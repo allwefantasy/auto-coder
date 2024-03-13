@@ -52,9 +52,9 @@ pip install -U byzercopilot
 ### Command Line
 
 ```shell
-python codecopilot.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --query "请仿照PyProject 实现一个 TypeScriptProject" 
+python auto-coder.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --query "请仿照PyProject 实现一个 TypeScriptProject" 
 ```
 
 ```shell
-python codecopilot.py --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/ByzerRawCopilot/xxx --package_name byzer_copilot --project_type py_spy-script 
+python auto-coder.py --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/ByzerRawCopilot/xxx --package_name byzer_copilot --project_type py_spy-script 
 ```
