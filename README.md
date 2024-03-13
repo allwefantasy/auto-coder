@@ -51,5 +51,10 @@ pip install -U byzercopilot
 
 ### Command Line
 
-You need to use  [Byzer-LLM](https://github.com/allwefantasy/byzer-llm) to deploy model.
-Once the model deployed, you can use the following command to test the performance of the model:
+```shell
+python codecopilot.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --query "请仿照PyProject 实现一个 TypeScriptProject" 
+```
+
+```shell
+python codecopilot.py --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/ByzerRawCopilot/xxx --package_name byzer_copilot --project_type py_spy-script 
+```

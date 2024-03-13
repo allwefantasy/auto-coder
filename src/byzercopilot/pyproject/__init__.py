@@ -3,6 +3,80 @@ from byzercopilot import common as FileUtils
 import os
 from typing import Optional,Generator,List,Dict,Any
 from git import Repo
+import ast
+import importlib
+import byzerllm
+
+class Level1PyProject():
+    
+    def __init__(self,script_path,package_name):
+        self.script_path = script_path
+        self.package_name = package_name
+
+    def get_imports_from_script(self,file_path):
+        script = ""
+        with open(file_path, "r") as file:
+            script = file.read()
+            tree = ast.parse(script, filename=file_path)
+        
+        imports = [node for node in ast.walk(tree) if isinstance(node, (ast.Import, ast.ImportFrom))]
+        return imports,script
+
+    def filter_imports(self,imports, package_name):
+        filtered_imports = []
+        for import_ in imports:
+            if isinstance(import_, ast.Import):
+                for alias in import_.names:
+                    if alias.name.startswith(package_name):
+                        filtered_imports.append(alias.name)
+            elif isinstance(import_, ast.ImportFrom):
+                if import_.module and import_.module.startswith(package_name):
+                    filtered_imports.append(import_.module)
+        return filtered_imports
+
+
+
+    def fetch_source_code(self,import_name):
+        spec = importlib.util.find_spec(import_name)
+        if spec and spec.origin:
+            with open(spec.origin, "r") as file:
+                return file.read()
+        return None
+    
+    @byzerllm.prompt(render="jinja")
+    def auto_implement(self,instruction:str, sources:List[Dict[str,Any]])->str:
+        '''
+        下面是一些Python 模块以及对应的源码：
+
+        {% for source in sources %}
+        #Module:{{ source.module_name }}
+        {{ source.source_code }}
+        {% endfor %}
+
+        请参考上面的内容，重新实现 script 模块下所有实现是"pass" 的方法。        
+        
+        {{ instruction }}
+            
+        '''
+        pass
+
+    def run(self):
+        imports,script = self.get_imports_from_script(self.script_path)
+        filtered_imports = self.filter_imports(imports, self.package_name)
+        sources = [] 
+
+
+        for import_name in filtered_imports:
+            source_code = self.fetch_source_code(import_name)
+            if source_code:
+                sources.append(SourceCode(module_name=import_name, source_code=source_code))            
+            else:
+                print(f"Could not fetch source code for {import_name}.")
+
+        sources.append(SourceCode(module_name="script", source_code=script))
+
+        sources = [source.dict() for source in sources]
+        return self.auto_implement(instruction="", sources=sources)
 
 class PyProject():
     

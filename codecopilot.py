@@ -6,7 +6,7 @@ import byzerllm
 from typing import List,Dict,Any
 import argparse
 from byzercopilot.common import SourceCode    
-from byzercopilot.pyproject import PyProject
+from byzercopilot.pyproject import PyProject,Level1PyProject
 from byzercopilot.tsproject import TSProject
 
 
@@ -48,8 +48,11 @@ if __name__ == "__main__":
     parser.add_argument("--target_file", required=False, help="the file to write the source code to")
     parser.add_argument("--query",  help="the instruction to handle the source code")
     parser.add_argument("--template",  default="common",help="the instruction to handle the source code")
-    parser.add_argument("--project_type",  default="py",help="the type of the project. py or ts")
-    parser.add_argument("--execute", action='store_false', help="Execute command line or not")
+    parser.add_argument("--project_type",  default="py",help="the type of the project. py ts,or py-script, default is py")
+    parser.add_argument("--execute", action='store_false', help="Execute command line or not")    
+
+    parser.add_argument("--package_name",  default="",help="only works for py-script project type. The package name of the script. default is empty.")
+    parser.add_argument("--script_path",  default="",help="only works for py-script project type. The path to the Python script. default is empty.")
 
     parser.add_argument("--model",  default="",help="the model name to use")
 
@@ -63,18 +66,18 @@ if __name__ == "__main__":
     else:
         llm = None
 
-    source_dir = args.source_dir
-    if not os.path.exists(source_dir):
-        raise ValueError(f"Directory {source_dir} does not exist.")
-
+    source_dir = args.source_dir    
     git_url = args.git_url or None
     target_file = args.target_file or None    
     template = args.template 
     project_type = args.project_type
     should_execute = args.execute
 
+
     if project_type == "ts":
         pp = TSProject(source_dir=source_dir, git_url=git_url, target_file=target_file)
+    elif project_type == "py-script":
+        pp = Level1PyProject(script_path=args.script_path, package_name=args.package_name)          
     else:
         pp = PyProject(source_dir=source_dir, git_url=git_url, target_file=target_file)
 
