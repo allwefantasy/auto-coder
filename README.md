@@ -83,7 +83,7 @@ Translate the markdown file in the project:
 
 ```shell
 
-auto_coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type "translate/中文/.md/cn" --model qianwen_chat 
+auto_coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type "translate/中文/.md/cn" --model_max_length 6000 --model qianwen_chat 
 ```
 When you want to translate some files, you must specify the model parameter. And the project_type is a litle bit complex, it's a combination of the following parameters:
 
@@ -97,10 +97,11 @@ So the final project_type is "translate/中文/.md/cn"
 If your model is powerful enough, you can use the following command to do the same task:
 
 ```shell
-python auto_coder.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --model qianwen_chat --project_type translate --query "把项目中的markdown文档翻译成中文"
+python auto_coder.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --model qianwen_chat --project_type translate --model_max_length 6000 --query "把项目中的markdown文档翻译成中文"
 ```
 
 The model will extract "translate/中文/.md/cn" from the query and then do the same thing as the previous command.
+
 
 ### Python Project Only Features
 
