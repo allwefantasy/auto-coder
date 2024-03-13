@@ -22,9 +22,9 @@ if os.path.exists(readme_path):
         readme_contents = fp.read().strip()
 
 setup(
-    name="byzercopilot",
+    name="auto-coder",
     version=__version__,
-    description="ByzerCopilot: Byzer Copilot",
+    description="AutoCoder: AutoCoder",
     author="allwefantasy",
     long_description=readme_contents,
     long_description_content_type="text/markdown",

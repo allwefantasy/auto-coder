@@ -1,12 +1,12 @@
 
 <p align="center">
   <picture>    
-    <img alt="byzer-perf" src="https://github.com/allwefantasy/byzer-llm/blob/master/docs/source/assets/logos/logo.jpg" width=55%>
+    <img alt="auto-coder" src="https://github.com/allwefantasy/byzer-llm/blob/master/docs/source/assets/logos/logo.jpg" width=55%>
   </picture>
 </p>
 
 <h3 align="center">
-Byzer-Copilot
+Auto Coder
 </h3>
 
 <p align="center">
@@ -18,7 +18,7 @@ Byzer-Copilot
 
 *Latest News* 🔥
 
-- [2024/03] Release Byzer-Evaluation 0.1.0
+- [2024/03] Release Auto-Coder 0.1.0
 
 ---
 
@@ -44,7 +44,7 @@ git clone https://github.com/allwefantasy/byzer-copilot.git
 pip install -r requirements.txt
 pip install -U vllm
 pip install -U byzerllm
-pip install -U byzercopilot
+pip install -U byzer-autocoder
 ```
 
 ## Usage 

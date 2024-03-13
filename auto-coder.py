@@ -4,10 +4,9 @@ import ray
 import ast
 import byzerllm
 from typing import List,Dict,Any
-import argparse
-from byzercopilot.common import SourceCode    
-from byzercopilot.pyproject import PyProject,Level1PyProject
-from byzercopilot.tsproject import TSProject
+import argparse 
+from autocoder.pyproject import PyProject,Level1PyProject
+from autocoder.tsproject import TSProject
 
 
 @byzerllm.prompt(render="jinja")
