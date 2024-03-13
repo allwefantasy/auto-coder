@@ -6,7 +6,7 @@
 </p>
 
 <h3 align="center">
-Auto Coder (based on Byzer-LLM)
+Auto-Coder (based on Byzer-LLM)
 </h3>
 
 <p align="center">
@@ -52,9 +52,16 @@ pip install -U auto_coder
 
 ### Basic 
 
-Withing prompt mode, the auto_coder will collect the source code from the source directory, and then generate context into the target file based on the query.
+The auto_coder provide two ways:
 
-The you can copy the content of output.txt and paste it to Web of ChatGPT or other AI models:
+1. Generate context for the query and used in Web of ChatGPT or other AI models.
+2. Use the model from Byzer-LLM to generate the result directly.
+
+>> Note: You should make sure the model has a long context length support, e.g. >32k. 
+
+The auto_coder will collect the source code from the source directory, and then generate context into the target file based on the query.
+
+Then you can copy the content of `output.txt` and paste it to Web of ChatGPT or other AI models:
 
 For example:
 
@@ -101,16 +108,23 @@ In order to reduce the context length collected by the auto_coder, if you are de
 
 
 ```shell
-auto_coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/ByzerRawCopilot/xxx --package_name byzer_copilot --project_type py-script 
+auto_coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/ByzerRawCopilot/xxx --package_name byzer_copilot --project_type py-script --query "帮我实现script模块中还没有实现方法"
+
 ```
 
 In the above command, we provide a script path and a package name, the script_path is the python file you are working now, and the package_name 
 is you cares about, then the auto_coder only collect the context from the package_name and imported by the script_path file, this will significantly reduce the context length.
 
+When you refer `script module` in `--query`, you means you are talking about script_path file.
+
 After the job is done, you can copy the prompt from the output.txt and paste it to Web of ChatGPT or other AI models.
 
 If you specify the model, the auto_coder will use the model to generate the result, then put the result into the target file.
 
-```python
-auto_coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/YOUR_PROJECT/xxx.py --package_name xxxx --project_type py-script --model qianwen_chat --execute --query "如何让这个系统可以通过 auto_coder 命令执行？" 
+```shell
+auto_coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/YOUR_PROJECT/xxx.py --package_name xxxx --project_type py-script --model qianwen_chat --execute --query "帮我实现script模块中还没有实现方法" 
 ```
+
+## TypeScript Project
+
+Just try to set the project_type to ts-script.

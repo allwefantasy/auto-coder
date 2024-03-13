@@ -96,6 +96,19 @@ class ActionPyScriptProject:
         return True
 
     def process_content(self, content: str):
+        args = self.args
+        if args.template == "common":
+            instruction = args.query or "Please implement the following methods"
+            content = instruction_template(instruction=instruction, content=content)
+        elif args.template == "auto_implement":
+            content = auto_implement_function_template(instruction="", content=content)
+
+        if args.execute:
+            t = self.llm.chat_oai(conversations=[{
+                "role": "user",
+                "content": content
+            }])
+            content = t[0].output
         with open(self.args.target_file, "w") as file:
             file.write(content)
 
@@ -207,6 +220,13 @@ class ActionTranslate():
                 "content": content
             }], response_class=Translates)         
             readmes: Translates = t[0].value
+            if not readmes:
+                output = t[0].response.output.strip()
+                if output and output.startswith("```json\n"):
+                    output = output[len("```json"):-3]
+                    readmes = Translates.parse_raw(output)                                        
+                else:    
+                    raise Exception(f"Fail to translate the content. {t[0]}",flush=True)
             for readme in readmes.readmes:
                 filename, extension = os.path.splitext(readme.filename)           
                 # if filename.endswith(f"-{tranlate_file_suffix}"):                        

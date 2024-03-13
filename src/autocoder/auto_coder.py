@@ -6,7 +6,7 @@ from autocoder.dispacher import Dispacher
 
 def parse_args() -> AutoCoderArgs:
     parser = argparse.ArgumentParser(description="Auto-implement missing methods in a Python script.")
-    parser.add_argument("--source_dir", required=True, help="Path to the project")
+    parser.add_argument("--source_dir", required=False, help="Path to the project")
     parser.add_argument("--git_url", help="URL of the git repository") 
     parser.add_argument("--target_file", required=False, help="the file to write the source code to")
     parser.add_argument("--query", help="the instruction to handle the source code")

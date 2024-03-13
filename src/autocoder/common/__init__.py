@@ -28,7 +28,7 @@ class TranslateArgs(pydantic.BaseModel):
     new_file_mark: str = pydantic.Field(..., description="according to the file suffix, the new file name should be like this: filename-new_file_mark.file_suffix")    
 
 class AutoCoderArgs(pydantic.BaseModel):
-    source_dir: str = pydantic.Field(..., description="Path to the project")
+    source_dir: Optional[str] = pydantic.Field(..., description="Path to the project")
     git_url: Optional[str] = pydantic.Field(None, description="URL of the git repository")
     target_file: Optional[str] = pydantic.Field(None, description="the file to write the source code to")
     query: Optional[str] = pydantic.Field(None, description="the instruction to handle the source code")
