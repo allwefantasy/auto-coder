@@ -60,6 +60,9 @@ pip install -U auto_coder
 ## Usage 
 
 ### Basic 
+> Recommend to use 千义通问Max/Qwen-Max SaaS model
+> You should deploy the model by [Byzer-LLM](https://github.com/allwefantasy/byzer-llm)
+
 
 The auto_coder provide two ways:
 
@@ -88,11 +91,13 @@ In the above command, we provide a model and enable the execute mode, the auto_c
 
 ### Advanced
 
+> This feature only works with the model from Byzer-LLM.
+
 Translate the markdown file in the project:
 
 ```shell
 
-auto_coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type "translate/中文/.md/cn" --model_max_length 6000 --model qianwen_chat 
+auto_coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type "translate/中文/.md/cn" --model_max_length 2000 --model qianwen_chat 
 ```
 When you want to translate some files, you must specify the model parameter. And the project_type is a litle bit complex, it's a combination of the following parameters:
 
@@ -106,10 +111,13 @@ So the final project_type is "translate/中文/.md/cn"
 If your model is powerful enough, you can use the following command to do the same task:
 
 ```shell
-python auto_coder.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --model qianwen_chat --project_type translate --model_max_length 6000 --query "把项目中的markdown文档翻译成中文"
+python auto_coder.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --model qianwen_chat --project_type translate --model_max_length 2000 --query "把项目中的markdown文档翻译成中文"
 ```
 
 The model will extract "translate/中文/.md/cn" from the query and then do the same thing as the previous command.
+
+Note: The model_max_length is used to control the model's generation length, if the model_max_length is not set, the default value is 1024.
+You should change the value based on your esitmating on the length of the translation.
 
 
 ### Python Project Only Features
@@ -122,7 +130,7 @@ auto_coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --s
 
 ```
 
-In the above command, we provide a script path and a package name, the script_path is the python file you are working now, and the package_name 
+In the above command, we provide a script path and a package name, the script_path is the python file you are working on now, and the package_name 
 is you cares about, then the auto_coder only collect the context from the package_name and imported by the script_path file, this will significantly reduce the context length.
 
 When you refer `script module` in `--query`, you means you are talking about script_path file.
