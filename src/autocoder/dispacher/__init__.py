@@ -221,12 +221,13 @@ class ActionTranslate():
             }], response_class=Translates)         
             readmes: Translates = t[0].value
             if not readmes:
-                output = t[0].response.output.strip()
-                if output and output.startswith("```json\n"):
-                    output = output[len("```json"):-3]
-                    readmes = Translates.parse_raw(output)                                        
-                else:    
-                    raise Exception(f"Fail to translate the content. {t[0]}",flush=True)
+                # output = t[0].response.output.strip()
+                # if output and output.startswith("```json\n"):
+                #     output = output[len("```json"):-3]
+                #     readmes = Translates.parse_raw(output)                                        
+                # else:    
+                print(f"Fail to translate the content. {t[0]}")
+                raise Exception(f"Fail to translate the content.")
             for readme in readmes.readmes:
                 filename, extension = os.path.splitext(readme.filename)           
                 # if filename.endswith(f"-{tranlate_file_suffix}"):                        
