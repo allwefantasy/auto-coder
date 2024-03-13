@@ -6,7 +6,7 @@
 </p>
 
 <h3 align="center">
-Auto-Coder (based on Byzer-LLM)
+Auto-Coder (powered by Byzer-LLM)
 </h3>
 
 <p align="center">
