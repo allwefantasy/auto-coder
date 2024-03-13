@@ -4,68 +4,30 @@ import os
 from typing import Optional,Generator,List,Dict,Any
 from git import Repo
 
-class TSProject():
+class SuffixProject():
     
-    def __init__(self,source_dir,git_url:Optional[str]=None,target_file:Optional[str]=None):
+    def __init__(self,source_dir,
+                 project_type:str,
+                 git_url:Optional[str]=None,
+                 target_file:Optional[str]=None):
         self.directory = source_dir
         self.git_url = git_url        
-        self.target_file = target_file       
+        self.target_file = target_file  
+        self.project_type = project_type
+        self.suffixs = [f".{suffix}" if not suffix.startswith('.') else suffix for suffix in self.project_type.split(",")]
 
     def output(self):
-        return open(self.target_file, "r").read()                    
+        return open(self.target_file, "r").read()                
+
+    def is_suffix_file(self,file_path):
+        return any([file_path.endswith(suffix) for suffix in self.suffixs])
 
     def read_file_content(self,file_path):
         with open(file_path, "r") as file:
-            return file.read()            
-
-    def is_likely_useful_file(self,file_path):
-        # Ignore hidden files and directories
-        if any(part.startswith(".") for part in file_path.split(os.path.sep)):
-            return False
-
-        # Ignore common build output, dependency and configuration directories
-        ignore_dirs = [
-            "node_modules",
-            "dist",
-            "build",
-            "coverage",
-            "public",
-            "config",
-            "__tests__",
-            "__mocks__",
-        ]
-        if any(dir in file_path.split(os.path.sep) for dir in ignore_dirs):
-            return False
-
-        # Ignore common non-source files in React + TS projects 
-        ignore_extensions = [
-            ".json",
-            ".md",
-            ".txt",
-            ".png",
-            ".jpg",
-            ".jpeg",
-            ".gif",
-            ".svg",
-            ".ico",
-            ".css",
-            ".less",
-            ".scss",
-            ".sass",
-            ".map",
-        ]
-        if any(file_path.endswith(ext) for ext in ignore_extensions):
-            return False
-        
-        # Include .ts, .tsx, .js and .jsx files
-        include_extensions = [".ts", ".tsx", ".js", ".jsx"]
-        if any(file_path.endswith(ext) for ext in include_extensions):
-            return True
-
-        return False    
+            return file.read()
 
     def convert_to_source_code(self,file_path):        
-        if not self.is_likely_useful_file(file_path):
+        if not FileUtils.is_likely_useful_file(file_path):
             return None
                
         module_name = file_path
@@ -83,10 +45,10 @@ class TSProject():
         for root, dirs, files in os.walk(self.directory):
             for file in files:
                 file_path = os.path.join(root, file)
-                source_code = self.convert_to_source_code(file_path)
-                if source_code is not None:
-                    yield source_code
-                    
+                if self.is_suffix_file(file_path):
+                    source_code = self.convert_to_source_code(file_path)
+                    if source_code is not None:
+                        yield source_code
 
 
     def run(self):

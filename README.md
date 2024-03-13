@@ -29,10 +29,10 @@ You can use the script provided by Byzer-LLM to setup the nvidia-driver/cuda env
 
 1. [CentOS 8 / Ubuntu 20.04 / Ubuntu 22.04](https://docs.byzer.org/#/byzer-lang/zh-cn/byzer-llm/deploy)
 
-After the nvidia-driver/cuda environment is set up, you can install byzer-evaluation like this:
+After the nvidia-driver/cuda environment is set up, you can install auto_coder like this:
 
 ```shell
-pip install -U byzercopilot
+pip install -U auto_coder
 ```
 
 ## Existing Installation
@@ -52,9 +52,18 @@ pip install -U auto_coder
 ### Command Line
 
 ```shell
-python auto-coder.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --query "请仿照PyProject 实现一个 TypeScriptProject" 
+python auto_coder.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --query "如何让这个系统可以通过 auto_coder 命令执行？" 
 ```
 
 ```shell
-python auto-coder.py --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/ByzerRawCopilot/xxx --package_name byzer_copilot --project_type py_spy-script 
+python auto_coder.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --query "重新生成一个 is_likely_useful_file 方法，满足reactjs+typescript 组合的项目。" 
+
+
+python auto_coder.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type "translate/中文/.md/cn" --model sparkdesk_chat --execute
 ```
+
+```shell
+python auto_coder.py --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/ByzerRawCopilot/xxx --package_name byzer_copilot --project_type py_spy-script 
+```
+
+python auto_coder.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --model qianwen_chat  --query "优化 src 目录外的auto_coder.py, 生成一个新的pydantic model, 提供一个方法自动将 argparse 参数转换为 pydantic model。"
