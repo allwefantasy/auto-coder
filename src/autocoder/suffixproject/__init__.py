@@ -17,6 +17,7 @@ class SuffixProject():
         self.project_type = project_type
         self.suffixs = [f".{suffix}" if not suffix.startswith('.') else suffix for suffix in self.project_type.split(",") if suffix.strip() != ""]
         self.file_filter = file_filter
+        self.sources = []
 
     def output(self):
         return open(self.target_file, "r").read()                
@@ -52,11 +53,13 @@ class SuffixProject():
 
         if self.target_file is None:                
             for code in self.get_source_codes():
+                self.sources.append(code)
                 print(f"##File: {code.module_name}")
                 print(code.source_code)                
         else:            
             with open(self.target_file, "w") as file:
                 for code in self.get_source_codes():
+                    self.sources.append(code)
                     file.write(f"##File: {code.module_name}\n")
                     file.write(f"{code.source_code}\n\n")
                     

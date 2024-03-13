@@ -1,5 +1,5 @@
 
-from autocoder.common import AutoCoderArgs,Translates,TranslateArgs
+from autocoder.common import AutoCoderArgs,TranslateArgs,TranslateReadme
 from autocoder.pyproject import PyProject,Level1PyProject
 from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
@@ -214,26 +214,32 @@ class ActionTranslate():
                                 file_filter=file_filter                               
                                 ) 
             pp.run()            
-            content = translate_readme(content=pp.output(), lang=lang)
-            t = self.llm.chat_oai(conversations=[{
+            for source in pp.sources:
+                content = translate_readme(content=source.source_code, lang=lang)
+                t = self.llm.chat_oai(conversations=[{
                 "role": "user",
                 "content": content
-            }], response_class=Translates)         
-            readmes: Translates = t[0].value
-            if not readmes:
-                # output = t[0].response.output.strip()
-                # if output and output.startswith("```json\n"):
-                #     output = output[len("```json"):-3]
-                #     readmes = Translates.parse_raw(output)                                        
-                # else:    
-                print(f"Fail to translate the content. {t[0]}")
-                raise Exception(f"Fail to translate the content.")
-            for readme in readmes.readmes:
-                filename, extension = os.path.splitext(readme.filename)           
-                # if filename.endswith(f"-{tranlate_file_suffix}"):                        
+                }]) 
+                readme = TranslateReadme(filename=source.module_name,content=t[0].output)
+                filename, extension = os.path.splitext(readme.filename)                                                   
                 chinese_filename = f"{filename}-{new_file_mark}{extension}"
                 with open(chinese_filename, "w") as file:        
                     file.write(readme.content)
+
+            # t = self.llm.chat_oai(conversations=[{
+            #     "role": "user",
+            #     "content": content
+            # }], response_class=Translates)         
+            # readmes: Translates = t[0].value
+            # if not readmes:
+            #     # output = t[0].response.output.strip()
+            #     # if output and output.startswith("```json\n"):
+            #     #     output = output[len("```json"):-3]
+            #     #     readmes = Translates.parse_raw(output)                                        
+            #     # else:    
+            #     print(f"Fail to translate the content. {t[0]}")
+            #     raise Exception(f"Fail to translate the content.")            
+                
 
 class Dispacher():
     def __init__(self, args:AutoCoderArgs,llm:Optional[byzerllm.ByzerLLM]=None):

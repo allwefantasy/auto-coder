@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.2
+Version: 0.1.3
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -15,7 +15,7 @@ Description-Content-Type: text/markdown
 </p>
 
 <h3 align="center">
-Auto-Coder (based on Byzer-LLM)
+Auto-Coder (powered by Byzer-LLM)
 </h3>
 
 <p align="center">
@@ -27,7 +27,7 @@ Auto-Coder (based on Byzer-LLM)
 
 *Latest News* 🔥
 
-- [2024/03] Release Auto-Coder 0.1.2
+- [2024/03] Release Auto-Coder 0.1.3
 
 ---
 
