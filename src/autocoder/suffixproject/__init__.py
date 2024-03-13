@@ -1,55 +1,50 @@
 from autocoder.common import SourceCode
 from autocoder import common as FileUtils  
 import os
-from typing import Optional,Generator,List,Dict,Any
+from typing import Optional, Generator, List, Dict, Any, Callable
 from git import Repo
 
 class SuffixProject():
     
-    def __init__(self,source_dir,
-                 project_type:str,
-                 git_url:Optional[str]=None,
-                 target_file:Optional[str]=None):
+    def __init__(self, source_dir, 
+                 project_type: str,
+                 git_url: Optional[str] = None,
+                 target_file: Optional[str] = None,
+                 file_filter: Optional[Callable[[str], bool]] = None):
         self.directory = source_dir
         self.git_url = git_url        
         self.target_file = target_file  
         self.project_type = project_type
-        self.suffixs = [f".{suffix}" if not suffix.startswith('.') else suffix for suffix in self.project_type.split(",")]
+        self.suffixs = [f".{suffix}" if not suffix.startswith('.') else suffix for suffix in self.project_type.split(",") if suffix.strip() != ""]
+        self.file_filter = file_filter
 
     def output(self):
         return open(self.target_file, "r").read()                
 
-    def is_suffix_file(self,file_path):
+    def is_suffix_file(self, file_path):
         return any([file_path.endswith(suffix) for suffix in self.suffixs])
 
-    def read_file_content(self,file_path):
+    def read_file_content(self, file_path):
         with open(file_path, "r") as file:
             return file.read()
 
-    def convert_to_source_code(self,file_path):        
-        if not FileUtils.is_likely_useful_file(file_path):
-            return None
-               
+    def convert_to_source_code(self, file_path):                               
         module_name = file_path
-        source_code = self.read_file_content(file_path)
-
-        if not FileUtils.has_sufficient_content(source_code,min_line_count=1):
-            return None
-        
-        if FileUtils.is_test_file(source_code):
-            return None
+        source_code = self.read_file_content(file_path)            
         return SourceCode(module_name=module_name, source_code=source_code)
     
-
-    def get_source_codes(self)->Generator[SourceCode,None,None]:
+    def get_source_codes(self) -> Generator[SourceCode, None, None]:
         for root, dirs, files in os.walk(self.directory):
             for file in files:
                 file_path = os.path.join(root, file)
+                
                 if self.is_suffix_file(file_path):
-                    source_code = self.convert_to_source_code(file_path)
-                    if source_code is not None:
-                        yield source_code
-
+                
+                    if self.file_filter is None or self.file_filter(file_path,self.suffixs):
+                        print(f"====Processing {file_path}",flush=True)
+                        source_code = self.convert_to_source_code(file_path)
+                        if source_code is not None:
+                            yield source_code
 
     def run(self):
         if self.git_url is not None:

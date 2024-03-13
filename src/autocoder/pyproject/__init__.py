@@ -45,18 +45,11 @@ class Level1PyProject():
     
     @byzerllm.prompt(render="jinja")
     def auto_implement(self,instruction:str, sources:List[Dict[str,Any]])->str:
-        '''
-        下面是一些Python 模块以及对应的源码：
-
+        '''        
         {% for source in sources %}
         #Module:{{ source.module_name }}
         {{ source.source_code }}
-        {% endfor %}
-
-        请参考上面的内容，重新实现 script 模块下所有实现是"pass" 的方法。        
-        
-        {{ instruction }}
-            
+        {% endfor %}                   
         '''
         pass
 

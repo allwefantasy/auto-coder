@@ -9,5 +9,7 @@ src/autocoder/__init__.py
 src/autocoder/auto_coder.py
 src/autocoder/version.py
 src/autocoder/common/__init__.py
+src/autocoder/dispacher/__init__.py
 src/autocoder/pyproject/__init__.py
+src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py

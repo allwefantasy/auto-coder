@@ -1,9 +1,43 @@
 import pydantic
 import ast
+from typing import List,Dict,Any,Optional
 
 class SourceCode(pydantic.BaseModel):
     module_name: str
     source_code: str
+
+
+class TranslateReadme(pydantic.BaseModel):
+    filename:str = pydantic.Field(...,description="需要翻译的文件路径")
+    content:str  = pydantic.Field(...,description="翻译后的内容")
+
+
+class Translates(pydantic.BaseModel):
+    readmes:List[TranslateReadme]
+
+class TranslateArgs(pydantic.BaseModel):
+    '''
+    示例：把项目中的markdown文档翻译成中文
+    此时对应的字段值应该是
+    target_lang=中文
+    file_suffix=.md
+    new_file_mark=cn
+    '''
+    target_lang: str = pydantic.Field(..., description="The target language to translate to")
+    file_suffix: str = pydantic.Field(..., description="to filter the file by suffix, e.g. py, ts, md, etc. if multiple, use comma to separate")    
+    new_file_mark: str = pydantic.Field(..., description="according to the file suffix, the new file name should be like this: filename-new_file_mark.file_suffix")    
+
+class AutoCoderArgs(pydantic.BaseModel):
+    source_dir: str = pydantic.Field(..., description="Path to the project")
+    git_url: Optional[str] = pydantic.Field(None, description="URL of the git repository")
+    target_file: Optional[str] = pydantic.Field(None, description="the file to write the source code to")
+    query: Optional[str] = pydantic.Field(None, description="the instruction to handle the source code")
+    template: str = pydantic.Field("common", description="the instruction to handle the source code")
+    project_type: str = pydantic.Field("py", description="the type of the project. py, ts, py-script, translate, or file suffix. default is py")
+    execute: bool = pydantic.Field(False, description="Execute command line or not")
+    package_name: str = pydantic.Field("", description="only works for py-script project type. The package name of the script. default is empty.")
+    script_path: str = pydantic.Field("", description="only works for py-script project type. The path to the Python script. default is empty.")
+    model: str = pydantic.Field("", description="the model name to use")
 
 
 def is_likely_useful_file(file_path):
