@@ -30,8 +30,9 @@ def main():
         byzerllm.connect_cluster()
         llm = byzerllm.ByzerLLM()
         llm.setup_template(model=args.model,template="auto")
-        llm.setup_default_model_name(args.model)        
+        llm.setup_default_model_name(args.model)
         llm.setup_max_output_length(args.model,args.model_max_length)
+        llm.setup_extra_generation_params(args.model, {"max_length": args.model_max_length})
     else:
         llm = None
 
@@ -40,8 +41,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-    
-    
