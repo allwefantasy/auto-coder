@@ -18,7 +18,7 @@ Auto-Coder (based on Byzer-LLM)
 
 *Latest News* 🔥
 
-- [2024/03] Release Auto-Coder 0.1.1
+- [2024/03] Release Auto-Coder 0.1.2
 
 ---
 
@@ -32,7 +32,7 @@ You can use the script provided by Byzer-LLM to setup the nvidia-driver/cuda env
 After the nvidia-driver/cuda environment is set up, you can install auto_coder like this:
 
 ```shell
-pip install -U auto_coder
+pip install -U auto-coder
 ```
 
 ## Existing Installation
@@ -45,7 +45,7 @@ pip install -r requirements.txt
 ## if you want to use private/open-source models, uncomment this line.
 # pip install -U vllm
 pip install -U byzerllm
-pip install -U auto_coder
+pip install -U auto-coder
 ```
 
 ## Usage 
@@ -55,30 +55,30 @@ pip install -U auto_coder
 > You should deploy the model by [Byzer-LLM](https://github.com/allwefantasy/byzer-llm)
 
 
-The auto_coder provide two ways:
+The auto-coder provide two ways:
 
 1. Generate context for the query and used in Web of ChatGPT or other AI models.
 2. Use the model from Byzer-LLM to generate the result directly.
 
 >> Note: You should make sure the model has a long context length support, e.g. >32k. 
 
-The auto_coder will collect the source code from the source directory, and then generate context into the target file based on the query.
+The auto-coder will collect the source code from the source directory, and then generate context into the target file based on the query.
 
 Then you can copy the content of `output.txt` and paste it to Web of ChatGPT or other AI models:
 
 For example:
 
 ```shell
-auto_coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --query "如何让这个系统可以通过 auto_coder 命令执行？" 
+auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --query "如何让这个系统可以通过 auto-coder 命令执行？" 
 ```
 
 If you want to use the model from Byzer-LLM, you can use the following command:
 
 ```shell
-auto_coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --model qianwen_chat --execute --query "重新生成一个 is_likely_useful_file 方法，满足reactjs+typescript 组合的项目。" 
+auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --model qianwen_chat --execute --query "重新生成一个 is_likely_useful_file 方法，满足reactjs+typescript 组合的项目。" 
 ```
 
-In the above command, we provide a model and enable the execute mode, the auto_coder will collect the source code from the source directory, and then generate context for the query, and then use the model to generate the result, then put the result into the target file.
+In the above command, we provide a model and enable the execute mode, the auto-coder will collect the source code from the source directory, and then generate context for the query, and then use the model to generate the result, then put the result into the target file.
 
 ### Advanced
 
@@ -88,7 +88,7 @@ Translate the markdown file in the project:
 
 ```shell
 
-auto_coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type "translate/中文/.md/cn" --model_max_length 2000 --model qianwen_chat 
+auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type "translate/中文/.md/cn" --model_max_length 2000 --model qianwen_chat 
 ```
 When you want to translate some files, you must specify the model parameter. And the project_type is a litle bit complex, it's a combination of the following parameters:
 
@@ -102,7 +102,7 @@ So the final project_type is "translate/中文/.md/cn"
 If your model is powerful enough, you can use the following command to do the same task:
 
 ```shell
-python auto_coder.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --model qianwen_chat --project_type translate --model_max_length 2000 --query "把项目中的markdown文档翻译成中文"
+auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --model qianwen_chat --project_type translate --model_max_length 2000 --query "把项目中的markdown文档翻译成中文"
 ```
 
 The model will extract "translate/中文/.md/cn" from the query and then do the same thing as the previous command.
@@ -113,25 +113,25 @@ You should change the value based on your esitmating on the length of the transl
 
 ### Python Project Only Features
 
-In order to reduce the context length collected by the auto_coder, if you are dealing with a python project, you can use the following command:
+In order to reduce the context length collected by the auto-coder, if you are dealing with a python project, you can use the following command:
 
 
 ```shell
-auto_coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/ByzerRawCopilot/xxx --package_name byzer_copilot --project_type py-script --query "帮我实现script模块中还没有实现方法"
+auto-coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/ByzerRawCopilot/xxx --package_name byzer_copilot --project_type py-script --query "帮我实现script模块中还没有实现方法"
 
 ```
 
 In the above command, we provide a script path and a package name, the script_path is the python file you are working on now, and the package_name 
-is you cares about, then the auto_coder only collect the context from the package_name and imported by the script_path file, this will significantly reduce the context length.
+is you cares about, then the auto-coder only collect the context from the package_name and imported by the script_path file, this will significantly reduce the context length.
 
 When you refer `script module` in `--query`, you means you are talking about script_path file.
 
 After the job is done, you can copy the prompt from the output.txt and paste it to Web of ChatGPT or other AI models.
 
-If you specify the model, the auto_coder will use the model to generate the result, then put the result into the target file.
+If you specify the model, the auto-coder will use the model to generate the result, then put the result into the target file.
 
 ```shell
-auto_coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/YOUR_PROJECT/xxx.py --package_name xxxx --project_type py-script --model qianwen_chat --execute --query "帮我实现script模块中还没有实现方法" 
+auto-coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/YOUR_PROJECT/xxx.py --package_name xxxx --project_type py-script --model qianwen_chat --execute --query "帮我实现script模块中还没有实现方法" 
 ```
 
 ## TypeScript Project

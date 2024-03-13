@@ -1,2 +1,2 @@
 [console_scripts]
-auto_coder = autocoder.auto_coder:main
+auto-coder = autocoder.auto_coder:main

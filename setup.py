@@ -22,7 +22,7 @@ if os.path.exists(readme_path):
         readme_contents = fp.read().strip()
 
 setup(
-    name="auto_coder",
+    name="auto-coder",
     version=__version__,
     description="AutoCoder: AutoCoder",
     author="allwefantasy",
@@ -30,7 +30,7 @@ setup(
     long_description_content_type="text/markdown",
     entry_points={
         'console_scripts': [
-            'auto_coder = autocoder.auto_coder:main',
+            'auto-coder = autocoder.auto_coder:main',
         ],
     },
     package_dir={"": "src"},

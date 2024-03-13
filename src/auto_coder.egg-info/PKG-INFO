@@ -41,7 +41,7 @@ You can use the script provided by Byzer-LLM to setup the nvidia-driver/cuda env
 After the nvidia-driver/cuda environment is set up, you can install auto_coder like this:
 
 ```shell
-pip install -U auto_coder
+pip install -U auto-coder
 ```
 
 ## Existing Installation
@@ -54,7 +54,7 @@ pip install -r requirements.txt
 ## if you want to use private/open-source models, uncomment this line.
 # pip install -U vllm
 pip install -U byzerllm
-pip install -U auto_coder
+pip install -U auto-coder
 ```
 
 ## Usage 
