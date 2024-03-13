@@ -1,7 +1,7 @@
 Metadata-Version: 2.1
-Name: byzercopilot
+Name: auto-coder
 Version: 0.1.0
-Summary: ByzerCopilot: Byzer Copilot
+Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
 Classifier: Programming Language :: Python :: 3.9
@@ -10,12 +10,12 @@ Description-Content-Type: text/markdown
 
 <p align="center">
   <picture>    
-    <img alt="byzer-perf" src="https://github.com/allwefantasy/byzer-llm/blob/master/docs/source/assets/logos/logo.jpg" width=55%>
+    <img alt="auto-coder" src="https://github.com/allwefantasy/byzer-llm/blob/master/docs/source/assets/logos/logo.jpg" width=55%>
   </picture>
 </p>
 
 <h3 align="center">
-Byzer-Copilot
+Auto Coder
 </h3>
 
 <p align="center">
@@ -27,7 +27,7 @@ Byzer-Copilot
 
 *Latest News* 🔥
 
-- [2024/03] Release Byzer-Evaluation 0.1.0
+- [2024/03] Release Auto-Coder 0.1.0
 
 ---
 
@@ -53,12 +53,17 @@ git clone https://github.com/allwefantasy/byzer-copilot.git
 pip install -r requirements.txt
 pip install -U vllm
 pip install -U byzerllm
-pip install -U byzercopilot
+pip install -U auto_coder
 ```
 
 ## Usage 
 
 ### Command Line
 
-You need to use  [Byzer-LLM](https://github.com/allwefantasy/byzer-llm) to deploy model.
-Once the model deployed, you can use the following command to test the performance of the model:
+```shell
+python auto-coder.py --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --query "请仿照PyProject 实现一个 TypeScriptProject" 
+```
+
+```shell
+python auto-coder.py --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/ByzerRawCopilot/xxx --package_name byzer_copilot --project_type py_spy-script 
+```

@@ -44,7 +44,7 @@ git clone https://github.com/allwefantasy/byzer-copilot.git
 pip install -r requirements.txt
 pip install -U vllm
 pip install -U byzerllm
-pip install -U byzer-autocoder
+pip install -U auto_coder
 ```
 
 ## Usage 

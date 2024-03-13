@@ -40,7 +40,7 @@ def instruction_template(instruction:str, content:str)->str:
     pass
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Auto-implement missing methods in a Python script.")
     parser.add_argument("--source_dir", required=True, help="Path to the project")
     parser.add_argument("--git_url", help="URL of the git repository")
@@ -99,8 +99,5 @@ if __name__ == "__main__":
     with open(target_file, "w") as file:        
         file.write(content)
 
-
-
-
-    
-    
+if __name__ == "__main__":
+    main()

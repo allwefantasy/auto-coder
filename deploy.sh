@@ -1,6 +1,6 @@
-project=byzerevaluation
+project=auto_coder
 
-version=$(grep -oP '__version__ = "\K[0-9]+\.[0-9]+\.[0-9]+' src/byzerevaluation/version.py | cut -d '"' -f 1)
+version=$(grep -oP '__version__ = "\K[0-9]+\.[0-9]+\.[0-9]+' src/autocoder/version.py | cut -d '"' -f 1)
 echo "Version: $version"
 
 echo "Clean dist"

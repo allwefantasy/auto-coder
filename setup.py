@@ -3,7 +3,7 @@ from setuptools import find_packages
 from setuptools import setup
 
 folder = os.path.dirname(__file__)
-version_path = os.path.join(folder, "src", "byzercopilot", "version.py")
+version_path = os.path.join(folder, "src", "autocoder", "version.py")
 
 __version__ = None
 with open(version_path) as f:
@@ -22,12 +22,17 @@ if os.path.exists(readme_path):
         readme_contents = fp.read().strip()
 
 setup(
-    name="auto-coder",
+    name="auto_coder",
     version=__version__,
     description="AutoCoder: AutoCoder",
     author="allwefantasy",
     long_description=readme_contents,
     long_description_content_type="text/markdown",
+    entry_points={
+        'console_scripts': [
+            'auto_coder = autocoder.auto_coder:main',
+        ],
+    },
     package_dir={"": "src"},
     packages=find_packages("src"),    
     package_data={        
