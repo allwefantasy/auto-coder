@@ -18,7 +18,7 @@ Auto-Coder (powered by Byzer-LLM)
 
 *Latest News* 🔥
 
-- [2024/03] Release Auto-Coder 0.1.5
+- [2024/03] Release Auto-Coder 0.1.6
 
 ---
 
@@ -92,14 +92,14 @@ pip install -U auto-coder
 
 The auto-coder provide two ways:
 
-1. Generate context for the query and used in Web of ChatGPT or other AI models.
+1. Generate context for the query and you can copy&&Paste to Web UI of ChatGPT/Claud3/Kimi.
 2. Use the model from Byzer-LLM to generate the result directly.
 
 >> Note: You should make sure the model has a long context length support, e.g. >32k. 
 
 The auto-coder will collect the source code from the source directory, and then generate context into the target file based on the query.
 
-Then you can copy the content of `output.txt` and paste it to Web of ChatGPT or other AI models:
+Then you can copy the content of `output.txt` and paste it to Web UI of ChatGPT/Claud3/Kimi:
 
 For example:
 
@@ -131,6 +131,31 @@ auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /
 ```
 
 In the above command, we provide a model and enable the execute mode, the auto-coder will collect the source code from the source directory, and then generate context for the query, and then use the model to generate the result, then put the result into the target file.
+
+### How to reduce the context length?
+
+As you may know, auto-coder will collect the source code from the source directory, and then generate context for the query, if the source directory is too large, the context will be too large, and the model may not be able to handle it.
+
+You can change the source directory to sub directory to reduce the context length.
+
+We also provide a way to reduce the context length, you can use the following configuration:
+
+```yaml
+source_dir: /home/winubuntu/projects/ByzerRawCopilot 
+target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
+model: qianwen_chat
+model_max_length: 2000
+anti_quota_limit: 13
+skip_build_index: false
+project_type: "copilot/.py"
+query: |
+  优化 copilot 里的 get_suffix_from_project_type 函数并更新原文件
+```
+
+here we add a new parameter `skip_build_index`, by default, this value is true. If you set it to false, the auto-coder collect the source code from the source directory, and then generate index for the source code(This may cost a lot of tokens), and then create a directory called `.auto-coder` in source directory to store the index. Once the index is created, the auto-coder will use the index to filter files and reduce the context length. notice that the filter is also cost tokens, so you should use it carefully.
+
+> skip_build_index only works for project_type "copilot" now. 
+
 
 ### Advanced
 

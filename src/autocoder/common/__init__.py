@@ -67,6 +67,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     file: Optional[str] = pydantic.Field(None, description="the configuration file to use")
     anti_quota_limit: Optional[int] = pydantic.Field(1, description="After how much time to wait for the next request. default is 1s")
     skip_build_index: bool = pydantic.Field(True, description="Skip building index or not. default is True")
+    print_request: bool = pydantic.Field(False, description="Print request to model or not. default is False")
 
 
 def is_likely_useful_file(file_path):
