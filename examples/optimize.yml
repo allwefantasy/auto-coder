@@ -1,4 +1,4 @@
 source_dir: /home/winubuntu/projects/ByzerRawCopilot 
 target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
 query: |
-  对 index.py 文件里代码进行优化，对文件内容做md5,作为其中一个元数据，并且使用该值作为判断文件是否变化的依据
+  格式化打印所有命令行参数

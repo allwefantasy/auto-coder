@@ -10,14 +10,14 @@
     "md5": "4e02680b18c3271c51c10a5202b6577d"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/auto_coder.py": {
-    "symbols": "符号类型: 函数, 符号名称: parse_args, main\n符号类型: 类, 符号名称: AutoCoderArgs, Dispacher\n符号类型: 变量, 符号名称: args, config, llm, parser\n符号类型: 导入语句, 符号名称: byzerllm, typing, argparse, AutoCoderArgs, Dispacher, yaml",
-    "last_modified": 1710419286.131495,
-    "md5": "ca35e5dc25b63c6fa26308a613364ab3"
+    "symbols": "函数: parse_args, main\n类: AutoCoderArgs, Dispacher\n变量: args, config, llm\n导入语句: import byzerllm, from typing import List, Dict, Any, Optional, import argparse, from autocoder.common import AutoCoderArgs, from autocoder.dispacher import Dispacher, import yaml",
+    "last_modified": 1710421359.039045,
+    "md5": "df3b07b8446973fcbca2a8c55d189aa6"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/version.py": {
-    "symbols": " 在给定的源码中，我们可以找到以下符号：\n\n变量:\n__version__\n\n由于源码中没有函数、类和导入语句，所以最终结果如下：\n\n变量: __version__",
-    "last_modified": 1710409273.0752838,
-    "md5": "458485aa6066b94a59039c9817f1176c"
+    "symbols": "根据提供的源码，文件 /home/winubuntu/projects/ByzerRawCopilot/src/autocoder/version.py 中只有一个变量定义：\n\n符号类型: 变量\n符号名称: __version__",
+    "last_modified": 1710421032.0566556,
+    "md5": "fa63c57525800b14ee827d724f0e345d"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/suffixproject/__init__.py": {
     "symbols": " 函数: `output`, `is_suffix_file`, `read_file_content`, `convert_to_source_code`, `get_source_codes`, `run`, `clone_repository`\n\n类: `SuffixProject`\n\n变量: `self.directory`, `self.git_url`, `self.target_file`, `self.project_type`, `self.suffixs`, `self.file_filter`, `self.sources`\n\n导入语句: \n- `from autocoder.common import SourceCode`\n- `from autocoder import common as FileUtils`\n- `import os`\n- `from typing import Optional, Generator, List, Dict, Any, Callable`\n- `from git import Repo`",

@@ -18,7 +18,7 @@ Auto-Coder（由 Byzer-LLM 提供支持）
 
 *最新动态* 🔥
 
-- [2024/03] 发布 Auto-Coder 0.1.6
+- [2024/03] 发布 Auto-Coder 0.1.7
 
 ---
 

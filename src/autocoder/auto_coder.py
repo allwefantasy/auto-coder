@@ -21,9 +21,16 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--file", default=None, required=False, help="Path to the YAML configuration file")
     parser.add_argument("--anti_quota_limit",type=int, default=1, help="After how much time to wait for the next request. default is 1s")
     parser.add_argument("--skip_build_index", action='store_true', help="Skip building index or not. default is True")
-    parser.add_argument("--print_request", action='store_false', help="Print request to model or not. default is False")
+    parser.add_argument("--print_request", action='store_true', help="Print request to model or not. default is False")
     
     args = parser.parse_args()
+    
+    print("Command Line Arguments:")
+    print("-" * 50)
+    for arg, value in vars(args).items():
+        print(f"{arg:20}: {value}")
+    print("-" * 50)
+
     return AutoCoderArgs(**vars(args))
 
 
@@ -37,7 +44,7 @@ def main():
                     setattr(args, key, value)
     
     if args.model:
-        byzerllm.connect_cluster()
+        byzerllm.connect_cluster()        
         llm = byzerllm.ByzerLLM(verbose=args.print_request)
         llm.setup_template(model=args.model,template="auto")
         llm.setup_default_model_name(args.model)
