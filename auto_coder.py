@@ -24,7 +24,14 @@ def parse_args() -> AutoCoderArgs:
 
 
 def main():
-    args = parse_args()
+    args = AutoCoderArgs(
+        source_dir="/home/winubuntu/projects/ByzerRawCopilot",
+        target_file="/home/winubuntu/projects/ByzerRawCopilot/output.txt",
+        project_type="copilot",
+        model_max_length=2000,
+        model="qianwen_chat",
+        query="用python打印你好，中国"
+    )
     
     if args.model:
         byzerllm.connect_cluster()
@@ -41,3 +48,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

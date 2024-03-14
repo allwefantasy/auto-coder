@@ -1,5 +1,8 @@
 import pydantic
 import ast
+import sys
+import subprocess
+import os
 from typing import List,Dict,Any,Optional
 
 class SourceCode(pydantic.BaseModel):
@@ -30,6 +33,7 @@ class TranslateArgs(pydantic.BaseModel):
 class ExecuteStep(pydantic.BaseModel):
     code: str = pydantic.Field(..., description="The code line to execute")
     lang: str = pydantic.Field(..., description="The language to execute the code line, python,shell. default is python")
+    total_steps: Optional[int] = pydantic.Field(-1, description="The total steps to finish the user's question")
     cwd: Optional[str] = pydantic.Field(None, description="The current working directory to execute the command line")
     env: Optional[Dict[str, Any]] = pydantic.Field(None, description="The environment variables to execute the command line")
     timeout: Optional[int] = pydantic.Field(None, description="The timeout to execute the command line")
@@ -38,6 +42,14 @@ class ExecuteStep(pydantic.BaseModel):
 class ExecuteSteps(pydantic.BaseModel):
     steps:List[ExecuteStep]
 
+
+class EnvInfo(pydantic.BaseModel):
+    os_name: str
+    os_version: str
+    python_version: str
+    conda_env: Optional[str]
+    virtualenv: Optional[str] 
+    has_bash: bool
 
 class AutoCoderArgs(pydantic.BaseModel):
     source_dir: Optional[str] = pydantic.Field(..., description="Path to the project")
@@ -105,3 +117,35 @@ def split_code_into_segments(source_code, max_tokens=1024):
         source_code = source_code[split_point:]
     segments.append(source_code)
     return segments
+
+
+def detect_env() -> EnvInfo:
+        os_name = sys.platform
+        os_version = ""
+        if os_name == "win32":
+            os_version = sys.getwindowsversion().major
+        elif os_name == "darwin":
+            os_version = subprocess.check_output(["sw_vers", "-productVersion"]).decode('utf-8').strip()
+        elif os_name == "linux":
+            os_version = subprocess.check_output(["uname", "-r"]).decode('utf-8').strip()
+         
+        python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        
+        conda_env = os.environ.get("CONDA_DEFAULT_ENV")
+        
+        virtualenv = os.environ.get("VIRTUAL_ENV")
+        
+        has_bash = True
+        try:
+            subprocess.check_output(["bash", "--version"])
+        except:
+            has_bash = False
+            
+        return EnvInfo(
+            os_name=os_name,
+            os_version=os_version,
+            python_version=python_version,
+            conda_env=conda_env,
+            virtualenv=virtualenv,
+            has_bash=has_bash
+        )

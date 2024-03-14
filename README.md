@@ -22,6 +22,24 @@ Auto-Coder (powered by Byzer-LLM)
 
 ---
 
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Brand new Installation](#brand-new-installation)
+- [Existing Installation](#existing-installation)
+- [Usage](#usage)
+  - [Basic](#basic)
+  - [Advanced](#advanced)
+  - [Python Project Only Features](#python-project-only-features)
+  - [TypeScript Project](#typescript-project)
+  - [Real-Auto](#real-auto)
+
+
+## Introduction
+
+Auto-Coder is a powerful tool powered by Byzer-LLM that streamlines code generation and project management. It collects source code from a specified directory and generates context based on user queries, which can be used with ChatGPT or other AI models. Auto-Coder also integrates with Byzer-LLM to generate results directly. It supports various project types, including Python, TypeScript, and offers advanced features like file translation and targeted code generation within specific modules and packages. With Auto-Coder, developers can significantly enhance their productivity and efficiently manage their projects, leveraging the power of AI-assisted coding.
+
+The copilot project type can automatically do environment setup and project creation or create new classes and methods based on user queries. It is a powerful tool for developers to quickly create new projects and manage existing ones.
 
 ## Brand new Installation
 
@@ -137,3 +155,70 @@ auto-coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --s
 ## TypeScript Project
 
 Just try to set the project_type to ts-script.
+
+## Real-Auto
+
+
+Here is a example:
+
+```shell
+auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type copilot --model_max_length 2000 --model qianwen_chat  --query "帮我创建一个名字叫t-copilot 的python项目，生成的目录需要符合包装的python项目结构"
+
+```
+
+This project type will automatically create a python project based on the query, and then generate the result based on the query. 
+
+You can check all log in the `output.txt` file.
+
+auto-coder also support python code interpreter,try this:
+  
+```shell 
+auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type copilot --model_max_length 2000 --model qianwen_chat  --query "用python打印你好，中国" 
+```
+
+The content of the output.txt will be:
+
+```text
+=================CONVERSATION==================
+
+user: 
+根据用户的问题，对问题进行拆解，然后生成执行步骤。
+
+环境信息如下:
+操作系统: linux 5.15.0-48-generic  
+Python版本: 3.10.11
+Conda环境: byzerllm-dev 
+支持Bash
+
+用户的问题是：用python打印你好，中国
+
+每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。
+如果是最后一个步骤，请标注 "__END__"
+assistant: ```json
+{
+  "code": "print('你好，中国')",
+  "lang": "python",
+  "total_steps": 1,
+  "cwd": "",
+  "env": {},
+  "timeout": -1,
+  "ignore_error": false
+}
+```
+是否继续？
+user: 继续
+=================RESULT==================
+
+Python Code:
+print('你好，中国')
+Output:
+你好，中国
+--------------------
+```
+
+You ask the auto-coder to modify a python file:
+
+```shell
+auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type copilot/.py --model_max_length 2000 --model qianwen_chat  --query "用python打印你好，中国" 
+``` 
+
