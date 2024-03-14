@@ -1,4 +1,4 @@
-from autocoder.common import AutoCoderArgs,ExecuteSteps
+from autocoder.common import AutoCoderArgs,ExecuteSteps,ExecuteStep
 from autocoder.suffixproject import SuffixProject
 from typing import Optional
 import byzerllm
@@ -10,8 +10,8 @@ class ActionCopilot():
         self.args = args
         self.llm = llm  
     
-    @byzerllm.prompt(lambda self:self.llm,render="jinja")
-    def get_execute_steps(self,s:str)->ExecuteSteps:
+    @byzerllm.prompt(render="jinja")
+    def get_execute_steps(self,s:str)->str:
         '''
         根据用户的问题，对问题进行拆解，然后生成执行步骤。
 
@@ -20,7 +20,7 @@ class ActionCopilot():
         每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。
         '''
 
-    @byzerllm.prompt(render="jinja")
+    @byzerllm.prompt(lambda self:self.llm,render="jinja")
     def get_all_file_symbols(self,path:str,code:str)->str: 
         '''
         下列是文件 {{ path }} 的源码：
@@ -49,7 +49,7 @@ class ActionCopilot():
         #     file_symbols = self.get_all_file_symbols(source.module_name,source.source_code)
         #     print(file_symbols,flush=True)
         
-        final_v = ExecuteSteps([])
+        final_v = ExecuteSteps(steps=[])
         q = self.get_execute_steps(args.query) 
         conversations = [{
                 "role":"user",
@@ -57,8 +57,8 @@ class ActionCopilot():
             }]
                
         t = self.llm.chat_oai(conversations=conversations,response_class=ExecuteSteps)
-       
-        while t[0].value and t[0].value.steps:
+        max_steps = 30
+        while max_steps>0 and t[0].value and t[0].value.steps:            
             conversations.append({
                 "role":"assistant",
                 "content":t[0].response.output
@@ -67,10 +67,11 @@ class ActionCopilot():
                 "role":"user",
                 "content":"继续"
             })
-            print("====================================",flush=True)
+            print("====================================",flush=True)            
             print(t[0].value.steps,flush=True)
             final_v.steps += t[0].value.steps
-            t = self.llm.chat_oai(conversations=conversations,response_class=ExecuteSteps)                                
+            t = self.llm.chat_oai(conversations=conversations,response_class=ExecuteStep)
+            max_steps -= 1                                
 
         return True
                      
