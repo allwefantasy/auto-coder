@@ -140,7 +140,7 @@ class IndexManager:
     def get_related_files(self,file_paths:List[str]):
         return self._get_related_files(self._get_meta_str(),"\n".join(file_paths))
     
-    @byzerllm.prompt(lambda self: self.llm, render="jinja2")
+    @byzerllm.prompt(lambda self: self.llm, render="jinja2",print_prompt=True)
     def _get_target_files_by_query(self,indices:str,query:str)->FileList:
         '''
         下面是所有文件以及对应的符号信息：

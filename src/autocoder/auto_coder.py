@@ -37,7 +37,7 @@ def main():
     
     if args.model:
         byzerllm.connect_cluster()
-        llm = byzerllm.ByzerLLM()
+        llm = byzerllm.ByzerLLM(verbose=True)
         llm.setup_template(model=args.model,template="auto")
         llm.setup_default_model_name(args.model)
         llm.setup_max_output_length(args.model,args.model_max_length)

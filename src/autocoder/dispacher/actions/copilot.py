@@ -112,7 +112,7 @@ class ActionCopilot():
             index_manager.build_index()
             target_files = index_manager.get_target_files_by_query(args.query)
             print(f"Target Files: {target_files.file_list}",flush=True)
-            related_fiels = index_manager.get_related_files(target_files.file_list)        
+            related_fiels = index_manager.get_related_files([file.file_path for file in target_files.file_list])        
             print(f"Related Files: {related_fiels.file_list}",flush=True)                
 
             for file in target_files.file_list + related_fiels.file_list:
