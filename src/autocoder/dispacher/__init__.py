@@ -1,11 +1,13 @@
 
-from autocoder.common import AutoCoderArgs,TranslateArgs,TranslateReadme
+from autocoder.common import AutoCoderArgs,TranslateArgs,TranslateReadme,split_code_into_segments
 from autocoder.pyproject import PyProject,Level1PyProject
 from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
+from autocoder.dispacher.actions.copilot import ActionCopilot
 from typing import Optional
 import byzerllm
 import os
+import re
 
 @byzerllm.prompt(render="jinja")
 def auto_implement_function_template(instruction:str, content:str)->str:
@@ -40,14 +42,25 @@ def instruction_template(instruction:str, content:str)->str:
 @byzerllm.prompt(render="jinja")
 def translate_readme(content:str,lang:str)->str:
     '''
-    下面是一些文件路径以及每个文件对应的内容：
+    请将下面的内容翻译成{{ lang }}：
 
     {{ content }}    
     
-    请参考上面的内容，将上面的每一个文件对应的内容翻译成{{ lang }}。
+    当你开始翻译的时候，请以 >>>>> 开头，然后是翻译后的内容。
     
     '''
     pass
+
+def get_translate_part(content: str) -> str:
+    pattern = re.compile(r"^>>>>>(.+)", re.MULTILINE | re.DOTALL)
+    match = pattern.search(content)
+    if match:
+        return match.group(1)
+    else:
+        lines = content.splitlines()
+        if len(lines) > 1 and lines[0].startswith(">>>>>"):
+            return "\n".join(lines[1:]).strip()
+    return content
 
 class ActionTSProject:
     def __init__(self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None) -> None:
@@ -215,12 +228,16 @@ class ActionTranslate():
                                 ) 
             pp.run()            
             for source in pp.sources:
-                content = translate_readme(content=source.source_code, lang=lang)
-                t = self.llm.chat_oai(conversations=[{
-                "role": "user",
-                "content": content
-                }]) 
-                readme = TranslateReadme(filename=source.module_name,content=t[0].output)
+                segments = split_code_into_segments(source_code=source.source_code)
+                temp_result = []
+                for segment in segments:                    
+                    content = translate_readme(content=segment, lang=lang)
+                    t = self.llm.chat_oai(conversations=[{
+                    "role": "user",
+                    "content": content
+                    }])
+                    temp_result.append(get_translate_part(t[0].output)) 
+                readme = TranslateReadme(filename=source.module_name,content="".join(temp_result))
                 filename, extension = os.path.splitext(readme.filename)                                                   
                 chinese_filename = f"{filename}-{new_file_mark}{extension}"
                 with open(chinese_filename, "w") as file:        
@@ -239,7 +256,6 @@ class ActionTranslate():
             #     # else:    
             #     print(f"Fail to translate the content. {t[0]}")
             #     raise Exception(f"Fail to translate the content.")            
-                
 
 class Dispacher():
     def __init__(self, args:AutoCoderArgs,llm:Optional[byzerllm.ByzerLLM]=None):
@@ -252,7 +268,9 @@ class Dispacher():
                     ActionTSProject(args=args,llm=self.llm),
                     ActionPyScriptProject(args=args,llm=self.llm),
                     ActionPyProject(args=args,llm=self.llm),
-                    ActionSuffixProject(args=args,llm=self.llm)]
+                    ActionCopilot(args=args,llm=self.llm),
+                    ActionSuffixProject(args=args,llm=self.llm)
+                    ]
         for action in actions:
             if action.run():
                 return                

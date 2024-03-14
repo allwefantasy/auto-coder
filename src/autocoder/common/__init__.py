@@ -27,6 +27,18 @@ class TranslateArgs(pydantic.BaseModel):
     file_suffix: str = pydantic.Field(..., description="to filter the file by suffix, e.g. py, ts, md, etc. if multiple, use comma to separate")    
     new_file_mark: str = pydantic.Field(..., description="according to the file suffix, the new file name should be like this: filename-new_file_mark.file_suffix")    
 
+class ExecuteStep(pydantic.BaseModel):
+    code: str = pydantic.Field(..., description="The code line to execute")
+    lang: str = pydantic.Field(..., description="The language to execute the code line, python,shell. default is python")
+    cwd: Optional[str] = pydantic.Field(None, description="The current working directory to execute the command line")
+    env: Optional[Dict[str, Any]] = pydantic.Field(None, description="The environment variables to execute the command line")
+    timeout: Optional[int] = pydantic.Field(None, description="The timeout to execute the command line")
+    ignore_error: Optional[bool] = pydantic.Field(False, description="Ignore the error of the command line")
+
+class ExecuteSteps(pydantic.BaseModel):
+    steps:List[ExecuteStep]
+
+
 class AutoCoderArgs(pydantic.BaseModel):
     source_dir: Optional[str] = pydantic.Field(..., description="Path to the project")
     git_url: Optional[str] = pydantic.Field(None, description="URL of the git repository")
@@ -81,3 +93,15 @@ def remove_comments_and_docstrings(source):
         elif isinstance(node, ast.Expr) and isinstance(node.value, ast.Str):
             node.value.s = ""  # Remove comments
     return ast.unparse(tree)
+
+def split_code_into_segments(source_code, max_tokens=1024):
+    """Split the source code into segments of length up to max_tokens."""
+    segments = []
+    while len(source_code) > max_tokens:
+        split_point = source_code.rfind('\n', 0, max_tokens)
+        if split_point == -1:  # If no newline is found,
+            split_point = max_tokens  # split at max_tokens
+        segments.append(source_code[:split_point])
+        source_code = source_code[split_point:]
+    segments.append(source_code)
+    return segments

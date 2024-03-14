@@ -26,6 +26,7 @@ retrying
 zhipuai
 dashscope
 tiktoken
+jupyter_client
 
 # dependencies only for sparkdesk
 # websockets
