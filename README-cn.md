@@ -21,9 +21,25 @@ Auto-Coder（由 Byzer-LLM 提供支持）
 
 ---
 
+🎉 Auto-Coder 震撼发布,开启 AI 编程新时代!🚀
+
+Auto-Coder 由 Byzer-LLM 强力驱动的一个命令行工具,为开发者带来:
+📂 根据源目录智能生成上下文相关代码
+💡 可以结合上下文生成合适的 prompt 到指定文件，方便用户黏贴到 web 版 大模型。也通过Byzer-LLM支持指定私有模型直接完成工作。两种模式任君选择。
+💻 支持 Python、TypeScript 等主流语言项目
+🌍 自动翻译项目文件,让你的代码触达全球
+🤖 Copilot 模式:内置shell/jupyter 引擎，可自动拆解任务并且执行相关任务，完成诸如自动搭建环境与创建项目,修改代码
+
+🧑‍💻 开发者们,是时候提升编程效率了!Auto-Coder 支持与 ChatGPT 等知名 AI 模型无缝对接,为你的开发流程增速🚀
+
+🌟 即刻体验 Auto-Coder,让 AI 成为你编程路上的得力助手! https://github.com/allwefantasy/auto-coder 🔥
+
+#AutoCoder #AI编程 #效率提升 #ByzerLLM #开发者工具
+
+
 ## 目录
 
-- [介绍](#introduction)
+
 - [全新安装](#brand-new-installation)
 - [已有安装](#existing-installation)
 - [使用方法](#usage)
