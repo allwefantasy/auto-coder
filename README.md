@@ -228,7 +228,7 @@ Conda环境: byzerllm-dev
 
 每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。
 如果是最后一个步骤，请标注 "__END__"
-assistant: ```json
+assistant: 
 {
   "code": "print('你好，中国')",
   "lang": "python",
@@ -238,7 +238,7 @@ assistant: ```json
   "timeout": -1,
   "ignore_error": false
 }
-```
+
 是否继续？
 user: 继续
 =================RESULT==================
