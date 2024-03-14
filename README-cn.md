@@ -1,11 +1,11 @@
-<p align="center">
+ <p align="center">
   <picture>    
-    <img alt="Auto-Coder" src="https://github.com/allwefantasy/byzer-llm/blob/master/docs/source/assets/logos/logo.jpg" width=55%>
+    <img alt="auto-coder" src="https://github.com/allwefantasy/byzer-llm/blob/master/docs/source/assets/logos/logo.jpg" width=55%>
   </picture>
 </p>
 
 <h3 align="center">
-Auto-Coder（由 Byzer-LLM 提供支持）
+Auto-Coder (由 Byzer-LLM 支持)
 </h3>
 
 <p align="center">
@@ -15,59 +15,57 @@ Auto-Coder（由 Byzer-LLM 提供支持）
 
 ---
 
-*最新动态* 🔥
+*最新消息* 🔥
 
-- [2024/03] 发布 Auto-Coder 0.1.4 版本
+- [2024/03] 发布 Auto-Coder 0.1.4
 
 ---
 
-🎉 Auto-Coder 震撼发布,开启 AI 编程新时代!🚀
 
-Auto-Coder 由 Byzer-LLM 强力驱动的一个命令行工具,为开发者带来:
-📂 根据源目录智能生成上下文相关代码
-💡 可以结合上下文生成合适的 prompt 到指定文件，方便用户黏贴到 web 版 大模型。也通过Byzer-LLM支持指定私有模型直接完成工作。两种模式任君选择。
-💻 支持 Python、TypeScript 等主流语言项目
-🌍 自动翻译项目文件,让你的代码触达全球
-🤖 Copilot 模式:内置shell/jupyter 引擎，可自动拆解任务并且执行相关任务，完成诸如自动搭建环境与创建项目,修改代码
 
-🧑‍💻 开发者们,是时候提升编程效率了!Auto-Coder 支持与 ChatGPT 等知名 AI 模型无缝对接,为你的开发流程增速🚀
+🚀 注意开发者们！🚨 改变游戏规则的 Auto-Coder 已经到来，它将把您的 AI 编程提升到一个全新的水平！🌟
 
-🌟 即刻体验 Auto-Coder,让 AI 成为你编程路上的得力助手! https://github.com/allwefantasy/auto-coder 🔥
+由 Byzer-LLM 不可思议的力量驱动，这款命令行工具功能丰富，将让您大吃一惊：
 
-#AutoCoder #AI编程 #效率提升 #ByzerLLM #开发者工具
+📂 告别手动上下文收集！Auto-Coder 根据源代码目录的上下文智能生成代码。就像拥有一个知道您确切需求的天才助手一样！ 两种模式，无限可能！为网络大型模型生成完美的提示，或直接通过Byzer-LLM与私有模型一起使用Auto-Coder发挥其魔力。选择权在你手中，结果总是令人惊艳！
 
+💻 Python？TypeScript？没问题！Auto-Coder支持编程界所有备受欢迎的编程语言。
+
+🌍 走向全球轻而易举！Auto-Coder自动翻译您的项目文件，让您的代码征服世界！
+
+🤖 Copilot模式来了，它是您的新最佳朋友！凭借其内置的shell/Jupyter引擎，Auto-Coder为您分解任务、设置环境、创建项目，甚至为您修改代码。就像拥有一个永不知疲倦的超级智能助手！
+
+🧑‍💻 开发者们，准备好让你们的思维被震撼吧！Auto-Coder与ChatGPT等最热门的AI模型无缝集成，将您的开发过程加速到闪电般的速度！🚀 🌟 不要再等一秒！立即体验Auto-Coder的原始实力，让AI成为您的终极编程伙伴！https://github.com/allwefantasy/auto-coder 🔥
+
+#AutoCoder #AI编程 #游戏改变者 #ByzerLLM #开发工具
 
 ## 目录
 
-
-- [全新安装](#brand-new-installation)
-- [已有安装](#existing-installation)
-- [使用方法](#usage)
-  - [基础用法](#basic)
-  - [高级用法](#advanced)
-  - [仅限 Python 项目的功能](#python-project-only-features)
-  - [TypeScript 项目](#typescript-project)
-  - [全自动模式](#real-auto)
-
-
-## 介绍
-Auto-Coder 是一款由 Byzer-LLM 提供强大支持的工具，用于简化代码生成和项目管理流程。它能够从指定目录收集源代码，并基于用户查询生成上下文信息，这些信息可以与 ChatGPT 或其他 AI 模型配合使用。同时，Auto-Coder 还集成了 Byzer-LLM，可直接生成结果。该工具支持多种项目类型，包括 Python、TypeScript 等，并提供高级功能，如文件翻译以及在特定模块和包内进行针对性代码生成。借助 Auto-Coder，开发者可以显著提升工作效率并高效地管理项目，充分利用 AI 辅助编码的力量。
-
-copilot 项目类型能够自动完成环境设置和项目创建，或者根据用户查询创建新的类和方法。它是开发者快速创建新项目及管理现有项目的强大工具。
+- [全新安装](#全新安装)
+- [现有安装](#现有安装)
+- [使用说明](#使用说明)
+  - [基础](#基础)
+  - [高级](#高级)
+  - [仅限Python项目功能](#仅限python项目功能)
+  - [TypeScript项目](#typescript项目)
+  - [实时自动](#实时自动)
 
 ## 全新安装
 
-您可以使用 Byzer-LLM 提供的脚本来设置 nvidia-driver/cuda 环境：
-在NVIDIA驱动/CUDA环境设置完毕后，您可以按照以下方式安装auto_coder：
+您可以使用Byzer-LLM提供的脚本设置nvidia驱动程序/cuda环境：
+
+1. [CentOS 8 / Ubuntu 20.04 / Ubuntu 22.04](https://docs.byzer.org/#/byzer-lang/zh-cn/byzer-llm/deploy)
+
+设置好nvidia驱动程序/cuda环境后，您可以像这样安装auto_coder：
 
 ```shell
 pip install -U auto-coder
 ```
 
-## 已有安装
+## 现有安装
 
 ```shell
-# 或者使用 https://gitcode.com/allwefantasy11/auto-coder.git
+# 或 https://gitcode.com/allwefantasy11/auto-coder.git    
 git clone https://github.com/allwefantasy/auto-coder.git
 pip install -r requirements.txt
 ## 如果您想使用私有/开源模型，请取消注释此行。
@@ -78,26 +76,29 @@ pip install -U auto-coder
 
 ## 使用方法
 
-### 基本用法
-> 推荐使用千义通问Max/Qwen-Max-longcontext SaaS模型
-> 您应当通过[Byzer-LLM](https://github.com/allwefantasy/byzer-llm)部署模型
+### 基础
+> 建议使用千义通问Max/Qwen-Max-longcontext SaaS模型
+> 您应该通过[Byzer-LLM](https://github.com/allwefantasy/byzer-llm)部署模型
 
 Auto-Coder 提供两种方式：
 
-1. 为查询生成上下文，并用于Web中的ChatGPT或其他AI模型。
+1. 为查询生成上下文，并在ChatGPT Web或其他AI模型中使用。
 2. 直接使用Byzer-LLM中的模型生成结果。
 
->> 注意：您应确保所使用的模型支持长上下文长度，例如 >32k。自动编码器将从源目录中收集源代码，然后根据查询内容生成上下文并写入目标文件。
+>> 注意：您应确保模型支持较长的上下文长度，例如 >32k。
 
-接下来，您可以复制 `output.txt` 文件中的内容，并将其粘贴到 Web of ChatGPT 或其他 AI 模型中：
+Auto-Coder 将从源目录收集源代码，然后根据查询将上下文生成到目标文件中。
+
+然后，您可以复制`output.txt`的内容并粘贴到ChatGPT Web或其他AI模型中：
 
 例如：
 
-```shell
+```shell    
 auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --query "如何让这个系统可以通过 auto-coder 命令执行？" 
 ```
 
-您也可以将所有参数放入一个 yaml 文件中：
+您还可以将所有参数放入一个 yaml 文件中:
+
 
 ```yaml
 # /home/winubuntu/projects/ByzerRawCopilot/auto-coder.yaml
@@ -107,93 +108,80 @@ query: |
   如何让这个系统可以通过 auto-coder 命令执行？
 ```
   
-然后使用以下命令：
+然后使用以下命令:
 
 ```shell
 auto-coder --file /home/winubuntu/projects/ByzerRawCopilot/auto-coder.yaml
 ``` 
 
-如果您想使用 Byzer-LLM 模型，可以使用以下命令：
+如果您想使用 Byzer-LLM 中的模型，您可以使用以下命令:
 
-```shell    
-（此处由于没有提供具体的命令行示例，请参照 Byzer-LLM 文档以获取正确命令）
-```在上述命令中，我们提供了一个模型并启用了执行模式。Auto-Coder 将从源目录收集源代码，然后为查询生成上下文，接着使用该模型生成结果，并将结果放入目标文件中。
+```shell
+auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --model qianwen_chat --execute --query "重新生成一个 is_likely_useful_file 方法，满足reactjs+typescript 组合的项目。" 
+``` 在上述命令中，我们提供了一个模型并启用执行模式，Auto-Coder 将从源目录收集源代码，然后为查询生成上下文，接着使用模型生成结果，然后将结果放入目标文件。
 
-### 高级功能
+### 高级
 
-> 该功能仅适用于 Byzer-LLM 提供的模型。
+> 此功能仅适用于 Byzer-LLM 的模型。
 
 翻译项目中的 Markdown 文件：
 
 ```shell
+
 auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type "translate/中文/.md/cn" --model_max_length 2000 --model qianwen_chat 
 ```
-
-当你想要翻译某些文件时，必须指定 model 参数。而 project_type 概念稍微复杂一些，它是以下参数的组合：
+当你想要翻译一些文件时，必须指定 model 参数。而 project_type 有点复杂，它是以下参数的组合：
 
 - translate：项目类型
-- 中文：你希望翻译成的目标语言
-- .md：你想要翻译的文件扩展名
-- cn：根据翻译后内容创建的新文件后缀。例如，如果原始文件是 README.md，新生成的文件将会是 README-cn.md
-
-所以最终的 project_type 为 "translate/中文/.md/cn"
-
-如果你的模型功能足够强大，可以使用以下命令执行相同任务：
+- 中文：你想要翻译成的目标语言
+- .md：你想要翻译的文件扩展名 请从这里开始翻译。
 
 ```shell
-auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --model qianwen_chat --project_type translate --model_max_length 2000 --query "把项目中的markdown文档翻译成中文"
-```
-
-该模型会从查询语句中提取出 "translate/中文/.md/cn"，然后执行与上一条命令相同的操作。 注意：model_max_length 用于控制模型生成的长度，如果未设置 model_max_length，则默认值为 1024。您应根据对翻译长度的预估来调整这个值。
-
-### Python 项目专属特性
-
-为了减少自动编码器收集的上下文长度，如果您正在处理的是一个 Python 项目，可以使用以下命令：
-
-```shell
-auto-coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/ByzerRawCopilot/xxx --package_name byzer_copilot --project_type py-script --query "帮我实现script模块中还没有实现的方法"
+auto-coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/ByzerRawCopilot/xxx --package_name byzer_copilot --project_type py-script --query "帮我实现script模块中还没有实现方法"
 
 ```
 
-在上述命令中，我们提供了一个脚本路径和一个包名，其中 script_path 是您当前正在处理的 Python 文件，而 package_name 是您关心的包名。这样，自动编码器只会从 package_name 和由 script_path 文件导入的部分收集上下文信息，这将显著减少上下文长度。 当你在 `--query` 参数中提到 `script module` 时，意味着你指的是 script_path 路径下的脚本文件。
+在上述命令中，我们提供了一个脚本路径和一个包名称，script_path 是您当前正在处理的Python文件，而 package_name 是您关心的名称。然后，自动编码器仅从 package_name 和通过 script_path 文件导入的上下文中收集内容，这将显著减少上下文长度。
 
-完成任务后，可以从 output.txt 文件中获取提示并将其粘贴至聊天通义或其它AI模型的网页端。
+当您在 `--query` 中引用 `script module` 时，意味着您正在谈论 script_path 文件。
 
-如果指定了模型，自动编码器会利用该模型生成结果，并将结果插入目标文件内。
-
-示例：
+任务完成后，您可以将 output.txt 中的提示复制并粘贴到ChatGPT Web或其他AI模型中。 如果您指定了模型，Auto-Coder 将使用该模型生成结果，然后将结果放入目标文件中。
 
 ```shell
-auto-coder --目标文件路径 /home/winubuntu/projects/ByzerRawCopilot/output.txt --脚本路径 /home/winubuntu/projects/YOUR_PROJECT/xxx.py --包名 xxxx --项目类型 py-script --模型 qianwen_chat --执行 --查询指令 "帮我实现script模块中还未实现的方法"
+auto-coder --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --script_path /home/winubuntu/projects/YOUR_PROJECT/xxx.py --package_name xxxx --project_type py-script --model qianwen_chat --execute --query "帮我实现script模块中还没有实现方法" 
 ```
 
-## TypeScript 项目设置
+## TypeScript 项目
 
-只需尝试将项目类型（project_type）设为 ts-script。
+尝试将 project_type 设置为 ts-script。
 
-## 实时自动化生成实例
+## Real-Auto
+
+以下是一个示例：
 
 ```shell
-auto-coder --源代码目录 /home/winubuntu/projects/ByzerRawCopilot --目标文件路径 /home/winubuntu/projects/ByzerRawCopilot/output.txt --项目类型 copilot --模型最大长度 2000 --模型 qianwen_chat --查询指令 "帮我创建一个名字叫做t-copilot 的python项目，生成的目录结构需符合打包的python项目规范" 
+auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type copilot --model_max_length 2000 --model qianwen_chat  --query "帮我创建一个名字叫t-copilot 的python项目，生成的目录需要符合包装的python项目结构"
+
 ```
 
-此项目类型会根据查询内容自动生成一个Python项目，并进一步基于查询结果生成输出。
+这个项目类型将根据查询自动创建一个 python 项目，然后根据查询生成结果。
 
 您可以在 `output.txt` 文件中查看所有日志。
 
-Auto-Coder 还支持Python代码解释器，您可以尝试以下命令：
+Auto-Coder 还支持 python 代码解释器，请尝试以下操作：
 
-```shell
-auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type copilot --model_max_length 2000 --model qianwen_chat --query "用python打印你好，中国"
-```
+```shell     
+``` 请将以下内容翻译成中文：
 
-`output.txt` 文件中的内容将会是：
+auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type copilot --model_max_length 2000 --model qianwen_chat  --query "用python打印你好，中国"
+
+output.txt 文件的内容将是：
 
 ```text
-=================对话记录==================
+=================CONVERSATION==================
 
 user: 
-根据用户的问题，对问题进行拆解并生成执行步骤。
+根据用户的问题，对问题进行拆解，然后生成执行步骤。
 
 环境信息如下:
 操作系统: linux 5.15.0-48-generic  
@@ -203,10 +191,9 @@ Conda环境: byzerllm-dev
 
 用户的问题是：用python打印你好，中国
 
-每次生成一个执行步骤后询问我是否继续，当我回复继续时，将生成下一个执行步骤。
-如果是最后一个步骤，请标注 "__END__"
+每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。
 
-assistant: ```json
+assistant: 
 {
   "code": "print('你好，中国')",
   "lang": "python",
@@ -215,20 +202,21 @@ assistant: ```json
   "env": {},
   "timeout": -1,
   "ignore_error": false
-}```
+}
+
 是否继续？
 user: 继续
-=================结果区域==================
-    
-Python 代码：
+=================RESULT==================
 
+Python 代码:
 print('你好，中国')
-输出结果：
+输出:
 你好，中国
 --------------------
-
-你要求自动编码器修改一个 Python 文件：
-
-```shell
-auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type copilot/.py --model_max_length 2000 --model qianwen_chat --query "优化 copilot 中的 get_suffix_from_project_type 函数并更新原文件"
 ```
+
+您要求 Auto-Coder 修改一个 python 文件：
+
+```shell    
+auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type copilot/.py --model_max_length 2000 --model qianwen_chat --查询 "优化copilot中的get_suffix_from_project_type函数并更新原文件"
+``` 

@@ -16,6 +16,8 @@ src/autocoder/common/const.py
 src/autocoder/dispacher/__init__.py
 src/autocoder/dispacher/actions/__init__.py
 src/autocoder/dispacher/actions/copilot.py
+src/autocoder/index/__init__.py
+src/autocoder/index/index.py
 src/autocoder/pyproject/__init__.py
 src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py

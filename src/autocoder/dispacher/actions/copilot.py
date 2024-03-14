@@ -1,4 +1,4 @@
-from autocoder.common import AutoCoderArgs,ExecuteSteps,ExecuteStep,EnvInfo,detect_env
+from autocoder.common import AutoCoderArgs,ExecuteSteps,ExecuteStep,EnvInfo,detect_env,chat_with_llm_step_by_step
 from autocoder.common.JupyterClient import JupyterNotebook
 from autocoder.common.ShellClient import ShellClient
 from autocoder.suffixproject import SuffixProject
@@ -42,25 +42,12 @@ class ActionCopilot():
         用户的问题是：{{ s }}
 
         每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。        
-        '''
-
-    @byzerllm.prompt(lambda self:self.llm,render="jinja2")
-    def get_all_file_symbols(self,path:str,code:str)->str: 
-        '''
-        下列是文件 {{ path }} 的源码：
-        
-        {{ code }}
-        
-        从上述内容中获取文件中的符号。需要获取的符号类型包括：函数、类、变量、模块、包
-        按如下格式返回：
-
-        符号类型: 符号名称        
-        '''             
+        '''            
 
     def execute_steps(self, steps: ExecuteSteps) -> str:
         jupyter_client = JupyterNotebook()
         shell_client = ShellClient()
-        print(steps, flush=True)
+
         output = ""
         for step in steps.steps:
             if step.lang == "python":
@@ -130,36 +117,14 @@ class ActionCopilot():
             }] 
 
         print(f"{conversations[0]['role']}: {conversations[0]['content']}\n",flush=True)   
-               
-        t = self.llm.chat_oai(conversations=conversations,response_class=ExecuteStep)        
-        max_steps = 30
-        total_steps = max_steps
-        current_step = 0
-        
-        if not t[0].value:
-            total_steps = t[0].value.total_steps
-            if total_steps == 1:
-                current_step = 1
 
-        while current_step < total_steps and max_steps>0 and t[0].value:                             
-            total_steps = t[0].value.total_steps                
-            final_v.steps.append(t[0].value)
-            conversations.append({
-                "role":"assistant",
-                "content":t[0].response.output
-            })
-            print(f"{conversations[-1]['role']}: {conversations[-1]['content']}\n",flush=True)
+        (result,_) = chat_with_llm_step_by_step(self.llm,conversations=conversations,
+                                                            response_class=ExecuteStep,
+                                                            max_steps=30,
+                                                            anti_quota_limit=args.anti_quota_limit)
 
-            conversations.append({
-                "role":"user",
-                "content":"继续"
-            })            
-            print(f"{conversations[-1]['role']}: {conversations[-1]['content']}\n",flush=True)
-
-            t = self.llm.chat_oai(conversations=conversations,response_class=ExecuteStep)
-            max_steps -= 1  
-            current_step += 1 
-            time.sleep(args.anti_quota_limit)                             
+        for item in result:
+            final_v.steps.append(item)                            
         
         # 执行步骤并保存结果
         result = self.execute_steps(final_v)

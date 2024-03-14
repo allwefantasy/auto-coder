@@ -31,9 +31,30 @@ Auto-Coder (powered by Byzer-LLM)
 
 ---
 
+
+
+🚀 Attention developers! 🚨 The game-changing Auto-Coder has arrived, and it's about to take your AI programming to a whole new level! 🌟
+
+Fueled by the incredible power of Byzer-LLM, this command-line tool is packed with features that will blow your mind:
+
+📂 Say goodbye to manual context gathering! Auto-Coder intelligently generates code based on the context of your source directory. It's like having a genius assistant that knows exactly what you need!
+
+💡 Two modes, endless possibilities! Generate perfect prompts to paste into web-based large models, or let Auto-Coder work its magic directly with private models via Byzer-LLM. The choice is yours, and the results are always spectacular!
+
+💻 Python? TypeScript? No problem! Auto-Coder supports all the cool kids on the programming block.
+
+🌍 Going global is a breeze! Auto-Coder automatically translates your project files, so your code can conquer the world!
+
+🤖 Copilot mode is here, and it's your new best friend! With its built-in shell/Jupyter engine, Auto-Coder breaks down tasks, sets up environments, creates projects, and even modifies code for you. It's like having a super-smart sidekick that never sleeps!
+
+🧑‍💻 Developers, prepare to have your minds blown! Auto-Coder integrates seamlessly with the hottest AI models like ChatGPT, turbocharging your development process to lightning speeds! 🚀
+
+🌟 Don't wait another second! Experience the raw power of Auto-Coder today and let AI be your ultimate coding companion! https://github.com/allwefantasy/auto-coder 🔥
+
+#AutoCoder #AIProgramming #GameChanger #ByzerLLM #DevTools
+
 ## Table of Contents
 
-- [Introduction](#introduction)
 - [Brand new Installation](#brand-new-installation)
 - [Existing Installation](#existing-installation)
 - [Usage](#usage)
@@ -44,11 +65,7 @@ Auto-Coder (powered by Byzer-LLM)
   - [Real-Auto](#real-auto)
 
 
-## Introduction
 
-Auto-Coder is a powerful tool powered by Byzer-LLM that streamlines code generation and project management. It collects source code from a specified directory and generates context based on user queries, which can be used with ChatGPT or other AI models. Auto-Coder also integrates with Byzer-LLM to generate results directly. It supports various project types, including Python, TypeScript, and offers advanced features like file translation and targeted code generation within specific modules and packages. With Auto-Coder, developers can significantly enhance their productivity and efficiently manage their projects, leveraging the power of AI-assisted coding.
-
-The copilot project type can automatically do environment setup and project creation or create new classes and methods based on user queries. It is a powerful tool for developers to quickly create new projects and manage existing ones.
 
 ## Brand new Installation
 
@@ -219,8 +236,8 @@ Conda环境: byzerllm-dev
 用户的问题是：用python打印你好，中国
 
 每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。
-如果是最后一个步骤，请标注 "__END__"
-assistant: ```json
+
+assistant: 
 {
   "code": "print('你好，中国')",
   "lang": "python",
@@ -230,7 +247,7 @@ assistant: ```json
   "timeout": -1,
   "ignore_error": false
 }
-```
+
 是否继续？
 user: 继续
 =================RESULT==================
