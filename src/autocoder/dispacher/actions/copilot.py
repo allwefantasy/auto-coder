@@ -4,6 +4,7 @@ from autocoder.common.ShellClient import ShellClient
 from autocoder.suffixproject import SuffixProject
 from typing import Optional,Dict,Any,List
 import byzerllm
+import time
 import os
 import re
 
@@ -157,7 +158,8 @@ class ActionCopilot():
 
             t = self.llm.chat_oai(conversations=conversations,response_class=ExecuteStep)
             max_steps -= 1  
-            current_step += 1                              
+            current_step += 1 
+            time.sleep(args.anti_quota_limit)                             
         
         # 执行步骤并保存结果
         result = self.execute_steps(final_v)

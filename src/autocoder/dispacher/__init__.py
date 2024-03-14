@@ -8,6 +8,7 @@ from typing import Optional
 import byzerllm
 import os
 import re
+import time
 
 @byzerllm.prompt(render="jinja")
 def auto_implement_function_template(instruction:str, content:str)->str:
@@ -237,6 +238,7 @@ class ActionTranslate():
                     "content": content
                     }])
                     temp_result.append(get_translate_part(t[0].output)) 
+                    time.sleep(args.anti_quota_limit) 
                 readme = TranslateReadme(filename=source.module_name,content="".join(temp_result))
                 filename, extension = os.path.splitext(readme.filename)                                                   
                 chinese_filename = f"{filename}-{new_file_mark}{extension}"
