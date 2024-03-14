@@ -1,0 +1,142 @@
+{
+  "/home/winubuntu/projects/ByzerRawCopilot/auto_coder.py": {
+    "symbols": " 函数: parse_args, main\n类: AutoCoderArgs, Dispacher\n变量: args, config, value, llm\n导入语句: import byzerllm, from typing import List, Dict, Any, Optional, import argparse, from autocoder.common import AutoCoderArgs, from autocoder.dispacher import Dispacher, import yaml",
+    "last_modified": 1710415582.1887314,
+    "md5": "908783e98cb7c55da84b38bced623fff"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/setup.py": {
+    "symbols": " 函数: open, exec, setup\n类: None\n变量: folder, version_path, __version__, req_path, install_requires, readme_path, readme_contents\n导入语句: os, setuptools, find_packages",
+    "last_modified": 1710339475.4360106,
+    "md5": "4e02680b18c3271c51c10a5202b6577d"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/auto_coder.py": {
+    "symbols": " 函数: parse_args, main\n类: AutoCoderArgs, Dispacher\n变量: args, parser, config, key, value, llm\n导入语句: import byzerllm, from typing import List, Dict, Any, Optional, import argparse, from autocoder.common import AutoCoderArgs, from autocoder.dispacher import Dispacher, import yaml",
+    "last_modified": 1710409114.6965048,
+    "md5": "2fe03d154dc6c3c7e47e17313efb80b3"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/version.py": {
+    "symbols": " 在给定的源码中，我们可以找到以下符号：\n\n变量:\n__version__\n\n由于源码中没有函数、类和导入语句，所以最终结果如下：\n\n变量: __version__",
+    "last_modified": 1710409273.0752838,
+    "md5": "458485aa6066b94a59039c9817f1176c"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/suffixproject/__init__.py": {
+    "symbols": " 函数: `output`, `is_suffix_file`, `read_file_content`, `convert_to_source_code`, `get_source_codes`, `run`, `clone_repository`\n\n类: `SuffixProject`\n\n变量: `self.directory`, `self.git_url`, `self.target_file`, `self.project_type`, `self.suffixs`, `self.file_filter`, `self.sources`\n\n导入语句: \n- `from autocoder.common import SourceCode`\n- `from autocoder import common as FileUtils`\n- `import os`\n- `from typing import Optional, Generator, List, Dict, Any, Callable`\n- `from git import Repo`",
+    "last_modified": 1710341076.5002017,
+    "md5": "2c913db14a8a0b0db883a95c9f01bde9"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/index/index.py": {
+    "symbols": " 为了实现这个功能，我们需要解析 Python 源码并提取所需的符号。我们可以使用 `ast`（Abstract Syntax Tree）库来解析 Python 代码。以下是修改后的 `get_all_file_symbols` 函数：\n\n```python\nimport ast\n\nclass IndexManager:\n    # ... 其他方法 ...\n\n    def get_all_file_symbols(self, path: str, code: str) -> str:\n        try:\n            tree = ast.parse(code)\n            symbols = []\n\n            for node in ast.walk(tree):\n                if isinstance(node, ast.FunctionDef):\n                    symbols.append(\"函数: \" + node.name)\n                elif isinstance(node, ast.ClassDef):\n                    symbols.append(\"类: \" + node.name)\n                elif isinstance(node, ast.Assign):\n                    for target in node.targets:\n                        if isinstance(target, ast.Name):\n                            symbols.append(\"变量: \" + target.id)\n                elif isinstance(node, ast.Import):\n                    symbols.append(\"导入: \" + \", \".join(ali for ali in node.names))\n\n            symbols_str = \", \".join(symbols) if symbols else \"没有任何符号\"\n            return symbols_str\n        except Exception as e:\n            print(f\"Error: {e}\")\n            return \"解析错误\"\n\n    # ... 其他方法 ...\n```\n\n这个函数首先使用 `ast.parse` 方法将源码字符串解析为 AST。然后，通过遍历 AST 的节点，检查节点的类型，并将相应的符号添加到 `symbols` 列表中。最后，将符号列表转换为所需格式的字符串并返回。如果没有找到任何符号，返回 \"没有任何符号\"。如果解析过程中出现错误，将返回 \"解析错误\"。",
+    "last_modified": 1710415402.139271,
+    "md5": "76e05d0eee7440885eb1a856bf1b722d"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/JupyterClient.py": {
+    "symbols": " 函数: clean_output, add_and_run, close, __deepcopy\n类: JupyterNotebook\n变量: outputs, error_flag\n所有导入语句: from jupyter_client import KernelManager, import threading, import re, from autocoder.common.const import *",
+    "last_modified": 1710373833.6981235,
+    "md5": "8693afc1ed9106a61db821c9da0ad070"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/const.py": {
+    "symbols": " 函数: write_denial_function, read_denial_function\n类: Class Denial\n变量: TOOLS_CODE, GUARD_CODE, CODE_INTERPRETER_SYSTEM_PROMPT\n导入语句: import numpy as np, import pandas as pd, import matplotlib.pyplot as plt, import seaborn as sns, from scipy import stats, import os, sys, import re, from datetime import datetime, from sympy import symbols, Eq, solve, import torch, import requests, from bs4 import BeautifulSoup, import json, import math, import yfinance, import time",
+    "last_modified": 1710373724.2893336,
+    "md5": "0ef3c5bd231599fbf376364d1297ddaa"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/dispacher/__init__.py": {
+    "symbols": " 1. 函数: auto_implement_function_template, instruction_template, translate_readme, get_translate_part\n2. 类: ActionTSProject, ActionPyScriptProject, ActionPyProject, ActionSuffixProject, ActionTranslate, Dispacher\n3. 变量: instruction, content, pp, t, args, file_filter, source, segments, segment, lang, suffixes, new_file_mark, temp_result, readme, filename, extension, chinese_filename\n4. 所有导入语句: from autocoder.common import AutoCoderArgs, TranslateArgs, TranslateReadme, split_code_into_segments, from autocoder.pyproject import PyProject, Level1PyProject, from autocoder.tsproject import TSProject, from autocoder.suffixproject import SuffixProject, from autocoder.dispacher.actions.copilot import ActionCopilot, from typing import Optional, import byzerllm, import os, import re, import time",
+    "last_modified": 1710393781.7486494,
+    "md5": "eb3e39f85e787b0b75df90e45643d750"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/dispacher/actions/copilot.py": {
+    "symbols": " 1. 函数: get_execute_steps, execute_steps, get_suffix_from_project_type, run\n2. 类: ActionCopilot\n3. 变量: args, llm, env_info, jupyter_client, shell_client, output, result, error, stdout, stderr, final_v, conversations\n4. 所有导入语句: from autocoder.common import AutoCoderArgs, ExecuteSteps, ExecuteStep, EnvInfo, detect_env, chat_with_llm_step_by_step, from autocoder.common.JupyterClient import JupyterNotebook, from autocoder.common.ShellClient import ShellClient, from autocoder.suffixproject import SuffixProject, from autocoder.index.index import IndexManager, from typing import Optional, Dict, Any, List, import byzerllm, import time, import os, import re",
+    "last_modified": 1710415198.149482,
+    "md5": "bd8f870b5da7291f4cd7a1067148ecf3"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/tsproject/__init__.py": {
+    "symbols": " 函数: __init__, output, read_file_content, is_likely_useful_file, convert_to_source_code, get_source_codes, run, clone_repository\n\n类: TSProject\n\n变量: source_dir, git_url, target_file, directory, ignore_dirs, ignore_extensions, include_extensions\n\n所有导入语句: \nfrom autocoder.common import SourceCode\nfrom autocoder import common as FileUtils\nimport os\nfrom typing import Optional,Generator,List,Dict,Any\nfrom git import Repo",
+    "last_modified": 1710318124.032286,
+    "md5": "3eb6942356ab1002ee9067729405064c"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/auto_coder.py": {
+    "symbols": " 函数: parse_args, main\n类: AutoCoderArgs, Dispacher\n变量: args, config, llm\n导入语句: import byzerllm, from typing import List, Dict, Any, Optional, import argparse, from autocoder.common import AutoCoderArgs, from autocoder.dispacher import Dispacher, import yaml",
+    "last_modified": 1710409114.0,
+    "md5": "2fe03d154dc6c3c7e47e17313efb80b3"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/common/const.py": {
+    "symbols": " 符号类型: 符号名称, 符号名称, ...\n1. 函数: write_denial_function, read_denial_function\n2. 类: Class Denial\n3. 变量: TOOLS_CODE, GUARD_CODE, CODE_INTERPRETER_SYSTEM_PROMPT\n4. 所有导入语句: import numpy as np, import pandas as pd, import matplotlib.pyplot as plt, import seaborn as sns, from scipy import stats, import os, import sys, import re, from datetime import datetime, from sympy import symbols, from sympy import Eq, from sympy import solve, import torch, import requests, from bs4 import BeautifulSoup, import json, import math, import yfinance, import time, os.kill, os.system, os.putenv, os.remove, os.removedirs, os.rmdir, os.fchdir, os.setuid, os.fork, os.forkpty, os.killpg, os.rename, os.renames, os.truncate, os.replace, os.unlink, os.fchmod, os.fchown, os.chmod, os.chown, os.chroot, os.fchdir, os.lchflags, os.lchmod, os.lchown, os.getcwd, os.chdir, os.popen, shutil.rmtree, shutil.move, shutil.chown, subprocess.Popen, sys.modules[\"ipdb\"], sys.modules[\"joblib\"], sys.modules[\"resource\"], sys.modules[\"psutil\"], sys.modules[\"tkinter\"]",
+    "last_modified": 1710373724.0,
+    "md5": "0ef3c5bd231599fbf376364d1297ddaa"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/common/ShellClient.py": {
+    "symbols": " 1. 函数: `subprocess.Popen`, `communicate`, `decode`, `terminate`, `join`, `is_alive`\n2. 类: `ShellClient`\n3. 变量: `subprocess`, `threading`, `os`, `Optional`, `Tuple`, `shell`, `timeout`, `working_dir`, `env`, `stdout`, `stderr`, `self.process`\n4. 所有导入语句: `import subprocess`, `import threading`, `import os`, `from typing import Optional, Tuple`\n\n返回结果:\n函数: subprocess.Popen, communicate, decode, terminate, join, is_alive\n类: ShellClient\n变量: subprocess, threading, os, Optional, Tuple, shell, timeout, working_dir, env, stdout, stderr, self.process\n导入语句: import subprocess, import threading, import os, from typing import Optional, Tuple",
+    "last_modified": 1710374192.0,
+    "md5": "6a40821de4581b60ff719120de72ba16"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/common/cleaner.py": {
+    "symbols": " 1. 函数: get_error_header, clean_error_msg\n2. 类: 无\n3. 变量: PYTHON_PREFIX, SITE_PKG_ERROR_PREFIX, ansi_escape\n4. 所有导入语句: import re, import os\n\n结果：\n\n函数: get_error_header, clean_error_msg\n类: 无\n变量: PYTHON_PREFIX, SITE_PKG_ERROR_PREFIX, ansi_escape\n导入语句: import re, import os",
+    "last_modified": 1710373724.0,
+    "md5": "f45329036b3f7b3147e4494884a5d77f"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/common/__init__.py": {
+    "symbols": " 函数: is_likely_useful_file, is_test_file, has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments, detect_env, chat_with_llm_step_by_step\n类: SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, EnvInfo, AutoCoderArgs\n变量: excluded_dirs, utility_or_config_files, github_workflow_or_docs, test_indicators, max_tokens, response_class, max_steps, anti_quota_limit\n导入语句: import pydantic, import ast, import sys, import subprocess, import os, import time, from typing import List, Dict, Any, Optional\n\n按照要求的格式，结果如下：\n\n函数: is_likely_useful_file, is_test_file, has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments, detect_env, chat_with_llm_step_by_step\n类: SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, EnvInfo, AutoCoderArgs\n变量: excluded_dirs, utility_or_config_files, github_workflow_or_docs, test_indicators, max_tokens, response_class, max_steps, anti_quota_limit\n导入语句: import pydantic, import ast, import sys, import subprocess, import os, import time, from typing import List, Dict, Any, Optional",
+    "last_modified": 1710409158.0,
+    "md5": "8bd7e22a9515ba1351c5cbaecb17ba41"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/dispacher/actions/copilot.py": {
+    "symbols": " 1. 函数: get_execute_steps, execute_steps, get_suffix_from_project_type, run\n2. 类: ActionCopilot\n3. 变量: args, llm, env_info, jupyter_client, shell_client, output, step, result, error, stdout, stderr, suffixs, pp, source_code, final_v, conversations\n4. 所有导入语句: from autocoder.common import AutoCoderArgs, ExecuteSteps, ExecuteStep, EnvInfo, detect_env, chat_with_llm_step_by_step, from autocoder.common.JupyterClient import JupyterNotebook, from autocoder.common.ShellClient import ShellClient, from autocoder.suffixproject import SuffixProject, from typing import Optional, Dict, Any, List, import byzerllm, import time, import os, import re",
+    "last_modified": 1710409020.0,
+    "md5": "5d80c3723e29ee3a68cecb9e072c22a8"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/tsproject/__init__.py": {
+    "symbols": " 函数: `output`, `read_file_content`, `is_likely_useful_file`, `convert_to_source_code`, `get_source_codes`, `run`, `clone_repository`\n\n类: `TSProject`\n\n变量: `self.directory`, `self.git_url`, `self.target_file`, `ignore_dirs`, `ignore_extensions`, `include_extensions`\n\n所有导入语句: \n1. `from autocoder.common import SourceCode`\n2. `from autocoder import common as FileUtils`\n3. `import os`\n4. `from typing import Optional,Generator,List,Dict,Any`\n5. `from git import Repo`",
+    "last_modified": 1710318124.0,
+    "md5": "3eb6942356ab1002ee9067729405064c"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/ShellClient.py": {
+    "symbols": " 函数: add_and_run, close\n类: ShellClient\n变量: stdout, stderr, thread\n导入语句: subprocess, threading, os, typing\n\n结果:\n函数: add_and_run, close\n类: ShellClient\n变量: stdout, stderr, thread\n导入语句: subprocess, threading, os, typing",
+    "last_modified": 1710374192.2127354,
+    "md5": "6a40821de4581b60ff719120de72ba16"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/cleaner.py": {
+    "symbols": " 1. 函数: get_error_header, clean_error_msg\n2. 类: 无\n3. 变量: PYTHON_PREFIX, SITE_PKG_ERROR_PREFIX, ansi_escape\n4. 所有导入语句: import re, import os\n\n结果：\n函数: get_error_header, clean_error_msg\n变量: PYTHON_PREFIX, SITE_PKG_ERROR_PREFIX, ansi_escape\n导入语句: import re, import os",
+    "last_modified": 1710373724.1453326,
+    "md5": "f45329036b3f7b3147e4494884a5d77f"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/__init__.py": {
+    "symbols": " 1. 函数: is_likely_useful_file, is_test_file, has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments, detect_env, chat_with_llm_step_by_step\n2. 类: SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, EnvInfo, AutoCoderArgs\n3. 变量: pydantic, ast, sys, subprocess, os, time, List, Dict, Any, Optional\n4. 所有导入语句: \n    - import pydantic\n    - import ast\n    - import sys\n    - import subprocess\n    - import os\n    - import time\n    - from typing import List, Dict, Any, Optional\n\n注意: 在Python中，导入语句通常不被视为\"符号\"，但根据您的要求，我已将其包含在内。",
+    "last_modified": 1710409158.121312,
+    "md5": "8bd7e22a9515ba1351c5cbaecb17ba41"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/pyproject/__init__.py": {
+    "symbols": " 以下是从给定源码中提取的符号：\n\n函数:\n- get_imports_from_script\n- filter_imports\n- fetch_source_code\n- auto_implement\n- run\n- output\n- is_python_file\n- read_file_content\n- convert_to_source_code\n- get_source_codes\n- clone_repository\n\n类:\n- Level1PyProject\n- PyProject\n- SourceCode\n\n变量:\n- script_path\n- package_name\n- imports\n- filtered_imports\n- source_code\n- module_name\n- source_dir\n- git_url\n- target_file\n- spec\n- tree\n- instruction\n- sources\n\n导入语句:\n- from autocoder.common import SourceCode\n- from autocoder import common as FileUtils\n- import os\n- from typing import Optional, Generator, List, Dict, Any\n- from git import Repo\n- import ast\n- import importlib\n- import byzerllm\n\n符号类型: 函数: get_imports_from_script, filter_imports, fetch_source_code, auto_implement, run, output, is_python_file, read_file_content, convert_to_source_code, get_source_codes, clone_repository; 类: Level1PyProject, PyProject, SourceCode; 变量: script_path, package_name, imports, filtered_imports, source_code, module_name, source_dir, git_url, target_file, spec, tree, instruction, sources; 导入语句: from autocoder.common import SourceCode, from autocoder import common as FileUtils, import os, from typing import Optional, Generator, List, Dict, Any, from git import Repo, import ast, import importlib, import byzerllm.",
+    "last_modified": 1710333069.2454216,
+    "md5": "95a160a26756d678880a9b5c612e8900"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/version.py": {
+    "symbols": " 在给定的源码中，我们可以找到以下符号：\n\n1. 变量: `__version__`\n2. 没有找到函数、类和导入语句。\n\n因此，结果如下：\n\n变量: __version__",
+    "last_modified": 1710409273.0,
+    "md5": "458485aa6066b94a59039c9817f1176c"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/suffixproject/__init__.py": {
+    "symbols": " 函数: __init__, output, is_suffix_file, read_file_content, convert_to_source_code, get_source_codes, run, clone_repository\n类: SuffixProject\n变量: source_dir, project_type, git_url, target_file, file_filter, suffixs, sources\n导入语句: from autocoder.common import SourceCode, from autocoder import common as FileUtils, import os, from typing import Optional, Generator, List, Dict, Any, Callable, from git import Repo\n\n结果:\n函数: __init__,output,is_suffix_file,read_file_content,convert_to_source_code,get_source_codes,run,clone_repository\n类: SuffixProject\n变量: source_dir,project_type,git_url,target_file,file_filter,suffixs,sources\n导入语句: from autocoder.common import SourceCode,from autocoder import common as FileUtils,import os,from typing import Optional,Generator,List,Dict,Any,Callable,from git import Repo",
+    "last_modified": 1710341076.0,
+    "md5": "2c913db14a8a0b0db883a95c9f01bde9"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/pyproject/__init__.py": {
+    "symbols": " 以下是从给定源码中提取的符号：\n\n函数:\n- get_imports_from_script\n- filter_imports\n- fetch_source_code\n- auto_implement\n- run\n- output\n- is_python_file\n- read_file_content\n- convert_to_source_code\n- get_source_codes\n- clone_repository\n\n类:\n- Level1PyProject\n- PyProject\n- SourceCode\n\n变量:\n- script_path\n- package_name\n- imports\n- filtered_imports\n- import_name\n- spec\n- origin\n- source_code\n- module_name\n- target_file\n- root\n- dirs\n- files\n- file_path\n\n导入语句:\n- from autocoder.common import SourceCode\n- from autocoder import common as FileUtils\n- import os\n- from typing import Optional, Generator, List, Dict, Any\n- from git import Repo\n- import ast\n- import importlib\n- import byzerllm\n\n符号类型: 函数: get_imports_from_script, 函数: filter_imports, 函数: fetch_source_code, 函数: auto_implement, 函数: run, 函数: output, 函数: is_python_file, 函数: read_file_content, 函数: convert_to_source_code, 函数: get_source_codes, 函数: clone_repository, 类: Level1PyProject, 类: PyProject, 类: SourceCode, 变量: script_path, 变量: package_name, 变量: imports, 变量: filtered_imports, 变量: import_name, 变量: spec, 变量: origin, 变量: source_code, 变量: module_name, 变量: target_file, 变量: root, 变量: dirs, 变量: files, 变量: file_path, 导入语句: from autocoder.common import SourceCode, 导入语句: from autocoder import common as FileUtils, 导入语句: import os, 导入语句: from typing import Optional, Generator, List, Dict, Any, 导入语句: from git import Repo, 导入语句: import ast, 导入语句: import importlib, 导入语句: import byzerllm",
+    "last_modified": 1710333069.0,
+    "md5": "95a160a26756d678880a9b5c612e8900"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/dispacher/__init__.py": {
+    "symbols": " 1. 函数:\n- auto_implement_function_template\n- instruction_template\n- translate_readme\n- get_translate_part\n\n2. 类:\n- ActionTSProject\n- ActionPyScriptProject\n- ActionPyProject\n- ActionSuffixProject\n- ActionTranslate\n- Dispacher\n\n3. 变量:\n- instruction\n- content\n- args\n- llm\n- pp\n- t\n- temp_result\n- segment\n- readmes\n- filename\n- extension\n- new_file_mark\n- source\n- segments\n- temp_result\n- output\n- Chinese_filename\n\n4. 所有导入语句:\n- from autocoder.common import AutoCoderArgs, TranslateArgs, TranslateReadme, split_code_into_segments\n- from autocoder.pyproject import PyProject, Level1PyProject\n- from autocoder.tsproject import TSProject\n- from autocoder.suffixproject import SuffixProject\n- from autocoder.dispacher.actions.copilot import ActionCopilot\n- from typing import Optional\n- import byzerllm\n- import os\n- import re\n- import time",
+    "last_modified": 1710393781.0,
+    "md5": "eb3e39f85e787b0b75df90e45643d750"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/index/index.py": {
+    "symbols": " 要获取文件中的符号，我们需要解析源代码并提取相关信息。以下是 `get_all_file_symbols` 方法的实现：\n\n```python\nimport re\n\nclass IndexManager:\n    # ... 其他方法 ...\n\n    def get_all_file_symbols(self, path: str, code: str) -> str:\n        # 初始化符号列表\n        symbols = {\n            \"functions\": [],\n            \"classes\": [],\n            \"variables\": [],\n            \"imports\": [],\n        }\n\n        # 定义正则表达式模式\n        patterns = {\n            \"functions\": r\"(def\\s+([\\w\\d_]+)\\s*\\((.*)\\)\\s*:)\",\n            \"classes\": r\"(class\\s+([\\w\\d_]+)\\s*:\\s*([\\w\\d_]+))\",\n            \"variables\": r\"(\\b[\\w\\d_]+\\s*=)\",\n            \"imports\": r\"(import\\s+[\\w\\d_]+)\",\n        }\n\n        # 使用正则表达式查找符号\n        for symbol_type, pattern in patterns.items():\n            matches = re.findall(pattern, code)\n            for match in matches:\n                if symbol_type == \"classes\" and len(match) == 2:\n                    symbols[symbol_type].append(match[0])\n                else:\n                    symbols[symbol_type].extend(matches)\n\n        # 过滤重复的符号\n        for symbol_type in symbols:\n            symbols[symbol_type] = list(set(symbols[symbol_type]))\n\n        # 构建结果字符串\n        result = []\n        for symbol_type, symbol_list in symbols.items():\n            if symbol_list:\n                result.append(f\"{symbol_type.capitalize()}: {', '.join(symbol_list)}\")\n        if not result:\n            result.append(\"没有任何符号\")\n\n        return \", \".join(result)\n```\n\n这个实现首先定义了一个字典来存储不同类型的符号。然后，我们为每种符号类型定义了一个正则表达式模式，并使用这些模式在源代码中查找符号。找到的符号被添加到字典中，然后我们过滤掉重复的符号。最后，我们构建一个结果字符串，其中包含所有找到的符号及其类型。\n\n请注意，这个实现可能需要根据实际的源代码和符号类型进行调整。在实际应用中，您可能需要使用更复杂的解析方法，例如使用 Python 的 `ast` 模块或其他第三方库来解析源代码。",
+    "last_modified": 1710408546.0,
+    "md5": "d17090105456c8337db990f68be6199d"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/common/JupyterClient.py": {
+    "symbols": " 1. 函数: clean_output, add_and_run, close, __deepcopy\n2. 类: JupyterNotebook\n3. 变量: outputs, error_flag\n4. 所有导入语句: from jupyter_client import KernelManager, import threading, import re, from autocoder.common.const import *",
+    "last_modified": 1710373833.0,
+    "md5": "8693afc1ed9106a61db821c9da0ad070"
+  }
+}

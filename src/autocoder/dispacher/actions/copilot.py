@@ -2,6 +2,7 @@ from autocoder.common import AutoCoderArgs,ExecuteSteps,ExecuteStep,EnvInfo,dete
 from autocoder.common.JupyterClient import JupyterNotebook
 from autocoder.common.ShellClient import ShellClient
 from autocoder.suffixproject import SuffixProject
+from autocoder.index.index import IndexManager
 from typing import Optional,Dict,Any,List
 import byzerllm
 import time
@@ -11,7 +12,7 @@ import re
 class ActionCopilot():
     def __init__(self,args:AutoCoderArgs,llm:Optional[byzerllm.ByzerLLM]=None) -> None:
         self.args = args
-        self.llm = llm 
+        self.llm = llm         
         self.env_info = detect_env()  
     
     @byzerllm.prompt(render="jinja2")
@@ -42,7 +43,7 @@ class ActionCopilot():
         用户的问题是：{{ s }}
 
         每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。        
-        '''            
+        '''               
 
     def execute_steps(self, steps: ExecuteSteps) -> str:
         jupyter_client = JupyterNotebook()
@@ -104,10 +105,25 @@ class ActionCopilot():
                             file_filter=None                               
                             ) 
         pp.run()
+                
+        index_manager = IndexManager(llm=self.llm,sources=pp.sources,args=args)
+        index_manager.build_index()
+        target_files = index_manager.get_target_files_by_query(args.query)
+        print(f"Target Files: {target_files.file_list}",flush=True)
+        related_fiels = index_manager.get_related_files(target_files.file_list)        
+        print(f"Related Files: {related_fiels.file_list}",flush=True)
         
-        source_code = None
-        if suffixs:
-            source_code = pp.output()
+        final_files = []
+
+        for file in target_files.file_list + related_fiels.file_list:
+            if file.file_path.strip().startswith("##"):
+                final_files.append(file.file_path.strip()[2:])            
+
+        source_code = "" 
+        for file in pp.sources:
+            if file.module_name in final_files:
+                source_code += f"##File: {file.module_name}\n"
+                source_code += f"{file.source_code}\n\n"                                     
 
         final_v = ExecuteSteps(steps=[])
         q = self.get_execute_steps(args.query,env_info = self.env_info.dict(),source_code=source_code) 
