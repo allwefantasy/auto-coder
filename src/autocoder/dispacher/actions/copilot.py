@@ -105,19 +105,21 @@ class ActionCopilot():
                             file_filter=None                               
                             ) 
         pp.run()
-                
-        index_manager = IndexManager(llm=self.llm,sources=pp.sources,args=args)
-        index_manager.build_index()
-        target_files = index_manager.get_target_files_by_query(args.query)
-        print(f"Target Files: {target_files.file_list}",flush=True)
-        related_fiels = index_manager.get_related_files(target_files.file_list)        
-        print(f"Related Files: {related_fiels.file_list}",flush=True)
-        
         final_files = []
+      
+        if not args.skip_build_index:        
+            index_manager = IndexManager(llm=self.llm,sources=pp.sources,args=args)
+            index_manager.build_index()
+            target_files = index_manager.get_target_files_by_query(args.query)
+            print(f"Target Files: {target_files.file_list}",flush=True)
+            related_fiels = index_manager.get_related_files(target_files.file_list)        
+            print(f"Related Files: {related_fiels.file_list}",flush=True)                
 
-        for file in target_files.file_list + related_fiels.file_list:
-            if file.file_path.strip().startswith("##"):
-                final_files.append(file.file_path.strip()[2:])            
+            for file in target_files.file_list + related_fiels.file_list:
+                if file.file_path.strip().startswith("##"):
+                    final_files.append(file.file_path.strip()[2:])            
+        else:
+            final_files = [file.module_name for file in pp.sources]
 
         source_code = "" 
         for file in pp.sources:
