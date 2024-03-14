@@ -219,6 +219,6 @@ Output:
 You ask the auto-coder to modify a python file:
 
 ```shell
-auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type copilot/.py --model_max_length 2000 --model qianwen_chat  --query "用python打印你好，中国" 
+auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type copilot/.py --model_max_length 2000 --model qianwen_chat  --query "优化 copilot 里的get_suffix_from_project_type 函数并更新原文件"
 ``` 
 
