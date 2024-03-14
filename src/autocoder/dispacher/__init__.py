@@ -41,14 +41,17 @@ def instruction_template(instruction:str, content:str)->str:
     pass
 
 @byzerllm.prompt(render="jinja")
-def translate_readme(content:str,lang:str)->str:
+def translate_readme(content:str,lang:str,instruction:Optional[str]=None)->str:
     '''
     请将下面的内容翻译成{{ lang }}：
 
     {{ content }}    
     
-    当你开始翻译的时候，请以 >>>>> 开头，然后是翻译后的内容。
-    
+    翻译时请以 >>>>> 开头。
+
+    {%- if instruction %}
+    {{ instruction }}
+    {%- endif %}    
     '''
     pass
 
@@ -59,8 +62,8 @@ def get_translate_part(content: str) -> str:
         return match.group(1)
     else:
         lines = content.splitlines()
-        if len(lines) > 1 and lines[0].startswith(">>>>>"):
-            return "\n".join(lines[1:]).strip()
+        if len(lines) >= 1 and lines[0].strip().startswith(">>>>>"):
+            return "\n".join([lines[0][len(">>>>>")+1:]]+lines[1:])
     return content
 
 class ActionTSProject:
@@ -194,56 +197,63 @@ class ActionTranslate():
 
     def run(self):
         args = self.args        
-        if args.project_type.startswith("translate"):
-            if args.project_type == "translate" and args.query is not None and self.llm is not None:
-                # we should extract the message from query
+        if not args.project_type.startswith("translate"):
+            return False
+        
+        if args.project_type == "translate" and args.query is not None and self.llm is not None:
+            # we should extract the message from query
+            t = self.llm.chat_oai(conversations=[{
+                "role": "user",
+                "content": args.query
+            }],response_class=TranslateArgs)                
+            tranlate_args:TranslateArgs = t[0].value
+            if tranlate_args:
+                lang = tranlate_args.target_lang
+                suffixes = tranlate_args.file_suffix
+                new_file_mark = tranlate_args.new_file_mark
+        else:        
+            #translate/中文/.md/cn
+            [_, lang, suffixes, new_file_mark] = args.project_type.split("/")
+        
+        print(f"lang:{lang}, suffixes:{suffixes}, new_file_mark:{new_file_mark}",flush=True)
+        def file_filter(file_path, suffixes):
+            for suffix in suffixes:
+                if suffix.startswith("."):
+                    if file_path.endswith(f"-{new_file_mark}{suffix}"):
+                        return False
+                else:
+                    if file_path.endswith(f"-{new_file_mark}.{suffix}"):
+                        return False
+            return True
+        
+        pp = SuffixProject(source_dir=args.source_dir, 
+                            git_url=args.git_url, 
+                            target_file=args.target_file, 
+                            project_type=suffixes,
+                            file_filter=file_filter                               
+                            ) 
+        pp.run()                        
+        for source in pp.sources:
+            segments = split_code_into_segments(source_code=source.source_code)
+            temp_result = []
+            segment_count = 0
+            for segment in segments:                    
+                content = translate_readme(content=segment, lang=lang,instruction=args.query)
                 t = self.llm.chat_oai(conversations=[{
-                    "role": "user",
-                    "content": args.query
-                }],response_class=TranslateArgs)                
-                tranlate_args:TranslateArgs = t[0].value
-                if tranlate_args:
-                    lang = tranlate_args.target_lang
-                    suffixes = tranlate_args.file_suffix
-                    new_file_mark = tranlate_args.new_file_mark
-            else:        
-                #translate/中文/.md/cn
-                [_, lang, suffixes, new_file_mark] = args.project_type.split("/")
-            
-            print(f"lang:{lang}, suffixes:{suffixes}, new_file_mark:{new_file_mark}",flush=True)
-            def file_filter(file_path, suffixes):
-                for suffix in suffixes:
-                    if suffix.startswith("."):
-                        if file_path.endswith(f"-{new_file_mark}{suffix}"):
-                            return False
-                    else:
-                        if file_path.endswith(f"-{new_file_mark}.{suffix}"):
-                            return False
-                return True
-            
-            pp = SuffixProject(source_dir=args.source_dir, 
-                                git_url=args.git_url, 
-                                target_file=args.target_file, 
-                                project_type=suffixes,
-                                file_filter=file_filter                               
-                                ) 
-            pp.run()            
-            for source in pp.sources:
-                segments = split_code_into_segments(source_code=source.source_code)
-                temp_result = []
-                for segment in segments:                    
-                    content = translate_readme(content=segment, lang=lang)
-                    t = self.llm.chat_oai(conversations=[{
-                    "role": "user",
-                    "content": content
-                    }])
-                    temp_result.append(get_translate_part(t[0].output)) 
-                    time.sleep(args.anti_quota_limit) 
-                readme = TranslateReadme(filename=source.module_name,content="".join(temp_result))
-                filename, extension = os.path.splitext(readme.filename)                                                   
-                chinese_filename = f"{filename}-{new_file_mark}{extension}"
-                with open(chinese_filename, "w") as file:        
-                    file.write(readme.content)
+                "role": "user",
+                "content": content
+                }])                                
+                temp_result.append(get_translate_part(t[0].output)) 
+                time.sleep(args.anti_quota_limit) 
+                segment_count += 1
+                print(f"Translated {segment_count}({len(content)}) of {len(segments)} segments from {source.module_name}",flush=True)
+            readme = TranslateReadme(filename=source.module_name,content="".join(temp_result))
+            filename, extension = os.path.splitext(readme.filename)                                                   
+            chinese_filename = f"{filename}-{new_file_mark}{extension}"
+            with open(chinese_filename, "w") as file:        
+                file.write(readme.content)
+        return True       
+                 
 
             # t = self.llm.chat_oai(conversations=[{
             #     "role": "user",
