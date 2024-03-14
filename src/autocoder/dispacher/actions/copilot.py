@@ -134,6 +134,12 @@ class ActionCopilot():
         max_steps = 30
         total_steps = max_steps
         current_step = 0
+        
+        if not t[0].value:
+            total_steps = t[0].value.total_steps
+            if total_steps == 1:
+                current_step = 1
+
         while current_step < total_steps and max_steps>0 and t[0].value:                             
             total_steps = t[0].value.total_steps                
             final_v.steps.append(t[0].value)
@@ -154,7 +160,7 @@ class ActionCopilot():
             current_step += 1                              
         
         # 执行步骤并保存结果
-        result = "" #self.execute_steps(final_v)
+        result = self.execute_steps(final_v)
         
         # 将结果写入文件
         with open(args.target_file, "w") as f:

@@ -69,7 +69,7 @@ pip install -U auto-coder
 ## Usage 
 
 ### Basic 
-> Recommend to use 千义通问Max/Qwen-Max SaaS model
+> Recommend to use 千义通问Max/Qwen-Max-longcontext SaaS model
 > You should deploy the model by [Byzer-LLM](https://github.com/allwefantasy/byzer-llm)
 
 
@@ -89,6 +89,23 @@ For example:
 ```shell
 auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --query "如何让这个系统可以通过 auto-coder 命令执行？" 
 ```
+
+You can also put all arguments into a yaml file:
+
+
+```yaml
+# /home/winubuntu/projects/ByzerRawCopilot/auto-coder.yaml
+source_dir: /home/winubuntu/projects/ByzerRawCopilot
+target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt
+query: |
+  如何让这个系统可以通过 auto-coder 命令执行？
+```
+  
+Then use the following command:
+
+```shell
+auto-coder --file /home/winubuntu/projects/ByzerRawCopilot/auto-coder.yaml
+``` 
 
 If you want to use the model from Byzer-LLM, you can use the following command:
 

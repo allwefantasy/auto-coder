@@ -1,0 +1,10 @@
+source_dir: /home/winubuntu/projects/ByzerRawCopilot
+target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt
+project_type: copilot
+model_max_length: 2000
+model: qianwen_chat
+query: |
+  用python实现以下功能：
+  1. 打印"你好，中国"
+  2. 计算1到100的总和
+  3. 输出当前日期和时间
