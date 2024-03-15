@@ -9,6 +9,7 @@
 # Ignore build output directories
 /bin/
 /build/
+/dist/
 
 # Ignore package manager directories
 /node_modules/
