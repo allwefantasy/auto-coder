@@ -25,9 +25,9 @@
     "md5": "2c913db14a8a0b0db883a95c9f01bde9"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/index/index.py": {
-    "symbols": "该源码定义了一个`IndexManager`类，用于管理和构建代码文件的索引信息，并通过与Byzer LLM（Large Language Model）交互来获取相关文件和符号信息。主要功能包括：\n\n1. **数据模型定义**：\n   - `IndexItem`：存储单个文件的索引信息，包括模块名称、符号列表、最后修改时间戳以及文件内容MD5值。\n   - `TargetFile`：表示目标文件的数据模型，包含文件路径和选择该文件作为目标的原因。\n   - `FileList`：包含多个`TargetFile`的列表。\n\n2. **IndexManager 类**：\n   - 初始化方法：接受ByzerLLM实例、源代码列表和自动编码器参数，初始化索引目录、索引文件路径等属性。\n   - `_get_related_files` 方法：通过与LLM交互获取与指定文件相关的其他文件列表。\n   - `get_all_file_symbols` 方法：通过与LLM交互从给定的源代码中提取函数、类、变量和导入语句等符号信息。\n   - `build_index` 方法：遍历源代码文件，计算MD5哈希，如果文件内容有变化，则更新索引信息并保存到索引文件中。\n   - `read_index` 方法：读取并解析索引文件，返回一个`IndexItem`对象的列表。\n   - `_get_meta_str` 方法：将所有索引项的元数据转换为字符串形式，便于向LLM提供上下文信息。\n   - `get_related_files` 和 `get_target_files_by_query` 方法：根据用户查询或指定文件路径，通过与LLM交互获取相关的目标文件列表。\n\n3. **辅助函数**：\n   - `build_index_and_filter_files` 函数：根据参数决定是否构建索引，然后利用`IndexManager`获取与查询条件匹配的目标文件及其关联文件，并最终组装成包含源代码的字符串。\n\n整体来看，这个模块主要用于在自动编码过程中管理代码文件的索引信息，并利用LLM进行智能分析以找到与查询或特定文件相关的其他文件及符号信息。",
-    "last_modified": 1710469690.7427235,
-    "md5": "b14dcd621eab9e925421c14f9cd21009"
+    "symbols": "`IndexManager` 类是这个源码的核心类，它主要用于管理和构建代码索引。通过与 ByzerLLM（一个大型语言模型）交互，它可以获取文件中的符号信息、相关文件列表以及根据用户查询筛选目标文件。\n\n主要功能点包括：\n\n1. **初始化 IndexManager**：接受 ByzerLLM 实例、源代码列表以及 AutoCoderArgs 参数。初始化时创建或检查索引目录及其索引文件。\n\n2. **get_all_file_symbols** 方法：通过 ByzerLLM 提供的提示功能，从给定路径和源代码中提取出函数、类、变量和导入语句等符号信息，并按格式返回。\n\n3. **build_index** 方法：遍历源代码列表，计算每个文件的 MD5 哈希值并检查是否需要更新索引。如果文件有变化，则调用 `get_all_file_symbols` 获取符号信息并更新索引文件。\n\n4. **read_index** 方法：读取索引文件并将其内容转换为 `IndexItem` 对象列表。\n\n5. **get_related_files** 和 **_get_target_files_by_query** 方法：通过 ByzerLLM 询问哪些文件与给定文件或用户查询相关联，并返回相关的文件列表。\n\n6. **外部辅助函数 build_index_and_filter_files**：根据参数决定是否构建索引，然后通过用户查询筛选目标文件和相关文件，并将符合条件的源代码合并到一起。\n\n整体上，该模块通过构建和维护源代码的索引来支持对项目中文件间依赖关系的智能分析和检索。",
+    "last_modified": 1710470894.3078017,
+    "md5": "380e64bad06b97fad7990a16d7829114"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/JupyterClient.py": {
     "symbols": " 函数: clean_output, add_and_run, close, __deepcopy\n类: JupyterNotebook\n变量: outputs, error_flag\n所有导入语句: from jupyter_client import KernelManager, import threading, import re, from autocoder.common.const import *",
@@ -40,9 +40,9 @@
     "md5": "0ef3c5bd231599fbf376364d1297ddaa"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/dispacher/__init__.py": {
-    "symbols": "符号类型: 函数\n符号名称: auto_implement_function_template, instruction_template, translate_readme, get_translate_part, ActionTSProject, ActionPyScriptProject, ActionPyProject, ActionSuffixProject, ActionTranslate, Dispacher\n\n符号类型: 类\n符号名称: AutoCoderArgs, TranslateArgs, TranslateReadme, PyProject, Level1PyProject, TSProject, SuffixProject, ActionCopilot, Translates\n\n符号类型: 变量\n符号名称: pattern, match, lines\n\n符号类型: 导入语句\n符号名称: from autocoder.common import AutoCoderArgs, TranslateArgs, TranslateReadme, split_code_into_segments, from autocoder.pyproject import PyProject, Level1PyProject, from autocoder.tsproject import TSProject, from autocoder.suffixproject import SuffixProject, from autocoder.index.index import build_index_and_filter_files, from autocoder.dispacher.actions.copilot import ActionCopilot, import byzerllm, import os, import re, import time",
-    "last_modified": 1710469322.1388738,
-    "md5": "76127c2c451e552a0ea73c813f60ab1b"
+    "symbols": "函数: dispach\n类: Dispacher\n变量: args, llm, actions\n导入语句:\n1. from autocoder.common import AutoCoderArgs\n2. from autocoder.dispacher.actions.copilot import ActionCopilot\n3. from autocoder.dispacher.actions.action import ActionTranslate, ActionTSProject, ActionPyScriptProject, ActionPyProject, ActionSuffixProject\n4. import byzerllm\n5. import re",
+    "last_modified": 1710471390.6673324,
+    "md5": "8c522d273b533d3e036a885f6715ce6c"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/dispacher/actions/copilot.py": {
     "symbols": "符号类型: 函数\n符号名称: get_execute_steps, get_raw_prompt, execute_steps, get_suffix_from_project_type, run\n\n符号类型: 类\n符号名称: ActionCopilot\n\n符号类型: 变量\n符号名称: AutoCoderArgs, ExecuteSteps, ExecuteStep, EnvInfo, JupyterNotebook, ShellClient, SuffixProject, byzerllm, time, os, re\n\n符号类型: 导入语句\n符号名称: from autocoder.common import AutoCoderArgs, ExecuteSteps, ExecuteStep, EnvInfo, detect_env, chat_with_llm_step_by_step\nfrom autocoder.common.JupyterClient import JupyterNotebook\nfrom autocoder.common.ShellClient import ShellClient\nfrom autocoder.suffixproject import SuffixProject\nfrom autocoder.index.index import build_index_and_filter_files\nfrom typing import Optional, Dict, Any, List\nimport byzerllm\nimport time\nimport os\nimport re",
@@ -143,5 +143,10 @@
     "symbols": " 函数: main\n类: AutoCoderArgs, Dispacher, ByzerLLM\n变量: args, config, value, llm, max_output_length, extra_generation_params\n导入语句: byzerllm, typing, argparse, autocoder.common, autocoder.dispacher, yaml",
     "last_modified": 1710416973.850808,
     "md5": "a4c14c22ad743bd85ad327e265d6f616"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/dispacher/actions/action.py": {
+    "symbols": "符号类型: 函数\n- auto_implement_function_template\n- instruction_template\n- translate_readme\n- get_translate_part\n\n符号类型: 类\n- ActionTSProject\n- ActionPyScriptProject\n- ActionPyProject\n- ActionSuffixProject\n- ActionTranslate\n\n符号类型: 变量\n- args\n- llm\n- pattern\n- match\n- lines\n\n符号类型: 导入语句\n- from autocoder.common import AutoCoderArgs, TranslateArgs, TranslateReadme, split_code_into_segments\n- from autocoder.pyproject import PyProject, Level1PyProject\n- from autocoder.tsproject import TSProject\n- from autocoder.suffixproject import SuffixProject\n- from autocoder.index.index import build_index_and_filter_files\n- from typing import Optional\n- import byzerllm\n- import os\n- import re\n- import time",
+    "last_modified": 1710471427.8435605,
+    "md5": "0630f82225db98267d2d455a1de8ddf6"
   }
 }

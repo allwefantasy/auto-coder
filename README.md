@@ -134,11 +134,19 @@ In the above command, we provide a model and enable the execute mode, the auto-c
 
 ### How to reduce the context length?
 
-As you may know, auto-coder will collect the source code from the source directory, and then generate context for the query, if the source directory is too large, the context will be too large, and the model may not be able to handle it.
+As you may know, auto-coder will collect the source code from the source directory, and then generate context for the query, if the source directory is too large, the context will be too long, and the model may not be able to handle it.
 
-You can change the source directory to sub directory to reduce the context length.
+There are two ways to reduce the context length:
 
-We also provide a way to reduce the context length, you can use the following configuration:
+1. Change the source_dir to sub directory of project.
+2. Enable aut-coder's index feature.
+
+In order to use the index feature, you should configure some extra parameters:
+
+1. skip_build_index: false
+2. model
+
+For example:
 
 ```yaml
 source_dir: /home/winubuntu/projects/ByzerRawCopilot 
@@ -152,9 +160,10 @@ query: |
   优化 copilot 里的 get_suffix_from_project_type 函数并更新原文件
 ```
 
-here we add a new parameter `skip_build_index`, by default, this value is true. If you set it to false, the auto-coder collect the source code from the source directory, and then generate index for the source code(This may cost a lot of tokens), and then create a directory called `.auto-coder` in source directory to store the index. Once the index is created, the auto-coder will use the index to filter files and reduce the context length. notice that the filter is also cost tokens, so you should use it carefully.
+Here we add a new parameter `skip_build_index`, by default, this value is true. 
+If you set it to false and a model provide at the same time, then the auto-coder will generate index for the source code using the model(This may cost a lot of tokens), and the index file will be stored in a directory called `.auto-coder` in source directory. 
 
-> skip_build_index only works for project_type "copilot" now. 
+Once the index is created, the auto-coder will use the index to filter files and reduce the context length. notice that the filter action also use model, and it may cost tokens, so you should use it carefully.
 
 
 ### Advanced

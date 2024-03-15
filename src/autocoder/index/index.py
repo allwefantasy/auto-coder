@@ -84,7 +84,7 @@ class IndexManager:
         for source in self.sources:
             file_path = source.module_name                                   
             md5 = hashlib.md5(source.source_code.encode('utf-8')).hexdigest()
-            print(f"build index for {file_path} md5: {md5}")
+            print(f"try to build index for {file_path} md5: {md5}")
             if source.source_code.strip() == "":
                 continue
 
@@ -92,6 +92,7 @@ class IndexManager:
                 continue
             
             try:
+                print(f"parse and update index for {file_path} md5: {md5}")
                 symbols = self.get_all_file_symbols(source.module_name, source.source_code)
                 time.sleep(self.anti_quota_limit)
             except Exception as e:
@@ -162,18 +163,24 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
         index_manager = IndexManager(llm=llm,sources=sources,args=args)
         index_manager.build_index()
         target_files = index_manager.get_target_files_by_query(args.query)
-        print(f"Target Files: {target_files.file_list}",flush=True)
-        related_fiels = index_manager.get_related_files([file.file_path for file in target_files.file_list])        
-        print(f"Related Files: {related_fiels.file_list}",flush=True)                
-
-        for file in target_files.file_list + related_fiels.file_list:
-            file_path = file.file_path.strip()
-            if file_path.startswith("##"):
-                final_files.append(file_path.strip()[2:]) 
-            else:
-                final_files.append(file_path)           
+        if target_files is not None:    
+            print(f"Target Files: {target_files.file_list}",flush=True)
+            related_fiels = index_manager.get_related_files([file.file_path for file in target_files.file_list])            
+            if related_fiels is not None:                            
+                print(f"Related Files: {related_fiels.file_list}",flush=True)                
+                for file in target_files.file_list + related_fiels.file_list:
+                    file_path = file.file_path.strip()
+                    if file_path.startswith("##"):
+                        final_files.append(file_path.strip()[2:]) 
+                    else:
+                        final_files.append(file_path) 
+        if not final_files:
+            print("Warning: No related files found, use all files",flush=True)
+            final_files = [file.module_name for file in sources]                          
     else:
         final_files = [file.module_name for file in sources]
+
+    
 
     source_code = "" 
     for file in sources:
