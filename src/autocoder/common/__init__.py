@@ -70,6 +70,8 @@ class AutoCoderArgs(pydantic.BaseModel):
     skip_build_index: bool = pydantic.Field(True, description="Skip building index or not. default is True")
     print_request: bool = pydantic.Field(False, description="Print request to model or not. default is False")
     human_as_model: bool = pydantic.Field(False, description="Use human as model or not. default is False")
+    py_packages: str = pydantic.Field("", description="The Python packages added to context,only works for py project type. default is empty.")
+    urls: str = pydantic.Field("", description="The urls to crawl and extract text from, separated by comma")
 
 
 def is_likely_useful_file(file_path):

@@ -23,6 +23,8 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--skip_build_index", action='store_true', help="Skip building index or not. default is True")
     parser.add_argument("--print_request", action='store_true', help="Print request to model or not. default is False")
     parser.add_argument("--human_as_model", action='store_true', help="Use human as model or not. default is False")
+    parser.add_argument("--py_packages", required=False,  default="", help="The Python packages added to context,only works for py project type. default is empty.")
+    parser.add_argument("--urls", default="", help="The urls to crawl and extract text from, separated by comma")
     
     args = parser.parse_args()    
 

@@ -1,11 +1,14 @@
-from autocoder.common import SourceCode
+from autocoder.common import SourceCode,AutoCoderArgs
 from autocoder import common as FileUtils
+from autocoder.utils.rest import HttpDoc
 import os
 from typing import Optional,Generator,List,Dict,Any
 from git import Repo
 import ast
 import importlib
 import byzerllm
+import importlib
+import pkgutil
 
 class Level1PyProject():
     
@@ -73,11 +76,13 @@ class Level1PyProject():
 
 class PyProject():
     
-    def __init__(self,source_dir,git_url:Optional[str]=None,target_file:Optional[str]=None):
-        self.directory = source_dir
-        self.git_url = git_url        
-        self.target_file = target_file 
-        self.sources = []      
+    def __init__(self,args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None):        
+        self.args = args
+        self.directory = args.source_dir
+        self.git_url = args.git_url        
+        self.target_file = args.target_file 
+        self.sources = []   
+        self.llm = llm   
 
     def output(self):
         return open(self.target_file, "r").read()                
@@ -103,6 +108,29 @@ class PyProject():
             return None
         return SourceCode(module_name=module_name, source_code=source_code)
     
+    def get_package_source_codes(self, package_name: str) -> Generator[SourceCode, None, None]:
+        try:
+            package = importlib.import_module(package_name)
+            package_path = os.path.dirname(package.__file__)
+            
+            for _, name, _ in pkgutil.iter_modules([package_path]):
+                module_name = f"{package_name}.{name}"
+                spec = importlib.util.find_spec(module_name)
+                if spec is None:
+                    continue
+                module_path = spec.origin
+                source_code = self.convert_to_source_code(module_path)
+                if source_code is not None:
+                    yield source_code
+        except ModuleNotFoundError:
+            print(f"Package {package_name} not found.") 
+
+    def get_rest_source_codes(self) -> Generator[SourceCode, None, None]:
+        if self.args.urls:
+            http_doc = HttpDoc(urls=self.args.urls.split(","), llm=self.llm)
+            sources = http_doc.crawl_urls()         
+            return sources
+        return []    
 
     def get_source_codes(self)->Generator[SourceCode,None,None]:
         for root, dirs, files in os.walk(self.directory):
@@ -114,17 +142,40 @@ class PyProject():
                         yield source_code
 
 
-    def run(self):
+    def run(self,packages:List[str]=[]):
         if self.git_url is not None:
             self.clone_repository()
 
-        if self.target_file is None:                
-            for code in self.get_source_codes():
+        if self.target_file is None:            
+            for code in self.get_rest_source_codes():
+                self.sources.append(code)
+                print(f"##File: {code.module_name}")
+                print(code.source_code)
+
+            for package in packages:
+                for code in self.get_package_source_codes(package):
+                    self.sources.append(code)
+                    print(f"##File: {code.module_name}")
+                    print(code.source_code)
+                        
+            for code in self.get_source_codes():                
                 self.sources.append(code)
                 print(f"##File: {code.module_name}")
                 print(code.source_code)                
         else:            
             with open(self.target_file, "w") as file:
+
+                for code in self.get_rest_source_codes():
+                    self.sources.append(code)
+                    file.write(f"##File: {code.module_name}\n")
+                    file.write(f"{code.source_code}\n\n")
+                
+                for package in packages:
+                    for code in self.get_package_source_codes(package):
+                        self.sources.append(code)
+                        file.write(f"##File: {code.module_name}\n")
+                        file.write(f"{code.source_code}\n\n")
+
                 for code in self.get_source_codes():
                     self.sources.append(code)
                     file.write(f"##File: {code.module_name}\n")

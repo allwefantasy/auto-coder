@@ -1,0 +1,7 @@
+source_dir: /home/winubuntu/projects/ByzerRawCopilot 
+target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
+
+query: |
+  新增一个命令行参数 --urls 可以指定按逗号分隔的多个http链接
+  实现一个 HttpDoc 类，获取指定的http链接，获取链接的内容，返回 SourceCode 对象列表
+  在 HttpDoc 类实现一个抽取正文的方法，llm.chat_oai 方法来完成

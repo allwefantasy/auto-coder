@@ -1,16 +1,21 @@
-from autocoder.common import SourceCode
+from autocoder.common import SourceCode,AutoCoderArgs
 from autocoder import common as FileUtils  
+from autocoder.utils.rest import HttpDoc
 import os
 from typing import Optional,Generator,List,Dict,Any
+
 from git import Repo
+import byzerllm
 
 class TSProject():
     
-    def __init__(self,source_dir,git_url:Optional[str]=None,target_file:Optional[str]=None):
-        self.directory = source_dir
-        self.git_url = git_url        
-        self.target_file = target_file   
-        self.sources = []    
+    def __init__(self,args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None):        
+        self.args = args
+        self.directory = args.source_dir
+        self.git_url = args.git_url        
+        self.target_file = args.target_file 
+        self.sources = []   
+        self.llm = llm    
 
     def output(self):
         return open(self.target_file, "r").read()                    
@@ -88,19 +93,34 @@ class TSProject():
                 if source_code is not None:
                     yield source_code
                     
-
+    def get_rest_source_codes(self) -> Generator[SourceCode, None, None]:
+        if self.args.urls:
+            http_doc = HttpDoc(urls=self.args.urls.split(","), llm=self.llm)
+            sources = http_doc.crawl_urls()         
+            return sources
+        return []  
 
     def run(self):
         if self.git_url is not None:
             self.clone_repository()
 
-        if self.target_file is None:                
+        if self.target_file is None:          
+            for code in self.get_rest_source_codes():
+                self.sources.append(code)
+                print(f"##File: {code.module_name}")
+                print(code.source_code)
+
             for code in self.get_source_codes():
                 self.sources.append(code)
                 print(f"##File: {code.module_name}")
                 print(code.source_code)                
         else:            
             with open(self.target_file, "w") as file:
+                for code in self.get_rest_source_codes():
+                    self.sources.append(code)
+                    file.write(f"##File: {code.module_name}\n")
+                    file.write(f"{code.source_code}\n\n")
+                    
                 for code in self.get_source_codes():
                     self.sources.append(code)
                     file.write(f"##File: {code.module_name}\n")

@@ -1,13 +1,14 @@
-from autocoder.common import AutoCoderArgs,TranslateArgs,TranslateReadme,split_code_into_segments
+from autocoder.common import AutoCoderArgs,TranslateArgs,TranslateReadme,split_code_into_segments,SourceCode
 from autocoder.pyproject import PyProject,Level1PyProject
 from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
 from autocoder.index.index import build_index_and_filter_files
-from typing import Optional
+from typing import Optional,Generator
 import byzerllm
 import os
 import re
 import time
+
 
 @byzerllm.prompt(render="jinja")
 def auto_implement_function_template(instruction:str, content:str)->str:
@@ -75,7 +76,7 @@ class ActionTSProject:
         args = self.args
         if args.project_type != "ts":
             return False
-        pp = TSProject(source_dir=args.source_dir, git_url=args.git_url, target_file=args.target_file)
+        pp = TSProject(args=args, llm=self.llm)
         pp.run()
 
         source_code = pp.output()
@@ -138,13 +139,14 @@ class ActionPyProject:
     def __init__(self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None) -> None:
         self.args = args
         self.llm = llm
+      
     
     def run(self):
         args = self.args
         if args.project_type != "py":
             return False
-        pp = PyProject(source_dir=args.source_dir, git_url=args.git_url, target_file=args.target_file)
-        pp.run()
+        pp = PyProject(args=self.args,llm=self.llm)
+        pp.run(packages=args.py_packages.split(",") if args.py_packages else [])
 
         source_code = pp.output()
         if self.llm:
@@ -178,7 +180,7 @@ class ActionSuffixProject:
         
     def run(self):
         args = self.args        
-        pp = SuffixProject(source_dir=args.source_dir, git_url=args.git_url, target_file=args.target_file, project_type=args.project_type)
+        pp = SuffixProject(args=args, llm=self.llm)
         pp.run()
         self.process_content(pp.output())
 

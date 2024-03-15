@@ -28,6 +28,7 @@ dashscope
 tiktoken
 jupyter_client
 prompt-toolkit
+# selenium
 # dependencies only for sparkdesk
 # websockets
 websocket-client
