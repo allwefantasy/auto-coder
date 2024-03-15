@@ -2,7 +2,7 @@ from autocoder.common import AutoCoderArgs,ExecuteSteps,ExecuteStep,EnvInfo,dete
 from autocoder.common.JupyterClient import JupyterNotebook
 from autocoder.common.ShellClient import ShellClient
 from autocoder.suffixproject import SuffixProject
-from autocoder.index.index import IndexManager
+from autocoder.index import build_index_and_filter_files
 from typing import Optional,Dict,Any,List
 import byzerllm
 import time
@@ -43,7 +43,36 @@ class ActionCopilot():
         用户的问题是：{{ s }}
 
         每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。        
-        '''               
+        ''' 
+
+    @byzerllm.prompt(render="jinja2")
+    def get_raw_prompt(self,s:str,env_info:Dict[str,Any],source_code:Optional[str]=None)->str:
+        '''        
+        根据用户的问题，对问题进行拆解，然后生成执行步骤。
+
+        环境信息如下:
+        操作系统: {{ env_info.os_name }} {{ env_info.os_version }}  
+        Python版本: {{ env_info.python_version }}
+        {%- if env_info.conda_env %}
+        Conda环境: {{ env_info.conda_env }}
+        {%- endif %}
+        {%- if env_info.virtualenv %}  
+        虚拟环境: {{ env_info.virtualenv }}
+        {%- endif %}
+        {%- if env_info.has_bash %} 
+        支持Bash
+        {%- else %}
+        不支持Bash
+        {%- endif %}
+
+        {%- if source_code %}
+        下面是一系列文件以及它们的源码：
+        {{ source_code }}
+        {%- endif %}
+
+        {{ s }}
+        
+        '''                   
 
     def execute_steps(self, steps: ExecuteSteps) -> str:
         jupyter_client = JupyterNotebook()
@@ -105,27 +134,14 @@ class ActionCopilot():
                             file_filter=None                               
                             ) 
         pp.run()
-        final_files = []
-      
-        if not args.skip_build_index:        
-            index_manager = IndexManager(llm=self.llm,sources=pp.sources,args=args)
-            index_manager.build_index()
-            target_files = index_manager.get_target_files_by_query(args.query)
-            print(f"Target Files: {target_files.file_list}",flush=True)
-            related_fiels = index_manager.get_related_files([file.file_path for file in target_files.file_list])        
-            print(f"Related Files: {related_fiels.file_list}",flush=True)                
+        
+        source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=pp.sources)  
 
-            for file in target_files.file_list + related_fiels.file_list:
-                if file.file_path.strip().startswith("##"):
-                    final_files.append(file.file_path.strip()[2:])            
-        else:
-            final_files = [file.module_name for file in pp.sources]
-
-        source_code = "" 
-        for file in pp.sources:
-            if file.module_name in final_files:
-                source_code += f"##File: {file.module_name}\n"
-                source_code += f"{file.source_code}\n\n"                                     
+        if self.llm is None:
+            print("model is not specified and we will generate prompt to the target file",flush=True)
+            with open(args.target_file, "w") as f:
+                f.write(self.get_raw_prompt(args.query,env_info = self.env_info.dict(),source_code=source_code))
+            return True                                         
 
         final_v = ExecuteSteps(steps=[])
         q = self.get_execute_steps(args.query,env_info = self.env_info.dict(),source_code=source_code) 

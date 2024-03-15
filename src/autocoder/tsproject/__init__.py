@@ -9,7 +9,8 @@ class TSProject():
     def __init__(self,source_dir,git_url:Optional[str]=None,target_file:Optional[str]=None):
         self.directory = source_dir
         self.git_url = git_url        
-        self.target_file = target_file       
+        self.target_file = target_file   
+        self.sources = []    
 
     def output(self):
         return open(self.target_file, "r").read()                    
@@ -95,11 +96,13 @@ class TSProject():
 
         if self.target_file is None:                
             for code in self.get_source_codes():
+                self.sources.append(code)
                 print(f"##File: {code.module_name}")
                 print(code.source_code)                
         else:            
             with open(self.target_file, "w") as file:
                 for code in self.get_source_codes():
+                    self.sources.append(code)
                     file.write(f"##File: {code.module_name}\n")
                     file.write(f"{code.source_code}\n\n")
                     

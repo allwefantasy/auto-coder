@@ -3,6 +3,7 @@ from autocoder.common import AutoCoderArgs,TranslateArgs,TranslateReadme,split_c
 from autocoder.pyproject import PyProject,Level1PyProject
 from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
+from autocoder.index import build_index_and_filter_files
 from autocoder.dispacher.actions.copilot import ActionCopilot
 from typing import Optional
 import byzerllm
@@ -77,7 +78,12 @@ class ActionTSProject:
             return False
         pp = TSProject(source_dir=args.source_dir, git_url=args.git_url, target_file=args.target_file)
         pp.run()
-        self.process_content(pp.output())
+
+        source_code = pp.output()
+        if self.llm:
+            source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=pp.sources)
+
+        self.process_content(source_code)
         return True
 
     def process_content(self, content: str):
@@ -140,7 +146,12 @@ class ActionPyProject:
             return False
         pp = PyProject(source_dir=args.source_dir, git_url=args.git_url, target_file=args.target_file)
         pp.run()
-        self.process_content(pp.output())
+
+        source_code = pp.output()
+        if self.llm:
+            source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=pp.sources)
+
+        self.process_content(source_code)
         return True
 
     def process_content(self, content: str):
