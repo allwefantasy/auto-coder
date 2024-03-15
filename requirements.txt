@@ -27,7 +27,7 @@ zhipuai
 dashscope
 tiktoken
 jupyter_client
-
+prompt-toolkit
 # dependencies only for sparkdesk
 # websockets
 websocket-client

@@ -22,6 +22,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--anti_quota_limit",type=int, default=1, help="After how much time to wait for the next request. default is 1s")
     parser.add_argument("--skip_build_index", action='store_true', help="Skip building index or not. default is True")
     parser.add_argument("--print_request", action='store_true', help="Print request to model or not. default is False")
+    parser.add_argument("--human_as_model", action='store_true', help="Use human as model or not. default is False")
     
     args = parser.parse_args()    
 
@@ -42,10 +43,54 @@ def main():
     for arg, value in vars(args).items():
         print(f"{arg:20}: {value}")
     print("-" * 50)                
+        
+    from byzerllm.utils.client import EventCallbackResult,EventName
+    from prompt_toolkit import prompt
+    from prompt_toolkit.formatted_text import FormattedText
+    def intercept_callback(llm,model: str, input_value: List[Dict[str, Any]]) -> EventCallbackResult:
+                
+        if input_value[0].get("embedding",False) or input_value[0].get("tokenizer",False) or input_value[0].get("apply_chat_template",False) or input_value[0].get("meta",False):
+              return True,None
+        print(f"Intercepted request to model: {model}")        
+        instruction = input_value[0]["instruction"] 
+        history = input_value[0]["history"]
+        final_ins = instruction + "\n".join([item["content"] for item in history])                    
+
+        with open(args.target_file, "w") as f:
+            f.write(final_ins)
+
+        print(f'''\033[92m {final_ins[0:100]}....\n\n(The instruction to model have be saved in: {args.target_file})\033[0m''')    
+        
+        lines = []
+        while True:
+            line = prompt(FormattedText([("#00FF00", "> ")]), multiline=False)
+            if line.strip() == "EOF":
+                break
+            lines.append(line)
+        
+        result = "\n".join(lines)
+
+        with open(args.target_file, "w") as f:
+            f.write(result)
+
+        if result.lower() == 'c':
+            return True, None
+        else:            
+            v = [{
+              "predict":result,
+              "input":input_value[0]["instruction"],
+              "metadata":{}
+            }]
+            return False, v
+        
     
     if args.model:
         byzerllm.connect_cluster()        
         llm = byzerllm.ByzerLLM(verbose=args.print_request)
+        
+        if args.human_as_model:
+            llm.add_event_callback(EventName.BEFORE_CALL_MODEL, intercept_callback)
+
         llm.setup_template(model=args.model,template="auto")
         llm.setup_default_model_name(args.model)
         llm.setup_max_output_length(args.model,args.model_max_length)

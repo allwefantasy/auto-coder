@@ -69,6 +69,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     anti_quota_limit: Optional[int] = pydantic.Field(1, description="After how much time to wait for the next request. default is 1s")
     skip_build_index: bool = pydantic.Field(True, description="Skip building index or not. default is True")
     print_request: bool = pydantic.Field(False, description="Print request to model or not. default is False")
+    human_as_model: bool = pydantic.Field(False, description="Use human as model or not. default is False")
 
 
 def is_likely_useful_file(file_path):
@@ -159,7 +160,7 @@ def detect_env() -> EnvInfo:
 
 def chat_with_llm_step_by_step(llm,conversations, response_class, max_steps=30, anti_quota_limit=1):
     result = []
-    t = llm.chat_oai(conversations=conversations, response_class=response_class)
+    t = llm.chat_oai(conversations=conversations, response_class=response_class,enable_default_sys_message=True)
     total_steps = max_steps
     current_step = 0
 
@@ -183,7 +184,7 @@ def chat_with_llm_step_by_step(llm,conversations, response_class, max_steps=30, 
         })
         print(f"{conversations[-1]['role']}: {conversations[-1]['content']}\n", flush=True)
 
-        t = llm.chat_oai(conversations=conversations, response_class=response_class)
+        t = llm.chat_oai(conversations=conversations, response_class=response_class,enable_default_sys_message=True)
         max_steps -= 1
         current_step += 1
         time.sleep(anti_quota_limit)

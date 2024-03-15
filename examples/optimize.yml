@@ -2,11 +2,5 @@ source_dir: /home/winubuntu/projects/ByzerRawCopilot
 target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
 
 query: |
-  在 copilot 里，添加一个用户意图枚举类型：
-  1. 创建新项目
-  2. 对已有项目里优化
-
-  并添加一个实例变量进行标记。同时生成相应的函数，来设置这个实例变量。
-  1. try_create_new_project
-  2. try_optimize_existing_project
-  
+  优化 auto_coder里intercept_callback 方法中的input, 让他完备支持的黏贴的多行输入，最后回车结束输入。
+  你也可以使用其他更好用的库，来完成这个功能。
