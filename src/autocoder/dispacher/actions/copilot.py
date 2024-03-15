@@ -2,7 +2,7 @@ from autocoder.common import AutoCoderArgs,ExecuteSteps,ExecuteStep,EnvInfo,dete
 from autocoder.common.JupyterClient import JupyterNotebook
 from autocoder.common.ShellClient import ShellClient
 from autocoder.suffixproject import SuffixProject
-from autocoder.index import build_index_and_filter_files
+from autocoder.index.index import build_index_and_filter_files
 from typing import Optional,Dict,Any,List
 import byzerllm
 import time

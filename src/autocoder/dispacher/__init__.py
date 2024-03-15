@@ -3,7 +3,7 @@ from autocoder.common import AutoCoderArgs,TranslateArgs,TranslateReadme,split_c
 from autocoder.pyproject import PyProject,Level1PyProject
 from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
-from autocoder.index import build_index_and_filter_files
+from autocoder.index.index import build_index_and_filter_files
 from autocoder.dispacher.actions.copilot import ActionCopilot
 from typing import Optional
 import byzerllm

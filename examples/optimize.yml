@@ -1,4 +1,25 @@
 source_dir: /home/winubuntu/projects/ByzerRawCopilot 
 target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
 query: |
-  格式化打印所有命令行参数
+  Traceback (most recent call last):
+  File "/home/winubuntu/miniconda3/envs/byzerllm-dev/bin/auto-coder", line 33, in <module>
+    sys.exit(load_entry_point('auto-coder', 'console_scripts', 'auto-coder')())
+  File "/home/winubuntu/miniconda3/envs/byzerllm-dev/bin/auto-coder", line 25, in importlib_load_entry_point
+    return next(matches).load()
+  File "/home/winubuntu/miniconda3/envs/byzerllm-dev/lib/python3.10/importlib/metadata/__init__.py", line 171, in load
+    module = import_module(match.group('module'))
+  File "/home/winubuntu/miniconda3/envs/byzerllm-dev/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1050, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1027, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1006, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 688, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 883, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/my8t/projects/ByzerRawCopilot/src/autocoder/auto_coder.py", line 5, in <module>
+    from autocoder.dispacher import Dispacher 
+  File "/my8t/projects/ByzerRawCopilot/src/autocoder/dispacher/__init__.py", line 6, in <module>
+    from autocoder.index import build_index_and_filter_files
+  File "/my8t/projects/ByzerRawCopilot/src/autocoder/index/__init__.py", line 2, in <module>
+    from autocoder.index import IndexManager
+  ImportError: cannot import name 'IndexManager' from partially initialized module 'autocoder.index' (most likely due to a circular import) (/my8t/projects/ByzerRawCopilot/src/autocoder/index/__init__.py)

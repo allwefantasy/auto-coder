@@ -23,13 +23,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--skip_build_index", action='store_true', help="Skip building index or not. default is True")
     parser.add_argument("--print_request", action='store_true', help="Print request to model or not. default is False")
     
-    args = parser.parse_args()
-    
-    print("Command Line Arguments:")
-    print("-" * 50)
-    for arg, value in vars(args).items():
-        print(f"{arg:20}: {value}")
-    print("-" * 50)
+    args = parser.parse_args()    
 
     return AutoCoderArgs(**vars(args))
 
@@ -42,6 +36,12 @@ def main():
             for key, value in config.items():
                 if key != "file":  # 排除 --file 参数本身
                     setattr(args, key, value)
+    
+    print("Command Line Arguments:")
+    print("-" * 50)
+    for arg, value in vars(args).items():
+        print(f"{arg:20}: {value}")
+    print("-" * 50)                
     
     if args.model:
         byzerllm.connect_cluster()        
