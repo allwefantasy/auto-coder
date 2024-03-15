@@ -167,8 +167,11 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
         print(f"Related Files: {related_fiels.file_list}",flush=True)                
 
         for file in target_files.file_list + related_fiels.file_list:
-            if file.file_path.strip().startswith("##"):
-                final_files.append(file.file_path.strip()[2:])            
+            file_path = file.file_path.strip()
+            if file_path.startswith("##"):
+                final_files.append(file_path.strip()[2:]) 
+            else:
+                final_files.append(file_path)           
     else:
         final_files = [file.module_name for file in sources]
 
