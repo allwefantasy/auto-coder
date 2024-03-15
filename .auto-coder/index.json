@@ -45,9 +45,9 @@
     "md5": "8c522d273b533d3e036a885f6715ce6c"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/dispacher/actions/copilot.py": {
-    "symbols": "符号类型: 函数\n符号名称: get_execute_steps, get_raw_prompt, execute_steps, get_suffix_from_project_type, run\n\n符号类型: 类\n符号名称: ActionCopilot\n\n符号类型: 变量\n符号名称: AutoCoderArgs, ExecuteSteps, ExecuteStep, EnvInfo, JupyterNotebook, ShellClient, SuffixProject, byzerllm, time, os, re\n\n符号类型: 导入语句\n符号名称: from autocoder.common import AutoCoderArgs, ExecuteSteps, ExecuteStep, EnvInfo, detect_env, chat_with_llm_step_by_step\nfrom autocoder.common.JupyterClient import JupyterNotebook\nfrom autocoder.common.ShellClient import ShellClient\nfrom autocoder.suffixproject import SuffixProject\nfrom autocoder.index.index import build_index_and_filter_files\nfrom typing import Optional, Dict, Any, List\nimport byzerllm\nimport time\nimport os\nimport re",
-    "last_modified": 1710469336.6148431,
-    "md5": "99af13cce5e4cadeadbefa7974806cf1"
+    "symbols": "符号类型: 函数\n符号名称: get_execute_steps, get_execute_steps_for_create_project, get_raw_prompt, execute_steps, get_suffix_from_project_type, try_create_new_project, try_optimize_existing_project, user_itent_prompt, run\n\n符号类型: 类\n符号名称: UserIntent, ActionCopilot\n\n符号类型: 变量\n符号名称: AutoCoderArgs, byzerllm, UserIntent, ActionCopilot, env_info, user_intent\n\n符号类型: 导入语句\n导入语句: \n1. from autocoder.common import AutoCoderArgs, ExecuteSteps, ExecuteStep, EnvInfo, detect_env, chat_with_llm_step_by_step\n2. from autocoder.common.JupyterClient import JupyterNotebook\n3. from autocoder.common.ShellClient import ShellClient\n4. from autocoder.suffixproject import SuffixProject\n5. from autocoder.index.index import build_index_and_filter_files\n6. import byzerllm\n7. from enum import Enum",
+    "last_modified": 1710474678.6783144,
+    "md5": "274d83aad0792d44dae6e42e2ab976f1"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/tsproject/__init__.py": {
     "symbols": "函数:\n- output\n- read_file_content\n- is_likely_useful_file\n- convert_to_source_code\n- get_source_codes\n- run\n- clone_repository\n\n类:\n- TSProject\n\n变量:\n- source_dir\n- git_url\n- target_file\n- sources\n- module_name\n- source_code\n- root\n- dirs\n- files\n- file_path\n- code\n\n导入语句:\n- from autocoder.common import SourceCode\n- from autocoder import common as FileUtils\n- import os\n- from typing import Optional, Generator, List, Dict, Any\n- from git import Repo",
@@ -145,8 +145,8 @@
     "md5": "a4c14c22ad743bd85ad327e265d6f616"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/dispacher/actions/action.py": {
-    "symbols": "符号类型: 函数\n- auto_implement_function_template\n- instruction_template\n- translate_readme\n- get_translate_part\n\n符号类型: 类\n- ActionTSProject\n- ActionPyScriptProject\n- ActionPyProject\n- ActionSuffixProject\n- ActionTranslate\n\n符号类型: 变量\n- args\n- llm\n- pattern\n- match\n- lines\n\n符号类型: 导入语句\n- from autocoder.common import AutoCoderArgs, TranslateArgs, TranslateReadme, split_code_into_segments\n- from autocoder.pyproject import PyProject, Level1PyProject\n- from autocoder.tsproject import TSProject\n- from autocoder.suffixproject import SuffixProject\n- from autocoder.index.index import build_index_and_filter_files\n- from typing import Optional\n- import byzerllm\n- import os\n- import re\n- import time",
-    "last_modified": 1710471427.8435605,
-    "md5": "0630f82225db98267d2d455a1de8ddf6"
+    "symbols": "根据提供的源代码，以下是所请求的符号类型及其名称列表：\n\n导入语句:\n\n```markdown\n导入语句: autocoder.common, autocoder.pyproject, autocoder.tsproject, autocoder.suffixproject, autocoder.index.index, typing, os, re, time, byzerllm\n```\n\n类:\n\n```markdown\n类: ActionTSProject, ActionPyScriptProject, ActionPyProject, ActionSuffixProject, ActionTranslate\n```\n\n函数:\n\n```markdown\n函数: auto_implement_function_template, instruction_template, translate_readme, get_translate_part, run (4个run方法分别在ActionTSProject, ActionPyScriptProject, ActionPyProject, ActionSuffixProject中)\n```\n\n变量:\n\n```markdown\n变量: args, llm, pp, source_code, content, t, file, self, instruction, new_file_mark, lang, suffixes, tranlate_args, segment_count, temp_result, segments, segment, readme, filename, extension, chinese_filename\n```\n\n注意：上述\"变量\"列表包含了类属性和局部变量。",
+    "last_modified": 1710473196.9758422,
+    "md5": "c23d19110d4735348ab7aaf5b3fce87a"
   }
 }

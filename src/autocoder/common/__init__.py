@@ -35,6 +35,7 @@ class ExecuteStep(pydantic.BaseModel):
     code: str = pydantic.Field(..., description="The code line to execute")
     lang: str = pydantic.Field(..., description="The language to execute the code line, python,shell. default is python")
     total_steps: Optional[int] = pydantic.Field(-1, description="The total steps to finish the user's question")
+    current_step: Optional[int] = pydantic.Field(-1, description="The current step to finish the user's question")
     cwd: Optional[str] = pydantic.Field(None, description="The current working directory to execute the command line")
     env: Optional[Dict[str, Any]] = pydantic.Field(None, description="The environment variables to execute the command line")
     timeout: Optional[int] = pydantic.Field(None, description="The timeout to execute the command line")

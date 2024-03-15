@@ -42,7 +42,7 @@ class SuffixProject():
                 if self.is_suffix_file(file_path):
                 
                     if self.file_filter is None or self.file_filter(file_path,self.suffixs):
-                        print(f"====Processing {file_path}",flush=True)
+                        print(f"====Filter {file_path}",flush=True)
                         source_code = self.convert_to_source_code(file_path)
                         if source_code is not None:
                             yield source_code

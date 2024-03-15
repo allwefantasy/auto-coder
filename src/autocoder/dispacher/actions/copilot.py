@@ -5,18 +5,30 @@ from autocoder.suffixproject import SuffixProject
 from autocoder.index.index import build_index_and_filter_files
 from typing import Optional,Dict,Any,List
 import byzerllm
-import time
-import os
-import re
+from enum import Enum
+import pydantic
+
+class UserIntent(Enum):
+    CREATE_NEW_PROJECT = "CREATE_NEW_PROJECT"
+    OPTIMIZE_EXISTING_PROJECT = "OPTIMIZE_EXISTING_PROJECT"
+    UNKNOWN = "UNKNOWN"
+
+
+class RUserIntent(pydantic.BaseModel):
+    user_intent:UserIntent= pydantic.Field(UserIntent.UNKNOWN,description="用户意图,默认为UNKNOWN")
+    
 
 class ActionCopilot():
     def __init__(self,args:AutoCoderArgs,llm:Optional[byzerllm.ByzerLLM]=None) -> None:
         self.args = args
         self.llm = llm         
         self.env_info = detect_env()  
+        self.user_intent = UserIntent.UNKNOWN
     
     @byzerllm.prompt(render="jinja2")
-    def get_execute_steps(self,s:str,env_info:Dict[str,Any],source_code:Optional[str]=None)->str:
+    def get_execute_steps(self,s:str,
+                          env_info:Dict[str,Any],
+                          source_code:Optional[str]=None)->str:
         '''        
         根据用户的问题，对问题进行拆解，然后生成执行步骤。
 
@@ -44,6 +56,34 @@ class ActionCopilot():
 
         每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。        
         ''' 
+
+    @byzerllm.prompt(render="jinja2")
+    def get_execute_steps_for_create_project(self,s:str,
+                          env_info:Dict[str,Any])->str:
+        '''        
+        你熟悉各种编程语言以及相关框架对应的项目结构。现在，你需要
+        根据用户的问题，对问题进行拆解，然后生成执行步骤，当执行完所有步骤，最终帮生成一个符合对应编程语言规范以及相关框架的项目结构。
+        整个过程只能使用 python/shell。
+
+        环境信息如下:
+        操作系统: {{ env_info.os_name }} {{ env_info.os_version }}  
+        Python版本: {{ env_info.python_version }}
+        {%- if env_info.conda_env %}
+        Conda环境: {{ env_info.conda_env }}
+        {%- endif %}
+        {%- if env_info.virtualenv %}  
+        虚拟环境: {{ env_info.virtualenv }}
+        {%- endif %}
+        {%- if env_info.has_bash %} 
+        支持Bash
+        {%- else %}
+        不支持Bash
+        {%- endif %}
+        
+        用户的问题是：{{ s }}
+
+        每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。        
+        '''    
 
     @byzerllm.prompt(render="jinja2")
     def get_raw_prompt(self,s:str,env_info:Dict[str,Any],source_code:Optional[str]=None)->str:
@@ -119,12 +159,25 @@ class ActionCopilot():
                     result.append(suffix)
                 
                 return result            
-        return []
+        return []     
 
     def run(self):
         args = self.args        
         if not args.project_type.startswith("copilot"):    
-            return False  
+            return False 
+
+        if args.query and self.llm:
+            t = self.llm.chat_oai(conversations=[
+              {
+                "role":"user",
+                "content":args.query
+              }
+            ],response_class=RUserIntent) 
+            
+            if t[0].value:
+                self.user_intent = t[0].value.user_intent         
+
+
 
         suffixs = self.get_suffix_from_project_type(args.project_type)        
         pp = SuffixProject(source_dir=args.source_dir, 
@@ -135,16 +188,23 @@ class ActionCopilot():
                             ) 
         pp.run()
         
-        source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=pp.sources)  
+        print(f"用户尝试: {self.user_intent}",flush=True)        
 
-        if self.llm is None:
-            print("model is not specified and we will generate prompt to the target file",flush=True)
-            with open(args.target_file, "w") as f:
-                f.write(self.get_raw_prompt(args.query,env_info = self.env_info.dict(),source_code=source_code))
-            return True                                         
+        if self.user_intent == UserIntent.CREATE_NEW_PROJECT:
+            source_code = ""
+            q = self.get_execute_steps_for_create_project(args.query,env_info = self.env_info.dict())
+        else:
+            source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=pp.sources)  
 
-        final_v = ExecuteSteps(steps=[])
-        q = self.get_execute_steps(args.query,env_info = self.env_info.dict(),source_code=source_code) 
+            if self.llm is None:
+                print("model is not specified and we will generate prompt to the target file",flush=True)
+                with open(args.target_file, "w") as f:
+                    f.write(self.get_raw_prompt(args.query,env_info = self.env_info.dict(),source_code=source_code))
+                return True  
+            
+            q = self.get_execute_steps(args.query,env_info = self.env_info.dict(),source_code=source_code)                                        
+
+        final_v = ExecuteSteps(steps=[])            
         conversations = [{
                 "role":"user",
                 "content":q
