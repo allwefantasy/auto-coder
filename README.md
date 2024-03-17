@@ -304,6 +304,8 @@ query: |
 
 Here we add  new parameters  `search_engine` and `search_engine_token`, the search engine will provide more context for the model, and the model will use the context to generate the result.
 
+For now, we support bing/google.  If you use bing, try to get the token from [here](https://www.microsoft.com/en-us/bing/apis/bing-web-search-api).
+
 Here is the output:
 
 ```text
