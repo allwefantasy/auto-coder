@@ -54,6 +54,7 @@ Fueled by the incredible power of Byzer-LLM, this command-line tool is packed wi
   - [Python Project Only Features](#python-project-only-features)
   - [TypeScript Project](#typescript-project)
   - [Real-Auto](#real-auto)
+    - [Real-Auto with Search Engine](#real-auto-with-search-engine)
 
 
 
@@ -283,6 +284,8 @@ Output:
 你好，中国
 --------------------
 ```
+
+### Real-Auto with Search Engine
 
 If you want to get a more stable result, you should introduce search engine:
 
