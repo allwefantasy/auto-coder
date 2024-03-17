@@ -149,30 +149,33 @@ class ActionCopilot():
     def execute_steps(self, steps: ExecuteSteps) -> str:
         jupyter_client = JupyterNotebook()
         shell_client = ShellClient(working_dir=steps.steps[0].cwd)
-
-        output = ""
-        for step in steps.steps:
-            if step.lang == "python":
-                output += f"Python Code:\n{step.code}\n"
-                output += "Output:\n"
-                result, error = jupyter_client.add_and_run(step.code)
-                output += result + "\n"
-                if error:
-                    output += f"Error: {str(error)}\n"
-            elif step.lang == "shell":  
-                output += f"Shell Command:\n{step.code}\n"
-                output += "Output:\n"
-                stdout, stderr = shell_client.add_and_run(step.code)
-                output += stdout + "\n"
-                if stderr:
-                    output += f"Error: {stderr}\n"
-            else:
-                output += f"Unknown step type: {step.lang}\n"
-            
-            output += "-" * 20 + "\n"
         
-        jupyter_client.close()
-        shell_client.close()
+        try:
+            output = ""
+            for step in steps.steps:
+                if step.lang == "python":
+                    output += f"Python Code:\n{step.code}\n"
+                    output += "Output:\n"
+                    result, error = jupyter_client.add_and_run(step.code)
+                    output += result + "\n"
+                    if error:
+                        output += f"Error: {str(error)}\n"
+                elif step.lang == "shell":  
+                    output += f"Shell Command:\n{step.code}\n"
+                    output += "Output:\n"
+                    stdout, stderr = shell_client.add_and_run(step.code)
+                    output += stdout + "\n"
+                    if stderr:
+                        output += f"Error: {stderr}\n"
+                else:
+                    output += f"Unknown step type: {step.lang}\n"
+                
+                output += "-" * 20 + "\n"
+        except Exception as e:
+            output += f"Error: {str(e)}\n"
+        finally:    
+            jupyter_client.close()
+            shell_client.close()
         
         return output
     
