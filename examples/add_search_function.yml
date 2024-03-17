@@ -1,0 +1,7 @@
+source_dir: /home/winubuntu/projects/ByzerRawCopilot 
+target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
+urls: https://raw.githubusercontent.com/leptonai/search_with_lepton/main/search_with_lepton.py
+query: |
+  在 autocoder/common 目录中添加一个 search.py ，参考 search_with_lepton，实现一个 Search 类，支持 bing,google,baidu等endpoint,获取搜索结果，返回 contexts,对该contexts
+  生成一个pydantic对象。
+   
