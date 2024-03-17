@@ -36,3 +36,13 @@ class ShellClient:
     def close(self):
         """Close the shell process."""
         self.process.terminate()
+
+client = ShellClient(working_dir="/tmp")
+stdout, stderr = client.add_and_run("npm install -g create-react-app")        
+print(stdout)
+
+stdout, stderr = client.add_and_run("npx create-react-app t-project --template typescript")        
+print(stdout)
+
+stdout, stderr = client.add_and_run("cd t-project")        
+print(stdout)

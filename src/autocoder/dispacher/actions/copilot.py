@@ -148,7 +148,7 @@ class ActionCopilot():
 
     def execute_steps(self, steps: ExecuteSteps) -> str:
         jupyter_client = JupyterNotebook()
-        shell_client = ShellClient()
+        shell_client = ShellClient(working_dir=steps.steps[0].cwd)
 
         output = ""
         for step in steps.steps:
