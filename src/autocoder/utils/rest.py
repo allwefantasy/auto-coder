@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from typing import List
 from autocoder.common import SourceCode
 import byzerllm
+from bs4 import BeautifulSoup
 
 class HttpDoc:
     def __init__(self, urls: List[str], llm: byzerllm.ByzerLLM):
@@ -27,7 +28,7 @@ class HttpDoc:
             response = requests.get(url)
             
             if response.status_code == 200:
-                html_content = response.text   
+                html_content = clean_html_keep_text(response.text)
                 if self.llm:                             
                     main_content = self._extract_main_content(url, html_content)
                 else:                    
@@ -39,3 +40,20 @@ class HttpDoc:
                 print(f"Failed to crawl URL: {url}. Status code: {response.status_code}")
 
         return source_codes
+    
+def clean_html_keep_text(self,html_content: str) -> str:
+    soup = BeautifulSoup(html_content, 'html.parser')
+        
+    tags_to_remove_completely = ['script', 'style']
+        
+    for tag in tags_to_remove_completely:
+        for element in soup.find_all(tag):
+            element.decompose()
+        
+    tags_to_remove_but_keep_text = ['nav', 'footer', 'aside']
+    
+    for tag in tags_to_remove_but_keep_text:
+        for element in soup.find_all(tag):            
+            element.replace_with(element.get_text(separator=" ", strip=True))
+    
+    return soup.get_text(separator=" ", strip=True)
