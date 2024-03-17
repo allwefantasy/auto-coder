@@ -26,7 +26,9 @@ lang_desc = {
         "cmd_args_title": "Command Line Arguments:",
         "py_packages": "The Python packages added to context, only works for py project type. Default is empty.",
         "human_as_model": "Use human as model or not. Default is False",
-        "urls": "The urls to crawl and extract text from, separated by comma"
+        "urls": "The urls to crawl and extract text from, separated by comma",
+        "search_engine": "The search engine to use. Supported engines: bing, google. Default is empty",
+        "search_engine_token": "The token for the search engine API. Default is empty"
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -48,7 +50,9 @@ lang_desc = {
         "cmd_args_title": "命令行参数:",
         "py_packages": "添加到上下文的Python包,仅适用于py项目类型。默认为空。",
         "human_as_model": "是否使用人工作为模型。默认为False",
-        "urls": "要爬取并提取文本的URL,多个URL以逗号分隔"
+        "urls": "要爬取并提取文本的URL,多个URL以逗号分隔",
+        "search_engine": "要使用的搜索引擎。支持的引擎:bing、google。默认为空",
+        "search_engine_token": "搜索引擎API的令牌。默认为空"
     }
 }
 
@@ -77,6 +81,8 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--py_packages", required=False, default="", help=desc["py_packages"])
     parser.add_argument("--human_as_model", action='store_true', help=desc["human_as_model"])
     parser.add_argument("--urls", default="", help=desc["urls"])
+    parser.add_argument("--search_engine", default="", help=desc["search_engine"])
+    parser.add_argument("--search_engine_token", default="",help=desc["search_engine_token"])
     
     args = parser.parse_args()
 

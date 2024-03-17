@@ -36,7 +36,7 @@ class JupyterNotebook:
 
             while True:
                 try:
-                    msg = self.kc.get_iopub_msg(timeout=20)
+                    msg = self.kc.get_iopub_msg(timeout=300)
 
                     msg_type = msg["header"]["msg_type"]
                     content = msg["content"]

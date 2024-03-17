@@ -1,0 +1,7 @@
+source_dir: /home/winubuntu/projects/ByzerRawCopilot 
+target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
+query: |
+  添加命令行参数: --search_engine, 用于指定搜索引擎,支持的搜索引擎有: bing,google. 
+  添加命令行参数： --search_engine_token, 用于指定搜索引擎API的token,例如bing的token,google的token等。
+  注意，需要同时修改 AutoCoderArgs类，以及auto_coder的parse_args方法，使得命令行参数可以被正确解析，同步还要修改auto_coder的help信息。
+   

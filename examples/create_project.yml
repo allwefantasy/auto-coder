@@ -5,6 +5,9 @@ model: qianwen_short_chat
 model_max_length: 2000
 anti_quota_limit: 5
 
+search_engine: bing
+search_engine_token: xxxxxxx
+
 project_type: "copilot"
 query: |
   帮我在/tmp/目录下创建一个 typescript + reactjs 组成的项目，项目名字叫 t-project

@@ -284,9 +284,123 @@ Output:
 --------------------
 ```
 
-You ask the auto-coder to modify a python file:
+If you want to get a more stable result, you should introduce search engine:
 
-```shell
-auto-coder --source_dir /home/winubuntu/projects/ByzerRawCopilot --target_file /home/winubuntu/projects/ByzerRawCopilot/output.txt --project_type copilot/.py --model_max_length 2000 --model qianwen_chat  --query "优化 copilot 里的get_suffix_from_project_type 函数并更新原文件"
-``` 
+```yaml
+source_dir: /home/winubuntu/projects/ByzerRawCopilot 
+target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
 
+model: qianwen_short_chat
+model_max_length: 2000
+anti_quota_limit: 5
+
+search_engine: bing
+search_engine_token: xxxxxx
+
+project_type: "copilot"
+query: |
+  帮我在/tmp/目录下创建一个 typescript + reactjs 组成的项目，项目名字叫 t-project
+```
+
+Here we add  new parameters  `search_engine` and `search_engine_token`, the search engine will provide more context for the model, and the model will use the context to generate the result.
+
+Here is the output:
+
+```text
+用户尝试: UserIntent.CREATE_NEW_PROJECT
+search SearchEngine.BING for 帮我在/tmp/目录下创建一个 typescript + reactjs 组成的项目，项目名字叫 t-project...
+reraking the search result by snippets...
+fetch https://blog.csdn.net/weixin_42429718/article/details/117402097 and answer the quesion (帮我在/tmp/目录下创建一个 typescript + reactjs 组成的项目，项目名字叫 t-project) based on the full content...
+user: 
+你熟悉各种编程语言以及相关框架对应的项目结构。现在，你需要
+根据用户的问题，根据提供的信息，对问题进行拆解，然后生成执行步骤，当执行完所有步骤，最终帮生成一个符合对应编程语言规范以及相关框架的项目结构。
+整个过程只能使用 python/shell。
+
+环境信息如下:
+操作系统: linux 5.15.0-48-generic  
+Python版本: 3.10.11
+Conda环境: byzerllm-dev 
+支持Bash
+
+现在请参考下面内容：
+
+由于提供的上下文信息与在Linux环境下使用命令行创建一个TypeScript和ReactJS项目无关，我将基于一般操作步骤给出解答。
+
+要在Linux系统的 `/tmp/` 目录下创建一个由TypeScript和ReactJS组成的项目，并命名为`t-project`，请按照以下步骤操作：
+
+1. 首先，请确保您已全局安装了Node.js包管理器（npm）以及创建React应用的脚手架工具 `create-react-app`。如果尚未安装，可以通过以下命令安装：
+   ```
+   npm install -g create-react-app
+   ```
+
+2. 然后，由于`create-react-app`默认不支持 TypeScript，需要安装 `create-react-app` 的 TypeScript 版本，即 `react-scripts-ts`，但请注意，`react-scripts-ts` 已不再维护，最新推荐做法是直接使用 `create-react-app` 并通过 `--template typescript` 参数指定 TypeScript 模板：
+
+   ```sh
+   npx create-react-app t-project --template typescript
+   ```
+
+   这条命令会在 `/tmp/` 目录下创建名为 `t-project` 的新React项目，并配置为使用TypeScript。
+
+3. 创建完成后，进入项目目录并启动开发服务器：
+
+   ```sh
+   cd /tmp/t-project
+   npm start
+   ```
+
+这样就成功在 `/tmp/` 目录下创建了一个基于TypeScript和ReactJS的项目。[information is missing on]如何具体使用命令行在Linux系统中创建项目，因为上下文没有提供相关指导。
+
+用户的问题是：帮我在/tmp/目录下创建一个 typescript + reactjs 组成的项目，项目名字叫 t-project
+
+每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。        
+
+assistant: ```json
+{
+  "code": "npm install -g create-react-app",
+  "lang": "shell",
+  "total_steps": 3,
+  "current_step": 1,
+  "cwd": "/tmp",
+  "env": {},
+  "timeout": null,
+  "ignore_error": false
+}
+```
+请确认是否已安装全局的 `create-react-app` 工具。如果确认或执行完成，请回复“继续”。
+
+user: 继续
+
+assistant: ```json
+{
+  "code": "npx create-react-app t-project --template typescript",
+  "lang": "shell",
+  "total_steps": 3,
+  "current_step": 2,
+  "cwd": "/tmp",
+  "env": {},
+  "timeout": null,
+  "ignore_error": false
+}
+```
+请在 `/tmp` 目录下执行此命令以创建基于 TypeScript 的 ReactJS 项目。如果项目创建完成，请回复“继续”。
+
+user: 继续
+
+assistant: ```json
+{
+  "code": "cd t-project",
+  "lang": "shell",
+  "total_steps": 3,
+  "current_step": 3,
+  "cwd": "/tmp",
+  "env": {},
+  "timeout": null,
+  "ignore_error": false
+}
+```
+请在终端中切换到刚创建的 `t-project` 目录。若切换成功，请回复“继续”以进行下一步操作，即启动项目开发服务器。
+
+user: 继续
+```
+
+There are three steps to create the new project, and the ShellClient in auto-coder will finally execute the three steps.

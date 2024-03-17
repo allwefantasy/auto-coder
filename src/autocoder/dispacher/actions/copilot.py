@@ -2,6 +2,7 @@ from autocoder.common import AutoCoderArgs,ExecuteSteps,ExecuteStep,EnvInfo,dete
 from autocoder.common.JupyterClient import JupyterNotebook
 from autocoder.common.ShellClient import ShellClient
 from autocoder.suffixproject import SuffixProject
+from autocoder.common.search import Search,SearchEngine
 from autocoder.index.index import build_index_and_filter_files
 from typing import Optional,Dict,Any,List
 import byzerllm
@@ -83,7 +84,38 @@ class ActionCopilot():
         用户的问题是：{{ s }}
 
         每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。        
-        '''    
+        '''   
+    @byzerllm.prompt(render="jinja2")
+    def get_execute_steps_for_create_project_based_on_doc(self,s:str,context:str,
+                          env_info:Dict[str,Any])->str:
+        '''        
+        你熟悉各种编程语言以及相关框架对应的项目结构。现在，你需要
+        根据用户的问题，根据提供的信息，对问题进行拆解，然后生成执行步骤，当执行完所有步骤，最终帮生成一个符合对应编程语言规范以及相关框架的项目结构。
+        整个过程只能使用 python/shell。
+
+        环境信息如下:
+        操作系统: {{ env_info.os_name }} {{ env_info.os_version }}  
+        Python版本: {{ env_info.python_version }}
+        {%- if env_info.conda_env %}
+        Conda环境: {{ env_info.conda_env }}
+        {%- endif %}
+        {%- if env_info.virtualenv %}  
+        虚拟环境: {{ env_info.virtualenv }}
+        {%- endif %}
+        {%- if env_info.has_bash %} 
+        支持Bash
+        {%- else %}
+        不支持Bash
+        {%- endif %}
+        
+        现在请参考下面内容：
+
+        {{ context }}
+
+        用户的问题是：{{ s }}
+
+        每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。        
+        '''      
 
     @byzerllm.prompt(render="jinja2")
     def get_raw_prompt(self,s:str,env_info:Dict[str,Any],source_code:Optional[str]=None)->str:
@@ -179,20 +211,27 @@ class ActionCopilot():
 
 
 
-        suffixs = self.get_suffix_from_project_type(args.project_type)        
-        pp = SuffixProject(source_dir=args.source_dir, 
-                            git_url=args.git_url, 
-                            target_file=args.target_file, 
-                            project_type=",".join(suffixs) or ".py",
-                            file_filter=None                               
-                            ) 
+        suffixs = self.get_suffix_from_project_type(args.project_type)  
+        args.project_type = ",".join(suffixs) or ".py"      
+        pp = SuffixProject(args=args,
+                           llm = self.llm,file_filter=None) 
         pp.run()
         
         print(f"用户尝试: {self.user_intent}",flush=True)        
 
         if self.user_intent == UserIntent.CREATE_NEW_PROJECT:
             source_code = ""
-            q = self.get_execute_steps_for_create_project(args.query,env_info = self.env_info.dict())
+            if args.search_engine and args.search_engine_token:
+                if args.search_engine == "bing":
+                    search_engine = SearchEngine.BING
+                else:
+                    search_engine = SearchEngine.GOOGLE
+
+                searcher=Search(llm=self.llm,search_engine=search_engine,subscription_key=args.search_engine_token)
+                context = searcher.answer_with_the_most_related_context(args.query)
+                q = self.get_execute_steps_for_create_project_based_on_doc(args.query,context,env_info = self.env_info.dict())
+            else:
+                q = self.get_execute_steps_for_create_project(args.query,env_info = self.env_info.dict())
         else:
             source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=pp.sources)  
 
