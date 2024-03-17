@@ -309,6 +309,15 @@ Here we add  new parameters  `search_engine` and `search_engine_token`, the sear
 
 For now, we support bing/google.  If you use bing, try to get the token from [here](https://www.microsoft.com/en-us/bing/apis/bing-web-search-api).
 
+The basic workflow is:
+
+1. search the query 
+2. reranking the search result by snippets
+3. fetch the first search result and answer the question based on the full content.
+4. generate the result based on the query and the full content.
+5. get execute steps based on the result.
+5. execute the steps by ShellClient/PythonClient in auto-coder.
+
 Here is the output:
 
 ```text
