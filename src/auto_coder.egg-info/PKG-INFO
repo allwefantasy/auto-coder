@@ -161,10 +161,13 @@ For example:
 ```yaml
 source_dir: /home/winubuntu/projects/ByzerRawCopilot 
 target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
+
 model: qianwen_chat
 model_max_length: 2000
 anti_quota_limit: 13
+
 skip_build_index: false
+
 project_type: "copilot/.py"
 query: |
   优化 copilot 里的 get_suffix_from_project_type 函数并更新原文件
@@ -317,6 +320,15 @@ query: |
 Here we add  new parameters  `search_engine` and `search_engine_token`, the search engine will provide more context for the model, and the model will use the context to generate the result.
 
 For now, we support bing/google.  If you use bing, try to get the token from [here](https://www.microsoft.com/en-us/bing/apis/bing-web-search-api).
+
+The basic workflow is:
+
+1. search the query 
+2. reranking the search result by snippets
+3. fetch the first search result and answer the question based on the full content.
+4. generate the result based on the query and the full content.
+5. get execute steps based on the result.
+5. execute the steps by ShellClient/PythonClient in auto-coder.
 
 Here is the output:
 

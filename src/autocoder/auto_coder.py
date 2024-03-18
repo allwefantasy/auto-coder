@@ -5,6 +5,9 @@ from autocoder.common import AutoCoderArgs
 from autocoder.dispacher import Dispacher 
 import yaml   
 import locale
+import os
+from jinja2 import Template
+
 lang_desc = {
     "en": {
         "parser_desc": "Auto-implement missing methods in a Python script.",
@@ -95,7 +98,11 @@ def main():
         with open(args.file, "r") as f:
             config = yaml.safe_load(f)
             for key, value in config.items():
-                if key != "file":  # 排除 --file 参数本身
+                if key != "file":  # 排除 --file 参数本身   
+                    ## key: ENV {{VARIABLE_NAME}}
+                    if isinstance(value, str) and value.startswith("ENV"):  
+                        template = Template(value.removeprefix("ENV").strip())                  
+                        value = template.render(os.environ)                        
                     setattr(args, key, value)
     
     print("Command Line Arguments:")

@@ -152,10 +152,13 @@ For example:
 ```yaml
 source_dir: /home/winubuntu/projects/ByzerRawCopilot 
 target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
+
 model: qianwen_chat
 model_max_length: 2000
 anti_quota_limit: 13
+
 skip_build_index: false
+
 project_type: "copilot/.py"
 query: |
   优化 copilot 里的 get_suffix_from_project_type 函数并更新原文件
