@@ -78,7 +78,7 @@ class AutoCoderArgs(pydantic.BaseModel):
 
 def is_likely_useful_file(file_path):
     """Determine if the file is likely to be useful by excluding certain directories and specific file types."""
-    excluded_dirs = ["docs", "examples", "tests", "test", "__pycache__", "scripts", "benchmarks"]
+    excluded_dirs = ["docs", "examples", "tests", "test", "__pycache__", "scripts", "benchmarks","build"]
     utility_or_config_files = ["hubconf.py", "setup.py"]
     github_workflow_or_docs = ["stale.py", "gen-card-", "write_model_card"]
     

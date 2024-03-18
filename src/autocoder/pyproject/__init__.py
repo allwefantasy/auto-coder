@@ -132,7 +132,7 @@ class PyProject():
             return sources
         return []    
 
-    def get_source_codes(self)->Generator[SourceCode,None,None]:
+    def get_source_codes(self)->Generator[SourceCode,None,None]:        
         for root, dirs, files in os.walk(self.directory):
             for file in files:
                 file_path = os.path.join(root, file)

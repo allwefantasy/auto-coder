@@ -46,8 +46,8 @@ Fueled by the incredible power of Byzer-LLM, this command-line tool is packed wi
 
 ## Table of Contents
 
+- [Installation](#installation)
 - [Brand new Installation](#brand-new-installation)
-- [Existing Installation](#existing-installation)
 - [Usage](#usage)
   - [Basic](#basic)
   - [Advanced](#advanced)
@@ -58,6 +58,19 @@ Fueled by the incredible power of Byzer-LLM, this command-line tool is packed wi
 
 
 
+## Existing Installation
+
+```shell
+# or https://gitcode.com/allwefantasy11/auto-coder.git
+git clone https://github.com/allwefantasy/auto-coder.git
+pip install -r requirements.txt
+## if you want to use private/open-source models, uncomment this line.
+# pip install -U vllm
+pip install -U byzerllm
+pip install -U auto-coder
+
+ray start --head
+```
 
 ## Brand new Installation
 
@@ -71,24 +84,39 @@ After the nvidia-driver/cuda environment is set up, you can install auto_coder l
 pip install -U auto-coder
 ```
 
-## Existing Installation
-
-
-```shell
-# or https://gitcode.com/allwefantasy11/auto-coder.git
-git clone https://github.com/allwefantasy/auto-coder.git
-pip install -r requirements.txt
-## if you want to use private/open-source models, uncomment this line.
-# pip install -U vllm
-pip install -U byzerllm
-pip install -U auto-coder
-```
 
 ## Usage 
 
-### Basic 
+### LLM Model
+
 > Recommend to use 千义通问Max/Qwen-Max-longcontext SaaS model
-> You should deploy the model by [Byzer-LLM](https://github.com/allwefantasy/byzer-llm)
+
+Try to use the following command to deploy Qwen-Max:
+
+```shell
+byzerllm deploy  --pretrained_model_type saas/qianwen \
+--cpus_per_worker 0.01 \
+--gpus_per_worker 0 \
+--num_workers 1 \
+--infer_params saas.api_key="sk-33cbd1e4a45f477e860035a57b39efa8" saas.model="qwen-max" \
+--model qianwen_short_chat 
+```
+
+Then you can use the following command to test the model:
+
+```shell
+byzerllm query --model qianwen_short_chat --query "你好"
+```
+
+If you want to undeploy the model:
+
+```shell
+byzerllm undeploy --model qianwen_short_chat
+```
+
+If you want to deploy you private/open source model, please try to this [link](https://github.com/allwefantasy/byzer-llm)
+
+### Basic 
 
 
 The auto-coder provide two ways:
