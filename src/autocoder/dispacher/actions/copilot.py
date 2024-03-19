@@ -107,11 +107,16 @@ class ActionCopilot():
         '''    
        
     @byzerllm.prompt(render="jinja2")
-    def get_execute_steps_for_create_project(self,s:str,context:str)->str:
+    def get_execute_steps_for_create_project(self,s:str,context:str,source_code:str)->str:
         '''        
         你熟悉各种编程语言以及相关框架对应的项目结构。现在，你需要
         根据用户的问题，根据提供的信息，对问题进行拆解，然后生成执行步骤，当执行完所有步骤，最终帮生成一个符合对应编程语言规范以及相关框架的项目结构。
-        整个过程只能使用 python/shell。        
+        整个过程只能使用 python/shell。
+
+        {%- if source_code %}
+        下面是一系列文件以及它们的源码：
+        {{ source_code }}
+        {%- endif %}        
         
         现在请参考下面内容：
 
@@ -199,6 +204,7 @@ class ActionCopilot():
         source_code = ""
         search_context = ""
         step_num = -1
+        first_response = ""
 
         if args.search_engine and args.search_engine_token:
             if args.search_engine == "bing":
@@ -208,36 +214,37 @@ class ActionCopilot():
 
             searcher=Search(llm=self.llm,search_engine=search_engine,subscription_key=args.search_engine_token)
             search_context = searcher.answer_with_the_most_related_context(args.query)
+        
+        first_response = search_context
+        if self.llm:
+            print("try to get the total steps...",flush=True)
+            q1 = self.get_step_num(args.query,env_info = self.env_info.dict(),
+                                    source_code=source_code,
+                                    context=search_context)
+            t = self.llm.chat_oai(conversations=[{
+                "role":"user",
+                "content":q1
+            }])                
+            first_response = t[0].output
+            
+            t = self.llm.chat_oai(conversations=[{
+                "role":"user",
+                "content":first_response
+            }],response_class=StepNum,enable_default_sys_message=True)
+            
+            if t[0].value:
+                step_num = t[0].value.step_num
+                print(f"total steps to finish the user's question: {step_num}",flush=True)
+            else:
+                print(f"fail to get the step num for the user's quesion: {t[0]}",flush=True)    
 
-        if self.user_intent == UserIntent.CREATE_NEW_PROJECT:            
-            first_response = search_context
-            if self.llm:
-                print("try to get the total steps...",flush=True)
-                q1 = self.get_step_num(args.query,env_info = self.env_info.dict(),
-                                       source_code=source_code,
-                                       context=search_context)
-                t = self.llm.chat_oai(conversations=[{
-                    "role":"user",
-                    "content":q1
-                }])                
-                first_response = t[0].output
-                
-                t = self.llm.chat_oai(conversations=[{
-                    "role":"user",
-                    "content":first_response
-                }],response_class=StepNum,enable_default_sys_message=True)
-                
-                if t[0].value:
-                    step_num = t[0].value.step_num
-                    print(f"total steps to finish the user's question: {step_num}",flush=True)
-                else:
-                    print(f"fail to get the step num for the user's quesion: {t[0]}",flush=True)                            
-                    
-            q = self.get_execute_steps_for_create_project(s=args.query,context=first_response)
-        else:                           
+        if self.user_intent == UserIntent.CREATE_NEW_PROJECT: 
+            source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=pp.sources)                                                                        
+            q = self.get_execute_steps_for_create_project(s=args.query,context=first_response,source_code=source_code)
+        else:                                       
             source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=pp.sources) 
             q = self.get_execute_steps(args.query,env_info = self.env_info.dict(),
-                                       context=search_context,
+                                       context=first_response,
                                        source_code=source_code)  
 
         if self.llm is None:

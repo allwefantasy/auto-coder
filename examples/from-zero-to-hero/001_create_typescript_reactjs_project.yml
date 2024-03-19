@@ -1,13 +1,15 @@
-source_dir: /home/winubuntu/projects/ByzerRawCopilot 
+source_dir: /tmp/t-project
 target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
 
-model: qianwen_short_chat
+model: qianwen_chat
 model_max_length: 2000
+model_max_input_length: 6000
 anti_quota_limit: 5
+execute: true
 
 search_engine: bing
 search_engine_token: ENV {{BING_SEARCH_TOKEN}}
 
-project_type: "copilot"
+project_type: "copilot/.ts,.jsx"
 query: |
   帮我在/tmp/目录下创建一个 typescript + reactjs 组成的项目，项目名字叫 t-project

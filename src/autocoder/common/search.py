@@ -66,13 +66,16 @@ def llm_rerank(llm:byzerllm.ByzerLLM,query:str,docs:List[str],top_k:int=1):
         "role": "user",
         "content": DEFAULT_CHOICE_SELECT_PROMPT.format(context_str=context_str,query_str=query_str)
     }])
-
+    
     r = llm.chat_oai(conversations=[{
         "role": "user",
         "content": r[0].output
     }],response_class=DocWithRelevance,enable_default_sys_message=True)
     
     doc_with_relevents:DocWithRelevance = r[0].value 
+
+    if doc_with_relevents is None:
+        raise ValueError("LLM Ranker failed, please try again.")
     # target_values = [] 
 
     # print(f"docs:{docs} doc_with_relevents {doc_with_relevents}",flush=True)
