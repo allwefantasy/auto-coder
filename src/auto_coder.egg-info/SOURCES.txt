@@ -4,6 +4,7 @@ src/auto_coder.egg-info/PKG-INFO
 src/auto_coder.egg-info/SOURCES.txt
 src/auto_coder.egg-info/dependency_links.txt
 src/auto_coder.egg-info/entry_points.txt
+src/auto_coder.egg-info/requires.txt
 src/auto_coder.egg-info/top_level.txt
 src/autocoder/__init__.py
 src/autocoder/auto_coder.py

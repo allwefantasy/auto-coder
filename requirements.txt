@@ -62,4 +62,5 @@ protobuf==3.20.0
 
 # camelot-py
 # llama_index
+byzerllm
 

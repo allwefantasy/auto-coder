@@ -1,12 +1,48 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.10
+Version: 0.1.11
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
 Classifier: Programming Language :: Python :: 3.9
 Classifier: Programming Language :: Python :: 3.10
 Description-Content-Type: text/markdown
+Requires-Dist: contextlib2
+Requires-Dist: ninja
+Requires-Dist: netifaces
+Requires-Dist: accelerate
+Requires-Dist: bitsandbytes==0.39.0
+Requires-Dist: transformers>=4.35.0
+Requires-Dist: torch==2.1.2
+Requires-Dist: ray[default]==2.9.1
+Requires-Dist: sentencepiece
+Requires-Dist: pyarrow==12.0.1
+Requires-Dist: sentence-transformers
+Requires-Dist: datasets
+Requires-Dist: langchain
+Requires-Dist: paramiko
+Requires-Dist: einops
+Requires-Dist: tqdm==4.62.3
+Requires-Dist: loguru
+Requires-Dist: tensorboard
+Requires-Dist: pyjava==0.6.15
+Requires-Dist: tiktoken
+Requires-Dist: transformers_stream_generator
+Requires-Dist: optimum
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: retrying
+Requires-Dist: zhipuai
+Requires-Dist: dashscope
+Requires-Dist: tiktoken
+Requires-Dist: jupyter_client
+Requires-Dist: prompt-toolkit
+Requires-Dist: websocket-client
+Requires-Dist: wudao
+Requires-Dist: SwissArmyTransformer
+Requires-Dist: jieba
+Requires-Dist: protobuf==3.20.0
+Requires-Dist: byzerllm
 
 <p align="center">
   <picture>    
@@ -27,7 +63,7 @@ Auto-Coder (powered by Byzer-LLM)
 
 *Latest News* 🔥
 
-- [2024/03] Release Auto-Coder 0.1.10
+- [2024/03] Release Auto-Coder 0.1.11
 
 ---
 
@@ -70,14 +106,11 @@ Fueled by the incredible power of Byzer-LLM, this command-line tool is packed wi
 ## Installation
 
 ```shell
-# or https://gitcode.com/allwefantasy11/auto-coder.git
-git clone https://github.com/allwefantasy/auto-coder.git
-pip install -r requirements.txt
+conda create --name autocoder python=3.10.11
+conda activate autocoder
 ## if you want to use private/open-source models, uncomment this line.
 # pip install -U vllm
-pip install -U byzerllm
 pip install -U auto-coder
-
 ray start --head
 ```
 

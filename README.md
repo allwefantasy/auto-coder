@@ -18,7 +18,7 @@ Auto-Coder (powered by Byzer-LLM)
 
 *Latest News* 🔥
 
-- [2024/03] Release Auto-Coder 0.1.10
+- [2024/03] Release Auto-Coder 0.1.11
 
 ---
 
@@ -61,16 +61,11 @@ Fueled by the incredible power of Byzer-LLM, this command-line tool is packed wi
 ## Installation
 
 ```shell
-conda create --name autocoder python==3.10.11
+conda create --name autocoder python=3.10.11
 conda activate autocoder
-# or https://gitcode.com/allwefantasy11/auto-coder.git
-git clone https://github.com/allwefantasy/auto-coder.git
-pip install -r requirements.txt
 ## if you want to use private/open-source models, uncomment this line.
 # pip install -U vllm
-pip install -U byzerllm
 pip install -U auto-coder
-
 ray start --head
 ```
 
