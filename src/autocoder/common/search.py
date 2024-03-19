@@ -1,4 +1,4 @@
-from typing import List
+from typing import List,Optional
 import httpx
 import json
 from loguru import logger
@@ -65,8 +65,12 @@ def llm_rerank(llm:byzerllm.ByzerLLM,query:str,docs:List[str],top_k:int=1):
     r = llm.chat_oai(conversations=[{
         "role": "user",
         "content": DEFAULT_CHOICE_SELECT_PROMPT.format(context_str=context_str,query_str=query_str)
-    }],response_class=DocWithRelevance)
+    }])
 
+    r = llm.chat_oai(conversations=[{
+        "role": "user",
+        "content": r[0].output
+    }],response_class=DocWithRelevance,enable_default_sys_message=True)
     
     doc_with_relevents:DocWithRelevance = r[0].value 
     # target_values = [] 
@@ -95,7 +99,7 @@ def search_with_bing(query: str, subscription_key: str):
         """
         Search with bing and return the contexts.
         """
-        params = {"q": query, "mkt": BING_MKT}
+        params = {"q": query, "mkt": BING_MKT}        
         response = requests.get(
             BING_SEARCH_V7_ENDPOINT,
             headers={"Ocp-Apim-Subscription-Key": subscription_key},
@@ -337,13 +341,20 @@ class Search:
         Here is the original question: {{ query }}        
         '''
 
-    def get_the_most_related_context(self, query: str) -> SearchContext:
+    def get_the_most_related_context(self, query: str) -> Optional[SearchContext]:
         print(f"search {self.search_engine} for {query}...")
         contexts = self.search(query)
+        if len(contexts) == 0:
+            print(f"failed to find any context for the question: {query}")
+            return None
         snippets = [c.snippet for c in contexts]
-        print(f"reraking the search result by snippets...")
+        print(f"reraking the search result by snippets...")        
         (indices,scores) = llm_rerank(self.llm,query,snippets)          
-        return contexts[indices[0]-1]
+        if indices and scores[0]>7:
+            return contexts[indices[0]-1]
+        else:
+            print(f"no context is found with relevance score > 7 for the question: {query}")
+            return None
          
 
     def llm_related_questions(self, query: str, context: str) -> RelatedQuestion:
@@ -362,7 +373,11 @@ class Search:
 
     def answer_with_the_most_related_context(self, query: str) -> str:        
         context = self.get_the_most_related_context(query)
-        print(f"fetch {context.url} and answer the quesion ({query}) based on the full content...")        
+        if context is None:
+            print(f"failed to find the most related context for the question: {query}")
+            return ""
+        
+        print(f"etch {context.url} and answer the quesion ({query}) based on the full content...")        
         doc = HttpDoc([context.url],self.llm)
         source_codes = doc.crawl_urls()            
         return self._llm_search(query,[SearchContext(name=source_code.module_name,url=context.url,snippet=source_code.source_code) for source_code in source_codes])    

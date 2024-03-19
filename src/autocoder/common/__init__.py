@@ -163,19 +163,19 @@ def detect_env() -> EnvInfo:
         )
 
 
-def chat_with_llm_step_by_step(llm,conversations, response_class, max_steps=30, anti_quota_limit=1):
+def chat_with_llm_step_by_step(llm,conversations, 
+                               response_class, 
+                               max_steps=30, 
+                               anti_quota_limit=1):
+    if max_steps == -1:
+        max_steps = 30
+
     result = []
     t = llm.chat_oai(conversations=conversations, response_class=response_class,enable_default_sys_message=True)
     total_steps = max_steps
     current_step = 0
 
-    if not t[0].value:
-        total_steps = t[0].value.total_steps
-        if total_steps == 1:
-            current_step = 1
-
-    while current_step < total_steps and max_steps > 0 and t[0].value:
-        total_steps = t[0].value.total_steps
+    while current_step < total_steps and t[0].value:        
         result.append(t[0].value)
         conversations.append({
             "role": "assistant",
@@ -187,10 +187,8 @@ def chat_with_llm_step_by_step(llm,conversations, response_class, max_steps=30, 
             "role": "user",
             "content": "继续"
         })
-        print(f"{conversations[-1]['role']}: {conversations[-1]['content']}\n", flush=True)
-
-        t = llm.chat_oai(conversations=conversations, response_class=response_class,enable_default_sys_message=True)
-        max_steps -= 1
+        print(f"{conversations[-1]['role']}: {conversations[-1]['content']}\n", flush=True)        
+        t = llm.chat_oai(conversations=conversations, response_class=response_class,enable_default_sys_message=True)        
         current_step += 1
         time.sleep(anti_quota_limit)
 
