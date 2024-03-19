@@ -47,7 +47,7 @@ Fueled by the incredible power of Byzer-LLM, this command-line tool is packed wi
 ## Table of Contents
 
 - [Installation](#installation)
-- [Brand new Installation](#brand-new-installation)
+- [Brand new Installation](#raw-meta-matchine-installation)
 - [Usage](#usage)
   - [Basic](#basic)
   - [Advanced](#advanced)
@@ -58,7 +58,7 @@ Fueled by the incredible power of Byzer-LLM, this command-line tool is packed wi
 
 
 
-## Existing Installation
+## Installation
 
 ```shell
 # or https://gitcode.com/allwefantasy11/auto-coder.git
@@ -72,7 +72,7 @@ pip install -U auto-coder
 ray start --head
 ```
 
-## Brand new Installation
+## Raw Meta Matchine Installation
 
 You can use the script provided by Byzer-LLM to setup the nvidia-driver/cuda environment:
 
@@ -98,7 +98,7 @@ byzerllm deploy  --pretrained_model_type saas/qianwen \
 --cpus_per_worker 0.01 \
 --gpus_per_worker 0 \
 --num_workers 1 \
---infer_params saas.api_key="sk-33cbd1e4a45f477e860035a57b39efa8" saas.model="qwen-max" \
+--infer_params saas.api_key="xxxxxxx" saas.model="qwen-max" \
 --model qianwen_short_chat 
 ```
 
