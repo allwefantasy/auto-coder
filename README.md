@@ -90,6 +90,7 @@ pip install -U auto-coder
 ### LLM Model
 
 > Recommend to use 千义通问Max/Qwen-Max-longcontext SaaS model
+> Make sure your model has at least 8k context.
 
 Try to use the following command to deploy Qwen-Max:
 
