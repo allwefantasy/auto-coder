@@ -61,6 +61,8 @@ Fueled by the incredible power of Byzer-LLM, this command-line tool is packed wi
 ## Installation
 
 ```shell
+conda create --name autocoder python==3.10.11
+conda activate autocoder
 # or https://gitcode.com/allwefantasy11/auto-coder.git
 git clone https://github.com/allwefantasy/auto-coder.git
 pip install -r requirements.txt

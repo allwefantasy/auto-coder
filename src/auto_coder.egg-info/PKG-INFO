@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.9
+Version: 0.1.10
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -27,7 +27,7 @@ Auto-Coder (powered by Byzer-LLM)
 
 *Latest News* 🔥
 
-- [2024/03] Release Auto-Coder 0.1.9
+- [2024/03] Release Auto-Coder 0.1.10
 
 ---
 
@@ -56,7 +56,7 @@ Fueled by the incredible power of Byzer-LLM, this command-line tool is packed wi
 ## Table of Contents
 
 - [Installation](#installation)
-- [Brand new Installation](#brand-new-installation)
+- [Brand new Installation](#raw-meta-matchine-installation)
 - [Usage](#usage)
   - [Basic](#basic)
   - [Advanced](#advanced)
@@ -67,7 +67,7 @@ Fueled by the incredible power of Byzer-LLM, this command-line tool is packed wi
 
 
 
-## Existing Installation
+## Installation
 
 ```shell
 # or https://gitcode.com/allwefantasy11/auto-coder.git
@@ -81,7 +81,7 @@ pip install -U auto-coder
 ray start --head
 ```
 
-## Brand new Installation
+## Raw Meta Matchine Installation
 
 You can use the script provided by Byzer-LLM to setup the nvidia-driver/cuda environment:
 
@@ -98,29 +98,27 @@ pip install -U auto-coder
 
 ### LLM Model
 
-> Recommend to use 千义通问Max/Qwen-Max-longcontext SaaS model
+> Recommend to use 千义通问Max/Qwen-Max SaaS model
+> Make sure your model has at least 8k context.
 
 Try to use the following command to deploy Qwen-Max:
 
 ```shell
 byzerllm deploy  --pretrained_model_type saas/qianwen \
---cpus_per_worker 0.01 \
---gpus_per_worker 0 \
---num_workers 1 \
---infer_params saas.api_key="sk-33cbd1e4a45f477e860035a57b39efa8" saas.model="qwen-max" \
---model qianwen_short_chat 
+--infer_params saas.api_key=xxxxxxx saas.model=qwen-max \
+--model qianwen_chat 
 ```
 
 Then you can use the following command to test the model:
 
 ```shell
-byzerllm query --model qianwen_short_chat --query "你好"
+byzerllm query --model qianwen_chat --query "你好"
 ```
 
 If you want to undeploy the model:
 
 ```shell
-byzerllm undeploy --model qianwen_short_chat
+byzerllm undeploy --model qianwen_chat
 ```
 
 If you want to deploy you private/open source model, please try to this [link](https://github.com/allwefantasy/byzer-llm)
@@ -192,6 +190,7 @@ target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt
 
 model: qianwen_chat
 model_max_length: 2000
+model_max_input_length: 6000
 anti_quota_limit: 13
 
 skip_build_index: false
