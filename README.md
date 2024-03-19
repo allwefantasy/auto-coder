@@ -99,20 +99,20 @@ byzerllm deploy  --pretrained_model_type saas/qianwen \
 --cpus_per_worker 0.01 \
 --gpus_per_worker 0 \
 --num_workers 1 \
---infer_params saas.api_key="xxxxxxx" saas.model="qwen-max" \
---model qianwen_short_chat 
+--infer_params saas.api_key="xxxxxxx" saas.model="qwen-max-longcontext" \
+--model qianwen_chat 
 ```
 
 Then you can use the following command to test the model:
 
 ```shell
-byzerllm query --model qianwen_short_chat --query "你好"
+byzerllm query --model qianwen_chat --query "你好"
 ```
 
 If you want to undeploy the model:
 
 ```shell
-byzerllm undeploy --model qianwen_short_chat
+byzerllm undeploy --model qianwen_chat
 ```
 
 If you want to deploy you private/open source model, please try to this [link](https://github.com/allwefantasy/byzer-llm)
