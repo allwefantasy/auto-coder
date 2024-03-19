@@ -74,6 +74,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     urls: str = pydantic.Field("", description="The urls to crawl and extract text from, separated by comma")
     search_engine: str = ""
     search_engine_token: str = ""
+    model_max_input_length: int = pydantic.Field(6000, description="The maximum input length of the model") 
 
 
 def is_likely_useful_file(file_path):

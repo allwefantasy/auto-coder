@@ -1,0 +1,14 @@
+source_dir: /home/winubuntu/projects/ByzerRawCopilot 
+target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
+
+search_engine: bing
+search_engine_token: ENV {{BING_SEARCH_TOKEN}}
+
+query: |
+  src/index/index.py 中的 _get_meta_str 函数会获得所有索引信息。
+  基于该索引信息，我们会获取通过 _get_target_files_by_query，_get_related_files 分别
+  获取相关的文件信息。但是  _get_meta_str 返回的结果信息可能过大导致模型无法处理。
+  现在，在 _get_meta_str 新增一个参数 max_chunk_size，默认值为 4k，返回值为generator,返回的每个chunk大小不超过max_chunk_size。
+
+  同时修改 get_related_files,get_target_files_by_query，函数，使其可以分多次调用_get_meta_str，并且最后返回完整的list
+  

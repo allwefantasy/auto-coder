@@ -31,7 +31,9 @@ lang_desc = {
         "human_as_model": "Use human as model or not. Default is False",
         "urls": "The urls to crawl and extract text from, separated by comma",
         "search_engine": "The search engine to use. Supported engines: bing, google. Default is empty",
-        "search_engine_token": "The token for the search engine API. Default is empty"
+        "search_engine_token": "The token for the search engine API. Default is empty",
+        "model_max_input_length": "The maximum length of the generated code by the model. Default is 6000. This only works when model is specified.",
+        
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -55,7 +57,8 @@ lang_desc = {
         "human_as_model": "是否使用人工作为模型。默认为False",
         "urls": "要爬取并提取文本的URL,多个URL以逗号分隔",
         "search_engine": "要使用的搜索引擎。支持的引擎:bing、google。默认为空",
-        "search_engine_token": "搜索引擎API的令牌。默认为空"
+        "search_engine_token": "搜索引擎API的令牌。默认为空",
+        "model_max_input_length": "模型的最大输入长度。默认为6000。仅在指定模型时生效。",
     }
 }
 
@@ -76,7 +79,8 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--package_name", default="", help=desc["package_name"])  
     parser.add_argument("--script_path", default="", help=desc["script_path"])
     parser.add_argument("--model", default="", help=desc["model"])
-    parser.add_argument("--model_max_length", type=int, default=1024, help=desc["model_max_length"])
+    parser.add_argument("--model_max_length", type=int, default=2000, help=desc["model_max_length"])
+    parser.add_argument("--model_max_input_length", type=int, default=6000, help=desc["model_max_input_length"])
     parser.add_argument("--file", default=None, required=False, help=desc["file"])
     parser.add_argument("--anti_quota_limit", type=int, default=1, help=desc["anti_quota_limit"])
     parser.add_argument("--skip_build_index", action='store_true', help=desc["skip_build_index"])

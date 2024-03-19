@@ -88,6 +88,12 @@ class ActionTSProject:
 
     def process_content(self, content: str):
         args = self.args
+
+        if args.execute and self.llm:
+            if len(content) > self.args.model_max_input_length:
+                print(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
+                content = content[:self.args.model_max_input_length]        
+
         if args.template == "common":
             instruction = args.query or "Please implement the following methods"
             content = instruction_template(instruction=instruction, content=content)
@@ -157,13 +163,19 @@ class ActionPyProject:
 
     def process_content(self, content: str):
         args = self.args
+        
+        if args.execute and self.llm:
+            if len(content) > self.args.model_max_input_length:
+                print(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
+                content = content[:self.args.model_max_input_length]
+
         if args.template == "common":
             instruction = args.query or "Please implement the following methods"
             content = instruction_template(instruction=instruction, content=content)
         elif args.template == "auto_implement":
             content = auto_implement_function_template(instruction="", content=content)
 
-        if args.execute:
+        if args.execute:            
             t = self.llm.chat_oai(conversations=[{
                 "role": "user",
                 "content": content
@@ -186,6 +198,12 @@ class ActionSuffixProject:
 
     def process_content(self, content: str):
         args = self.args
+
+        if args.execute and self.llm:
+            if len(content) > self.args.model_max_input_length:
+                print(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
+                content = content[:self.args.model_max_input_length]        
+
         if args.template == "common":
             instruction = args.query or "Please implement the following methods"
             content = instruction_template(instruction=instruction, content=content)

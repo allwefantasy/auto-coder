@@ -32,6 +32,7 @@ class IndexManager:
         self.index_dir = os.path.join(self.source_dir, ".auto-coder")
         self.index_file = os.path.join(self.index_dir, "index.json")
         self.llm = llm
+        self.args = args
 
         # 如果索引目录不存在,则创建它
         if not os.path.exists(self.index_dir):
@@ -93,7 +94,11 @@ class IndexManager:
             
             try:
                 print(f"parse and update index for {file_path} md5: {md5}")
-                symbols = self.get_all_file_symbols(source.module_name, source.source_code)
+                source_code = source.source_code
+                if len(source.source_code) > self.args.model_max_input_length:
+                    print(f"Warning: The length of source code is too long ({len(source.source_code)}) > model_max_input_length({self.args.model_max_input_length}) , keep the first {self.args.model_max_input_length} characters to avoid failure of the model limit")
+                    source_code = source.source_code[:self.args.model_max_input_length]
+                symbols = self.get_all_file_symbols(source.module_name, source_code)
                 time.sleep(self.anti_quota_limit)
             except Exception as e:
                 print(f"Error: {e}")
@@ -130,16 +135,45 @@ class IndexManager:
             index_items.append(index_item)
 
         return index_items
-
-    def _get_meta_str(self):
+     
+    def _get_meta_str(self, max_chunk_size=4096):
         index_items = self.read_index()
         output = []
+        current_chunk = []
+        current_size = 0
+        
         for item in index_items:
-            output.append(f"##{item.module_name}\n{item.symbols}\n\n")
-        return "".join(output)  
+            item_str = f"##{item.module_name}\n{item.symbols}\n\n"
+            item_size = len(item_str)
+            
+            if current_size + item_size > max_chunk_size:
+                yield "".join(current_chunk)
+                current_chunk = [item_str]
+                current_size = item_size
+            else:
+                current_chunk.append(item_str)
+                current_size += item_size
+        
+        if current_chunk:
+            yield "".join(current_chunk) 
 
-    def get_related_files(self,file_paths:List[str]):
-        return self._get_related_files(self._get_meta_str(),"\n".join(file_paths))
+    def get_related_files(self, file_paths: List[str]):
+        all_results = []
+        
+        for chunk in self._get_meta_str():
+            result = self._get_related_files(chunk, "\n".join(file_paths))
+            all_results.extend(result.file_list)
+        
+        return FileList(file_list=all_results)
+
+    def get_target_files_by_query(self, query: str) -> FileList:
+        all_results = []
+        
+        for chunk in self._get_meta_str():
+            result = self._get_target_files_by_query(chunk, query)
+            all_results.extend(result.file_list)
+        
+        return FileList(file_list=all_results) 
     
     @byzerllm.prompt(lambda self: self.llm, render="jinja2",print_prompt=True)
     def _get_target_files_by_query(self,indices:str,query:str)->FileList:
@@ -153,8 +187,7 @@ class IndexManager:
         用户的问题是：{{ query }}
         '''
 
-    def get_target_files_by_query(self,query:str)->FileList:
-        return self._get_target_files_by_query(self._get_meta_str(),query) 
+    
 
 
 def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode])->str:
