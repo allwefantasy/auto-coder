@@ -96,7 +96,7 @@ Try to use the following command to deploy Qwen-Max:
 
 ```shell
 byzerllm deploy  --pretrained_model_type saas/qianwen \
---infer_params saas.api_key="xxxxxxx" saas.model="qwen-max-longcontext" \
+--infer_params saas.api_key=xxxxxxx saas.model=qwen-max-longcontext \
 --model qianwen_chat 
 ```
 
