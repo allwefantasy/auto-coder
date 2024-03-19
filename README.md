@@ -181,6 +181,7 @@ target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt
 
 model: qianwen_chat
 model_max_length: 2000
+model_max_input_length: 6000
 anti_quota_limit: 13
 
 skip_build_index: false
