@@ -89,14 +89,14 @@ pip install -U auto-coder
 
 ### LLM Model
 
-> Recommend to use 千义通问Max/Qwen-Max-longcontext SaaS model
+> Recommend to use 千义通问Max/Qwen-Max SaaS model
 > Make sure your model has at least 8k context.
 
 Try to use the following command to deploy Qwen-Max:
 
 ```shell
 byzerllm deploy  --pretrained_model_type saas/qianwen \
---infer_params saas.api_key=xxxxxxx saas.model=qwen-max-longcontext \
+--infer_params saas.api_key=xxxxxxx saas.model=qwen-max \
 --model qianwen_chat 
 ```
 
