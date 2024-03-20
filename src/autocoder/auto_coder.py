@@ -83,7 +83,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--model_max_input_length", type=int, default=6000, help=desc["model_max_input_length"])
     parser.add_argument("--file", default=None, required=False, help=desc["file"])
     parser.add_argument("--anti_quota_limit", type=int, default=1, help=desc["anti_quota_limit"])
-    parser.add_argument("--skip_build_index", action='store_true', help=desc["skip_build_index"])
+    parser.add_argument("--skip_build_index", action='store_false', help=desc["skip_build_index"])
     parser.add_argument("--print_request", action='store_true', help=desc["print_request"])
     parser.add_argument("--py_packages", required=False, default="", help=desc["py_packages"])
     parser.add_argument("--human_as_model", action='store_true', help=desc["human_as_model"])

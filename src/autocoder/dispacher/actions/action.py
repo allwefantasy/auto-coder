@@ -40,8 +40,8 @@ def instruction_template(instruction:str, content:str,execute:bool=False)->str:
     {{ instruction }}
 
     {%- if execute %}    
-    生成的代码块需要以 "##File: FILE_PATH"开头，"##" 和 "File"之间不要有空格。其中 FILE_PATH 是文件路径。
-    生成的代码需要完整。如果文件已经存在，新生成的代码也需要保持完整。
+    生成的代码块里要添加文件路径的注释，格式为： "##File: FILE_PATH" 开头，其中 FILE_PATH 是文件路径。
+    请确保代码的完整性。
     {%- endif %}    
         
     '''
