@@ -33,6 +33,7 @@ lang_desc = {
         "search_engine": "The search engine to use. Supported engines: bing, google. Default is empty",
         "search_engine_token": "The token for the search engine API. Default is empty",
         "model_max_input_length": "The maximum length of the generated code by the model. Default is 6000. This only works when model is specified.",
+        "auto_merge": "Whether to automatically merge the generated code into the existing file. Default is False",
         
     },
     "zh": {
@@ -59,6 +60,7 @@ lang_desc = {
         "search_engine": "要使用的搜索引擎。支持的引擎:bing、google。默认为空",
         "search_engine_token": "搜索引擎API的令牌。默认为空",
         "model_max_input_length": "模型的最大输入长度。默认为6000。仅在指定模型时生效。",
+        "auto_merge": "是否自动将生成的代码合并到现有文件中。默认为False。",
     }
 }
 
@@ -90,6 +92,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--urls", default="", help=desc["urls"])
     parser.add_argument("--search_engine", default="", help=desc["search_engine"])
     parser.add_argument("--search_engine_token", default="",help=desc["search_engine_token"])
+    parser.add_argument("--auto_merge", action='store_true', help=desc["auto_merge"])
     
     args = parser.parse_args()
 
