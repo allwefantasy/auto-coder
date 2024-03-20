@@ -29,13 +29,20 @@ def auto_implement_function_template(instruction:str, content:str)->str:
     pass
 
 @byzerllm.prompt(render="jinja")
-def instruction_template(instruction:str, content:str)->str:
+def instruction_template(instruction:str, content:str,execute:bool=False)->str:
     '''
+    {%- if content %}
     下面是一些文件路径以及每个文件对应的源码：
 
-    {{ content }}    
+    {{ content }}  
+    {%- endif %}     
     
     {{ instruction }}
+
+    {%- if execute %}    
+    生成的代码块需要以 "##File: FILE_PATH"开头，其中 FILE_PATH 是文件路径。
+    生成的代码需要完整。如果文件已经存在，新生成的代码也需要保持完整。
+    {%- endif %}    
         
     '''
     pass
@@ -96,7 +103,7 @@ class ActionTSProject:
 
         if args.template == "common":
             instruction = args.query or "Please implement the following methods"
-            content = instruction_template(instruction=instruction, content=content)
+            content = instruction_template(instruction=instruction, content=content,execute=args.execute)
         elif args.template == "auto_implement":
             content = auto_implement_function_template(instruction="", content=content)
 
@@ -128,7 +135,7 @@ class ActionPyScriptProject:
         args = self.args
         if args.template == "common":
             instruction = args.query or "Please implement the following methods"
-            content = instruction_template(instruction=instruction, content=content)
+            content = instruction_template(instruction=instruction, content=content,execute=args.execute)
         elif args.template == "auto_implement":
             content = auto_implement_function_template(instruction="", content=content)
 
@@ -171,7 +178,7 @@ class ActionPyProject:
 
         if args.template == "common":
             instruction = args.query or "Please implement the following methods"
-            content = instruction_template(instruction=instruction, content=content)
+            content = instruction_template(instruction=instruction, content=content,execute=args.execute)
         elif args.template == "auto_implement":
             content = auto_implement_function_template(instruction="", content=content)
 
@@ -206,7 +213,7 @@ class ActionSuffixProject:
 
         if args.template == "common":
             instruction = args.query or "Please implement the following methods"
-            content = instruction_template(instruction=instruction, content=content)
+            content = instruction_template(instruction=instruction, content=content,execute=args.execute)
         elif args.template == "auto_implement":
             content = auto_implement_function_template(instruction="", content=content)
 

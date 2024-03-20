@@ -1,0 +1,14 @@
+source_dir: /tmp/t-project
+target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
+
+model: qianwen_chat
+model_max_length: 2000
+model_max_input_length: 6000
+anti_quota_limit: 5
+
+search_engine: bing
+search_engine_token: ENV {{BING_SEARCH_TOKEN}}
+
+project_type: py
+query: |
+  在 src/server/server.py 中使用 FastAPI 创建一个web服务。服务的根路径返回 "Hello, World!"。
