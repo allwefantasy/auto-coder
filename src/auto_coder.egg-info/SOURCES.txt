@@ -13,6 +13,7 @@ src/autocoder/common/JupyterClient.py
 src/autocoder/common/ShellClient.py
 src/autocoder/common/__init__.py
 src/autocoder/common/cleaner.py
+src/autocoder/common/code_auto_merge.py
 src/autocoder/common/const.py
 src/autocoder/common/search.py
 src/autocoder/dispacher/__init__.py
@@ -26,3 +27,4 @@ src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py
 src/autocoder/utils/__init__.py
 src/autocoder/utils/rest.py
+tests/test_code_auto_merge.py

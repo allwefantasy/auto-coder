@@ -12,7 +12,7 @@ import hashlib
 class IndexItem(pydantic.BaseModel):
     module_name: str
     symbols: str
-    last_modified: str
+    last_modified: float
     md5: str  # 新增文件内容的MD5哈希值字段
 
 
