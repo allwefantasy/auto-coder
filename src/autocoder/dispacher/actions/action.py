@@ -3,11 +3,12 @@ from autocoder.pyproject import PyProject,Level1PyProject
 from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
 from autocoder.index.index import build_index_and_filter_files
+from autocoder.common.code_auto_merge import CodeAutoMerge
 from typing import Optional,Generator
 import byzerllm
 import os
-import re
 import time
+from loguru import logger
 
 
 @byzerllm.prompt(render="jinja")
@@ -115,6 +116,12 @@ class ActionTSProject:
         with open(args.target_file, "w") as file:
             file.write(content)
 
+        if args.execute and args.auto_merge:
+            logger.info("Auto merge the code...")
+            code_merge = CodeAutoMerge(llm=self.llm,args=self.args)
+            code_merge.merge_code(content=content)
+            
+
 class ActionPyScriptProject:
     def __init__(self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None) -> None:
         self.args = args
@@ -145,6 +152,11 @@ class ActionPyScriptProject:
             content = t[0].output
         with open(self.args.target_file, "w") as file:
             file.write(content)
+
+        if args.execute and args.auto_merge:
+            logger.info("Auto merge the code...")
+            code_merge = CodeAutoMerge(llm=self.llm,args=self.args)
+            code_merge.merge_code(content=content)    
 
 class ActionPyProject:
     def __init__(self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None) -> None:
@@ -189,6 +201,11 @@ class ActionPyProject:
 
         with open(args.target_file, "w") as file:
             file.write(content)
+
+        if args.execute and args.auto_merge:
+            logger.info("Auto merge the code...")
+            code_merge = CodeAutoMerge(llm=self.llm,args=self.args)
+            code_merge.merge_code(content=content)    
         
 class ActionSuffixProject:
     def __init__(self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None) -> None:
@@ -224,6 +241,11 @@ class ActionSuffixProject:
 
         with open(args.target_file, "w") as file:
             file.write(content)
+
+        if args.execute and args.auto_merge:
+            logger.info("Auto merge the code...")
+            code_merge = CodeAutoMerge(llm=self.llm,args=self.args)
+            code_merge.merge_code(content=content)    
 
 class ActionTranslate():
     def __init__(self,args:AutoCoderArgs,llm:Optional[byzerllm.ByzerLLM]=None) -> None:
@@ -288,18 +310,3 @@ class ActionTranslate():
             with open(chinese_filename, "w") as file:        
                 file.write(readme.content)
         return True       
-                 
-
-            # t = self.llm.chat_oai(conversations=[{
-            #     "role": "user",
-            #     "content": content
-            # }], response_class=Translates)         
-            # readmes: Translates = t[0].value
-            # if not readmes:
-            #     # output = t[0].response.output.strip()
-            #     # if output and output.startswith("```json\n"):
-            #     #     output = output[len("```json"):-3]
-            #     #     readmes = Translates.parse_raw(output)                                        
-            #     # else:    
-            #     print(f"Fail to translate the content. {t[0]}")
-            #     raise Exception(f"Fail to translate the content.")  
