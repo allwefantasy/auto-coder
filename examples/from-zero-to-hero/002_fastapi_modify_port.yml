@@ -18,6 +18,4 @@ auto_merge: true
 project_type: py
 
 query: >
-  在 /tmp/t-py/server/server.py 
-  中使用 FastAPI 创建一个web服务。
-  服务的根路径返回 "Hello, World!"。  
+  修改 server.py 中的端口，改成 9001  

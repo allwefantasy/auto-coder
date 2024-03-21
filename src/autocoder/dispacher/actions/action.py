@@ -39,10 +39,22 @@ def instruction_template(instruction:str, content:str,execute:bool=False)->str:
     {%- endif %}     
     
     {{ instruction }}
-     
-    生成的代码块里要添加文件路径的注释，格式为： "##File: FILE_PATH" 开头，其中 FILE_PATH 是文件路径。
-    请确保代码的完整性。    
-        
+
+    你生成的代码要符合这个格式：
+    
+    ```{lang}
+    ##File: {FILE_PATH}
+    {CODE}
+    ```    
+
+    ```{lang}
+    ##File: {FILE_PATH}
+    {CODE}
+    ```
+
+    其中，{lang}是代码的语言，{CODE}是代码的内容, {FILE_PATH} 是文件的路径。
+         
+    请确保代码的完整性。        
     '''
     pass
 

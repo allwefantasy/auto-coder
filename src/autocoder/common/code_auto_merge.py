@@ -4,6 +4,7 @@ from autocoder.common import AutoCoderArgs
 from typing import List
 import pydantic
 import byzerllm
+from loguru import logger
 
 class PathAndCode(pydantic.BaseModel):
     path: str
@@ -36,14 +37,19 @@ class CodeAutoMerge:
 
         return parsed_blocks
 
-    def merge_code(self, text: str):
-        parsed_blocks = self.parse_text(text)
+    def merge_code(self, content: str):
+        codes =  code_utils.extract_code(content)
+        total = 0
+        for (lang,code) in codes:            
+            parsed_blocks = self.parse_text(code)
 
-        for block in parsed_blocks:
-            file_path = block.path
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            for block in parsed_blocks:
+                file_path = block.path
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-            with open(file_path, "w") as f:
-                f.write(block.content)
+                with open(file_path, "w") as f:
+                    logger.info(f"Upsert path: {file_path}")
+                    total += 1
+                    f.write(block.content)
 
-        print(f"Merged {len(parsed_blocks)} code blocks into the project.")
+        logger.info(f"Merged {total} files into the project.")

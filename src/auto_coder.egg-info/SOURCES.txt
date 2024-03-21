@@ -26,5 +26,6 @@ src/autocoder/pyproject/__init__.py
 src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py
 src/autocoder/utils/__init__.py
+src/autocoder/utils/coder.py
 src/autocoder/utils/rest.py
 tests/test_code_auto_merge.py
