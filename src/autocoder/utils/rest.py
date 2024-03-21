@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 
 class HttpDoc:
     def __init__(self, urls: List[str], llm: byzerllm.ByzerLLM):
-        self.urls = urls
+        self.urls = [url.strip() for url in urls if url.strip() != ""]
         self.llm = llm
 
     @byzerllm.prompt(lambda self:self.llm, render="jinja2")

@@ -125,6 +125,9 @@ def main():
                 
         if input_value[0].get("embedding",False) or input_value[0].get("tokenizer",False) or input_value[0].get("apply_chat_template",False) or input_value[0].get("meta",False):
               return True,None
+        if not input_value.pop("human_as_model",None):
+            return True, None
+        
         print(f"Intercepted request to model: {model}")        
         instruction = input_value[0]["instruction"] 
         history = input_value[0]["history"]

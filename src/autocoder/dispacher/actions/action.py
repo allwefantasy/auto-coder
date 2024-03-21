@@ -57,7 +57,9 @@ def translate_readme(content:str,lang:str,instruction:Optional[str]=None)->str:
 
     请将下面的内容翻译成{{ lang }}：
 
-    {{ content }}        
+    {{ content }} 
+
+    现在，请直接开始翻译内容。
     '''
     pass
 
@@ -105,12 +107,17 @@ class ActionTSProject:
             content = instruction_template(instruction=instruction, content=content,execute=args.execute)
         elif args.template == "auto_implement":
             content = auto_implement_function_template(instruction="", content=content)
-
+     
         if args.execute:
+            extra_llm_config = {}
+            
+            if args.human_as_model:
+                extra_llm_config["human_as_model"] = True
+
             t = self.llm.chat_oai(conversations=[{
                 "role": "user",
                 "content": content
-            }])
+            }],llm_config={**extra_llm_config})
             content = t[0].output
 
         with open(args.target_file, "w") as file:
@@ -145,10 +152,16 @@ class ActionPyScriptProject:
             content = auto_implement_function_template(instruction="", content=content)
 
         if args.execute:
+            extra_llm_config = {}
+            
+            if args.human_as_model:
+                extra_llm_config["human_as_model"] = True
+
             t = self.llm.chat_oai(conversations=[{
                 "role": "user",
                 "content": content
-            }])
+            }],llm_config={**extra_llm_config})
+
             content = t[0].output
         with open(self.args.target_file, "w") as file:
             file.write(content)
@@ -192,11 +205,17 @@ class ActionPyProject:
         elif args.template == "auto_implement":
             content = auto_implement_function_template(instruction="", content=content)
 
-        if args.execute:            
+        if args.execute: 
+
+            extra_llm_config = {}
+            
+            if args.human_as_model:
+                extra_llm_config["human_as_model"] = True
+
             t = self.llm.chat_oai(conversations=[{
                 "role": "user",
                 "content": content
-            }])
+            }],llm_config={**extra_llm_config})
             content = t[0].output
 
         with open(args.target_file, "w") as file:
@@ -233,10 +252,15 @@ class ActionSuffixProject:
             content = auto_implement_function_template(instruction="", content=content)
 
         if args.execute:
+            extra_llm_config = {}
+            
+            if args.human_as_model:
+                extra_llm_config["human_as_model"] = True
+
             t = self.llm.chat_oai(conversations=[{
                 "role": "user",
                 "content": content
-            }])
+            }],llm_config={**extra_llm_config})
             content = t[0].output
 
         with open(args.target_file, "w") as file:
