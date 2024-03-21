@@ -3,7 +3,7 @@ target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt
 
 model: qianwen_chat
 model_max_length: 2000
-model_max_input_length: 6000
+model_max_input_length: 100000
 anti_quota_limit: 5
 
 search_engine: bing
@@ -20,6 +20,5 @@ project_type: py
 human_as_model: true
 
 query: >
-  在 read_root 方法前新添加一个方法，
-  对应的rest 路径为 /hello, 
-  输出返回值为  "world"  
+  修改 server.py ，在代码 app = FastAPI()后
+  增加 ray 的初始化连接代码。   

@@ -4,6 +4,7 @@ from typing import List
 from autocoder.common import SourceCode
 import byzerllm
 from bs4 import BeautifulSoup
+from loguru import logger
 
 class HttpDoc:
     def __init__(self, urls: List[str], llm: byzerllm.ByzerLLM):
@@ -29,15 +30,19 @@ class HttpDoc:
             
             if response.status_code == 200:
                 html_content = self.clean_html_keep_text(response.text)
-                if self.llm:                             
-                    main_content = self._extract_main_content(url, html_content)
+                if self.llm:  
+                    try:
+                        main_content = self._extract_main_content(url, html_content)
+                    except Exception as e:
+                        logger.warning(f"Failed to extract main content from URL: {url}. Error: {e}")
+                        main_content = html_content
                 else:                    
                     main_content = response.text   
 
                 source_code = SourceCode(module_name=url, source_code=main_content)
                 source_codes.append(source_code)
             else:
-                print(f"Failed to crawl URL: {url}. Status code: {response.status_code}")
+                logger.warning(f"Failed to crawl URL: {url}. Status code: {response.status_code}")
 
         return source_codes
     
