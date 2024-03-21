@@ -5,6 +5,7 @@ import os
 from typing import Optional, Generator, List, Dict, Any, Callable
 from git import Repo
 import byzerllm
+from autocoder.common.search import Search,SearchEngine
 
 class SuffixProject():
     
@@ -52,7 +53,19 @@ class SuffixProject():
             http_doc = HttpDoc(urls=self.args.urls.split(","), llm=self.llm)
             sources = http_doc.crawl_urls()         
             return sources
-        return []                          
+        return []  
+
+    def get_search_source_codes(self):
+        if self.args.search_engine and self.args.search_engine_token:
+            if self.args.search_engine == "bing":
+                search_engine = SearchEngine.BING
+            else:
+                search_engine = SearchEngine.GOOGLE
+
+            searcher=Search(llm=self.llm,search_engine=search_engine,subscription_key=self.args.search_engine_token)
+            search_context = searcher.answer_with_the_most_related_context(self.args.query)  
+            return [SourceCode(module_name="SEARCH_ENGINE", source_code=search_context)]
+        return []                             
 
     def run(self):
         if self.git_url is not None:
@@ -64,6 +77,11 @@ class SuffixProject():
                 print(f"##File: {code.module_name}")
                 print(code.source_code)
 
+            for code in self.get_search_source_codes():
+                self.sources.append(code)
+                print(f"##File: {code.module_name}")
+                print(code.source_code)    
+
             for code in self.get_source_codes():
                 self.sources.append(code)
                 print(f"##File: {code.module_name}")
@@ -74,6 +92,11 @@ class SuffixProject():
                     self.sources.append(code)
                     file.write(f"##File: {code.module_name}\n")
                     file.write(f"{code.source_code}\n\n")
+
+                for code in self.get_search_source_codes():
+                    self.sources.append(code)
+                    file.write(f"##File: {code.module_name}\n")
+                    file.write(f"{code.source_code}\n\n")    
                     
                 for code in self.get_source_codes():
                     self.sources.append(code)

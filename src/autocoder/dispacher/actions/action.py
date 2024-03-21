@@ -71,7 +71,7 @@ def translate_readme(content:str,lang:str,instruction:Optional[str]=None)->str:
 
     {{ content }} 
 
-    现在，请直接开始翻译内容。
+    现在，请直接开始翻译内容:
     '''
     pass
 
@@ -319,10 +319,8 @@ class ActionTranslate():
                         return False
             return True
         
-        pp = SuffixProject(source_dir=args.source_dir, 
-                            git_url=args.git_url, 
-                            target_file=args.target_file, 
-                            project_type=suffixes,
+        args.project_type = suffixes
+        pp = SuffixProject(args=args, llm=self.llm,
                             file_filter=file_filter                               
                             ) 
         pp.run()                        
