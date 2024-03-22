@@ -1,6 +1,6 @@
 <p align="center">
   <picture>    
-    <img alt="auto-coder" src="https://github.com/allwefantasy/auto-coder/blob/master/logo/auto-coder.jpeg" width=55%>
+    <img alt="auto-coder" src="./logo/auto-coder.jpeg" width=55%>
   </picture>
 </p>
 
