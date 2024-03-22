@@ -100,7 +100,7 @@ byzerllm deploy  --pretrained_model_type saas/qianwen \
 If your SaaS model support the OpenAI SDK, you can use the following command to deploy the model:
 
 ```shell
-byzerllm deploy  --pretrained_model_type saas/offical_openai \
+byzerllm deploy  --pretrained_model_type saas/official_openai \
 --infer_params saas.api_key=xxxxxxx saas.model=yi-34b-chat-0205 saas.base_url=https://api.lingyiwanwu.com/v1 \
 --model yi_chat
 ```
