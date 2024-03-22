@@ -45,3 +45,8 @@ query: >
   修改 server.py ，在代码 app = FastAPI()后
   增加 ray 的初始化连接代码。
 ```
+
+这里，我们可以看到 search_engine 和 search_engine_token 参数。当你使用 ENV {{BING_SEARCH_TOKEN}} AutoCoder 会在你环境变量里找到 BING_SEARCH_TOKEN 的值。如果你不是通过环境变量，你直接复制你的token 替换 "ENV {{BING_SEARCH_TOKEN}}" 就行。
+
+注意， AutoCoder 需要你配置Model才会生效。此外，AutoCoder 还会利用大模型对搜索结果进行筛选，最终可能没有合适的，这个时候就搜索内容就不会影响后续的代码生成。
+

@@ -69,9 +69,7 @@ def translate_readme(content:str,lang:str,instruction:Optional[str]=None)->str:
 
     请将下面的内容翻译成{{ lang }}：
 
-    {{ content }} 
-
-    现在，请直接开始翻译内容:
+    {{ content }}     
     '''
     pass
 

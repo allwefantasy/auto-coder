@@ -1,4 +1,3 @@
-
 <p align="center">
   <picture>    
     <img alt="auto-coder" src="https://github.com/allwefantasy/byzer-llm/blob/master/docs/source/assets/logos/logo.jpg" width=55%>
@@ -10,7 +9,7 @@ Auto-Coder (powered by Byzer-LLM)
 </h3>
 
 <p align="center">
-| <a href="./README.md"><b>English</b></a> | <a href="./README-CN.md"><b>中文</b></a> |
+| <a href="./docs/en"><b>English</b></a> | <a href="./docs/zh"><b>中文</b></a> |
 
 </p>
 
@@ -69,7 +68,7 @@ pip install -U auto-coder
 ray start --head
 ```
 
-## Raw Meta Matchine Installation
+## Setup machine for OpenSource/Private Model
 
 You can use the script provided by Byzer-LLM to setup the nvidia-driver/cuda environment:
 
