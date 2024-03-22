@@ -147,24 +147,24 @@ Since the provided context information is not related to creating a TypeScript a
 To create a project composed of TypeScript and ReactJS in the `/tmp/` directory and name it `t-project`, please follow these steps:
 
 1. First, please ensure that you have globally installed the Node.js package manager (npm) and the scaffolding tool for creating React applications, `create-react-app`. If not installed, you can install it with the following command:
-   ```
+   \```
    npm install -g create-react-app
-   ```
+   \```
 
 2. Then, since `create-react-app` does not support TypeScript by default, you need to install the TypeScript version of `create-react-app`, which is `react-scripts-ts`. However, please note that `react-scripts-ts` is no longer maintained, and the latest recommended practice is to directly use `create-react-app` and specify the TypeScript template with the `--template typescript` parameter:
 
-   ```sh
+   \```sh
    npx create-react-app t-project --template typescript
-   ```
+   \```
 
    This command will create a new React project named `t-project` in the `/tmp/` directory and configure it to use TypeScript.
 
 3. After creation, enter the project directory and start the development server:
 
-   ```sh
+   \```sh
    cd /tmp/t-project
    npm start
-   ```
+   \```
 
 This successfully creates a TypeScript and ReactJS-based project in the `/tmp/` directory. [Information is missing on] how to specifically use the command line to create a project in the Linux system, as the context does not provide relevant guidance.
 
@@ -172,7 +172,7 @@ The user's question is: Help me create a typescript + reactjs project in the /tm
 
 Each time a step is generated, ask me if I want to continue. When I reply "continue," continue generating the next step.
 
-Assistant: ```json
+Assistant: \```json
 {
   "code": "npm install -g create-react-app",
   "lang": "shell",
@@ -183,12 +183,12 @@ Assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 Please confirm whether the `create-react-app` tool is installed globally. If confirmed or completed, please reply "continue."
 
 User: Continue
 
-Assistant: ```json
+Assistant: \```json
 {
   "code": "npx create-react-app t-project --template typescript",
   "lang": "shell",
@@ -199,12 +199,12 @@ Assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 Please execute this command in the `/tmp` directory to create a ReactJS project based on TypeScript. If the project creation is completed, please reply "continue."
 
 User: Continue
 
-Assistant: ```json
+Assistant: \```json
 {
   "code": "cd t-project",
   "lang": "shell",
@@ -215,7 +215,7 @@ Assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 Please switch to the newly created `t-project` directory in the terminal. If the switch is successful, please reply "continue" to proceed to the next step, which is to start the project development server.
 
 User: Continue
