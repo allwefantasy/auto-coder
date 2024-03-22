@@ -13,7 +13,7 @@ datasets
 langchain
 paramiko
 einops
-tqdm==4.62.3
+tqdm
 loguru
 tensorboard
 pyjava==0.6.15
@@ -28,6 +28,7 @@ dashscope
 tiktoken
 jupyter_client
 prompt-toolkit
+llama_index
 # selenium
 # dependencies only for sparkdesk
 # websockets

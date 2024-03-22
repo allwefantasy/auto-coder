@@ -22,7 +22,7 @@ Requires-Dist: datasets
 Requires-Dist: langchain
 Requires-Dist: paramiko
 Requires-Dist: einops
-Requires-Dist: tqdm==4.62.3
+Requires-Dist: tqdm
 Requires-Dist: loguru
 Requires-Dist: tensorboard
 Requires-Dist: pyjava==0.6.15
@@ -37,6 +37,7 @@ Requires-Dist: dashscope
 Requires-Dist: tiktoken
 Requires-Dist: jupyter_client
 Requires-Dist: prompt-toolkit
+Requires-Dist: llama_index
 Requires-Dist: websocket-client
 Requires-Dist: wudao
 Requires-Dist: SwissArmyTransformer
@@ -140,6 +141,14 @@ Try to use the following command to deploy Qwen-Max:
 byzerllm deploy  --pretrained_model_type saas/qianwen \
 --infer_params saas.api_key=xxxxxxx saas.model=qwen-max \
 --model qianwen_chat 
+```
+
+If your SaaS model support the OpenAI SDK, you can use the following command to deploy the model:
+
+```shell
+byzerllm deploy  --pretrained_model_type saas/official_openai \
+--infer_params saas.api_key=xxxxxxx saas.model=yi-34b-chat-0205 saas.base_url=https://api.lingyiwanwu.com/v1 \
+--model yi_chat
 ```
 
 Then you can use the following command to test the model:
