@@ -385,7 +385,7 @@ cd /tmp/
 npx create-react-app t-project --template typescript
 Output:
 
---------------------
+\--------------------
 ```
 
 It can be seen that AutoCoder automatically searches for articles and found a blog post on CSDN: https://blog.csdn.net/weixin_42429718/article/details/117402097 which seems quite good, so it adopted its solution as a reference, and finally produced specific execution steps.

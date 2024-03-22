@@ -324,16 +324,16 @@ npm install -g create-react-app
 
 \**步骤 2：在 /tmp/ 目录下创建名为 t-project 的 TypeScript + ReactJS 项目**
 
-```bash
-# 首先，确保你位于 /tmp/ 目录下
+\```bash
+\# 首先，确保你位于 /tmp/ 目录下
 cd /tmp/
 
-# 使用npx创建新项目，并指定TypeScript模板
+\# 使用npx创建新项目，并指定TypeScript模板
 npx create-react-app t-project --template typescript
 
-# 或者，如果你习惯使用yarn进行包管理
+\# 或者，如果你习惯使用yarn进行包管理
 yarn create react-app t-project --template typescript
-```
+\```
 
 以上步骤完成后，你将在 `/tmp/` 目录下得到一个名为 `t-project` 的React项目，该项目已集成TypeScript支持。
 
@@ -387,7 +387,7 @@ cd /tmp/
 npx create-react-app t-project --template typescript
 Output:
 
---------------------
+\--------------------
 ```
 
 可以看到，AutoCoder 会自动搜索文章，并且找到了 CSDN的一篇博文：https://blog.csdn.net/weixin_42429718/article/details/117402097 觉得很不错，所以采用了他的方案作为参考，最后产生具体的执行步骤。
