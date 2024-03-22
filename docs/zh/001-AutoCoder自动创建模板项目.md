@@ -52,28 +52,28 @@ user:
 根据用户的问题，创建一个符合 pip 标准的 Python 项目不需要创建 conda/virtualenv 环境，但需要初始化项目结构，包括 setup.py、requirements.txt 和项目的目录结构。以下是详细的执行步骤：
 
 1. **创建项目目录**：
-   ```bash
+   \```bash
    mkdir /tmp/t-py
    cd /tmp/t-py
-   ```
+   \```
 
 2. **创建项目文件夹结构**：
    在 `/tmp/t-py` 下创建 `t_py`（假设这是你的实际Python包名称）目录和 `src` 目录，以及其他可能需要的如 `tests` 目录等。
-   ```bash
+   \```bash
    mkdir t_py
    mkdir -p src/t_py
    mkdir tests
-   ```
+   \```
 
 3. **在 `src/t_py` 下创建一个 __init__.py 文件**：
-   ```bash
+   \```bash
    touch src/t_py/__init__.py
-   ```
+   \```
    这个文件是标识该目录为 Python 包所必需的。
 
 4. **创建 setup.py 文件**：
    在 `/tmp/t-py` 根目录下创建一个 `setup.py` 文件，用于定义项目信息及依赖项：
-   ```bash
+   \```bash
    cat << EOF > setup.py
    from setuptools import setup, find_packages
 
@@ -99,25 +99,25 @@ user:
        python_requires='>=3.6',
    )
    EOF
-   ```
+   \```
    请根据实际情况修改上述 `setup.py` 中的项目信息。
 
 5. **创建 requirements.txt 文件**：
    在 `/tmp/t-py` 根目录下创建一个 `requirements.txt` 文件，列出项目所需的依赖包：
-   ```bash
+   \```bash
    touch requirements.txt
-   ```
+   \```
    如果有具体的依赖包，可以打开此文件并添加它们的版本号，例如：
-   ```
+   \```
    numpy==1.23.0
    pandas==1.4.3
-   ```
+   \```
 
 总计共5步。
 
 每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。
 
-assistant: ```json
+assistant: \```json
 {
   "current_step": 1,
   "total_steps": 5,
@@ -128,12 +128,12 @@ assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 请确认是否已执行此步骤并准备继续？
 
 user: 继续
 
-assistant: ```json
+assistant: \```json
 {
   "current_step": 2,
   "total_steps": 5,
@@ -144,12 +144,12 @@ assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 请确认是否已执行此步骤并准备继续？
 
 user: 继续
 
-assistant: ```json
+assistant: \```json
 {
   "current_step": 3,
   "total_steps": 5,
@@ -160,12 +160,12 @@ assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 请确认是否已执行此步骤并准备继续？
 
 user: 继续
 
-assistant: ```json
+assistant: \```json
 {
   "current_step": 4,
   "total_steps": 5,
@@ -176,12 +176,12 @@ assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 请确认是否已执行此步骤并准备继续？
 
 user: 继续
 
-assistant: ```json
+assistant: \```json
 {
   "current_step": 5,
   "total_steps": 5,
@@ -192,7 +192,7 @@ assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 请确认是否已执行此步骤并准备继续？
 
 user: 继续
@@ -314,12 +314,12 @@ user:
 
 **步骤 1：全局安装Create React App**
 
-```bash
+\```bash
 # 使用npm全局安装Create React App
 npm install -g create-react-app
 
 # 或者，如果你的系统中已经配置了yarn，使用yarn全局安装
-yarn global add create-react-app
+\yarn global add create-react-app
 ```
 
 **步骤 2：在 /tmp/ 目录下创建名为 t-project 的 TypeScript + ReactJS 项目**
@@ -339,7 +339,7 @@ yarn create react-app t-project --template typescript
 
 每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。
 
-assistant: ```json
+assistant: \```json
 {
   "current_step": 1,
   "total_steps": 2,
@@ -350,13 +350,13 @@ assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 
 请确认，是否已成功执行了第一步（全局安装Create React App），如果完成，请回复“继续”，我将为您生成下一个执行步骤。
 
 user: 继续
 
-assistant: ```json
+assistant: \```json
 {
   "current_step": 2,
   "total_steps": 2,
@@ -367,7 +367,7 @@ assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 
 请确认您已成功执行了上一步并现在位于 `/tmp/` 目录下。如果完成，请回复“继续”，我将为您生成最后一个执行步骤来创建名为 `t-project` 的 TypeScript + ReactJS 项目。
 

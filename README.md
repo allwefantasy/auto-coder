@@ -377,24 +377,24 @@ Conda环境: byzerllm-dev
 要在Linux系统的 `/tmp/` 目录下创建一个由TypeScript和ReactJS组成的项目，并命名为`t-project`，请按照以下步骤操作：
 
 1. 首先，请确保您已全局安装了Node.js包管理器（npm）以及创建React应用的脚手架工具 `create-react-app`。如果尚未安装，可以通过以下命令安装：
-   ```
+   \```
    npm install -g create-react-app
-   ```
+   \```
 
 2. 然后，由于`create-react-app`默认不支持 TypeScript，需要安装 `create-react-app` 的 TypeScript 版本，即 `react-scripts-ts`，但请注意，`react-scripts-ts` 已不再维护，最新推荐做法是直接使用 `create-react-app` 并通过 `--template typescript` 参数指定 TypeScript 模板：
 
-   ```sh
+   \```sh
    npx create-react-app t-project --template typescript
-   ```
+   \```
 
    这条命令会在 `/tmp/` 目录下创建名为 `t-project` 的新React项目，并配置为使用TypeScript。
 
 3. 创建完成后，进入项目目录并启动开发服务器：
 
-   ```sh
+   \```sh
    cd /tmp/t-project
    npm start
-   ```
+   \```
 
 这样就成功在 `/tmp/` 目录下创建了一个基于TypeScript和ReactJS的项目。[information is missing on]如何具体使用命令行在Linux系统中创建项目，因为上下文没有提供相关指导。
 
@@ -402,7 +402,7 @@ Conda环境: byzerllm-dev
 
 每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。        
 
-assistant: ```json
+assistant: \```json
 {
   "code": "npm install -g create-react-app",
   "lang": "shell",
@@ -413,12 +413,12 @@ assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 请确认是否已安装全局的 `create-react-app` 工具。如果确认或执行完成，请回复“继续”。
 
 user: 继续
 
-assistant: ```json
+assistant: \```json
 {
   "code": "npx create-react-app t-project --template typescript",
   "lang": "shell",
@@ -429,12 +429,12 @@ assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 请在 `/tmp` 目录下执行此命令以创建基于 TypeScript 的 ReactJS 项目。如果项目创建完成，请回复“继续”。
 
 user: 继续
 
-assistant: ```json
+assistant: \```json
 {
   "code": "cd t-project",
   "lang": "shell",
@@ -445,10 +445,10 @@ assistant: ```json
   "timeout": null,
   "ignore_error": false
 }
-```
+\```
 请在终端中切换到刚创建的 `t-project` 目录。若切换成功，请回复“继续”以进行下一步操作，即启动项目开发服务器。
 
 user: 继续
-```
+\```
 
 There are three steps to create the new project, and the ShellClient in auto-coder will finally execute the three steps.
