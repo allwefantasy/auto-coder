@@ -254,7 +254,7 @@ Output:
 
 The automatically created project directory is as follows:
 
-![](./images/image2.png)
+![](../images/image2.png)
 
 Note that due to the variability and probabilistic nature of the model, your final result may differ slightly from mine. But overall, it is able to correctly create the corresponding directory structure.
 
@@ -392,7 +392,7 @@ It can be seen that AutoCoder automatically searches for articles and found a bl
 
 The final generated directory:
 
-![](./images/image3.png)
+![](../images/image3.png)
 
 Of course, if you find a suitable article yourself, you can also configure it through the urls parameter, so AutoCoder can complete the project creation by referring to the articles you provide.
 

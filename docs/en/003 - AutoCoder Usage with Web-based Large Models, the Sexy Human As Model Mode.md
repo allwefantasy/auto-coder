@@ -41,25 +41,25 @@ auto-coder --file ./examples/from-zero-to-hero/003_human_as_model.yml
 
 At this point, the terminal automatically enters interactive mode:
 
-![](./images/image5.png)
+![](../images/image5.png)
 
 It prompts you that the problem has been saved to the output.txt file, and you are asked to respond to this question. At this time, I paste the question to Claude:
 
-![](./images/image6.png)
+![](../images/image6.png)
 
 Claude generates the following code:
 
-![](./images/image7.png)
+![](../images/image7.png)
 
 Now we copy it, making sure to copy the entire response, not just the code. After copying, it looks like this:
 
-![](./images/image8.png)
+![](../images/image8.png)
 
 At the end, EOF indicates that you have finished pasting, and then press Enter.
 
 When you open the `server.py` file again, the content has been updated:
 
-![](./images/image9.png)
+![](../images/image9.png)
 
 We have added a new interface.
 
@@ -67,7 +67,7 @@ As your project's completion level increases, the model's generative capabilitie
 
 We can also see that the requirements for a single request should not be too large, otherwise, the results may become uncontrollable. In the future, developing code will be a process like this:
 
-![](./images/image10.png)
+![](../images/image10.png)
 
 Each requirement is a piece of text that everyone can understand. How much change has been made and what each change entails are essentially textualized, which is a significant advantage for both product development and research and development.
 

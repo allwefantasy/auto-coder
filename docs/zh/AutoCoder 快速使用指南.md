@@ -89,7 +89,7 @@ auto-coder --file test.yml
 
 然后将 output.txt 拖拽到大模型web界面，点击执行，大模型就开始干活了。
 
-![](./images/image1.png)
+![](../images/image1.png)
 
 可以看到，他做的很细致，会告诉你新的文件路径是什么，以及对应的代码。你只需要拷贝黏贴到你的项目里即可。
 

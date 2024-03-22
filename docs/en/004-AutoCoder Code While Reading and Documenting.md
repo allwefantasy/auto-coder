@@ -136,7 +136,7 @@ http://127.0.0.1:9001/llm?query=你好&model=qianwen_chat
 
 Response:
 
-![](./images/image11.png)
+![](../images/image11.png)
 
 Congratulations, you have successfully completed a large model service!
 

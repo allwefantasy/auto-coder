@@ -41,25 +41,25 @@ auto-coder --file ./examples/from-zero-to-hero/003_human_as_model.yml
 
 这个时候终端会自动进入交互模式：
 
-![](./images/image5.png)
+![](../images/image5.png)
 
 他提示你，他已经把问题保存到了 output.txt 文件里了，你来回答下这个问题。我这个时候把问题贴给 Claude:
 
-![](./images/image6.png)
+![](../images/image6.png)
 
 Calude 生成了下面的代码：
 
-![](./images/image7.png)
+![](../images/image7.png)
 
 现在我们复制下，注意要复制整个回复，而不是复制代码，复制完成后是这样子的：
 
-![](./images/image8.png)
+![](../images/image8.png)
 
 在最后EOF 表示你黏贴完了，再按回车。
 
 这个时候你再打开 server.py 文件，内容已经更新了：
 
-![](./images/image9.png)
+![](../images/image9.png)
 
 我们新增了一个新的接口。
 
@@ -67,7 +67,7 @@ Calude 生成了下面的代码：
 
 我们也可以看到，单次需求不要太大，否则会导致结果不可控。未来开发代码，会是这么一个流程：
 
-![](./images/image10.png)
+![](../images/image10.png)
 
 每个需求都是一段文本，每个人都看得懂。做了多少变更，每个变更是什么，基本上都文本化了，对于产品，或者研发而言都是很大的利好。
 

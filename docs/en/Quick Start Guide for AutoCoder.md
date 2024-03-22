@@ -88,7 +88,7 @@ auto-coder --file test.yml
 
 Then drag and drop output.txt onto the large model web interface, click to execute, and the large model starts working.
 
-![](./images/image1.png)
+![](../images/image1.png)
 
 You can see that it is very detailed, telling you what the new file path is and the corresponding code. You just need to copy and paste it into your project.
 

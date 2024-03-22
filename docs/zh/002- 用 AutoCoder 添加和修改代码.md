@@ -74,7 +74,7 @@ INFO:     127.0.0.1:33516 - "GET /favicon.ico HTTP/1.1" 404 Not Found
 
 访问下：
 
-![](./images/image4.png)
+![](../images/image4.png)
 
 成功搞定。
 
