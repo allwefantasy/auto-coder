@@ -50,9 +50,6 @@ class HttpDoc:
                 """TextFile parser."""
 
                 def __init__(self) -> None:
-                    """
-                    Initialize PDFReader.
-                    """
                     pass
 
                 def load_data(
