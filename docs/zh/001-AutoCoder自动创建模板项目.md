@@ -312,7 +312,7 @@ user:
 
 总共分为两步来完成。
 
-**步骤 1：全局安装Create React App**
+\**步骤 1：全局安装Create React App**
 
 \```bash
 # 使用npm全局安装Create React App
@@ -322,7 +322,7 @@ npm install -g create-react-app
 \yarn global add create-react-app
 ```
 
-**步骤 2：在 /tmp/ 目录下创建名为 t-project 的 TypeScript + ReactJS 项目**
+\**步骤 2：在 /tmp/ 目录下创建名为 t-project 的 TypeScript + ReactJS 项目**
 
 ```bash
 # 首先，确保你位于 /tmp/ 目录下
@@ -374,16 +374,16 @@ assistant: \```json
 user: 继续
 
 Shell Command:
-# 使用npm全局安装Create React App
+\# 使用npm全局安装Create React App
 npm install -g create-react-app
 Output:
 
 --------------------
 Shell Command:
-# 首先，确保你位于 /tmp/ 目录下
+\# 首先，确保你位于 /tmp/ 目录下
 cd /tmp/
 
-# 使用npx创建新项目，并指定TypeScript模板
+\# 使用npx创建新项目，并指定TypeScript模板
 npx create-react-app t-project --template typescript
 Output:
 
