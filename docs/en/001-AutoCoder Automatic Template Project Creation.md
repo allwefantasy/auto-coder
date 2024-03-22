@@ -315,23 +315,23 @@ The task is divided into two steps.
 \**Step 1: Globally install Create React App**
 
 \```bash
-# Use npm to globally install Create React App
+\# Use npm to globally install Create React App
 npm install -g create-react-app
 
-# Or, if you have yarn configured in your system, use yarn to globally install
+\# Or, if you have yarn configured in your system, use yarn to globally install
 yarn global add create-react-app
 \```
 
 \**Step 2: Create a TypeScript + ReactJS project named t-project in the /tmp/ directory**
 
 \```bash
-# First, ensure you are in the /tmp/ directory
+\# First, ensure you are in the /tmp/ directory
 cd /tmp/
 
-# Use npx to create a new project and specify the TypeScript template
+\# Use npx to create a new project and specify the TypeScript template
 npx create-react-app t-project --template typescript
 
-# Or, if you are accustomed to using yarn for package management
+\# Or, if you are accustomed to using yarn for package management
 yarn create react-app t-project --template typescript
 \```
 
