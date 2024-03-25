@@ -1,8 +1,15 @@
-# 001-AutoCoder Automatic Template Project Creation
+# 001-AutoCoder Automatic Project Template Creation
 
-The AutoCoder series tutorial begins. As programmers, we should start by creating a project. AutoCoder provides the ability to automatically create projects.
+The AutoCoder tutorial series begins. As a programmer, the first step is to create a project. AutoCoder provides the capability to automate project creation.
 
-However, it's important to note that because each model's capabilities are different, and even the same model may not provide stable answers every time, this part of the function is not stable. Here, we still recommend using Qwen-Max to complete the following tasks.
+However, it is important to note here that, because each model's capabilities differ and even the same model may not give consistent answers every time, **this feature is not stable**.
+
+We still recommend Qwen-Max (who is also not very stable) to complete the following tasks.
+
+In fact, most people develop existing projects, and creating new projects is relatively rare. Moreover, many projects actually have tools for automated creation. This section is just a demonstration of AutoCoder's
+problem decomposition, self-planning, and execution abilities.
+
+It is recommended to directly proceed to [002- Adding and Modifying Code with AutoCoder](./002-%20Adding%20and%20Modifying%20Code%20with%20AutoCoder.md) to start.
 
 ## Practical Exercise One: Create a Python Project
 
