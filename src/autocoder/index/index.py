@@ -51,7 +51,9 @@ class IndexManager:
         
         {{ file_paths }}
 
-        如果没有相关的文件，返回空即可
+        注意，
+        1. 找到的文件名必须出现在上面的文件列表中
+        2. 如果没有相关的文件，返回空即可
         '''
         
 
@@ -194,12 +196,14 @@ class IndexManager:
         
         {{ indices }}
 
-        请参考上面的信息，根据用户的问题寻找相关文件。如果没有相关的文件，返回空即可。
+        请参考上面的信息，根据用户的问题寻找相关文件。如果没有相关的文件，返回空即可。        
 
         用户的问题是：{{ query }}
-        '''
 
-    
+        注意，
+        1. 找到的文件名必须出现在上面的文件列表中
+        2. 如果没有相关的文件，返回空即可
+        '''
 
 
 def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode])->str:
