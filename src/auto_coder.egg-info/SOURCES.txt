@@ -15,6 +15,7 @@ src/autocoder/common/__init__.py
 src/autocoder/common/cleaner.py
 src/autocoder/common/code_auto_merge.py
 src/autocoder/common/const.py
+src/autocoder/common/git_utils.py
 src/autocoder/common/search.py
 src/autocoder/dispacher/__init__.py
 src/autocoder/dispacher/actions/__init__.py
