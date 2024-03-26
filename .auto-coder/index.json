@@ -10,24 +10,24 @@
     "md5": "4e02680b18c3271c51c10a5202b6577d"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/auto_coder.py": {
-    "symbols": "符号类型: 变量\n符号名称: lang_desc, system_lang, lang, desc\n\n符号类型: 函数\n符号名称: parse_args\n\n符号类型: 导入语句\n符号名称: \n1. import byzerllm\n2. from typing import List, Dict, Any, Optional\n3. import argparse\n4. from autocoder.common import AutoCoderArgs\n5. from autocoder.dispacher import Dispacher\n6. import yaml\n7. import locale\n8. import os\n9. from autocoder.common import git_utils\n10. from jinja2 import Template\n11. import hashlib",
-    "last_modified": 1711418122.9601579,
-    "md5": "5a159fcb531d00fe0044f0b4d063d152"
+    "symbols": "该代码是一个Python脚本，用于实现一个自动编码器（AutoCoder）工具，它通过命令行参数接收输入并根据指定的配置与模型进行交互。以下是代码逻辑的大致解读：\n\n1. `parse_args` 函数使用argparse库解析命令行参数，并根据系统默认语言设置显示相应的描述信息。支持多种命令模式，如“revert”和“store”，以及各种参数，如源代码目录、Git URL、目标文件、查询语句、模板类型、项目类型等。\n\n2. `main` 函数是程序的入口点，首先调用`parse_args`获取解析后的参数。如果指定了`--file`参数，将读取该文件中的配置信息，并替换环境变量表达式为实际环境变量值。\n\n3. 如果执行的是`revert`命令，会根据参数恢复Git仓库中的文件到特定版本。\n\n4. 若执行`store`命令，则初始化一个数据库存储对象并展示token计数器信息。\n\n5. 如果指定了`model`参数，程序连接到ByzerLLM集群，并实例化一个ByzerLLM对象。若启用了`human_as_model`选项，将拦截请求并把指令写入到目标文件中。\n\n6. 在代码的最后一部分（未完整给出），似乎是一个待完成的功能，提示用户根据给定的文件内容提取特定类型的符号（函数、类、变量和导入语句），并将结果按照特定格式返回。\n\n总之，这个脚本主要用于通过命令行接口与AI模型交互，进行代码生成、版本控制和符号提取等相关操作。",
+    "last_modified": 1711458798.3850129,
+    "md5": "377e23c6b610b82596597a961d7e6ce4"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/version.py": {
-    "symbols": "根据提供的源代码，该文件中没有函数和类定义，也没有导入语句。唯一出现的是一个变量：\n\n符号类型: 变量\n符号名称: __version__\n\n所以，按照要求的格式返回结果为：\n\n变量: __version__",
-    "last_modified": 1711108603.2659726,
-    "md5": "b3622ac5145d82168b82a3bf657fdba8"
+    "symbols": "根据提供的源代码，这个文件中没有函数和类的定义，也没有导入语句。它仅包含一个变量：\n\n符号类型: 变量\n符号名称: __version__\n\n所以，按照要求的格式返回结果为：\n\n变量: __version__",
+    "last_modified": 1711419427.4664032,
+    "md5": "9cd80a73a4e4b890dc793cb72cbbd4a0"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/suffixproject/__init__.py": {
-    "symbols": "函数:\n- `__init__`\n- `output`\n- `is_suffix_file`\n- `read_file_content`\n- `convert_to_source_code`\n- `get_source_codes`\n- `get_rest_source_codes`\n- `get_search_source_codes`\n- `run`\n- `clone_repository`\n\n类:\n- `SuffixProject`\n\n变量:\n- `args`\n- `directory`\n- `git_url`\n- `target_file`\n- `project_type`\n- `suffixs`\n- `file_filter`\n- `sources`\n- `llm`\n\n导入语句:\n- `from autocoder.common import SourceCode, AutoCoderArgs`\n- `from autocoder import common as FileUtils`\n- `from autocoder.utils.rest import HttpDoc`\n- `import os`\n- `from typing import Optional, Generator, List, Dict, Any, Callable`\n- `from git import Repo`\n- `import byzerllm`\n- `from autocoder.common.search import Search, SearchEngine`",
-    "last_modified": 1711019938.481263,
-    "md5": "a5da6c21ca231ebe8c62d2d0972d4cdb"
+    "symbols": "函数:\n- `__init__`\n- `output`\n- `is_suffix_file`\n- `read_file_content`\n- `convert_to_source_code`\n- `get_source_codes`\n- `get_rest_source_codes`\n- `get_search_source_codes`\n- `run`\n- `clone_repository`\n\n类:\n- `SuffixProject`\n\n变量:\n- `args`\n- `directory`\n- `git_url`\n- `target_file`\n- `project_type`\n- `suffixs`\n- `file_filter`\n- `sources`\n- `llm`\n\n导入语句:\n- `from autocoder.common import SourceCode, AutoCoderArgs`\n- `from autocoder import common as FileUtils`\n- `from autocoder.utils.rest import HttpDoc`\n- `import os`\n- `from typing import Optional, Generator, List, Dict, Any, Callable`\n- `import git`\n- `import byzerllm`\n- `from autocoder.common.search import Search, SearchEngine`\n- `from loguru import logger`",
+    "last_modified": 1711454421.3468199,
+    "md5": "e41c81fe72f7eedd4bd70ae981c65225"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/index/index.py": {
-    "symbols": "该代码定义了一个`IndexManager`类，用于管理和构建源代码索引，并通过自然语言模型（如ByzerLLM）来处理和解析代码以提取符号信息。主要功能如下：\n\n1. `IndexItem`、`TargetFile`和`FileList`为数据模型类，分别用于存储索引项、目标文件信息和文件列表。\n\n2. `IndexManager`类初始化时接收一个自然语言模型实例`llm`，源代码列表`sources`以及自动编码器参数`args`，并设置索引目录及索引文件路径。\n\n3. `_get_related_files`方法是一个装饰器函数，通过自然语言模型提示用户根据给定的索引信息和文件路径找出相关文件列表。\n\n4. `get_all_file_symbols`方法同样使用自然语言模型提示用户从指定文件的源代码中提取出函数、类、变量和导入语句等符号信息。\n\n5. `build_index`方法遍历源代码文件，计算每个文件的MD5哈希值，比较是否已存在索引中且内容未改变，如果文件有更新，则调用`get_all_file_symbols`方法获取符号信息并更新索引文件。\n\n6. `read_index`方法读取并解析索引文件，将其中的数据转换为`IndexItem`对象列表。\n\n7. `_get_meta_str`方法将索引信息分块输出，以便在与自然语言模型交互时避免一次性输入过大的数据量。\n\n8. `get_related_files`方法通过循环调用自然语言模型处理每一块索引信息，查找与给定文件路径相关的文件列表。\n\n注意：代码中缺少了`_get_target_files_by_query`方法的实现，但从上下文推测，这个方法可能也是通过自然语言模型查询索引以获取满足特定条件的目标文件列表。",
-    "last_modified": 1711377637.3445458,
-    "md5": "4606f05ef2ccaa48ffd45169ebae6878"
+    "symbols": "`IndexManager` 类主要用于管理和构建源代码索引，通过与 Byzer LLM（Large Language Model）交互来实现对源代码中符号信息的提取和相关文件查找功能。类中包含以下方法：\n\n1. **初始化方法 `__init__`**：接收参数 `llm` (ByzerLLM 对象)，`sources` (SourceCode 列表) 和 `args` (AutoCoderArgs 对象)，并设置类的成员变量，包括索引目录、索引文件路径等。\n\n2. **`_get_related_files` 方法**：通过 ByzerLLM 提供的 prompt 功能，根据给定的索引信息和文件路径，找出与指定文件相关的其他文件，并以 FileList 类型返回。\n\n3. **`get_all_file_symbols` 方法**：同样利用 ByzerLLM 的 prompt 功能，从指定文件的源代码中提取出函数、类、变量及所有导入语句等符号信息，并按照特定格式返回。\n\n4. **`build_index` 方法**：遍历源代码列表，计算每个文件的 MD5 哈希值，若文件内容发生变化，则更新索引数据（包括符号信息、最后修改时间及 MD5 哈希值），并将更新后的索引信息写入索引文件。\n\n5. **`read_index` 方法**：从索引文件中读取并解析索引数据，将每条索引转换为 IndexItem 对象并存入列表后返回。\n\n6. **`_get_meta_str` 方法**：将索引信息生成便于分块处理的字符串形式，以便于在模型限制下分批查询相关文件。\n\n7. **`get_related_files` 方法**：根据传入的文件路径列表，通过 `_get_meta_str` 方法分块查询相关文件，并整合所有查询结果，最终返回一个 FileList 对象。\n\n8. **`get_target_files_by_query` 方法**：此方法未在给出的源码中完全定义，但根据其命名和上下文推测，可能是根据用户提供的查询条件来查找目标文件，并返回一个 FileList 对象。不过请注意，源代码中存在拼写错误（缺少了 `_get_target_files_by_query` 完整定义）。",
+    "last_modified": 1711459351.99805,
+    "md5": "1d57a93cfd85406c49ce4ed33f3e1a06"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/JupyterClient.py": {
     "symbols": "导入语句: from jupyter_client import KernelManager\n导入语句: import threading\n导入语句: import re\n导入语句: from autocoder.common.const import *\n\n函数: clean_output\n函数: add_and_run\n函数: close\n函数: __deepcopy__\n\n类: JupyterNotebook\n\n变量: self.km\n变量: self.kc\n变量: _\n变量: outputs\n变量: error_flag\n变量: thread\n变量: msg_id\n变量: msg\n变量: msg_type\n变量: content\n变量: error_msg",
@@ -140,9 +140,9 @@
     "md5": "8693afc1ed9106a61db821c9da0ad070"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/run.py": {
-    "symbols": " 函数: main\n类: AutoCoderArgs, Dispacher, ByzerLLM\n变量: args, config, value, llm, max_output_length, extra_generation_params\n导入语句: byzerllm, typing, argparse, autocoder.common, autocoder.dispacher, yaml",
-    "last_modified": 1710416973.850808,
-    "md5": "a4c14c22ad743bd85ad327e265d6f616"
+    "symbols": "导入语句:\n```python\nimport byzerllm\nfrom typing import List, Dict, Any, Optional\nimport argparse\nfrom autocoder.common import AutoCoderArgs\nfrom autocoder.dispacher import Dispacher\n```\n\n函数:\n```\n函数: main\n```\n\n变量:\n```\n变量: file\n```",
+    "last_modified": 1711449836.811936,
+    "md5": "3c479f948d8d8a7a030bd5887db72eec"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/dispacher/actions/action.py": {
     "symbols": "根据提供的源码，该文件定义了一些函数、类和导入语句，但没有直接提供对变量或函数、类等符号的提取逻辑。为了获取所需的符号类型（函数、类、变量和导入语句），通常需要使用Python的`ast`模块或其他类似工具来解析源代码。\n\n然而，基于现有代码，无法直接给出符号列表。若要实现这一功能，可以编写一个辅助函数，利用`ast`模块遍历并提取相关符号信息。\n\n以下是一个简化的示例，展示如何通过`ast`模块提取这些符号：\n\n```python\nimport ast\n\ndef extract_symbols_from_source(source_code: str) -> dict:\n    symbols_by_type = {\n        '函数': [],\n        '类': [],\n        '变量': [],\n        '导入语句': []\n    }\n\n    tree = ast.parse(source_code)\n\n    for node in ast.walk(tree):\n        if isinstance(node, ast.FunctionDef):\n            symbols_by_type['函数'].append(node.name)\n        elif isinstance(node, ast.ClassDef):\n            symbols_by_type['类'].append(node.name)\n        elif isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):\n            symbols_by_type['变量'].append(node.targets[0].id)\n        elif isinstance(node, ast.ImportFrom) or isinstance(node, ast.Import):\n            for alias in node.names:\n                if alias.asname:\n                    symbols_by_type['导入语句'].append(alias.asname)\n                else:\n                    symbols_by_type['导入语句'].append(alias.name)\n\n    for key, value in symbols_by_type.items():\n        if not value:\n            symbols_by_type[key] = \"没有任何符号\"\n\n    return symbols_by_type\n\n# 使用示例\nsource_code = open('/path/to/source.py', 'r').read()\nsymbols = extract_symbols_from_source(source_code)\nfor symbol_type, names in symbols.items():\n    print(f\"{symbol_type}: {', '.join(names)}\")\n```\n\n请注意，上述代码仅作为示例，并未在提供的源码文件中实际执行。若要在该文件中实现符号提取，需要将其整合到合适的位置，并处理可能存在的复杂情况（例如变量赋值、导入别名等）。",
@@ -173,5 +173,25 @@
     "symbols": "函数:\n- get_repo\n- commit_changes\n- get_current_branch\n- revert_changes\n\n导入语句:\n- import os\n- from git import Repo, GitCommandError\n- from loguru import logger",
     "last_modified": 1711415159.5240228,
     "md5": "9483378f3ff61a3fcb528fc4e3738acd"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/lang.py": {
+    "symbols": "根据提供的源代码，这是一个Python字典定义，其中并未包含任何函数、类或导入语句定义。它只定义了一个名为`lang_desc`的变量，该变量是一个包含语言描述信息的字典。\n\n符号类型: 变量\n符号名称: lang_desc",
+    "last_modified": 1711436096.923712,
+    "md5": "c1c4b997f0339bc963b36a291d15d938"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/utils/llm_client_interceptors.py": {
+    "symbols": "符号类型: 函数, 变量, 导入语句\n\n函数:\n- token_counter_interceptor\n\n变量:\n- store\n- v\n- metadata\n- input_tokens_count\n- generated_tokens_count\n\n导入语句:\n- from byzerllm.utils.client import EventCallbackResult, EventName\n- from prompt_toolkit import prompt\n- from prompt_toolkit.formatted_text import FormattedText\n- from typing import List, Dict, Any\n- from loguru import logger\n- from autocoder.db.store import Store",
+    "last_modified": 1711457755.1954439,
+    "md5": "b0eec5f8938e9201a6e19c80ea3f7580"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/db/store.py": {
+    "symbols": "函数:\n- update_token_counter\n- get_token_counter\n- _create_engine\n\n类:\n- TokenCounter\n- SingletonStore\n- Store\n\n变量:\n- db_path (在Store类中)\n- engine (在Store类中)\n- _instances (在SingletonStore类中)\n\n导入语句:\n- import os\n- from sqlmodel import SQLModel, Field, create_engine, Session, select",
+    "last_modified": 1711458013.0513837,
+    "md5": "4ca044d1c37e4eeea372dcdfdba3f5f9"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/utils/print_table.py": {
+    "symbols": "符号类型: 变量, 符号名称: headers\n符号类型: 变量, 符号名称: table_data\n符号类型: 变量, 符号名称: table_output\n符号类型: 函数, 符号名称: print_table\n符号类型: 导入语句, 符号名称: tabulate\n符号类型: 导入语句, 符号名称: TokenCounter from autocoder.db.store\n符号类型: 导入语句, 符号名称: List from typing",
+    "last_modified": 1711458777.8275075,
+    "md5": "d50c00aa682dd6641da2d9e8f4fa1c70"
   }
 }

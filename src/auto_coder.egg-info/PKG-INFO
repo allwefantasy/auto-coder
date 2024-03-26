@@ -35,15 +35,17 @@ Requires-Dist: retrying
 Requires-Dist: zhipuai
 Requires-Dist: dashscope
 Requires-Dist: tiktoken
+Requires-Dist: tabulate
 Requires-Dist: jupyter_client
 Requires-Dist: prompt-toolkit
 Requires-Dist: llama_index
 Requires-Dist: websocket-client
+Requires-Dist: sqlmodel
 Requires-Dist: wudao
 Requires-Dist: SwissArmyTransformer
 Requires-Dist: jieba
 Requires-Dist: protobuf==3.20.0
-Requires-Dist: byzerllm
+Requires-Dist: byzerllm>=0.1.54
 
 <p align="center">
   <picture>    

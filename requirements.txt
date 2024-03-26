@@ -26,6 +26,7 @@ retrying
 zhipuai
 dashscope
 tiktoken
+tabulate
 jupyter_client
 prompt-toolkit
 llama_index
@@ -33,6 +34,7 @@ llama_index
 # dependencies only for sparkdesk
 # websockets
 websocket-client
+sqlmodel
 
 # dependencies only for saas/chatglm
 wudao
@@ -63,5 +65,5 @@ protobuf==3.20.0
 
 # camelot-py
 # llama_index
-byzerllm
+byzerllm>=0.1.54
 

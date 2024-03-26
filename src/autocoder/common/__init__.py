@@ -76,6 +76,8 @@ class AutoCoderArgs(pydantic.BaseModel):
     search_engine_token: str = ""
     model_max_input_length: int = pydantic.Field(6000, description="The maximum input length of the model") 
     auto_merge: bool = pydantic.Field(False, description="Whether to automatically merge the generated code into the existing file")
+    class Config:
+        protected_namespaces = ()
 
 
 def is_likely_useful_file(file_path):

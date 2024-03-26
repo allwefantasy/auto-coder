@@ -46,14 +46,14 @@ class IndexManager:
         下面是所有文件以及对应的符号信息：
         
         {{ indices }}
-
-        请参考上面的信息，找到被下列文件使用或者引用到的文件列表：
         
-        {{ file_paths }}
-
         注意，
         1. 找到的文件名必须出现在上面的文件列表中
         2. 如果没有相关的文件，返回空即可
+         
+        请参考上面的信息，找到被下列文件使用或者引用到的文件列表：
+        
+        {{ file_paths }}    
         '''
         
 
@@ -189,20 +189,20 @@ class IndexManager:
         
         return FileList(file_list=all_results) 
     
-    @byzerllm.prompt(lambda self: self.llm, render="jinja2",print_prompt=True)
+    @byzerllm.prompt(lambda self: self.llm, render="jinja2",check_result=True)
     def _get_target_files_by_query(self,indices:str,query:str)->FileList:
         '''
         下面是所有文件以及对应的符号信息：
         
         {{ indices }}
 
-        请参考上面的信息，根据用户的问题寻找相关文件。如果没有相关的文件，返回空即可。        
-
-        用户的问题是：{{ query }}
+        请参考上面的信息，根据用户的问题寻找相关文件。如果没有相关的文件，返回空即可。 
 
         注意，
         1. 找到的文件名必须出现在上面的文件列表中
-        2. 如果没有相关的文件，返回空即可
+        2. 如果没有相关的文件，返回空即可       
+
+        用户的问题是：{{ query }}        
         '''
 
 

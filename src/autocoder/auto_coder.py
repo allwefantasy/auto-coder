@@ -5,6 +5,8 @@ from autocoder.common import AutoCoderArgs
 from autocoder.dispacher import Dispacher 
 from autocoder.lang import lang_desc
 from autocoder.common import git_utils
+from autocoder.utils.llm_client_interceptors import token_counter_interceptor
+from autocoder.db.store import Store
 import yaml   
 import locale
 import os
@@ -50,6 +52,9 @@ def parse_args() -> AutoCoderArgs:
 
     revert_parser = subparsers.add_parser("revert", help=desc["revert_desc"])
     revert_parser.add_argument("--file", help=desc["revert_desc"])
+
+    store_parser = subparsers.add_parser("store", help=desc["revert_desc"])
+    store_parser.add_argument("--source_dir", help=desc["revert_desc"])
     
     args = parser.parse_args()
 
@@ -58,6 +63,7 @@ def parse_args() -> AutoCoderArgs:
 
 def main():
     args,raw_args = parse_args()
+    args:AutoCoderArgs = args
     
     if args.file:
         with open(args.file, "r") as f:
@@ -88,9 +94,18 @@ def main():
     print("-" * 50)
     for arg, value in vars(args).items():
         print(f"{arg:20}: {value}")
-    print("-" * 50)                
-                
-    
+    print("-" * 50)
+
+    # init store
+    store = Store(os.path.join(args.source_dir,".auto-coder","metadata.db"))
+    store.update_token_counter(os.path.basename(args.source_dir),0,0)
+
+    if raw_args.command == "store":
+        from autocoder.utils.print_table import print_table
+        tc = store.get_token_counter()
+        print_table([tc])
+        return
+
     if args.model:
         
         byzerllm.connect_cluster()        
@@ -135,10 +150,12 @@ def main():
                     }]
                     return False, v
             llm.add_event_callback(EventName.BEFORE_CALL_MODEL, intercept_callback)
+        llm.add_event_callback(EventName.AFTER_CALL_MODEL,token_counter_interceptor)
 
         llm.setup_template(model=args.model,template="auto")
         llm.setup_default_model_name(args.model)
         llm.setup_max_output_length(args.model,args.model_max_length)
+        llm.setup_max_input_length(args.model,args.model_max_input_length)
         llm.setup_extra_generation_params(args.model, {"max_length": args.model_max_length})
     else:
         llm = None

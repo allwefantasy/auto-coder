@@ -1,0 +1,24 @@
+source_dir: /home/winubuntu/projects/ByzerRawCopilot
+target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
+project_type: py
+
+model: qianwen_chat
+model_max_length: 2000
+model_max_input_length: 6000
+anti_quota_limit: 5
+
+skip_build_index: false
+execute: false
+auto_merge: false
+
+query: |
+   在 src/autocoder/db/store.py 中的 Store 使用 sqlite 作为数据引擎。
+   创建一个一个SQLModel类，叫TokenCounter,包含三个字段 project,input_tokens_count,generated_tokens_count，
+   初始化的时候创建该表。
+   
+   在Store中增加一个方法，叫update_token_counter(input_tokens_count,generated_tokens_count),
+   TokenCounter表中的数据，并进行increment操作。
+
+   添加另外一个方法，叫get_token_counter(project),返回TokenCounter表中的数据。
+
+   检查 sqlite 数据目录是否存在，不存在则创建

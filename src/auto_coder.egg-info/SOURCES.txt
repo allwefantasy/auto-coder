@@ -29,6 +29,7 @@ src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py
 src/autocoder/utils/__init__.py
 src/autocoder/utils/coder.py
-src/autocoder/utils/llm_client_utils.py
+src/autocoder/utils/llm_client_interceptors.py
+src/autocoder/utils/print_table.py
 src/autocoder/utils/rest.py
 tests/test_code_auto_merge.py

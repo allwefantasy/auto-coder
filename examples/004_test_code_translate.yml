@@ -8,8 +8,8 @@ model_max_input_length: 6000
 anti_quota_limit: 5
 
 skip_build_index: true
-execute: false
-auto_merge: true
+execute: true
+auto_merge: false
 
 query: |
    翻译 src/test.cs 为 java 代码，路径为 src/test.java
