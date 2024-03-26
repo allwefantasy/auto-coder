@@ -73,8 +73,7 @@ def parse_args() -> AutoCoderArgs:
     desc = lang_desc[lang]
 
     parser = argparse.ArgumentParser(description=desc["parser_desc"])
-
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(dest="command")
     
     parser.add_argument("--source_dir", required=False, help=desc["source_dir"])
     parser.add_argument("--git_url", help=desc["git_url"])
@@ -100,26 +99,16 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--auto_merge", action='store_true', help=desc["auto_merge"])
 
     revert_parser = subparsers.add_parser("revert", help=desc["revert_desc"])
-    revert_parser.add_argument("file", help=desc["revert_desc"])
+    revert_parser.add_argument("--file", help=desc["revert_desc"])
     
     args = parser.parse_args()
 
-    return AutoCoderArgs(**vars(args))
+    return AutoCoderArgs(**vars(args)),args
 
 
 def main():
-    args = parse_args()
+    args,raw_args = parse_args()
     
-    if args.command == "revert":        
-        repo_path = os.path.dirname(args.file)
-        revert_result = git_utils.revert_changes(repo_path, args.file)
-        if revert_result:
-            print(f"Successfully reverted changes for {args.file}")
-        else:
-            print(f"Failed to revert changes for {args.file}")
-        return    
-
-
     if args.file:
         with open(args.file, "r") as f:
             config = yaml.safe_load(f)
@@ -130,6 +119,15 @@ def main():
                         template = Template(value.removeprefix("ENV").strip())                  
                         value = template.render(os.environ)                        
                     setattr(args, key, value)
+
+    if raw_args.command == "revert":        
+        repo_path = args.source_dir
+        revert_result = git_utils.revert_changes(repo_path, args.file)
+        if revert_result:
+            print(f"Successfully reverted changes for {args.file}")
+        else:
+            print(f"Failed to revert changes for {args.file}")
+        return                  
     
     print("Command Line Arguments:")
     print("-" * 50)
