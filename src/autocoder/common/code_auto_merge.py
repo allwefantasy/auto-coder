@@ -1,6 +1,6 @@
 import os
 from byzerllm.utils.client import code_utils
-from autocoder.common import AutoCoderArgs
+from autocoder.common import AutoCoderArgs,git_utils
 from typing import List
 import pydantic
 import byzerllm
@@ -40,6 +40,9 @@ class CodeAutoMerge:
     def merge_code(self, content: str):
         codes =  code_utils.extract_code(content)
         total = 0
+
+        git_utils.commit_changes(self.args.source_dir, f"pre_{self.args.target_file}")
+
         for (lang,code) in codes:            
             parsed_blocks = self.parse_text(code)
 
@@ -53,3 +56,4 @@ class CodeAutoMerge:
                     f.write(block.content)
 
         logger.info(f"Merged {total} files into the project.")
+        git_utils.commit_changes(self.args.source_dir, f"{self.args.target_file}")

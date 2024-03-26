@@ -10,24 +10,24 @@
     "md5": "4e02680b18c3271c51c10a5202b6577d"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/auto_coder.py": {
-    "symbols": "符号类型: 函数, 符号名称: parse_args, main\n符号类型: 类, 符号名称: AutoCoderArgs\n符号类型: 变量, 符号名称: lang_desc, args, config, template\n符号类型: 导入语句, 符号名称:\n    import byzerllm\n    from typing import List, Dict, Any, Optional\n    import argparse\n    from autocoder.common import AutoCoderArgs\n    from autocoder.dispacher import Dispacher\n    import yaml\n    import locale\n    import os\n    from jinja2 import Template",
-    "last_modified": 1710893554.2818205,
-    "md5": "30b3b86d19e2afa626945b5bef9fc75e"
+    "symbols": "函数: parse_args, main\n类: AutoCoderArgs\n变量: lang_desc, system_lang, lang, desc, parser\n导入语句: import byzerllm, from typing import List, Dict, Any, Optional, import argparse, from autocoder.common import AutoCoderArgs, from autocoder.dispacher import Dispacher, import yaml, import locale, import os, from jinja2 import Template",
+    "last_modified": 1711376809.6636627,
+    "md5": "76aa3c7c03a198dd3788982fe027a1ee"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/version.py": {
-    "symbols": "根据提供的源代码，该文件中没有函数和类定义，也没有导入语句。它仅包含一个变量：\n\n符号类型: 变量\n符号名称: __version__\n\n所以，按要求格式返回结果为：\n\n变量: __version__",
-    "last_modified": 1710893733.024047,
-    "md5": "142aba8a2581bb0c1865683244a48897"
+    "symbols": "根据提供的源代码，该文件中没有函数和类定义，也没有导入语句。唯一出现的是一个变量：\n\n符号类型: 变量\n符号名称: __version__\n\n所以，按照要求的格式返回结果为：\n\n变量: __version__",
+    "last_modified": 1711108603.2659726,
+    "md5": "b3622ac5145d82168b82a3bf657fdba8"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/suffixproject/__init__.py": {
-    "symbols": "函数:\n- is_suffix_file\n- read_file_content\n- convert_to_source_code\n- get_source_codes\n- get_rest_source_codes\n- run\n- clone_repository\n\n类:\n- SuffixProject\n\n变量:\n- args\n- directory\n- git_url\n- target_file\n- project_type\n- suffixs\n- file_filter\n- sources\n- llm\n\n导入语句:\n- from autocoder.common import SourceCode, AutoCoderArgs\n- from autocoder import common as FileUtils\n- from autocoder.utils.rest import HttpDoc\n- import os\n- from typing import Optional, Generator, List, Dict, Any, Callable\n- from git import Repo\n- import byzerllm",
-    "last_modified": 1710651902.153176,
-    "md5": "52c7c0efcc82637e2939a0769ba03844"
+    "symbols": "函数:\n- `__init__`\n- `output`\n- `is_suffix_file`\n- `read_file_content`\n- `convert_to_source_code`\n- `get_source_codes`\n- `get_rest_source_codes`\n- `get_search_source_codes`\n- `run`\n- `clone_repository`\n\n类:\n- `SuffixProject`\n\n变量:\n- `args`\n- `directory`\n- `git_url`\n- `target_file`\n- `project_type`\n- `suffixs`\n- `file_filter`\n- `sources`\n- `llm`\n\n导入语句:\n- `from autocoder.common import SourceCode, AutoCoderArgs`\n- `from autocoder import common as FileUtils`\n- `from autocoder.utils.rest import HttpDoc`\n- `import os`\n- `from typing import Optional, Generator, List, Dict, Any, Callable`\n- `from git import Repo`\n- `import byzerllm`\n- `from autocoder.common.search import Search, SearchEngine`",
+    "last_modified": 1711019938.481263,
+    "md5": "a5da6c21ca231ebe8c62d2d0972d4cdb"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/index/index.py": {
-    "symbols": "`IndexManager` 类是该源码的核心类，用于构建和管理代码索引。它通过利用 `byzerllm` 库与大型语言模型进行交互，以获取文件中的符号信息以及根据查询搜索相关文件。\n\n以下是该类主要功能的概述：\n\n1. **初始化方法 `__init__`**：初始化 IndexManager 时接收参数 llm（一个大型语言模型实例），sources（源代码列表）和 AutoCoderArgs（包含配置参数的对象）。同时设置索引目录和索引文件路径，并检查并创建索引目录。\n\n2. **方法 `_get_related_files`**：使用大型语言模型处理提示信息，返回给定文件路径所引用或使用的其他文件列表。结果为 FileList 类型。\n\n3. **方法 `get_all_file_symbols`**：同样利用大型语言模型，从给定的源代码中提取出函数、类、变量和导入语句等符号信息，按照指定格式返回。\n\n4. **方法 `build_index`**：遍历源代码列表，对每个源文件计算 MD5 哈希值，比较索引文件中记录的哈希值判断是否需要更新索引。如果文件内容有变，则调用 `get_all_file_symbols` 获取文件符号信息并更新索引数据，最后将更新后的索引数据写入到索引文件。\n\n5. **方法 `read_index`**：读取索引文件内容，将其转换为 IndexItem 对象列表并返回。\n\n6. **方法 `_get_meta_str`**：将索引信息分块输出为字符串，以便于分批次传递给大型语言模型。\n\n7. **方法 `get_related_files`** 和 **`get_target_files_by_query`**：这两个方法分别根据文件路径列表和用户查询，结合索引信息调用 `_get_related_files` 或 `_get_target_files_by_query` 方法，利用大型语言模型找到相关的文件列表，并封装成 FileList 对象返回。\n\n总之，这个类主要用于构建和维护源代码的符号索引，并通过与大型语言模型交互来发现源代码之间的引用关系以及根据用户查询查找相关文件。",
-    "last_modified": 1710917272.9403048,
-    "md5": "c80e44cf59f72ba5c892694ccff27f2a"
+    "symbols": "该代码定义了一个`IndexManager`类，用于管理和构建源代码索引，并通过自然语言模型（如ByzerLLM）来处理和解析代码以提取符号信息。主要功能如下：\n\n1. `IndexItem`、`TargetFile`和`FileList`为数据模型类，分别用于存储索引项、目标文件信息和文件列表。\n\n2. `IndexManager`类初始化时接收一个自然语言模型实例`llm`，源代码列表`sources`以及自动编码器参数`args`，并设置索引目录及索引文件路径。\n\n3. `_get_related_files`方法是一个装饰器函数，通过自然语言模型提示用户根据给定的索引信息和文件路径找出相关文件列表。\n\n4. `get_all_file_symbols`方法同样使用自然语言模型提示用户从指定文件的源代码中提取出函数、类、变量和导入语句等符号信息。\n\n5. `build_index`方法遍历源代码文件，计算每个文件的MD5哈希值，比较是否已存在索引中且内容未改变，如果文件有更新，则调用`get_all_file_symbols`方法获取符号信息并更新索引文件。\n\n6. `read_index`方法读取并解析索引文件，将其中的数据转换为`IndexItem`对象列表。\n\n7. `_get_meta_str`方法将索引信息分块输出，以便在与自然语言模型交互时避免一次性输入过大的数据量。\n\n8. `get_related_files`方法通过循环调用自然语言模型处理每一块索引信息，查找与给定文件路径相关的文件列表。\n\n注意：代码中缺少了`_get_target_files_by_query`方法的实现，但从上下文推测，这个方法可能也是通过自然语言模型查询索引以获取满足特定条件的目标文件列表。",
+    "last_modified": 1711377637.3445458,
+    "md5": "4606f05ef2ccaa48ffd45169ebae6878"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/JupyterClient.py": {
     "symbols": "导入语句: from jupyter_client import KernelManager\n导入语句: import threading\n导入语句: import re\n导入语句: from autocoder.common.const import *\n\n函数: clean_output\n函数: add_and_run\n函数: close\n函数: __deepcopy__\n\n类: JupyterNotebook\n\n变量: self.km\n变量: self.kc\n变量: _\n变量: outputs\n变量: error_flag\n变量: thread\n变量: msg_id\n变量: msg\n变量: msg_type\n变量: content\n变量: error_msg",
@@ -50,9 +50,9 @@
     "md5": "19aa36056c1a9eea6da98baf12501446"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/tsproject/__init__.py": {
-    "symbols": "函数:\n- output\n- read_file_content\n- is_likely_useful_file\n- convert_to_source_code\n- get_source_codes\n- get_rest_source_codes\n- run\n- clone_repository\n\n类:\n- TSProject\n\n变量:\n- args\n- directory\n- git_url\n- target_file\n- sources\n- llm\n\n导入语句:\n- from autocoder.common import SourceCode, AutoCoderArgs\n- from autocoder import common as FileUtils\n- from autocoder.utils.rest import HttpDoc\n- import os\n- from typing import Optional, Generator, List, Dict, Any\n- from git import Repo\n- import byzerllm",
-    "last_modified": 1710506848.6659877,
-    "md5": "1e15d045258bae603a00d1d1360c48cd"
+    "symbols": "函数:\n- output\n- read_file_content\n- is_likely_useful_file\n- convert_to_source_code\n- get_source_codes\n- get_rest_source_codes\n- get_search_source_codes\n- run\n- clone_repository\n\n类:\n- TSProject\n\n变量:\n- args\n- directory\n- git_url\n- target_file\n- sources\n- llm\n\n导入语句:\n- from autocoder.common import SourceCode, AutoCoderArgs\n- from autocoder import common as FileUtils\n- from autocoder.utils.rest import HttpDoc\n- import os\n- from typing import Optional, Generator, List, Dict, Any\n- from git import Repo\n- import byzerllm\n- from autocoder.common.search import Search, SearchEngine",
+    "last_modified": 1711019887.796761,
+    "md5": "513677056b4c3120025f0c69c56df604"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/auto_coder.py": {
     "symbols": "函数: parse_args, main\n类: AutoCoderArgs, Dispacher\n变量: args, config, llm\n导入语句: import byzerllm, from typing import List, Dict, Any, Optional, import argparse, from autocoder.common import AutoCoderArgs, from autocoder.dispacher import Dispacher, import yaml",
@@ -105,9 +105,9 @@
     "md5": "5ff1e108d09f8874c30fcfdda8e7c788"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/pyproject/__init__.py": {
-    "symbols": "符号类型: 类, 符号名称: Level1PyProject, PyProject\n符号类型: 函数, 符号名称: get_imports_from_script, filter_imports, fetch_source_code, auto_implement, run (Level1PyProject 类中), output, is_python_file, read_file_content, convert_to_source_code, get_package_source_codes, get_rest_source_codes, get_source_codes, run (PyProject 类中)\n符号类型: 变量, 符号名称: script_path, package_name (Level1PyProject 类中), instruction, sources (在 auto_implement 方法参数中), args, directory, git_url, target_file, sources, llm (PyProject 类中)\n符号类型: 导入语句, 符号名称: from autocoder.common import SourceCode, AutoCoderArgs, from autocoder import common as FileUtils, from autocoder.utils.rest import HttpDoc, import os, import ast, import importlib, import byzerllm, import pkgutil\n\n注意：此处列出的“符号名称”实际上是导入的模块或类、函数等名称，对于导入语句这一类别来说，“符号名称”表示的是导入的模块或包名。",
-    "last_modified": 1710763139.8091683,
-    "md5": "56c361a058521b95413d142a0a02bb1e"
+    "symbols": "符号类型: 类, 符号名称:\n- Level1PyProject\n- PyProject\n\n符号类型: 函数, 符号名称:\n- get_imports_from_script\n- filter_imports\n- fetch_source_code\n- auto_implement\n- run\n- output\n- is_python_file\n- read_file_content\n- convert_to_source_code\n- get_package_source_codes\n- get_rest_source_codes\n- get_search_source_codes\n- get_source_codes\n\n符号类型: 变量, 符号名称:\n- script_path\n- package_name\n- imports\n- script\n- filtered_imports\n- source_code\n- instruction\n- sources\n- args\n- directory\n- git_url\n- target_file\n- llm\n\n符号类型: 导入语句, 符号名称:\n- from autocoder.common import SourceCode,AutoCoderArgs\n- from autocoder import common as FileUtils\n- from autocoder.utils.rest import HttpDoc\n- import os\n- import ast\n- import importlib\n- import byzerllm\n- import pkgutil\n- from autocoder.common.search import Search,SearchEngine",
+    "last_modified": 1711019771.6915364,
+    "md5": "657358b1d7f3726a1defb369036fe6cf"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/build/lib/autocoder/version.py": {
     "symbols": "根据提供的源码，这个文件中没有函数和类的定义，也没有导入语句。存在的符号类型是变量，具体的变量名称如下：\n\n变量: __version__\n\n所以，最终结果按照要求的格式返回为：\n\n变量: __version__",
@@ -145,23 +145,33 @@
     "md5": "a4c14c22ad743bd85ad327e265d6f616"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/dispacher/actions/action.py": {
-    "symbols": "符号类型: 函数\n- auto_implement_function_template\n- instruction_template\n- translate_readme\n- get_translate_part\n- ActionTSProject.__init__\n- ActionTSProject.run\n- ActionTSProject.process_content\n- ActionPyScriptProject.__init__\n- ActionPyScriptProject.run\n- ActionPyScriptProject.process_content\n- ActionPyProject.__init__\n- ActionPyProject.run\n- ActionPyProject.process_content\n\n符号类型: 类\n- ActionTSProject\n- ActionPyScriptProject\n- ActionPyProject\n\n符号类型: 变量\n- args\n- llm\n- source_code\n- content\n- t\n- pp\n\n符号类型: 导入语句\n- from autocoder.common import AutoCoderArgs, TranslateArgs, TranslateReadme, split_code_into_segments, SourceCode\n- from autocoder.pyproject import PyProject, Level1PyProject\n- from autocoder.tsproject import TSProject\n- from autocoder.suffixproject import SuffixProject\n- from autocoder.index.index import build_index_and_filter_files\n- from typing import Optional, Generator\n- import byzerllm\n- import os\n- import re\n- import time",
-    "last_modified": 1710914698.9489594,
-    "md5": "521a62d0f5aeaed0ab6c9e85e2326547"
+    "symbols": "根据提供的源码，该文件`action.py`主要定义了一些装饰器和类，但并没有直接声明函数、类、变量或导入语句（除了导入的模块和类）。为了分析其中的符号，我们需要查看引用的其他模块（如`autocoder.common`, `autocoder.pyproject`, 等）来获取它们声明的函数、类和变量。\n\n然而，基于此源码片段，无法直接提供符号类型及名称的列表。若要获取所需信息，请提供相应模块中声明函数、类和变量的部分源码。对于导入语句，在此文件中我们可以列出以下导入的模块和类：\n\n导入语句：\n\n1. `from autocoder.common import AutoCoderArgs, TranslateArgs, TranslateReadme, split_code_into_segments, SourceCode`\n2. `from autocoder.pyproject import PyProject, Level1PyProject`\n3. `from autocoder.tsproject import TSProject`\n4. `from autocoder.suffixproject import SuffixProject`\n5. `from autocoder.index.index import build_index_and_filter_files`\n6. `from autocoder.common.code_auto_merge import CodeAutoMerge`\n7. `import byzerllm`\n8. `import os`\n9. `import time`\n10. `from loguru import logger`\n\n注意：这些不是具体的函数、类或变量符号，而是导入它们的语句。 若要获取具体符号，请提供更多相关源码。",
+    "last_modified": 1711377195.8929672,
+    "md5": "d38d2ec5d21e0f5132af2db301a002ba"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/search.py": {
-    "symbols": "函数: llm_rerank, search_with_bing, search_with_google, search_with_serper\n类: DocWithRelevance, SearchEngine, SearchContext, RelatedQuestion\n变量: BING_SEARCH_V7_ENDPOINT, BING_MKT, GOOGLE_SEARCH_ENDPOINT, SERPER_SEARCH_ENDPOINT, SEARCHAPI_SEARCH_ENDPOINT, REFERENCE_COUNT, DEFAULT_SEARCH_ENGINE_TIMEOUT, DEFAULT_CHOICE_SELECT_PROMPT_TMPL\n导入语句:\n1. from typing import List,Optional\n2. import httpx\n3. import json\n4. from loguru import logger\n5. from pydantic import BaseModel, Field\n6. import requests\n7. from enum import Enum\n8. import byzerllm\n9. from langchain import PromptTemplate\n10. from autocoder.utils.rest import HttpDoc",
-    "last_modified": 1710860721.1527498,
-    "md5": "a2729269e326587c0110b4aecedcc30a"
+    "symbols": "函数:\n- llm_rerank\n- search_with_bing\n- search_with_google\n- search_with_serper\n\n类:\n- DocWithRelevance\n- SearchEngine\n- SearchContext\n- RelatedQuestion\n\n变量:\n- BING_SEARCH_V7_ENDPOINT\n- BING_MKT\n- GOOGLE_SEARCH_ENDPOINT\n- SERPER_SEARCH_ENDPOINT\n- SEARCHAPI_SEARCH_ENDPOINT\n- REFERENCE_COUNT\n- DEFAULT_SEARCH_ENGINE_TIMEOUT\n- DEFAULT_CHOICE_SELECT_PROMPT_TMPL\n\n导入语句:\n- from typing import List, Optional\n- import httpx\n- import json\n- from loguru import logger\n- from pydantic import BaseModel, Field\n- import requests\n- from enum import Enum\n- import byzerllm\n- from langchain import PromptTemplate\n- from autocoder.utils.rest import HttpDoc",
+    "last_modified": 1711019654.574174,
+    "md5": "3ac92b6a38eaa6bcefb0cb176a6acebc"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/utils/rest.py": {
-    "symbols": "符号类型: 函数, 符号名称: _extract_main_content\n符号类型: 类, 符号名称: HttpDoc\n符号类型: 变量, 符号名称: urls, llm, source_codes, url, response, html_content, main_content, source_code\n符号类型: 导入语句, 符号名称:\n    - requests\n    - BeautifulSoup\n    - typing.List\n    - autocoder.common.SourceCode\n    - byzerllm.ByzerLLM",
-    "last_modified": 1710644106.7657866,
-    "md5": "dbe5a61db5e9f14b3ebce43e154753c7"
+    "symbols": "函数:\n- `_extract_main_content`\n- `get_file_extractor`\n- `crawl_urls`\n- `clean_html_keep_text`\n\n类:\n- `HttpDoc`\n- `TextFileReader`\n\n变量:\n- `urls`\n- `llm`\n- `source_codes`\n- `document`\n- `main_content`\n- `response`\n- `html_content`\n- `tags_to_remove_completely`\n- `tag`\n- `default_file_reader_cls`\n\n导入语句:\n```python\nimport requests\nfrom bs4 import BeautifulSoup\nfrom typing import List, Dict, Type, Optional\nfrom autocoder.common import SourceCode\nimport byzerllm\nfrom loguru import logger\nimport os\nfrom pathlib import Path\nfrom llama_index.core.readers.base import BaseReader\nfrom fsspec import AbstractFileSystem\nfrom llama_index.core.schema import Document\nfrom llama_index.core.readers.file.base import get_default_fs\nfrom llama_index.readers.file import (\n    DocxReader,\n    EpubReader,\n    HWPReader,\n    ImageReader,\n    IPYNBReader,\n    MarkdownReader,\n    MboxReader,\n    PandasCSVReader,\n    PDFReader,\n    PptxReader,\n    VideoAudioReader,\n)\n```",
+    "last_modified": 1711105557.4173536,
+    "md5": "5cbf124dd82157ca76162c9f05a4c72a"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/code_auto_merge.py": {
-    "symbols": "导入语句: os, byzerllm.utils.client.code_utils, autocoder.common.AutoCoderArgs, typing.List, pydantic, byzerllm\n\n类: PathAndCode, CodeAutoMerge\n\n函数:\n- parse_text\n- merge_code",
-    "last_modified": 1710916913.6250603,
-    "md5": "bfa1408eadaf8884ec2893b9983e18b0"
+    "symbols": "根据提供的源代码，以下是各个符号类型的列表：\n\n1. **类：**\n   - `PathAndCode`\n   - `CodeAutoMerge`\n\n2. **函数：**\n   - `__init__` (在`CodeAutoMerge`类中)\n   - `parse_text` (在`CodeAutoMerge`类中)\n   - `merge_code` (在`CodeAutoMerge`类中)\n\n3. **变量：**\n   - `parsed_blocks`\n   - `lines`\n   - `file_path`\n   - `content_lines`\n   - `total`\n   - `codes`\n   - `block`\n   - `file_path` (在`merge_code`方法内循环中)\n   - `f` (在`with open(file_path, \"w\") as f:` 中的文件对象)\n\n4. **所有导入语句：**\n   - `import os`\n   - `from byzerllm.utils.client import code_utils`\n   - `from autocoder.common import AutoCoderArgs, git_utils`\n   - `from typing import List`\n   - `import pydantic`\n   - `import byzerllm`\n   - `from loguru import logger`\n\n汇总结果（格式化后）：\n\n- 类型: 类, 符号名称: PathAndCode, CodeAutoMerge\n- 类型: 函数, 符号名称: __init__, parse_text, merge_code\n- 类型: 变量, 符号名称: parsed_blocks, lines, file_path, content_lines, total, codes, block, file_path, f\n- 类型: 导入语句, 符号名称: os, code_utils, AutoCoderArgs, git_utils, List, pydantic, byzerllm, logger",
+    "last_modified": 1711414199.0350478,
+    "md5": "5a80f1fcef761b7ae50d35bf9ff2878f"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/utils/coder.py": {
+    "symbols": "函数:\n- data_preprocess_prompt\n- image2webpage_prompt\n- get_type\n- write_plan\n- react_think\n\n类:\n- TaskTypeDef\n- TaskType\n- Thought\n- Plan\n- Coder\n\n变量:\n- AUTOCODER_ARGS_IMPORT (导入的 `AutoCoderArgs` 类型)\n- BYZERLLM_IMPORT (导入的 `byzerllm` 模块)\n- PYDANTIC_IMPORT (导入的 `pydantic` 模块)\n- ENUM_IMPORT (导入的 `Enum` 类型)\n\n导入语句:\n- from autocoder.common import AutoCoderArgs\n- import byzerllm\n- from pydantic import BaseModel\n- from enum import Enum",
+    "last_modified": 1711010056.8836126,
+    "md5": "97fbef061ca5f516f64888c1af23ff25"
+  },
+  "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/git_utils.py": {
+    "symbols": "函数: get_repo, commit_changes, get_current_branch\n导入语句: import os, from git import Repo, GitCommandError, from loguru import logger",
+    "last_modified": 1711378117.0396943,
+    "md5": "2fa4ee2a020b543915d266cb9ef87376"
   }
 }

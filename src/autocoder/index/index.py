@@ -9,6 +9,8 @@ import pydantic
 import byzerllm
 import hashlib
 
+from loguru import logger
+
 class IndexItem(pydantic.BaseModel):
     module_name: str
     symbols: str
@@ -93,15 +95,15 @@ class IndexManager:
                 continue
             
             try:
-                print(f"parse and update index for {file_path} md5: {md5}")
+                logger.info(f"parse and update index for {file_path} md5: {md5}")
                 source_code = source.source_code
                 if len(source.source_code) > self.args.model_max_input_length:
-                    print(f"Warning: The length of source code is too long ({len(source.source_code)}) > model_max_input_length({self.args.model_max_input_length}) , keep the first {self.args.model_max_input_length} characters to avoid failure of the model limit")
+                    logger.warning(f"Warning: The length of source code is too long ({len(source.source_code)}) > model_max_input_length({self.args.model_max_input_length}) , keep the first {self.args.model_max_input_length} characters to avoid failure of the model limit")
                     source_code = source.source_code[:self.args.model_max_input_length]
                 symbols = self.get_all_file_symbols(source.module_name, source_code)
                 time.sleep(self.anti_quota_limit)
             except Exception as e:
-                print(f"Error: {e}")
+                logger.warning(f"Error: {e}")
                 continue
 
             index_data[source.module_name] = {
@@ -159,19 +161,29 @@ class IndexManager:
 
     def get_related_files(self, file_paths: List[str]):
         all_results = []
-        
-        for chunk in self._get_meta_str():
+        chunk_count = 0
+        for chunk in self._get_meta_str():            
             result = self._get_related_files(chunk, "\n".join(file_paths))
-            all_results.extend(result.file_list)
+            if result is not None:
+                all_results.extend(result.file_list)
+            else:
+                logger.warning(f"Fail to find related files for chunk {chunk_count}. this may be caused by the model limit or the query is not suitable for the files.")   
+            chunk_count += 1  
+            time.sleep(self.args.anti_quota_limit)  
         
         return FileList(file_list=all_results)
 
     def get_target_files_by_query(self, query: str) -> FileList:
         all_results = []
-        
+        chunk_count = 0
         for chunk in self._get_meta_str():
-            result = self._get_target_files_by_query(chunk, query)
-            all_results.extend(result.file_list)
+            result = self._get_target_files_by_query(chunk, query)            
+            if result is not None:
+                all_results.extend(result.file_list)
+            else:
+                logger.warning(f"Fail to find targed files for chunk {chunk_count}. this may be caused by the model limit or the query is not suitable for the files.")
+            chunk_count += 1  
+            time.sleep(self.args.anti_quota_limit)      
         
         return FileList(file_list=all_results) 
     
@@ -196,11 +208,15 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
         index_manager = IndexManager(llm=llm,sources=sources,args=args)
         index_manager.build_index()
         target_files = index_manager.get_target_files_by_query(args.query)
-        if target_files is not None:    
-            print(f"Target Files: {target_files.file_list}",flush=True)
+        if target_files is not None:
+            for temp_file in target_files.file_list:
+                logger.info(f"Target File: {temp_file.file_path} reason: {temp_file.reason}")    
+            
             related_fiels = index_manager.get_related_files([file.file_path for file in target_files.file_list])            
-            if related_fiels is not None:                            
-                print(f"Related Files: {related_fiels.file_list}",flush=True)                
+            if related_fiels is not None:                                            
+                for temp_file in related_fiels.file_list:
+                    logger.info(f"Related File: {temp_file.file_path} reason: {temp_file.reason}")              
+                
                 for file in target_files.file_list + related_fiels.file_list:
                     file_path = file.file_path.strip()
                     if file_path.startswith("##"):
@@ -208,7 +224,7 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
                     else:
                         final_files.append(file_path) 
         if not final_files:
-            print("Warning: No related files found, use all files",flush=True)
+            logger.warning("Warning: No related files found, use all files")
             final_files = [file.module_name for file in sources]                          
     else:
         final_files = [file.module_name for file in sources]

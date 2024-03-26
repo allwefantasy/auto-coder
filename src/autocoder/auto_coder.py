@@ -6,6 +6,7 @@ from autocoder.dispacher import Dispacher
 import yaml   
 import locale
 import os
+from autocoder.common import git_utils
 from jinja2 import Template
 
 lang_desc = {
@@ -34,6 +35,7 @@ lang_desc = {
         "search_engine_token": "The token for the search engine API. Default is empty",
         "model_max_input_length": "The maximum length of the generated code by the model. Default is 6000. This only works when model is specified.",
         "auto_merge": "Whether to automatically merge the generated code into the existing file. Default is False",
+        "revert_desc": "Revert the changes made by the specified file",
         
     },
     "zh": {
@@ -61,15 +63,18 @@ lang_desc = {
         "search_engine_token": "搜索引擎API的令牌。默认为空",
         "model_max_input_length": "模型的最大输入长度。默认为6000。仅在指定模型时生效。",
         "auto_merge": "是否自动将生成的代码合并到现有文件中。默认为False。",
+        "revert_desc": "撤销指定文件所做的更改",
     }
 }
 
 def parse_args() -> AutoCoderArgs:
     system_lang, _ = locale.getdefaultlocale()
-    lang = "zh" if system_lang.startswith("zh") else "en"
+    lang = "zh" if system_lang and system_lang.startswith("zh") else "en"
     desc = lang_desc[lang]
 
     parser = argparse.ArgumentParser(description=desc["parser_desc"])
+
+    subparsers = parser.add_subparsers(dest="command", required=True)
     
     parser.add_argument("--source_dir", required=False, help=desc["source_dir"])
     parser.add_argument("--git_url", help=desc["git_url"])
@@ -93,6 +98,9 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--search_engine", default="", help=desc["search_engine"])
     parser.add_argument("--search_engine_token", default="",help=desc["search_engine_token"])
     parser.add_argument("--auto_merge", action='store_true', help=desc["auto_merge"])
+
+    revert_parser = subparsers.add_parser("revert", help=desc["revert_desc"])
+    revert_parser.add_argument("file", help=desc["revert_desc"])
     
     args = parser.parse_args()
 
@@ -101,6 +109,17 @@ def parse_args() -> AutoCoderArgs:
 
 def main():
     args = parse_args()
+    
+    if args.command == "revert":        
+        repo_path = os.path.dirname(args.file)
+        revert_result = git_utils.revert_changes(repo_path, args.file)
+        if revert_result:
+            print(f"Successfully reverted changes for {args.file}")
+        else:
+            print(f"Failed to revert changes for {args.file}")
+        return    
+
+
     if args.file:
         with open(args.file, "r") as f:
             config = yaml.safe_load(f)

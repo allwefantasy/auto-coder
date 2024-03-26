@@ -21,7 +21,7 @@ The basic idea is:
 
 For specific usage, we have detailed instructions in [human as model mode](./003-%20Using%20Web%20Version%20Large%20Model%20in%20AutoCoder,%20The%20Sexy%20Human%20As%20Model%20Mode.md).
 
-Furthermore, if you're curious about what the small model configured in AutoCoder is mainly used for, you can refer to our previous [special edition](./007-%20Special%20Edition%20What%20are%20the%20models%20configured%20in%20AutoCoder%20actually%20used%20for.md).
+Furthermore, if you're curious about what the  model configured in AutoCoder is mainly used for, you can refer to our previous [special edition](./007-%20Special%20Edition%20What%20are%20the%20models%20configured%20in%20AutoCoder%20actually%20used%20for.md).
 
 My personal configuration combination is:
 

@@ -36,7 +36,10 @@ def instruction_template(instruction:str, content:str,execute:bool=False)->str:
     下面是一些文件路径以及每个文件对应的源码：
 
     {{ content }}  
-    {%- endif %}     
+    {%- endif %}
+
+
+    下面是用户的需求：
     
     {{ instruction }}
 
@@ -54,7 +57,7 @@ def instruction_template(instruction:str, content:str,execute:bool=False)->str:
 
     其中，{lang}是代码的语言，{CODE}是代码的内容, {FILE_PATH} 是文件的路径。
          
-    请确保代码的完整性。        
+    请确保每份代码的完整性，而不要只生成修改部分。
     '''
     pass
 
