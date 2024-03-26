@@ -18,6 +18,8 @@ src/autocoder/common/code_auto_merge.py
 src/autocoder/common/const.py
 src/autocoder/common/git_utils.py
 src/autocoder/common/search.py
+src/autocoder/db/__init__.py
+src/autocoder/db/store.py
 src/autocoder/dispacher/__init__.py
 src/autocoder/dispacher/actions/__init__.py
 src/autocoder/dispacher/actions/action.py
