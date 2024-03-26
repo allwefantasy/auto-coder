@@ -5,6 +5,7 @@ from typing import List
 import pydantic
 import byzerllm
 from loguru import logger
+import hashlib
 
 class PathAndCode(pydantic.BaseModel):
     path: str
@@ -40,8 +41,12 @@ class CodeAutoMerge:
     def merge_code(self, content: str):
         codes =  code_utils.extract_code(content)
         total = 0
-
-        git_utils.commit_changes(self.args.source_dir, f"pre_{self.args.target_file}")
+        
+        file_content = open(self.args.file).read()
+        md5 = hashlib.md5(file_content.encode('utf-8')).hexdigest()
+        # get the file name 
+        file_name = os.path.basename(self.args.file)
+        git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
 
         for (lang,code) in codes:            
             parsed_blocks = self.parse_text(code)
@@ -56,4 +61,4 @@ class CodeAutoMerge:
                     f.write(block.content)
 
         logger.info(f"Merged {total} files into the project.")
-        git_utils.commit_changes(self.args.source_dir, f"{self.args.target_file}")
+        git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}")

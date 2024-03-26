@@ -8,6 +8,7 @@ import locale
 import os
 from autocoder.common import git_utils
 from jinja2 import Template
+import hashlib
 
 lang_desc = {
     "en": {
@@ -122,7 +123,12 @@ def main():
 
     if raw_args.command == "revert":        
         repo_path = args.source_dir
-        revert_result = git_utils.revert_changes(repo_path, args.file)
+
+        file_content = open(args.file).read()
+        md5 = hashlib.md5(file_content.encode('utf-8')).hexdigest()        
+        file_name = os.path.basename(args.file)
+        
+        revert_result = git_utils.revert_changes(repo_path, f"auto_coder_{file_name}_{md5}")
         if revert_result:
             print(f"Successfully reverted changes for {args.file}")
         else:
