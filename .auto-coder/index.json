@@ -10,9 +10,9 @@
     "md5": "4e02680b18c3271c51c10a5202b6577d"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/auto_coder.py": {
-    "symbols": "符号类型: 变量\n符号名称: lang_desc, system_lang, _, lang, desc, parser, subparsers\n\n符号类型: 函数\n符号名称: parse_args\n\n符号类型: 导入语句\n符号名称: import byzerllm, from typing import List, Dict, Any, Optional, import argparse, from autocoder.common import AutoCoderArgs, from autocoder.dispacher import Dispacher, import yaml, import locale, import os, from autocoder.common import git_utils, from jinja2 import Template",
-    "last_modified": 1711415708.4742322,
-    "md5": "d2019bea20546014983c71d941d2fbc8"
+    "symbols": "符号类型: 变量\n符号名称: lang_desc, system_lang, lang, desc\n\n符号类型: 函数\n符号名称: parse_args\n\n符号类型: 导入语句\n符号名称: \n1. import byzerllm\n2. from typing import List, Dict, Any, Optional\n3. import argparse\n4. from autocoder.common import AutoCoderArgs\n5. from autocoder.dispacher import Dispacher\n6. import yaml\n7. import locale\n8. import os\n9. from autocoder.common import git_utils\n10. from jinja2 import Template\n11. import hashlib",
+    "last_modified": 1711418122.9601579,
+    "md5": "5a159fcb531d00fe0044f0b4d063d152"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/version.py": {
     "symbols": "根据提供的源代码，该文件中没有函数和类定义，也没有导入语句。唯一出现的是一个变量：\n\n符号类型: 变量\n符号名称: __version__\n\n所以，按照要求的格式返回结果为：\n\n变量: __version__",
@@ -160,9 +160,9 @@
     "md5": "5cbf124dd82157ca76162c9f05a4c72a"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/code_auto_merge.py": {
-    "symbols": "根据提供的源代码，以下是各个符号类型的列表：\n\n1. **类：**\n   - `PathAndCode`\n   - `CodeAutoMerge`\n\n2. **函数：**\n   - `__init__` (在`CodeAutoMerge`类中)\n   - `parse_text` (在`CodeAutoMerge`类中)\n   - `merge_code` (在`CodeAutoMerge`类中)\n\n3. **变量：**\n   - `parsed_blocks`\n   - `lines`\n   - `file_path`\n   - `content_lines`\n   - `total`\n   - `codes`\n   - `block`\n   - `file_path` (在`merge_code`方法内循环中)\n   - `f` (在`with open(file_path, \"w\") as f:` 中的文件对象)\n\n4. **所有导入语句：**\n   - `import os`\n   - `from byzerllm.utils.client import code_utils`\n   - `from autocoder.common import AutoCoderArgs, git_utils`\n   - `from typing import List`\n   - `import pydantic`\n   - `import byzerllm`\n   - `from loguru import logger`\n\n汇总结果（格式化后）：\n\n- 类型: 类, 符号名称: PathAndCode, CodeAutoMerge\n- 类型: 函数, 符号名称: __init__, parse_text, merge_code\n- 类型: 变量, 符号名称: parsed_blocks, lines, file_path, content_lines, total, codes, block, file_path, f\n- 类型: 导入语句, 符号名称: os, code_utils, AutoCoderArgs, git_utils, List, pydantic, byzerllm, logger",
-    "last_modified": 1711414199.0350478,
-    "md5": "5a80f1fcef761b7ae50d35bf9ff2878f"
+    "symbols": "根据提供的代码，以下是所请求的符号类型和它们对应的名称列表：\n\n1. **类：**\n   - `PathAndCode`\n   - `CodeAutoMerge`\n\n2. **函数：**\n   - `__init__` （在`CodeAutoMerge`类中）\n   - `parse_text` （在`CodeAutoMerge`类中）\n   - `merge_code` （在`CodeAutoMerge`类中）\n\n3. **变量：**\n   - `parsed_blocks`\n   - `lines`\n   - `file_path`\n   - `content_lines`\n   - `total`\n   - `codes`\n   - `file_content`\n   - `md5`\n   - `file_name`\n   - `block`\n   - `f`\n\n4. **所有导入语句：**\n   - `import os`\n   - `from byzerllm.utils.client import code_utils`\n   - `from autocoder.common import AutoCoderArgs, git_utils`\n   - `from typing import List`\n   - `import pydantic`\n   - `import byzerllm`\n   - `from loguru import logger`\n   - `import hashlib`\n\n注意：变量“self.llm”和“self.args”虽在类定义中出现，但它们不是独立声明的变量，而是类实例属性。",
+    "last_modified": 1711418034.9878201,
+    "md5": "9a5e651bfab0a25752f727eb99ef09ee"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/utils/coder.py": {
     "symbols": "函数:\n- data_preprocess_prompt\n- image2webpage_prompt\n- get_type\n- write_plan\n- react_think\n\n类:\n- TaskTypeDef\n- TaskType\n- Thought\n- Plan\n- Coder\n\n变量:\n- AUTOCODER_ARGS_IMPORT (导入的 `AutoCoderArgs` 类型)\n- BYZERLLM_IMPORT (导入的 `byzerllm` 模块)\n- PYDANTIC_IMPORT (导入的 `pydantic` 模块)\n- ENUM_IMPORT (导入的 `Enum` 类型)\n\n导入语句:\n- from autocoder.common import AutoCoderArgs\n- import byzerllm\n- from pydantic import BaseModel\n- from enum import Enum",
