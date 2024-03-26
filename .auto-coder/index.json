@@ -10,9 +10,9 @@
     "md5": "4e02680b18c3271c51c10a5202b6577d"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/auto_coder.py": {
-    "symbols": "函数: parse_args, main\n类: AutoCoderArgs\n变量: lang_desc, system_lang, lang, desc, parser\n导入语句: import byzerllm, from typing import List, Dict, Any, Optional, import argparse, from autocoder.common import AutoCoderArgs, from autocoder.dispacher import Dispacher, import yaml, import locale, import os, from jinja2 import Template",
-    "last_modified": 1711376809.6636627,
-    "md5": "76aa3c7c03a198dd3788982fe027a1ee"
+    "symbols": "符号类型: 变量\n符号名称: lang_desc, system_lang, _, lang, desc, parser, subparsers\n\n符号类型: 函数\n符号名称: parse_args\n\n符号类型: 导入语句\n符号名称: import byzerllm, from typing import List, Dict, Any, Optional, import argparse, from autocoder.common import AutoCoderArgs, from autocoder.dispacher import Dispacher, import yaml, import locale, import os, from autocoder.common import git_utils, from jinja2 import Template",
+    "last_modified": 1711415708.4742322,
+    "md5": "d2019bea20546014983c71d941d2fbc8"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/version.py": {
     "symbols": "根据提供的源代码，该文件中没有函数和类定义，也没有导入语句。唯一出现的是一个变量：\n\n符号类型: 变量\n符号名称: __version__\n\n所以，按照要求的格式返回结果为：\n\n变量: __version__",
@@ -145,9 +145,9 @@
     "md5": "a4c14c22ad743bd85ad327e265d6f616"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/dispacher/actions/action.py": {
-    "symbols": "根据提供的源码，该文件`action.py`主要定义了一些装饰器和类，但并没有直接声明函数、类、变量或导入语句（除了导入的模块和类）。为了分析其中的符号，我们需要查看引用的其他模块（如`autocoder.common`, `autocoder.pyproject`, 等）来获取它们声明的函数、类和变量。\n\n然而，基于此源码片段，无法直接提供符号类型及名称的列表。若要获取所需信息，请提供相应模块中声明函数、类和变量的部分源码。对于导入语句，在此文件中我们可以列出以下导入的模块和类：\n\n导入语句：\n\n1. `from autocoder.common import AutoCoderArgs, TranslateArgs, TranslateReadme, split_code_into_segments, SourceCode`\n2. `from autocoder.pyproject import PyProject, Level1PyProject`\n3. `from autocoder.tsproject import TSProject`\n4. `from autocoder.suffixproject import SuffixProject`\n5. `from autocoder.index.index import build_index_and_filter_files`\n6. `from autocoder.common.code_auto_merge import CodeAutoMerge`\n7. `import byzerllm`\n8. `import os`\n9. `import time`\n10. `from loguru import logger`\n\n注意：这些不是具体的函数、类或变量符号，而是导入它们的语句。 若要获取具体符号，请提供更多相关源码。",
-    "last_modified": 1711377195.8929672,
-    "md5": "d38d2ec5d21e0f5132af2db301a002ba"
+    "symbols": "根据提供的源码，该文件定义了一些函数、类和导入语句，但没有直接提供对变量或函数、类等符号的提取逻辑。为了获取所需的符号类型（函数、类、变量和导入语句），通常需要使用Python的`ast`模块或其他类似工具来解析源代码。\n\n然而，基于现有代码，无法直接给出符号列表。若要实现这一功能，可以编写一个辅助函数，利用`ast`模块遍历并提取相关符号信息。\n\n以下是一个简化的示例，展示如何通过`ast`模块提取这些符号：\n\n```python\nimport ast\n\ndef extract_symbols_from_source(source_code: str) -> dict:\n    symbols_by_type = {\n        '函数': [],\n        '类': [],\n        '变量': [],\n        '导入语句': []\n    }\n\n    tree = ast.parse(source_code)\n\n    for node in ast.walk(tree):\n        if isinstance(node, ast.FunctionDef):\n            symbols_by_type['函数'].append(node.name)\n        elif isinstance(node, ast.ClassDef):\n            symbols_by_type['类'].append(node.name)\n        elif isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):\n            symbols_by_type['变量'].append(node.targets[0].id)\n        elif isinstance(node, ast.ImportFrom) or isinstance(node, ast.Import):\n            for alias in node.names:\n                if alias.asname:\n                    symbols_by_type['导入语句'].append(alias.asname)\n                else:\n                    symbols_by_type['导入语句'].append(alias.name)\n\n    for key, value in symbols_by_type.items():\n        if not value:\n            symbols_by_type[key] = \"没有任何符号\"\n\n    return symbols_by_type\n\n# 使用示例\nsource_code = open('/path/to/source.py', 'r').read()\nsymbols = extract_symbols_from_source(source_code)\nfor symbol_type, names in symbols.items():\n    print(f\"{symbol_type}: {', '.join(names)}\")\n```\n\n请注意，上述代码仅作为示例，并未在提供的源码文件中实际执行。若要在该文件中实现符号提取，需要将其整合到合适的位置，并处理可能存在的复杂情况（例如变量赋值、导入别名等）。",
+    "last_modified": 1711414954.6639447,
+    "md5": "9444b4a926c1d9eedd9c04ec1ccc05a0"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/search.py": {
     "symbols": "函数:\n- llm_rerank\n- search_with_bing\n- search_with_google\n- search_with_serper\n\n类:\n- DocWithRelevance\n- SearchEngine\n- SearchContext\n- RelatedQuestion\n\n变量:\n- BING_SEARCH_V7_ENDPOINT\n- BING_MKT\n- GOOGLE_SEARCH_ENDPOINT\n- SERPER_SEARCH_ENDPOINT\n- SEARCHAPI_SEARCH_ENDPOINT\n- REFERENCE_COUNT\n- DEFAULT_SEARCH_ENGINE_TIMEOUT\n- DEFAULT_CHOICE_SELECT_PROMPT_TMPL\n\n导入语句:\n- from typing import List, Optional\n- import httpx\n- import json\n- from loguru import logger\n- from pydantic import BaseModel, Field\n- import requests\n- from enum import Enum\n- import byzerllm\n- from langchain import PromptTemplate\n- from autocoder.utils.rest import HttpDoc",
@@ -170,8 +170,8 @@
     "md5": "97fbef061ca5f516f64888c1af23ff25"
   },
   "/home/winubuntu/projects/ByzerRawCopilot/src/autocoder/common/git_utils.py": {
-    "symbols": "函数: get_repo, commit_changes, get_current_branch\n导入语句: import os, from git import Repo, GitCommandError, from loguru import logger",
-    "last_modified": 1711378117.0396943,
-    "md5": "2fa4ee2a020b543915d266cb9ef87376"
+    "symbols": "函数:\n- get_repo\n- commit_changes\n- get_current_branch\n- revert_changes\n\n导入语句:\n- import os\n- from git import Repo, GitCommandError\n- from loguru import logger",
+    "last_modified": 1711415159.5240228,
+    "md5": "9483378f3ff61a3fcb528fc4e3738acd"
   }
 }
