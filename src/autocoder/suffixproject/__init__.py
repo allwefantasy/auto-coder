@@ -11,14 +11,14 @@ class SuffixProject():
     
     def __init__(self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None,file_filter=None):
         self.args = args
-        self.directory = args.source_dir
+        self.directory = args.source_dir        
         self.git_url = args.git_url        
         self.target_file = args.target_file  
         self.project_type = args.project_type
         self.suffixs = [f".{suffix}" if not suffix.startswith('.') else suffix for suffix in self.project_type.split(",") if suffix.strip() != ""]
         self.file_filter = file_filter
         self.sources = []
-        self.llm = llm
+        self.llm = llm        
 
     def output(self):
         return open(self.target_file, "r").read()                
@@ -38,10 +38,8 @@ class SuffixProject():
     def get_source_codes(self) -> Generator[SourceCode, None, None]:
         for root, dirs, files in os.walk(self.directory):
             for file in files:
-                file_path = os.path.join(root, file)
-                
-                if self.is_suffix_file(file_path):
-                
+                file_path = os.path.join(root, file)                            
+                if self.is_suffix_file(file_path):                
                     if self.file_filter is None or self.file_filter(file_path,self.suffixs):
                         print(f"====Filter {file_path}",flush=True)
                         source_code = self.convert_to_source_code(file_path)
@@ -71,7 +69,12 @@ class SuffixProject():
         if self.git_url is not None:
             self.clone_repository()
 
-        if self.target_file is None:     
+        if self.target_file is None:   
+            for code in self.get_source_codes():
+                self.sources.append(code)
+                print(f"##File: {code.module_name}")
+                print(code.source_code)   
+
             for code in self.get_rest_source_codes():
                 self.sources.append(code)
                 print(f"##File: {code.module_name}")
@@ -82,12 +85,14 @@ class SuffixProject():
                 print(f"##File: {code.module_name}")
                 print(code.source_code)    
 
-            for code in self.get_source_codes():
-                self.sources.append(code)
-                print(f"##File: {code.module_name}")
-                print(code.source_code)                
+                         
         else:            
             with open(self.target_file, "w") as file:
+                for code in self.get_source_codes():                    
+                    self.sources.append(code)
+                    file.write(f"##File: {code.module_name}\n")
+                    file.write(f"{code.source_code}\n\n")
+
                 for code in self.get_rest_source_codes():
                     self.sources.append(code)
                     file.write(f"##File: {code.module_name}\n")
@@ -97,11 +102,7 @@ class SuffixProject():
                     self.sources.append(code)
                     file.write(f"##File: {code.module_name}\n")
                     file.write(f"{code.source_code}\n\n")    
-                    
-                for code in self.get_source_codes():
-                    self.sources.append(code)
-                    file.write(f"##File: {code.module_name}\n")
-                    file.write(f"{code.source_code}\n\n")
+                                    
                     
     
     def clone_repository(self):   

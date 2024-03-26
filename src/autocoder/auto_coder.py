@@ -5,7 +5,6 @@ from autocoder.common import AutoCoderArgs
 from autocoder.dispacher import Dispacher 
 from autocoder.lang import lang_desc
 from autocoder.common import git_utils
-from autocoder.utils.llm_client_utils import intercept_callback,EventName
 import yaml   
 import locale
 import os
