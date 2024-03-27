@@ -1,0 +1,16 @@
+source_dir: /home/winubuntu/projects/ByzerRawCopilot
+target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
+project_type: py
+
+model: qianwen_chat
+model_max_length: 2000
+model_max_input_length: 6000
+anti_quota_limit: 5
+
+skip_build_index: true
+execute: true
+auto_merge: true
+human_as_model: true
+
+query: |
+   测试
