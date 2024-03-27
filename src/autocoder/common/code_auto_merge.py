@@ -46,7 +46,22 @@ class CodeAutoMerge:
         md5 = hashlib.md5(file_content.encode('utf-8')).hexdigest()
         # get the file name 
         file_name = os.path.basename(self.args.file)
-        git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
+
+        try:
+            git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
+        except Exception as e:            
+            logger.error(f'''auto_merge only works for git repositories. 
+                         Try to use git init in the source directory. 
+                         
+                         ```shell
+                         cd {self.args.source_dir}
+                         git init .
+                         ```
+
+                         Then try to run auto-coder again.
+                         Error: {str(e)}''')
+            return
+
 
         for (lang,code) in codes:            
             parsed_blocks = self.parse_text(code)
