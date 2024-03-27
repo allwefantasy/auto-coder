@@ -37,6 +37,22 @@ class CodeAutoMerge:
             parsed_blocks.append(PathAndCode(path=file_path,content="\n".join(content_lines)))
 
         return parsed_blocks
+    
+    @byzerllm.prompt(render="jinja2")
+    def git_require_msg(self,source_dir:str,error:str)->str:
+        '''
+        auto_merge only works for git repositories.
+         
+        Try to use git init in the source directory. 
+        
+        ```shell
+        cd {{ source_dir }}
+        git init .
+        ```
+
+        Then try to run auto-coder again.
+        Error: {{ error }}
+        '''
 
     def merge_code(self, content: str):
         codes =  code_utils.extract_code(content)
@@ -50,16 +66,7 @@ class CodeAutoMerge:
         try:
             git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
         except Exception as e:            
-            logger.error(f'''auto_merge only works for git repositories. 
-                         Try to use git init in the source directory. 
-                         
-                         ```shell
-                         cd {self.args.source_dir}
-                         git init .
-                         ```
-
-                         Then try to run auto-coder again.
-                         Error: {str(e)}''')
+            logger.error(self.git_require_msg(source_dir=self.args.source_dir,error=str(e)))
             return
 
 

@@ -1,4 +1,4 @@
-source_dir: /home/winubuntu/projects/ByzerRawCopilot
+source_dir: /home/winubuntu/projects/test_merge
 target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
 project_type: py
 
