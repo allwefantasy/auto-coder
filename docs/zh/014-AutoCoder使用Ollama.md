@@ -1,15 +1,13 @@
 # 014 - AutoCoder 使用 Ollama
 
-Ollama 是一个很优秀的模型部署工具。 
-Byzer-LLM 则不仅仅支持类似 Ollama 的模型部署能力，还可以用于
+Ollama 是一个很优秀的模型部署工具。 Byzer-LLM 则不仅仅支持类似 Ollama 的模型部署能力，还包括如下功能特性：
 
 1. 开源或者私有模型训练、模型调参等
-2. 分布式
+2. 训练和部署都支持分布式
 3. 同时支持Saas模型
-4. 支持诸如Prompt函数/类等将大模型和编程语言融合的一些更加高阶的设计
+4. 支持诸如Prompt函数/类等将大模型和编程语言融合的一些高阶特性
 
-不过如果用户已经使用 Ollama 进行了模型,我们依然可以使用 byzer-llm 对接Ollama, 这样 AutoCoder就可以无缝使用 Ollama了。
-因为 ollama 支持 OpenAI 协议的接口，所以我们可以使用如下方式进行部署：
+不过如果用户已经使用 Ollama 进行了模型的部署,我们依然可以使用 byzer-llm 对接Ollama, 这样 AutoCoder就可以无缝使用 Ollama了。 因为 ollama 支持 OpenAI 协议的接口，所以我们可以使用如下方式进行部署：
 
 ```shell
 byzerllm deploy  --pretrained_model_type saas/official_openai \
