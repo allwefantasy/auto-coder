@@ -26,6 +26,18 @@ class HttpDoc:
         返回提取的结果即可,不需要给出提取步骤。
         """
 
+    def is_binary_file(self,filepath):    
+        try:
+            with open(filepath, 'rb') as file:
+                chunk = file.read(1024)  # Read first 1024 bytes
+                if b'\x00' in chunk:  # Binary files often contain null bytes
+                    return True
+                # Attempt to decode as UTF-8 (or any encoding you expect your text files to be in)
+                chunk.decode('utf-8')
+                return False
+        except UnicodeDecodeError:
+            return True   
+
     def get_file_extractor(self):        
         try:
             from llama_index.core.readers.base import BaseReader
@@ -44,26 +56,7 @@ class HttpDoc:
                 PDFReader,
                 PptxReader,
                 VideoAudioReader,
-            )  # pants: no-infer-dep
-            
-            class TextFileReader(BaseReader):
-                """TextFile parser."""
-
-                def __init__(self) -> None:
-                    pass
-
-                def load_data(
-                    self,
-                    file: Path,
-                    extra_info: Optional[Dict] = None,
-                    fs: Optional[AbstractFileSystem] = None,
-                ) -> List[Document]:
-                    """Parse file."""                    
-                    fs = fs or get_default_fs()                    
-                    with fs.open(file, "r") as fp:
-                        metadata = {"file_name": fp.name, "file_path": fp.name}                        
-                        return [Document(text=fp.read(), metadata=metadata)]
-        
+            )  # pants: no-infer-dep                                
         except ImportError as e:
             raise ImportError(f"`llama-index-readers-file` package not found. {e}")
 
@@ -74,43 +67,53 @@ class HttpDoc:
             # ".pptx": PptxReader(),
             # ".ppt": PptxReader(),
             # ".pptm": PptxReader(),
-            ".jpg": ImageReader(),
-            ".png": ImageReader(),
-            ".jpeg": ImageReader(),
+            # ".jpg": ImageReader(),
+            # ".png": ImageReader(),
+            # ".jpeg": ImageReader(),
             # ".mp3": VideoAudioReader(),
             # ".mp4": VideoAudioReader(),
-            ".csv": PandasCSVReader(),
-            ".epub": EpubReader(),
-            ".md": MarkdownReader(),
+            # ".csv": PandasCSVReader(),
+            ".epub": EpubReader(),            
             ".mbox": MboxReader(),
-            ".ipynb": IPYNBReader(),
-            ".py": TextFileReader(),
-            ".java": TextFileReader(),
-            ".scala": TextFileReader(),
-            ".go": TextFileReader(),
-            ".rs": TextFileReader(),
-            ".ts": TextFileReader(),
-            ".js": TextFileReader(),
-            ".vue": TextFileReader(),
-            ".jsx": TextFileReader(),
-            ".txt": TextFileReader(),
-            ".css": TextFileReader(),
+            ".ipynb": IPYNBReader(),            
         }
         return default_file_reader_cls
 
     def crawl_urls(self) -> List[SourceCode]:
-        source_codes = []
+        source_codes = []        
         for url in self.urls:
             if not url.startswith("http://") or not url.startswith("https://"):
                 try:
                  from llama_index.core import SimpleDirectoryReader
+                 exts = self.get_file_extractor()
+                 documents = []   
+
+                 def process_single_file(file_path: str): 
+                    temp_documents = []
+                    ext = os.path.splitext(file_path)[1].lower()                    
+                    if self.is_binary_file(file_path):
+                        logger.warning(f"Skipping binary file: {file_path}")
+                        return temp_documents
+                    
+                    if ext not in exts.keys():                                                
+                        main_content = open(file_path, "r").read()
+                        source_code = SourceCode(module_name=file_path, source_code=main_content)
+                        source_codes.append(source_code)                                   
+                    else:
+                        temp_documents = SimpleDirectoryReader(input_files=[url],file_extractor=exts).load_data()  
+                    return temp_documents                                    
+
                  if os.path.isdir(url):
-                    documents = SimpleDirectoryReader(input_dir=url,file_extractor=self.get_file_extractor()).load_data()                    
+                    for root, dirs, files in os.walk(url):
+                        for file in files:
+                            file_path = os.path.join(root, file)                            
+                            documents.extend(process_single_file(file_path))
+                    
                  else:
-                    documents = SimpleDirectoryReader(input_files=[url],file_extractor=self.get_file_extractor()).load_data()                    
+                    documents.extend(process_single_file(url))
                     
                  for document in documents:
-                    source_code = SourceCode(module_name=document.metadata["file_name"], source_code=document.get_content())
+                    source_code = SourceCode(module_name=document.metadata["file_path"], source_code=document.get_content())
                     source_codes.append(source_code)
 
                 except ImportError as e:

@@ -110,9 +110,9 @@ class ActionTSProject:
     def process_content(self, content: str):
         args = self.args
 
-        if args.execute and self.llm:
+        if args.execute and self.llm and not args.human_as_model:
             if len(content) > self.args.model_max_input_length:
-                print(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
+                logger.warning(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
                 content = content[:self.args.model_max_input_length]        
 
         if args.template == "common":
@@ -207,9 +207,9 @@ class ActionPyProject:
     def process_content(self, content: str):
         args = self.args
         
-        if args.execute and self.llm:
+        if args.execute and self.llm and not args.human_as_model:
             if len(content) > self.args.model_max_input_length:
-                print(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
+                logger.warning(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
                 content = content[:self.args.model_max_input_length]
 
         if args.template == "common":
@@ -253,9 +253,9 @@ class ActionSuffixProject:
     def process_content(self, content: str):
         args = self.args
 
-        if args.execute and self.llm:
+        if args.execute and self.llm and not args.human_as_model:
             if len(content) > self.args.model_max_input_length:
-                print(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
+                logger.warning(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
                 content = content[:self.args.model_max_input_length]        
 
         if args.template == "common":
