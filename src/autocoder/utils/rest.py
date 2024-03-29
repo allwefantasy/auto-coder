@@ -105,6 +105,7 @@ class HttpDoc:
 
                  if os.path.isdir(url):
                     for root, dirs, files in os.walk(url):
+                        dirs[:] = [d for d in dirs if d not in ['.git']]  # Exclude .git directory
                         for file in files:
                             file_path = os.path.join(root, file)                            
                             documents.extend(process_single_file(file_path))
