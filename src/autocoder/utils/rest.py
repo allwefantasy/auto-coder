@@ -82,7 +82,7 @@ class HttpDoc:
     def crawl_urls(self) -> List[SourceCode]:
         source_codes = []        
         for url in self.urls:
-            if not url.startswith("http://") or not url.startswith("https://"):
+            if not url.startswith("http://") and not url.startswith("https://"):
                 try:
                  from llama_index.core import SimpleDirectoryReader
                  exts = self.get_file_extractor()
@@ -105,7 +105,7 @@ class HttpDoc:
 
                  if os.path.isdir(url):
                     for root, dirs, files in os.walk(url):
-                        dirs[:] = [d for d in dirs if d not in ['.git']]  # Exclude .git directory
+                        dirs[:] = [d for d in dirs if d not in ['.git',"node_modules"]]  # Exclude .git directory
                         for file in files:
                             file_path = os.path.join(root, file)                            
                             documents.extend(process_single_file(file_path))
