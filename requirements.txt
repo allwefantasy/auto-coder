@@ -1,6 +1,6 @@
 contextlib2
 ninja
-netifaces
+# netifaces
 accelerate
 bitsandbytes==0.39.0
 transformers>=4.35.0
@@ -65,5 +65,6 @@ protobuf==3.20.0
 
 # camelot-py
 # llama_index
-byzerllm>=0.1.54
+byzerllm>=0.1.55
+GitPython
 

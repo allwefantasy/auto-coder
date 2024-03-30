@@ -1,6 +1,5 @@
 contextlib2
 ninja
-netifaces
 accelerate
 bitsandbytes==0.39.0
 transformers>=4.35.0
@@ -36,4 +35,4 @@ wudao
 SwissArmyTransformer
 jieba
 protobuf==3.20.0
-byzerllm>=0.1.54
+byzerllm>=0.1.55
