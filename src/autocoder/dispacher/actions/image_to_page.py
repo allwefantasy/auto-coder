@@ -84,7 +84,7 @@ class ImageToPage:
 
         {{ desc }}
         
-        
+
         请根据需求修改上述 HTML/CSS，对应的文件路径为: {{ html_path }} ,你新生成的HTML代码要符合这个格式：
     
         ```{lang}
@@ -133,9 +133,9 @@ class ImageToPage:
 
         return file_modified_num            
 
-    def run_then_iterate(self,origin_image:str,html_path:str,max_iter:int=5):
+    def run_then_iterate(self,origin_image:str,html_path:str,max_iter:int=1):
         desc = self.desc_image(origin_image)
-        logger.info(f"desc image: {desc}")        
+        logger.info(f"desc image: {origin_image}")        
         content_contains_html = self.generate_html(desc,html_path)  
         
         file_modified_num = self.write_code(content_contains_html,html_path)
