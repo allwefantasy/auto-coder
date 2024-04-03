@@ -55,7 +55,7 @@ def instruction_template(instruction:str, content:str,execute:bool=False)->str:
     {CODE}
     ```
 
-    其中，{lang}是代码的语言，{CODE}是代码的内容, {FILE_PATH} 是文件的路径。
+    其中，{lang}是代码的语言，{CODE}是代码的内容, {FILE_PATH} 是文件的路径，他们都在代码块中，请严格按上面的格式进行内容生成。
          
     请确保每份代码的完整性，而不要只生成修改部分。
     '''

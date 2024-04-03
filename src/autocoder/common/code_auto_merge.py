@@ -54,7 +54,7 @@ class CodeAutoMerge:
         Error: {{ error }}
         '''
 
-    def merge_code(self, content: str):
+    def merge_code(self, content: str,force_skip_git:bool=False):
         codes =  code_utils.extract_code(content)
         total = 0
         
@@ -62,12 +62,13 @@ class CodeAutoMerge:
         md5 = hashlib.md5(file_content.encode('utf-8')).hexdigest()
         # get the file name 
         file_name = os.path.basename(self.args.file)
-
-        try:
-            git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
-        except Exception as e:            
-            logger.error(self.git_require_msg(source_dir=self.args.source_dir,error=str(e)))
-            return
+        
+        if not force_skip_git:
+            try:
+                git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
+            except Exception as e:            
+                logger.error(self.git_require_msg(source_dir=self.args.source_dir,error=str(e)))
+                return            
 
 
         for (lang,code) in codes:            
@@ -83,4 +84,5 @@ class CodeAutoMerge:
                     f.write(block.content)
 
         logger.info(f"Merged {total} files into the project.")
-        git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}")
+        if not force_skip_git:
+            git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}")
