@@ -144,8 +144,9 @@ class ImageToPage:
             return
                 
         logger.info(f"generate html: {html_path}")
-
-        new_image_dir = os.path.join("screenshots","new")
+        
+        
+        new_image_dir = os.path.join(os.path.dirname(origin_image),"new")
         os.makedirs(new_image_dir, exist_ok=True)
                
 
@@ -167,6 +168,8 @@ class ImageToPage:
             self.write_code(new_code,html_path)
             logger.info(f"generate new html: {html_path}")
             time.sleep(self.args.anti_quota_limit)
+
+        return html_path    
             
 
 
