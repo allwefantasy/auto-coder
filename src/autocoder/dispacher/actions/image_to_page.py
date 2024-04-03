@@ -25,7 +25,7 @@ class ImageToPage:
             "role":"user",
             "content":json.dumps([{
                 "image":image,
-                "text":"这是一张网页截图,请描述该网页的布局结构,尽可能详细，比如是居中布局么？还是左中右布局等。"
+                "text":"这是一张网页截图,请描述该网页的布局结构,对于每个元素，请描述它位于页面所在的相对位置，大小，颜色。最后对网页整体特点做个总结。注意，不要吝啬词汇，尽量描述详细。"
             }],ensure_ascii=False)
         }])
         return t[0].output
@@ -135,7 +135,7 @@ class ImageToPage:
 
     def run_then_iterate(self,origin_image:str,html_path:str,max_iter:int=1):
         desc = self.desc_image(origin_image)
-        logger.info(f"desc image: {origin_image}")        
+        logger.info(f"desc image: {origin_image} {desc}")        
         content_contains_html = self.generate_html(desc,html_path)  
         
         file_modified_num = self.write_code(content_contains_html,html_path)
