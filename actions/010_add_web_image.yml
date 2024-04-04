@@ -18,5 +18,4 @@ auto_merge: true
 human_as_model: true
 
 query: |
-   在 build_index 方法中，如果发现文本长度过长，自动切割文本（按换行符切割，每个chunk不超过大小限制），分多次抽取符号，
-   然后合并符号得到完整symbols，在保存。
+   在 auto_coder.py 中添加 image_file 字段，同步更新 lang.py 和 AutoCoderArgs。

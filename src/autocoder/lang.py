@@ -28,6 +28,7 @@ lang_desc = {
         "vl_model": "The name of the multi-modal model to use. Default is empty",
         "sd_model": "The name of the stable diffusion model to use. Default is empty",
         "index_model": "The name of the model used to build index. Default is empty",
+         "image_file": "The path of the image file to process. Default is empty",
         
     },
     "zh": {
@@ -59,5 +60,6 @@ lang_desc = {
         "vl_model": "要使用的多模态模型的名称。默认为空",
         "sd_model": "要使用的稳定扩散模型的名称。默认为空",
         "index_model": "用于构建索引的模型名称。默认为空",
+         "image_file": "要处理的图像文件路径。默认为空",
     }
 }

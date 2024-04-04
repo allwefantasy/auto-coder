@@ -65,22 +65,55 @@ class IndexManager:
 
     @byzerllm.prompt(lambda self: self.index_llm, render="jinja2")
     def get_all_file_symbols(self, path: str, code: str) -> str:
-        '''
-        下列是文件 {{ path }} 的源码：
-        
-        {{ code }}
-        
-        从上述内容中获取文件中的符号。需要获取的符号类型包括：
+        '''        
+        你的目标是从给定的代码中获取代码里的符号，需要获取的符号类型包括：
         
         1. 函数
         2. 类  
         3. 变量
         4. 所有导入语句 
-        
-        如果没有任何符号,返回"没有任何符号"。
-        最终结果按如下格式返回:
+            
+        如果没有任何符号,返回空字符串就行。
+        如果有符号，按如下格式返回:
+            
+        ```
+        {符号类型}: {符号名称}, {符号名称}, ...
+        ```
 
-        {符号类型}: {符号名称}, {符号名称}, ...        
+        注意：
+        1. 直接输出结果，不要尝试使用任何代码        
+        2. 不要分析代码的内容和目的
+        
+        下面是一段示例：
+
+        ## 输入 
+        下列是文件 /test.py 的源码：
+        
+        import os
+        import time
+        from loguru import logger
+        import byzerllm
+
+        a = ""
+
+        @byzerllm.prompt(render="jinja")
+        def auto_implement_function_template(instruction:str, content:str)->str:
+
+        ## 输出
+
+        函数：auto_implement_function_template
+        变量：a
+        类：
+        导入语句：import os,import time,from loguru import logger,import byzerllm
+
+        现在，让我们开始一个新的任务。
+        
+        ## 输入 
+        下列是文件 {{ path }} 的源码：
+        
+        {{ code }}
+
+        ## 输出
         '''
 
     def split_text_into_chunks(self, text, max_chunk_size=4096):
@@ -204,10 +237,11 @@ class IndexManager:
             chunk_count += 1  
             time.sleep(self.args.anti_quota_limit)  
         
+        all_results = list({file.file_path: file for file in all_results}.values())
         return FileList(file_list=all_results)
 
     def get_target_files_by_query(self, query: str) -> FileList:
-        all_results = []
+        all_results:List[TargetFile] = []
         chunk_count = 0
         for chunk in self._get_meta_str():
             result = self._get_target_files_by_query(chunk, query)            
@@ -217,7 +251,8 @@ class IndexManager:
                 logger.warning(f"Fail to find targed files for chunk {chunk_count}. this may be caused by the model limit or the query is not suitable for the files.")
             chunk_count += 1  
             time.sleep(self.args.anti_quota_limit)      
-        
+                
+        all_results = list({file.file_path: file for file in all_results}.values())
         return FileList(file_list=all_results) 
     
     @byzerllm.prompt(lambda self: self.llm, render="jinja2",check_result=True)

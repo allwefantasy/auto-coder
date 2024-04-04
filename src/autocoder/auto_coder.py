@@ -60,6 +60,8 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--search_engine_token", default="",help=desc["search_engine_token"])
     parser.add_argument("--auto_merge", action='store_true', help=desc["auto_merge"])
 
+    parser.add_argument("--image_file", default="", help=desc["image_file"])
+
     revert_parser = subparsers.add_parser("revert", help=desc["revert_desc"])
     revert_parser.add_argument("--file", help=desc["revert_desc"])
 
