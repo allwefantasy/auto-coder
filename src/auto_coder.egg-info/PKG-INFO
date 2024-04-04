@@ -45,6 +45,7 @@ Requires-Dist: SwissArmyTransformer
 Requires-Dist: jieba
 Requires-Dist: protobuf==3.20.0
 Requires-Dist: byzerllm>=0.1.55
+Requires-Dist: GitPython
 
 <p align="center">
   <picture>    

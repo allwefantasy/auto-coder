@@ -36,9 +36,19 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--execute", action='store_true', help=desc["execute"])
     parser.add_argument("--package_name", default="", help=desc["package_name"])  
     parser.add_argument("--script_path", default="", help=desc["script_path"])
-    parser.add_argument("--model", default="", help=desc["model"])
+    
+    parser.add_argument("--model", default="", help=desc["model"])    
     parser.add_argument("--model_max_length", type=int, default=2000, help=desc["model_max_length"])
     parser.add_argument("--model_max_input_length", type=int, default=6000, help=desc["model_max_input_length"])
+
+    parser.add_argument("--vl_model", default="", help=desc["vl_model"])
+    parser.add_argument("--sd_model", default="", help=desc["sd_model"])
+    
+    parser.add_argument("--index_model", default="", help=desc["index_model"])
+    parser.add_argument("--index_model_max_length", type=int, default=0, help=desc["model_max_length"])
+    parser.add_argument("--index_model_max_input_length", type=int, default=0, help=desc["model_max_input_length"])
+    parser.add_argument("--index_model_anti_quota_limit", type=int, default=0, help=desc["anti_quota_limit"])
+    
     parser.add_argument("--file", default=None, required=False, help=desc["file"])
     parser.add_argument("--anti_quota_limit", type=int, default=1, help=desc["anti_quota_limit"])
     parser.add_argument("--skip_build_index", action='store_false', help=desc["skip_build_index"])
@@ -157,6 +167,27 @@ def main():
         llm.setup_max_output_length(args.model,args.model_max_length)
         llm.setup_max_input_length(args.model,args.model_max_input_length)
         llm.setup_extra_generation_params(args.model, {"max_length": args.model_max_length})
+        
+        if args.vl_model:
+            vl_model = byzerllm.ByzerLLM()
+            vl_model.setup_default_model_name(args.vl_model)
+            vl_model.setup_template(model=args.vl_model,template="auto")            
+            llm.setup_sub_client("vl_model",vl_model)
+
+        if args.sd_model:
+            sd_model = byzerllm.ByzerLLM()
+            sd_model.setup_default_model_name(args.sd_model)
+            sd_model.setup_template(model=args.sd_model,template="auto")            
+            llm.setup_sub_client("sd_model",sd_model)
+
+        if args.index_model:
+            index_model = byzerllm.ByzerLLM()
+            index_model.setup_default_model_name(args.index_model)
+            index_model.setup_max_output_length(args.index_model,args.index_model_max_length or args.model_max_length)
+            index_model.setup_max_input_length(args.index_model,args.index_model_max_input_length or args.model_max_input_length)
+            index_model.setup_extra_generation_params(args.index_model, {"max_length": args.index_model_max_length or args.model_max_length})  
+            llm.setup_sub_client("index_model",index_model)    
+
     else:
         llm = None
 

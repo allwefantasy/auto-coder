@@ -25,6 +25,9 @@ lang_desc = {
         "model_max_input_length": "The maximum length of the generated code by the model. Default is 6000. This only works when model is specified.",
         "auto_merge": "Whether to automatically merge the generated code into the existing file. Default is False",
         "revert_desc": "Revert the changes made by the specified file",
+        "vl_model": "The name of the multi-modal model to use. Default is empty",
+        "sd_model": "The name of the stable diffusion model to use. Default is empty",
+        "index_model": "The name of the model used to build index. Default is empty",
         
     },
     "zh": {
@@ -53,5 +56,8 @@ lang_desc = {
         "model_max_input_length": "模型的最大输入长度。默认为6000。仅在指定模型时生效。",
         "auto_merge": "是否自动将生成的代码合并到现有文件中。默认为False。",
         "revert_desc": "撤销指定文件所做的更改",
+        "vl_model": "要使用的多模态模型的名称。默认为空",
+        "sd_model": "要使用的稳定扩散模型的名称。默认为空",
+        "index_model": "用于构建索引的模型名称。默认为空",
     }
 }

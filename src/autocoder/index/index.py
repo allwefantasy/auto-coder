@@ -27,14 +27,20 @@ class FileList(pydantic.BaseModel):
 
 
 class IndexManager:
-    def __init__(self, llm, sources: List[SourceCode], args:AutoCoderArgs):
+    def __init__(self, llm:byzerllm.ByzerLLM, sources: List[SourceCode], args:AutoCoderArgs):
         self.sources = sources
         self.source_dir = args.source_dir
-        self.anti_quota_limit = args.anti_quota_limit
+        self.anti_quota_limit = args.index_model_anti_quota_limit or args.anti_quota_limit
         self.index_dir = os.path.join(self.source_dir, ".auto-coder")
         self.index_file = os.path.join(self.index_dir, "index.json")
-        self.llm = llm
+        if llm and (s := llm.get_sub_client("index_model")):            
+            self.index_llm =s
+        else:
+            self.index_llm =llm
+
+        self.llm = llm    
         self.args = args
+        self.max_input_length = args.index_model_max_input_length or args.model_max_input_length
 
         # 如果索引目录不存在,则创建它
         if not os.path.exists(self.index_dir):
@@ -57,7 +63,7 @@ class IndexManager:
         '''
         
 
-    @byzerllm.prompt(lambda self: self.llm, render="jinja2")
+    @byzerllm.prompt(lambda self: self.index_llm, render="jinja2")
     def get_all_file_symbols(self, path: str, code: str) -> str:
         '''
         下列是文件 {{ path }} 的源码：
@@ -74,8 +80,25 @@ class IndexManager:
         如果没有任何符号,返回"没有任何符号"。
         最终结果按如下格式返回:
 
-        符号类型: 符号名称, 符号名称, ...        
+        {符号类型}: {符号名称}, {符号名称}, ...        
         '''
+
+    def split_text_into_chunks(self, text, max_chunk_size=4096):
+        lines = text.split("\n")
+        chunks = []
+        current_chunk = []
+        current_length = 0
+        for line in lines:
+            if current_length + len(line) + 1 <= self.max_input_length:
+                current_chunk.append(line)
+                current_length += len(line) + 1
+            else:
+                chunks.append("\n".join(current_chunk))
+                current_chunk = [line]
+                current_length = len(line) + 1
+        if current_chunk:
+            chunks.append("\n".join(current_chunk))
+        return chunks    
 
     def build_index(self):
         if os.path.exists(self.index_file):
@@ -99,10 +122,18 @@ class IndexManager:
             try:
                 logger.info(f"parse and update index for {file_path} md5: {md5}")
                 source_code = source.source_code
-                if len(source.source_code) > self.args.model_max_input_length:
-                    logger.warning(f"Warning: The length of source code is too long ({len(source.source_code)}) > model_max_input_length({self.args.model_max_input_length}) , keep the first {self.args.model_max_input_length} characters to avoid failure of the model limit")
-                    source_code = source.source_code[:self.args.model_max_input_length]
-                symbols = self.get_all_file_symbols(source.module_name, source_code)
+                if len(source.source_code) > self.max_input_length:
+                    logger.warning(f"Warning: The length of source code is too long ({len(source.source_code)}) > model_max_input_length({self.max_input_length}), splitting into chunks...")
+                    chunks = self.split_text_into_chunks(source_code,self.max_input_length-1000)
+                    symbols = []
+                    for chunk in chunks:
+                        chunk_symbols = self.get_all_file_symbols(source.module_name, chunk)
+                        time.sleep(self.anti_quota_limit)
+                        symbols.append(chunk_symbols)
+                    symbols = "\n".join(symbols)
+                else:
+                    symbols = self.get_all_file_symbols(source.module_name, source_code)
+                    time.sleep(self.anti_quota_limit)
                 time.sleep(self.anti_quota_limit)
             except Exception as e:
                 logger.warning(f"Error: {e}")
@@ -164,7 +195,7 @@ class IndexManager:
     def get_related_files(self, file_paths: List[str]):
         all_results = []
         chunk_count = 0
-        for chunk in self._get_meta_str():            
+        for chunk in self._get_meta_str(max_chunk_size=self.max_input_length-1000):            
             result = self._get_related_files(chunk, "\n".join(file_paths))
             if result is not None:
                 all_results.extend(result.file_list)
@@ -192,15 +223,11 @@ class IndexManager:
     @byzerllm.prompt(lambda self: self.llm, render="jinja2",check_result=True)
     def _get_target_files_by_query(self,indices:str,query:str)->FileList:
         '''
-        下面是所有文件以及对应的符号信息：
+        下面是已知文件以及对应的符号信息：
         
         {{ indices }}
 
-        请参考上面的信息，根据用户的问题寻找相关文件。如果没有相关的文件，返回空即可。 
-
-        注意，
-        1. 找到的文件名必须出现在上面的文件列表中
-        2. 如果没有相关的文件，返回空即可       
+        请参考上面的信息，根据用户的问题寻找包含在上面的相关文件。如果没有找到，返回空即可。         
 
         用户的问题是：{{ query }}        
         '''
