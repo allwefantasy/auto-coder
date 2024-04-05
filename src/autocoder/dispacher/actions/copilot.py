@@ -1,17 +1,21 @@
-from autocoder.common import AutoCoderArgs,ExecuteSteps,ExecuteStep,EnvInfo,detect_env,chat_with_llm_step_by_step
+from autocoder.common import AutoCoderArgs,ExecuteSteps,ExecuteStep,EnvInfo,detect_env,chat_with_llm_step_by_step,SourceCode
 from autocoder.common.JupyterClient import JupyterNotebook
 from autocoder.common.ShellClient import ShellClient
 from autocoder.suffixproject import SuffixProject
 from autocoder.common.search import Search,SearchEngine
 from autocoder.index.index import build_index_and_filter_files
+from autocoder.common.image_to_page import ImageToPage
+from autocoder.common.code_auto_merge import CodeAutoMerge
 from typing import Optional,Dict,Any,List
 import byzerllm
 from enum import Enum
 import pydantic
+import os
+from loguru import logger
 
 class UserIntent(Enum):
     CREATE_NEW_PROJECT = "CREATE_NEW_PROJECT"
-    OPTIMIZE_EXISTING_PROJECT = "OPTIMIZE_EXISTING_PROJECT"
+    OPTIMIZE_EXISTING_PROJECT = "OPTIMIZE_EXISTING_PROJECT"    
     UNKNOWN = "UNKNOWN"
 
 
@@ -24,7 +28,7 @@ class StepNum(pydantic.BaseModel):
 class ActionCopilot():
     def __init__(self,args:AutoCoderArgs,llm:Optional[byzerllm.ByzerLLM]=None) -> None:
         self.args = args
-        self.llm = llm         
+        self.llm = llm                 
         self.env_info = detect_env()  
         self.user_intent = UserIntent.UNKNOWN
     
@@ -123,7 +127,36 @@ class ActionCopilot():
         {{ context }}        
         
         每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。        
-        '''                          
+        ''' 
+
+    @byzerllm.prompt(render="jinja2") 
+    def prompt_convert_html_to_page(self,query:str,source_code:str) -> str:
+        '''
+        {%- if source_code %}
+        下面是一系列文件以及它们的源码：
+        {{ source_code }}
+        {%- endif %}
+        
+        参考上面的代码，根据下面要求对最后一个HTML/CSS 代码进行翻译：
+
+        {{ query }}
+
+        你生成的代码要符合这个格式：
+    
+        ```{lang}
+        ##File: {FILE_PATH}
+        {CODE}
+        ```    
+
+        ```{lang}
+        ##File: {FILE_PATH}
+        {CODE}
+        ```
+
+        其中，{lang}是代码的语言，{CODE}是代码的内容, {FILE_PATH} 是文件的路径，他们都在代码块中，请严格按上面的格式进行内容生成。
+            
+        请确保每份代码的完整性，而不要只生成修改部分。
+        '''
 
     def execute_steps(self, steps: ExecuteSteps) -> str:
         jupyter_client = JupyterNotebook()
@@ -179,6 +212,46 @@ class ActionCopilot():
         args = self.args        
         if not args.project_type.startswith("copilot"):    
             return False 
+        
+        if args.image_file:
+            image_to_page = ImageToPage(llm=self.llm, args=args)
+            file_name = os.path.splitext(os.path.basename(args.image_file))[0]
+            html_path = os.path.join(os.path.dirname(args.image_file), "html",f"{file_name}.html")
+            image_to_page.run_then_iterate(origin_image=args.image_file, html_path=html_path)
+            suffixs = self.get_suffix_from_project_type(args.project_type)  
+            args.project_type = ",".join(suffixs) or ".py"      
+            pp = SuffixProject(args=args,
+                            llm = self.llm,file_filter=None) 
+            pp.run()
+
+            sources = list(pp.get_source_codes())
+            with open(html_path,"r") as f:
+                sources.append(SourceCode(module_name=html_path,source_code=f.read()))
+            
+            source_code = ""
+            for source in sources:
+                source_code  += f"##File: {source.module_name}\n"
+                source_code  += f"{source.source_code}\n\n"
+            
+
+            s = self.prompt_convert_html_to_page(query=args.query,source_code=source_code)            
+            
+            if args.execute:
+                t = self.llm.chat_oai(conversations=[{
+                    "role":"user",
+                    "content":s
+                }]) 
+                s = t[0].output    
+
+            with open(args.target_file, "w") as f:
+                f.write(s)    
+
+            if args.execute and args.auto_merge:
+                logger.info("Auto merge the code...")
+                code_merge = CodeAutoMerge(llm=self.llm,args=self.args)
+                code_merge.merge_code(content=s)    
+
+            return True
 
         if args.query and self.llm:
             t = self.llm.chat_oai(conversations=[

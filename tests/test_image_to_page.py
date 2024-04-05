@@ -3,7 +3,7 @@ import byzerllm
 import os
 import base64
 import json
-from autocoder.dispacher.actions.image_to_page import ImageToPage
+from autocoder.common.image_to_page import ImageToPage
 from autocoder.common import AutoCoderArgs
 
 class TestImageToPage(unittest.TestCase):

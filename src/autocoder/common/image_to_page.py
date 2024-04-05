@@ -14,6 +14,9 @@ class ImageToPage:
     def __init__(self,llm:byzerllm.ByzerLLM,args:AutoCoderArgs):        
         self.llm = llm
         self.vl_model = llm.get_sub_client("vl_model")
+        if not self.vl_model:
+            raise Exception("vl_model is required by  ImageToPage")
+
         self.args = args
             
     def desc_image(self,img_path:str):   
