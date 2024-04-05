@@ -2,6 +2,13 @@
 
 > AutoCoder >= 0.1.25 Features
 
+Extra requirements:
+
+```shell
+pip install playwright
+playwright install
+```
+
 This functionality is useful in scenarios such as when you have a ReactJS + TypeScript + Tailwind project, and you want to reference a page from another website. At that point, you can take a screenshot and then generate the corresponding ReactJS + TypeScript + Tailwind code based on that image.
 
 Let's look at the following example:

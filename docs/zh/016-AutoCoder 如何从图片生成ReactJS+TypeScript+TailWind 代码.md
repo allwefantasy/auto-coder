@@ -2,6 +2,13 @@
 
 > AutoCoder >= 0.1.25 特性
 
+需要额外安装：
+
+```shell
+pip install playwright
+playwright install
+```
+
 这个功能在什么场景下有用呢，比如你有个 reactjs + typescript + tailwind 的项目，然后你有个页面想参考某个其他的网站，这个时候你就可以截个图，然后根据该图生成对应的 reactjs + typescript + tailwind 代码了。
 
 我们看下面的例子：
