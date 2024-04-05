@@ -2,7 +2,7 @@
 
 > AutoCoder >= 0.1.25 特性
 
-这个功能在什么场景下有用了，比如你有个 reactjs + typescript + tailwind 的项目，然后你有个页面想参考某个其他的网站，这个时候你就可以截个图，然后根据该图生成对应的 reactjs + typescript + tailwind 代码。
+这个功能在什么场景下有用呢，比如你有个 reactjs + typescript + tailwind 的项目，然后你有个页面想参考某个其他的网站，这个时候你就可以截个图，然后根据该图生成对应的 reactjs + typescript + tailwind 代码了。
 
 我们看下面的例子：
 
@@ -29,14 +29,16 @@ query: |
 tt 已经是 reactjs + typescript + tailwind 项目
 ```
 
-这里和以前的项目相比，还有几个区别：
+/Users/allwefantasy/projects/tt/ 是一个已经存在的 reactjs + typescript + tailwind 项目。我们希望新的代码生成到这个项目合适的目录。
+
+这里的配置文件相比以前，几个区别：
 
 1. 指定网页图片地址，这里通过 image_file 指定。
 2. 项目配置类型为： copilot/ts 而不是 ts
 3. 额外指定一个多模态模型，可以通过 vl_model 指定。
 4. 多模态模型需要通过 byzerllm 进行部署。
 
-默认情况，AutoCoder 会把图片转成 html/css 格式，然后再通过 query 转换成你要的形态。比如在我们的例子里是 reactjs+typescript+tailwind， 其他情况可能比如是用vue等。
+默认情况，AutoCoder 会把图片转成 html/css 格式，然后再通过 query 转换成你要的形态。比如在我们的例子里我们希望是转换成 reactjs+typescript+tailwind， 其他情况可能比如是用vue等，你只需要在 query中说明即可。
 
 我们指定的图片 www_elmo_chat.png 是这个样子：
 
