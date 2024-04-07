@@ -67,4 +67,4 @@ protobuf==3.20.0
 # llama_index
 byzerllm>=0.1.56
 GitPython
-
+openai>=1.14.3
