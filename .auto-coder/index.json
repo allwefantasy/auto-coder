@@ -5,9 +5,9 @@
     "md5": "3c479f948d8d8a7a030bd5887db72eec"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py": {
-    "symbols": "函数：auto_implement_function_template\n变量：a, lang_desc\n类：\n导入语句：import os, import time, from loguru import logger, import byzerllm",
-    "last_modified": 1712236045.9141326,
-    "md5": "fc2b29f6fa1d9a0b2cc686521fb8a2b6"
+    "symbols": "函数：\n导入语句：import os,import time,from loguru import logger,import byzerllm\n\n类：\n变量：lang_desc",
+    "last_modified": 1712570075.7878745,
+    "md5": "e2763b9b54aa8703d44c55ccef71b065"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py": {
     "symbols": "变量：__version__\n导入语句：",
@@ -15,9 +15,9 @@
     "md5": "0af00e6ace9f3a7a87fcc7847d793673"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
-    "symbols": "```python\n函数：parse_args,main\n变量：system_lang,desc,parser,subparsers,args,raw_args,repo_path,file_content,md5,file_name,revert_result,arg,value,tc,llm\n类：AutoCoderArgs\n导入语句：import os,time,from loguru import logger,import byzerllm,List,Dict,Any,Optional,argparse ,from autocoder.common import AutoCoderArgs,from autocoder.dispacher import Dispacher ,from autocoder.lang import lang_desc,from autocoder.common import git_utils,from autocoder.utils.llm_client_interceptors import token_counter_interceptor,from autocoder.db.store import Store,import yaml   ,import locale,from byzerllm.utils.client import EventCallbackResult,EventName,from prompt_toolkit import prompt,from prompt_toolkit.formatted_text import FormattedText,from typing import List,Dict,Any\n```\n函数：main, dispacher.dispach\n变量：args, llm, vl_model, sd_model, index_model\n类：Dispacher\n导入语句：import byzerllm",
-    "last_modified": 1712236012.5121207,
-    "md5": "f51d1a3a7bfa6cf165caa1927df531af"
+    "symbols": "```python\n函数：parse_args,main\n变量：system_lang,desc,parser,subparsers,args,raw_args,config,key,value,template,revert_result,repo_path,file_content,md5,file_name,store,tc\n类：AutoCoderArgs\n导入语句：import os,time,from loguru import logger,import byzerllm,argparse ,from typing import List,Dict,Any,Optional,from autocoder.common import AutoCoderArgs,from autocoder.dispacher import Dispacher ,from autocoder.lang import lang_desc,from autocoder.common import git_utils,from autocoder.utils.llm_client_interceptors import token_counter_interceptor,from autocoder.db.store import Store,import yaml   ,import locale,from byzerllm.utils.client import EventCallbackResult,EventName,from prompt_toolkit import prompt,from prompt_toolkit.formatted_text import FormattedText,from typing import List,Dict,Any,from jinja2 import Template,import hashlib,from autocoder.index.index import IndexManager\n```\n函数：intercept_callback,dispacher.dispach\n变量：llm,args,raw_args\n类：Dispacher\n导入语句：import byzerllm",
+    "last_modified": 1712570431.2552438,
+    "md5": "15071185f92a464eeba3b871198acdd4"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py": {
     "symbols": "函数：dispach\n类：Dispacher\n变量：args, actions\n导入语句：from autocoder.common import AutoCoderArgs, from autocoder.dispacher.actions.copilot import ActionCopilot, from autocoder.dispacher.actions.action import ActionTranslate, ActionTSProject, ActionPyScriptProject, ActionPyProject, ActionSuffixProject, import byzerllm, import re",
@@ -128,5 +128,30 @@
     "symbols": "```\n函数：auto_implement_function_template,generate_html_prompt,get_optimize,optimize_html,write_code,run_then_iterate\n变量：a\n类：ImageToPage\n导入语句：import os,import time,from loguru import logger,import byzerllm,from autocoder.common.screenshots import gen_screenshots,from autocoder.common import AutoCoderArgs,from autocoder.common.code_auto_merge import CodeAutoMerge\n```",
     "last_modified": 1712303708.4438167,
     "md5": "def4c73e143d77a4089498179fd220d4"
+  },
+  "/Users/allwefantasy/projects/auto-coder/setup.py": {
+    "symbols": "函数：setup\n变量：folder, version_path, __version__, req_path, install_requires, readme_path, readme_contents\n类：\n导入语句：import os,from setuptools import find_packages,from setuptools import setup",
+    "last_modified": 1711809217.9135008,
+    "md5": "755d4c909428aca6751b50c4f9f1fb0f"
+  },
+  "/Users/allwefantasy/projects/auto-coder/tests/test_code_auto_merge.py": {
+    "symbols": "函数：setUp, tearDown, test_merge_code\n类：TestCodeAutoMerge\n变量：text, merger\n导入语句：import os, import shutil, import unittest, from autocoder.common.code_auto_merge import CodeAutoMerge",
+    "last_modified": 1711809217.9193702,
+    "md5": "0922b98fb1b942b807a202b87b8be840"
+  },
+  "/Users/allwefantasy/projects/auto-coder/tests/test_image_to_page.py": {
+    "symbols": "函数：setUp, test_run_then_iterate\n类：TestImageToPage\n变量：self.model, self.llm, vl_model, self.image_to_page\n导入语句：import unittest, import byzerllm, import os, import base64, import json, from autocoder.common.image_to_page import ImageToPage, from autocoder.common import AutoCoderArgs",
+    "last_modified": 1712298397.8095207,
+    "md5": "7c4b6672ace3b7c74ea0c932c67d19ff"
+  },
+  "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py": {
+    "symbols": "```python\n函数：is_likely_useful_file\n类：EnvInfo, SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, AutoCoderArgs\n变量：a\n导入语句：import pydantic, import ast, import sys, import subprocess, import os, import time, from typing import List,Dict,Any,Optional\n```\n函数：detect_env, chat_with_llm_step_by_step, is_test_file, has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments\n变量：os_name, os_version, python_version, conda_env, virtualenv, has_bash\n类：EnvInfo\n导入语句：import sys, import subprocess",
+    "last_modified": 1712236119.6815553,
+    "md5": "be1320cfa42145f695dcac21bf972e05"
+  },
+  "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/for_command.py": {
+    "symbols": "函数：index_command, index_query_command\n类：SuffixProject, IndexManager\n变量：args, llm, sources, related_files\n导入语句：from autocoder.index.index import IndexManager, from autocoder.suffixproject import SuffixProject, from loguru import logger",
+    "last_modified": 1712570571.681329,
+    "md5": "ed8074caf3f0e8d71020e68eac0e1874"
   }
 }

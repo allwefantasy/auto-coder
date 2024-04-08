@@ -200,21 +200,13 @@ def main():
         llm = None
 
     if raw_args.command == "index":  # New subcommand logic
-        from autocoder.common.code_utils import fetch_code
-        sources = fetch_code(args.source_dir, args.project_type)
-        index_manager = IndexManager(llm=llm, sources=sources, args=args)
-        index_manager.build_index()
-        print("Index built successfully.")
+        from autocoder.index.for_command import index_command
+        index_command(args,llm)
         return
 
     if raw_args.command == "index-query":  # New subcommand logic
-        from autocoder.common.code_utils import fetch_code
-        sources = fetch_code(args.source_dir, args.project_type)  
-        index_manager = IndexManager(llm=llm, sources=sources, args=args)
-        related_files = index_manager.get_target_files_by_query(args.query)
-        print("Related files:")
-        for file in related_files.file_list:
-            print(f"- {file.file_path}")
+        from autocoder.index.for_command import index_query_command
+        index_query_command(args,llm)
         return
 
     dispacher = Dispacher(args, llm)
