@@ -17,6 +17,7 @@ src/autocoder/common/cleaner.py
 src/autocoder/common/code_auto_merge.py
 src/autocoder/common/const.py
 src/autocoder/common/git_utils.py
+src/autocoder/common/image_to_page.py
 src/autocoder/common/screenshots.py
 src/autocoder/common/search.py
 src/autocoder/db/__init__.py
@@ -25,8 +26,8 @@ src/autocoder/dispacher/__init__.py
 src/autocoder/dispacher/actions/__init__.py
 src/autocoder/dispacher/actions/action.py
 src/autocoder/dispacher/actions/copilot.py
-src/autocoder/dispacher/actions/image_to_page.py
 src/autocoder/index/__init__.py
+src/autocoder/index/for_command.py
 src/autocoder/index/index.py
 src/autocoder/pyproject/__init__.py
 src/autocoder/suffixproject/__init__.py
@@ -38,3 +39,4 @@ src/autocoder/utils/print_table.py
 src/autocoder/utils/rest.py
 tests/test_code_auto_merge.py
 tests/test_image_to_page.py
+tests/test_shell_client.py

@@ -35,5 +35,6 @@ wudao
 SwissArmyTransformer
 jieba
 protobuf==3.20.0
-byzerllm>=0.1.55
+byzerllm>=0.1.57
 GitPython
+openai>=1.14.3

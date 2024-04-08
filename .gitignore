@@ -25,3 +25,4 @@
 __pycache__/
 output.txt
 screenshots/
+./output.txt

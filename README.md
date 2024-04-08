@@ -17,32 +17,11 @@ Auto-Coder (powered by Byzer-LLM)
 
 *Latest News* 🔥
 
+- [2024/04] Release Auto-Coder 0.1.26
 - [2024/03] Release Auto-Coder 0.1.25
 - [2024/03] Release Auto-Coder 0.1.24
 
 ---
-
-
-
-🚀 Attention developers! 🚨 The game-changing Auto-Coder has arrived, and it's about to take your AI programming to a whole new level! 🌟
-
-Fueled by the incredible power of Byzer-LLM, this command-line tool is packed with features that will blow your mind:
-
-📂 Say goodbye to manual context gathering! Auto-Coder intelligently generates code based on the context of your source directory. It's like having a genius assistant that knows exactly what you need!
-
-💡 Two modes, endless possibilities! Generate perfect prompts to paste into web-based large models, or let Auto-Coder work its magic directly with private models via Byzer-LLM. The choice is yours, and the results are always spectacular!
-
-💻 Python? TypeScript? No problem! Auto-Coder supports all the cool kids on the programming block.
-
-🌍 Going global is a breeze! Auto-Coder automatically translates your project files, so your code can conquer the world!
-
-🤖 Copilot mode is here, and it's your new best friend! With its built-in shell/Jupyter engine, Auto-Coder breaks down tasks, sets up environments, creates projects, and even modifies code for you. It's like having a super-smart sidekick that never sleeps!
-
-🧑‍💻 Developers, prepare to have your minds blown! Auto-Coder integrates seamlessly with the hottest AI models like ChatGPT, turbocharging your development process to lightning speeds! 🚀
-
-🌟 Don't wait another second! Experience the raw power of Auto-Coder today and let AI be your ultimate coding companion! https://github.com/allwefantasy/auto-coder 🔥
-
-#AutoCoder #AIProgramming #GameChanger #ByzerLLM #DevTools
 
 ## Table of Contents
 
