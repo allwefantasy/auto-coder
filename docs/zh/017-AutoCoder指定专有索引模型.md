@@ -1,6 +1,6 @@
 # 017-AutoCoder指定专有索引模型
 
-> AutoCoder >= 0.1.25 特性
+> AutoCoder >= 0.1.27 特性
 
 如果你的项目很大，里面有海量的代码，如果用比较大的模型，速度和成本确实比较高。所以我们将构建索引的功能单独了出来，允许
 你单独指定一个模型来完成。
@@ -37,4 +37,23 @@ query: |
 我又通过参数 `index_model` 来指定索引模型。 同样的，对于索引，你可以指定单次请求的最大输入和输出，以及为了防止模型的限速，你可以设置每次请求
 后的停顿时间。
 
-这样你就可以使用一些私有的或者较便宜的模型来完成模型构建。但是注意的是，很多模型能力实在太弱，构建索引需要该模型能够识别里面的包语句，变量，函数等，但是很多模型连这个都做不到。所以
+这样你就可以使用一些私有的或者较便宜的模型来完成模型构建。但是注意的是，很多模型能力实在太弱，构建索引需要该模型能够识别里面的包语句，变量，函数等，但是很多模型连这个都做不到。
+
+
+执行下面的命令：
+
+```bash
+auto-coder index --model kimi_chat --index_model sparkdesk_chat --project_type py --source_dir YOUR_PROJECT
+```
+
+此时项目会使用 `sparkdesk_chat` 模型来构建索引，构建完成后，你可以在项目的 .auto-coder/index.json 文件中看到索引的内容。
+
+接着你可以使用索引来查找文件：
+
+```bash
+auto-coder index-query --model kimi_chat --index_model sparkdesk_chat --source_dir YOUR_PROJECT --query "添加一个新命令"
+```
+
+之后就可以看看查找是否准确。你可以将 model 和 index_model 设置为相同的值。
+
+对于上面的命令，如果你想做更精细的控制，可以使用 `--file` 来指定 YAML 文件。

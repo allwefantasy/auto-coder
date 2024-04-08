@@ -70,9 +70,17 @@ def parse_args() -> AutoCoderArgs:
 
     index_parser = subparsers.add_parser("index", help=desc["index_desc"])  # New subcommand
     index_parser.add_argument("--file", help=desc["file"])
+    index_parser.add_argument("--model", default="", help=desc["model"]) 
+    index_parser.add_argument("--index_model", default="", help=desc["index_model"])
+    index_parser.add_argument("--source_dir", required=False, help=desc["source_dir"])
+    index_parser.add_argument("--project_type", default="py", help=desc["project_type"])
 
     index_query_parser = subparsers.add_parser("index-query", help=desc["index_query_desc"])  # New subcommand  
     index_query_parser.add_argument("--file", help=desc["file"])
+    index_query_parser.add_argument("--model", default="", help=desc["model"]) 
+    index_query_parser.add_argument("--index_model", default="", help=desc["index_model"])
+    index_query_parser.add_argument("--source_dir", required=False, help=desc["source_dir"])    
+    index_query_parser.add_argument("--query", help=desc["query"])
 
     args = parser.parse_args()
 
