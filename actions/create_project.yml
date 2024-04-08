@@ -1,4 +1,4 @@
-source_dir: /home/winubuntu/projects/ByzerRawCopilot 
+source_dir: /tmp/
 target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
 
 model: qianwen_short_chat
@@ -10,4 +10,4 @@ search_engine_token: ENV {{BING_SEARCH_TOKEN}}
 
 project_type: "copilot"
 query: |
-  帮我在/tmp/目录下创建一个 typescript + reactjs 组成的项目，项目名字叫 t-project
+  帮我在/tmp/目录下创建一个 typescript + reactjs + tailwind 组成的项目，项目名字叫 t-project

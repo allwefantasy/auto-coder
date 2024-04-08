@@ -1,0 +1,14 @@
+source_dir: /tmp/projects
+target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
+project_type: copilot
+
+model: kimi_chat
+model_max_length: 2000
+model_max_input_length: 6000
+anti_quota_limit: 0
+
+execute: true
+
+query: |   
+   帮我在/tmp/目录下创建一个 typescript + reactjs + tailwind 项目，项目名字叫 t-project
+   

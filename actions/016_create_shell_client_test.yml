@@ -1,0 +1,23 @@
+source_dir: /Users/allwefantasy/projects/auto-coder
+target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
+project_type: py
+
+model: qianwen_chat
+model_max_length: 2000
+model_max_input_length: 6000
+anti_quota_limit: 5
+
+index_model: sparkdesk_chat
+index_model_max_length: 2000
+index_model_max_input_length: 6000
+index_model_anti_quota_limit: 1
+
+skip_build_index: false
+execute: true
+auto_merge: true
+human_as_model: true
+
+query: |   
+   在 tests 目录下创建一个新的测试文件，文件名字叫 test_shell_client.py, 对应的测试类名字叫 TestShellClient。
+   主要是对 common/ShellClient.py 这个文件进行测试。
+   
