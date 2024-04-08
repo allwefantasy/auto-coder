@@ -145,7 +145,7 @@ class IndexManager:
         for source in self.sources:
             file_path = source.module_name                                   
             md5 = hashlib.md5(source.source_code.encode('utf-8')).hexdigest()
-            print(f"try to build index for {file_path} md5: {md5}")
+            logger.info(f"try to build index for {file_path} md5: {md5}")
             if source.source_code.strip() == "":
                 continue
 
@@ -242,13 +242,24 @@ class IndexManager:
 
     def get_target_files_by_query(self, query: str) -> FileList:
         all_results:List[TargetFile] = []
+        index_items = self.read_index()
+        paths = "\n".join([index.module_name for index in index_items])
+        
+        logger.info("Find the related files mentioned in query...")
+        result = self._get_target_files_by_query(paths,query)
+
+        if result is not None:
+            all_results.extend(result.file_list)
+            
         chunk_count = 0
+
+        logger.info("Find the related files by query according to the file and symbos...")
         for chunk in self._get_meta_str():
             result = self._get_target_files_by_query(chunk, query)            
             if result is not None:
                 all_results.extend(result.file_list)
             else:
-                logger.warning(f"Fail to find targed files for chunk {chunk_count}. this may be caused by the model limit or the query is not suitable for the files.")
+                logger.warning(f"Fail to find targed files for chunk {chunk_count}. This is is caused by the model'response is not json format or the json is empty.")
             chunk_count += 1  
             time.sleep(self.args.anti_quota_limit)      
                 
@@ -261,10 +272,10 @@ class IndexManager:
         下面是已知文件以及对应的符号信息：
         
         {{ indices }}
-
-        请参考上面的信息，根据用户的问题寻找包含在上面的相关文件。如果没有找到，返回空即可。         
-
+                 
         用户的问题是：{{ query }}        
+
+        请根据用户的在一只的文件以及符号符号信息中寻找相关文件路径。如果没有找到，返回空即可。
         '''
 
 
