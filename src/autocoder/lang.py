@@ -29,7 +29,8 @@ lang_desc = {
         "sd_model": "The name of the stable diffusion model to use. Default is empty",
         "index_model": "The name of the model used to build index. Default is empty",
          "image_file": "The path of the image file to process. Default is empty",
-        
+        "index_desc": "Build the source code index",  # New description
+        "index_query_desc": "Query related files based on the index"  # New description
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -61,5 +62,7 @@ lang_desc = {
         "sd_model": "要使用的稳定扩散模型的名称。默认为空",
         "index_model": "用于构建索引的模型名称。默认为空",
          "image_file": "要处理的图像文件路径。默认为空",
+        "index_desc": "构建源代码索引",  # 新描述
+        "index_query_desc": "根据索引查询相关文件"  # 新描述
     }
 }

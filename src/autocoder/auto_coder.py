@@ -17,7 +17,7 @@ from typing import List,Dict,Any
 
 from jinja2 import Template
 import hashlib
-
+from autocoder.index.index import IndexManager
 
 def parse_args() -> AutoCoderArgs:
     system_lang, _ = locale.getdefaultlocale()
@@ -67,7 +67,13 @@ def parse_args() -> AutoCoderArgs:
 
     store_parser = subparsers.add_parser("store", help=desc["revert_desc"])
     store_parser.add_argument("--source_dir", help=desc["revert_desc"])
-    
+
+    index_parser = subparsers.add_parser("index", help=desc["index_desc"])  # New subcommand
+    index_parser.add_argument("--file", help=desc["file"])
+
+    index_query_parser = subparsers.add_parser("index-query", help=desc["index_query_desc"])  # New subcommand  
+    index_query_parser.add_argument("--file", help=desc["file"])
+
     args = parser.parse_args()
 
     return AutoCoderArgs(**vars(args)),args
@@ -192,6 +198,24 @@ def main():
 
     else:
         llm = None
+
+    if raw_args.command == "index":  # New subcommand logic
+        from autocoder.common.code_utils import fetch_code
+        sources = fetch_code(args.source_dir, args.project_type)
+        index_manager = IndexManager(llm=llm, sources=sources, args=args)
+        index_manager.build_index()
+        print("Index built successfully.")
+        return
+
+    if raw_args.command == "index-query":  # New subcommand logic
+        from autocoder.common.code_utils import fetch_code
+        sources = fetch_code(args.source_dir, args.project_type)  
+        index_manager = IndexManager(llm=llm, sources=sources, args=args)
+        related_files = index_manager.get_target_files_by_query(args.query)
+        print("Related files:")
+        for file in related_files.file_list:
+            print(f"- {file.file_path}")
+        return
 
     dispacher = Dispacher(args, llm)
     dispacher.dispach()
