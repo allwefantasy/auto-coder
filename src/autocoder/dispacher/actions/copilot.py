@@ -165,14 +165,14 @@ class ActionCopilot():
         try:
             output = ""
             for step in steps.steps:
-                if step.lang == "python":
+                if step.land and step.lang.lower() in ["python"]:
                     output += f"Python Code:\n{step.code}\n"
                     output += "Output:\n"
                     result, error = jupyter_client.add_and_run(step.code)
                     output += result + "\n"
                     if error:
                         output += f"Error: {str(error)}\n"
-                elif step.lang == "shell":  
+                elif step.land and step.lang.lower() in ["shell", "bash", "sh", "zsh", "ksh", "csh","powershell","cmd"]:  
                     output += f"Shell Command:\n{step.code}\n"
                     output += "Output:\n"                    
                     stdout, stderr = shell_client.add_and_run(step.code)
@@ -272,7 +272,7 @@ class ActionCopilot():
                            llm = self.llm,file_filter=None) 
         pp.run()
         
-        print(f"Intent: {self.user_intent}",flush=True)        
+        logger.info(f"Intent: {self.user_intent}")        
         
         source_code = ""
         search_context = ""
@@ -290,7 +290,7 @@ class ActionCopilot():
         
         first_response = search_context
         if self.llm:
-            print("try to get the total steps...",flush=True)
+            logger.info("try to get the total steps...")
             q1 = self.get_step_num(args.query,env_info = self.env_info.dict(),
                                     source_code=source_code,
                                     context=search_context)
@@ -307,9 +307,9 @@ class ActionCopilot():
             
             if t[0].value:
                 step_num = t[0].value.step_num
-                print(f"total steps to finish the user's question: {step_num}",flush=True)
+                logger.info(f"total steps to finish the user's question: {step_num}")
             else:
-                print(f"fail to get the step num for the user's quesion: {t[0]}",flush=True)    
+                logger.info(f"fail to get the step num for the user's quesion: {t[0]}")    
 
         if self.user_intent == UserIntent.CREATE_NEW_PROJECT: 
             source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=pp.sources)                                                                        
@@ -321,7 +321,7 @@ class ActionCopilot():
                                        source_code=source_code)  
 
         if self.llm is None:
-            print("model is not specified and we will generate prompt to the target file",flush=True)
+            logger.info("model is not specified and we will generate prompt to the target file")
             with open(args.target_file, "w") as f:
                 f.write(q)
             return True                  
@@ -343,8 +343,12 @@ class ActionCopilot():
             final_v.steps.append(item)                            
         
         # 执行步骤并保存结果
+        if not final_v.steps:
+            logger.error("No steps to execute, this may be caused by the model's response")
+            return True
+        
         result = self.execute_steps(final_v)
-        print(result,flush=True)
+        logger.info(result)
         
         # 将结果写入文件
         with open(args.target_file, "w") as f:
