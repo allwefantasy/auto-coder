@@ -14,7 +14,6 @@ paramiko
 einops
 tqdm
 loguru
-tensorboard
 pyjava==0.6.15
 tiktoken
 transformers_stream_generator
@@ -34,7 +33,8 @@ sqlmodel
 wudao
 SwissArmyTransformer
 jieba
-protobuf==3.20.0
-byzerllm>=0.1.57
+byzerllm>=0.1.58
 GitPython
 openai>=1.14.3
+anthropic
+google-generativeai

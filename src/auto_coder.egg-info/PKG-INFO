@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.27
+Version: 0.1.28
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -23,7 +23,6 @@ Requires-Dist: paramiko
 Requires-Dist: einops
 Requires-Dist: tqdm
 Requires-Dist: loguru
-Requires-Dist: tensorboard
 Requires-Dist: pyjava==0.6.15
 Requires-Dist: tiktoken
 Requires-Dist: transformers_stream_generator
@@ -43,10 +42,11 @@ Requires-Dist: sqlmodel
 Requires-Dist: wudao
 Requires-Dist: SwissArmyTransformer
 Requires-Dist: jieba
-Requires-Dist: protobuf==3.20.0
-Requires-Dist: byzerllm>=0.1.57
+Requires-Dist: byzerllm>=0.1.58
 Requires-Dist: GitPython
 Requires-Dist: openai>=1.14.3
+Requires-Dist: anthropic
+Requires-Dist: google-generativeai
 
 <p align="center">
   <picture>    
@@ -67,7 +67,7 @@ Auto-Coder (powered by Byzer-LLM)
 
 *Latest News* 🔥
 
-- [2024/04] Release Auto-Coder 0.1.27
+- [2024/04] Release Auto-Coder 0.1.28
 - [2024/03] Release Auto-Coder 0.1.25
 - [2024/03] Release Auto-Coder 0.1.24
 

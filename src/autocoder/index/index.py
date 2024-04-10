@@ -143,7 +143,15 @@ class IndexManager:
         updated_sources = []
 
         for source in self.sources:
-            file_path = source.module_name                                   
+            file_path = source.module_name  
+
+            if not os.path.exists(file_path):
+                continue
+
+            ext = os.path.splitext(file_path)[1].lower()  
+            if ext in [".md",".html",".txt",".doc",".pdf"]:
+                continue
+
             md5 = hashlib.md5(source.source_code.encode('utf-8')).hexdigest()
             logger.info(f"try to build index for {file_path} md5: {md5}")
             if source.source_code.strip() == "":
