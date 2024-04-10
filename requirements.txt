@@ -47,11 +47,6 @@ jieba
 # rouge_chinese
 # icetk
 
-## TGI dependencies for quick inference
-# pip install flash-attn --no-build-isolation
-
-protobuf==3.20.0
-
 # dependencies only for stable_diffusion
 # safetensors
 # pydantic
@@ -70,3 +65,4 @@ GitPython
 openai>=1.14.3
 anthropic
 google-generativeai
+protobuf==3.20.0
