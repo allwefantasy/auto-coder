@@ -131,7 +131,7 @@ class HttpDoc:
                         try:
                             main_content = self._extract_main_content(url, html_content)
                         except Exception as e:
-                            logger.warning(f"Failed to extract main content from URL: {url}. Error: {e}")
+                            logger.warning(f"Failed to extract main content from URL: {url}, we will skip this clean step, and use the raw html. Error: {e}")
                             main_content = html_content
                     else:                    
                         main_content = response.text   
