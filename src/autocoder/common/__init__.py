@@ -88,6 +88,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     index_model_max_input_length: int = pydantic.Field(0, description="The maximum input length of the model") 
     index_model_anti_quota_limit: Optional[int] = pydantic.Field(0, description="After how much time to wait for the next request. default is 0s")
     index_filter_level: int = 3
+    index_filter_workers: int = 1
 
     class Config:
         protected_namespaces = ()

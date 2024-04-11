@@ -49,6 +49,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--index_model_max_input_length", type=int, default=0, help=desc["model_max_input_length"])
     parser.add_argument("--index_model_anti_quota_limit", type=int, default=0, help=desc["anti_quota_limit"])
     parser.add_argument("--index_filter_level",type=int, default=0, help=desc["index_filter_level"])
+    parser.add_argument("--index_filter_workers",type=int, default=1, help=desc["index_filter_workers"])
     
     parser.add_argument("--file", default=None, required=False, help=desc["file"])
     parser.add_argument("--anti_quota_limit", type=int, default=1, help=desc["anti_quota_limit"])
