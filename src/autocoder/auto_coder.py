@@ -48,6 +48,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--index_model_max_length", type=int, default=0, help=desc["model_max_length"])
     parser.add_argument("--index_model_max_input_length", type=int, default=0, help=desc["model_max_input_length"])
     parser.add_argument("--index_model_anti_quota_limit", type=int, default=0, help=desc["anti_quota_limit"])
+    parser.add_argument("--index_filter_level",type=int, default=0, help=desc["index_filter_level"])
     
     parser.add_argument("--file", default=None, required=False, help=desc["file"])
     parser.add_argument("--anti_quota_limit", type=int, default=1, help=desc["anti_quota_limit"])
@@ -61,6 +62,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--auto_merge", action='store_true', help=desc["auto_merge"])
 
     parser.add_argument("--image_file", default="", help=desc["image_file"])
+    
 
     revert_parser = subparsers.add_parser("revert", help=desc["revert_desc"])
     revert_parser.add_argument("--file", help=desc["revert_desc"])
@@ -81,6 +83,7 @@ def parse_args() -> AutoCoderArgs:
     index_query_parser.add_argument("--index_model", default="", help=desc["index_model"])
     index_query_parser.add_argument("--source_dir", required=False, help=desc["source_dir"])    
     index_query_parser.add_argument("--query", help=desc["query"])
+    index_query_parser.add_argument("--index_filter_level",type=int, default=2, help=desc["index_filter_level"])
 
     args = parser.parse_args()
 

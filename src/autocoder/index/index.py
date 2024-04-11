@@ -106,7 +106,7 @@ class IndexManager:
         类：
         导入语句：import os,import time,from loguru import logger,import byzerllm
 
-        现在，让我们开始一个新的任务。
+        现在，让我们开始一个新的任务:
         
         ## 输入 
         下列是文件 {{ path }} 的源码：
@@ -258,18 +258,20 @@ class IndexManager:
 
         if result is not None:
             all_results.extend(result.file_list)
-            
-        chunk_count = 0
 
-        logger.info("Find the related files by query according to the file and symbos...")
-        for chunk in self._get_meta_str():
-            result = self._get_target_files_by_query(chunk, query)            
-            if result is not None:
-                all_results.extend(result.file_list)
-            else:
-                logger.warning(f"Fail to find targed files for chunk {chunk_count}. This is is caused by the model'response is not json format or the json is empty.")
-            chunk_count += 1  
-            time.sleep(self.args.anti_quota_limit)      
+        
+        if self.args.index_filter_level >= 1:    
+            chunk_count = 0
+
+            logger.info("Find the related files by query according to the file and symbos...")
+            for chunk in self._get_meta_str():
+                result = self._get_target_files_by_query(chunk, query)            
+                if result is not None:
+                    all_results.extend(result.file_list)
+                else:
+                    logger.warning(f"Fail to find targed files for chunk {chunk_count}. This is is caused by the model'response is not json format or the json is empty.")
+                chunk_count += 1  
+                time.sleep(self.args.anti_quota_limit)      
                 
         all_results = list({file.file_path: file for file in all_results}.values())
         return FileList(file_list=all_results) 
@@ -294,11 +296,12 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
     if not args.skip_build_index and llm:        
         index_manager = IndexManager(llm=llm,sources=sources,args=args)
         index_manager.build_index()
+        
         target_files = index_manager.get_target_files_by_query(args.query)
-        if target_files is not None:
+        if target_files is not None and args.index_filter_level >= 2:
             for temp_file in target_files.file_list:
                 logger.info(f"Target File: {temp_file.file_path} reason: {temp_file.reason}")    
-            
+                        
             related_fiels = index_manager.get_related_files([file.file_path for file in target_files.file_list])            
             if related_fiels is not None:                                            
                 for temp_file in related_fiels.file_list:
