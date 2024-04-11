@@ -247,10 +247,14 @@ class ActionCopilot():
             s = self.prompt_convert_html_to_page(query=args.query,source_code=source_code)            
             
             if args.execute:
+                extra_llm_config = {}        
+                if args.human_as_model:
+                    extra_llm_config["human_as_model"] = True
+
                 t = self.llm.chat_oai(conversations=[{
                     "role":"user",
                     "content":s
-                }]) 
+                }],llm_config={**extra_llm_config}) 
                 s = t[0].output    
 
             with open(args.target_file, "w") as f:
