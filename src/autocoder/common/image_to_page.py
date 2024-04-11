@@ -33,7 +33,7 @@ class ImageToPage:
         }])
         return t[0].output
     
-    @byzerllm.prompt(llm=lambda self: self.llm,render="jinja2")
+    @byzerllm.prompt()
     def generate_html(self,desc:str,html_path:str)->str:
         '''
         下面是对一张网页的描述：
@@ -68,7 +68,7 @@ class ImageToPage:
         '''   
 
     
-    @byzerllm.prompt(llm=lambda self: self.llm,render="jinja2")
+    @byzerllm.prompt()
     def get_optimize(self,desc:str)->str:
         '''
         根据下面的描述，为了让B页面更加趋近A页面，请描述B需要做出的调整：
@@ -76,7 +76,7 @@ class ImageToPage:
         {{ desc }}
         '''
 
-    @byzerllm.prompt(llm=lambda self: self.llm,render="jinja2")
+    @byzerllm.prompt(render="jinja2")
     def optimize_html(self,desc:str,html:str,html_path:str)->str:
         '''
         ## HTML/CSS
@@ -137,9 +137,31 @@ class ImageToPage:
         return file_modified_num            
 
     def run_then_iterate(self,origin_image:str,html_path:str,max_iter:int=1):
+
+        extra_llm_config = {}        
+        if self.args.human_as_model:
+            extra_llm_config["human_as_model"] = True
+
+
         desc = self.desc_image(origin_image)
-        logger.info(f"desc image: {origin_image} {desc}")        
-        content_contains_html = self.generate_html(desc,html_path)  
+        logger.info(f"desc image: {origin_image} {desc}")
+
+        ## generate html by image description        
+        content_contains_html_prompt = self.generate_html(desc,html_path) 
+
+        with open(self.args.target_file, "w") as f:
+            f.write(content_contains_html_prompt) 
+
+        t = self.llm.chat_oai(conversations=[{
+            "role":"user",
+            "content":content_contains_html_prompt
+        }],llm_config={**extra_llm_config})
+
+        content_contains_html = t[0].output 
+
+        with open(self.args.target_file, "w") as f:
+            f.write(content_contains_html)
+        
         
         file_modified_num = self.write_code(content_contains_html,html_path)
         if file_modified_num == 0:
@@ -165,12 +187,44 @@ class ImageToPage:
 
             logger.info(f"generate image from html: {html_path}  to {new_image}")
 
-            new_desc = self.get_optimize(self.score(origin_image,new_image))
+            ## get new description prompt by comparing old and new image
+            new_desc_prompt = self.get_optimize(self.score(origin_image,new_image))
+
+            with open(self.args.target_file, "w") as f:
+                f.write(new_desc_prompt) 
+
+            t = self.llm.chat_oai(conversations=[{
+                "role":"user",
+                "content":new_desc_prompt
+            }],llm_config={**extra_llm_config})
+
+            new_desc = t[0].output 
+
+            with open(self.args.target_file, "w") as f:
+                f.write(new_desc)            
+
             logger.info(f"score old/new image: {new_desc}")
-            new_code =  self.optimize_html(desc=new_desc,html=prev_html,html_path=html_path) 
+
+            ## generate new html by new description
+            optimze_html_prompt =  self.optimize_html(desc=new_desc,html=prev_html,html_path=html_path)                                    
+            
+            with open(self.args.target_file, "w") as f:
+                f.write(optimze_html_prompt) 
+
+            t = self.llm.chat_oai(conversations=[{
+                "role":"user",
+                "content":optimze_html_prompt
+            }],llm_config={**extra_llm_config}) 
+            new_code = t[0].output
+            
+            with open(self.args.target_file, "w") as f:
+                f.write(new_code) 
+
             self.write_code(new_code,html_path)
             logger.info(f"generate new html: {html_path}")
             time.sleep(self.args.anti_quota_limit)
+            
+
 
         return html_path    
             
