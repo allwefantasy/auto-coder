@@ -2,7 +2,7 @@ source_dir: /Users/allwefantasy/projects/auto-coder
 target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
 project_type: py
 
-model: qianwen_chat
+model: sparkdesk_chat
 model_max_length: 2000
 model_max_input_length: 6000
 anti_quota_limit: 5

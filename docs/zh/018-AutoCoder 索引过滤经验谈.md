@@ -58,7 +58,7 @@ query: |
 
 注意，根据索引做文件过滤的模型会使用  model 参数，而不是 index_model 参数。 index_model 参数是用来构建索引的模型。
 
-这里我们设置了 `index_filter_level: 0`，这意味着我们只会根据文件名来过滤文件，我们接着运行：
+这里我们设置了 `index_filter_level: 0`，这意味着我们只会根据文件名来过滤文件，我们可以通过下面的命令来验证：
 
 
 ```shell
