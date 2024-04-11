@@ -34,6 +34,7 @@ lang_desc = {
         "index_filter_level": "Index filter level, 0: only filter the file names mentioned in query, 1. filter the file names mentioned in query and possibly implicitly used files 2. files obtained from 0,1 and then find files related to these files",
         "store_desc": "Some statistics, such as token usage, etc.",
         "index_filter_workers": "Number of workers to use for filtering files by index",
+        "image_max_iter": "The maximum number of iterations for image to html. Default is 1",
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -70,5 +71,6 @@ lang_desc = {
         "index_filter_level": "索引过滤级别,0:仅过滤query 中提到的文件名，1. 过滤query 中提到的文件名以及可能会隐含会使用的文件 2. 从0,1 中获得的文件，再寻找这些文件相关的文件。",        
         "store_desc": "一些统计信息，比如token使用等",
         "index_filter_workers":"用于通过索引过滤文件的工作线程数",
+        "image_max_iter": "图像转html的最大迭代次数。默认为1",
     }
 }

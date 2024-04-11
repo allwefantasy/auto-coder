@@ -2,6 +2,8 @@ from autocoder.common import AutoCoderArgs,ExecuteSteps,ExecuteStep,EnvInfo,dete
 from autocoder.common.JupyterClient import JupyterNotebook
 from autocoder.common.ShellClient import ShellClient
 from autocoder.suffixproject import SuffixProject
+from autocoder.tsproject import TSProject
+from autocoder.pyproject import PyProject
 from autocoder.common.search import Search,SearchEngine
 from autocoder.index.index import build_index_and_filter_files
 from autocoder.common.image_to_page import ImageToPage
@@ -217,11 +219,19 @@ class ActionCopilot():
             image_to_page = ImageToPage(llm=self.llm, args=args)
             file_name = os.path.splitext(os.path.basename(args.image_file))[0]
             html_path = os.path.join(os.path.dirname(args.image_file), "html",f"{file_name}.html")
-            image_to_page.run_then_iterate(origin_image=args.image_file, html_path=html_path)
+            image_to_page.run_then_iterate(origin_image=args.image_file, html_path=html_path,max_iter=self.args.image_max_iter)
             suffixs = self.get_suffix_from_project_type(args.project_type)  
-            args.project_type = ",".join(suffixs) or ".py"      
-            pp = SuffixProject(args=args,
-                            llm = self.llm,file_filter=None) 
+            args.project_type = ",".join(suffixs) or ".py"   
+
+            if args.project_type == ".ts":
+                pp = TSProject(args=args,
+                               llm = self.llm)
+            elif args.project_type == ".py":
+                pp = PyProject(args=args,
+                               llm = self.llm)
+            else:
+                pp = SuffixProject(args=args,
+                                llm = self.llm,file_filter=None) 
             pp.run()
 
             sources = list(pp.get_source_codes())
@@ -267,7 +277,8 @@ class ActionCopilot():
 
 
         suffixs = self.get_suffix_from_project_type(args.project_type)  
-        args.project_type = ",".join(suffixs) or ".py"      
+        args.project_type = ",".join(suffixs) or ".py"  
+
         pp = SuffixProject(args=args,
                            llm = self.llm,file_filter=None) 
         pp.run()

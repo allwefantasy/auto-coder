@@ -63,6 +63,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--auto_merge", action='store_true', help=desc["auto_merge"])
 
     parser.add_argument("--image_file", default="", help=desc["image_file"])
+    parser.add_argument("--image_max_iter",type=int, default=1, help=desc["image_max_iter"])
     
 
     revert_parser = subparsers.add_parser("revert", help=desc["revert_desc"])
@@ -84,7 +85,7 @@ def parse_args() -> AutoCoderArgs:
     index_query_parser.add_argument("--index_model", default="", help=desc["index_model"])
     index_query_parser.add_argument("--source_dir", required=False, help=desc["source_dir"])    
     index_query_parser.add_argument("--query", help=desc["query"])
-    index_query_parser.add_argument("--index_filter_level",type=int, default=2, help=desc["index_filter_level"])
+    index_query_parser.add_argument("--index_filter_level",type=int, default=2, help=desc["index_filter_level"])    
 
     args = parser.parse_args()
 
