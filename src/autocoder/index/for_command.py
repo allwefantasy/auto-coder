@@ -4,7 +4,7 @@ import tabulate
 import textwrap
 from loguru import logger
 
-def wrap_text_in_table(data, max_width=100):
+def wrap_text_in_table(data, max_width=60):
     """
     Wraps text in each cell of the table to a specified width.
 

@@ -2,7 +2,7 @@ source_dir: /Users/allwefantasy/projects/auto-coder
 target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
 project_type: py
 
-model: sparkdesk_chat
+model: qianwen_chat
 model_max_length: 2000
 model_max_input_length: 6000
 anti_quota_limit: 5
@@ -17,5 +17,7 @@ index_filter_level: 1
 skip_build_index: false
 
 query: |   
-   添加一个新命令
+   添加一个新命令。
+   
+   另外，过滤文件的时候，尽量严格一些。
    
