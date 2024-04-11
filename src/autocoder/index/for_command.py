@@ -46,14 +46,16 @@ def index_query_command(args,llm):
         
         if related_fiels is not None:                                                        
             final_files.extend(related_fiels.file_list)
-                
+
+    
+    all_results = list({file.file_path: file for file in final_files}.values())            
 
     print("===================Filter FILEs=========================",flush=True)
     
-    print(f"index_filter_level:{args.index_filter_level}, total files: {len(final_files)} filter files by query: {args.query}",flush=True)
+    print(f"index_filter_level:{args.index_filter_level}, total files: {len(all_results)} filter files by query: {args.query}",flush=True)
 
     headers =  TargetFile.model_fields.keys()
-    table_data = wrap_text_in_table([[getattr(file_item, name) for name in headers] for file_item in final_files])
+    table_data = wrap_text_in_table([[getattr(file_item, name) for name in headers] for file_item in all_results])
     table_output = tabulate.tabulate(table_data, headers, tablefmt="grid")    
     print(table_output,flush=True)        
     return    

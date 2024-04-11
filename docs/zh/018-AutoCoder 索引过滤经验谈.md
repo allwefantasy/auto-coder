@@ -83,3 +83,8 @@ auto-coder index-query  --file actions/014_test_index_command.yml
 
 可以将 index_filter_level 设置为 0, 然后主动在 query 中提到一些文件名，这样可以提高过滤的准确性。
 亦或者将 index_filter_level 设置为 1, 这样你可以在 query 中提到一些函数或者类，系统也能自动识别，你用起来也会更自然一些。
+
+此外，如果你明确知道要改的文件，你可以这么做：
+
+1. index_filter_level设置为0
+2. 在query 最后一行中添加如下语句： 请从提供的信息中只过滤出xxxx.xx文件

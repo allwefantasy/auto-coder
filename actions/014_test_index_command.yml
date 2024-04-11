@@ -12,12 +12,12 @@ index_model_max_length: 2000
 index_model_max_input_length: 10000
 index_model_anti_quota_limit: 1
 
-index_filter_level: 1
+index_filter_level: 0
 
 skip_build_index: false
 
 query: |   
    添加一个新命令。
    
-   另外，过滤文件的时候，尽量严格一些。
+   请从提供的信息中只过滤出for_command.py文件
    
