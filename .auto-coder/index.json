@@ -11,8 +11,8 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py": {
     "symbols": "变量：__version__\n导入语句：",
-    "last_modified": 1712652853.4538023,
-    "md5": "b9418e22fcb6d01e92c27d7676c3eab7"
+    "last_modified": 1712818598.9214072,
+    "md5": "5156799b49279161ec29f833a962769d"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
     "symbols": "```python\n函数：parse_args,main\n变量：system_lang,desc,parser,subparsers,args,raw_args,config,key,value,template,repo_path,file_content,md5,file_name\n类：AutoCoderArgs\n导入语句：import os,time,from loguru import logger,import byzerllm,List,Dict,Any,Optional,argparse ,from autocoder.common import AutoCoderArgs ,from autocoder.dispacher import Dispacher ,from autocoder.lang import lang_desc,from autocoder.common import git_utils,from autocoder.utils.llm_client_interceptors import token_counter_interceptor,from autocoder.db.store import Store ,import yaml   ,import locale,from byzerllm.utils.client import EventCallbackResult,EventName\n```\n函数：main, dispacher\n变量：args, llm\n类：Dispacher\n导入语句：import os,import time,from loguru import logger,import byzerllm",
@@ -40,9 +40,9 @@
     "md5": "9f8874514202b1cb3617721fb32b58bc"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/utils/print_table.py": {
-    "symbols": "函数：print_table\n导入语句：import tabulate,from autocoder.db.store import TokenCounter,from typing import List",
-    "last_modified": 1711809217.918856,
-    "md5": "d50c00aa682dd6641da2d9e8f4fa1c70"
+    "symbols": "函数：print_table\n变量：headers, table_data, table_output\n类：\n导入语句：import tabulate,from autocoder.db.store import TokenCounter,from typing import List",
+    "last_modified": 1712813470.311295,
+    "md5": "321dac6254f910d04b70b9e5e9f799e6"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/utils/rest.py": {
     "symbols": "```python\n函数：HttpDoc, _extract_main_content, is_binary_file, get_file_extractor, crawl_urls\n变量：self.urls, self.llm\n类：HttpDoc\n导入语句：import requests, from bs4 import BeautifulSoup, from typing import List,Dict,Type,Optional, from autocoder.common import SourceCode, import byzerllm, from loguru import logger, import os, from pathlib import Path\n```\n函数：clean_html_keep_text\n变量：tags_to_remove_completely, tags_to_remove_but_keep_text\n类：SourceCode\n导入语句：from bs4 import BeautifulSoup",
@@ -110,9 +110,9 @@
     "md5": "4ca044d1c37e4eeea372dcdfdba3f5f9"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/index.py": {
-    "symbols": "函数：IndexItem, TargetFile, FileList, IndexManager\n变量：module_name, symbols, last_modified, md5\n类：IndexItem, TargetFile, FileList, IndexManager\n导入语句：import os, import json, import time, from typing import List, from datetime import datetime, from autocoder.common import SourceCode, AutoCoderArgs, import pydantic, import byzerllm, import hashlib, from loguru import logger\n函数：_get_target_files_by_query,build_index_and_filter_files,read_index,_get_meta_str,get_related_files,get_target_files_by_query\n变量：self,index_manager,args,sources,final_files,file,temp_file,target_files,related_fiels,file_path,source_code\n类：无\n导入语句：import os,import time,from loguru import logger,import byzerllm",
-    "last_modified": 1712812011.7032552,
-    "md5": "ab9005892a66013aed5a104a7f8486a1"
+    "symbols": "函数：IndexItem, TargetFile, FileList, IndexManager\n变量：module_name, symbols, last_modified, md5\n类：IndexItem, TargetFile, FileList, IndexManager\n导入语句：import os, import json, import time, from typing import List, from datetime import datetime, from autocoder.common import SourceCode, AutoCoderArgs, import pydantic, import byzerllm, import hashlib, from loguru import logger\n函数：_get_target_files_by_query,build_index_and_filter_files,read_index,get_related_files,get_target_files_by_query\n变量：llm,args,sources,final_files,file_path,temp_file,source_code\n类：无\n导入语句：import os,import time,from loguru import logger,import byzerllm",
+    "last_modified": 1712821071.8720992,
+    "md5": "64b98b502320bf494950ae12d65cb6fd"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/suffixproject/__init__.py": {
     "symbols": "```python\n函数：__init__, output, is_suffix_file, read_file_content, convert_to_source_code, get_source_codes, get_rest_source_codes, get_search_source_codes, run, clone_repository\n变量：args, directory, git_url, target_file, project_type, suffixs, file_filter, sources, llm\n类：SuffixProject\n导入语句：from autocoder.common import SourceCode,AutoCoderArgs, from autocoder import common as FileUtils, from autocoder.utils.rest import HttpDoc, import os, from typing import Optional, Generator, List, Dict, Any, Callable, from git import Repo, import byzerllm, from autocoder.common.search import Search,SearchEngine, from loguru import logger\n```",
@@ -150,9 +150,9 @@
     "md5": "e400b3f88f83f6c63bcffa96c70cd04b"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/for_command.py": {
-    "symbols": "函数：index_command, index_query_command\n类：SuffixProject, IndexManager\n变量：args, llm, sources, related_files\n导入语句：from autocoder.index.index import IndexManager, from autocoder.suffixproject import SuffixProject, from loguru import logger",
-    "last_modified": 1712570571.681329,
-    "md5": "ed8074caf3f0e8d71020e68eac0e1874"
+    "symbols": "函数：wrap_text_in_table,index_command,index_query_command\n变量：data,max_width,wrapped_data,row,wrapped_row,project,sources,index_manager,target_files,final_files,related_fiels,all_results,headers,table_data,table_output\n类：SuffixProject,IndexManager,TargetFile\n导入语句：from autocoder.index.index import IndexManager,TargetFile,from autocoder.suffixproject import SuffixProject,import tabulate,import textwrap,from loguru import logger",
+    "last_modified": 1712819034.2598698,
+    "md5": "591a14588252aa781906d924b63664b0"
   },
   "/Users/allwefantasy/projects/auto-coder/tests/test_shell_client.py": {
     "symbols": "函数：setup_method, teardown_method, test_add_and_run\n变量：self, output, error, client\n类：TestShellClient\n导入语句：import tempfile, import os, import pytest, from autocoder.common.ShellClient import ShellClient, import shutil",

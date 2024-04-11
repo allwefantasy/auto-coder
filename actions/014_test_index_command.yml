@@ -19,5 +19,5 @@ skip_build_index: false
 query: |   
    添加一个新命令。
    
-   请从提供的信息中只过滤出for_command.py文件
+   如果需要筛选文件，请从提供的信息中只过滤出for_command.py文件
    

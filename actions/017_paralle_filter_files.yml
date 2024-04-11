@@ -9,7 +9,7 @@ anti_quota_limit: 5
 
 index_model: sparkdesk_chat
 index_model_max_length: 2000
-index_model_max_input_length: 6000
+index_model_max_input_length: 10000
 index_model_anti_quota_limit: 1
 
 index_filter_level: 0
@@ -33,5 +33,7 @@ query: |
          time.sleep(self.args.anti_quota_limit) 
    ```
 
-   修改该函数里如下代码，使其并行化处理，最多四个线程同时处理。另外需要保证线程安全。
+   修改该函数里上面的代码，使其并行化处理，最多四个线程同时处理。另外需要保证线程安全。
+
+   如果需要筛选文件，请从提供的信息中只过滤出 index.py 文件
    
