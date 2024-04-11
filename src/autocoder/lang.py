@@ -32,6 +32,7 @@ lang_desc = {
         "index_desc": "Build the source code index",  
         "index_query_desc": "Query related files based on the index"  ,
         "index_filter_level": "Index filter level, 0: only filter the file names mentioned in query, 1. filter the file names mentioned in query and possibly implicitly used files 2. files obtained from 0,1 and then find files related to these files",
+        "store_desc": "Some statistics, such as token usage, etc.",
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -65,6 +66,7 @@ lang_desc = {
          "image_file": "要处理的图像文件路径。默认为空",
         "index_desc": "构建源代码索引",
         "index_query_desc": "根据索引查询相关文件",
-        "index_filter_level": "索引过滤级别,0:仅过滤query 中提到的文件名，1. 过滤query 中提到的文件名以及可能会隐含会使用的文件 2. 从0,1 中获得的文件，再寻找这些文件相关的文件。",
+        "index_filter_level": "索引过滤级别,0:仅过滤query 中提到的文件名，1. 过滤query 中提到的文件名以及可能会隐含会使用的文件 2. 从0,1 中获得的文件，再寻找这些文件相关的文件。",        
+        "store_desc": "一些统计信息，比如token使用等",
     }
 }

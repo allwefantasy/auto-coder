@@ -67,8 +67,8 @@ def parse_args() -> AutoCoderArgs:
     revert_parser = subparsers.add_parser("revert", help=desc["revert_desc"])
     revert_parser.add_argument("--file", help=desc["revert_desc"])
 
-    store_parser = subparsers.add_parser("store", help=desc["revert_desc"])
-    store_parser.add_argument("--source_dir", help=desc["revert_desc"])
+    store_parser = subparsers.add_parser("store", help=desc["store_desc"])
+    store_parser.add_argument("--source_dir", help=desc["source_dir"])
 
     index_parser = subparsers.add_parser("index", help=desc["index_desc"])  # New subcommand
     index_parser.add_argument("--file", help=desc["file"])
