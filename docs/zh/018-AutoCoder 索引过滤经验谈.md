@@ -87,4 +87,4 @@ auto-coder index-query  --file actions/014_test_index_command.yml
 此外，如果你明确知道要改的文件，你可以这么做：
 
 1. index_filter_level设置为0
-2. 在query 最后一行中添加如下语句： 请从提供的信息中只过滤出xxxx.xx文件
+2. 在query 最后一行中添加如下语句： 如果需要筛选文件，请从提供的信息中只过滤出xxxx.xx文件
