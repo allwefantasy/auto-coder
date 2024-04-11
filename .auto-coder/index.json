@@ -10,9 +10,9 @@
     "md5": "5fcd114fd526598a64d0397f694212af"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py": {
-    "symbols": "变量：__version__\n导入语句：",
-    "last_modified": 1712821295.768058,
-    "md5": "b56d0c023e577c940ab90c8f7531c6bd"
+    "symbols": "```\n变量：__version__\n导入语句：\n类：\n函数：\n```",
+    "last_modified": 1712825249.516008,
+    "md5": "8a63a6e46383b50aa9186afeb2e02ce4"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
     "symbols": "```python\n函数：parse_args,main\n变量：args,raw_args\n类：无\n导入语句：import byzerllm,argparse,os,locale,hashlib,yaml,jinja2,token_counter_interceptor,git_utils,time,EventName,prompt,FormattedText,Store,IndexManager\n```\n函数：main\n变量：args, llm, index_model, dispacher\n类：Dispacher\n导入语句：from autocoder.index.for_command import index_command, from autocoder.index.for_command import index_query_command",
