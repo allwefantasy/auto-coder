@@ -20,7 +20,7 @@ def index_query_command(args,llm):
     
     print("===================Filter FILEs=========================",flush=True)
     
-    print(f"index_filter_level:{args.index_filter_level}, filter files by query: {args.query}",flush=True)
+    print(f"index_filter_level:{args.index_filter_level}, total files: {len(related_files.file_list)} filter files by query: {args.query}",flush=True)
 
     headers =  TargetFile.model_fields.keys()
     table_data = [[getattr(file_item, name) for name in headers] for file_item in related_files.file_list]    

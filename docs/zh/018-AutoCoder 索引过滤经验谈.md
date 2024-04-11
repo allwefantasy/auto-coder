@@ -62,7 +62,7 @@ query: |
 
 
 ```shell
-auto-coder index-query -f actions/014_test_index_command.yml
+auto-coder index-query  --file actions/014_test_index_command.yml 
 ```        
 
 输出结果如下：
