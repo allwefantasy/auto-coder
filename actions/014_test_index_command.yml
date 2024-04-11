@@ -11,7 +11,8 @@ index_model: sparkdesk_chat
 index_model_max_length: 2000
 index_model_max_input_length: 10000
 index_model_anti_quota_limit: 1
-index_filter_level: 0
+
+index_filter_level: 1
 
 skip_build_index: false
 
