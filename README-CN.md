@@ -36,3 +36,6 @@ pip install -U auto-coder
 ray start --head
 ```
 
+## 示例项目
+
+https://github.com/allwefantasy/auto-coder.example

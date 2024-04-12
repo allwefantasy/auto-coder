@@ -23,19 +23,6 @@ Auto-Coder (powered by Byzer-LLM)
 
 ---
 
-## Table of Contents
-
-- [Installation](#installation)
-- [Brand new Installation](#raw-meta-matchine-installation)
-- [Usage](#usage)
-  - [Basic](#basic)
-  - [Advanced](#advanced)
-  - [Python Project Only Features](#python-project-only-features)
-  - [TypeScript Project](#typescript-project)
-  - [Real-Auto](#real-auto)
-    - [Real-Auto with Search Engine](#real-auto-with-search-engine)
-
-
 
 ## Installation
 
@@ -47,3 +34,7 @@ pip install -U auto-coder
 # pip install -U vllm
 ray start --head
 ```
+
+## Example Project
+
+https://github.com/allwefantasy/auto-coder.example
