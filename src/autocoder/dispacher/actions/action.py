@@ -248,7 +248,10 @@ class ActionSuffixProject:
         args = self.args        
         pp = SuffixProject(args=args, llm=self.llm)
         pp.run()
-        self.process_content(pp.output())
+        source_code = pp.output()
+        if self.llm:
+            source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=pp.sources)
+        self.process_content(source_code)
 
     def process_content(self, content: str):
         args = self.args
