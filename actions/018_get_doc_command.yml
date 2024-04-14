@@ -1,0 +1,33 @@
+source_dir: /Users/allwefantasy/projects/auto-coder
+target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
+project_type: py
+
+model: qianwen_chat
+model_max_length: 2000
+model_max_input_length: 6000
+anti_quota_limit: 5
+
+index_model: sparkdesk_chat
+index_model_max_length: 2000
+index_model_max_input_length: 10000
+index_model_anti_quota_limit: 1
+
+index_filter_level: 0
+# index_filter_workers: 2
+
+skip_build_index: false
+execute: true
+auto_merge: true
+human_as_model: true
+
+query: |   
+   在 auto-coder.py 中新增一个子命令 doc.具体使用方式如下：
+
+   ```bash
+   auto-coder doc --urls https://www.volcengine.com/docs/6561/1167808 --model qianwen_chat --target_file xxxx.output
+   ```
+
+   具体逻辑如下：
+
+   1. 调用  rest.py 中的 crawl_urls 方法，然后将 source 内容写入到 target_file 中。   
+   
