@@ -75,7 +75,10 @@ class AutoCoderArgs(pydantic.BaseModel):
     print_request: bool = pydantic.Field(False, description="Print request to model or not. default is False")
     human_as_model: bool = pydantic.Field(False, description="Use human as model or not. default is False")
     py_packages: str = pydantic.Field("", description="The Python packages added to context,only works for py project type. default is empty.")
+    
     urls: str = pydantic.Field("", description="The urls to crawl and extract text from, separated by comma")
+    urls_use_model:bool = True
+
     search_engine: str = ""
     search_engine_token: str = ""
     
@@ -90,6 +93,8 @@ class AutoCoderArgs(pydantic.BaseModel):
     index_filter_level: int = 3
     index_filter_workers: int = 1
     image_max_iter: int = 1
+
+    
 
     class Config:
         protected_namespaces = ()

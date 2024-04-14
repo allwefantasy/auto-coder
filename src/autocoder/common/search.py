@@ -381,7 +381,7 @@ class Search:
             return ""
         
         print(f"fetch {context.url} and answer the quesion ({query}) based on the full content...")        
-        doc = HttpDoc([context.url],self.llm)
+        doc = HttpDoc(args = self.args,llm = self.llm,urls=[context.url])
         source_codes = doc.crawl_urls()            
         return self._llm_search(query,[SearchContext(name=source_code.module_name,url=context.url,snippet=source_code.source_code) for source_code in source_codes])    
         

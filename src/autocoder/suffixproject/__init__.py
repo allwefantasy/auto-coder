@@ -49,7 +49,7 @@ class SuffixProject():
 
     def get_rest_source_codes(self) -> Generator[SourceCode, None, None]:
         if self.args.urls:
-            http_doc = HttpDoc(urls=self.args.urls.split(","), llm=self.llm)
+            http_doc = HttpDoc(args =self.args, llm=self.llm,urls=self.args.urls.split(","))
             sources = http_doc.crawl_urls()         
             return sources
         return []  

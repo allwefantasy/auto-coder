@@ -24,7 +24,11 @@ query: |
    在 auto-coder.py 中新增一个子命令 doc.具体使用方式如下：
 
    ```bash
-   auto-coder doc --urls https://www.volcengine.com/docs/6561/1167808 --model qianwen_chat --target_file xxxx.output
+   auto-coder doc \
+   --urls https://www.volcengine.com/docs/6561/1167808 \
+   --model sparkdesk_chat \
+   --source_dir . \
+   --target_file /Users/allwefantasy/projects/auto-coder/output.txt
    ```
 
    具体逻辑如下：

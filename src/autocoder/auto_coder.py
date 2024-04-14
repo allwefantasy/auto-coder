@@ -59,6 +59,9 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--py_packages", required=False, default="", help=desc["py_packages"])
     parser.add_argument("--human_as_model", action='store_true', help=desc["human_as_model"])
     parser.add_argument("--urls", default="", help=desc["urls"])
+    parser.add_argument("--urls_use_model", action='store_true', help=desc["urls_use_model"])
+    
+
     parser.add_argument("--search_engine", default="", help=desc["search_engine"])
     parser.add_argument("--search_engine_token", default="",help=desc["search_engine_token"])
     parser.add_argument("--auto_merge", action='store_true', help=desc["auto_merge"])
@@ -89,9 +92,13 @@ def parse_args() -> AutoCoderArgs:
     index_query_parser.add_argument("--index_filter_level",type=int, default=2, help=desc["index_filter_level"])        
 
     doc_parser = subparsers.add_parser("doc", help=desc["doc_desc"])
-    doc_parser.add_argument("--urls", required=True, help=desc["doc_urls"])
-    doc_parser.add_argument("--model", required=True, help=desc["model"]) 
-    doc_parser.add_argument("--target_file", required=True, help=desc["target_file"])
+    doc_parser.add_argument("--urls", default="", help=desc["urls"])
+    doc_parser.add_argument("--model", default="", help=desc["model"]) 
+    doc_parser.add_argument("--target_file", default="", help=desc["target_file"])
+    doc_parser.add_argument("--file",default="", help=desc["file"])
+    doc_parser.add_argument("--source_dir", required=False, help=desc["source_dir"]) 
+    doc_parser.add_argument("--human_as_model", action='store_true', help=desc["human_as_model"])
+    doc_parser.add_argument("--urls_use_model", action='store_true', help=desc["urls_use_model"])
 
     args = parser.parse_args()
 
@@ -229,7 +236,7 @@ def main():
         return
 
     if raw_args.command == "doc":
-        http_doc = HttpDoc(args.urls.strip().split(" "), llm)
+        http_doc = HttpDoc(args = args, llm = llm, urls = None)
         source_codes = http_doc.crawl_urls()
         with open(args.target_file, "w") as f:
             f.write("\n".join([sc.source_code for sc in source_codes]))

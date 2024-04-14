@@ -10,20 +10,31 @@ from pathlib import Path
 
 
 class HttpDoc:
-    def __init__(self, urls: List[str], llm: byzerllm.ByzerLLM):
-        self.urls = [url.strip() for url in urls if url.strip() != ""]
+    def __init__(self, args, llm: byzerllm.ByzerLLM,urls:Optional[List[str]]=None):
+        self.args = args
+        temp_urls = self.args.urls.split(",") if not urls else urls
+        self.urls = [url.strip() for url in temp_urls if url.strip() != ""]
         self.llm = llm
 
-    @byzerllm.prompt(lambda self:self.llm, render="jinja2")
+    @byzerllm.prompt()
     def _extract_main_content(self, url: str, html: str) -> str:
-        """
-        链接：{{ url }}
+        """    
+        ## 任务 
+
+        你的目标是把 HTML 格式的文本内容转换为 Markdown。保持最后生成文档的可阅读性，同时去除广告、导航、版权声明等无关内容,
+        如果里面有 html 表格，请将其转换为 Markdown表格。
         
-        HTML内容：
+        返回的结果务必要保持完整,不需要给出提取步骤。             
+        
+        ## 链接
+        
+        {{ url }}
+        
+        ## HTML内容
+
         {{ html }}
         
-        请从上面的HTML内容中提取正文内容,去除广告、导航、版权声明等无关内容,如果是html表格之类的，则可以转化markdown表格或者List格式。
-        返回提取的结果即可,不需要给出提取步骤。
+        ## Markdown内容        
         """
 
     def is_binary_file(self,filepath):    
@@ -127,14 +138,24 @@ class HttpDoc:
                 
                 if response.status_code == 200:
                     html_content = self.clean_html_keep_text(response.text)
-                    if self.llm:  
-                        try:
-                            main_content = self._extract_main_content(url, html_content)
+                    if self.args.urls_use_model and self.llm:  
+                        try: 
+                            extra_llm_config = {}        
+                            if self.args.human_as_model:
+                                extra_llm_config["human_as_model"] = True
+                            prompt = self._extract_main_content(url, html_content)
+                            
+                            t = self.llm.chat_oai(conversations=[{
+                                "role":"user",
+                                "content":prompt
+                            }],llm_config={**extra_llm_config})
+
+                            main_content = t[0].output
                         except Exception as e:
                             logger.warning(f"Failed to extract main content from URL: {url}, we will skip this clean step, and use the raw html. Error: {e}")
                             main_content = html_content
                     else:                    
-                        main_content = response.text   
+                        main_content = html_content   
 
                     source_code = SourceCode(module_name=url, source_code=main_content)
                     source_codes.append(source_code)

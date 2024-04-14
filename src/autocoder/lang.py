@@ -35,6 +35,8 @@ lang_desc = {
         "store_desc": "Some statistics, such as token usage, etc.",
         "index_filter_workers": "Number of workers to use for filtering files by index",
         "image_max_iter": "The maximum number of iterations for image to html. Default is 1",
+        "doc_desc": "Some operation on doc,e.g. extract text from html",
+        "urls_use_model":"Whether to use model to processing content in urls. Default is False",
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -72,5 +74,7 @@ lang_desc = {
         "store_desc": "一些统计信息，比如token使用等",
         "index_filter_workers":"用于通过索引过滤文件的工作线程数",
         "image_max_iter": "图像转html的最大迭代次数。默认为1",
+        "doc_desc": "对文档进行一些操作,诸如获取html的正文内容",
+        "urls_use_model":"是否使用模型处理urls中的内容。默认为False",
     }
 }
