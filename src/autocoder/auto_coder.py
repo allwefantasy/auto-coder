@@ -18,6 +18,7 @@ from typing import List,Dict,Any
 from jinja2 import Template
 import hashlib
 from autocoder.index.index import IndexManager
+from autocoder.utils.rest import HttpDoc
 
 def parse_args() -> AutoCoderArgs:
     system_lang, _ = locale.getdefaultlocale()
@@ -85,7 +86,12 @@ def parse_args() -> AutoCoderArgs:
     index_query_parser.add_argument("--index_model", default="", help=desc["index_model"])
     index_query_parser.add_argument("--source_dir", required=False, help=desc["source_dir"])    
     index_query_parser.add_argument("--query", help=desc["query"])
-    index_query_parser.add_argument("--index_filter_level",type=int, default=2, help=desc["index_filter_level"])    
+    index_query_parser.add_argument("--index_filter_level",type=int, default=2, help=desc["index_filter_level"])        
+
+    doc_parser = subparsers.add_parser("doc", help=desc["doc_desc"])
+    doc_parser.add_argument("--urls", required=True, help=desc["doc_urls"])
+    doc_parser.add_argument("--model", required=True, help=desc["model"]) 
+    doc_parser.add_argument("--target_file", required=True, help=desc["target_file"])
 
     args = parser.parse_args()
 
@@ -220,6 +226,13 @@ def main():
     if raw_args.command == "index-query":  # New subcommand logic
         from autocoder.index.for_command import index_query_command
         index_query_command(args,llm)
+        return
+
+    if raw_args.command == "doc":
+        http_doc = HttpDoc(args.urls.strip().split(" "), llm)
+        source_codes = http_doc.crawl_urls()
+        with open(args.target_file, "w") as f:
+            f.write("\n".join([sc.source_code for sc in source_codes]))
         return
 
     dispacher = Dispacher(args, llm)
