@@ -6,7 +6,7 @@ from pydantic import BaseModel,Field
 import requests
 from enum import Enum
 import byzerllm
-from langchain import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from autocoder.utils.rest import HttpDoc
 
 # Search engine related. You don't really need to change this.

@@ -1,0 +1,15 @@
+source_dir: /Users/allwefantasy/projects/deploy_models
+target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
+
+model: qianwen_chat
+model_max_length: 2000
+model_max_input_length: 6000
+anti_quota_limit: 5
+
+emb_model: qianwen_emb
+
+index_filter_level: 0
+
+query: |   
+   你好   
+   

@@ -1,5 +1,7 @@
 from autocoder.index.index import IndexManager,TargetFile
 from autocoder.suffixproject import SuffixProject
+from autocoder.tsproject import TSProject
+from autocoder.pyproject import PyProject
 import tabulate
 import textwrap
 from loguru import logger
@@ -28,9 +30,14 @@ def index_command(args,llm):
     index_manager.build_index()    
 
 def index_query_command(args,llm):    
-    project = SuffixProject(args,llm) 
-    project.run()
-    sources = project.sources 
+    if args.project_type in [".ts","ts"]:
+        pp = TSProject(args=args,llm = llm)
+    elif args.project_type in [".py","py"]:
+        pp = PyProject(args=args,llm = llm)
+    else:
+        pp = SuffixProject(args=args,llm = llm,file_filter=None) 
+    pp.run()    
+    sources = pp.sources 
 
     final_files = [] 
     

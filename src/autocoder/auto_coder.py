@@ -5,6 +5,7 @@ from autocoder.common import AutoCoderArgs
 from autocoder.dispacher import Dispacher 
 from autocoder.lang import lang_desc
 from autocoder.common import git_utils
+from autocoder.rag.build_doc import SimpleRAG
 from autocoder.utils.llm_client_interceptors import token_counter_interceptor
 from autocoder.db.store import Store
 import yaml   
@@ -44,6 +45,7 @@ def parse_args() -> AutoCoderArgs:
 
     parser.add_argument("--vl_model", default="", help=desc["vl_model"])
     parser.add_argument("--sd_model", default="", help=desc["sd_model"])
+    parser.add_argument("--emb_model", default="", help=desc["emb_model"])
     
     parser.add_argument("--index_model", default="", help=desc["index_model"])
     parser.add_argument("--index_model_max_length", type=int, default=0, help=desc["model_max_length"])
@@ -53,6 +55,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--index_filter_workers",type=int, default=1, help=desc["index_filter_workers"])
     
     parser.add_argument("--file", default=None, required=False, help=desc["file"])
+    parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
     parser.add_argument("--anti_quota_limit", type=int, default=1, help=desc["anti_quota_limit"])
     parser.add_argument("--skip_build_index", action='store_false', help=desc["skip_build_index"])
     parser.add_argument("--print_request", action='store_true', help=desc["print_request"])
@@ -99,6 +102,19 @@ def parse_args() -> AutoCoderArgs:
     doc_parser.add_argument("--source_dir", required=False, help=desc["source_dir"]) 
     doc_parser.add_argument("--human_as_model", action='store_true', help=desc["human_as_model"])
     doc_parser.add_argument("--urls_use_model", action='store_true', help=desc["urls_use_model"])
+
+    doc_subparsers = doc_parser.add_subparsers(dest="doc_command")
+    doc_build_parse = doc_subparsers.add_parser("build",help="")
+    doc_build_parse.add_argument("--source_dir", default="", help="")
+    doc_build_parse.add_argument("--model", default="", help=desc["model"]) 
+    doc_build_parse.add_argument("--emb_model", default="", help=desc["emb_model"])
+    doc_build_parse.add_argument("--file",default="", help=desc["file"])
+
+    doc_query_parse = doc_subparsers.add_parser("query",help="")
+    doc_query_parse.add_argument("--query", default="", help="")
+    doc_query_parse.add_argument("--model", default="", help=desc["model"])
+    doc_query_parse.add_argument("--emb_model", default="", help=desc["emb_model"]) 
+    doc_query_parse.add_argument("--file",default="", help=desc["file"])
 
     args = parser.parse_args()
 
@@ -152,7 +168,7 @@ def main():
 
     if args.model:
         
-        byzerllm.connect_cluster()        
+        byzerllm.connect_cluster(address=args.ray_address)        
         llm = byzerllm.ByzerLLM(verbose=args.print_request)
         
         if args.human_as_model:
@@ -220,7 +236,14 @@ def main():
             index_model.setup_max_output_length(args.index_model,args.index_model_max_length or args.model_max_length)
             index_model.setup_max_input_length(args.index_model,args.index_model_max_input_length or args.model_max_input_length)
             index_model.setup_extra_generation_params(args.index_model, {"max_length": args.index_model_max_length or args.model_max_length})  
-            llm.setup_sub_client("index_model",index_model)    
+            llm.setup_sub_client("index_model",index_model)  
+
+        if args.emb_model:
+            llm.setup_default_emb_model_name(args.emb_model)
+            emb_model = byzerllm.ByzerLLM()
+            emb_model.setup_default_emb_model_name(args.emb_model)
+            emb_model.setup_template(model=args.emb_model,template="auto")            
+            llm.setup_sub_client("emb_model",emb_model)       
 
     else:
         llm = None
@@ -235,12 +258,24 @@ def main():
         index_query_command(args,llm)
         return
 
-    if raw_args.command == "doc":
-        http_doc = HttpDoc(args = args, llm = llm, urls = None)
-        source_codes = http_doc.crawl_urls()
-        with open(args.target_file, "w") as f:
-            f.write("\n".join([sc.source_code for sc in source_codes]))
-        return
+    if raw_args.command == "doc":            
+        if raw_args.doc_command == "build":
+            rag = SimpleRAG(llm,args.source_dir)
+            rag.build()
+            print("Successfully built the document index")
+            return        
+        elif raw_args.doc_command == "query":
+            rag = SimpleRAG(llm,"")
+            response,contexts = rag.search(args.query)
+            for res in response:
+                print(res)                        
+            return
+        else:
+            http_doc = HttpDoc(args = args, llm = llm, urls = None)
+            source_codes = http_doc.crawl_urls()
+            with open(args.target_file, "w") as f:
+                f.write("\n".join([sc.source_code for sc in source_codes]))
+            return
 
     dispacher = Dispacher(args, llm)
     dispacher.dispach()

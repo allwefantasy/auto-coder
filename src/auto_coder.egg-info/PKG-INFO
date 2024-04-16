@@ -42,7 +42,7 @@ Requires-Dist: sqlmodel
 Requires-Dist: wudao
 Requires-Dist: SwissArmyTransformer
 Requires-Dist: jieba
-Requires-Dist: byzerllm>=0.1.65
+Requires-Dist: byzerllm>=0.1.64
 Requires-Dist: GitPython
 Requires-Dist: openai>=1.14.3
 Requires-Dist: anthropic

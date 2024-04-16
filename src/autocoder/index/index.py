@@ -214,7 +214,7 @@ class IndexManager:
 
        return index_items
     
-   def _get_meta_str(self, max_chunk_size=4096):
+   def _get_meta_str(self, max_chunk_size=4096,skip_symbols:bool = False):
        index_items = self.read_index()
        output = []
        current_chunk = []
@@ -222,6 +222,8 @@ class IndexManager:
        
        for item in index_items:
            item_str = f"##{item.module_name}\n{item.symbols}\n\n"
+           if skip_symbols:
+               item_str = f"{item.module_name}\n"
            item_size = len(item_str)
            
            if current_size + item_size > max_chunk_size:
@@ -261,44 +263,52 @@ class IndexManager:
 
        all_results = list({file.file_path: file for file in all_results}.values())
        return FileList(file_list=all_results)
+   
+   def _query_index_with_thread(self,query,func):
+        all_results = []
+        lock = threading.Lock()
+        
+        def process_chunk(chunk):
+            result = self._get_target_files_by_query(chunk, query)            
+            if result is not None:
+                with lock:
+                    all_results.extend(result.file_list)
+            else:
+                logger.warning(f"Fail to find target files for chunk. This is caused by the model response not being in JSON format or the JSON being empty.")
+            time.sleep(self.args.anti_quota_limit)
+
+        with ThreadPoolExecutor(max_workers=self.args.index_filter_workers) as executor:
+            futures = []
+            for chunk in func():
+                future = executor.submit(process_chunk, chunk)
+                futures.append(future)
+
+            for future in as_completed(futures):
+                future.result()
+        return all_results        
 
    def get_target_files_by_query(self, query: str) -> FileList:
-       all_results:List[TargetFile] = []
-       index_items = self.read_index()
-       paths = "\n".join([index.module_name for index in index_items])
-       
-       logger.info("Find the related files mentioned in query...")
-       result = self._get_target_files_by_query(paths,query)
-
-       if result is not None:
-           all_results.extend(result.file_list)
-
-       
-       if self.args.index_filter_level >= 1:    
-           
-            logger.info("Find the related files by query according to the file and symbols...")
-            lock = threading.Lock()
+        all_results:List[TargetFile] = []
         
-            def process_chunk(chunk):
-                result = self._get_target_files_by_query(chunk, query)            
-                if result is not None:
-                    with lock:
-                        all_results.extend(result.file_list)
-                else:
-                    logger.warning(f"Fail to find target files for chunk. This is caused by the model response not being in JSON format or the JSON being empty.")
-                time.sleep(self.args.anti_quota_limit)
+        def w():
+            return self._get_meta_str(skip_symbols=True)
 
-            with ThreadPoolExecutor(max_workers=self.args.index_filter_workers) as executor:
-                futures = []
-                for chunk in self._get_meta_str():
-                    future = executor.submit(process_chunk, chunk)
-                    futures.append(future)
+        temp_result = self._query_index_with_thread(query,w)
+        all_results.extend(temp_result)
+            
 
-                for future in as_completed(futures):
-                    future.result()
-               
-       all_results = list({file.file_path: file for file in all_results}.values())
-       return FileList(file_list=all_results) 
+        
+        if self.args.index_filter_level >= 1:    
+            
+            logger.info("Find the related files by query according to the file and symbols...")
+            def w():
+                return self._get_meta_str(skip_symbols=False)
+            temp_result = self._query_index_with_thread(query,w)            
+            all_results.extend(temp_result)
+        
+                
+        all_results = list({file.file_path: file for file in all_results}.values())
+        return FileList(file_list=all_results) 
    
    @byzerllm.prompt(lambda self: self.llm, render="jinja2",check_result=True)
    def _get_target_files_by_query(self,indices:str,query:str)->FileList:
@@ -316,7 +326,8 @@ class IndexManager:
 
 
 def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode])->str:
-   final_files = []
+   final_files = []      
+
    if not args.skip_build_index and llm:        
        index_manager = IndexManager(llm=llm,sources=sources,args=args)
        index_manager.build_index()

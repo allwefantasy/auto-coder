@@ -27,6 +27,7 @@ lang_desc = {
         "revert_desc": "Revert the changes made by the specified file",
         "vl_model": "The name of the multi-modal model to use. Default is empty",
         "sd_model": "The name of the stable diffusion model to use. Default is empty",
+        "emb_model": "The name of the embedding model to use. Default is empty",
         "index_model": "The name of the model used to build index. Default is empty",
          "image_file": "The path of the image file to process. Default is empty",
         "index_desc": "Build the source code index",  
@@ -37,6 +38,7 @@ lang_desc = {
         "image_max_iter": "The maximum number of iterations for image to html. Default is 1",
         "doc_desc": "Some operation on doc,e.g. extract text from html",
         "urls_use_model":"Whether to use model to processing content in urls. Default is False",
+        "ray_address": "The address of the Ray cluster to connect to. Default is 'auto'",
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -66,6 +68,7 @@ lang_desc = {
         "revert_desc": "撤销指定文件所做的更改",
         "vl_model": "要使用的多模态模型的名称。默认为空",
         "sd_model": "要使用的稳定扩散模型的名称。默认为空",
+        "emb_model": "要使用的嵌入模型的名称。默认为空",
         "index_model": "用于构建索引的模型名称。默认为空",
          "image_file": "要处理的图像文件路径。默认为空",
         "index_desc": "构建源代码索引",
@@ -76,5 +79,6 @@ lang_desc = {
         "image_max_iter": "图像转html的最大迭代次数。默认为1",
         "doc_desc": "对文档进行一些操作,诸如获取html的正文内容",
         "urls_use_model":"是否使用模型处理urls中的内容。默认为False",
+        "ray_address": "要连接的Ray集群的地址。默认为'auto'",
     }
 }
