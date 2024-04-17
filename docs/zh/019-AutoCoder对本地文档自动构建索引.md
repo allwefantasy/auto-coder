@@ -39,7 +39,7 @@ byzerllm storage start
 ```
 
 注意，你系统需要装有 JDK21。如果JDK21不是你默认 SDK,可以在启动命令前临时export JAVA_HOME。
-系统会自动下载文件需要的文件。
+系统会自动下载需要的文件。
 
 ## 对文档进行索引构建
 
@@ -70,7 +70,9 @@ byzerllm deploy --pretrained_model_type saas/qianwen \
 现在，可以构建你的文档了：
 
 ```bash
-auto-coder doc build --model qianwen_chat --emb_model qianwen_emb --source_dir 你存放文档的目录
+auto-coder doc build --model qianwen_chat \
+--emb_model qianwen_emb \
+--source_dir 你存放文档的目录
 ```
 
 你也可以把上面的参数放到一个 YAML 文件里去：

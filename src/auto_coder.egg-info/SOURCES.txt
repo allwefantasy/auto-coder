@@ -14,6 +14,7 @@ src/autocoder/common/JupyterClient.py
 src/autocoder/common/ShellClient.py
 src/autocoder/common/__init__.py
 src/autocoder/common/cleaner.py
+src/autocoder/common/code_auto_execute.py
 src/autocoder/common/code_auto_merge.py
 src/autocoder/common/const.py
 src/autocoder/common/git_utils.py
@@ -30,6 +31,8 @@ src/autocoder/index/__init__.py
 src/autocoder/index/for_command.py
 src/autocoder/index/index.py
 src/autocoder/pyproject/__init__.py
+src/autocoder/rag/__init__.py
+src/autocoder/rag/simple_rag.py
 src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py
 src/autocoder/utils/__init__.py
