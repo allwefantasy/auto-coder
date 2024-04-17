@@ -13,7 +13,7 @@ AutoCoder已经支持对代码构建索引了，参考：
 
 1. [006-AutoCoder 开启索引，减少上下文](006-AutoCoder%20%E5%BC%80%E5%90%AF%E7%B4%A2%E5%BC%95%EF%BC%8C%E5%87%8F%E5%B0%91%E4%B8%8A%E4%B8%8B%E6%96%87.md)
 2. [017-AutoCoder指定专有索引模型](017-AutoCoder%E6%8C%87%E5%AE%9A%E4%B8%93%E6%9C%89%E7%B4%A2%E5%BC%95%E6%A8%A1%E5%9E%8B.md)
-3. [018-AutoCoder 索引过滤经验谈](018-AutoCoder 索引过滤经验谈.md)
+3. [018-AutoCoder 索引过滤经验谈](018-AutoCoder%20索引过滤经验谈.md)
 
 而对文档的使用，我们目前还需要用户通过如下配置来使用：
 
