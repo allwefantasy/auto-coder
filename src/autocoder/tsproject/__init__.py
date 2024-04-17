@@ -1,6 +1,7 @@
 from autocoder.common import SourceCode,AutoCoderArgs
 from autocoder import common as FileUtils  
 from autocoder.utils.rest import HttpDoc
+from autocoder.rag.simple_rag import SimpleRAG
 import os
 from typing import Optional,Generator,List,Dict,Any
 
@@ -100,8 +101,16 @@ class TSProject():
             sources = http_doc.crawl_urls()         
             return sources
         return [] 
+    
+    def get_rag_source_codes(self):
+        if self.args.enable_rag_search:
+            rag = SimpleRAG(self.llm,self.args,self.args.source_dir)
+            docs = rag.search(self.args.query)
+            return docs
+        return  []
 
     def get_search_source_codes(self):
+        temp = self.get_rag_source_codes()
         if self.args.search_engine and self.args.search_engine_token:
             if self.args.search_engine == "bing":
                 search_engine = SearchEngine.BING
@@ -110,8 +119,8 @@ class TSProject():
 
             searcher=Search(llm=self.llm,search_engine=search_engine,subscription_key=self.args.search_engine_token)
             search_context = searcher.answer_with_the_most_related_context(self.args.query)  
-            return [SourceCode(module_name="SEARCH_ENGINE", source_code=search_context)]
-        return []       
+            return temp + [SourceCode(module_name="SEARCH_ENGINE", source_code=search_context)]
+        return temp + []       
 
     def run(self):
         if self.git_url is not None:

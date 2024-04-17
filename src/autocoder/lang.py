@@ -38,7 +38,7 @@ lang_desc = {
         "image_max_iter": "The maximum number of iterations for image to html. Default is 1",
         "doc_desc": "Some operation on doc,e.g. extract text from html",
         "urls_use_model":"Whether to use model to processing content in urls. Default is False",
-        "ray_address": "The address of the Ray cluster to connect to. Default is 'auto'",
+        "ray_address": "The address of the Ray cluster to connect to. Default is 'auto'",        
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",

@@ -82,6 +82,7 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     search_engine: str = ""
     search_engine_token: str = ""
+    enable_rag_search:bool
     
     auto_merge: bool = pydantic.Field(False, description="Whether to automatically merge the generated code into the existing file")
     vl_model: str = ""

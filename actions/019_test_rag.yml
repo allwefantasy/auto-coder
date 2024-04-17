@@ -11,5 +11,5 @@ emb_model: qianwen_emb
 index_filter_level: 0
 
 query: |   
-   你好   
+   请只给出 qianwen_chat  的启动语句。
    

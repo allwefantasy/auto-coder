@@ -5,7 +5,7 @@ from autocoder.common import AutoCoderArgs
 from autocoder.dispacher import Dispacher 
 from autocoder.lang import lang_desc
 from autocoder.common import git_utils
-from autocoder.rag.build_doc import SimpleRAG
+from autocoder.rag.simple_rag import SimpleRAG
 from autocoder.utils.llm_client_interceptors import token_counter_interceptor
 from autocoder.db.store import Store
 import yaml   
@@ -20,6 +20,7 @@ from jinja2 import Template
 import hashlib
 from autocoder.index.index import IndexManager
 from autocoder.utils.rest import HttpDoc
+from byzerllm.apps.command import get_latest_byzer_retrieval_lib
 
 def parse_args() -> AutoCoderArgs:
     system_lang, _ = locale.getdefaultlocale()
@@ -64,9 +65,11 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--urls", default="", help=desc["urls"])
     parser.add_argument("--urls_use_model", action='store_true', help=desc["urls_use_model"])
     
-
+    
     parser.add_argument("--search_engine", default="", help=desc["search_engine"])
     parser.add_argument("--search_engine_token", default="",help=desc["search_engine_token"])
+    parser.add_argument("--enable_rag_search", action='store_true',help="")
+
     parser.add_argument("--auto_merge", action='store_true', help=desc["auto_merge"])
 
     parser.add_argument("--image_file", default="", help=desc["image_file"])
@@ -78,6 +81,7 @@ def parse_args() -> AutoCoderArgs:
 
     store_parser = subparsers.add_parser("store", help=desc["store_desc"])
     store_parser.add_argument("--source_dir", help=desc["source_dir"])
+    store_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
 
     index_parser = subparsers.add_parser("index", help=desc["index_desc"])  # New subcommand
     index_parser.add_argument("--file", help=desc["file"])
@@ -85,6 +89,7 @@ def parse_args() -> AutoCoderArgs:
     index_parser.add_argument("--index_model", default="", help=desc["index_model"])
     index_parser.add_argument("--source_dir", required=False, help=desc["source_dir"])
     index_parser.add_argument("--project_type", default="py", help=desc["project_type"])
+    index_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
 
     index_query_parser = subparsers.add_parser("index-query", help=desc["index_query_desc"])  # New subcommand  
     index_query_parser.add_argument("--file", help=desc["file"])
@@ -93,6 +98,7 @@ def parse_args() -> AutoCoderArgs:
     index_query_parser.add_argument("--source_dir", required=False, help=desc["source_dir"])    
     index_query_parser.add_argument("--query", help=desc["query"])
     index_query_parser.add_argument("--index_filter_level",type=int, default=2, help=desc["index_filter_level"])        
+    index_query_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
 
     doc_parser = subparsers.add_parser("doc", help=desc["doc_desc"])
     doc_parser.add_argument("--urls", default="", help=desc["urls"])
@@ -102,6 +108,7 @@ def parse_args() -> AutoCoderArgs:
     doc_parser.add_argument("--source_dir", required=False, help=desc["source_dir"]) 
     doc_parser.add_argument("--human_as_model", action='store_true', help=desc["human_as_model"])
     doc_parser.add_argument("--urls_use_model", action='store_true', help=desc["urls_use_model"])
+    doc_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
 
     doc_subparsers = doc_parser.add_subparsers(dest="doc_command")
     doc_build_parse = doc_subparsers.add_parser("build",help="")
@@ -109,12 +116,14 @@ def parse_args() -> AutoCoderArgs:
     doc_build_parse.add_argument("--model", default="", help=desc["model"]) 
     doc_build_parse.add_argument("--emb_model", default="", help=desc["emb_model"])
     doc_build_parse.add_argument("--file",default="", help=desc["file"])
+    doc_build_parse.add_argument("--ray_address", default="auto", help=desc["ray_address"])
 
     doc_query_parse = doc_subparsers.add_parser("query",help="")
     doc_query_parse.add_argument("--query", default="", help="")
     doc_query_parse.add_argument("--model", default="", help=desc["model"])
     doc_query_parse.add_argument("--emb_model", default="", help=desc["emb_model"]) 
     doc_query_parse.add_argument("--file",default="", help=desc["file"])
+    doc_query_parse.add_argument("--ray_address", default="auto", help=desc["ray_address"])
 
     args = parser.parse_args()
 
@@ -168,7 +177,17 @@ def main():
 
     if args.model:
         
-        byzerllm.connect_cluster(address=args.ray_address)        
+        home = os.path.expanduser("~")
+        auto_coder_dir = os.path.join(home, ".auto-coder")
+        libs_dir = os.path.join(auto_coder_dir, "storage", "libs")                
+        code_search_path = None
+        if os.path.exists(libs_dir):        
+            retrieval_libs_dir = os.path.join(libs_dir,get_latest_byzer_retrieval_lib(libs_dir))            
+            if os.path.exists(retrieval_libs_dir):
+                code_search_path = [retrieval_libs_dir]
+        
+        byzerllm.connect_cluster(address=args.ray_address,code_search_path=code_search_path)        
+
         llm = byzerllm.ByzerLLM(verbose=args.print_request)
         
         if args.human_as_model:
@@ -266,9 +285,14 @@ def main():
             return        
         elif raw_args.doc_command == "query":
             rag = SimpleRAG(llm,"")
-            response,contexts = rag.search(args.query)
-            for res in response:
-                print(res)                        
+            response,contexts = rag.stream_search(args.query)
+            print("\n=============RESPONSE==================")            
+            for res in response:                
+                print(res,end="")  
+            print("\n=============CONTEXTS==================")
+
+            for ctx in contexts:
+                print(ctx["doc_url"])
             return
         else:
             http_doc = HttpDoc(args = args, llm = llm, urls = None)

@@ -1,5 +1,5 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
-from ray.util.client.common import ClientActorHandle, ClientObjectRef
+from autocoder.common import SourceCode
 
 from byzerllm.apps.llama_index.simple_retrieval import SimpleRetrieval
 from byzerllm.apps.llama_index import get_service_context,get_storage_context
@@ -10,8 +10,9 @@ from llama_index.core.indices.document_summary import DocumentSummaryIndex
 import byzerllm
 
 class SimpleRAG:
-    def __init__(self,llm,path:str) -> None:
+    def __init__(self,llm,args,path:str) -> None:
         self.llm = llm
+        self.args = args
         self.retrieval = byzerllm.ByzerRetrieval()
         self.retrieval.launch_gateway()        
         self.path = path
@@ -20,7 +21,7 @@ class SimpleRAG:
         self.service_context = get_service_context(self.llm)
         self.storage_context = get_storage_context(self.llm,self.retrieval,chunk_collection="default",namespace="default")
 
-    def search(self,query:str):        
+    def stream_search(self,query:str):        
         index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,service_context=self.service_context)
         query_engine = index.as_query_engine(streaming=True)                
         streaming_response = query_engine.query(query)
@@ -33,6 +34,12 @@ class SimpleRAG:
                 
             })
         return streaming_response.response_gen,contexts   
+    
+    def search(self,query:str) -> List[SourceCode]:
+        texts,contexts = self.stream_search(query)
+        s = "".join([text for text in texts])
+        urls = ",".join([context["doc_url"] for context in contexts])
+        return [SourceCode(module_name=f"RAG:{urls}", source_code=s)]
 
     def build(self):            
         retrieval_client = SimpleRetrieval(llm=self.llm,retrieval=self.retrieval)
