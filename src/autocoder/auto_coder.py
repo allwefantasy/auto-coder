@@ -4,7 +4,7 @@ import argparse
 from autocoder.common import AutoCoderArgs
 from autocoder.dispacher import Dispacher 
 from autocoder.lang import lang_desc
-from autocoder.common import git_utils
+from autocoder.common import git_utils,code_auto_execute
 from autocoder.rag.simple_rag import SimpleRAG
 from autocoder.utils.llm_client_interceptors import token_counter_interceptor
 from autocoder.db.store import Store
@@ -124,6 +124,7 @@ def parse_args() -> AutoCoderArgs:
     doc_query_parse.add_argument("--emb_model", default="", help=desc["emb_model"]) 
     doc_query_parse.add_argument("--file",default="", help=desc["file"])
     doc_query_parse.add_argument("--ray_address", default="auto", help=desc["ray_address"])
+    doc_query_parse.add_argument("--execute", action='store_true', help=desc["execute"])
 
     args = parser.parse_args()
 
@@ -279,20 +280,28 @@ def main():
 
     if raw_args.command == "doc":            
         if raw_args.doc_command == "build":
-            rag = SimpleRAG(llm,args.source_dir)
+            rag = SimpleRAG(llm=llm,args=args,path = args.source_dir)
             rag.build()
             print("Successfully built the document index")
             return        
         elif raw_args.doc_command == "query":
-            rag = SimpleRAG(llm,"")
+            rag = SimpleRAG(llm = llm,args=args,path = "")
             response,contexts = rag.stream_search(args.query)
-            print("\n=============RESPONSE==================")            
+            
+            s = ""
+            print("\n\n=============RESPONSE==================\n\n")            
             for res in response:                
                 print(res,end="")  
-            print("\n=============CONTEXTS==================")
-
+                s  += res                
+            
+            print("\n\n=============CONTEXTS==================")
             for ctx in contexts:
                 print(ctx["doc_url"])
+
+            if args.execute:
+                print("\n\n=============EXECUTE==================")
+                executor = code_auto_execute.CodeAutoExecute(llm,args,code_auto_execute.Mode.SINGLE_ROUND)
+                executor.run(query=args.query,context=s,source_code="")                    
             return
         else:
             http_doc = HttpDoc(args = args, llm = llm, urls = None)

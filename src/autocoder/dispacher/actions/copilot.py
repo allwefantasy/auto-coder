@@ -167,14 +167,14 @@ class ActionCopilot():
         try:
             output = ""
             for step in steps.steps:
-                if step.land and step.lang.lower() in ["python"]:
+                if step.lang and step.lang.lower() in ["python"]:
                     output += f"Python Code:\n{step.code}\n"
                     output += "Output:\n"
                     result, error = jupyter_client.add_and_run(step.code)
                     output += result + "\n"
                     if error:
                         output += f"Error: {str(error)}\n"
-                elif step.land and step.lang.lower() in ["shell", "bash", "sh", "zsh", "ksh", "csh","powershell","cmd"]:  
+                elif step.lang and step.lang.lower() in ["shell", "bash", "sh", "zsh", "ksh", "csh","powershell","cmd"]:  
                     output += f"Shell Command:\n{step.code}\n"
                     output += "Output:\n"                    
                     stdout, stderr = shell_client.add_and_run(step.code)
