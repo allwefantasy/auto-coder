@@ -117,6 +117,7 @@ def parse_args() -> AutoCoderArgs:
     doc_build_parse.add_argument("--emb_model", default="", help=desc["emb_model"])
     doc_build_parse.add_argument("--file",default="", help=desc["file"])
     doc_build_parse.add_argument("--ray_address", default="auto", help=desc["ray_address"])
+    doc_build_parse.add_argument("--required_exts", default="", help="")
 
     doc_query_parse = doc_subparsers.add_parser("query",help="")
     doc_query_parse.add_argument("--query", default="", help="")
@@ -296,8 +297,8 @@ def main():
                 s  += res                
             
             print("\n\n=============CONTEXTS==================")
-            for ctx in contexts:
-                print(ctx["doc_url"])
+        
+            print("\n".join(set([ctx["doc_url"] for ctx in contexts])))    
 
             if args.execute:
                 print("\n\n=============EXECUTE==================")

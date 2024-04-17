@@ -38,15 +38,19 @@ class SimpleRAG:
     def search(self,query:str) -> List[SourceCode]:
         texts,contexts = self.stream_search(query)
         s = "".join([text for text in texts])
-        urls = ",".join([context["doc_url"] for context in contexts])
+        urls = ",".join(set([context["doc_url"] for context in contexts]))
         return [SourceCode(module_name=f"RAG:{urls}", source_code=s)]
 
     def build(self):            
         retrieval_client = SimpleRetrieval(llm=self.llm,retrieval=self.retrieval)
         retrieval_client.delete_from_doc_collection(self.namespace)
         retrieval_client.delete_from_chunk_collection(self.chunk_collection)
-
-        documents = SimpleDirectoryReader(self.path).load_data()        
+        
+        required_exts = self.args.required_exts or None
+        documents = SimpleDirectoryReader(self.path,
+                                          recursive=True,
+                                          filename_as_id=True,
+                                          required_exts=required_exts).load_data()        
 
         sp = SentenceSplitter(chunk_size=1024, chunk_overlap=0)        
 
