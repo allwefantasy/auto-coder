@@ -2,6 +2,13 @@
 
 > AutoCoder >= 0.1.36 特性
 
+请先
+
+```bash
+pip install -U byzerllm
+pip install -U auto-coder
+```
+
 AutoCoder已经支持对代码构建索引了，参考：
 
 1. [006-AutoCoder 开启索引，减少上下文](006-AutoCoder%20%E5%BC%80%E5%90%AF%E7%B4%A2%E5%BC%95%EF%BC%8C%E5%87%8F%E5%B0%91%E4%B8%8A%E4%B8%8B%E6%96%87.md)
