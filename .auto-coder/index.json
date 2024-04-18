@@ -95,9 +95,9 @@
     "md5": "b04d758bc1ab5fe89898a970f964480c"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/git_utils.py": {
-    "symbols": "导入语句：import os,from git import Repo, GitCommandError,from loguru import logger,from typing import List\n函数：get_repo, commit_changes, get_current_branch, revert_changes\n变量：changed_files, diff, repo, branch, file, message",
-    "last_modified": 1713435282.0789335,
-    "md5": "c5a821a6ad73758ece3c555a73aec82a"
+    "symbols": "导入语句：import os,from git import Repo, GitCommandError,from loguru import logger,from typing import List\n函数：get_repo,commit_changes,get_current_branch,revert_changes\n变量：repo,commit,changed_files,file,diff,branch\n类：",
+    "last_modified": 1713482221.383511,
+    "md5": "75c0bdb17164313b18dc127a0e1a28e2"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/const.py": {
     "symbols": "函数：write_denial_function, read_denial_function\n变量：TOOLS_CODE, write_denial_function, read_denial_function, class_denial, GUARD_CODE, CODE_INTERPRETER_SYSTEM_PROMPT\n类：class_denial\n导入语句：import numpy as np,import pandas as pd,import matplotlib.pyplot as plt,import seaborn as sns,from scipy import stats,import os,import sys,import re,from datetime import datetime,from sympy import symbols, Eq, solve,import torch,import requests,from bs4 import BeautifulSoup,import json,import math,import yfinance,import time",
