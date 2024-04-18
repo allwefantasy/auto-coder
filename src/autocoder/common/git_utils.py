@@ -10,20 +10,31 @@ def get_repo(repo_path: str) -> Repo:
 def commit_changes(repo_path: str, message: str) -> bool:
     repo = get_repo(repo_path)
     if repo is None:
+        logger.error("Repository is not initialized.")
         return False
     
-    repo.git.add(all=True)
-    commit = repo.index.commit(message)
-    
-    logger.info(f"Committed changes with message: {message}")
-    logger.info(f"Commit hash: {commit.hexsha}")
-    
-    changed_files: List[str] = repo.git.diff(commit.parent.hexsha, commit.hexsha, name_only=True).split('\n')
-    logger.info(f"Changed files: {changed_files}")
-    
-    for file in changed_files:
-        diff = repo.git.diff(commit.parent.hexsha, commit.hexsha, file)
-        logger.info(f"Diff for {file}:\n{diff}")
+    try:
+        repo.git.add(all=True)
+        commit = repo.index.commit(message)
+        logger.info(f"Committed changes with message: {message}")
+        logger.info(f"Commit hash: {commit.hexsha}")
+
+        # Check if there is a parent commit to compare against
+        if commit.parents:
+            changed_files = repo.git.diff(commit.parents[0].hexsha, commit.hexsha, name_only=True).split('\n')
+            logger.info(f"Changed files: {changed_files}")
+            
+            for file in changed_files:
+                if file.strip():
+                    diff = repo.git.diff(commit.parents[0].hexsha, commit.hexsha, file)
+                    logger.info(f"Diff for {file}:\n{diff}")
+        else:
+            logger.info("This is the initial commit, no parent to compare against.")
+
+        return True
+    except GitCommandError as e:
+        logger.error(f"Error during commit operation: {e}")
+        return False
         
 def get_current_branch(repo_path: str) -> str:
     repo = get_repo(repo_path)
