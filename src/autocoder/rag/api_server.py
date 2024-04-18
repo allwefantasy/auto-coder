@@ -28,6 +28,7 @@ from byzerllm.utils.client.entrypoints.openai.protocol import (
     EmbeddingsData,
     EmbeddingsUsage,
 )
+from pydantic import BaseModel
 import byzerllm
 
 logger = init_logger(__name__)
@@ -155,70 +156,23 @@ async def embed(body: Embeddings):
         ),
     )
 
+class ServerArgs(BaseModel):
+    host: str = None
+    port: int = 8000
+    uvicorn_log_level: str = "info"
+    allow_credentials: bool = False
+    allowed_origins: List[str] = ["*"]  
+    allowed_methods: List[str] = ["*"]
+    allowed_headers: List[str] = ["*"]
+    api_key: str = None
+    served_model_name: str = None
+    prompt_template: str = None
+    response_role: str = "assistant"
+    ssl_keyfile: str = None
+    ssl_certfile: str = None
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="ByzerLLm OpenAI-Compatible RESTful API server.")
-    parser.add_argument("--host", type=str, default=None, help="host name")
-    parser.add_argument("--port", type=int, default=8000, help="port number")
-    parser.add_argument(
-        "--uvicorn-log-level",
-        type=str,
-        default="info",
-        choices=['debug', 'info', 'warning', 'error', 'critical', 'trace'],
-        help="log level for uvicorn")
-    parser.add_argument("--allow-credentials",
-                        action="store_true",
-                        help="allow credentials")
-    parser.add_argument("--allowed-origins",
-                        type=json.loads,
-                        default=["*"],
-                        help="allowed origins")
-    parser.add_argument("--allowed-methods",
-                        type=json.loads,
-                        default=["*"],
-                        help="allowed methods")
-    parser.add_argument("--allowed-headers",
-                        type=json.loads,
-                        default=["*"],
-                        help="allowed headers")
-    parser.add_argument("--api-key",
-                        type=str,
-                        default=None,
-                        help="If provided, the server will require this key "
-                             "to be presented in the header.")
-    parser.add_argument("--served-model-name",
-                        type=str,
-                        default=None,
-                        help="The model name used in the API. If not "
-                             "specified, the model name will be the same as "
-                             "the huggingface name.")
-    parser.add_argument("--prompt-template",
-                        type=str,
-                        default=None,
-                        help="The file path to the chat template, "
-                             "or the template in single-line form "
-                             "for the specified model")
-    parser.add_argument("--response-role",
-                        type=str,
-                        default="assistant",
-                        help="The role name to return if "
-                             "`request.add_generation_prompt=true`.")
-    parser.add_argument("--ssl-keyfile",
-                        type=str,
-                        default=None,
-                        help="The file path to the SSL key file")
-    parser.add_argument("--ssl-certfile",
-                        type=str,
-                        default=None,
-                        help="The file path to the SSL cert file")
-
-    return parser.parse_args()
-
-
-def serve(llm:ByzerLLM):
-    args = parse_args()
-
+def serve(llm:ByzerLLM, args: ServerArgs):
+    
     logger.info(f"ByzerLLM API server version {version}")
     logger.info(f"args: {args}")
 
