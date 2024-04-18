@@ -26,3 +26,5 @@ __pycache__/
 output.txt
 screenshots/
 ./output.txt
+
+.auto-coder/metadata.db
