@@ -54,6 +54,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--search_engine", default="", help=desc["search_engine"])
     parser.add_argument("--search_engine_token", default="",help=desc["search_engine_token"])
     parser.add_argument("--enable_rag_search", action='store_true',help="")
+    parser.add_argument("--enable_rag_context", action='store_true', default=False, help="")
 
     parser.add_argument("--auto_merge", action='store_true', help=desc["auto_merge"])
 
