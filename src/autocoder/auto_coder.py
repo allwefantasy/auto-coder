@@ -303,7 +303,7 @@ def main():
             if args.execute:
                 print("\n\n=============EXECUTE==================")
                 executor = code_auto_execute.CodeAutoExecute(llm,args,code_auto_execute.Mode.SINGLE_ROUND)
-                executor.run(query=args.query,context=s,source_code="")                    
+                executor.run(query=args.query,context=s,source_code="")                                    
             return
         else:
             http_doc = HttpDoc(args = args, llm = llm, urls = None)

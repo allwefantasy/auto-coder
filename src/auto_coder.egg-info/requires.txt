@@ -33,7 +33,7 @@ sqlmodel
 wudao
 SwissArmyTransformer
 jieba
-byzerllm>=0.1.65
+byzerllm>=0.1.66
 GitPython
 openai>=1.14.3
 anthropic

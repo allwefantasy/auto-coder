@@ -8,7 +8,7 @@ from autocoder.db.store import Store
 
 def token_counter_interceptor(llm,model,response) -> EventCallbackResult: 
     store = Store()
-    v = response[0]        
+    v = response[0]     
     if "metadata" in v:
         metadata = v["metadata"]
         input_tokens_count = metadata.get("input_tokens_count",0)
