@@ -2,7 +2,6 @@ import io
 import json
 from PIL import Image
 import asyncio
-from playwright.async_api import async_playwright, TimeoutError
 from urllib.parse import urlparse
 from pathlib import Path
 from typing import Optional
@@ -39,6 +38,7 @@ class ImageSize(pydantic.BaseModel):
 RS = Image.LANCZOS
 
 async def async_gen_screenshots(url,image_dir:Optional[str]=None,image_size:ImageSize=ImageSize()):
+    from playwright.async_api import async_playwright, TimeoutError
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(headless=True)
         page = await browser.new_page()
