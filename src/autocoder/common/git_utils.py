@@ -1,6 +1,7 @@
 import os
 from git import Repo, GitCommandError
 from loguru import logger
+from typing import List
 
 def get_repo(repo_path: str) -> Repo:
     repo = Repo(repo_path)
@@ -12,10 +13,18 @@ def commit_changes(repo_path: str, message: str) -> bool:
         return False
     
     repo.git.add(all=True)
-    repo.index.commit(message)
+    commit = repo.index.commit(message)
+    
     logger.info(f"Committed changes with message: {message}")
+    logger.info(f"Commit hash: {commit.hexsha}")
+    
+    changed_files: List[str] = repo.git.diff(commit.parent.hexsha, commit.hexsha, name_only=True).split('\n')
+    logger.info(f"Changed files: {changed_files}")
+    
+    for file in changed_files:
+        diff = repo.git.diff(commit.parent.hexsha, commit.hexsha, file)
+        logger.info(f"Diff for {file}:\n{diff}")
         
-
 def get_current_branch(repo_path: str) -> str:
     repo = get_repo(repo_path)
     if repo is None:
