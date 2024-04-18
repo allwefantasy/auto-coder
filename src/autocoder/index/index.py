@@ -336,7 +336,7 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
 
    if not args.skip_build_index and llm:  
 
-       ## filter Rest/RAG sources       
+       ## keep Rest/RAG/Search sources
        for source in sources:
            if source.tag in ["REST","RAG","SEARCH"]:
                 final_files.append(get_file_path(source.module_name))

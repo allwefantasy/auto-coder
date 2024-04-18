@@ -14,11 +14,5 @@ auto_merge: true
 human_as_model: true
 
 query: |   
-   在 auto-coder.py 新增一个 doc serve 子命令,使用方式如下：
-
-   ```
-   auto-coder doc serve --file ./model.yml --port 9000 --host 127.0.0.1
-   ```  
-
-   在 src/rag 目录下新增一个 
+   把 api_sever.py parse_args 里面的参数转换成一个 Pydantic Model,然后作为 serve 方法的参数。
    

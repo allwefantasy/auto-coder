@@ -245,15 +245,17 @@ def serve(llm:ByzerLLM):
 
     # Register labels for metrics
     # add_global_metrics_labels(model_name=engine_args.model)
+    global llm_client
     llm_client = llm
-
+    
+    global openai_serving_chat
     openai_serving_chat = OpenAIServingChat(
         llm_client=llm_client,
         response_role=args.response_role,
         server_model_name=args.served_model_name,
         prompt_template=args.prompt_template
     )
-
+    global openai_serving_completion
     openai_serving_completion = OpenAIServingCompletion(
         llm_client=llm_client,
         server_model_name=args.served_model_name,
