@@ -33,6 +33,7 @@ src/autocoder/index/for_command.py
 src/autocoder/index/index.py
 src/autocoder/pyproject/__init__.py
 src/autocoder/rag/__init__.py
+src/autocoder/rag/api_server.py
 src/autocoder/rag/simple_rag.py
 src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py

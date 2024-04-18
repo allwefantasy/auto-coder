@@ -140,7 +140,7 @@ class IndexManager:
            with open(self.index_file, "r") as file:
                index_data = json.load(file)
        else:
-           index_data = {}
+           index_data = {}                   
 
        updated_sources = []
 

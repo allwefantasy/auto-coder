@@ -4,6 +4,7 @@ from autocoder.common import AutoCoderArgs
 from autocoder.dispacher import Dispacher 
 from autocoder.common import git_utils,code_auto_execute
 from autocoder.rag.simple_rag import SimpleRAG
+from autocoder.rag.llm_wrapper import LLWrapper
 from autocoder.utils.llm_client_interceptors import token_counter_interceptor
 from autocoder.db.store import Store
 import yaml   
@@ -18,6 +19,8 @@ from autocoder.index.index import IndexManager
 from autocoder.utils.rest import HttpDoc
 from byzerllm.apps.command import get_latest_byzer_retrieval_lib
 from autocoder.command_args import parse_args
+from autocoder.rag.api_server import serve,ServerArgs
+from loguru import logger
 
 
 def main():
@@ -75,15 +78,19 @@ def main():
             retrieval_libs_dir = os.path.join(libs_dir,get_latest_byzer_retrieval_lib(libs_dir))            
             if os.path.exists(retrieval_libs_dir):
                 code_search_path = [retrieval_libs_dir]
-        
-        byzerllm.connect_cluster(address=args.ray_address,code_search_path=code_search_path)        
+
+        try:        
+            byzerllm.connect_cluster(address=args.ray_address,code_search_path=code_search_path)        
+        except Exception as e:
+            logger.warning(f"Detecting error when connecting to ray cluster: {e}, try to connect to ray cluster without storage support.")
+            byzerllm.connect_cluster(address=args.ray_address)
 
         llm = byzerllm.ByzerLLM(verbose=args.print_request)
         
         if args.human_as_model:
             def intercept_callback(llm,model: str, input_value: List[Dict[str, Any]]) -> EventCallbackResult:            
                 if input_value[0].get("embedding",False) or input_value[0].get("tokenizer",False) or input_value[0].get("apply_chat_template",False) or input_value[0].get("meta",False):
-                        return True,None
+                    return True,None
                 if not input_value[0].pop("human_as_model",None):
                     return True, None
                 
@@ -194,8 +201,16 @@ def main():
             return
         elif raw_args.doc_command == "chat": 
             rag = SimpleRAG(llm=llm, args=args, path="")
-            rag.stream_chat(args.query)
+            rag.stream_chat_repl(args.query)
             return 
+        
+        elif raw_args.doc_command == "serve":  
+            server_args = ServerArgs(**{arg: getattr(raw_args, arg) for arg in vars(ServerArgs())})
+            rag = SimpleRAG(llm=llm, args=args, path="")  
+            llm_wrapper = LLWrapper(llm=llm, rag=rag)
+            serve(llm=llm_wrapper, args=server_args)
+            return
+
         else:
             http_doc = HttpDoc(args = args, llm = llm, urls = None)
             source_codes = http_doc.crawl_urls()

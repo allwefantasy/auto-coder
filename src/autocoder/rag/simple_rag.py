@@ -7,6 +7,7 @@ from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, ServiceContext
 from llama_index.core.node_parser import SentenceSplitter,SentenceWindowNodeParser
 from llama_index.core.indices.document_summary import DocumentSummaryIndex
+from llama_index.core.base.llms.types import ChatMessage,MessageRole
 import byzerllm
 
 class SimpleRAG:
@@ -35,8 +36,27 @@ class SimpleRAG:
                 
             })
         return streaming_response.response_gen,contexts 
+    
+    def stream_chat_oai(self,conversations, model:Optional[str]=None, role_mapping=None,llm_config:Dict[str,Any]={}):        
+        index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,
+                                                   service_context=self.service_context)
+        chat_engine = index.as_chat_engine(
+            chat_mode="condense_plus_context",                       
+            verbose=False,
+        )
+        history = []
+        for conv in conversations[:-1]:
+            if conv["role"] == "user":
+                role = MessageRole.USER
+            elif conv["role"] == "assistant":
+                role = MessageRole.ASSISTANT    
+            else:
+                role = MessageRole.SYSTEM
+            history.append(ChatMessage(role=role,content=conv["content"]))
+        return chat_engine.stream_chat(conversations[-1]["content"],chat_history=history).response_gen,[]
+        
 
-    def stream_chat(self,query:str):
+    def stream_chat_repl(self,query:str):
         from llama_index.core.memory import ChatMemoryBuffer
 
         memory = ChatMemoryBuffer.from_defaults(token_limit=8092)
