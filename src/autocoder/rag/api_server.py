@@ -1,9 +1,5 @@
-import argparse
-import json
 import os
 import time
-
-import ray
 import uvicorn
 from fastapi import Request
 from fastapi import FastAPI
@@ -29,7 +25,7 @@ from byzerllm.utils.client.entrypoints.openai.protocol import (
     EmbeddingsUsage,
 )
 from pydantic import BaseModel
-import byzerllm
+from typing import List
 
 logger = init_logger(__name__)
 
