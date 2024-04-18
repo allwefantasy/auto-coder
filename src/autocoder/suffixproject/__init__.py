@@ -51,7 +51,9 @@ class SuffixProject():
     def get_rest_source_codes(self) -> Generator[SourceCode, None, None]:
         if self.args.urls:
             http_doc = HttpDoc(args =self.args, llm=self.llm,urls=self.args.urls.split(","))
-            sources = http_doc.crawl_urls()         
+            sources = http_doc.crawl_urls()    
+            for source in sources:
+                source.tag = "REST"     
             return sources
         return []  
     
@@ -59,6 +61,8 @@ class SuffixProject():
         if self.args.enable_rag_search:
             rag = SimpleRAG(self.llm,self.args,self.args.source_dir)
             docs = rag.search(self.args.query)
+            for doc in docs:
+                doc.tag = "RAG"
             return docs
         return  []
 
@@ -72,7 +76,7 @@ class SuffixProject():
 
             searcher=Search(llm=self.llm,search_engine=search_engine,subscription_key=self.args.search_engine_token)
             search_context = searcher.answer_with_the_most_related_context(self.args.query)  
-            return temp + [SourceCode(module_name="SEARCH_ENGINE", source_code=search_context)]
+            return temp + [SourceCode(module_name="SEARCH_ENGINE", source_code=search_context,tag="SEARCH")]
         return temp + []                             
 
     def run(self):

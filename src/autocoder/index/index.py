@@ -326,9 +326,21 @@ class IndexManager:
 
 
 def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode])->str:
+   
+   def get_file_path(file_path):
+       if file_path.startswith("##"):
+           return file_path.strip()[2:]
+       return file_path
+
    final_files = []      
 
-   if not args.skip_build_index and llm:        
+   if not args.skip_build_index and llm:  
+
+       ## filter Rest/RAG sources       
+       for source in sources:
+           if source.tag in ["REST","RAG","SEARCH"]:
+                final_files.append(get_file_path(source.module_name))
+
        index_manager = IndexManager(llm=llm,sources=sources,args=args)
        index_manager.build_index()
        
@@ -336,25 +348,19 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
        
        if target_files:
            for file in target_files.file_list:
-               logger.info(f"Target File: {file.file_path} reason: {file.reason}")    
-               file_path = file.file_path.strip()
-               if file_path.startswith("##"):
-                   final_files.append(file_path.strip()[2:]) 
-               else:
-                   final_files.append(file_path)         
+                logger.info(f"Target File: {file.file_path} reason: {file.reason}")    
+                file_path = file.file_path.strip()
+                final_files.append(get_file_path(file_path))               
 
        if target_files is not None and args.index_filter_level >= 2:                                    
            related_fiels = index_manager.get_related_files([file.file_path for file in target_files.file_list])            
            if related_fiels is not None:                                            
                for temp_file in related_fiels.file_list:
-                   logger.info(f"Related File: {temp_file.file_path} reason: {temp_file.reason}")              
+                    logger.info(f"Related File: {temp_file.file_path} reason: {temp_file.reason}")              
                
                for file in related_fiels.file_list:
-                   file_path = file.file_path.strip()
-                   if file_path.startswith("##"):
-                       final_files.append(file_path.strip()[2:]) 
-                   else:
-                       final_files.append(file_path) 
+                    file_path = file.file_path.strip()
+                    final_files.append(get_file_path(file_path))               
        
        if not final_files:
            logger.warning("Warning: No related files found, use all files")

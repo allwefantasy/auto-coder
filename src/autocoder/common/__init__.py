@@ -9,6 +9,7 @@ from typing import List,Dict,Any,Optional
 class SourceCode(pydantic.BaseModel):
     module_name: str
     source_code: str
+    tag: str = ""
 
 
 class TranslateReadme(pydantic.BaseModel):
