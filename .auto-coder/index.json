@@ -300,9 +300,9 @@
     "md5": "a22dc1e65455564401e52562e128e0e2"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py": {
-    "symbols": "导入语句：import byzerllm,from typing import List,Dict,Any,Optional,import argparse,from autocoder.common import AutoCoderArgs,from autocoder.lang import lang_desc,import locale,from byzerllm.utils.client import EventCallbackResult,EventName\n函数：parse_args\n变量：system_lang, lang, desc, parser, subparsers, revert_parser, store_parser, index_parser, index_query_parser, doc_parser\n类：\n函数：AutoCoderArgs\n变量：args\n导入语句：",
-    "last_modified": 1713439903.0016437,
-    "md5": "c7c7033142a31b7959fa4f45226e6110"
+    "symbols": "导入语句：import byzerllm,from typing import List,Dict,Any,Optional,import argparse,from autocoder.common import AutoCoderArgs,from autocoder.lang import lang_desc,import locale,from byzerllm.utils.client import EventCallbackResult,EventName\n函数：parse_args\n变量：system_lang, lang, desc, parser, subparsers, revert_parser, store_parser, index_parser, index_query_parser, doc_parser\n导入语句：  \n变量：args  \n函数：AutoCoderArgs",
+    "last_modified": 1713482285.4280274,
+    "md5": "e1a7067137be99efa9ae6ec55e9caebd"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/api_server.py": {
     "symbols": "导入语句：import os,import time,import uvicorn,from fastapi import Request,from fastapi import FastAPI,from fastapi.middleware.cors import CORSMiddleware,from fastapi.responses import JSONResponse, StreamingResponse, Response,from byzerllm.log import init_logger,from byzerllm.utils import random_uuid,from byzerllm.version import __version__ as version,from byzerllm.utils.client import ByzerLLM, LLMRequest,from byzerllm.utils.client.entrypoints.openai.serving_chat import OpenAIServingChat,from byzerllm.utils.client.entrypoints.openai.serving_completion import OpenAIServingCompletion,from byzerllm.utils.client.entrypoints.openai.protocol import ModelList, ModelCard, ModelPermission, ChatCompletionRequest, ErrorResponse, CompletionRequest, Embeddings, EmbeddingsOutput, EmbeddingsData, EmbeddingsUsage,from pydantic import BaseModel,from typing import List\n变量：logger, llm_client, openai_serving_chat, openai_serving_completion, TIMEOUT_KEEP_ALIVE, TIMEOUT, router_app, ServerArgs\n函数：health, show_available_models, show_version, models, create_completion, create_chat_completion, embed, serve\n类：ServerArgs\n变量：openai_serving_chat, openai_serving_completion\n类：OpenAIServingChat, OpenAIServingCompletion\n函数：uvicorn.run\n导入语句：无",
