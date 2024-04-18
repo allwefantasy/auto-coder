@@ -121,12 +121,20 @@ def parse_args() -> AutoCoderArgs:
 
     doc_query_parse = doc_subparsers.add_parser("query",help="")
     doc_query_parse.add_argument("--query", default="", help="")
-    doc_query_parse.add_argument("--source_dir", default="", help="")
+    doc_query_parse.add_argument("--source_dir", default=".", help="")
     doc_query_parse.add_argument("--model", default="", help=desc["model"])
     doc_query_parse.add_argument("--emb_model", default="", help=desc["emb_model"]) 
     doc_query_parse.add_argument("--file",default="", help=desc["file"])
     doc_query_parse.add_argument("--ray_address", default="auto", help=desc["ray_address"])
     doc_query_parse.add_argument("--execute", action='store_true', help=desc["execute"])
+
+    doc_chat_parse = doc_subparsers.add_parser("chat", help="")
+    doc_chat_parse.add_argument("--file", default="", help=desc["file"])
+    doc_chat_parse.add_argument("--model", default="", help=desc["model"])
+    doc_chat_parse.add_argument("--emb_model", default="", help=desc["emb_model"]) 
+    doc_chat_parse.add_argument("--ray_address", default="auto", help=desc["ray_address"])
+    doc_chat_parse.add_argument("--source_dir", default=".", help="")
+
 
     args = parser.parse_args()
 
@@ -305,6 +313,10 @@ def main():
                 executor = code_auto_execute.CodeAutoExecute(llm,args,code_auto_execute.Mode.SINGLE_ROUND)
                 executor.run(query=args.query,context=s,source_code="")                                    
             return
+        elif raw_args.doc_command == "chat": 
+            rag = SimpleRAG(llm=llm, args=args, path="")
+            rag.stream_chat(args.query)
+            return 
         else:
             http_doc = HttpDoc(args = args, llm = llm, urls = None)
             source_codes = http_doc.crawl_urls()

@@ -33,7 +33,20 @@ class SimpleRAG:
                 "_id":node.node.id_,
                 
             })
-        return streaming_response.response_gen,contexts   
+        return streaming_response.response_gen,contexts 
+
+    def stream_chat(self,query:str):
+        from llama_index.core.memory import ChatMemoryBuffer
+
+        memory = ChatMemoryBuffer.from_defaults(token_limit=8092)
+        index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,service_context=self.service_context)
+
+        chat_engine = index.as_chat_engine(
+            chat_mode="condense_plus_context",
+            memory=memory,            
+            verbose=False,
+        )
+        chat_engine.streaming_chat_repl()  
     
     def search(self,query:str) -> List[SourceCode]:
         texts,contexts = self.stream_search(query)
