@@ -22,7 +22,8 @@ class SimpleRAG:
         self.storage_context = get_storage_context(self.llm,self.retrieval,chunk_collection="default",namespace="default")
 
     def stream_search(self,query:str):        
-        index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,service_context=self.service_context)
+        index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,
+                                                   service_context=self.service_context)
         query_engine = index.as_query_engine(streaming=True)                
         streaming_response = query_engine.query(query)
         contexts = []
@@ -39,7 +40,8 @@ class SimpleRAG:
         from llama_index.core.memory import ChatMemoryBuffer
 
         memory = ChatMemoryBuffer.from_defaults(token_limit=8092)
-        index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,service_context=self.service_context)
+        index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,
+                                                   service_context=self.service_context)
 
         chat_engine = index.as_chat_engine(
             chat_mode="condense_plus_context",
