@@ -68,7 +68,10 @@ class ActionTSProject:
 
         if args.execute:
             generate = CodeAutoGenerate(llm=self.llm, args=self.args)
-            result,_ = generate.multi_round_run(query=args.query,source_content=content)            
+            if self.args.enable_multi_round_generate:
+                result,_ = generate.multi_round_run(query=args.query,source_content=content)            
+            else:
+                result,_ = generate.single_round_run(query=args.query,source_content=content)
             content = "\n\n".join(result)
 
         with open(args.target_file, "w") as file:
@@ -99,7 +102,10 @@ class ActionPyScriptProject:
         
         if args.execute:
             generate = CodeAutoGenerate(llm=self.llm, args=self.args)
-            result,_ = generate.multi_round_run(query=args.query,source_content=content)            
+            if self.args.enable_multi_round_generate:
+                result,_ = generate.multi_round_run(query=args.query,source_content=content)            
+            else:
+                result,_ = generate.single_round_run(query=args.query,source_content=content)
             content = "\n\n".join(result)
             
         with open(self.args.target_file, "w") as file:
@@ -140,7 +146,10 @@ class ActionPyProject:
 
         if args.execute:
             generate = CodeAutoGenerate(llm=self.llm, args=self.args)
-            result,_ = generate.multi_round_run(query=args.query,source_content=content)            
+            if self.args.enable_multi_round_generate:
+                result,_ = generate.multi_round_run(query=args.query,source_content=content)            
+            else:
+                result,_ = generate.single_round_run(query=args.query,source_content=content)
             content = "\n\n".join(result)
 
         with open(args.target_file, "w") as file:
@@ -175,7 +184,10 @@ class ActionSuffixProject:
 
         if args.execute:
             generate = CodeAutoGenerate(llm=self.llm, args=self.args)
-            result,_ = generate.multi_round_run(query=args.query,source_content=content)            
+            if self.args.enable_multi_round_generate:
+                result,_ = generate.multi_round_run(query=args.query,source_content=content)            
+            else:
+                result,_ = generate.single_round_run(query=args.query,source_content=content)
             content = "\n\n".join(result)
 
         with open(args.target_file, "w") as file:
