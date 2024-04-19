@@ -5,9 +5,9 @@
     "md5": "3c479f948d8d8a7a030bd5887db72eec"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py": {
-    "symbols": "变量：lang_desc",
-    "last_modified": 1713316144.252421,
-    "md5": "2a0608ac2498f9b087742b7ad786488a"
+    "symbols": "变量：lang_desc\n符号类型：字典\n变量：无\n函数：无\n类：无\n导入语句：无",
+    "last_modified": 1713516182.073393,
+    "md5": "f2a7314bba33416002286001d8415704"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py": {
     "symbols": "变量：__version__\n导入语句：",
@@ -300,9 +300,9 @@
     "md5": "b84087b3f44cffbf575960f11fa72bd2"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py": {
-    "symbols": "导入语句：import byzerllm,from typing import List,Dict,Any,Optional,import argparse,from autocoder.common import AutoCoderArgs,from autocoder.lang import lang_desc,import locale,from byzerllm.utils.client import EventCallbackResult,EventName\n函数：parse_args\n变量：system_lang, lang, desc, parser, subparsers, revert_parser, store_parser, index_parser, index_query_parser, doc_parser\n类：AutoCoderArgs\n函数：AutoCoderArgs\n变量：args\n导入语句：",
-    "last_modified": 1713515107.5638094,
-    "md5": "5dca646c291022d78f272ae4de941bd3"
+    "symbols": "导入语句：import byzerllm,from typing import List,Dict,Any,Optional,import argparse,from autocoder.common import AutoCoderArgs,from autocoder.lang import lang_desc,import locale,from byzerllm.utils.client import EventCallbackResult,EventName\n函数：parse_args\n变量：system_lang, lang, desc, parser, subparsers, revert_parser, store_parser, index_parser, index_query_parser, doc_parser\n类：AutoCoderArgs\n导入语句：    \n变量：args    \n函数：AutoCoderArgs, parser_parse_args    \n类：",
+    "last_modified": 1713516182.074597,
+    "md5": "b4a94762b2d573dae7852682f0e6b370"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/api_server.py": {
     "symbols": "导入语句：import os,import time,import uvicorn,from fastapi import Request,from fastapi import FastAPI,from fastapi.middleware.cors import CORSMiddleware,from fastapi.responses import JSONResponse, StreamingResponse, Response,from byzerllm.log import init_logger,from byzerllm.utils import random_uuid,from byzerllm.version import __version__ as version,from byzerllm.utils.client import ByzerLLM, LLMRequest,from byzerllm.utils.client.entrypoints.openai.serving_chat import OpenAIServingChat,from byzerllm.utils.client.entrypoints.openai.serving_completion import OpenAIServingCompletion,from byzerllm.utils.client.entrypoints.openai.protocol import ModelList, ModelCard, ModelPermission, ChatCompletionRequest, ErrorResponse, CompletionRequest, Embeddings, EmbeddingsOutput, EmbeddingsData, EmbeddingsUsage,from pydantic import BaseModel,from typing import List\n变量：logger, llm_client, openai_serving_chat, openai_serving_completion, TIMEOUT_KEEP_ALIVE, TIMEOUT, router_app, ServerArgs\n函数：health, show_available_models, show_version, models, create_completion, create_chat_completion, embed, serve\n类：ServerArgs\n变量：openai_serving_chat, openai_serving_completion\n类：OpenAIServingChat, OpenAIServingCompletion\n函数：uvicorn.run\n导入语句：无",
