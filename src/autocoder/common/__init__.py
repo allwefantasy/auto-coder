@@ -62,6 +62,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     template: str = pydantic.Field("common", description="the instruction to handle the source code")
     project_type: str = pydantic.Field("py", description="the type of the project. py, ts, py-script, translate, or file suffix. default is py")
     execute: bool = pydantic.Field(False, description="Execute command line or not")
+    enable_multi_round_generate:bool = False
     package_name: str = pydantic.Field("", description="only works for py-script project type. The package name of the script. default is empty.")
     script_path: str = pydantic.Field("", description="only works for py-script project type. The path to the Python script. default is empty.")
     image_file: str = ""
