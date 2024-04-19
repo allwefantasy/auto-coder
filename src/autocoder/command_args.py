@@ -34,9 +34,9 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--emb_model", default="", help=desc["emb_model"])
     
     parser.add_argument("--index_model", default="", help=desc["index_model"])
-    parser.add_argument("--index_model_max_length", type=int, default=0, help=desc["model_max_length"])
-    parser.add_argument("--index_model_max_input_length", type=int, default=0, help=desc["model_max_input_length"])
-    parser.add_argument("--index_model_anti_quota_limit", type=int, default=0, help=desc["anti_quota_limit"])
+    parser.add_argument("--index_model_max_length", type=int, default=0, help=desc["index_model_max_length"])
+    parser.add_argument("--index_model_max_input_length", type=int, default=0, help=desc["index_model_max_input_length"])
+    parser.add_argument("--index_model_anti_quota_limit", type=int, default=0, help=desc["index_model_anti_quota_limit"])
     parser.add_argument("--index_filter_level",type=int, default=0, help=desc["index_filter_level"])
     parser.add_argument("--index_filter_workers",type=int, default=1, help=desc["index_filter_workers"])
     
@@ -53,15 +53,15 @@ def parse_args() -> AutoCoderArgs:
     
     parser.add_argument("--search_engine", default="", help=desc["search_engine"])
     parser.add_argument("--search_engine_token", default="",help=desc["search_engine_token"])
-    parser.add_argument("--enable_rag_search", action='store_true',help="")
-    parser.add_argument("--enable_rag_context", action='store_true', default=False, help="")
+    parser.add_argument("--enable_rag_search", action='store_true',help=desc["enable_rag_search"])
+    parser.add_argument("--enable_rag_context", action='store_true', default=False, help=desc["enable_rag_context"])
 
     parser.add_argument("--auto_merge", action='store_true', help=desc["auto_merge"])
 
     parser.add_argument("--image_file", default="", help=desc["image_file"])
     parser.add_argument("--image_max_iter",type=int, default=1, help=desc["image_max_iter"])
     
-    parser.add_argument("--enable_multi_round_generate", action='store_true',help="")
+    parser.add_argument("--enable_multi_round_generate", action='store_true',help=desc["enable_multi_round_generate"])
 
     revert_parser = subparsers.add_parser("revert", help=desc["revert_desc"])
     revert_parser.add_argument("--file", help=desc["revert_desc"])
@@ -104,7 +104,7 @@ def parse_args() -> AutoCoderArgs:
     doc_build_parse.add_argument("--emb_model", default="", help=desc["emb_model"])
     doc_build_parse.add_argument("--file",default="", help=desc["file"])
     doc_build_parse.add_argument("--ray_address", default="auto", help=desc["ray_address"])
-    doc_build_parse.add_argument("--required_exts", default="", help="")
+    doc_build_parse.add_argument("--required_exts", default="", help=desc["doc_build_parse_required_exts"])
 
     doc_query_parse = doc_subparsers.add_parser("query",help="")
     doc_query_parse.add_argument("--query", default="", help="")
