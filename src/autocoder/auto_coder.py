@@ -95,12 +95,8 @@ def main():
                     return True, None
                 
                 print(f"Intercepted request to model: {model}")        
-                instruction = input_value[0]["instruction"] 
-                history = input_value[0]["history"]
-                final_ins = instruction + "\n".join([item["content"] for item in history])                    
-
-                with open(args.target_file, "w") as f:
-                    f.write(final_ins)
+                instruction = input_value[0]["instruction"]                 
+                final_ins = instruction                
 
                 print(f'''\033[92m {final_ins[0:100]}....\n\n(The instruction to model have be saved in: {args.target_file})\033[0m''')    
                 
@@ -112,10 +108,7 @@ def main():
                     lines.append(line)
                 
                 result = "\n".join(lines)
-
-                with open(args.target_file, "w") as f:
-                    f.write(result)
-
+                
                 if result.lower() == 'c':
                     return True, None
                 else:            

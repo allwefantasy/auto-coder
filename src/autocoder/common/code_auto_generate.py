@@ -7,7 +7,25 @@ import byzerllm
 class CodeAutoGenerate:
     def __init__(self,llm:byzerllm.ByzerLLM,args:AutoCoderArgs) -> None:
         self.llm = llm
-        self.args = args        
+        self.args = args       
+
+
+    @byzerllm.prompt(llm = lambda self: self.llm)
+    def auto_implement_function(instruction:str, content:str)->str:
+        '''
+        下面是一些文件路径以及每个文件对应的源码：
+
+        {{ content }}
+
+        请参考上面的内容，重新实现所有文件下方法体标记了如下内容的方法：
+
+        ```python
+        raise NotImplementedError("This function should be implemented by the model.")
+        ```
+        
+        {{ instruction }}
+            
+        '''          
 
     @byzerllm.prompt(llm = lambda self: self.llm)
     def multi_round_instruction(self,instruction:str, content:str)->str:
@@ -72,9 +90,16 @@ class CodeAutoGenerate:
         '''    
     
     def single_round_run(self,query:str,source_content:str)-> Tuple[str,Dict[str,str]]:
-        llm_config = {"human_as_model":self.args.human_as_model}  
+        llm_config = {"human_as_model":self.args.human_as_model} 
 
-        init_prompt = self.single_round_instruction.prompt(instruction=query,content=source_content)    
+        if self.args.template == "common":
+            init_prompt = self.single_round_instruction.prompt(instruction=query,content=source_content)    
+        elif self.args.template == "auto_implement":
+            init_prompt = self.auto_implement_function.prompt(instruction=query,content=source_content)
+        
+        with open(self.args.target_file, "w") as file:
+            file.write(init_prompt)
+
         conversations = [
             {
                 "role": "user",
@@ -92,7 +117,12 @@ class CodeAutoGenerate:
     def multi_round_run(self,query:str,source_content:str,max_steps:int=10)-> Tuple[List[str],List[Dict[str,str]]]:   
         llm_config = {"human_as_model":self.args.human_as_model}        
         result = []
-        init_prompt = self.multi_round_instruction.prompt(instruction=query,content=source_content)
+        
+        if self.args.template == "common":
+            init_prompt = self.single_round_instruction.prompt(instruction=query,content=source_content)    
+        elif self.args.template == "auto_implement":
+            init_prompt = self.auto_implement_function.prompt(instruction=query,content=source_content)
+
         conversations = [
             {
                 "role": "user",

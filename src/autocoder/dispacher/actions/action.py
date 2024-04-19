@@ -13,56 +13,6 @@ from loguru import logger
 
 
 @byzerllm.prompt(render="jinja")
-def auto_implement_function_template(instruction:str, content:str)->str:
-    '''
-    下面是一些文件路径以及每个文件对应的源码：
-
-    {{ content }}
-
-    请参考上面的内容，重新实现所有文件下方法体标记了如下内容的方法：
-
-    ```python
-    raise NotImplementedError("This function should be implemented by the model.")
-    ```
-    
-    {{ instruction }}
-        
-    '''
-    pass
-
-@byzerllm.prompt(render="jinja")
-def instruction_template(instruction:str, content:str,execute:bool=False)->str:
-    '''
-    {%- if content %}
-    下面是一些文件路径以及每个文件对应的源码：
-
-    {{ content }}  
-    {%- endif %}
-
-
-    下面是用户的需求：
-    
-    {{ instruction }}
-
-    你生成的代码要符合这个格式：
-    
-    ```{lang}
-    ##File: {FILE_PATH}
-    {CODE}
-    ```    
-
-    ```{lang}
-    ##File: {FILE_PATH}
-    {CODE}
-    ```
-
-    其中，{lang}是代码的语言，{CODE}是代码的内容, {FILE_PATH} 是文件的路径，他们都在代码块中，请严格按上面的格式进行内容生成。
-         
-    请确保每份代码的完整性，而不要只生成修改部分。
-    '''
-    pass
-
-@byzerllm.prompt(render="jinja")
 def translate_readme(content:str,lang:str,instruction:Optional[str]=None)->str:
     '''
     你做翻译时，需要遵循如下要求：
@@ -116,23 +66,10 @@ class ActionTSProject:
                 logger.warning(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
                 content = content[:self.args.model_max_input_length]        
 
-        if args.template == "common":
-            instruction = args.query or "Please implement the following methods"
-            content = instruction_template(instruction=instruction, content=content,execute=args.execute)
-        elif args.template == "auto_implement":
-            content = auto_implement_function_template(instruction="", content=content)
-     
         if args.execute:
-            extra_llm_config = {}
-            
-            if args.human_as_model:
-                extra_llm_config["human_as_model"] = True
-
-            t = self.llm.chat_oai(conversations=[{
-                "role": "user",
-                "content": content
-            }],llm_config={**extra_llm_config})
-            content = t[0].output
+            generate = CodeAutoGenerate(llm=self.llm, args=self.args)
+            result,_ = generate.multi_round_run(query=args.query,source_content=content)            
+            content = "\n\n".join(result)
 
         with open(args.target_file, "w") as file:
             file.write(content)
@@ -160,9 +97,6 @@ class ActionPyScriptProject:
     def process_content(self, content: str):
         args = self.args
         
-        if args.template == "auto_implement":
-            content = auto_implement_function_template(instruction="", content=content)
-
         if args.execute:
             generate = CodeAutoGenerate(llm=self.llm, args=self.args)
             result,_ = generate.multi_round_run(query=args.query,source_content=content)            
@@ -203,9 +137,6 @@ class ActionPyProject:
             if len(content) > self.args.model_max_input_length:
                 logger.warning(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
                 content = content[:self.args.model_max_input_length]
-        
-        if args.template == "auto_implement":
-            content = auto_implement_function_template(instruction="", content=content)
 
         if args.execute:
             generate = CodeAutoGenerate(llm=self.llm, args=self.args)
@@ -242,23 +173,10 @@ class ActionSuffixProject:
                 logger.warning(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
                 content = content[:self.args.model_max_input_length]        
 
-        if args.template == "common":
-            instruction = args.query or "Please implement the following methods"
-            content = instruction_template(instruction=instruction, content=content,execute=args.execute)
-        elif args.template == "auto_implement":
-            content = auto_implement_function_template(instruction="", content=content)
-
         if args.execute:
-            extra_llm_config = {}
-            
-            if args.human_as_model:
-                extra_llm_config["human_as_model"] = True
-
-            t = self.llm.chat_oai(conversations=[{
-                "role": "user",
-                "content": content
-            }],llm_config={**extra_llm_config})
-            content = t[0].output
+            generate = CodeAutoGenerate(llm=self.llm, args=self.args)
+            result,_ = generate.multi_round_run(query=args.query,source_content=content)            
+            content = "\n\n".join(result)
 
         with open(args.target_file, "w") as file:
             file.write(content)
