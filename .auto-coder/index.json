@@ -11,8 +11,8 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py": {
     "symbols": "变量：__version__\n导入语句：",
-    "last_modified": 1713446014.6769123,
-    "md5": "83e1316b49e60726a578b58cbd12f129"
+    "last_modified": 1713482451.603537,
+    "md5": "033e07283312e2f6f25e3dcd46d22275"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
     "symbols": "导入语句：import byzerllm,from typing import List,Dict,Any,Optional,from autocoder.common import AutoCoderArgs,from autocoder.dispacher import Dispacher,from autocoder.common import git_utils,code_auto_execute,from autocoder.rag.simple_rag import SimpleRAG,from autocoder.rag.llm_wrapper import LLWrapper,from autocoder.utils.llm_client_interceptors import token_counter_interceptor,from autocoder.db.store import Store,import yaml,import os,from byzerllm.utils.client import EventCallbackResult,EventName,from prompt_toolkit import prompt,from prompt_toolkit.formatted_text import FormattedText,from jinja2 import Template,import hashlib,from autocoder.index.index import IndexManager,from autocoder.utils.rest import HttpDoc,from byzerllm.apps.command import get_latest_byzer_retrieval_lib,from autocoder.command_args import parse_args,from autocoder.rag.api_server import serve,ServerArgs,from loguru import logger\n变量：main, args, raw_args, config, key, value, template, f, md5, file_name, revert_result, arg, tc, home, auto_coder_dir, libs_dir, code_search_path, retrieval_libs_dir, e, llm, model, input_value, instruction, history, final_ins, lines, line, result, v, vl_model\n函数：setup_template, setup_sub_client, setup_default_model_name, setup_max_output_length, setup_max_input_length, setup_extra_generation_params, setup_default_emb_model_name, main, index_command, index_query_command, stream_search, stream_chat_repl, serve, crawl_urls, main  \n变量：vl_model, llm, sd_model, index_model, emb_model, raw_args, rag, response, contexts, s, executor, server_args, llm_wrapper, http_doc, source_codes  \n类：SimpleRAG, ServerArgs, LLWrapper, Dispacher, HttpDoc  \n导入语句：from autocoder.index.for_command import index_command,from autocoder.index.for_command import index_query_command,import byzerllm,import code_auto_execute,import os,import time,from loguru import logger",
@@ -30,9 +30,9 @@
     "md5": "ca6d681644e6263ffcee31f4a4c3be39"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/actions/action.py": {
-    "symbols": "导入语句：from autocoder.common import AutoCoderArgs,TranslateArgs,TranslateReadme,split_code_into_segments,SourceCode,from autocoder.pyproject import PyProject,Level1PyProject,from autocoder.tsproject import TSProject,from autocoder.suffixproject import SuffixProject,from autocoder.index.index import build_index_and_filter_files,from autocoder.common.code_auto_merge import CodeAutoMerge,from typing import Optional,Generator,import byzerllm,import os,import time,from loguru import logger\n函数：auto_implement_function_template, instruction_template, translate_readme, get_translate_part\n变量：a\n类：ActionTSProject, ActionPyScriptProject, ActionPyProject\n函数：process_content, run, process_content\n变量：pp, args, source_code, extra_llm_config, t, content, code_merge, tranlate_args, lang, suffixes, new_file_mark, file_path, suffix\n类：ActionSuffixProject, ActionTranslate\n导入语句：from loguru import logger,import byzerllm\n函数：get_translate_part, time.sleep, print, TranslateReadme, os.path.splitext, open, file.write\n变量：temp_result, segment_count, readme, filename, extension, chinese_filename, file\n类：\n导入语句：import os",
-    "last_modified": 1712901245.57558,
-    "md5": "d7078860ff517ac32d0426c6ccd4ef85"
+    "symbols": "导入语句：from autocoder.common import AutoCoderArgs,TranslateArgs,TranslateReadme,split_code_into_segments,SourceCode,from autocoder.pyproject import PyProject,Level1PyProject,from autocoder.tsproject import TSProject,from autocoder.suffixproject import SuffixProject,from autocoder.index.index import build_index_and_filter_files,from autocoder.common.code_auto_merge import CodeAutoMerge,from autocoder.common.code_auto_generate import CodeAutoGenerate,from typing import Optional,Generator,import byzerllm,import os,import time,from loguru import logger\n函数：auto_implement_function_template, instruction_template, translate_readme, get_translate_part\n变量：a\n类：ActionTSProject, ActionPyScriptProject, ActionPyProject\n函数：process_content, run, process_content, run, file_filter, get_translate_part, split_code_into_segments, translate_readme, build_index_and_filter_files, output, chat_oai, instruction_template, auto_implement_function_template\n变量：args, content, args, args, result, content, content, args, content, content, content, args, content, t, content, file, content, content, file, content, args, code_merge, code_merge, args, args, content, args, args, pp, source_code, source_code, source_code, source_code, lang, suffixes, new_file_mark, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes, suffixes\n变量：chinese_filename, filename, new_file_mark, extension, readme\n函数：open, write\n类：\n导入语句：",
+    "last_modified": 1713514111.8972852,
+    "md5": "fb99d6c1114d8bd1fb2b58f2175d0e79"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/actions/image_to_page.py": {
     "symbols": "```python\n函数：__init__,desc_image,generate_html,generate_html_prompt,get_optimize,optimize_html,score,write_code,run_then_iterate\n类：ImageToPage\n变量：a,self.llm,self.vl_model,self.args\n导入语句：import os,import time,from loguru import logger,import byzerllm\n```",
@@ -295,9 +295,9 @@
     "md5": "d5ac90eefd605f9789167afe0169dcc0"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_execute.py": {
-    "symbols": "导入语句：from autocoder.common import AutoCoderArgs,ExecuteSteps,ExecuteStep,EnvInfo,detect_env,chat_with_llm_step_by_step,SourceCode,from autocoder.common.JupyterClient import JupyterNotebook,from autocoder.common.ShellClient import ShellClient,from typing import Optional,Dict,Any,List,import byzerllm,import pydantic,from loguru import logger,from enum import Enum\n类：Mode,StepNum,CodeAutoExecute\n函数：get_execute_steps, get_step_num, execute_steps, run\n函数：  \n变量：final_v, result  \n类：  \n导入语句：",
-    "last_modified": 1713330514.9638557,
-    "md5": "a22dc1e65455564401e52562e128e0e2"
+    "symbols": "导入语句：from autocoder.common import (AutoCoderArgs,ExecuteSteps,ExecuteStep,EnvInfo,detect_env,chat_with_llm_step_by_step,SourceCode),from autocoder.common.JupyterClient import JupyterNotebook,from autocoder.common.ShellClient import ShellClient,from autocoder.common.types import Mode,StepNum,from typing import Optional,Dict,Any,List,import byzerllm,from loguru import logger\n类：CodeAutoExecute\n函数：get_execute_steps, get_step_num, execute_steps, run\n变量：llm, args, mode, query, context, source_code, parameters, step_num, final_v, conversations, result, item\n函数：execute_steps\n\n变量：result\n\n类：\n\n导入语句：from loguru import logger",
+    "last_modified": 1713511082.056554,
+    "md5": "b84087b3f44cffbf575960f11fa72bd2"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py": {
     "symbols": "导入语句：import byzerllm,from typing import List,Dict,Any,Optional,import argparse,from autocoder.common import AutoCoderArgs,from autocoder.lang import lang_desc,import locale,from byzerllm.utils.client import EventCallbackResult,EventName\n函数：parse_args\n变量：system_lang, lang, desc, parser, subparsers, revert_parser, store_parser, index_parser, index_query_parser, doc_parser\n导入语句：  \n变量：args  \n函数：AutoCoderArgs",
@@ -313,5 +313,15 @@
     "symbols": "导入语句：from typing import Any, Dict, List, Optional, Union,Callable,import pydantic,from byzerllm import ByzerLLM,from byzerllm.utils.client import LLMResponse,from byzerllm.utils import SingleOutputMeta,from autocoder.rag.simple_rag import SimpleRAG,from loguru import logger\n类：LLWrapper\n函数：__init__, chat_oai, stream_chat_oai, async_stream_chat_oai, __getattr__\n变量：llm, rag, tools, tool_choice, execute_tool, impl_func, execute_impl_func, impl_func_params, func_params, response_class, response_after_chat, enable_default_sys_message, model, role_mapping, llm_config",
     "last_modified": 1713444727.7036514,
     "md5": "905190c7d6d5f3c0ca5432e9e41d96da"
+  },
+  "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/types.py": {
+    "symbols": "导入语句：from enum import Enum,import pydantic\n类：Mode, StepNum\n符号：MULTI_ROUND, SINGLE_ROUND, step_num, content",
+    "last_modified": 1713511117.904288,
+    "md5": "f7c5b5b630e81e607ee1c36fcea7a27f"
+  },
+  "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_generate.py": {
+    "symbols": "导入语句：from typing import List,Dict,Tuple,from autocoder.common.types import Mode,from autocoder.common import AutoCoderArgs,import byzerllm\n类：CodeAutoGenerate\n函数：__init__, multi_round_instruction, single_round_instruction, single_round_run, multi_round_run",
+    "last_modified": 1713513293.0404723,
+    "md5": "e19b8dcde541eb40f502e09f01668f0a"
   }
 }

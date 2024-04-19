@@ -159,15 +159,13 @@ class ActionPyScriptProject:
 
     def process_content(self, content: str):
         args = self.args
-        if args.template == "common":
-            instruction = args.query or "Please implement the following methods"
-            content = instruction_template(instruction=instruction, content=content,execute=args.execute)
-        elif args.template == "auto_implement":
+        
+        if args.template == "auto_implement":
             content = auto_implement_function_template(instruction="", content=content)
 
         if args.execute:
             generate = CodeAutoGenerate(llm=self.llm, args=self.args)
-            result,_ = generate.multi_round_run(content=content, llm=self.llm, args=self.args)            
+            result,_ = generate.multi_round_run(query=args.query,source_content=content)            
             content = "\n\n".join(result)
             
         with open(self.args.target_file, "w") as file:
@@ -205,25 +203,14 @@ class ActionPyProject:
             if len(content) > self.args.model_max_input_length:
                 logger.warning(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
                 content = content[:self.args.model_max_input_length]
-
-        if args.template == "common":
-            instruction = args.query or "Please implement the following methods"
-            content = instruction_template(instruction=instruction, content=content,execute=args.execute)
-        elif args.template == "auto_implement":
+        
+        if args.template == "auto_implement":
             content = auto_implement_function_template(instruction="", content=content)
 
-        if args.execute: 
-
-            extra_llm_config = {}
-            
-            if args.human_as_model:
-                extra_llm_config["human_as_model"] = True
-
-            t = self.llm.chat_oai(conversations=[{
-                "role": "user",
-                "content": content
-            }],llm_config={**extra_llm_config})
-            content = t[0].output
+        if args.execute:
+            generate = CodeAutoGenerate(llm=self.llm, args=self.args)
+            result,_ = generate.multi_round_run(query=args.query,source_content=content)            
+            content = "\n\n".join(result)
 
         with open(args.target_file, "w") as file:
             file.write(content)
