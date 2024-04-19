@@ -241,10 +241,16 @@ query: |
 auto-coder --file generate.yml
 ```
 
+## 提供OpenAI兼容接口
+
+```bash
+auto-coder doc serve --model qianwen_chat --emb_model qianwen_emb --source_dir . --port 8000
+```
+
+
 ## 小实战
 
 新建一个目录,然后把 auto-coder 的中文文档和 byzerllm 的命令行示例脚本拷贝进去：
-
 
 ```
 ll /Users/allwefantasy/projects/doc_repo

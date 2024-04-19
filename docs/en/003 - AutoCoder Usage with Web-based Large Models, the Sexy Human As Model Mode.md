@@ -65,6 +65,24 @@ We have added a new interface.
 
 As your project's completion level increases, the model's generative capabilities will also become stronger, as there is more information available, which can directly help you generate business code.
 
+Here is the translation of the provided Chinese text into English:
+
+## How to Handle Multiple File Modifications
+
+Because the generation length of large models is usually limited and much shorter than the input (especially in the web version), you can activate the following parameter:
+
+```yaml
+enable_multi_round_generate: false
+```
+
+Then,
+
+1. When you paste the prompt into the web version, it will only generate code for one file, which you should then paste into AutoCoder, ending with a new line EOF.
+2. At this point, AutoCoder will not stop; it will continue to provide you with new prompts to paste.
+3. Repeat this cycle until your requirements are met.
+
+## Summary
+
 We can also see that the requirements for a single request should not be too large, otherwise, the results may become uncontrollable. In the future, developing code will be a process like this:
 
 ![](../images/image10.png)
