@@ -4,6 +4,7 @@ from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
 from autocoder.index.index import build_index_and_filter_files
 from autocoder.common.code_auto_merge import CodeAutoMerge
+from autocoder.common.code_auto_generate import CodeAutoGenerate
 from typing import Optional,Generator
 import byzerllm
 import os
@@ -165,17 +166,10 @@ class ActionPyScriptProject:
             content = auto_implement_function_template(instruction="", content=content)
 
         if args.execute:
-            extra_llm_config = {}
+            generate = CodeAutoGenerate(llm=self.llm, args=self.args)
+            result,_ = generate.multi_round_run(content=content, llm=self.llm, args=self.args)            
+            content = "\n\n".join(result)
             
-            if args.human_as_model:
-                extra_llm_config["human_as_model"] = True
-
-            t = self.llm.chat_oai(conversations=[{
-                "role": "user",
-                "content": content
-            }],llm_config={**extra_llm_config})
-
-            content = t[0].output
         with open(self.args.target_file, "w") as file:
             file.write(content)
 

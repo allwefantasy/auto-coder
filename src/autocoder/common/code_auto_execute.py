@@ -1,20 +1,13 @@
-from autocoder.common import AutoCoderArgs,ExecuteSteps,ExecuteStep,EnvInfo,detect_env,chat_with_llm_step_by_step,SourceCode
+from autocoder.common import (AutoCoderArgs,ExecuteSteps,
+                              ExecuteStep,EnvInfo,
+                              detect_env,chat_with_llm_step_by_step,SourceCode)
 from autocoder.common.JupyterClient import JupyterNotebook
 from autocoder.common.ShellClient import ShellClient
+from autocoder.common.types import Mode,StepNum
 from typing import Optional,Dict,Any,List
 import byzerllm
-import pydantic
 from loguru import logger
 
-from enum import Enum
-
-class Mode(Enum):
-    MULTI_ROUND = "multi_round"
-    SINGLE_ROUND = "single_round"
-
-class StepNum(pydantic.BaseModel):
-    step_num:int= pydantic.Field(1,description="总共步骤数")
-    content:int= pydantic.Field(1,description="详细的执行步骤，每个步骤需要包含一个shell/python 代码块")    
 
 class CodeAutoExecute:
     def __init__(self,llm,args,mode:Mode=Mode.SINGLE_ROUND) -> None:
