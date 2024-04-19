@@ -11,7 +11,7 @@ class CodeAutoGenerate:
 
 
     @byzerllm.prompt(llm = lambda self: self.llm)
-    def auto_implement_function(instruction:str, content:str)->str:
+    def auto_implement_function(self,instruction:str, content:str)->str:
         '''
         下面是一些文件路径以及每个文件对应的源码：
 
@@ -59,7 +59,7 @@ class CodeAutoGenerate:
         '''
 
     @byzerllm.prompt(llm = lambda self: self.llm)
-    def single_round_instruction(instruction:str, content:str)->str:
+    def single_round_instruction(self,instruction:str, content:str)->str:
         '''
         {%- if content %}
         下面是一些文件路径以及每个文件对应的源码：
@@ -119,7 +119,7 @@ class CodeAutoGenerate:
         result = []
         
         if self.args.template == "common":
-            init_prompt = self.single_round_instruction.prompt(instruction=query,content=source_content)    
+            init_prompt = self.multi_round_instruction.prompt(instruction=query,content=source_content)    
         elif self.args.template == "auto_implement":
             init_prompt = self.auto_implement_function.prompt(instruction=query,content=source_content)
 
