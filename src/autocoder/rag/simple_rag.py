@@ -1,5 +1,5 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
-from autocoder.common import SourceCode
+from autocoder.common import SourceCode,AutoCoderArgs
 
 from byzerllm.apps.llama_index.simple_retrieval import SimpleRetrieval
 from byzerllm.apps.llama_index import get_service_context,get_storage_context
@@ -7,11 +7,12 @@ from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, ServiceContext
 from llama_index.core.node_parser import SentenceSplitter,SentenceWindowNodeParser
 from llama_index.core.indices.document_summary import DocumentSummaryIndex
+from llama_index.core.postprocessor.llm_rerank import LLMRerank
 from llama_index.core.base.llms.types import ChatMessage,MessageRole
 import byzerllm
 
 class SimpleRAG:
-    def __init__(self,llm,args,path:str) -> None:
+    def __init__(self,llm:byzerllm.ByzerLLM,args:AutoCoderArgs,path:str) -> None:
         self.llm = llm
         self.args = args
         self.retrieval = byzerllm.ByzerRetrieval()
@@ -36,6 +37,15 @@ class SimpleRAG:
                 
             })
         return streaming_response.response_gen,contexts 
+    
+    def retrieve(self,query:str)->List[SourceCode]:
+        index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,
+                                                   service_context=self.service_context)
+        retrieval_engine = index.as_retriever()
+        nodes = retrieval_engine.retrieve(query)
+        reranker = LLMRerank(choice_batch_size=5, top_n=1, service_context=self.service_context)
+        retrieved_nodes = reranker.postprocess_nodes(retrieved_nodes, query)
+        return nodes
     
     def stream_chat_oai(self,conversations, model:Optional[str]=None, role_mapping=None,llm_config:Dict[str,Any]={}):        
         index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,
@@ -71,10 +81,17 @@ class SimpleRAG:
         chat_engine.streaming_chat_repl()  
     
     def search(self,query:str) -> List[SourceCode]:
-        texts,contexts = self.stream_search(query)
-        s = "".join([text for text in texts])
-        urls = ",".join(set([context["doc_url"] for context in contexts]))
-        return [SourceCode(module_name=f"RAG:{urls}", source_code=s)]
+        if self.args.enable_rag_search:
+            texts,contexts = self.stream_search(query)
+            s = "".join([text for text in texts])
+            urls = ",".join(set([context["doc_url"] for context in contexts]))
+            ## append RAG: prefix is used to protect avoid the source code is modified by the code auto execute
+            return [SourceCode(module_name=f"RAG:{urls}", source_code=s)]
+        elif self.args.enable_rag_context:
+            contexts = self.retrieve(query)
+            print(contexts)
+            return [SourceCode(module_name=context["_id"], source_code=context["raw_chunk"]) for context in contexts]
+        return []
 
     def build(self):            
         retrieval_client = SimpleRetrieval(llm=self.llm,retrieval=self.retrieval)

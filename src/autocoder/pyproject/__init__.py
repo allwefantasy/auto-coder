@@ -138,13 +138,11 @@ class PyProject():
         return []  
     
     def get_rag_source_codes(self):
-        if self.args.enable_rag_search:
-            rag = SimpleRAG(self.llm,self.args,self.args.source_dir)
-            docs = rag.search(self.args.query)
-            for doc in docs:
-                doc.tag = "RAG"
-            return docs
-        return  []
+        rag = SimpleRAG(self.llm,self.args,self.args.source_dir)
+        docs = rag.search(self.args.query)
+        for doc in docs:
+            doc.tag = "RAG"
+        return docs
 
     def get_search_source_codes(self):
         temp = self.get_rag_source_codes()
