@@ -41,7 +41,32 @@ class LLMRerank():
         if isinstance(query_bundle, str):
             query_bundle = QueryBundle(query_str=query_bundle)
 
+        # 给每个节点添加全局索引
+        indexed_nodes = list(enumerate(nodes))
 
-        
-        return nodes
-        
+        # 按 choice_batch_size 切分 nodes
+        node_batches = [indexed_nodes[i:i+choice_batch_size] for i in range(0, len(indexed_nodes), choice_batch_size)]
+
+        # 合并排序后的结果
+        sorted_nodes = []
+        for batch in node_batches:
+            context_str = "\n".join([f"文档{idx}:\n{node.node.get_text()}" for idx, node in batch])
+            rerank_output = self.rereank(context_str, query_bundle.query_str)
+
+            # 解析 rerank 的输出
+            rerank_result = []
+            for line in rerank_output.split("\n"):
+                if line.startswith("文档："):
+                    parts = line.split("，")
+                    if len(parts) == 2:
+                        doc_idx = int(parts[0].split("：")[1])
+                        relevance = float(parts[1].split("：")[1])
+                        rerank_result.append((doc_idx, relevance))
+
+            # 更新 batch 中节点的分数
+            for doc_idx, relevance in rerank_result:
+                batch[doc_idx][1].score = relevance
+
+            sorted_nodes.extend([node for _, node in sorted(batch, key=lambda x: x[1].score, reverse=True)])
+
+        return sorted_nodes[:top_n]
