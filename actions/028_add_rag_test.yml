@@ -1,0 +1,21 @@
+source_dir: /Users/allwefantasy/projects/auto-coder
+target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
+project_type: py
+
+model: gpt3_5_chat
+index_model: haiku_chat
+
+index_filter_level: 0
+# index_filter_workers: 2
+
+skip_build_index: false
+execute: true
+## 代码生成的时候会每次生成一个文件，现在大模型无法一次性生成太多文件，所以需要多轮生成
+enable_multi_round_generate: false
+auto_merge: true
+human_as_model: true
+
+query: |   
+   对 single_rag.py 添加一个测试类,放在 ./tests/ 目录下
+   
+   

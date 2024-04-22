@@ -138,6 +138,8 @@ class PyProject():
         return []  
     
     def get_rag_source_codes(self):
+        if not self.args.enable_rag_search and not self.args.enable_rag_context:
+            return []
         rag = SimpleRAG(self.llm,self.args,self.args.source_dir)
         docs = rag.search(self.args.query)
         for doc in docs:

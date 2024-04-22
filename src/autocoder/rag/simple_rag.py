@@ -12,7 +12,7 @@ from llama_index.core.base.llms.types import ChatMessage,MessageRole
 import byzerllm
 
 class SimpleRAG:
-    def __init__(self,llm:byzerllm.ByzerLLM,args:AutoCoderArgs,path:str) -> None:
+    def __init__(self,llm,args:AutoCoderArgs,path:str) -> None:
         self.llm = llm
         self.args = args
         self.retrieval = byzerllm.ByzerRetrieval()
