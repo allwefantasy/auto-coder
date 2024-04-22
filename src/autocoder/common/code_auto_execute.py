@@ -137,8 +137,12 @@ class CodeAutoExecute:
         
         if self.mode == Mode.SINGLE_ROUND:
             steps = self.get_execute_steps.run(query=query,context=context,source_code=source_code)
+
+            print("\n\n=================================Execute Steps===========================================")
             print(steps)
             output = self.execute_steps(steps)
+
+            print("\n\n=================================Execute Result===========================================")
             print(output)
             return
         if self.mode == Mode.MULTI_ROUND:
