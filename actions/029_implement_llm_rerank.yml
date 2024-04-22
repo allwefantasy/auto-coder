@@ -2,10 +2,13 @@ source_dir: /Users/allwefantasy/projects/auto-coder
 target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
 project_type: py
 
+urls: /Users/allwefantasy/projects/llama_index/llama-index-core/llama_index/core/schema.py
+
 model: gpt3_5_chat
 index_model: haiku_chat
 
 index_filter_level: 0
+index_model_max_input_length: 30000
 # index_filter_workers: 2
 
 skip_build_index: false
@@ -18,10 +21,12 @@ human_as_model: true
 query: |  
    llm_retrank.py 中，postprocess_nodes 的具体逻辑是，
    
-   1. 通过map 给 nodes 里的每一个元素添加一个 index 序号
-   2. 按choice_batch_size对 nodes 进行切分，然后调用 rerank 函数
-   3. 对 rerank 的结果进行解析，得到文档序号和得分。
-   4. 对每个 batch 进行 rerank，最后合并结果,按照得分排序，返回结果
+   1. 通过 map 给 nodes 里的每一个元素添加一个全局 index 序号
+   2. 按choice_batch_size对 nodes 进行切分，
+   3. 对 rerank 的结果进行解析，得到文档序号和得分。（注意，尽量解析的鲁棒性）
+   4. 对每个 batch 进行 rerank，然后调用 rerank 函数，确保 rerank 里的序号是全局的
+   5. 最后合并结果,按照得分排序，返回结果
+   6. 在 ./tests/ 目录下添加 llm_rerank 的测试用例，确保覆盖所有的逻辑。
    
    
    
