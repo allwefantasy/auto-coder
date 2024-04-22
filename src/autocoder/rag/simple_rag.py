@@ -3,6 +3,7 @@ from autocoder.common import SourceCode,AutoCoderArgs
 
 from byzerllm.apps.llama_index.simple_retrieval import SimpleRetrieval
 from byzerllm.apps.llama_index import get_service_context,get_storage_context
+from llama_index.core import QueryBundle
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, ServiceContext
 from llama_index.core.node_parser import SentenceSplitter,SentenceWindowNodeParser
@@ -39,13 +40,15 @@ class SimpleRAG:
         return streaming_response.response_gen,contexts 
     
     def retrieve(self,query:str)->List[SourceCode]:
+        query_bundle = QueryBundle(query_str=query)
         index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,
                                                    service_context=self.service_context)
         retrieval_engine = index.as_retriever()
-        nodes = retrieval_engine.retrieve(query)
+        nodes = retrieval_engine.retrieve(query_bundle)
+        print(nodes)
         reranker = LLMRerank(choice_batch_size=5, top_n=1, service_context=self.service_context)
-        retrieved_nodes = reranker.postprocess_nodes(retrieved_nodes, query)
-        return nodes
+        retrieved_nodes = reranker.postprocess_nodes(nodes, query_bundle)
+        return retrieved_nodes
     
     def stream_chat_oai(self,conversations, model:Optional[str]=None, role_mapping=None,llm_config:Dict[str,Any]={}):        
         index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,
