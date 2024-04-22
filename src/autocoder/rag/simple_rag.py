@@ -1,5 +1,6 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 from autocoder.common import SourceCode,AutoCoderArgs
+from autocoder.common.llm_rerank import LLMRerank
 
 from byzerllm.apps.llama_index.simple_retrieval import SimpleRetrieval
 from byzerllm.apps.llama_index import get_service_context,get_storage_context
@@ -8,9 +9,9 @@ from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, ServiceContext
 from llama_index.core.node_parser import SentenceSplitter,SentenceWindowNodeParser
 from llama_index.core.indices.document_summary import DocumentSummaryIndex
-from llama_index.core.postprocessor.llm_rerank import LLMRerank
 from llama_index.core.base.llms.types import ChatMessage,MessageRole
 import byzerllm
+from loguru import logger
 
 class SimpleRAG:
     def __init__(self,llm,args:AutoCoderArgs,path:str) -> None:
@@ -44,11 +45,17 @@ class SimpleRAG:
         index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,
                                                    service_context=self.service_context)
         retrieval_engine = index.as_retriever()
-        nodes = retrieval_engine.retrieve(query_bundle)
-        print(nodes)
-        reranker = LLMRerank(choice_batch_size=5, top_n=1, service_context=self.service_context)
-        retrieved_nodes = reranker.postprocess_nodes(nodes, query_bundle)
-        return retrieved_nodes
+        nodes = retrieval_engine.retrieve(query_bundle)        
+        reranker = LLMRerank(llm=self.llm)
+        retrieved_nodes = reranker.postprocess_nodes(nodes, query_bundle,choice_batch_size=5, top_n=1)
+        return [
+            {
+                "raw_chunk":node.node.text,
+                "doc_url":node.node.metadata["file_path"],
+                "_id":node.node.id_,
+                
+            } for node in retrieved_nodes
+        ]
     
     def stream_chat_oai(self,conversations, model:Optional[str]=None, role_mapping=None,llm_config:Dict[str,Any]={}):        
         index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,
@@ -91,9 +98,17 @@ class SimpleRAG:
             ## append RAG: prefix is used to protect avoid the source code is modified by the code auto execute
             return [SourceCode(module_name=f"RAG:{urls}", source_code=s)]
         elif self.args.enable_rag_context:
-            contexts = self.retrieve(query)
-            print(contexts)
-            return [SourceCode(module_name=context["_id"], source_code=context["raw_chunk"]) for context in contexts]
+            contexts = self.retrieve(query) 
+            for context in contexts:  
+                context["raw_chunk"]
+                try:
+                    with open(context["doc_url"],"r") as f:
+                        context["raw_chunk"] = f.read()
+                except Exception as e:
+                    logger.warning(f"Error reading file {context['doc_url']}")
+                    pass
+
+            return [SourceCode(module_name=context["doc_url"], source_code=context["raw_chunk"]) for context in contexts]
         return []
 
     def build(self):            

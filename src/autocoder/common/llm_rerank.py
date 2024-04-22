@@ -1,6 +1,7 @@
 import byzerllm
 from typing import Union,List
 from llama_index.core.schema import QueryBundle,NodeWithScore
+from loguru import logger
 
 class LLMRerank():
     def __init__(self,llm:byzerllm.ByzerLLM):
@@ -32,12 +33,16 @@ class LLMRerank():
 
         现在让我们试一试：
 
-        {context_str}
-        问题：{query_str}
+        {{ context_str }}
+
+        问题：{{ query_str }}
         回答：
         '''
 
-    def postprocess_nodes(self,nodes:List[NodeWithScore], query_bundle:Union[str,QueryBundle],choice_batch_size:int=5, top_n:int=1):
+    def postprocess_nodes(self,
+                          nodes:List[NodeWithScore], 
+                          query_bundle:Union[str,QueryBundle],
+                          choice_batch_size:int=5, top_n:int=1,verbose:bool=False)->List[NodeWithScore]:                          
         if isinstance(query_bundle, str):
             query_bundle = QueryBundle(query_str=query_bundle)
 
@@ -50,8 +55,11 @@ class LLMRerank():
         # 合并排序后的结果
         sorted_nodes = []
         for batch in node_batches:
-            context_str = "\n".join([f"文档{idx}:\n{node.node.get_text()}" for idx, node in batch])
+            context_str = "\n\n".join([f"文档{idx}:\n{node.node.get_text()}" for idx, node in batch])            
             rerank_output = self.rereank(context_str, query_bundle.query_str)
+            if verbose:
+                logger.info(self.rereank.prompt(context_str, query_bundle.query_str))
+                logger.info(rerank_output)
 
             # 解析 rerank 的输出
             rerank_result = []
@@ -59,14 +67,18 @@ class LLMRerank():
                 if line.startswith("文档："):
                     parts = line.split("，")
                     if len(parts) == 2:
-                        doc_idx = int(parts[0].split("：")[1])
-                        relevance = float(parts[1].split("：")[1])
-                        rerank_result.append((doc_idx, relevance))
+                        try:
+                            doc_idx = int(parts[0].split("：")[1])
+                            relevance = float(parts[1].split("：")[1])
+                            rerank_result.append((doc_idx, relevance))
+                        except:
+                            logger.warning(f"Failed to parse line: {line}")
+                            pass
 
             # 更新 batch 中节点的分数
-            for doc_idx, relevance in rerank_result:
-                batch[doc_idx][1].score = relevance
+            for doc_idx, relevance in rerank_result:                  
+                indexed_nodes[doc_idx][1].score = relevance
 
-            sorted_nodes.extend([node for _, node in sorted(batch, key=lambda x: x[1].score, reverse=True)])
+        sorted_nodes.extend([node for _, node in sorted(indexed_nodes, key=lambda x: x[1].score, reverse=True)])
 
         return sorted_nodes[:top_n]
