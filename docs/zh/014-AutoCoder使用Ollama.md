@@ -15,7 +15,7 @@ byzerllm deploy  --pretrained_model_type saas/official_openai \
 --gpus_per_worker 0 \
 --num_workers 1 \
 --infer_params saas.api_key=xxxxx saas.model=llama2  saas.base_url="http://localhost:11434/v1/" \
---model ollama_llama2_chat
+--model ollama_llama_chat
 ```
 
 这里的 `ollama_llama2_chat` 是一个模型的名字，可以自己定义，后续在 AutoCoder 中使用这个名字即可, 其他的则是一些资源方面的配置，因为

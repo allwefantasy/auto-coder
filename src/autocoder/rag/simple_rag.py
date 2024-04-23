@@ -23,13 +23,16 @@ class SimpleRAG:
         self.namespace = "default"
         self.chunk_collection = "default"
         self.service_context = get_service_context(self.llm)
-        self.storage_context = get_storage_context(self.llm,self.retrieval,chunk_collection="default",namespace="default")
+        self.storage_context = get_storage_context(self.llm,self.retrieval,
+                                                   chunk_collection=self.chunk_collection,
+                                                   namespace=self.namespace)
 
-    def stream_search(self,query:str):        
+    def stream_search(self,query:str):     
+        query_bundle = QueryBundle(query_str=query)   
         index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,
                                                    service_context=self.service_context)
         query_engine = index.as_query_engine(streaming=True)                
-        streaming_response = query_engine.query(query)
+        streaming_response = query_engine.query(query_bundle)
         contexts = []
         for node in streaming_response.source_nodes:
             contexts.append({
@@ -128,7 +131,7 @@ class SimpleRAG:
             documents, show_progress=True
         )
         _ = VectorStoreIndex(nodes=nodes,
-                             store_nodes_override=False,
+                             store_nodes_override=True,
                              storage_context=self.storage_context, 
                              service_context=self.service_context)        
         

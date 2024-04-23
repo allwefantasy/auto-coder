@@ -38,6 +38,7 @@ class LLWrapper:
     def stream_chat_oai(self,conversations, 
                         model:Optional[str]=None, 
                         role_mapping=None,
+                        delta_mode=False,
                         llm_config:Dict[str,Any]={}): 
         res,contexts = self.rag.stream_chat_oai(conversations)        
         for t in res:                        
@@ -46,6 +47,7 @@ class LLWrapper:
     async def async_stream_chat_oai(self,conversations, 
                         model:Optional[str]=None, 
                         role_mapping=None,
+                        delta_mode=False,
                         llm_config:Dict[str,Any]={}): 
         res,contexts = self.rag.stream_chat_oai(conversations)                
         for t in res:                                    
