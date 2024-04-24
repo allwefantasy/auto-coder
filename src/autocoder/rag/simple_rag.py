@@ -161,12 +161,12 @@ class SimpleRAG:
                                           ).load_data()    
         docs_keep = []
         for document in documents:            
-            doc = retrieval_client.get_doc(f"ref_doc_info/{document.doc_id}",self.namespace)            
+            doc = retrieval_client.get_doc(f"ref_doc_info/{document.doc_id}",self.namespace)                      
             if doc:
-                md5 = json.loads(doc["json_data"]).get("md5","")
+                md5 = json.loads(doc["json_data"])["metadata"].get("md5","")
                 file_path = document.metadata["file_path"]
                 new__md5 = document.metadata["md5"]
-                if md5 != new__md5:
+                if md5 != new__md5:                    
                     retrieval_client.delete_doc_and_chunks_by_filename(self.namespace,file_path)
                     docs_keep.append(document)
             else:
@@ -178,18 +178,21 @@ class SimpleRAG:
         for document in docs_keep:
             logger.info(f'\nUpsert {document.doc_id}')
 
-        sp = SentenceSplitter(chunk_size=1024, chunk_overlap=0)        
+        if docs_keep:    
+            sp = SentenceSplitter(chunk_size=1024, chunk_overlap=0)        
 
-        nodes = sp.get_nodes_from_documents(
-            docs_keep, show_progress=True
-        )
-        _ = VectorStoreIndex(nodes=nodes,
-                             store_nodes_override=True,
-                             storage_context=self.storage_context, 
-                             service_context=self.service_context) 
+            nodes = sp.get_nodes_from_documents(
+                docs_keep, show_progress=True
+            )
+            _ = VectorStoreIndex(nodes=nodes,
+                                store_nodes_override=True,
+                                storage_context=self.storage_context, 
+                                service_context=self.service_context) 
 
-        retrieval_client.commit_doc()
-        retrieval_client.commit_chunk()       
+            retrieval_client.commit_doc()
+            retrieval_client.commit_chunk() 
+        else:
+            logger.info("There is no new doc to build")          
         
                 
         
