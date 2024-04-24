@@ -1,0 +1,35 @@
+source_dir: /Users/allwefantasy/projects/auto-coder
+target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
+project_type: py
+
+urls: /Users/allwefantasy/projects/llama_index/llama-index-core/llama_index/core/schema.py
+
+model: gpt3_5_chat
+index_model: haiku_chat
+
+index_filter_level: 0
+index_model_max_input_length: 30000
+# index_filter_workers: 2
+
+skip_build_index: false
+execute: true
+## 代码生成的时候会每次生成一个文件，现在大模型无法一次性生成太多文件，所以需要多轮生成
+enable_multi_round_generate: false
+auto_merge: true
+human_as_model: true
+
+query: |  
+   修改 store.py ，新增一个 rag索引表，该表包含 file_path, md5, updated_time 三个字段，其中 file_path 是主键。
+   
+   simple_rag.py 中，我们需要对build 方法进行重构：
+   
+   1. 每次构建时，通过对documents:List[Document] 遍历获得所有文件。
+   2.  对每个文件做如下处理：
+        
+        2.1 从 store.py 中查找文件是否存在，如果存在或者md5值一致，跳过
+        2.2 如果文件不存在或者md5不一致，使用retrieval_client进行删除，并且添加到待构建索引集合
+        2.3 待构建索引集合走完后续流程
+        2.4 将相关信息更新会 store 的rag 索引表。
+   
+   
+   
