@@ -14,7 +14,7 @@ import byzerllm
 from loguru import logger
 
 class SimpleRAG:
-    def __init__(self,llm,args:AutoCoderArgs,path:str) -> None:
+    def __init__(self,llm:byzerllm.ByzerLLM,args:AutoCoderArgs,path:str) -> None:
         self.llm = llm
         self.args = args
         self.retrieval = byzerllm.ByzerRetrieval()
@@ -22,6 +22,9 @@ class SimpleRAG:
         self.path = path
         self.namespace = "default"
         self.chunk_collection = "default"
+        if not self.llm.default_emb_model_name:
+            raise ValueError("emb_model should be set")
+
         self.service_context = get_service_context(self.llm)
         self.storage_context = get_storage_context(self.llm,self.retrieval,
                                                    chunk_collection=self.chunk_collection,
