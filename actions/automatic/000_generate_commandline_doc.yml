@@ -2,10 +2,9 @@ source_dir: /Users/allwefantasy/projects/auto-coder
 target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
 project_type: py
 
-urls: /Users/allwefantasy/projects/llama_index/llama-index-core/llama_index/core/schema.py
-
 model: gpt3_5_chat
 emb_model: gpt_emb
+
 index_model: haiku_chat
 
 index_filter_level: 0
@@ -21,8 +20,12 @@ auto_merge: true
 human_as_model: true
 
 query: |  
-   根据 auto-coder.py, lang.py, command_args.py 三个文件，整理出一个 markdown 文档, 介绍各种可选参数。
-   最后放在 docs/zh 目录下，名字叫 020-AutoCoder参数大全.md。文档一定要写的通俗易懂，方便用户查阅。
+   根据 auto-coder.py, lang.py, command_args.py 三个文件，整理出一个两个 markdown 文档，一个中文，一个英文, 介绍各种可选参数。
+   
+   1. 中文版本放在 docs/zh 目录下，名字叫 020-AutoCoder_参数大全.md。
+   2. 英文版本放在 docs/en 目录下，名字叫 020-AutoCoder_Parameters.md。
+   
+   文档一定要写的通俗易懂，方便用户查阅。
 
    
    
