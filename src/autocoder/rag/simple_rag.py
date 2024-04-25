@@ -7,13 +7,12 @@ import os
 from byzerllm.apps.llama_index.simple_retrieval import SimpleRetrieval
 from byzerllm.apps.llama_index import get_service_context,get_storage_context
 from llama_index.core import QueryBundle
-from llama_index.core.readers.file.base import default_file_metadata_func,get_default_fs,_format_file_timestamp
-import mimetypes
-from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.readers.file.base import default_file_metadata_func
 from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, ServiceContext
-from llama_index.core.node_parser import SentenceSplitter,SentenceWindowNodeParser
-from llama_index.core.indices.document_summary import DocumentSummaryIndex
+from llama_index.core.node_parser import SentenceSplitter,HierarchicalNodeParser,get_leaf_nodes, get_root_nodes
 from llama_index.core.base.llms.types import ChatMessage,MessageRole
+from llama_index.core.retrievers import AutoMergingRetriever
+from llama_index.core.query_engine import RetrieverQueryEngine
 import byzerllm
 from loguru import logger
 import hashlib
@@ -63,7 +62,12 @@ class SimpleRAG:
         query_bundle = QueryBundle(query_str=query)   
         index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,
                                                    service_context=self.service_context)
-        query_engine = index.as_query_engine(streaming=True)                
+        retriever = AutoMergingRetriever(index.as_retriever(),storage_context=self.storage_context,verbose=True)
+        query_engine = RetrieverQueryEngine.from_args(retriever,
+                                                      service_context=self.service_context,
+                                                      streaming=True)
+        # query_engine = index.as_query_engine(streaming=True)       
+        
         streaming_response = query_engine.query(query_bundle)
         contexts = []
         for node in streaming_response.source_nodes:
@@ -79,7 +83,7 @@ class SimpleRAG:
         query_bundle = QueryBundle(query_str=query)
         index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context.vector_store,
                                                    service_context=self.service_context)
-        retrieval_engine = index.as_retriever()
+        retrieval_engine = AutoMergingRetriever(index.as_retriever(),storage_context=self.storage_context)
         nodes = retrieval_engine.retrieve(query_bundle) 
 
         reranker = LLMRerank(llm=self.llm)
@@ -179,12 +183,17 @@ class SimpleRAG:
             logger.info(f'\nUpsert {document.doc_id}')
 
         if docs_keep:    
-            sp = SentenceSplitter(chunk_size=1024, chunk_overlap=0)        
+            hirerachical = HierarchicalNodeParser.from_defaults(chunk_sizes=[6000,3000,1024])
+            # sp = SentenceSplitter(chunk_size=1024, chunk_overlap=0)             
 
-            nodes = sp.get_nodes_from_documents(
+            nodes = hirerachical.get_nodes_from_documents(
                 docs_keep, show_progress=True
             )
-            _ = VectorStoreIndex(nodes=nodes,
+            
+            leaf_nodes = get_leaf_nodes(nodes)     
+            self.storage_context.docstore.add_documents(nodes)  
+
+            _ = VectorStoreIndex(nodes=leaf_nodes,
                                 store_nodes_override=True,
                                 storage_context=self.storage_context, 
                                 service_context=self.service_context) 
