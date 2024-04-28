@@ -8,6 +8,7 @@ import json
 import base64
 from concurrent.futures import ThreadPoolExecutor
 import shutil
+import tempfile
 
 def play_wave(filename:str):
     try:
@@ -26,6 +27,7 @@ class PlayStreamAudioFromText:
         self.llm = byzerllm.ByzerLLM()
         self.llm.setup_default_model_name(tts_model_name)
         self.wav_num = -1
+        self.tempdir = tempfile.mkdtemp()
 
     def text_to_speech(self, text, file_path):
         print(f"Converting text to speech: {text}")
@@ -48,7 +50,7 @@ class PlayStreamAudioFromText:
         while True:
             if self.wav_num == -2:
                 break
-            file_path = f"/tmp/wavs/{idx:03d}.wav"
+            file_path = os.path.join(self.tempdir, f"{idx:03d}.wav")
             if not os.path.exists(file_path):
                 time.sleep(0.1) # Reduce CPU usage
                 continue
@@ -75,7 +77,7 @@ class PlayStreamAudioFromText:
             for sentence in sentences:
                 if len(sentence) == 0:
                     continue
-                file_path = f"/tmp/wavs/{idx:03d}.wav"
+                file_path = os.path.join(self.tempdir, f"{idx:03d}.wav")
                 print(f"Processing: {sentence} to {file_path}")
                 self.pool.submit(self.text_to_speech, sentence, file_path)
                 idx += 1
@@ -83,7 +85,6 @@ class PlayStreamAudioFromText:
         self.wav_num = idx - 1
 
     def run(self, text_generator):
-        os.makedirs("/tmp/wavs", exist_ok=True)
         threading.Thread(target=self.play_audio_files).start()
         threading.Thread(target=self.process_texts).start()
         for text in text_generator:
@@ -91,6 +92,7 @@ class PlayStreamAudioFromText:
         self.q.put(None)
         while self.wav_num != -2:
             time.sleep(0.1)
+        shutil.rmtree(self.tempdir)
 
 # byzerllm.connect_cluster()
 # player = PlayStreamAudioFromText()
