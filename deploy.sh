@@ -25,7 +25,7 @@ echo "Install ${project} ${version}"
 pip install ${project}-${version}-py3-none-any.whl && cd -
 
 # 默认模式设定
-export MODE=${MODE:-"dev"}
+export MODE=${MODE:-"release"}
 
 # 发布模式下的操作
 if [[ ${MODE} == "release" ]]; then

@@ -23,7 +23,7 @@ Requires-Dist: paramiko
 Requires-Dist: einops
 Requires-Dist: tqdm
 Requires-Dist: loguru
-Requires-Dist: pyjava==0.6.15
+Requires-Dist: pyjava>=0.6.15
 Requires-Dist: tiktoken
 Requires-Dist: transformers_stream_generator
 Requires-Dist: optimum
