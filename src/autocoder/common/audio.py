@@ -92,6 +92,6 @@ class PlayStreamAudioFromText:
         while self.wav_num != -2:
             time.sleep(0.1)
 
-byzerllm.connect_cluster()
-player = PlayStreamAudioFromText()
-player.run(["hello everyone", "i'am william", "auto coder is a great tool", "i hope you like it", "goodbye"])
+# byzerllm.connect_cluster()
+# player = PlayStreamAudioFromText()
+# player.run(["hello everyone", "i'am william", "auto coder is a great tool", "i hope you like it", "goodbye"])
