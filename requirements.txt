@@ -15,7 +15,7 @@ paramiko
 einops
 tqdm
 loguru
-pyjava>=0.6.15
+pyjava>=0.6.16
 tiktoken
 transformers_stream_generator
 optimum
@@ -59,7 +59,7 @@ jieba
 
 # camelot-py
 # llama_index
-byzerllm>=0.1.75
+byzerllm>=0.1.76
 GitPython
 openai>=1.14.3
 anthropic
