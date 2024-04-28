@@ -41,8 +41,7 @@ class PlayStreamAudioFromText:
         with open(temp_file_path, "wb") as f:
             f.write(base64.b64decode(t[0].output))
         shutil.move(temp_file_path, file_path)
-        print(f"Converted successfully: {file_path}")
-        self.q.task_done()
+        print(f"Converted successfully: {file_path}")        
 
     def play_audio_files(self):
         idx = 1
@@ -61,13 +60,16 @@ class PlayStreamAudioFromText:
     def process_texts(self):
         idx = 1
         s = ""
-        while True:
+        done = False
+        while not done:
             text = self.q.get()
             if text is None:
-                self.q.task_done()
-                break
-            s += text
-            if len(s) < 10:
+                done = True
+                if len(s)==0:
+                    break
+            if text:
+                s += text
+            if not done and len(s) < 10:
                 continue
             sentences = s.split("。")
             for sentence in sentences:
@@ -83,10 +85,13 @@ class PlayStreamAudioFromText:
     def run(self, text_generator):
         os.makedirs("/tmp/wavs", exist_ok=True)
         threading.Thread(target=self.play_audio_files).start()
-        threading.Thread(target=self.process_texts)._start()
+        threading.Thread(target=self.process_texts).start()
         for text in text_generator:
             self.q.put(text)
         self.q.put(None)
         while self.wav_num != -2:
             time.sleep(0.1)
 
+byzerllm.connect_cluster()
+player = PlayStreamAudioFromText()
+player.run(["hello everyone", "i'am william", "auto coder is a great tool", "i hope you like it", "goodbye"])

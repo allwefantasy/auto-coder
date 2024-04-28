@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.44
+Version: 0.1.45
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -42,12 +42,13 @@ Requires-Dist: sqlmodel
 Requires-Dist: wudao
 Requires-Dist: SwissArmyTransformer
 Requires-Dist: jieba
-Requires-Dist: byzerllm>=0.1.73
+Requires-Dist: byzerllm>=0.1.75
 Requires-Dist: GitPython
 Requires-Dist: openai>=1.14.3
 Requires-Dist: anthropic
 Requires-Dist: google-generativeai
 Requires-Dist: protobuf
+Requires-Dist: azure-cognitiveservices-speech
 
 <p align="center">
   <picture>    
@@ -68,7 +69,7 @@ Auto-Coder (powered by Byzer-LLM)
 
 *Latest News* 🔥
 
-- [2024/04] Release Auto-Coder 0.1.42
+- [2024/04] Release Auto-Coder 0.1.45
 - [2024/03] Release Auto-Coder 0.1.25
 - [2024/03] Release Auto-Coder 0.1.24
 

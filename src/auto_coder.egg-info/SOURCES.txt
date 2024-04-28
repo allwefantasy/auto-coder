@@ -16,6 +16,7 @@ src/autocoder/agent/coder.py
 src/autocoder/common/JupyterClient.py
 src/autocoder/common/ShellClient.py
 src/autocoder/common/__init__.py
+src/autocoder/common/audio.py
 src/autocoder/common/cleaner.py
 src/autocoder/common/code_auto_execute.py
 src/autocoder/common/code_auto_generate.py
