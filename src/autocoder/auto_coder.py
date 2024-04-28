@@ -181,7 +181,7 @@ def main():
             print("\n\n=============RESPONSE==================\n\n")                                
             for res in response:                
                 print(res,end="")  
-                s  += res                
+                s  += res                          
             
             print("\n\n=============CONTEXTS==================")
         

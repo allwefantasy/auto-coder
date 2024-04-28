@@ -4,25 +4,11 @@ import queue
 import threading
 import byzerllm
 import time
+import json
+import base64
+from concurrent.futures import ThreadPoolExecutor
+import shutil
 
-def play_mp3(path):
-    try:
-        import pygame
-    except ImportError:
-        raise ImportError("The pygame module is required to play audio files. Try running 'pip install pygame'")
-
-    # Initialize the mixer module
-    pygame.mixer.init()
-
-    # Load the MP3 file 
-    pygame.mixer.music.load(path)
-    
-    # Start playing the music
-    pygame.mixer.music.play()
-
-    # Wait for the music to finish playing
-    while pygame.mixer.music.get_busy():
-        time.sleep(1)
 
 def play_wave(filename:str):  
     try:
@@ -36,25 +22,28 @@ def play_wave(filename:str):
         
         
 class PlayStreamAudioFromText:
-    def __init__(self):
+    def __init__(self,tts_model_name:str="openai_tts"):
         self.q = queue.Queue()
-        self.pool = byzerllm.ThreadPoolExecutor(max_workers=5)
-        byzerllm.connect_cluster()
+        self.pool = ThreadPoolExecutor(max_workers=5)        
         self.llm = byzerllm.ByzerLLM()
-        self.llm.setup_default_model_name("open_tts")
+        self.llm.setup_default_model_name(tts_model_name)
         
     def text_to_speech(self, text, file_path):
+        print(f"Converting text to speech: {text}")
         t = self.llm.chat_oai(conversations=[{ 
             "role":"user",
             "content": json.dumps({
                 "input": text,
-                "voice": "alloy",
+                "voice": "echo",
                 "response_format": "wav" 
             }, ensure_ascii=False)
         }])
         
-        with open(file_path, "wb") as f:
-            f.write(base64.b64decode(t[0].output))
+        temp_file_path = file_path + ".tmp"
+        with open(temp_file_path, "wb") as f:
+            f.write(base64.b64decode(t[0].output))      
+        shutil.move(temp_file_path, file_path)
+        print(f"Converted  successfully: {file_path}")
 
     def play_audio_files(self):
         idx = 1
@@ -68,15 +57,25 @@ class PlayStreamAudioFromText:
             
     def process_texts(self):
         idx = 1
+        s = ""
         while True:
-            text = self.q.get()
+            text = self.q.get()                        
             if text is None:
                 break
-            sentences = text.split("。")
+
+            s += text 
+            if len(s) < 10:                
+                continue            
+
+            sentences = s.split("。")
             for sentence in sentences:
+                if len(sentence) == 0:
+                    continue
                 file_path = f"/tmp/wavs/{idx:03d}.wav"
+                print(f"Processing: {sentence} to {file_path}")
                 self.pool.submit(self.text_to_speech, sentence, file_path)
                 idx += 1
+            s = ""    
             self.q.task_done()
         
     def run(self, text_generator):
