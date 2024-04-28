@@ -56,7 +56,7 @@ def main():
     print("-" * 50)
     for arg, value in vars(args).items():
         print(f"{arg:20}: {value}")
-    print("-" * 50)
+    print("-" * 50)    
 
     # init store
     store = Store(os.path.join(args.source_dir,".auto-coder","metadata.db"))
@@ -178,7 +178,7 @@ def main():
             response,contexts = rag.stream_search(args.query)
             
             s = ""
-            print("\n\n=============RESPONSE==================\n\n")            
+            print("\n\n=============RESPONSE==================\n\n")                                
             for res in response:                
                 print(res,end="")  
                 s  += res                

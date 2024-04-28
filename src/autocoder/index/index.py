@@ -154,16 +154,15 @@ class IndexManager:
            if ext in [".md",".html",".txt",".doc",".pdf"]:
                continue
 
-           md5 = hashlib.md5(source.source_code.encode('utf-8')).hexdigest()
-           logger.info(f"try to build index for {file_path} md5: {md5}")
+           md5 = hashlib.md5(source.source_code.encode('utf-8')).hexdigest()           
            if source.source_code.strip() == "":
                continue
 
            if source.module_name in index_data and index_data[source.module_name]["md5"] == md5:
                continue
            
-           try:
-               logger.info(f"parse and update index for {file_path} md5: {md5}")
+           try:               
+               start_time = time.monotonic()
                source_code = source.source_code
                if len(source.source_code) > self.max_input_length:
                    logger.warning(f"Warning: The length of source code is too long ({len(source.source_code)}) > model_max_input_length({self.max_input_length}), splitting into chunks...")
@@ -177,7 +176,9 @@ class IndexManager:
                else:
                    symbols = self.get_all_file_symbols(source.module_name, source_code)
                    time.sleep(self.anti_quota_limit)
-               time.sleep(self.anti_quota_limit)
+                
+               logger.info(f"Parse and update index for {file_path} md5: {md5} took {time.monotonic() - start_time:.2f}s") 
+               
            except Exception as e:
                logger.warning(f"Error: {e}")
                continue
@@ -291,18 +292,16 @@ class IndexManager:
         all_results:List[TargetFile] = []
         
         def w():
-            return self._get_meta_str(skip_symbols=True)
+            return self._get_meta_str(skip_symbols=True,max_chunk_size=self.max_input_length-1000)
 
+        logger.info("Find the related files by query according to the files...")
         temp_result = self._query_index_with_thread(query,w)
-        all_results.extend(temp_result)
-            
-
+        all_results.extend(temp_result)            
         
-        if self.args.index_filter_level >= 1:    
-            
-            logger.info("Find the related files by query according to the file and symbols...")
+        if self.args.index_filter_level >= 1:                
+            logger.info("Find the related files by query according to the symbols...")
             def w():
-                return self._get_meta_str(skip_symbols=False)
+                return self._get_meta_str(skip_symbols=False,max_chunk_size=self.max_input_length-1000)
             temp_result = self._query_index_with_thread(query,w)            
             all_results.extend(temp_result)
         
@@ -340,10 +339,13 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
        for source in sources:
            if source.tag in ["REST","RAG","SEARCH"]:
                 final_files.append(get_file_path(source.module_name))
-
+        
+       logger.info("Building index for all files...")
        index_manager = IndexManager(llm=llm,sources=sources,args=args)
        index_manager.build_index()
        
+       logger.info(f"Finding related files in the index...")
+       start_time = time.monotonic()
        target_files = index_manager.get_target_files_by_query(args.query)
        
        if target_files:
@@ -364,7 +366,9 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
        
        if not final_files:
            logger.warning("Warning: No related files found, use all files")
-           final_files = [file.module_name for file in sources]                          
+           final_files = [file.module_name for file in sources] 
+       
+       logger.info(f"Find related files took {time.monotonic() - start_time:.2f}s")
    else:
        final_files = [file.module_name for file in sources]
 

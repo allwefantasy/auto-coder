@@ -6,7 +6,7 @@ from byzerllm.utils.client.types import (
 import pydantic
 from byzerllm import ByzerLLM
 from byzerllm.utils.client import LLMResponse
-from byzerllm.utils import SingleOutputMeta
+from byzerllm.utils.types import SingleOutputMeta
 from autocoder.rag.simple_rag import SimpleRAG
 from loguru import logger
 

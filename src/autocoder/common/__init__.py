@@ -4,7 +4,7 @@ import sys
 import subprocess
 import os
 import time
-from typing import List,Dict,Any,Optional
+from typing import List,Dict,Any,Optional,Union
 
 class SourceCode(pydantic.BaseModel):
     module_name: str
@@ -85,8 +85,8 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     search_engine: str = ""
     search_engine_token: str = ""
-    enable_rag_search:bool
-    enable_rag_context:bool
+    enable_rag_search:Union[bool,str] = False
+    enable_rag_context:Union[bool,str] = False
     required_exts:str = ""
     
     auto_merge: bool = pydantic.Field(False, description="Whether to automatically merge the generated code into the existing file")

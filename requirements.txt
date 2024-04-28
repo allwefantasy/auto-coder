@@ -65,3 +65,4 @@ openai>=1.14.3
 anthropic
 google-generativeai
 protobuf
+azure-cognitiveservices-speech

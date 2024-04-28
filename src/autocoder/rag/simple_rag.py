@@ -132,13 +132,19 @@ class SimpleRAG:
     
     def search(self,query:str) -> List[SourceCode]:
         if self.args.enable_rag_search:
-            texts,contexts = self.stream_search(query)
+            target_query = query
+            if isinstance(self.args.enable_rag_search,str):
+                target_query = self.args.enable_rag_search
+            texts,contexts = self.stream_search(target_query)
             s = "".join([text for text in texts])
             urls = ",".join(set([context["doc_url"] for context in contexts]))
             ## append RAG: prefix is used to protect avoid the source code is modified by the code auto execute
             return [SourceCode(module_name=f"RAG:{urls}", source_code=s)]
         elif self.args.enable_rag_context:
-            contexts = self.retrieve(query) 
+            target_query = query            
+            if isinstance(self.args.enable_rag_context,str):
+                target_query = self.args.enable_rag_context            
+            contexts = self.retrieve(target_query) 
             for context in contexts:  
                 context["raw_chunk"]
                 try:
