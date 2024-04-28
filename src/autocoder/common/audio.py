@@ -89,3 +89,4 @@ class PlayStreamAudioFromText:
         self.q.put(None)
         while self.wav_num != -2:
             time.sleep(0.1)
+
