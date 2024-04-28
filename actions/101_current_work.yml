@@ -19,7 +19,13 @@ auto_merge: true
 human_as_model: true
 
 query: |  
-   audio.py 中使用 queue 有bug。帮我检查下先说明问题在哪。
+   audio.py 中的queue 使用了 join 来阻塞主线程，直到通知到了足够多的 task_done。
+   我们在最后不使用 join。
+   新增一个 wav_num 实例变量,初始值设置为-1，用来记录最后生成的 wav 文件的数量。
+   
+   1. 在 process_texts 将最后的 idx 赋值给 wav_num。
+   2. play_audio_files 通过 wav_num 来判断是否已经播放完所有的音频文件。如果播放完，则将 wav_num 设置为 -2。
+   3. 最后在 run 方法中，不再使用 join，而是使用 while 循环来判断 wav_num 是否为 -2，如果是，则退出循环。
    
    
    

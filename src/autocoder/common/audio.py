@@ -60,6 +60,7 @@ class PlayStreamAudioFromText:
         while True:
             text = self.q.get()                        
             if text is None:
+                self.q.task_done()
                 break
 
             s += text 
@@ -74,9 +75,8 @@ class PlayStreamAudioFromText:
                 print(f"Processing: {sentence} to {file_path}")
                 self.pool.submit(self.text_to_speech, sentence, file_path)
                 idx += 1
-            s = ""
-            if text is None:
-                self.q.task_done()
+            s = ""            
+                
         
     def run(self, text_generator):
         os.makedirs("/tmp/wavs", exist_ok=True)
