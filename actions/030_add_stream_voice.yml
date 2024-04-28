@@ -19,13 +19,15 @@ enable_multi_round_generate: false
 auto_merge: true
 human_as_model: true
 
-query: |  
-   我们要实现一个 play_stream_audio_from_text 的方法。
-   该方法输入是一个字符串generator，在方法内部会将文本转换为语音，并且播放出来。
+query: | 
+   我们要在 audio.py 中实现一个新的类叫 PlayStreamAudioFromText，该类有一个方法 run,该方法输入是一个字符串generator，在方法内部会将文本转换为语音，并且播放出来。
    
-   1. 内部维护一个queue, 用户从generator中读取文本，然后将文本放入queue中
-   2. 内部维护一个进程池，异步从queue中的文本，按中英文句号和换行对语句进行切割调用，并行调用 openai_tts 模型将文本转换为语音，音频文件已 001.wav, 002.wav, 003.wav...的方式保存在一个目录下.
-   3. 使用一个独立的线程播放音频文件，播放完一个音频文件后，再播放下一个音频文件。
+   具体逻辑是：
+   1. PlayStreamAudioFromText 维护一个queue，一个线程池
+   1. 运行时，从generator中读取文本，然后将文本放入queue中
+   2. 从queue中取出文本，按中英文句号或者换行符对语句进行切割调用，并行调用 openai_tts 模型将文本转换为语音，保存在 /tmp/wavs 目录下。
+   音频文件用 001.wav, 002.wav, 003.wav...的命名规则保存在一个目录下.
+   3. 使用一个独立的线程播放音频文件，播放完一个音频文件后，再播放下一个音频文件，直到播放完毕。
    
    
    
