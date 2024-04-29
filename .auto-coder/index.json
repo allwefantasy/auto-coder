@@ -340,8 +340,13 @@
     "md5": "92812f0b4c9ed7790e5118c2ab17417d"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/audio.py": {
-    "symbols": "函数：play_wave, text_to_speech, process_texts, run\n类：PlayStreamAudioFromText\n变量：q, pool, llm, wav_num\n导入语句：import io,import os,import queue,import threading,import byzerllm,import time,import json,import base64,from concurrent.futures import ThreadPoolExecutor,import shutil",
-    "last_modified": 1714292827.7428455,
-    "md5": "c1d95bddd97ab59235cc6a2a803ee451"
+    "symbols": "函数：play_wave, text_to_speech, process_texts, run\n类：PlayStreamAudioFromText\n变量：q, pool, llm, wav_num, tempdir\n导入语句：import io,import os,import queue,import threading,import byzerllm,import time,import json,import base64,from concurrent.futures import ThreadPoolExecutor,import shutil,import tempfile",
+    "last_modified": 1714293662.6210546,
+    "md5": "80dc7db48f0bdcd7fb444c419b0d9ebb"
+  },
+  "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/command_templates.py": {
+    "symbols": "函数：init_command_template\n变量：\n类：\n导入语句：import byzerllm",
+    "last_modified": 1714362871.9479604,
+    "md5": "284b42897f48506f03cd71eed3560533"
   }
 }
