@@ -6,6 +6,10 @@ from typing import List
 def init(repo_path: str) -> bool:
     if not os.path.exists(repo_path):
         os.makedirs(repo_path)
+
+    if os.path.exists(os.path.join(repo_path, '.git')):
+        logger.warning(f"The directory {repo_path} is already a Git repository. Skipping initialization.")
+        return False    
     try:
         repo = Repo.init(repo_path)
         logger.info(f"Initialized new Git repository at {repo_path}")
