@@ -61,12 +61,19 @@ class ActionTranslate():
                 suffixes = tranlate_args.file_suffix
                 new_file_mark = tranlate_args.new_file_mark
                 file_list = tranlate_args.file_list
+                output_dir = tranlate_args.output_dir
+                should_translate_file_name = tranlate_args.should_translate_file_name
         else:        
             #translate/中文/.md/cn/xxxx.md,xxxx2.md
-            [_, lang, suffixes, new_file_mark,file_list_str] = args.project_type.split("/")
+            [_, lang, suffixes, new_file_mark,file_list_str,output_dir,should_translate_file_name] = args.project_type.split("/")
             file_list = file_list_str.split(",")
         
-        print(f"lang:{lang}, suffixes:{suffixes}, new_file_mark:{new_file_mark} file list: {file_list}",flush=True)
+        logger.info(f"lang:{lang}, suffixes:{suffixes}, new_file_mark:{new_file_mark}  should_translate_file_name:{should_translate_file_name} file list: {file_list}",flush=True)
+        # human input confirm
+        input_confirm = input("Please confirm the above information is correct, input 'y' to continue, input 'n' to exit:")
+        if input_confirm != "y":
+            return True        
+
         def file_filter(file_path, suffixes):
             for suffix in suffixes:
                 if suffix.startswith("."):
@@ -83,6 +90,9 @@ class ActionTranslate():
                             ) 
         pp.run()                        
         for source in pp.sources:
+            if source.module_name not in file_list:
+                continue
+            logger.info(f"Translating {source.module_name}...")
             segments = split_code_into_segments(source_code=source.source_code)
             temp_result = []
             segment_count = 0
@@ -97,8 +107,22 @@ class ActionTranslate():
                 segment_count += 1
                 print(f"Translated {segment_count}({len(content)}) of {len(segments)} segments from {source.module_name}",flush=True)
             readme = TranslateReadme(filename=source.module_name,content="".join(temp_result))
-            filename, extension = os.path.splitext(readme.filename)                                                   
-            chinese_filename = f"{filename}-{new_file_mark}{extension}"
-            with open(chinese_filename, "w") as file:        
+            filename, extension = os.path.splitext(readme.filename) 
+            file_short_name,_ = os.path.splitext(os.path.basename(filename))
+            
+            if new_file_mark:
+                new_file_mark = f"-{new_file_mark}"
+            
+            if should_translate_file_name:
+                file_short_name = translate_readme.with_llm(self.llm).run(content=file_short_name, lang=lang,instruction=args.query)
+                file_short_name = file_short_name.replace(" ","_")
+                
+            if output_dir:
+                new_filename = os.path.join(output_dir,f"{file_short_name}{new_file_mark}{extension}")                                                  
+            else:
+                new_filename = f"{filename}{new_file_mark}{extension}"
+
+            logger.info(f"Writing to {new_filename}...")    
+            with open(new_filename, "w") as file:        
                 file.write(readme.content)
         return True   

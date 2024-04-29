@@ -1,0 +1,24 @@
+source_dir: /Users/allwefantasy/projects/auto-coder
+target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
+project_type: translate
+
+model: gpt3_5_chat
+
+skip_build_index: false
+execute: true
+
+query: |  
+   把项目中的markdown文档翻译成英文,
+   需要翻译的文件列表：
+  
+   1. /Users/allwefantasy/projects/auto-coder/docs/zh/021-AutoCoder初始化项目.md
+   
+   保存到 /Users/allwefantasy/projects/auto-coder/docs/en 目录下。
+
+   注意：
+   1. new_file_mark 设置为空字符串
+   2. 文件名也要翻译成英文
+
+
+
+   
