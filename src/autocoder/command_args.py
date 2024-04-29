@@ -143,6 +143,9 @@ def parse_args() -> AutoCoderArgs:
     doc_serve_parse.add_argument("--ssl_certfile", default="", help="")
     doc_serve_parse.add_argument("--response_role", default="assistant", help="")
 
+    init_parser = subparsers.add_parser("init", help=desc["init_desc"])
+    init_parser.add_argument("--dir", required=True, help=desc["init_dir"])
+
     args = parser.parse_args()
 
     return AutoCoderArgs(**vars(args)),args

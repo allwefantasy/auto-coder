@@ -21,6 +21,7 @@ from byzerllm.apps.command import get_latest_byzer_retrieval_lib
 from autocoder.command_args import parse_args
 from autocoder.rag.api_server import serve,ServerArgs
 from loguru import logger
+from autocoder.common.command_templates import init_command_template
 
 
 def main():
@@ -66,6 +67,17 @@ def main():
         from autocoder.utils.print_table import print_table
         tc = store.get_token_counter()
         print_table([tc])
+        return
+    
+    if raw_args.command == "init":
+        os.makedirs(os.path.join(args.dir, "actions"), exist_ok=True)
+        os.makedirs(os.path.join(args.dir, ".auto-coder"), exist_ok=True)
+
+        init_file_path = os.path.join(args.dir, "actions", "101_current_work.yml")
+        with open(init_file_path, "w") as f:
+            f.write(init_command_template())
+        
+        print(f"Successfully initialized auto-coder project in {args.dir}")
         return
 
     if args.model:
