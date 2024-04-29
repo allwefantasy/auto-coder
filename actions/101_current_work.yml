@@ -6,7 +6,7 @@ model: gpt3_5_chat
 index_model: haiku_chat
 emb_model: gpt_emb
 
-index_filter_level: 0
+index_filter_level: 1
 index_model_max_input_length: 30000
 # index_filter_workers: 2
 # enable_rag_context: true
@@ -19,7 +19,8 @@ auto_merge: true
 human_as_model: true
 
 query: |  
-   在 git_utils.py 中新增 init 函数，实现对指定目录进行 git init 初始化。   
+   对 ActionTranslate 目前支持根据后缀名进行过滤，并且实现翻译。
+
 
 
    

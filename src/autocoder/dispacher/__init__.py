@@ -1,7 +1,8 @@
 
 from autocoder.common import AutoCoderArgs
 from autocoder.dispacher.actions.copilot import ActionCopilot
-from autocoder.dispacher.actions.action import ActionTranslate, ActionTSProject, ActionPyScriptProject, ActionPyProject, ActionSuffixProject
+from autocoder.dispacher.actions.action import ActionTSProject, ActionPyScriptProject, ActionPyProject, ActionSuffixProject
+from autocoder.dispacher.actions.plugins.action_translate import ActionTranslate
 from typing import Optional
 import byzerllm
 import re

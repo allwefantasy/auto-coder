@@ -22,15 +22,17 @@ class Translates(pydantic.BaseModel):
 
 class TranslateArgs(pydantic.BaseModel):
     '''
-    示例：把项目中的markdown文档翻译成中文
+    示例：把项目中的markdown文档翻译成中文, 只翻译  test/abc.md 文件
     此时对应的字段值应该是
     target_lang=中文
     file_suffix=.md
     new_file_mark=cn
+    file_list=test/abc.md
     '''
     target_lang: str = pydantic.Field(..., description="The target language to translate to")
     file_suffix: str = pydantic.Field(..., description="to filter the file by suffix, e.g. py, ts, md, etc. if multiple, use comma to separate")    
     new_file_mark: str = pydantic.Field(..., description="according to the file suffix, the new file name should be like this: filename-new_file_mark.file_suffix")    
+    file_list: List[str] = pydantic.Field(..., description="the file list to translate provied")    
 
 class ExecuteStep(pydantic.BaseModel):
     code: str = pydantic.Field(..., description="The code line to execute, e.g. `print('hello world')` or `ls -l`, shell or python code.")
