@@ -5,9 +5,9 @@
     "md5": "3c479f948d8d8a7a030bd5887db72eec"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py": {
-    "symbols": "变量：lang_desc\n符号类型：字典\n变量：无\n函数：无\n类：无\n导入语句：无",
-    "last_modified": 1713516182.073393,
-    "md5": "f2a7314bba33416002286001d8415704"
+    "symbols": "函数: \n变量: lang_desc\n类:\n导入语句:",
+    "last_modified": 1714363370.6276205,
+    "md5": "2ee8ad73ab1c0ce99a68ee6d535340a5"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py": {
     "symbols": "变量：__version__",
