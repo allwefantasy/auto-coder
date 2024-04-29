@@ -77,8 +77,9 @@ def main():
         with open(init_file_path, "w") as f:
             f.write(init_command_template())
         
-        ## expand the args.source_dir to full path        
+        git_utils.init(os.path.abspath(args.source_dir))
         print(f'''Successfully initialized auto-coder project in {os.path.abspath(args.source_dir)}.''')
+        
         return
 
     if args.model:
