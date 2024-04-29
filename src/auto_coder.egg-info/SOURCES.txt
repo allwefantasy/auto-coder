@@ -21,6 +21,7 @@ src/autocoder/common/cleaner.py
 src/autocoder/common/code_auto_execute.py
 src/autocoder/common/code_auto_generate.py
 src/autocoder/common/code_auto_merge.py
+src/autocoder/common/command_templates.py
 src/autocoder/common/const.py
 src/autocoder/common/git_utils.py
 src/autocoder/common/image_to_page.py
@@ -50,6 +51,7 @@ src/autocoder/utils/print_table.py
 src/autocoder/utils/rest.py
 tests/test_code_auto_merge.py
 tests/test_image_to_page.py
+tests/test_init_command.py
 tests/test_llm_rerank.py
 tests/test_shell_client.py
 tests/test_simple_rag.py
