@@ -90,7 +90,7 @@ class ActionTranslate():
                             ) 
         pp.run()                        
         for source in pp.sources:
-            if source.module_name not in file_list:
+            if file_list and source.module_name not in file_list:
                 continue
             logger.info(f"Translating {source.module_name}...")
             segments = split_code_into_segments(source_code=source.source_code)
