@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.46
+Version: 0.1.47
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -23,7 +23,7 @@ Requires-Dist: paramiko
 Requires-Dist: einops
 Requires-Dist: tqdm
 Requires-Dist: loguru
-Requires-Dist: pyjava>=0.6.16
+Requires-Dist: pyjava>=0.6.17
 Requires-Dist: tiktoken
 Requires-Dist: transformers_stream_generator
 Requires-Dist: optimum
@@ -42,7 +42,7 @@ Requires-Dist: sqlmodel
 Requires-Dist: wudao
 Requires-Dist: SwissArmyTransformer
 Requires-Dist: jieba
-Requires-Dist: byzerllm>=0.1.76
+Requires-Dist: byzerllm>=0.1.77
 Requires-Dist: GitPython
 Requires-Dist: openai>=1.14.3
 Requires-Dist: anthropic

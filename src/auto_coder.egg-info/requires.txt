@@ -14,7 +14,7 @@ paramiko
 einops
 tqdm
 loguru
-pyjava>=0.6.16
+pyjava>=0.6.17
 tiktoken
 transformers_stream_generator
 optimum
@@ -33,7 +33,7 @@ sqlmodel
 wudao
 SwissArmyTransformer
 jieba
-byzerllm>=0.1.76
+byzerllm>=0.1.77
 GitPython
 openai>=1.14.3
 anthropic
