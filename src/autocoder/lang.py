@@ -45,7 +45,9 @@ lang_desc = {
         "index_model_max_length":"The maximum length of the generated code by the index model. Default is 0, which means using the value of model_max_length",
         "index_model_max_input_length":"The maximum length of the input to the index model. Default is 0, which means using the value of model_max_input_length",
         "index_model_anti_quota_limit":"Time to wait in seconds after each API request for the index model. Default is 0, which means using the value of anti_quota_limit",
-        "doc_build_parse_required_exts":"The required file extensions for doc build. Default is empty string"
+        "doc_build_parse_required_exts":"The required file extensions for doc build. Default is empty string",
+        "init_desc": "Initialize a new auto-coder project directory",
+        "init_dir": "The directory to initialize the auto-coder project in"
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -93,6 +95,8 @@ lang_desc = {
         "index_model_max_length":"索引模型生成代码的最大长度。默认为0,表示使用model_max_length的值",
         "index_model_max_input_length":"索引模型的最大输入长度。默认为0,表示使用model_max_input_length的值",
         "index_model_anti_quota_limit":"每次索引模型API请求后等待的秒数。默认为0,表示使用anti_quota_limit的值",
-        "doc_build_parse_required_exts":"doc构建所需的文件扩展名。默认为空字符串"
+        "doc_build_parse_required_exts":"doc构建所需的文件扩展名。默认为空字符串",
+        "init_desc": "初始化一个新的auto-coder项目目录",
+        "init_dir": "初始化auto-coder项目的目录"
     }
 }
