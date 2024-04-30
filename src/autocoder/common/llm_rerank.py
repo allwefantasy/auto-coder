@@ -1,7 +1,7 @@
 import byzerllm
 from typing import Union,List
-from llama_index.core.schema import QueryBundle,NodeWithScore
 from loguru import logger
+from llama_index.core.schema import QueryBundle,NodeWithScore
 
 class LLMRerank():
     def __init__(self,llm:byzerllm.ByzerLLM):
