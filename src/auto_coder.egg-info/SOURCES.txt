@@ -35,6 +35,8 @@ src/autocoder/dispacher/__init__.py
 src/autocoder/dispacher/actions/__init__.py
 src/autocoder/dispacher/actions/action.py
 src/autocoder/dispacher/actions/copilot.py
+src/autocoder/dispacher/actions/plugins/__init__.py
+src/autocoder/dispacher/actions/plugins/action_translate.py
 src/autocoder/index/__init__.py
 src/autocoder/index/for_command.py
 src/autocoder/index/index.py
