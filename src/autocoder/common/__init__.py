@@ -221,8 +221,8 @@ class AutoCoderArgs(pydantic.BaseModel):
     command: Optional[str] = None
     doc_command: Optional[str] = None
     required_exts: Optional[str] = None
-    collection: Optional[str] = "default"  
-    collections: Optional[str] = "default" 
+    collection: Optional[str] = None  
+    collections: Optional[str] = None
     description: Optional[str] = ""
 
     class Config:
