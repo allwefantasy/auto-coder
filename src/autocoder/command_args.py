@@ -106,6 +106,8 @@ def parse_args() -> AutoCoderArgs:
     doc_build_parse.add_argument("--file",default="", help=desc["file"])
     doc_build_parse.add_argument("--ray_address", default="auto", help=desc["ray_address"])
     doc_build_parse.add_argument("--required_exts", default="", help=desc["doc_build_parse_required_exts"])
+    doc_build_parse.add_argument("--collection", default="default", help="Collection name for indexing")
+    doc_build_parse.add_argument("--description", default="", help="Description of the indexed content")
 
     doc_query_parse = doc_subparsers.add_parser("query",help="")
     doc_query_parse.add_argument("--query", default="", help="")
@@ -115,6 +117,8 @@ def parse_args() -> AutoCoderArgs:
     doc_query_parse.add_argument("--file",default="", help=desc["file"])
     doc_query_parse.add_argument("--ray_address", default="auto", help=desc["ray_address"])
     doc_query_parse.add_argument("--execute", action='store_true', help=desc["execute"])
+    doc_query_parse.add_argument("--collections", default="default", help="Comma-separated list of collections to search")
+    doc_query_parse.add_argument("--description", default="", help="Description to route the query")
 
     doc_chat_parse = doc_subparsers.add_parser("chat", help="")
     doc_chat_parse.add_argument("--file", default="", help=desc["file"])
@@ -122,6 +126,8 @@ def parse_args() -> AutoCoderArgs:
     doc_chat_parse.add_argument("--emb_model", default="", help=desc["emb_model"]) 
     doc_chat_parse.add_argument("--ray_address", default="auto", help=desc["ray_address"])
     doc_chat_parse.add_argument("--source_dir", default=".", help="")
+    doc_chat_parse.add_argument("--collections", default="default", help="Comma-separated list of collections to search")
+    doc_chat_parse.add_argument("--description", default="", help="Description to route the query")
 
     doc_serve_parse = doc_subparsers.add_parser("serve", help="")
     doc_serve_parse.add_argument("--file", default="", help=desc["file"])
