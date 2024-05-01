@@ -145,6 +145,7 @@ def parse_args() -> AutoCoderArgs:
     doc_serve_parse.add_argument("--ssl_keyfile", default="", help="")
     doc_serve_parse.add_argument("--ssl_certfile", default="", help="")
     doc_serve_parse.add_argument("--response_role", default="assistant", help="")
+    doc_serve_parse.add_argument("--collections", default="default", help="Collection name for indexing")
 
     init_parser = subparsers.add_parser("init", help=desc["init_desc"])
     init_parser.add_argument("--source_dir", required=True, help=desc["init_dir"])

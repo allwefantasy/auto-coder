@@ -15,7 +15,7 @@ from llama_index.core.retrievers import AutoMergingRetriever
 from llama_index.core.query_engine import RetrieverQueryEngine,RouterQueryEngine
 from llama_index.core.tools import QueryEngineTool
 from llama_index.core.selectors import (
-   PydanticMultiSelector,   
+   LLMSingleSelector,   
 )
 
 import byzerllm
@@ -115,8 +115,11 @@ class SimpleRAG:
            tools.append(tool)
 
        query_engine = RouterQueryEngine(
-                       selector=PydanticMultiSelector.from_defaults(),
+                       selector=LLMSingleSelector.from_defaults(service_context=self.service_context),
                        query_engine_tools=tools,
+                       llm=self.service_context.llm,
+                       service_context=self.service_context,
+                       verbose=True
                    )    
        return query_engine
        
@@ -125,8 +128,9 @@ class SimpleRAG:
         indices = self._get_indices()
         retrievers = []
 
-        for (collection,index) in indices:
-            retriever = AutoMergingRetriever(index.as_retriever(),storage_context=self.storage_context_dict[collection.name])
+        for (collection_item,index) in indices:
+            retriever = AutoMergingRetriever(index.as_retriever(),
+                                             storage_context=self.storage_context_dict[collection_item.name])
             retrievers.append(retriever) 
 
         return retrievers                  
@@ -168,27 +172,35 @@ class SimpleRAG:
         return result    
    
    def stream_chat_oai(self,conversations, model:Optional[str]=None, role_mapping=None,llm_config:Dict[str,Any]={}):        
-       chat_engine = self._get_query_engine().as_chat_engine(
-           chat_mode="condense_plus_context",                       
-           verbose=False,
-       )
-       history = []
-       for conv in conversations[:-1]:
-           if conv["role"] == "user":
-               role = MessageRole.USER
-           elif conv["role"] == "assistant":
-               role = MessageRole.ASSISTANT    
-           else:
-               role = MessageRole.SYSTEM
-           history.append(ChatMessage(role=role,content=conv["content"]))
-       return chat_engine.stream_chat(conversations[-1]["content"],chat_history=history).response_gen,[]
+        if len(self.collections) != 1:
+            raise ValueError("When chat mode, only one collection can be set")
+        
+        index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context_dict[self.collections[0]].vector_store,
+                                               service_context=self.service_context)
+        chat_engine = index.as_chat_engine(
+            chat_mode="condense_plus_context",                       
+            verbose=False,
+        )
+        history = []
+        for conv in conversations[:-1]:
+            if conv["role"] == "user":
+                role = MessageRole.USER
+            elif conv["role"] == "assistant":
+                role = MessageRole.ASSISTANT    
+            else:
+                role = MessageRole.SYSTEM
+            history.append(ChatMessage(role=role,content=conv["content"]))
+        return chat_engine.stream_chat(conversations[-1]["content"],chat_history=history).response_gen,[]
        
 
    def stream_chat_repl(self,query:str):
+       if len(self.collections) != 1:
+           raise ValueError("When chat mode, only one collection can be set")
        from llama_index.core.memory import ChatMemoryBuffer
-
        memory = ChatMemoryBuffer.from_defaults(token_limit=8092)
-       chat_engine = self._get_query_engine().as_chat_engine(
+       index = VectorStoreIndex.from_vector_store(vector_store = self.storage_context_dict[self.collections[0]].vector_store,
+                                               service_context=self.service_context)
+       chat_engine = index.as_chat_engine(
            chat_mode="condense_plus_context",
            memory=memory,            
            verbose=False,
