@@ -44,13 +44,14 @@ def file_metadata_func(
    }
 
 
-
 class SimpleRAG:
-   def __init__(self,llm:byzerllm.ByzerLLM,args:AutoCoderArgs) -> None:
+   def __init__(self,llm:byzerllm.ByzerLLM,args:AutoCoderArgs,path:str) -> None:
        self.llm = llm
        self.args = args
        self.retrieval = byzerllm.ByzerRetrieval()
-       self.retrieval.launch_gateway()               
+       self.retrieval.launch_gateway() 
+
+       self.path = path              
        
        self.collections = self.args.collection or self.args.collections
        self.collections = self.collections.split(",") if self.collections else []        
