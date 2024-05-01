@@ -93,7 +93,8 @@ class ActionTranslate():
             if file_list and source.module_name not in file_list:
                 continue
             logger.info(f"Translating {source.module_name}...")
-            segments = split_code_into_segments(source_code=source.source_code)
+            max_tokens = self.args.model_max_length or 2000
+            segments = split_code_into_segments(source_code=source.source_code,max_tokens=max_tokens)
             temp_result = []
             segment_count = 0
             for segment in segments:                    
