@@ -45,6 +45,7 @@ src/autocoder/rag/__init__.py
 src/autocoder/rag/api_server.py
 src/autocoder/rag/llm_wrapper.py
 src/autocoder/rag/simple_rag.py
+src/autocoder/rag/types.py
 src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py
 src/autocoder/utils/__init__.py

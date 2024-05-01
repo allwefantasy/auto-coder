@@ -13,7 +13,7 @@ Requires-Dist: accelerate
 Requires-Dist: bitsandbytes==0.39.0
 Requires-Dist: transformers>=4.35.0
 Requires-Dist: torch==2.1.2
-Requires-Dist: ray[default]==2.9.1
+Requires-Dist: ray[default]>=2.9.1
 Requires-Dist: sentencepiece
 Requires-Dist: pyarrow==12.0.1
 Requires-Dist: sentence-transformers
