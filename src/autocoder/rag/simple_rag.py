@@ -53,7 +53,11 @@ class SimpleRAG:
 
        self.path = path              
        
-       self.collections = self.args.collection or self.args.collections
+
+       self.collections = self.args.collection
+       if self.args.collections:
+           self.collections = self.args.collections
+
        self.collections = self.collections.split(",") if self.collections else []        
 
        if not self.llm.default_emb_model_name:
@@ -119,12 +123,14 @@ class SimpleRAG:
        
 
    def _get_retriever(self):
-       indices = self._get_indices()
-       retrievers = [
-           AutoMergingRetriever(index.as_retriever(),storage_context=storage_context)
-           for index,storage_context in zip(indices,self.storage_context_list)
-       ]
-       return retrievers                
+        indices = self._get_indices()
+        retrievers = []
+
+        for (collection,index) in indices:
+            retriever = AutoMergingRetriever(index.as_retriever(),storage_context=self.storage_context_dict[collection.name])
+            retrievers.append(retriever) 
+
+        return retrievers                  
                
 
    def stream_search(self,query:str):     
@@ -262,11 +268,11 @@ class SimpleRAG:
             )
             
             leaf_nodes = get_leaf_nodes(nodes)     
-            self.storage_context_list[self.collections.index(collection)].docstore.add_documents(nodes)  
+            self.storage_context_dict[collection].docstore.add_documents(nodes)  
 
             _ = VectorStoreIndex(nodes=leaf_nodes,
                                 store_nodes_override=True,
-                                storage_context=self.storage_context_list[self.collections.index(collection)], 
+                                storage_context=self.storage_context_dict[collection], 
                                 service_context=self.service_context) 
 
             retrieval_client.commit_doc()
