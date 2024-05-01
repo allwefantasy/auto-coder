@@ -41,6 +41,7 @@ query: |
    
    simple_rag.py 可以将 self.storage_context 改成 self.storage_contexts 为一个map对象，key为collection，value为storage_context对象。
    
+   
 
 
 

@@ -50,9 +50,9 @@ class AutoCoderArgs(BaseModel):
     command: Optional[str] = None
     doc_command: Optional[str] = None
     required_exts: Optional[str] = None
-    collection: Optional[str] = "default"  # 新增 collection 字段，默认为 "default"
-    collections: Optional[str] = "default"  # 新增 collections 字段，默认为 "default"
-    description: Optional[str] = ""  # 新增 description 字段，默认为空字符串
+    collection: Optional[str] = "default"  
+    collections: Optional[str] = "default" 
+    description: Optional[str] = ""
 
 class SearchSourceCode(BaseModel):
     doc_path: str
