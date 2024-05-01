@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple
 from autocoder.common import SourceCode,AutoCoderArgs
 from autocoder.common.llm_rerank import LLMRerank
 import fsspec
@@ -84,8 +84,8 @@ class SimpleRAG:
            storage_context = self.storage_context_dict[collection]
            index = VectorStoreIndex.from_vector_store(vector_store = storage_context.vector_store,
                                                service_context=self.service_context)
-           collection = self.collection_manager.get_collection(collection)       
-           indices.append((collection,index))
+           collection_item = self.collection_manager.get_collection(collection)       
+           indices.append((collection_item,index))
            
        return indices    
 
@@ -94,8 +94,8 @@ class SimpleRAG:
        indices = self._get_indices()
        retrievers = []
        
-       for (collection,index) in indices:
-           retriever = AutoMergingRetriever(index.as_retriever(),storage_context=self.storage_context_dict[collection.name])
+       for (collection_item,index) in indices:
+           retriever = AutoMergingRetriever(index.as_retriever(),storage_context=self.storage_context_dict[collection_item.name])
            retrievers.append(retriever)       
        
        query_engines = [
@@ -107,11 +107,10 @@ class SimpleRAG:
            return query_engines[0]
        
        tools = []
-       for (collection,index),query_engine in zip(indices,query_engines):
-           item = self.collection_manager.get_collection(collection)
+       for (collection_item,index),query_engine in zip(indices,query_engines):           
            tool = QueryEngineTool.from_defaults(
                    query_engine=query_engine,
-                   description=item.description,
+                   description=collection_item.description,
                )
            tools.append(tool)
 
@@ -229,6 +228,19 @@ class SimpleRAG:
             raise ValueError("When build, only one collection should be set")
             
         collection = self.collections[0]
+
+        collection_exists = self.collection_manager.check_collection_exists(collection)
+        if not collection_exists:
+            logger.warning(f"Collection {collection} not found, creating it automatically")
+            if not self.args.description:
+                logger.error("Please provide a description for the collection")
+                return
+            item = CollectionItem(
+                name=collection,
+                description=self.args.description or ""
+            )
+            self.collection_manager.add_collection(item)
+
         retrieval_client = self.simple_retrieval_dict[collection]
         # retrieval_client.delete_from_doc_collection(collection)
         # retrieval_client.delete_from_chunk_collection(collection)
@@ -279,9 +291,4 @@ class SimpleRAG:
             retrieval_client.commit_chunk() 
         else:
             logger.info("There is no new doc to build")   
-
-        item = CollectionItem(
-            name=collection,
-            description=self.args.description or ""
-        )
-        self.collection_manager.add_collection(item)
+                
