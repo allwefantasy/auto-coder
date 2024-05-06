@@ -33,6 +33,28 @@ byzerllm deploy --pretrained_model_type custom/auto \
 定义规则如下：
 
 1. 如果是SaaS模型，这个参数是 `saas/xxxxx`。 如果你的 SaaS 模型（或者公司已经通过别的工具部署的模型），并且兼容 openai 协议，那么你可以使用 `saas/openai`，否则其他的就要根据官方文档的罗列来写。 参考这里： https://github.com/allwefantasy/byzer-llm?tab=readme-ov-file#SaaS-Models
+
+    下面是一个兼容 openai 协议的例子,比如 moonshot 的模型：
+
+    ```bash
+    byzerllm deploy --pretrained_model_type saas/official_openai \
+    --cpus_per_worker 0.001 \
+    --gpus_per_worker 0 \
+    --num_workers 2 \
+    --infer_params saas.api_key=${MODEL_KIMI_TOKEN} saas.base_url="https://api.moonshot.cn/v1" saas.model=moonshot-v1-32k \
+    --model kimi_chat
+    ```
+
+    还有比如如果你使用 ollama 部署的模型，就可以这样部署：
+
+    ```bash
+    byzerllm deploy  --pretrained_model_type saas/openai \
+    --cpus_per_worker 0.01 \
+    --gpus_per_worker 0 \
+    --num_workers 2 \
+    --infer_params saas.api_key=token saas.model=llama3:70b-instruct-q4_0  saas.base_url="http://192.168.3.106:11434/v1/" \
+    --model ollama_llama3_chat
+    ```
  
 2. 如果是私有模型，这个参数是是由 `--infer_backend` 参数来决定的。 如果你的模型可以使用 vllm/llama_cpp 部署，那么 `--pretrained_model_type` 是一个固定值 `custom/auto`。 如果你是用 transformers 部署，那么这个参数是 transformers 的模型名称, 具体名称目前也可以参考 https://github.com/allwefantasy/byzer-llm。 通常只有多模态，向量模型才需要使用 transformers 部署，我们大部分都有例子，如果没有的，那么也可以设置为 custom/auto 进行尝试。
 
