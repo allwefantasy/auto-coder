@@ -31,7 +31,7 @@ byzerllm deploy --pretrained_model_type custom/auto \
 ## 0. `--model`
 
 给当前部署的实例起一个名字，这个名字是唯一的，用于区分不同的模型。你可以理解为模型是一个模板，启动后的一个模型就是一个实例。
-比如同样一个 SaaS模型，我可以启动多个实例。
+比如同样一个 SaaS模型，我可以启动多个实例。每个实例里可以包含多个worker实例。
 
 ## 1. `--pretrained_model_type`
 
