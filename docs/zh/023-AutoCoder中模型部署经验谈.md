@@ -139,14 +139,14 @@ file                : None
 ```
 解释下上面的输出：
 
-1. total_workers: 模型gpt3_5_chat的实际部署实例数量
-2. busy_workers: 正在忙碌的部署实例数量
-3. idle_workers: 当前空闲的部署实例数量
+1. total_workers: 模型gpt3_5_chat的实际部署的worker实例数量
+2. busy_workers: 正在忙碌的worker实例数量
+3. idle_workers: 当前空闲的worker实例数量
 4. load_balance_strategy: 目前实例之间的负载均衡策略
-5. total_requests: 每个部署实例的累计的请求数量
-6. worker_max_concurrency: 每个部署实例的最大并发数
-7. state: 每个部署实例当前空闲的并发数（正在运行的并发=worker_max_concurrency-当前state的值）
-8. workers_last_work_time: 每个部署实例最后一次被调用的截止到现在的时间
+5. total_requests: 每个worker实例的累计的请求数量
+6. worker_max_concurrency: 每个worker实例的最大并发数
+7. state: 每个worker实例当前空闲的并发数（正在运行的并发=worker_max_concurrency-当前state的值）
+8. workers_last_work_time: 每个worker实例最后一次被调用的截止到现在的时间
 
 
 ## 6. `--cpus_per_worker`
