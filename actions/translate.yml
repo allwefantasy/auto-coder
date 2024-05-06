@@ -11,7 +11,7 @@ query: |
    把项目中的markdown文档翻译成英文,
    需要翻译的文件列表：
   
-   1. /Users/allwefantasy/projects/auto-coder/docs/zh/022-AutoCoder多知识库支持.md
+   1. /Users/allwefantasy/projects/auto-coder/docs/zh/023-AutoCoder中模型部署经验谈.md
    
    保存到 /Users/allwefantasy/projects/auto-coder/docs/en 目录下。
 
