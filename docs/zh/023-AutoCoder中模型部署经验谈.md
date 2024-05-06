@@ -28,6 +28,11 @@ byzerllm deploy --pretrained_model_type custom/auto \
 
 现在我们来仔细看看上面的参数。
 
+## 0. `--model`
+
+给当前部署的实例起一个名字，这个名字是唯一的，用于区分不同的模型。你可以理解为模型是一个模板，启动后的一个模型就是一个实例。
+比如同样一个 SaaS模型，我可以启动多个实例。
+
 ## 1. `--pretrained_model_type`
 
 定义规则如下：
@@ -86,7 +91,63 @@ llama_cpp 常见参数：
 
 ## 5. `--num_workers`
 
-`--num_workers` 是指定部署实例的数量。 以backend  vllm 为例，默认一个worker就是一个vllm实例，支持并发推理，所以通常是1。 如果是SaaS模型，则一个 worker 只支持一个并发，你可以根据你的需求设置合理数目的 worker 数量。
+`--num_workers` 是指定部署实例的数量。 以backend  vllm 为例，默认一个worker就是一个vllm实例，支持并发推理，所以通常可以设置为1。 如果是SaaS模型，则一个 worker 只支持一个并发，你可以根据你的需求设置合理数目的 worker 数量。
+
+byzerllm 默认使用 LRU 策略来进行worker请求的分配。
+
+你可以通过 `byzerllm stat` 来查看当前部署的模型的状态。
+
+比如：
+
+```bash
+byzerllm stat --model gpt3_5_chat
+```
+
+输出：
+```
+Command Line Arguments:
+--------------------------------------------------
+command             : stat
+ray_address         : auto
+model               : gpt3_5_chat
+file                : None
+--------------------------------------------------
+2024-05-06 14:48:17,206	INFO worker.py:1564 -- Connecting to existing Ray cluster at address: 127.0.0.1:6379...
+2024-05-06 14:48:17,222	INFO worker.py:1740 -- Connected to Ray cluster. View the dashboard at 127.0.0.1:8265
+{
+    "total_workers": 3,
+    "busy_workers": 0,
+    "idle_workers": 3,
+    "load_balance_strategy": "lru",
+    "total_requests": [
+        33,
+        33,
+        32
+    ],
+    "state": [
+        1,
+        1,
+        1
+    ],
+    "worker_max_concurrency": 1,
+    "workers_last_work_time": [
+        "631.7133535240428s",
+        "631.7022202090011s",
+        "637.2349605050404s"
+    ]
+}
+```
+解释下上面的输出：
+
+1. total_workers: 模型gpt3_5_chat的实际部署实例数量
+2. busy_workers: 正在忙碌的部署实例数量
+3. idle_workers: 当前空闲的部署实例数量
+4. load_balance_strategy: 目前实例之间的负载均衡策略
+5. total_requests: 每个部署实例的累计的请求数量
+6. worker_max_concurrency: 每个部署实例的最大并发数
+7. state: 每个部署实例当前空闲的并发数（正在运行的并发=worker_max_concurrency-当前state的值）
+8. workers_last_work_time: 每个部署实例最后一次被调用的截止到现在的时间
+
 
 ## 6. `--cpus_per_worker`
 
