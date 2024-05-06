@@ -32,9 +32,9 @@ byzerllm deploy --pretrained_model_type custom/auto \
 
 定义规则如下：
 
-1. 如果是SaaS模型，这个参数是 `saas/xxxxx`。 如果你的 SaaS 模型（或者公司已经通过别的工具部署的模型），如果兼容 openai 协议，那么你可以使用 `saas/openai`，否则其他的就要根据官方文档的罗列来写。 参考这里： https://github.com/allwefantasy/byzer-llm?tab=readme-ov-file#SaaS-Models
+1. 如果是SaaS模型，这个参数是 `saas/xxxxx`。 如果你的 SaaS 模型（或者公司已经通过别的工具部署的模型），并且兼容 openai 协议，那么你可以使用 `saas/openai`，否则其他的就要根据官方文档的罗列来写。 参考这里： https://github.com/allwefantasy/byzer-llm?tab=readme-ov-file#SaaS-Models
  
-2. 如果是私有模型，这个参数是是由 `--infer_backend` 参数来决定的。 如果你的模型可以使用 vllm/llama_cpp 部署，那么 `--pretrained_model_type` 是一个固定值 `custom/auto`。 如果你是用 transformers 部署，那么这个参数是 transformers 的模型名称, 具体名称目前也可以参考 https://github.com/allwefantasy/byzer-llm。 通常只有多模态，向量模型才需要使用 transformers 部署。
+2. 如果是私有模型，这个参数是是由 `--infer_backend` 参数来决定的。 如果你的模型可以使用 vllm/llama_cpp 部署，那么 `--pretrained_model_type` 是一个固定值 `custom/auto`。 如果你是用 transformers 部署，那么这个参数是 transformers 的模型名称, 具体名称目前也可以参考 https://github.com/allwefantasy/byzer-llm。 通常只有多模态，向量模型才需要使用 transformers 部署，我们大部分都有例子，如果没有的，那么也可以设置为 custom/auto 进行尝试。
 
 
 ## 2. `--infer_backend`
@@ -43,7 +43,7 @@ byzerllm deploy --pretrained_model_type custom/auto \
 
 ## 3. `--infer_params`
 
-对于 SaaS 模型，所有的参数都以 `saas.` 开头，基本兼容 OpenAI 参数。 例如 `saas.api_key`, `saas.model`,``saas.base_url` 等等。
+对于 SaaS 模型，所有的参数都以 `saas.` 开头，基本兼容 OpenAI 参数。 例如 `saas.api_key`, `saas.model`,`saas.base_url` 等等。
 对于所有私有模型，如果使用 vllm 部署，则都以 `backend.` 开头。 具体的参数则需要参考 vllm 的文档。 对于llama_cpp 部署，则直接配置 llama_cpp相关的参数即可，具体的参数则需要参考 llama_cpp 的文档。
 
 vllm 常见参数：
