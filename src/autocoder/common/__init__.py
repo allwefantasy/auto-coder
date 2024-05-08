@@ -201,6 +201,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     index_model_anti_quota_limit:Optional[int] = 0
     index_filter_level: Optional[int] = 0
     index_filter_workers: Optional[int] = 1
+    index_build_workers: Optional[int] = 1
     file: Optional[str] = ""
     ray_address: Optional[str] = ""
     anti_quota_limit: Optional[int] = 1

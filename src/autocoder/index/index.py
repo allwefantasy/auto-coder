@@ -133,7 +133,50 @@ class IndexManager:
                current_length = len(line) + 1
        if current_chunk:
            chunks.append("\n".join(current_chunk))
-       return chunks    
+       return chunks 
+
+   def build_index_for_single_source(self, source: SourceCode):
+       file_path = source.module_name
+       if not os.path.exists(file_path):
+           return None
+
+       ext = os.path.splitext(file_path)[1].lower()  
+       if ext in [".md",".html",".txt",".doc",".pdf"]:
+           return None
+
+       if source.source_code.strip() == "":
+           return None
+       
+       md5 = hashlib.md5(source.source_code.encode('utf-8')).hexdigest()       
+
+       try:               
+           start_time = time.monotonic()
+           source_code = source.source_code
+           if len(source.source_code) > self.max_input_length:
+               logger.warning(f"Warning: The length of source code is too long ({len(source.source_code)}) > model_max_input_length({self.max_input_length}), splitting into chunks...")
+               chunks = self.split_text_into_chunks(source_code,self.max_input_length-1000)
+               symbols = []
+               for chunk in chunks:
+                   chunk_symbols = self.get_all_file_symbols(source.module_name, chunk)
+                   time.sleep(self.anti_quota_limit)
+                   symbols.append(chunk_symbols)
+               symbols = "\n".join(symbols)
+           else:
+               symbols = self.get_all_file_symbols(source.module_name, source_code)
+               time.sleep(self.anti_quota_limit)
+           
+           logger.info(f"Parse and update index for {file_path} md5: {md5} took {time.monotonic() - start_time:.2f}s") 
+           
+       except Exception as e:
+           logger.warning(f"Error: {e}")
+           return None
+
+       return {
+           "module_name": source.module_name,
+           "symbols": symbols,
+           "last_modified": os.path.getmtime(file_path),
+           "md5": md5
+       }
 
    def build_index(self):
        if os.path.exists(self.index_file):
@@ -144,57 +187,21 @@ class IndexManager:
 
        updated_sources = []
 
-       for source in self.sources:
-           file_path = source.module_name  
-
-           if not os.path.exists(file_path):
-               continue
-
-           ext = os.path.splitext(file_path)[1].lower()  
-           if ext in [".md",".html",".txt",".doc",".pdf"]:
-               continue
-
-           md5 = hashlib.md5(source.source_code.encode('utf-8')).hexdigest()           
-           if source.source_code.strip() == "":
-               continue
-
-           if source.module_name in index_data and index_data[source.module_name]["md5"] == md5:
-               continue
-           
-           try:               
-               start_time = time.monotonic()
-               source_code = source.source_code
-               if len(source.source_code) > self.max_input_length:
-                   logger.warning(f"Warning: The length of source code is too long ({len(source.source_code)}) > model_max_input_length({self.max_input_length}), splitting into chunks...")
-                   chunks = self.split_text_into_chunks(source_code,self.max_input_length-1000)
-                   symbols = []
-                   for chunk in chunks:
-                       chunk_symbols = self.get_all_file_symbols(source.module_name, chunk)
-                       time.sleep(self.anti_quota_limit)
-                       symbols.append(chunk_symbols)
-                   symbols = "\n".join(symbols)
-               else:
-                   symbols = self.get_all_file_symbols(source.module_name, source_code)
-                   time.sleep(self.anti_quota_limit)
-                
-               logger.info(f"Parse and update index for {file_path} md5: {md5} took {time.monotonic() - start_time:.2f}s") 
-               
-           except Exception as e:
-               logger.warning(f"Error: {e}")
-               continue
-
-           index_data[source.module_name] = {
-               "symbols": symbols,
-               "last_modified": os.path.getmtime(file_path),
-               "md5": md5
-           }
-           updated_sources.append(source)
+       with ThreadPoolExecutor(max_workers=self.args.index_build_workers) as executor:
+           futures = [executor.submit(self.build_index_for_single_source, source) for source in self.sources]           
+           for future in as_completed(futures):
+               result = future.result()
+               if result is not None:
+                   module_name = result["module_name"]
+                   if module_name not in index_data or index_data[module_name]["md5"] != result["md5"]:
+                       index_data[module_name] = result
+                       updated_sources.append(module_name)
 
        if updated_sources:
            with open(self.index_file, "w") as file:
                json.dump(index_data, file, ensure_ascii=False, indent=2)
 
-       return index_data
+       return index_data      
 
    def read_index(self) -> List[IndexItem]:
        if not os.path.exists(self.index_file):

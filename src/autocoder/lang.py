@@ -47,7 +47,8 @@ lang_desc = {
         "index_model_anti_quota_limit":"Time to wait in seconds after each API request for the index model. Default is 0, which means using the value of anti_quota_limit",
         "doc_build_parse_required_exts":"The required file extensions for doc build. Default is empty string",
         "init_desc": "Initialize a new auto-coder project directory",
-        "init_dir": "The directory to initialize the auto-coder project in"
+        "init_dir": "The directory to initialize the auto-coder project in",
+        "index_build_workers": "Number of workers to use for building index",
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -97,6 +98,7 @@ lang_desc = {
         "index_model_anti_quota_limit":"每次索引模型API请求后等待的秒数。默认为0,表示使用anti_quota_limit的值",
         "doc_build_parse_required_exts":"doc构建所需的文件扩展名。默认为空字符串",
         "init_desc": "初始化一个新的auto-coder项目目录",
-        "init_dir": "初始化auto-coder项目的目录"
+        "init_dir": "初始化auto-coder项目的目录",
+        "index_build_workers": "用于构建索引的工作线程数",
     }
 }
