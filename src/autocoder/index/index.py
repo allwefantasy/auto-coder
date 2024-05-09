@@ -1,7 +1,7 @@
 import os
 import json
 import time
-from typing import List
+from typing import List,Dict,Any
 from datetime import datetime
 from autocoder.common import SourceCode, AutoCoderArgs
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -135,7 +135,7 @@ class IndexManager:
            chunks.append("\n".join(current_chunk))
        return chunks 
 
-   def build_index_for_single_source(self, source: SourceCode):
+   def build_index_for_single_source(self,source: SourceCode):
        file_path = source.module_name
        if not os.path.exists(file_path):
            return None
@@ -188,15 +188,28 @@ class IndexManager:
        updated_sources = []
 
        with ThreadPoolExecutor(max_workers=self.args.index_build_workers) as executor:
-           futures = [executor.submit(self.build_index_for_single_source, source) for source in self.sources]           
+                        
+           wait_to_build_files = []
+           for source in self.sources:
+               md5 = hashlib.md5(source.source_code.encode('utf-8')).hexdigest() 
+               if source.module_name not in index_data or index_data[source.module_name]["md5"] != md5:
+                   wait_to_build_files.append(source)
+
+           counter = 0 
+           num_files = len(wait_to_build_files) 
+           total_files = len(self.sources)
+           logger.info(f"Total Files: {total_files}, Need to Build Index: {num_files}")       
+
+           futures = [executor.submit(self.build_index_for_single_source, source) for source in wait_to_build_files]           
            for future in as_completed(futures):
                result = future.result()
-               if result is not None:
+               if result is not None:  
+                   counter += 1
+                   logger.info(f"Building Index:{counter}/{num_files}...")                 
                    module_name = result["module_name"]
-                   if module_name not in index_data or index_data[module_name]["md5"] != result["md5"]:
-                       index_data[module_name] = result
-                       updated_sources.append(module_name)
-
+                   index_data[module_name] = result
+                   updated_sources.append(module_name)
+                       
        if updated_sources:
            with open(self.index_file, "w") as file:
                json.dump(index_data, file, ensure_ascii=False, indent=2)
