@@ -1,6 +1,6 @@
 # 024-AutoCoder Parallel Index Building and Querying
 > Version Requirement:
-> - auto-coder >= 0.1.51
+> - auto-coder >= 0.1.52
 ## Which models are suitable for index building and querying?
 Both deepseek and haiku are cost-effective models that can be used for index building.
 For index querying, gpt-3.5-turbo can be used as it is fast and effective, making it suitable for index querying.
