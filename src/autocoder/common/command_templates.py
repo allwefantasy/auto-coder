@@ -22,6 +22,7 @@ def init_command_template():
     ## 启用索引构建，可以帮助您通过查询找到相关文件
     skip_build_index: false
     ## The model to build index for the project (Optional)
+    ## 用于为项目构建索引的模型（可选）
     index_model: haiku_chat
 
     ## the filter level to find the related files
@@ -37,9 +38,40 @@ def init_command_template():
     index_filter_level: 0
     index_model_max_input_length: 30000
 
+    ## The number of workers to filter the files
+    ## 过滤文件的线程数量
+    ## If you have a large project, you can increase this number
+    ## 如果您有一个大项目，可以增加这个数字
+    ## Make sure you you have the proper workers when you use `byzerllm` to deploy model.
+    ## 当您使用 `byzerllm` 部署模型时，请确保你也配置了合适的 num_workers 参数。
+    index_filter_workers: 1
+    
+    ## The number of workers to build the index
+    ## 构建索引的线程数量
+    ## If you have a large project, you can increase this number
+    ## 如果您有一个大项目，可以增加这个数字
+    ## Make sure you you have the proper workers when you use `byzerllm` to deploy model.
+    ## 当您使用 `byzerllm` 部署模型时，请确保你也配置了合适的 num_workers 参数。
+    index_build_workers: 1    
+
     ## enable RAG context
     ## 启用RAG上下文
-    # enable_rag_context: true
+    enable_rag_context: false
+    ## or you can give a query directly and enable the RAG at the same time
+    ## 或者您可以直接给出一个查询，并同时启用RAG
+    # enable_rag_context_query: YOUR QUERY TO GET SOME CONTEXT BY RAG
+
+    ## enable Search Engine
+    ## 启用搜索引擎
+    ## google/bing
+    # search_engine: bing
+    ## Get the search engine token in the environment variable
+    ## 在环境变量中获取搜索引擎令牌
+    ## Ask for Bing Search API Token. You can visit https://www.microsoft.com/en-us/bing/apis/bing-web-search-api to get the token.
+    ## 申请 Bing 搜索API Token。你可以访问 https://www.microsoft.com/en-us/bing/apis/bing-web-search-api 获取 token。
+    # search_engine_token: ENV {{BING_SEARCH_TOKEN}} 
+    
+    
     ##  The model to build index for the project
     ## 用于为项目构建索引的模型
     # emb_model: gpt_emb
