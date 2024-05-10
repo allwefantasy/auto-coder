@@ -41,12 +41,9 @@ byzerllm deploy --pretrained_model_type saas/qianwen \
 现在我们可以用相同的命令启动一个索引服务：
 
 ```bash
-# export JAVA_HOME=/Users/allwefantasy/Library/Java/JavaVirtualMachines/openjdk-21/Contents/Home
 byzerllm storage start
 ```
-
-注意，你系统需要装有 JDK21。如果JDK21不是你默认 SDK,可以在启动命令前临时export JAVA_HOME。
-系统会在启动期间下载一些库和文件，请确保网络畅通。
+系统会在启动期间下载包括JDK21,以及一些库和文件，请确保网络畅通。
 
 ## 对文档进行索引构建
 

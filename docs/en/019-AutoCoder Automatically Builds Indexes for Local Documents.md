@@ -44,7 +44,7 @@ Now, we can start an indexing service with the same command:
 byzerllm storage start
 ```
 
-Note, your system needs to have JDK21 installed. If JDK21 is not your default SDK, you can temporarily export JAVA_HOME before starting the command. The system will automatically download the required files.
+The system will automatically download some equired files, please ensure that your network is accessible.
 
 ## Building an Index for Documents
 
