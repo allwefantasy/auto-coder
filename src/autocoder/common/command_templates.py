@@ -3,6 +3,9 @@ import byzerllm
 @byzerllm.prompt()
 def init_command_template():
     '''
+    ## More details about the configuration file can be found in: https://github.com/allwefantasy/auto-coder/tree/master/docs/en
+    ## 关于配置文件的更多细节可以在这里找到: https://gitcode.com/allwefantasy11/auto-coder/tree/master/docs/zh
+    
     ## Location of your project
     ## 你项目的路径
     source_dir: /Users/allwefantasy/projects/xxxx
