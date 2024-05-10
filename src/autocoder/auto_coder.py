@@ -15,9 +15,8 @@ from prompt_toolkit.formatted_text import FormattedText
 
 from jinja2 import Template
 import hashlib
-from autocoder.index.index import IndexManager
 from autocoder.utils.rest import HttpDoc
-from byzerllm.apps.command import get_latest_byzer_retrieval_lib
+from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib
 from autocoder.command_args import parse_args
 from autocoder.rag.api_server import serve,ServerArgs
 from loguru import logger
