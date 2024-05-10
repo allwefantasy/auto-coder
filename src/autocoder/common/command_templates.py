@@ -6,7 +6,15 @@ def init_command_template():
     ## Location of your project
     ## 你项目的路径
     source_dir: /Users/allwefantasy/projects/xxxx
+
+    ## The target file to store the prompt/generated code or other information
     target_file: /Users/allwefantasy/projects/xxxx/output.txt
+    
+    ## The urls of some documents which can help the model to understand your current work
+    ## 一些文档的URL，可以帮助模型了解你当前的工作
+    ## Multiple documents can be separated by comma
+    ## 多个文档可以用逗号分隔
+    # urls: <SOME DOCUMENTATION URLs>
 
     ## The type of your project. py,ts or you can use the suffix e.g. .java .scala .go 
     ## If you use the suffix, you can combind multiple types with comma e.g. .java,.scala
