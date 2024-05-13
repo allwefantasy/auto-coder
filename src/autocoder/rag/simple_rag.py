@@ -58,7 +58,12 @@ class SimpleRAG:
        if self.args.collections:
            self.collections = self.args.collections
 
-       self.collections = self.collections.split(",") if self.collections else []        
+       self.collections = self.collections.split(",") if self.collections else []  
+
+       if not self.collections:
+           logger.warning('''No RAG collection is set, we will use the `default` collection.
+You can set the collection by passing the `--collections`argument in command line or set the `collections` attribute in the config file.''')  
+           self.collections = ["default"]
 
        if not self.llm.default_emb_model_name:
            raise ValueError("emb_model should be set")
@@ -102,7 +107,7 @@ class SimpleRAG:
            RetrieverQueryEngine.from_args(retriever,service_context=self.service_context,streaming=streaming)
            for retriever in retrievers
        ]
-
+       
        if len(query_engines) == 1:
            return query_engines[0]
        
