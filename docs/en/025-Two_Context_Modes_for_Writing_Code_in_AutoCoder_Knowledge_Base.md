@@ -47,21 +47,21 @@ Below is the code generated from the example above:
 
 ```python
 def text_to_speech(self, text, file_path):
-        print(f"Converting text to speech: {text}")
-        t = self.llm.chat_oai(conversations=[{
-            "role":"user",
-            "content": json.dumps({
-                "input": text,
-                "voice": "echo",
-                "response_format": "wav"
-            }, ensure_ascii=False)
-        }])
-        temp_file_path = file_path + ".tmp"
-        with open(temp_file_path, "wb") as f:
-            f.write(base64.b64decode(t[0].output))     
-``````python
-shutil.move(temp_file_path, file_path)
-print(f"Converted successfully: {file_path}")
+      print(f"Converting text to speech: {text}")
+      t = self.llm.chat_oai(conversations=[{
+         "role":"user",
+         "content": json.dumps({
+               "input": text,
+               "voice": "echo",
+               "response_format": "wav"
+         }, ensure_ascii=False)
+      }])
+      temp_file_path = file_path + ".tmp"
+      with open(temp_file_path, "wb") as f:
+         f.write(base64.b64decode(t[0].output))     
+
+      shutil.move(temp_file_path, file_path)
+      print(f"Converted successfully: {file_path}")
 ```
 
 The big model itself didn't know the specific implementation of the openai_tts model, but through the example code retrieved by RAG, he eventually figured out how to call the openai_tts model and wrote very beautiful code.
