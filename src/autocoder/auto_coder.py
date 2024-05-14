@@ -74,7 +74,7 @@ def main():
 
         init_file_path = os.path.join(args.source_dir, "actions", "101_current_work.yml")
         with open(init_file_path, "w") as f:
-            f.write(init_command_template())
+            f.write(init_command_template.prompt(source_dir=os.path.abspath(args.source_dir)))
         
         git_utils.init(os.path.abspath(args.source_dir))
         print(f'''Successfully initialized auto-coder project in {os.path.abspath(args.source_dir)}.''')

@@ -1,17 +1,17 @@
 import byzerllm
 
 @byzerllm.prompt()
-def init_command_template():
+def init_command_template(source_dir:str):
     '''
     ## More details about the configuration file can be found in: https://github.com/allwefantasy/auto-coder/tree/master/docs/en
     ## 关于配置文件的更多细节可以在这里找到: https://gitcode.com/allwefantasy11/auto-coder/tree/master/docs/zh
     
     ## Location of your project
     ## 你项目的路径
-    source_dir: /Users/allwefantasy/projects/xxxx
+    source_dir: {{ source_dir }}
 
     ## The target file to store the prompt/generated code or other information
-    target_file: /Users/allwefantasy/projects/xxxx/output.txt
+    target_file: {{ source_dir }}/output.txt
     
     ## The urls of some documents which can help the model to understand your current work
     ## 一些文档的URL，可以帮助模型了解你当前的工作
