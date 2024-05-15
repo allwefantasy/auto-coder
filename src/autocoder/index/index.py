@@ -442,8 +442,12 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
         table_output = tabulate.tabulate(wrapped_data, headers="firstrow", tablefmt="grid")
         print(table_output, flush=True)
 
-    target_files_data = [(file.file_path, file.reason) for file in final_files.values()]
-    final_filenames = display_table_and_get_selections(target_files_data)
+    if args.skip_confirm:
+        final_filenames = [file.file_path for file in final_files.values()]        
+    else: 
+        target_files_data = [(file.file_path, file.reason) for file in final_files.values()]
+        final_filenames = display_table_and_get_selections(target_files_data)
+        
     print_selected([(file.file_path, file.reason) for file in final_files.values() if file.file_path in final_filenames])    
 
     source_code = "" 

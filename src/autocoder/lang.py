@@ -49,6 +49,7 @@ lang_desc = {
         "init_desc": "Initialize a new auto-coder project directory",
         "init_dir": "The directory to initialize the auto-coder project in",
         "index_build_workers": "Number of workers to use for building index",
+        "skip_confirm": "Skip any confirmation. Default is False",
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -100,5 +101,6 @@ lang_desc = {
         "init_desc": "初始化一个新的auto-coder项目目录",
         "init_dir": "初始化auto-coder项目的目录",
         "index_build_workers": "用于构建索引的工作线程数",
+        "skip_confirm": "跳过任何确认。默认为False",
     }
 }

@@ -62,31 +62,6 @@ class EnvInfo(pydantic.BaseModel):
     has_bash: bool
 
 
-def is_likely_useful_file(file_path):
-    """Determine if the file is likely to be useful by excluding certain directories and specific file types."""
-    excluded_dirs = ["docs", "examples", "tests", "test", "__pycache__", "scripts", "benchmarks","build"]
-    utility_or_config_files = ["hubconf.py", "setup.py"]
-    github_workflow_or_docs = ["stale.py", "gen-card-", "write_model_card"]
-    
-    if any(part.startswith('.') for part in file_path.split('/')):
-        return False
-    if 'test' in file_path.lower():
-        return False
-    for excluded_dir in excluded_dirs:
-        if f"/{excluded_dir}/" in file_path or file_path.startswith(excluded_dir + "/"):
-            return False
-    for file_name in utility_or_config_files:
-        if file_name in file_path:
-            return False
-    for doc_file in github_workflow_or_docs:
-        if doc_file in file_path:
-            return False
-    return True
-
-def is_test_file(file_content):
-    """Determine if the file content suggests it is a test file."""
-    test_indicators = ["import unittest", "import pytest", "from unittest", "from pytest"]
-    return any(indicator in file_content for indicator in test_indicators)
 
 def has_sufficient_content(file_content, min_line_count=10):
     """Check if the file has a minimum number of substantive lines."""
@@ -225,6 +200,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     collection: Optional[str] = None  
     collections: Optional[str] = None
     description: Optional[str] = ""
+    skip_confirm: Optional[bool] = False
 
     class Config:
         protected_namespaces = ()
