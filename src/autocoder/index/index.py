@@ -10,6 +10,8 @@ import threading
 import pydantic
 import byzerllm
 import hashlib
+import textwrap
+import tabulate
 
 from loguru import logger
 
@@ -346,57 +348,108 @@ class IndexManager:
 
 def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode])->str:
    
-   def get_file_path(file_path):
-       if file_path.startswith("##"):
-           return file_path.strip()[2:]
-       return file_path
+    def get_file_path(file_path):
+        if file_path.startswith("##"):
+            return file_path.strip()[2:]
+        return file_path
 
-   final_files = []      
+    final_files:Dict[str,TargetFile] = {}      
 
-   if not args.skip_build_index and llm:  
+    if not args.skip_build_index and llm:  
 
-       ## keep Rest/RAG/Search sources
-       for source in sources:
-           if source.tag in ["REST","RAG","SEARCH"]:
-                final_files.append(get_file_path(source.module_name))
+        ## keep Rest/RAG/Search sources
+        for source in sources:
+            if source.tag in ["REST","RAG","SEARCH"]:
+                final_files[get_file_path(source.module_name)]=TargetFile(file_path=source.module_name,reason="Rest/Rag/Search")
+            
+        logger.info("Building index for all files...")
+        index_manager = IndexManager(llm=llm,sources=sources,args=args)
+        index_manager.build_index()
         
-       logger.info("Building index for all files...")
-       index_manager = IndexManager(llm=llm,sources=sources,args=args)
-       index_manager.build_index()
-       
-       logger.info(f"Finding related files in the index...")
-       start_time = time.monotonic()
-       target_files = index_manager.get_target_files_by_query(args.query)
-       
-       if target_files:
-           for file in target_files.file_list:
-                logger.info(f"Target File: {file.file_path} reason: {file.reason}")    
-                file_path = file.file_path.strip()
-                final_files.append(get_file_path(file_path))               
-
-       if target_files is not None and args.index_filter_level >= 2:                                    
-           related_fiels = index_manager.get_related_files([file.file_path for file in target_files.file_list])            
-           if related_fiels is not None:                                            
-               for temp_file in related_fiels.file_list:
-                    logger.info(f"Related File: {temp_file.file_path} reason: {temp_file.reason}")              
-               
-               for file in related_fiels.file_list:
+        logger.info(f"Finding related files in the index...")
+        start_time = time.monotonic()
+        target_files = index_manager.get_target_files_by_query(args.query)
+        
+        if target_files:
+            for file in target_files.file_list:
+                    logger.info(f"Target File: {file.file_path} reason: {file.reason}")    
                     file_path = file.file_path.strip()
-                    final_files.append(get_file_path(file_path))               
-       
-       if not final_files:
-           logger.warning("Warning: No related files found, use all files")
-           final_files = [file.module_name for file in sources] 
-       
-       logger.info(f"Find related files took {time.monotonic() - start_time:.2f}s")
-   else:
-       final_files = [file.module_name for file in sources]
+                    final_files[get_file_path(file_path)] = file
 
-   
+        if target_files is not None and args.index_filter_level >= 2:                                    
+            related_fiels = index_manager.get_related_files([file.file_path for file in target_files.file_list])            
+            if related_fiels is not None:                                            
+                for temp_file in related_fiels.file_list:
+                        logger.info(f"Related File: {temp_file.file_path} reason: {temp_file.reason}")              
+                
+                for file in related_fiels.file_list:
+                        file_path = file.file_path.strip()
+                        final_files[get_file_path(file_path)] = file
+        
+        if not final_files:
+            logger.warning("Warning: No related files found, use all files")
+            for source in sources:
+                final_files[get_file_path(source.module_name)]=TargetFile(file_path=source.module_name,reason="No related files found, use all files")
+        
+        logger.info(f"Find related files took {time.monotonic() - start_time:.2f}s")
+    else:
+        for source in sources:
+            final_files[get_file_path(source.module_name)]=TargetFile(file_path=source.module_name,reason="Index is not enabled or the model is not available. Use all files.")
+    
+    def display_table_and_get_selections(data):
+        from prompt_toolkit.shortcuts import checkboxlist_dialog 
+        from prompt_toolkit.styles import Style       
+        choices = [(file,f"{file} - {reason}") for file, reason in data]
+        selected_files = [file for file, _ in choices]
 
-   source_code = "" 
-   for file in sources:
-       if file.module_name in final_files:
-           source_code += f"##File: {file.module_name}\n"
-           source_code += f"{file.source_code}\n\n" 
-   return source_code
+        style = Style.from_dict({
+            'dialog': 'bg:#88ff88',
+            'dialog frame.label': 'bg:#ffffff #000000',
+            'dialog.body': 'bg:#88ff88 #000000',
+            'dialog shadow': 'bg:#00aa00',
+        })
+
+        result = checkboxlist_dialog(
+            title="Target Files",
+            text="Tab to switch between buttons, and Space/Enter to select/deselect.",
+            values=choices,
+            style=style,
+            default_values=selected_files
+        ).run()
+        
+        return [file for file in result] if result else []
+        
+    target_files_data = [(file.file_path, file.reason) for file in final_files.values()]
+    final_filenames = display_table_and_get_selections(target_files_data)
+    
+    def print_selected(data):
+        def wrap_text_in_table(data, max_width=None):
+            if max_width is None:
+                max_width = os.get_terminal_size().columns
+            wrapped_data = []
+            for row in data:
+                wrapped_row = [textwrap.fill(str(cell), width=max_width) for cell in row]
+                wrapped_data.append(wrapped_row)
+            return wrapped_data
+        terminal_width = os.get_terminal_size().columns
+        separator = "=" * terminal_width
+        print(separator, flush=True)
+        print("Target Files You Selected".center(terminal_width), flush=True)
+        print(separator, flush=True)
+
+        table_data = [["File Path", "Reason"]]
+        for file, reason in data:
+            table_data.append([file, reason])
+
+        wrapped_data = wrap_text_in_table(table_data)
+        table_output = tabulate.tabulate(wrapped_data, headers="firstrow", tablefmt="grid")
+        print(table_output, flush=True)
+
+    print_selected([(file.file_path, file.reason) for file in final_files.values() if file.file_path in final_filenames])    
+
+    source_code = "" 
+    for file in sources:
+        if file.module_name in final_filenames:
+            source_code += f"##File: {file.module_name}\n"
+            source_code += f"{file.source_code}\n\n" 
+    return source_code
