@@ -11,7 +11,7 @@ query: |
    把项目中的markdown文档翻译成英文,
    需要翻译的文件列表：
   
-   1. /Users/allwefantasy/projects/auto-coder/docs/zh/025-AutoCoder知识库写代码的两种上下文模式.md
+   1. /Users/allwefantasy/projects/auto-coder/docs/zh/026-AutoCoder模型的窗口长度控制.md
    
    保存到 /Users/allwefantasy/projects/auto-coder/docs/en 目录下。
 
