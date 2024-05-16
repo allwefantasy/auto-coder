@@ -29,7 +29,7 @@
 
 - index_filter_level: 0, 1, 2
 
-该参数可以默认为2, 0表示值开启前面第一个步骤，1，表示卡开启0,1两个步骤，2表示开启所有步骤。
+该参数默认为2, 0表示值开启前面第一个步骤，1，表示开启0,1两个步骤，2表示开启所有步骤。
 
 为了验证这个参数的作用，我们可以通过如下的配置文件：
 
@@ -78,6 +78,18 @@ auto-coder index-query  --file actions/014_test_index_command.yml
 | /Users/allwefantasy/projects/auto-coder/src/autocoder/index/for_command.py        | The file name and location suggest it may contain code related to handling commands, possibly providing functionality or infrastructure for implementing new commands in the project.                                                  |
 +-----------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 ```
+
+在比较新的版本里，我们允许用户对过滤出的文件再进行一次确认（对，就是那个丑丑的绿色选择框），移除掉一些不必要的文件。用Tab 移动光标到OK 和 Cancel,然后按回车完成确认。
+
+如果你很烦燥每次都要人工对大模型选择的文件做确认，可以通过参数:
+
+```yml
+skip_confirm: true
+```
+
+来跳过这个确认过程。
+
+如果你认为某些文件应该要被选择，但是大模型没有选择，你可以选择取消后，用 control + C 结束会话，然后重新修改 query, 在query中显示的提到这个文件，这样大模型就会选择这个文件。
 
 ## 有哪些小技巧来弥补没有被过滤进来的文件
 
