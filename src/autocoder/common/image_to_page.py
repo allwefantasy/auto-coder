@@ -46,7 +46,7 @@ class ImageToPageDirectly:
         Do not include markdown "```" or "```html" at the start or end.
         ''' 
 
-    def generate_html_directly(self,img_path:str)->str:
+    def generate_html_directly(self,img_path:str,image_size:ImageSize)->str:
         image_path_ext = os.path.splitext(img_path)[1]
         with open(img_path, 'rb') as image_file:
             image = base64.b64encode(image_file.read()).decode('utf-8')
@@ -59,7 +59,8 @@ class ImageToPageDirectly:
             "role":"user",
             "content":json.dumps([{
                 "image":image,
-                "text":"Generate code for a web page that looks exactly like this."
+                "detail":"high",
+                "text":f"Generate code for a web page that looks exactly like this(the image size is {image_size.DH}x{image_size.DW})."
             }],ensure_ascii=False)
         }])
         html = t[0].output
@@ -68,7 +69,7 @@ class ImageToPageDirectly:
     @byzerllm.prompt()
     def update_prompt(self,html:str)->str:
         '''
-        Here is the current HTML/Tailwind code:
+        Here is HTML/Tailwind code for the second image:
 
         ```html
         {{ html }}
@@ -93,9 +94,11 @@ class ImageToPageDirectly:
             {
             "role":"user",
             "content":json.dumps([{
-                "image":origin_image,                
+                "image":origin_image,
+                "detail":"high"
             },{
-                "image":new_image,                
+                "image":new_image,    
+                "detail":"high"
             },
             {
                 "text":self.update_prompt.prompt(html=html)
@@ -105,34 +108,39 @@ class ImageToPageDirectly:
         return html
 
     def run_then_iterate(self,origin_image:str,html_path:str,max_iter:int=1):
-        html = self.generate_html_directly(origin_image)                         
-        counter = 1
+
+        with Image.open(origin_image) as ori_img:        
+            width, height = ori_img.size                        
+            image_size = ImageSize(DW=width,DH=height)        
+        
+        html = self.generate_html_directly(origin_image,image_size=image_size)                         
+        
         origin_image_file_name = os.path.splitext(os.path.basename(origin_image))[0]
         html_file_name = os.path.splitext(os.path.basename(html_path))[0]
         html_dir = os.path.dirname(html_path)
-        os.makedirs(html_dir, exist_ok=True) 
+        os.makedirs(html_dir, exist_ok=True)   
 
-        ori_img = Image.open(origin_image)
-        width, height = ori_img.size                        
-        image_size = ImageSize(DW=width,DH=height)
-        ori_img.close()
-
+        counter = 1 
+        target_html_path = os.path.join(html_dir,f"{html_file_name}-{counter}.html") 
+        with open(target_html_path, "w") as f:
+            f.write(html)               
+        
         while counter < max_iter:
             logger.info(f"iterate  {counter}/{max_iter}....")
             new_image_dir = os.path.join(os.path.dirname(origin_image),"images",f"{origin_image_file_name}-{counter}")
-            os.makedirs(new_image_dir, exist_ok=True)        
+            os.makedirs(new_image_dir, exist_ok=True)              
             gen_screenshots(url=html_path,image_dir=new_image_dir,image_size=image_size)        
             file_name = os.path.splitext(os.path.basename(html_path))[0]            
             new_image = os.path.join(new_image_dir,f"{file_name}.png")  
-            html = self.update_html_directly(origin_image,new_image,html=html)                                    
+            html = self.update_html_directly(origin_image,new_image,html=html)
+            counter += 1
+            
             target_html_path = os.path.join(html_dir,f"{html_file_name}-{counter}.html")
             logger.info(f"generate html: {target_html_path}")                
             with open(target_html_path, "w") as f:
-                f.write(html)
-
-            counter += 1
+                f.write(html)            
         
-        logger.info(f"generate html: {html_path}")
+        logger.info(f"finally generate html: {html_path}")
         with open(html_path, "w") as f:
             f.write(html)    
              

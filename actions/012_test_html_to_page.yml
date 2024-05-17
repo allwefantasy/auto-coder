@@ -3,7 +3,7 @@ target_file: /Users/allwefantasy/projects/auto-coder/output.txt
 project_type: copilot/ts
 image_file: /Users/allwefantasy/projects/auto-coder/screenshots/zen.png
 image_mode: direct
-image_max_iter: 3
+image_max_iter: 2
 
 model: deepseek_chat
 model_max_length: 2000

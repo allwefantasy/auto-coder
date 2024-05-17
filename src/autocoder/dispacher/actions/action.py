@@ -8,7 +8,7 @@ from autocoder.common.code_auto_generate import CodeAutoGenerate
 from typing import Optional,Generator
 import byzerllm
 import os
-import time
+from autocoder.common.image_to_page import ImageToPage,ImageToPageDirectly
 from loguru import logger
 
 
@@ -25,10 +25,24 @@ class ActionTSProject:
         pp = TSProject(args=args, llm=self.llm)
         pp.run()
 
-        source_code = pp.output()
+        source_code = pp.output()         
         if self.llm:
-            source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=pp.sources)
+            source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=sources)
 
+        if args.image_file:
+            if args.image_mode == "iterative":
+                image_to_page = ImageToPage(llm=self.llm, args=args)   
+            else:
+                image_to_page = ImageToPageDirectly(llm=self.llm, args=args)
+
+            file_name = os.path.splitext(os.path.basename(args.image_file))[0]
+            html_path = os.path.join(os.path.dirname(args.image_file), "html",f"{file_name}.html")
+            image_to_page.run_then_iterate(origin_image=args.image_file, html_path=html_path,max_iter=self.args.image_max_iter)
+            
+            with open(html_path,"r") as f:
+                html_code = f.read()
+                source_code = f"##File: {html_path}\n{html_code}\n\n"+source_code                
+                
         self.process_content(source_code)
         return True
 

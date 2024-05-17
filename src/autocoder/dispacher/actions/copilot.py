@@ -224,51 +224,7 @@ class ActionCopilot():
             file_name = os.path.splitext(os.path.basename(args.image_file))[0]
             html_path = os.path.join(os.path.dirname(args.image_file), "html",f"{file_name}.html")
             image_to_page.run_then_iterate(origin_image=args.image_file, html_path=html_path,max_iter=self.args.image_max_iter)
-            suffixs = self.get_suffix_from_project_type(args.project_type)  
-            args.project_type = ",".join(suffixs) or ".py"   
-
-            if args.project_type == ".ts":
-                pp = TSProject(args=args,
-                               llm = self.llm)
-            elif args.project_type == ".py":
-                pp = PyProject(args=args,
-                               llm = self.llm)
-            else:
-                pp = SuffixProject(args=args,
-                                llm = self.llm,file_filter=None) 
-            pp.run()
-
-            sources = list(pp.get_source_codes())
-            with open(html_path,"r") as f:
-                sources.append(SourceCode(module_name=html_path,source_code=f.read()))
-            
-            source_code = ""
-            for source in sources:
-                source_code  += f"##File: {source.module_name}\n"
-                source_code  += f"{source.source_code}\n\n"
-            
-
-            s = self.prompt_convert_html_to_page(query=args.query,source_code=source_code)            
-            
-            if args.execute:
-                extra_llm_config = {}        
-                if args.human_as_model:
-                    extra_llm_config["human_as_model"] = True
-
-                t = self.llm.chat_oai(conversations=[{
-                    "role":"user",
-                    "content":s
-                }],llm_config={**extra_llm_config}) 
-                s = t[0].output    
-
-            with open(args.target_file, "w") as f:
-                f.write(s)    
-
-            if args.execute and args.auto_merge:
-                logger.info("Auto merge the code...")
-                code_merge = CodeAutoMerge(llm=self.llm,args=self.args)
-                code_merge.merge_code(content=s)    
-
+            logger.info(f"Image to Html is done, the result is saved in {html_path}")
             return True
 
         if args.query and self.llm:
