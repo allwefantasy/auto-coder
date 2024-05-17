@@ -81,9 +81,7 @@ class TSProject():
 
         if not FileUtils.has_sufficient_content(source_code,min_line_count=1):
             return None
-        
-        if FileUtils.is_test_file(source_code):
-            return None
+                        
         return SourceCode(module_name=module_name, source_code=source_code)
     
 

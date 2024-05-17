@@ -27,7 +27,7 @@ class ActionTSProject:
 
         source_code = pp.output()         
         if self.llm:
-            source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=sources)
+            source_code = build_index_and_filter_files(llm=self.llm,args=args,sources=pp.sources)
 
         if args.image_file:
             if args.image_mode == "iterative":

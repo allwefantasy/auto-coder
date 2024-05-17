@@ -1,9 +1,10 @@
-source_dir: /Users/allwefantasy/projects/tt/
+source_dir: /Users/allwefantasy/projects/auto-coder.example.copy/web
 target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
-project_type: copilot/ts
+# project_type: copilot/ts
+project_type: ts
 image_file: /Users/allwefantasy/projects/auto-coder/screenshots/zen.png
 image_mode: direct
-image_max_iter: 2
+image_max_iter: 1
 
 model: deepseek_chat
 model_max_length: 2000
