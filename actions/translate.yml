@@ -11,7 +11,7 @@ query: |
    把项目中的markdown文档翻译成英文,
    需要翻译的文件列表：
   
-   1. /Users/allwefantasy/projects/auto-coder/docs/zh/027-AutoCoder_我只要效果好_那么最佳组合是什么.md
+   1. /Users/allwefantasy/projects/auto-coder/docs/zh/016-AutoCoder 如何从图片生成ReactJS+TypeScript+TailWind 代码.md
    
    保存到 /Users/allwefantasy/projects/auto-coder/docs/en 目录下。
 
