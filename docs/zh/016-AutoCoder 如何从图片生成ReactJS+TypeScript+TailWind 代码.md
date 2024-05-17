@@ -1,6 +1,6 @@
 # 016-AutoCoder 如何从图片生成ReactJS+TypeScript+TailWind 代码
 
-> AutoCoder >= 0.1.25 特性
+> AutoCoder >= 0.1.58 特性
 
 需要额外安装：
 
@@ -11,20 +11,28 @@ playwright install
 
 这个功能在什么场景下有用呢，比如你有个 reactjs + typescript + tailwind 的项目，然后你有个页面想参考某个其他的网站，这个时候你就可以截个图，然后根据该图生成对应的 reactjs + typescript + tailwind 代码了。
 
+默认情况，AutoCoder 会把图片转成 html/tailwind 格式，然后再通过 query 使用 model 将其转换成你最终需要的形态。
+所以你可以只生成 html/tailwind 代码 或者是生成 reactjs + typescript + tailwind 代码。
+
+## 只生成 HTML + Tailwind
+
 我们看下面的例子：
 
 ```yml
 source_dir: /Users/allwefantasy/projects/tt/
 target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
 project_type: copilot/ts
-image_file: /Users/allwefantasy/projects/auto-coder/screenshots/www_elmo_chat.png
 
-model: qianwen_chat
+image_file: /Users/allwefantasy/projects/auto-coder/screenshots/www_elmo_chat.png
+image_mode: direct
+image_max_iter: 1
+
+model: deepseek_chat
 model_max_length: 2000
 model_max_input_length: 6000
 anti_quota_limit: 5
 
-vl_model: qianwen_vl_chat
+vl_model: gpt4o_chat
 
 skip_build_index: false
 execute: true
@@ -42,10 +50,23 @@ tt 已经是 reactjs + typescript + tailwind 项目
 
 1. 指定网页图片地址，这里通过 image_file 指定。
 2. 项目配置类型为： copilot/ts 而不是 ts
-3. 额外指定一个多模态模型，可以通过 vl_model 指定。
+3. 额外指定一个多模态模型，可以通过 vl_model 指定,推荐 gpt_4o
 4. 多模态模型需要通过 byzerllm 进行部署。
+5. image_max_iter 可以设置迭代次数，迭代次数越多，理论上生成的代码越接近原图，你也可以查看中间生成的 html 文件，看看是否满足你的需求。
 
-默认情况，AutoCoder 会把图片转成 html/css 格式，然后再通过 query 转换成你要的形态。比如在我们的例子里我们希望是转换成 reactjs+typescript+tailwind， 其他情况可能比如是用vue等，你只需要在 query中说明即可。
+## 生成 reactjs + typescript + tailwind
+
+此时只需要改一行配置即可：
+
+```yml
+project_type: ts
+```
+
+我们把project_type 从 copilot/ts 改成 ts,这样中间会让我们勾选相关的一些文件，并且进行代码转换。
+
+如果你希望转成诸如vue等，你只需要在 query中说明即可。
+
+## 结果
 
 我们指定的图片 www_elmo_chat.png 是这个样子：
 
@@ -56,7 +77,7 @@ tt 已经是 reactjs + typescript + tailwind 项目
 ![](../images/image16-02.png)
 
 
-可以看到整体layout 啥的都识别出来了，就是色系不太对，很多细节丢失了。不过相信多模态大模型的发展，后续效果肯定会越来越好。我们也支持设置逼近原图迭代次数，默认一次，但是目前还没有开放该参数。
+可以看到整体layout 啥的都识别出来了，就是色系不太对，很多细节丢失了。不过相信多模态大模型的发展，后续效果肯定会越来越好。（PS: GPT-4o的效果已经相当好了）
 
 最后生成的 ReactJS 代码则是这样的：
 
