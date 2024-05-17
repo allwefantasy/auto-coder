@@ -6,7 +6,7 @@ from autocoder.tsproject import TSProject
 from autocoder.pyproject import PyProject
 from autocoder.common.search import Search,SearchEngine
 from autocoder.index.index import build_index_and_filter_files
-from autocoder.common.image_to_page import ImageToPage
+from autocoder.common.image_to_page import ImageToPage,ImageToPageDirectly
 from autocoder.common.code_auto_merge import CodeAutoMerge
 from typing import Optional,Dict,Any,List
 import byzerllm
@@ -131,7 +131,7 @@ class ActionCopilot():
         每次生成一个执行步骤，然后询问我是否继续，当我回复继续，继续生成下一个执行步骤。        
         ''' 
 
-    @byzerllm.prompt(render="jinja2") 
+    @byzerllm.prompt() 
     def prompt_convert_html_to_page(self,query:str,source_code:str) -> str:
         '''
         {%- if source_code %}
@@ -216,7 +216,11 @@ class ActionCopilot():
             return False 
         
         if args.image_file:
-            image_to_page = ImageToPage(llm=self.llm, args=args)
+            if args.image_mode == "iterative":
+                image_to_page = ImageToPage(llm=self.llm, args=args)   
+            else:
+                image_to_page = ImageToPageDirectly(llm=self.llm, args=args)
+
             file_name = os.path.splitext(os.path.basename(args.image_file))[0]
             html_path = os.path.join(os.path.dirname(args.image_file), "html",f"{file_name}.html")
             image_to_page.run_then_iterate(origin_image=args.image_file, html_path=html_path,max_iter=self.args.image_max_iter)

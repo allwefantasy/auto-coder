@@ -1,19 +1,21 @@
 source_dir: /Users/allwefantasy/projects/tt/
 target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
 project_type: copilot/ts
-image_file: /Users/allwefantasy/projects/auto-coder/screenshots/www_elmo_chat.png
+image_file: /Users/allwefantasy/projects/auto-coder/screenshots/zen.png
+image_mode: direct
+image_max_iter: 3
 
-model: qianwen_chat
+model: deepseek_chat
 model_max_length: 2000
-model_max_input_length: 6000
-anti_quota_limit: 5
+model_max_input_length: 30000
+anti_quota_limit: 0
 
-vl_model: qianwen_vl_chat
+vl_model: gpt4o_chat
 
-index_model: sparkdesk_chat
+index_model: deepseek_chat
 index_model_max_length: 2000
-index_model_max_input_length: 6000
-index_model_anti_quota_limit: 1
+index_model_max_input_length: 30000
+index_model_anti_quota_limit: 0
 
 skip_build_index: false
 execute: true

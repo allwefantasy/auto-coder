@@ -44,8 +44,10 @@ byzerllm deploy --model_path /home/byzerllm/models/openbuddy-llama2-13b64k-v15 \
 第一种方式，是按如下方式启动一个客户端代理：
 
 ```shell
-ray start --address='公司Byzer-LLM集群地址'
+ray start --address='公司Byzer-LLM集群地址' --num-cpus=0 --num-gpus=0
 ```                    
+其中公司Byzer-LLM集群地址地址格式应该是类似这样的类似： 192.168.x.x:6379  
+
 然后你就可以正常使用 AutoCoder 了,比如：
 
 ```yml
@@ -83,6 +85,7 @@ query: |
   优化 copilot 里的 get_suffix_from_project_type 函数并更新原文件
 ```       
 
+此时公司Byzer-LLM集群地址为类似： ray://192.168.3.123:10001
 用户可以根据自己的需求选择其中一种方式。
 
 ## 总结

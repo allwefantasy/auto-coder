@@ -1,13 +1,141 @@
 import byzerllm
 from byzerllm.utils.client import code_utils
+from PIL import Image
 import base64
 import json
 import os
 import time
-from autocoder.common.screenshots import gen_screenshots
+from autocoder.common.screenshots import gen_screenshots,ImageSize
 from autocoder.common import AutoCoderArgs
 from autocoder.common.code_auto_merge import CodeAutoMerge
 from loguru import logger
+
+class ImageToPageDirectly:
+    def __init__(self,llm:byzerllm.ByzerLLM,args:AutoCoderArgs):        
+        self.llm = llm
+        self.vl_model = llm.get_sub_client("vl_model")
+        if not self.vl_model:
+            raise Exception("vl_model is required by  ImageToPage")
+
+        self.args = args
+
+    @byzerllm.prompt()
+    def system_prompt(self):
+        '''
+        You are an expert Tailwind developer
+        You take screenshots of a reference web page from the user, and then build single page apps 
+        using Tailwind, HTML and JS.
+        You might also be given a screenshot(The second image) of a web page that you have already built, and asked to
+        update it to look more like the reference image(The first image).
+
+        - Make sure the app looks exactly like the screenshot.
+        - Pay close attention to background color, text color, font size, font family, 
+        padding, margin, border, etc. Match the colors and sizes exactly.
+        - Use the exact text from the screenshot.
+        - Do not add comments in the code such as "<!-- Add other navigation links as needed -->" and "<!-- ... other news items ... -->" in place of writing the full code. WRITE THE FULL CODE.
+        - Repeat elements as needed to match the screenshot. For example, if there are 15 items, the code should have 15 items. DO NOT LEAVE comments like "<!-- Repeat for each news item -->" or bad things will happen.
+        - For images, use placeholder images from https://placehold.co and include a detailed description of the image in the alt text so that an image generation AI can generate the image later.
+
+        In terms of libraries,
+
+        - Use this script to include Tailwind: <script src="https://cdn.tailwindcss.com"></script>
+        - You can use Google Fonts
+        - Font Awesome for icons: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"></link>
+
+        Return only the full code in <html></html> tags.
+        Do not include markdown "```" or "```html" at the start or end.
+        ''' 
+
+    def generate_html_directly(self,img_path:str)->str:
+        image_path_ext = os.path.splitext(img_path)[1]
+        with open(img_path, 'rb') as image_file:
+            image = base64.b64encode(image_file.read()).decode('utf-8')
+            image = f"data:image/{image_path_ext};base64,{image}"
+        t = self.vl_model.chat_oai(conversations=[{
+            "role":"system",
+            "content": self.system_prompt.prompt()
+            },
+            {
+            "role":"user",
+            "content":json.dumps([{
+                "image":image,
+                "text":"Generate code for a web page that looks exactly like this."
+            }],ensure_ascii=False)
+        }])
+        html = t[0].output
+        return html
+    
+    @byzerllm.prompt()
+    def update_prompt(self,html:str)->str:
+        '''
+        Here is the current HTML/Tailwind code:
+
+        ```html
+        {{ html }}
+        ```
+
+        Update the code for the second image to look more like the first image.
+        Return only the full code in <html></html> tags.
+        Do not include markdown "```" or "```html" at the start or end.
+        '''
+
+    def update_html_directly(self,origin_image:str,new_image:str,html:str)->str:
+        
+        with open(origin_image, 'rb') as image_file:
+            origin_image = base64.b64encode(image_file.read()).decode('utf-8')
+        with open(new_image, 'rb') as image_file:
+            new_image = base64.b64encode(image_file.read()).decode('utf-8') 
+
+        t = self.vl_model.chat_oai(conversations=[{
+            "role":"system",
+            "content": self.system_prompt.prompt()
+            },
+            {
+            "role":"user",
+            "content":json.dumps([{
+                "image":origin_image,                
+            },{
+                "image":new_image,                
+            },
+            {
+                "text":self.update_prompt.prompt(html=html)
+            }],ensure_ascii=False)
+        }])
+        html = t[0].output
+        return html
+
+    def run_then_iterate(self,origin_image:str,html_path:str,max_iter:int=1):
+        html = self.generate_html_directly(origin_image)                         
+        counter = 1
+        origin_image_file_name = os.path.splitext(os.path.basename(origin_image))[0]
+        html_file_name = os.path.splitext(os.path.basename(html_path))[0]
+        html_dir = os.path.dirname(html_path)
+        os.makedirs(html_dir, exist_ok=True) 
+
+        ori_img = Image.open(origin_image)
+        width, height = ori_img.size                        
+        image_size = ImageSize(DW=width,DH=height)
+        ori_img.close()
+
+        while counter < max_iter:
+            logger.info(f"iterate  {counter}/{max_iter}....")
+            new_image_dir = os.path.join(os.path.dirname(origin_image),"images",f"{origin_image_file_name}-{counter}")
+            os.makedirs(new_image_dir, exist_ok=True)        
+            gen_screenshots(url=html_path,image_dir=new_image_dir,image_size=image_size)        
+            file_name = os.path.splitext(os.path.basename(html_path))[0]            
+            new_image = os.path.join(new_image_dir,f"{file_name}.png")  
+            html = self.update_html_directly(origin_image,new_image,html=html)                                    
+            target_html_path = os.path.join(html_dir,f"{html_file_name}-{counter}.html")
+            logger.info(f"generate html: {target_html_path}")                
+            with open(target_html_path, "w") as f:
+                f.write(html)
+
+            counter += 1
+        
+        logger.info(f"generate html: {html_path}")
+        with open(html_path, "w") as f:
+            f.write(html)    
+             
 
 class ImageToPage:
     
@@ -17,7 +145,7 @@ class ImageToPage:
         if not self.vl_model:
             raise Exception("vl_model is required by  ImageToPage")
 
-        self.args = args
+        self.args = args    
             
     def desc_image(self,img_path:str):   
         image_path_ext = os.path.splitext(img_path)[1]
@@ -48,24 +176,7 @@ class ImageToPage:
         ```    
 
         其中，{lang}是代码的语言，{CODE}是HTML部分,{FILE_PATH} 是文件路径部分，他们都在代码块中，请严格按上面的格式进行内容生成。
-        '''
-
-    @byzerllm.prompt(render="jinja2")
-    def generate_html_prompt(self,desc:str,html_path:str)->str:
-        '''
-        下面是对一张网页的描述：
-
-        {{ desc }}
-
-        请根据上述描述，生成对应的HTML代码，对应的文件路径为: {{ html_path }} ,你生成的代码要符合这个格式：
-    
-        ```{lang}
-        ##File: {FILE_PATH}
-        {CODE}
-        ```    
-
-        其中，{lang}是代码的语言，{CODE}是HTML部分,{FILE_PATH} 是文件路径部分，他们都在代码块中，请严格按上面的格式进行内容生成。                  
-        '''   
+        '''       
 
     
     @byzerllm.prompt()
@@ -76,7 +187,7 @@ class ImageToPage:
         {{ desc }}
         '''
 
-    @byzerllm.prompt(render="jinja2")
+    @byzerllm.prompt()
     def optimize_html(self,desc:str,html:str,html_path:str)->str:
         '''
         ## HTML/CSS
@@ -147,7 +258,7 @@ class ImageToPage:
         logger.info(f"desc image: {origin_image} {desc}")
 
         ## generate html by image description        
-        content_contains_html_prompt = self.generate_html(desc,html_path) 
+        content_contains_html_prompt = self.generate_html.prompt(desc,html_path) 
 
         with open(self.args.target_file, "w") as f:
             f.write(content_contains_html_prompt) 
@@ -165,7 +276,7 @@ class ImageToPage:
         
         file_modified_num = self.write_code(content_contains_html,html_path)
         if file_modified_num == 0:
-            logger.info(f"The html generated may not be correct, here is the prompt:\n {self.generate_html_prompt(desc,html_path)} \n\n result: \n {content_contains_html}")
+            logger.info(f"The html generated may not be correct, here is the prompt:\n {self.generate_html.prompt(desc,html_path)} \n\n result: \n {content_contains_html}")
             return
                 
         logger.info(f"generate html: {html_path}")
@@ -206,7 +317,7 @@ class ImageToPage:
             logger.info(f"score old/new image: {new_desc}")
 
             ## generate new html by new description
-            optimze_html_prompt =  self.optimize_html(desc=new_desc,html=prev_html,html_path=html_path)                                    
+            optimze_html_prompt =  self.optimize_html.prompt(desc=new_desc,html=prev_html,html_path=html_path)                                    
             
             with open(self.args.target_file, "w") as f:
                 f.write(optimze_html_prompt) 

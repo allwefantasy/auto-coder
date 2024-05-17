@@ -58,6 +58,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--auto_merge", action='store_true', help=desc["auto_merge"])
 
     parser.add_argument("--image_file", default="", help=desc["image_file"])
+    parser.add_argument("--image_mode", default="direct", help=desc["image_mode"])
     parser.add_argument("--image_max_iter",type=int, default=1, help=desc["image_max_iter"])
     
     parser.add_argument("--enable_multi_round_generate", action='store_true',help=desc["enable_multi_round_generate"])

@@ -189,6 +189,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     enable_rag_context: Optional[bool] = False
     auto_merge: Optional[bool] = False
     image_file: Optional[str] = ""
+    image_mode: Optional[str] = "direct"
     image_max_iter: Optional[int] = 1
     human_as_model:Optional[bool] = False
     urls: Optional[str] = ""

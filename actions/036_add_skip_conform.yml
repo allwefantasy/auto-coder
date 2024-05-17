@@ -2,6 +2,8 @@ source_dir: /Users/allwefantasy/projects/auto-coder
 target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
 project_type: py
 
+ray_address: "ray://192.168.3.58:10001"
+
 model: deepseek_chat
 index_model: deepseek_chat
 emb_model: gpt_emb
