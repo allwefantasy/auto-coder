@@ -67,16 +67,6 @@ If you want to convert to other frameworks like vue, you just need to specify it
 
 ## Results
 
-The image we specified, www_elmo_chat.png, looks like this:
-
-![](../images/image16-01.png)
-
-The generated intermediate HTML looks like this:
-
-![](../images/image16-02.png)
-
-You can see that the overall layout is recognized, but the color scheme is not quite right and many details are missing. However, with the development of multimodal large models, the results are expected to improve over time. (PS: The performance of GPT-4o is already quite good)
-
 Finally, the generated ReactJS code looks like this:
 
 ```jsx

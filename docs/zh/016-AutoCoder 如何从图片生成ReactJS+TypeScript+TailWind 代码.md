@@ -68,16 +68,6 @@ project_type: ts
 
 ## 结果
 
-我们指定的图片 www_elmo_chat.png 是这个样子：
-
-![](../images/image16-01.png)
-
-生成的中间 HTML 是这样的：
-
-![](../images/image16-02.png)
-
-
-可以看到整体layout 啥的都识别出来了，就是色系不太对，很多细节丢失了。不过相信多模态大模型的发展，后续效果肯定会越来越好。（PS: GPT-4o的效果已经相当好了）
 
 最后生成的 ReactJS 代码则是这样的：
 
