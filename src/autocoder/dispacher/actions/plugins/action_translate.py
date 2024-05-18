@@ -10,6 +10,9 @@ import byzerllm
 import os
 import time
 from loguru import logger
+from prompt_toolkit import prompt, print_formatted_text
+from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.shortcuts import confirm, radiolist_dialog
 
 @byzerllm.prompt()
 def translate_readme(content:str,lang:str,instruction:Optional[str]=None)->str:
@@ -68,11 +71,7 @@ class ActionTranslate():
             [_, lang, suffixes, new_file_mark,file_list_str,output_dir,should_translate_file_name] = args.project_type.split("/")
             file_list = file_list_str.split(",")
         
-        logger.info(f"lang:{lang}, suffixes:{suffixes}, new_file_mark:{new_file_mark}  should_translate_file_name:{should_translate_file_name} file list: {file_list}",flush=True)
-        # human input confirm
-        input_confirm = input("Please confirm the above information is correct, input 'y' to continue, input 'n' to exit:")
-        if input_confirm != "y":
-            return True        
+        tranlate_args = TranslateArgs(target_lang=lang,file_suffix=suffixes,new_file_mark=new_file_mark,file_list=file_list,output_dir=output_dir,should_translate_file_name=should_translate_file_name)                           
 
         def file_filter(file_path, suffixes):
             for suffix in suffixes:
