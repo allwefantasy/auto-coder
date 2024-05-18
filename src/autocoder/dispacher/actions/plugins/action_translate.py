@@ -16,6 +16,8 @@ from prompt_toolkit.shortcuts import confirm, radiolist_dialog
 from prompt_toolkit.styles import Style
 from prompt_toolkit.lexers import PygmentsLexer
 from pygments.lexers.markup import MarkdownLexer
+from rich import print
+from rich.table import Table
 
 @byzerllm.prompt()
 def translate_readme(content:str,lang:str,instruction:Optional[str]=None)->str:
@@ -33,6 +35,51 @@ def translate_readme(content:str,lang:str,instruction:Optional[str]=None)->str:
 
 def get_translate_part(content: str) -> str:
     return content
+
+def confirm_translation_parameters(translate_args: TranslateArgs) -> TranslateArgs:
+    while True:
+        table = Table(title="Translation Parameters")
+        table.add_column("Parameter", style="cyan")
+        table.add_column("Value", style="magenta")
+        table.add_row("Target Language", translate_args.target_lang)
+        table.add_row("File Suffixes", translate_args.file_suffix)
+        table.add_row("New File Mark", translate_args.new_file_mark)
+        table.add_row("Translate File Name", str(translate_args.should_translate_file_name))
+        table.add_row("File List", ", ".join(translate_args.file_list))
+        table.add_row("Output Directory", translate_args.output_dir)
+        print(table)
+
+        if confirm("Are the above parameters correct?"):
+            break
+
+        param_options = [
+            ("1", "Target Language"),
+            ("2", "File Suffixes"), 
+            ("3", "New File Mark"),
+            ("4", "Translate File Name"),
+            ("5", "File List"),
+            ("6", "Output Directory")
+        ]
+        selected_param = radiolist_dialog(
+            title="Select parameter to modify",
+            text="Choose the parameter you want to change:",
+            values=param_options
+        ).run()
+
+        if selected_param == "1":
+            translate_args.target_lang = prompt("Enter the new target language: ")
+        elif selected_param == "2":
+            translate_args.file_suffix = prompt("Enter the new file suffixes (comma-separated): ")
+        elif selected_param == "3":
+            translate_args.new_file_mark = prompt("Enter the new file mark: ")
+        elif selected_param == "4":
+            translate_args.should_translate_file_name = confirm("Translate file names?")
+        elif selected_param == "5":
+            translate_args.file_list = prompt("Enter the new file list (comma-separated): ").split(",")
+        elif selected_param == "6":
+            translate_args.output_dir = prompt("Enter the new output directory: ")
+
+    return translate_args
 
 class ActionTranslate():
     def __init__(self,args:AutoCoderArgs,llm:Optional[byzerllm.ByzerLLM]=None) -> None:
@@ -52,7 +99,7 @@ class ActionTranslate():
             tranlate_args:TranslateArgs = t[0].value
             if tranlate_args:
                 lang = tranlate_args.target_lang
-                suffixes = tranlate_args.file_suffix
+                suffixes = tranlate_args.file_suffix 
                 new_file_mark = tranlate_args.new_file_mark
                 file_list = tranlate_args.file_list
                 output_dir = tranlate_args.output_dir  
@@ -63,96 +110,25 @@ class ActionTranslate():
         
         translate_args = TranslateArgs(target_lang=lang,file_suffix=suffixes,new_file_mark=new_file_mark,file_list=file_list,output_dir=output_dir,should_translate_file_name=should_translate_file_name)                           
 
-        while True:
-            # Display the translation parameters for user confirmation
-            print_formatted_text(HTML(f"""
-<h3>Please confirm the following translation parameters:</h3>
-
-<table>
-  <tr>
-    <th>Parameter</th>
-    <th>Value</th>
-  </tr>
-  <tr>
-    <td>1. Target Language</td>
-    <td>{lang}</td>
-  </tr>
-  <tr>
-    <td>2. File Suffixes</td>
-    <td>{suffixes}</td>
-  </tr>
-  <tr>
-    <td>3. New File Mark</td>
-    <td>{new_file_mark}</td>
-  </tr>
-  <tr>
-    <td>4. Translate File Name</td>
-    <td>{should_translate_file_name}</td>
-  </tr>
-  <tr>
-    <td>5. File List</td>
-    <td>{file_list}</td>
-  </tr>
-  <tr>
-    <td>6. Output Directory</td>
-    <td>{output_dir}</td>
-  </tr>
-</table>
-            """))
-
-            if confirm("Are the above parameters correct?"):
-                break
-
-            param_options = [
-                ("1", "Target Language"),
-                ("2", "File Suffixes"),
-                ("3", "New File Mark"),
-                ("4", "Translate File Name"),
-                ("5", "File List"),
-                ("6", "Output Directory")
-            ]
-            selected_param = radiolist_dialog(
-                title="Select parameter to modify",
-                text="Choose the parameter you want to change:",
-                values=param_options
-            ).run()
-
-            if selected_param == "1":
-                lang = prompt("Enter the new target language: ")
-                translate_args.target_lang = lang
-            elif selected_param == "2":
-                suffixes = prompt("Enter the new file suffixes (comma-separated): ")
-                translate_args.file_suffix = suffixes
-            elif selected_param == "3":
-                new_file_mark = prompt("Enter the new file mark: ")
-                translate_args.new_file_mark = new_file_mark
-            elif selected_param == "4":
-                should_translate_file_name = confirm("Translate file names?")
-                translate_args.should_translate_file_name = should_translate_file_name
-            elif selected_param == "5":
-                file_list = prompt("Enter the new file list (comma-separated): ").split(",")
-                translate_args.file_list = file_list
-            elif selected_param == "6":
-                output_dir = prompt("Enter the new output directory: ")
-                translate_args.output_dir = output_dir
-
+        translate_args = confirm_translation_parameters(translate_args)
+        
         def file_filter(file_path, suffixes):
             for suffix in suffixes:
                 if suffix.startswith("."):
-                    if file_path.endswith(f"-{new_file_mark}{suffix}"):
+                    if file_path.endswith(f"-{translate_args.new_file_mark}{suffix}"):
                         return False
                 else:
-                    if file_path.endswith(f"-{new_file_mark}.{suffix}"):
+                    if file_path.endswith(f"-{translate_args.new_file_mark}.{suffix}"):
                         return False
             return True
         
-        args.project_type = suffixes
+        args.project_type = translate_args.file_suffix
         pp = SuffixProject(args=args, llm=self.llm,
                             file_filter=file_filter                               
                             ) 
         pp.run()                        
         for source in pp.sources:
-            if file_list and source.module_name not in file_list:
+            if translate_args.file_list and source.module_name not in translate_args.file_list:
                 continue
             logger.info(f"Translating {source.module_name}...")
             max_tokens = self.args.model_max_length or 2000
@@ -160,7 +136,7 @@ class ActionTranslate():
             temp_result = []
             segment_count = 0
             for segment in segments:                    
-                content = translate_readme(content=segment, lang=lang,instruction=args.query)
+                content = translate_readme(content=segment, lang=translate_args.target_lang,instruction=args.query)
                 t = self.llm.chat_oai(conversations=[{
                 "role": "user",
                 "content": content
@@ -173,15 +149,15 @@ class ActionTranslate():
             filename, extension = os.path.splitext(readme.filename) 
             file_short_name,_ = os.path.splitext(os.path.basename(filename))
             
-            if new_file_mark:
-                new_file_mark = f"-{new_file_mark}"
+            if translate_args.new_file_mark:
+                new_file_mark = f"-{translate_args.new_file_mark}"
             
-            if should_translate_file_name:
-                file_short_name = translate_readme.with_llm(self.llm).run(content=file_short_name, lang=lang,instruction=args.query)
+            if translate_args.should_translate_file_name:
+                file_short_name = translate_readme.with_llm(self.llm).run(content=file_short_name, lang=translate_args.target_lang,instruction=args.query)
                 file_short_name = file_short_name.replace(" ","_")
                 
-            if output_dir:
-                new_filename = os.path.join(output_dir,f"{file_short_name}{new_file_mark}{extension}")                                                  
+            if translate_args.output_dir:
+                new_filename = os.path.join(translate_args.output_dir,f"{file_short_name}{new_file_mark}{extension}")                                                  
             else:
                 new_filename = f"{filename}{new_file_mark}{extension}"
 
