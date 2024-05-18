@@ -61,10 +61,11 @@ class ActionTranslate():
             [_, lang, suffixes, new_file_mark,file_list_str,output_dir,should_translate_file_name] = args.project_type.split("/")
             file_list = file_list_str.split(",")
         
-        tranlate_args = TranslateArgs(target_lang=lang,file_suffix=suffixes,new_file_mark=new_file_mark,file_list=file_list,output_dir=output_dir,should_translate_file_name=should_translate_file_name)                           
+        translate_args = TranslateArgs(target_lang=lang,file_suffix=suffixes,new_file_mark=new_file_mark,file_list=file_list,output_dir=output_dir,should_translate_file_name=should_translate_file_name)                           
 
-        # Display the translation parameters for user confirmation
-        print_formatted_text(HTML(f"""
+        while True:
+            # Display the translation parameters for user confirmation
+            print_formatted_text(HTML(f"""
 <h3>Please confirm the following translation parameters:</h3>
 
 <table>
@@ -77,31 +78,38 @@ class ActionTranslate():
     <td>{lang}</td>
   </tr>
   <tr>
-    <td>2. File Suffixes</td>  
+    <td>2. File Suffixes</td>
     <td>{suffixes}</td>
   </tr>
   <tr>
     <td>3. New File Mark</td>
     <td>{new_file_mark}</td>
   </tr>
-  <tr>  
+  <tr>
     <td>4. Translate File Name</td>
     <td>{should_translate_file_name}</td>
   </tr>
   <tr>
     <td>5. File List</td>
-    <td>{file_list}</td>  
+    <td>{file_list}</td>
+  </tr>
+  <tr>
+    <td>6. Output Directory</td>
+    <td>{output_dir}</td>
   </tr>
 </table>
-        """))
+            """))
 
-        if not confirm("Are the above parameters correct?"):
+            if confirm("Are the above parameters correct?"):
+                break
+
             param_options = [
                 ("1", "Target Language"),
-                ("2", "File Suffixes"),  
+                ("2", "File Suffixes"),
                 ("3", "New File Mark"),
                 ("4", "Translate File Name"),
-                ("5", "File List")
+                ("5", "File List"),
+                ("6", "Output Directory")
             ]
             selected_param = radiolist_dialog(
                 title="Select parameter to modify",
@@ -111,14 +119,22 @@ class ActionTranslate():
 
             if selected_param == "1":
                 lang = prompt("Enter the new target language: ")
+                translate_args.target_lang = lang
             elif selected_param == "2":
                 suffixes = prompt("Enter the new file suffixes (comma-separated): ")
-            elif selected_param == "3":  
+                translate_args.file_suffix = suffixes
+            elif selected_param == "3":
                 new_file_mark = prompt("Enter the new file mark: ")
+                translate_args.new_file_mark = new_file_mark
             elif selected_param == "4":
                 should_translate_file_name = confirm("Translate file names?")
+                translate_args.should_translate_file_name = should_translate_file_name
             elif selected_param == "5":
                 file_list = prompt("Enter the new file list (comma-separated): ").split(",")
+                translate_args.file_list = file_list
+            elif selected_param == "6":
+                output_dir = prompt("Enter the new output directory: ")
+                translate_args.output_dir = output_dir
 
         def file_filter(file_path, suffixes):
             for suffix in suffixes:
