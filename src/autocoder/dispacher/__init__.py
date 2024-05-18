@@ -19,6 +19,7 @@ class Dispacher():
                     ActionPyScriptProject(args=args,llm=self.llm),
                     ActionPyProject(args=args,llm=self.llm),
                     ActionCopilot(args=args,llm=self.llm),
+
                     ActionSuffixProject(args=args,llm=self.llm)
                     ]
         for action in actions:

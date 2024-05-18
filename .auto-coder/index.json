@@ -23,9 +23,10 @@
     "md5": "51b9616f81320ded3715deadb6b1a652"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py": {
-    "symbols": "函数：__init__,dispach\n类：Dispacher\n变量：args,llm\n导入语句：from autocoder.common import AutoCoderArgs,from autocoder.dispacher.actions.copilot import ActionCopilot,from autocoder.dispacher.actions.action import ActionTSProject, ActionPyScriptProject, ActionPyProject, ActionSuffixProject,from autocoder.dispacher.actions.plugins.action_translate import ActionTranslate,from typing import Optional,import byzerllm,import re",
-    "last_modified": 1714366923.8075686,
-    "md5": "57d46c96ea805c4cb73b0ae9ec96944b"
+    "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py",
+    "symbols": " 函数：dispach\n变量：args, actions, action\n类：Dispacher\n导入语句：from autocoder.common import AutoCoderArgs, from autocoder.dispacher.actions.copilot import ActionCopilot, from autocoder.dispacher.actions.action import ActionTSProject, ActionPyScriptProject, ActionPyProject, ActionSuffixProject, from autocoder.dispacher.actions.plugins.action_translate import ActionTranslate, from typing import Optional, import byzerllm, import re",
+    "last_modified": 1716043367.6599503,
+    "md5": "f58c949256728bb66605146810cee71a"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/actions/copilot.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/actions/copilot.py",
@@ -257,5 +258,11 @@
     "symbols": "函数：__init__, save_doc, _owner_filter, search_content_chunks, search_content_by_filename, search_content, get_chunk_by_id, get_chunks_by_docid, delete_chunk_by_ids, save_chunks, get_doc, truncate_table, delete_doc_and_chunks_by_filename, delete_from_doc_collection, delete_from_chunk_collection, commit_doc, commit_chunk, emb, split_text_into_chunks, search_tokenize\n类：SimpleRetrieval\n变量：\n导入语句：from byzerllm.utils.retrieval import ByzerRetrieval,from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union,from byzerllm.utils.client import ByzerLLM,from byzerllm.utils import generate_str_md5,from byzerllm.utils.retrieval import ByzerRetrieval,import time,from byzerllm.utils.client import LLMHistoryItem,LLMRequest,from byzerllm.utils.retrieval import TableSettings,SearchQuery,import uuid,import json,from langchain_core.prompts import PromptTemplate,from langchain.text_splitter import RecursiveCharacterTextSplitter,try:,from termcolor import colored,except ImportError:,import jieba",
     "last_modified": 1713936709.5514567,
     "md5": "52171defcfeccafa4e069af4d7c9d892"
+  },
+  "/Users/allwefantasy/projects/auto-coder/src/autocoder/regex_project/__init__.py": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/regex_project/__init__.py",
+    "symbols": " 类：RegexProject\n函数：extract_regex_pattern, output, is_regex_match, read_file_content, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, run, clone_repository\n变量：\n导入语句：import re,from autocoder.common import SourceCode,AutoCoderArgs,from autocoder import common as FileUtils,from autocoder.utils.rest import HttpDoc,import os,from typing import Optional, Generator, List, Dict, Any, Callable,from git import Repo,import byzerllm,from autocoder.common.search import Search,SearchEngine,from autocoder.rag.simple_rag import SimpleRAG,from loguru import logger",
+    "last_modified": 1716043146.123372,
+    "md5": "e7c0e7b05ae9802a796441ba84624902"
   }
 }
