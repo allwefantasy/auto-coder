@@ -12,7 +12,7 @@ query: |
    把项目中的markdown文档翻译成英文,
    需要翻译的文件列表：
   
-   1. /Users/allwefantasy/projects/auto-coder/docs/zh/028-AutoCoder_如何高效的生成修改多文件.md
+   1. /Users/allwefantasy/projects/auto-coder/docs/zh/029-AutoCoder_混合项目如何开发.md
    
    保存到 /Users/allwefantasy/projects/auto-coder/docs/en 目录下。
 
