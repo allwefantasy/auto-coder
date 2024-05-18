@@ -22,6 +22,34 @@ from autocoder.rag.api_server import serve,ServerArgs
 from loguru import logger
 from autocoder.common.command_templates import init_command_template
 
+def resolve_include_path(base_path, include_path):
+   if include_path.startswith('.') or include_path.startswith('..'):
+       return os.path.abspath(os.path.join(os.path.dirname(base_path), include_path))
+   else:
+       return include_path
+
+def load_include_files(config,base_path, max_depth=10, current_depth=0):
+   if current_depth >= max_depth:
+       raise ValueError(f"Exceeded maximum include depth of {max_depth},you may have a circular dependency in your include files.")
+   
+   if "include_file" in config:
+       include_files = config['include_file']
+       if not isinstance(include_files, list):
+           include_files = [include_files]
+       
+       for include_file in include_files:
+           abs_include_path = resolve_include_path(base_path, include_file)
+           logger.info(f"Loading include file: {abs_include_path}")
+           with open(abs_include_path, "r") as f:
+               include_config = yaml.safe_load(f)
+               if not include_config:
+                   logger.info(f"Include file {abs_include_path} is empty,skipping.")
+                   continue
+               config.update(load_include_files(include_config, max_depth, current_depth+1))
+       
+       del config['include_file']
+   
+   return config
 
 def main():
     args,raw_args = parse_args()
@@ -30,6 +58,7 @@ def main():
     if args.file:
         with open(args.file, "r") as f:
             config = yaml.safe_load(f)
+            config = load_include_files(config,args.file)
             for key, value in config.items():
                 if key != "file":  # 排除 --file 参数本身   
                     ## key: ENV {{VARIABLE_NAME}}
