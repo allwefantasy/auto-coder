@@ -54,7 +54,7 @@ class CodeAutoGenerate:
         ```
 
         其中，{lang}是代码的语言，{CODE}是代码的内容, {FILE_PATH} 是文件的路径，他们都在代码块中，请严格按上面的格式进行内容生成。                
-        每次生成一个文件的代码，然后询问我是否继续，当我回复继续，继续生成下一个文件的代码。当没有后续任务时，请回复 "__完成__"。
+        每次生成一个文件的代码，然后询问我是否继续，当我回复继续，继续生成下一个文件的代码。当没有后续任务时，请回复 "__完成__" 或者 "__EOF__"。
         请确保每份代码的完整性，而不要只生成修改部分。
         '''
 
@@ -166,7 +166,7 @@ class CodeAutoGenerate:
             })
             current_step += 1   
             
-            if "__完成__" in t[0].output:
+            if "__完成__" in t[0].output or "__EOF__" in t[0].output:
                 return result, conversations         
             
 

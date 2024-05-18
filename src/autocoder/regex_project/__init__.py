@@ -9,6 +9,10 @@ import byzerllm
 from autocoder.common.search import Search,SearchEngine
 from autocoder.rag.simple_rag import SimpleRAG
 from loguru import logger
+from pydantic import BaseModel,Field
+
+class RegPattern(BaseModel):
+    pattern: str = Field(..., title="Pattern", description="The regex pattern can be used by `re.search` in python.")
 
 class RegexProject():
     
@@ -21,11 +25,26 @@ class RegexProject():
         self.regex_pattern = self.extract_regex_pattern(self.project_type)
         self.file_filter = file_filter
         self.sources = []
-        self.llm = llm        
+        self.llm = llm   
+
+    @byzerllm.prompt()
+    def generate_regex_pattern(self,desc:str)->RegPattern:
+        '''
+        Generate a regex pattern based on the following description:
+
+        {{ desc }}              
+        '''
+        
 
     def extract_regex_pattern(self, project_type):
-        if project_type.startswith("regex//"):
-            return project_type[7:]
+        if project_type.startswith("regex://"):
+            return project_type[8:]
+        if project_type.startswith("human://"):
+            desc = project_type[8:]
+            v = self.generate_regex_pattern(desc=desc)
+            if not v:
+                raise ValueError("Fail to generate regex pattern, try again.")
+            return v.pattern
         else:
             raise ValueError("Invalid project_type format. Expected 'regex//<pattern>'")
 

@@ -3,6 +3,7 @@ from autocoder.common import AutoCoderArgs
 from autocoder.dispacher.actions.copilot import ActionCopilot
 from autocoder.dispacher.actions.action import ActionTSProject, ActionPyScriptProject, ActionPyProject, ActionSuffixProject
 from autocoder.dispacher.actions.plugins.action_translate import ActionTranslate
+from autocoder.dispacher.actions.plugins.action_regex_project import ActionRegexProject
 from typing import Optional
 import byzerllm
 import re
@@ -19,7 +20,7 @@ class Dispacher():
                     ActionPyScriptProject(args=args,llm=self.llm),
                     ActionPyProject(args=args,llm=self.llm),
                     ActionCopilot(args=args,llm=self.llm),
-
+                    ActionRegexProject(args=args,llm=self.llm),
                     ActionSuffixProject(args=args,llm=self.llm)
                     ]
         for action in actions:
