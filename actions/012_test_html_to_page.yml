@@ -1,7 +1,7 @@
 source_dir: /Users/allwefantasy/projects/auto-coder.example.copy/web
 target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
-# project_type: copilot/ts
-project_type: ts
+project_type: copilot/ts
+# project_type: ts
 image_file: /Users/allwefantasy/projects/auto-coder/screenshots/zen.png
 image_mode: direct
 image_max_iter: 1
@@ -12,6 +12,7 @@ model_max_input_length: 30000
 anti_quota_limit: 0
 
 vl_model: gpt4o_chat
+# vl_model: yi_vl_chat
 
 index_model: deepseek_chat
 index_model_max_length: 2000
