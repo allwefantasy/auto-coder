@@ -1,0 +1,50 @@
+source_dir: /Users/allwefantasy/projects/auto-coder
+target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
+project_type: py
+
+ray_address: "ray://192.168.3.123:10001"
+
+model: deepseek_chat
+index_model: deepseek_chat
+emb_model: gpt_emb
+
+index_filter_level: 1
+index_model_max_input_length: 30000
+index_filter_workers: 4
+index_build_workers: 4
+
+# enable_rag_context: true
+
+skip_build_index: false
+execute: true
+## 代码生成的时候会每次生成一个文件，现在大模型无法一次性生成太多文件，所以需要多轮生成
+enable_multi_round_generate: false
+auto_merge: true
+human_as_model: true
+
+query: |
+   优化 ActionTranslate，在对应的代码，我们会打通过logger打印诸如suffixes，new_file_mark等信息，
+   然后通过input 来让用户来确认是不是对的。
+
+   对应的字段解释如下：
+   1. lang: 目标语言
+   2. suffixes: 需要翻译的文件的后缀名，多个按逗号分隔
+   3. new_file_mark: 新文件的标记，比如原始文件名是a.md，new_file_mark 是cn, 那么翻译后的文件名是a_en.md。
+   4. should_translate_file_name: 是否翻译文件名
+   5. file_list：需要翻译的文件列表，类型为 list
+
+
+   现在我们需要优化这个功能，需要确保 1. 清晰，格式化的展示上面的信息。 2. 来让用户确认是否正确。
+   3. 如果用户认为不正确，需要让用户输入正确的信息。
+
+   使用 prompt_toolkit 来进行交互，保证 prompt_toolkit 的交互界面是modern的。
+
+   
+    
+   
+   
+
+
+
+
+   

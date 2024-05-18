@@ -44,7 +44,10 @@ The first method is to start a client proxy as follows:
 
 ```shell
 ray start --address='Company Byzer-LLM cluster address'
-```                    
+```      
+
+Here, the company's Byzer-LLM cluster address should be in a format similar to `x.x.x.x:6379`.
+
 Then you can normally use AutoCoder, for example:
 
 ```yml
@@ -81,6 +84,8 @@ project_type: "copilot/.py"
 query: |
   Optimize the get_suffix_from_project_type function in copilot and update the original file
 ```       
+
+Here, the company's Byzer-LLM cluster address should be in a format similar to `ray://x.x.x.x:10001`.
 
 Users can choose one of these methods according to their needs.
 
