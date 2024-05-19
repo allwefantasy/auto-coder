@@ -446,7 +446,11 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
         final_filenames = [file.file_path for file in final_files.values()]        
     else: 
         target_files_data = [(file.file_path, file.reason) for file in final_files.values()]
-        final_filenames = display_table_and_get_selections(target_files_data)
+        if not target_files_data:
+            logger.warning("No target files found, try to rewrite the query and run again.")            
+            final_filenames = []
+        else:
+            final_filenames = display_table_and_get_selections(target_files_data)
         
     print_selected([(file.file_path, file.reason) for file in final_files.values() if file.file_path in final_filenames])    
 

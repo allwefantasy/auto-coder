@@ -1,0 +1,9 @@
+include_file: 
+   - ./common/remote.yml
+
+model: gpt3_5_chat
+project_type: "human://过滤出common包下的所有文件"
+query: |   
+   模仿 ActionSuffixProject(dispatcher/actions/action.py) 中的代码，你需要实现该类中的所有方法， 
+   然后使用 RegexProject 做过滤。
+   新文件放在 actions/plugins/action_regex_project.py 中。

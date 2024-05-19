@@ -37,6 +37,7 @@ class RegexProject():
         
 
     def extract_regex_pattern(self, project_type):
+        project_type = project_type.strip()
         if project_type.startswith("regex://"):
             return project_type[8:]
         if project_type.startswith("human://"):
@@ -44,6 +45,7 @@ class RegexProject():
             v = self.generate_regex_pattern(desc=desc)
             if not v:
                 raise ValueError("Fail to generate regex pattern, try again.")
+            logger.info(f"Generated regex pattern: {v.pattern}")
             return v.pattern
         else:
             raise ValueError("Invalid project_type format. Expected 'regex//<pattern>'")
@@ -107,7 +109,7 @@ class RegexProject():
 
     def run(self):
         if self.git_url is not None:
-            self.clone_repository()
+            self.clone_repository()        
 
         if self.target_file is None:   
             for code in self.get_source_codes():

@@ -13,6 +13,10 @@ class ActionRegexProject:
         self.llm = llm
 
     def run(self):
+        args = self.args        
+        if not args.project_type.startswith("human://") and not args.project_type.startswith("regex://"):    
+            return False 
+        
         args = self.args
         pp = RegexProject(args=args, llm=self.llm)
         pp.run()

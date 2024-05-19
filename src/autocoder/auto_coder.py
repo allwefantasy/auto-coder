@@ -45,7 +45,7 @@ def load_include_files(config,base_path, max_depth=10, current_depth=0):
                if not include_config:
                    logger.info(f"Include file {abs_include_path} is empty,skipping.")
                    continue
-               config.update(load_include_files(include_config, max_depth, current_depth+1))
+               config.update({**load_include_files(include_config, max_depth, current_depth+1),**config})
        
        del config['include_file']
    

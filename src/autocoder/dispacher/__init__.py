@@ -14,7 +14,7 @@ class Dispacher():
         self.llm = llm 
 
     def dispach(self):
-        args = self.args
+        args = self.args        
         actions = [ActionTranslate(args=args,llm=self.llm),
                     ActionTSProject(args=args,llm=self.llm),
                     ActionPyScriptProject(args=args,llm=self.llm),
