@@ -81,7 +81,7 @@ auto-coder doc serve --model deepseek_chat --emb_model gpt_emb  --collection aut
 ```
 会开启一个兼容 OpenAI 的API接口，默认端口8000,你可以在你的聊天软件里做下配置,然后就可以有一个 auto-coder 文档小助手了：
 
-![](images/032-01.png)
+![](../images/032-01.png)
 
 
 
