@@ -12,7 +12,7 @@ query: |
    把项目中的markdown文档翻译成英文,
    需要翻译的文件列表：
   
-   1. /Users/allwefantasy/projects/auto-coder/docs/zh/030-AutoCoder_复用YAML配置文件.md
+   1. /Users/allwefantasy/projects/auto-coder/docs/zh/031-AutoCoder_正则表达式排除目录.md
    
    保存到 /Users/allwefantasy/projects/auto-coder/docs/en 目录下。
 
