@@ -12,7 +12,7 @@ query: |
    把项目中的markdown文档翻译成英文,
    需要翻译的文件列表：
   
-   1. /Users/allwefantasy/projects/auto-coder/docs/zh/003- AutoCoder 使用Web版大模型，性感的Human As Model 模式.md
+   1. /Users/allwefantasy/projects/auto-coder/docs/zh/005-AutoCoder 使用搜索引擎.md
    
    保存到 /Users/allwefantasy/projects/auto-coder/docs/en 目录下。
 
