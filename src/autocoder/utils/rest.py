@@ -12,7 +12,13 @@ from pathlib import Path
 class HttpDoc:
     def __init__(self, args, llm: byzerllm.ByzerLLM,urls:Optional[List[str]]=None):
         self.args = args
-        temp_urls = self.args.urls.split(",") if not urls else urls
+        urls_from_args = self.args.urls
+        if urls_from_args:
+            if isinstance(urls_from_args, str):
+                _urls = urls_from_args.split(",")
+            else:
+                _urls = urls_from_args
+        temp_urls = _urls if not urls else urls
         self.urls = [url.strip() for url in temp_urls if url.strip() != ""]
         self.llm = llm
 

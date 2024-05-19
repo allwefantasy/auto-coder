@@ -193,7 +193,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     image_mode: Optional[str] = "direct"
     image_max_iter: Optional[int] = 1
     human_as_model:Optional[bool] = False
-    urls: Optional[str] = ""
+    urls: Optional[Union[str,List[str]]] = ""
     urls_use_model: Optional[bool] = False
     enable_multi_round_generate: Optional[bool] = False
     command: Optional[str] = None

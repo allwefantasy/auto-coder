@@ -1,0 +1,9 @@
+include_file: 
+   - ../common/remote.yml
+
+urls:
+   - /Users/allwefantasy/projects/auto-coder/actions/000_add_command_line_auto_merge.yml
+
+query: |   
+   xxxxxxx
+   

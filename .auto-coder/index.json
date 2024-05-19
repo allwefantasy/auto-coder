@@ -13,8 +13,8 @@
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py",
     "symbols": " 变量：__version__\n函数：\n类：\n导入语句：",
-    "last_modified": 1716113312.0381694,
-    "md5": "118ee21b716ced8fb2c6b96946a218db"
+    "last_modified": 1716119424.4041636,
+    "md5": "a3fa78334ea6623d657d138c6f9fd5b7"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
@@ -51,9 +51,10 @@
     "md5": "321dac6254f910d04b70b9e5e9f799e6"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/utils/rest.py": {
-    "symbols": "导入语句：import requests,from bs4 import BeautifulSoup,from typing import List,Dict,Type,Optional,from autocoder.common import SourceCode,import byzerllm,from bs4 import BeautifulSoup,from loguru import logger,import os,from pathlib import Path\n变量：source_codes,exts,url,documents,response,html_content,extra_llm_config\n类：HttpDoc\n函数：_extract_main_content,is_binary_file,get_file_extractor,crawl_urls,process_single_file\n函数：clean_html_keep_text  \n变量：extra_llm_config, prompt, t, main_content, source_code, source_codes, soup, tags_to_remove_completely, tag, element, tags_to_remove_but_keep_text  \n类：  \n导入语句：BeautifulSoup, html_content, SourceCode, url, response, logger, requests, os, time, from loguru import logger, import byzerllm",
-    "last_modified": 1713251851.0555391,
-    "md5": "830a2c7934a17cbdcddcfa140f8e09b5"
+    "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/utils/rest.py",
+    "symbols": " 函数：_extract_main_content, is_binary_file, get_file_extractor, crawl_urls, clean_html_keep_text\n变量：\n类：HttpDoc\n导入语句：import requests,from bs4 import BeautifulSoup,from typing import List,Dict,Type,Optional,from autocoder.common import SourceCode,import byzerllm,from bs4 import BeautifulSoup,from loguru import logger,import os,from pathlib import Path",
+    "last_modified": 1716125903.9219522,
+    "md5": "88c38cb0ed1b69570f1cbb870ce205b0"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/utils/llm_client_interceptors.py": {
     "symbols": "导入语句：from byzerllm.utils.client import EventCallbackResult,EventName,from prompt_toolkit import prompt,from prompt_toolkit.formatted_text import FormattedText,from typing import List,Dict,Any,from loguru import logger,from autocoder.db.store import Store\n函数：token_counter_interceptor\n变量：v,metadata,input_tokens_count,generated_tokens_count\n类：\n",
@@ -127,14 +128,14 @@
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/suffixproject/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/suffixproject/__init__.py",
     "symbols": " 函数：generate_regex_pattern, parse_exclude_files, output, is_suffix_file, read_file_content, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, run, clone_repository\n变量：args, directory, git_url, target_file, project_type, suffixs, file_filter, sources, llm, exclude_files, exclude_patterns, default_exclude_dirs\n类：RegPattern, SuffixProject\n导入语句：from autocoder.common import SourceCode,AutoCoderArgs, from autocoder import common as FileUtils, from autocoder.utils.rest import HttpDoc, import os, from typing import Optional, Generator, List, Dict, Any, Callable, from git import Repo, import byzerllm, from autocoder.common.search import Search,SearchEngine, from autocoder.rag.simple_rag import SimpleRAG, from loguru import logger, import re, from pydantic import BaseModel,Field",
-    "last_modified": 1716118951.8397353,
-    "md5": "510cba6ce517a2b480c325b73cde6794"
+    "last_modified": 1716125708.9844017,
+    "md5": "ce22c8720aad15eca57eae7444bda9b2"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/tsproject/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/tsproject/__init__.py",
-    "symbols": " 函数：__init__, output, read_file_content, is_likely_useful_file, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, run, clone_repository\n变量：args, directory, git_url, target_file, sources, llm\n类：TSProject\n导入语句：from autocoder.common import SourceCode,AutoCoderArgs,from autocoder import common as FileUtils,from autocoder.utils.rest import HttpDoc,from autocoder.rag.simple_rag import SimpleRAG,import os,from typing import Optional,Generator,List,Dict,Any,from git import Repo,import byzerllm,from autocoder.common.search import Search,SearchEngine",
-    "last_modified": 1716118971.0664444,
-    "md5": "5d68e4ee6d0930ab1608dd729aaaffaa"
+    "symbols": " 函数：output, read_file_content, is_likely_useful_file, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, run, clone_repository\n变量：args, directory, git_url, target_file, sources, llm\n类：TSProject\n导入语句：from autocoder.common import SourceCode,AutoCoderArgs,from autocoder import common as FileUtils,from autocoder.utils.rest import HttpDoc,from autocoder.rag.simple_rag import SimpleRAG,import os,from typing import Optional,Generator,List,Dict,Any,from git import Repo,import byzerllm,from autocoder.common.search import Search,SearchEngine",
+    "last_modified": 1716125721.0191417,
+    "md5": "c5a7351e3e630ca5271b88f6117de8b0"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/image_to_page.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/image_to_page.py",
@@ -147,32 +148,18 @@
     "last_modified": 1711809217.9135008,
     "md5": "755d4c909428aca6751b50c4f9f1fb0f"
   },
-  "/Users/allwefantasy/projects/auto-coder/tests/test_code_auto_merge.py": {
-    "symbols": "函数：setUp, tearDown, test_merge_code\n类：TestCodeAutoMerge\n变量：text, merger\n导入语句：import os, import shutil, import unittest, from autocoder.common.code_auto_merge import CodeAutoMerge",
-    "last_modified": 1711809217.9193702,
-    "md5": "0922b98fb1b942b807a202b87b8be840"
-  },
-  "/Users/allwefantasy/projects/auto-coder/tests/test_image_to_page.py": {
-    "symbols": "函数：setUp, test_run_then_iterate\n类：TestImageToPage\n变量：self.model, self.llm, vl_model, self.image_to_page\n导入语句：import unittest, import byzerllm, import os, import base64, import json, from autocoder.common.image_to_page import ImageToPage, from autocoder.common import AutoCoderArgs",
-    "last_modified": 1712298397.8095207,
-    "md5": "7c4b6672ace3b7c74ea0c932c67d19ff"
-  },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py",
     "symbols": " 函数：auto_implement_function_template, has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments, detect_env, chat_with_llm_step_by_step\n变量：\n类：SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, EnvInfo, AutoCoderArgs\n导入语句：import pydantic,import ast,import sys,import subprocess,import os,import time,from typing import List,Dict,Any,Optional,Union",
-    "last_modified": 1716118801.6580973,
-    "md5": "ef73b1b43ac3d9b048fda220ca4edcf0"
+    "last_modified": 1716125546.1221256,
+    "md5": "e0efab1e9c6755095d4d5f0332c26c94"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/for_command.py": {
     "symbols": "导入语句：from autocoder.index.index import IndexManager,TargetFile,from autocoder.suffixproject import SuffixProject,from autocoder.tsproject import TSProject,from autocoder.pyproject import PyProject,import tabulate,import textwrap,from loguru import logger\n函数：wrap_text_in_table, index_command, index_query_command\n变量：wrapped_data, project, sources, index_manager, pp, final_files, target_files, related_fiels, all_results, headers, table_data, table_output",
     "last_modified": 1713251238.3426147,
     "md5": "cb51d04bb706f8bb0c14a5964aed1edf"
   },
-  "/Users/allwefantasy/projects/auto-coder/tests/test_shell_client.py": {
-    "symbols": "函数：setup_method, teardown_method, test_add_and_run\n变量：self, output, error, client\n类：TestShellClient\n导入语句：import tempfile, import os, import pytest, from autocoder.common.ShellClient import ShellClient, import shutil",
-    "last_modified": 1712574188.2251313,
-    "md5": "7804fda3cdd07308ebc84540ba899ac4"
-  },
+
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/simple_rag.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/simple_rag.py",
     "symbols": " 函数：file_metadata_func, generate_file_md5, __init__, _get_indices, _get_query_engine, _get_retriever, stream_search, retrieve, stream_chat_oai, stream_chat_repl, search, build\n变量：\n类：SimpleRAG\n导入语句：from typing import Any, Dict, List, Optional, Tuple, from autocoder.common import SourceCode,AutoCoderArgs, from autocoder.common.llm_rerank import LLMRerank, import fsspec, from byzerllm.apps.llama_index.simple_retrieval import SimpleRetrieval, from byzerllm.apps.llama_index import get_service_context,get_storage_context, from byzerllm.apps.llama_index.collection_manager import CollectionManager,CollectionItem, from llama_index.core import QueryBundle,StorageContext, from llama_index.core.readers.file.base import default_file_metadata_func, from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, ServiceContext, from llama_index.core.node_parser import SentenceSplitter,HierarchicalNodeParser,get_leaf_nodes, get_root_nodes, from llama_index.core.base.llms.types import ChatMessage,MessageRole, from llama_index.core.retrievers import AutoMergingRetriever, from llama_index.core.query_engine import RetrieverQueryEngine,RouterQueryEngine, from llama_index.core.tools import QueryEngineTool, from llama_index.core.selectors import LLMSingleSelector, import byzerllm, from loguru import logger, import hashlib, import json",
@@ -265,9 +252,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/regex_project/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/regex_project/__init__.py",
-    "symbols": " 函数：generate_regex_pattern, extract_regex_pattern, output, is_regex_match, read_file_content, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, run, clone_repository\n变量：args, directory, git_url, target_file, project_type, file_filter, sources, llm, regex_pattern\n类：RegPattern, RegexProject\n导入语句：import re,from autocoder.common import SourceCode,AutoCoderArgs,from autocoder import common as FileUtils,from autocoder.utils.rest import HttpDoc,import os,from typing import Optional, Generator, List, Dict, Any, Callable,from git import Repo,import byzerllm,from autocoder.common.search import Search,SearchEngine,from autocoder.rag.simple_rag import SimpleRAG,from loguru import logger,from pydantic import BaseModel,Field",
-    "last_modified": 1716118940.507114,
-    "md5": "5ecd63ffa25db85ff57a4cc4d874c5eb"
+    "symbols": " 函数：generate_regex_pattern, extract_regex_pattern, output, read_file_content, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, run, clone_repository\n变量：args, directory, git_url, target_file, project_type, file_filter, sources, llm, regex_pattern\n类：RegPattern, RegexProject\n导入语句：import re,from autocoder.common import SourceCode,AutoCoderArgs,from autocoder import common as FileUtils,from autocoder.utils.rest import HttpDoc,import os,from typing import Optional, Generator, List, Dict, Any, Callable,from git import Repo,import byzerllm,from autocoder.common.search import Search,SearchEngine,from autocoder.rag.simple_rag import SimpleRAG,from loguru import logger,from pydantic import BaseModel,Field",
+    "last_modified": 1716125693.2202597,
+    "md5": "154de737c7481dd9e0f346edda0f05b6"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/actions/plugins/action_regex_project.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/actions/plugins/action_regex_project.py",
@@ -281,22 +268,11 @@
     "last_modified": 1713764606.5222874,
     "md5": "674562598c453e7070d042b058d6389b"
   },
-  "/Users/allwefantasy/projects/auto-coder/tests/test_init_command.py": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/tests/test_init_command.py",
-    "symbols": " 函数：test_init_command\n变量：test_dir\n类：\n导入语句：import os,import shutil,from autocoder.auto_coder import main,from autocoder.command_args import parse_args",
-    "last_modified": 1714363934.3556216,
-    "md5": "3a02a954c1c7b2a2b666a42b9a3bbd20"
-  },
-  "/Users/allwefantasy/projects/auto-coder/tests/test_simple_rag.py": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/tests/test_simple_rag.py",
-    "symbols": " 函数：auto_implement_function_template, test_retrieve\n变量：temp_dir, args, llm, rag, results\n类：SimpleRAG, AutoCoderArgs\n导入语句：import tempfile,import shutil,from autocoder.rag.simple_rag import SimpleRAG,from autocoder.common import AutoCoderArgs,import pytest,from loguru import logger,from .base import get_llm,MODEL,EMB_MODEL,RAY_ADDRESS,QUERY",
-    "last_modified": 1713764800.5813866,
-    "md5": "5b3d9fb1b5f0364e66b6d24eae27bbd9"
-  },
-  "/Users/allwefantasy/projects/auto-coder/tests/test_llm_rerank.py": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/tests/test_llm_rerank.py",
-    "symbols": " 函数：auto_implement_function_template, llm, nodes, test_postprocess_nodes_single_batch, test_postprocess_nodes_multiple_batches\n变量：\n类：LLMRerank, AutoCoderArgs, NodeWithScore, TextNode\n导入语句：from autocoder.common.llm_rerank import LLMRerank, from autocoder.common import AutoCoderArgs, import tempfile, from llama_index.core.schema import NodeWithScore, TextNode, import shutil, import pytest, from .base import get_llm, MODEL, EMB_MODEL, RAY_ADDRESS, QUERY",
-    "last_modified": 1713764597.059191,
-    "md5": "614ea349452839c031012f32d1be0649"
+
+  "/Users/allwefantasy/projects/auto-coder/actions/000_add_command_line_auto_merge.yml": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/actions/000_add_command_line_auto_merge.yml",
+    "symbols": " 变量：source_dir, target_file, model, model_max_length, model_max_input_length, anti_quota_limit, skip_build_index\n函数：\n类：\n导入语句：",
+    "last_modified": 1711809217.9089248,
+    "md5": "19eca50d7cc3f27475320bf2c4120efd"
   }
 }

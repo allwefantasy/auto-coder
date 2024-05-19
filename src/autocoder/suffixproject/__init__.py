@@ -99,7 +99,10 @@ class SuffixProject():
 
     def get_rest_source_codes(self) -> Generator[SourceCode, None, None]:
         if self.args.urls:
-            http_doc = HttpDoc(args =self.args, llm=self.llm,urls=self.args.urls.split(","))
+            urls = self.args.urls
+            if isinstance(self.args.urls, str):
+                urls = self.args.urls.split(",") 
+            http_doc = HttpDoc(args =self.args, llm=self.llm,urls=urls)
             sources = http_doc.crawl_urls()    
             for source in sources:
                 source.tag = "REST"     
