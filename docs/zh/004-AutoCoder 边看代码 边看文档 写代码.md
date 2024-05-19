@@ -44,6 +44,16 @@ query: >
 
 这里，相比之前，我们新增了一个 urls 参数，你可以指定一份多份文档。因为我准备给我们的web server 添加一个大模型服务的功能，所以我把 byzerllm 的文档提供给了他。
 
+此外,urls 也支持YAML的数组格式，方便你指定多个文档：
+
+```yml
+urls:
+  - https://raw.githubusercontent.com/allwefantasy/byzer-llm/master/README.md
+  - /tmp/t-py/README.md
+```
+
+注意, urls 支持 Rest 和 本地路径两种，并且支持多种文本格式，诸如PDF,Word，txt, md等等。
+
 这里因为文档比较长，我使用了 human_as_model 功能，从而可以使用一些具有超长窗口的 web 模型。
 
 现在，我们打开 server.py 文件，可以看到新增了一个/llm 接口。
