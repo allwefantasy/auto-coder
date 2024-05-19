@@ -39,7 +39,7 @@ class SuffixProject():
         '''    
 
     def parse_exclude_files(self, exclude_files):
-        if exclude_files is None:
+        if not exclude_files:
             return []
         
         if isinstance(exclude_files, str):

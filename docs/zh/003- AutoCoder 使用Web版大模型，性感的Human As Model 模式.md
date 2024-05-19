@@ -70,7 +70,7 @@ Calude 生成了下面的代码：
 因为大模型生成长度通常是有限制的，而且远远小于（尤其是在web版里）输入。这个时候，你可以开启下面的参数：
 
 ```yaml
-enable_multi_round_generate: false
+enable_multi_round_generate: true
 ```
 
 此时，
@@ -78,6 +78,8 @@ enable_multi_round_generate: false
 1. 当你把prompt黏贴到web版里，只会生成一个文件的的代码，你把生成的代码你黏贴到 auto-coder 里，然后以新行 EOF  结尾
 2. 此时AutoCoder 不会结束，会继续给你新的Prompt 让你黏贴
 3. 这样循环往复，直到你的需求完成。
+4. 有的时候大模型没有在适当的时候说"\_\_完成\_\_", 你可以手动输入 "\_\_完成\_\_" 或者 "\_\_EOF\_\_" 结束这个循环，最后再加一个换行以及 EOF 结束。
+
 
 ## 总结
 
