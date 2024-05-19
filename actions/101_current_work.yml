@@ -1,52 +1,7 @@
-source_dir: /Users/allwefantasy/projects/auto-coder
-target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
-project_type: py
+include_file: 
+   - ./common/remote.yml
 
-urls: /Users/allwefantasy/projects/auto-coder/temp_docs/RouterQueryEngine.txt,/Users/allwefantasy/projects/byzer-llm/src/byzerllm/apps/llama_index/collection_manager.py,/Users/allwefantasy/projects/byzer-llm/src/byzerllm/apps/llama_index/simple_retrieval.py
-
-model: gpt3_5_chat
-index_model: haiku_chat
-emb_model: gpt_emb
-
-index_filter_level: 1
-index_model_max_input_length: 30000
-# index_filter_workers: 2
-# enable_rag_context: true
-
-skip_build_index: false
-execute: true
-## 代码生成的时候会每次生成一个文件，现在大模型无法一次性生成太多文件，所以需要多轮生成
-enable_multi_round_generate: true
-auto_merge: true
-human_as_model: true
-
-query: |  
-   
-   在 SimpleRAG 对象中，self.namespace = "default" self.chunk_collection = "default" 两个值决定
-   了在哪个集合(collection)下存储数据。 我们将使用 args.collection 参数来统一指定这两个值。比如 args.collection = "my_collection"，
-   那么 self.namespace = "my_collection" 而且 self.chunk_collection = "my_collection"。
-
-   args 是指 AutoCoderArgs 对象。
-
-   特别注意：一个集合(collection) 对应一个 storage_context 和一个simple_retrieval，以及一个 VectorStoreIndex 对象。
-   
-   我们现在希望将 SimpleRAG 改造成支持多个集合(collection)的形式，当args.collections 表示多个按逗号分隔的集合名称。
-   请参考RouterQueryEngine.txt，collection_manager.py 文件，根据你的理解，完成这个改造。
-
-   下面一些是你需要遵循的限制：
-
-   1. 引入 collection_manager.py 时，可以这么用：from byzerllm.apps.llama_index.collection_manager import CollectionManager
-   2. SimpleRAG 对象中的所有方法的签名不允许修改， 但是可以增加新的方法。
-   3. build 需要使用初始化中的 args.collection 和 args.description 两个值， 通过collection_manager 来进行保存。
-   4. stream_search/retrieve/stream_chat_oai/stream_chat_repl/search 需要使用初始化中的 args.collections，并且通过collection_manager 获取
-     每个collection的完整信息。
-         如果 args.collections 只有一个值(多个值会按逗号分隔)，则按原有逻辑执行。
-         如果 args.collections 有多个值,并且args.description没有值的时候，则按照顺序执行。
-         如果 args.collections 有多个值,并且args.description有值的时候，则参考 RouterQueryEngine.txt 文档中的描述，用 QueryEngineTool 将
-         各个 query_engine 转换为tool, RouterQueryEngine 来形成一个新的 query_engine,然后使用新的 query_engine 来执行。
-
-
-
-
-
-   
+query: |   
+   在定义了 SuffixProject 类的代码里优化 get_source_codes 方法，根据
+   default_exclude_dirs 参数排除不需要处理的目录。 
+    
