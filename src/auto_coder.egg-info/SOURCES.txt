@@ -36,6 +36,7 @@ src/autocoder/dispacher/actions/__init__.py
 src/autocoder/dispacher/actions/action.py
 src/autocoder/dispacher/actions/copilot.py
 src/autocoder/dispacher/actions/plugins/__init__.py
+src/autocoder/dispacher/actions/plugins/action_regex_project.py
 src/autocoder/dispacher/actions/plugins/action_translate.py
 src/autocoder/index/__init__.py
 src/autocoder/index/for_command.py
@@ -46,6 +47,7 @@ src/autocoder/rag/api_server.py
 src/autocoder/rag/llm_wrapper.py
 src/autocoder/rag/simple_rag.py
 src/autocoder/rag/types.py
+src/autocoder/regex_project/__init__.py
 src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py
 src/autocoder/utils/__init__.py
