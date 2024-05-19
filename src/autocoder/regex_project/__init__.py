@@ -21,11 +21,11 @@ class RegexProject():
         self.directory = args.source_dir        
         self.git_url = args.git_url        
         self.target_file = args.target_file  
-        self.project_type = args.project_type
-        self.regex_pattern = self.extract_regex_pattern(self.project_type)
+        self.project_type = args.project_type        
         self.file_filter = file_filter
         self.sources = []
         self.llm = llm   
+        self.regex_pattern = self.extract_regex_pattern(self.project_type)
 
     @byzerllm.prompt()
     def generate_regex_pattern(self,desc:str)->RegPattern:
@@ -42,7 +42,7 @@ class RegexProject():
             return project_type[8:]
         if project_type.startswith("human://"):
             desc = project_type[8:]
-            v = self.generate_regex_pattern(desc=desc)
+            v = self.generate_regex_pattern.with_llm(self.llm).run(desc=desc)
             if not v:
                 raise ValueError("Fail to generate regex pattern, try again.")
             logger.info(f"Generated regex pattern: {v.pattern}")

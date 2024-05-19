@@ -46,7 +46,8 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--py_packages", required=False, default="", help=desc["py_packages"])
     parser.add_argument("--human_as_model", action='store_true', help=desc["human_as_model"])
     parser.add_argument("--urls", default="", help=desc["urls"])
-    parser.add_argument("--urls_use_model", action='store_true', help=desc["urls_use_model"])
+    parser.add_argument("--urls_use_model", action='store_true', help=desc["urls_use_model"])    
+    parser.add_argument("--exclude_files", default="", help="")
     
     
     parser.add_argument("--search_engine", default="", help=desc["search_engine"])
