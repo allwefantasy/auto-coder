@@ -22,8 +22,8 @@ class SuffixProject():
         self.file_filter = file_filter
         self.sources = []
         self.llm = llm
-        self.exclude_files = args.exclude_files  # 获取exclude_files参数
-        self.exclude_patterns = self.parse_exclude_files(self.exclude_files)  # 解析exclude_files为正则表达式
+        self.exclude_files = args.exclude_files  
+        self.exclude_patterns = self.parse_exclude_files(self.exclude_files) 
 
     def parse_exclude_files(self, exclude_files):
         if exclude_files is None:
