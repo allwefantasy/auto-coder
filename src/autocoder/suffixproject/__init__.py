@@ -8,6 +8,7 @@ import byzerllm
 from autocoder.common.search import Search,SearchEngine
 from autocoder.rag.simple_rag import SimpleRAG
 from loguru import logger
+import re
 
 class SuffixProject():
     
@@ -20,7 +21,23 @@ class SuffixProject():
         self.suffixs = [f".{suffix}" if not suffix.startswith('.') else suffix for suffix in self.project_type.split(",") if suffix.strip() != ""]
         self.file_filter = file_filter
         self.sources = []
-        self.llm = llm        
+        self.llm = llm
+        self.exclude_files = args.exclude_files  # 获取exclude_files参数
+        self.exclude_patterns = self.parse_exclude_files(self.exclude_files)  # 解析exclude_files为正则表达式
+
+    def parse_exclude_files(self, exclude_files):
+        if exclude_files is None:
+            return []
+        exclude_patterns = []
+        for pattern in exclude_files:
+            exclude_patterns.append(re.compile(pattern))
+        return exclude_patterns
+
+    def should_exclude(self, file_path):
+        for pattern in self.exclude_patterns:
+            if pattern.search(file_path):
+                return True
+        return False
 
     def output(self):
         return open(self.target_file, "r").read()                
@@ -40,7 +57,9 @@ class SuffixProject():
     def get_source_codes(self) -> Generator[SourceCode, None, None]:
         for root, dirs, files in os.walk(self.directory):
             for file in files:
-                file_path = os.path.join(root, file)                            
+                file_path = os.path.join(root, file)
+                if self.should_exclude(file_path):  # 判断是否需要排除
+                    continue                             
                 if self.is_suffix_file(file_path):                
                     if self.file_filter is None or self.file_filter(file_path,self.suffixs):
                         logger.info(f"collect file: {file_path}")
