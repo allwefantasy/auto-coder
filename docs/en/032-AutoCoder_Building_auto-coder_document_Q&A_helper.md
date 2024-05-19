@@ -78,4 +78,4 @@ In this way, AutoCoder will open both documents for your reference. It is import
 auto-coder doc serve --model deepseek_chat --emb_model gpt_emb  --collection auto-coder
 ```It will start a compatible OpenAI API interface, default port is 8000, you can configure it in your chat software, and then you will have an auto-coder document assistant:
 
-![](images/032-01.png)
+![](../images/032-01.png)
