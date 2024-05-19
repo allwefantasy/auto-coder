@@ -50,3 +50,11 @@ query: >
 
 注意， AutoCoder 需要你配置Model才会生效。此外，AutoCoder 还会利用大模型对搜索结果进行筛选，最终可能没有合适的，这个时候就搜索内容就不会影响后续的代码生成。
 
+如果你能明确知道你的搜索词，那你可以直接通过一个参数解决：
+
+```yml
+search: 如何使用FastAPI
+search_engine: bing
+search_engine_token: ENV {{BING_SEARCH_TOKEN}}
+```
+

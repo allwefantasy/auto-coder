@@ -123,8 +123,9 @@ class SuffixProject():
             else:
                 search_engine = SearchEngine.GOOGLE
 
-            searcher=Search(llm=self.llm,search_engine=search_engine,subscription_key=self.args.search_engine_token)
-            search_context = searcher.answer_with_the_most_related_context(self.args.query)  
+            searcher=Search(args=self.args,llm=self.llm,search_engine=search_engine,subscription_key=self.args.search_engine_token)
+            search_query = self.args.search or self.args.query
+            search_context = searcher.answer_with_the_most_related_context(search_query)  
             return temp + [SourceCode(module_name="SEARCH_ENGINE", source_code=search_context,tag="SEARCH")]
         return temp + []                             
 

@@ -297,10 +297,12 @@ def search_with_searchapi(query: str, subscription_key: str):
 
 class Search:
     def __init__(self, 
+                 args,
                  llm:byzerllm.ByzerLLM,
                  search_engine: SearchEngine, 
                  subscription_key: str, 
                  reference_count: int = 8, timeout: int = 5):
+        self.args = args
         self.llm = llm
         self.search_engine = search_engine
         self.subscription_key = subscription_key

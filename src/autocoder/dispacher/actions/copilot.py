@@ -260,8 +260,9 @@ class ActionCopilot():
             else:
                 search_engine = SearchEngine.GOOGLE
 
-            searcher=Search(llm=self.llm,search_engine=search_engine,subscription_key=args.search_engine_token)
-            search_context = searcher.answer_with_the_most_related_context(args.query)
+            searcher=Search(args=self.args,llm=self.llm,search_engine=search_engine,subscription_key=args.search_engine_token)
+            search_query = args.search or args.query
+            search_context = searcher.answer_with_the_most_related_context(search_query)
         
         first_response = search_context
         if self.llm:

@@ -183,6 +183,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     skip_build_index: Optional[bool] = False
     print_request: Optional[bool] = False
     py_packages: Optional[str] = ""
+    search: Optional[Union[str,List[str]]] = ""
     search_engine: Optional[str] = ""
     search_engine_token: Optional[str] = ""
     enable_rag_search: Optional[bool] = False

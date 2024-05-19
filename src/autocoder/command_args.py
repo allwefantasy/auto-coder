@@ -49,7 +49,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--urls_use_model", action='store_true', help=desc["urls_use_model"])    
     parser.add_argument("--exclude_files", default="", help="")
     
-    
+    parser.add_argument("--search", default="", help="")
     parser.add_argument("--search_engine", default="", help=desc["search_engine"])
     parser.add_argument("--search_engine_token", default="",help=desc["search_engine_token"])
     
