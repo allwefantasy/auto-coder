@@ -1,0 +1,12 @@
+include_file: 
+   - ./common/local.yml
+
+
+search_engine: bing
+search_engine_token: ENV {{BING_SEARCH_TOKEN}}
+search: "如何把文本目录结构生成文本"
+
+query: |   
+   TSProject 类负责收集项目文件，主要体现在get_source_codes方法里，我们需要新增一个方法，通过get_source_codes
+   得到的结果还原出一个目录结构文本，该文本要让大模型很容易理解这个目录结构。 生成的文本要类似通过tree命令生成的文本。
+   

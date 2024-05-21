@@ -12,9 +12,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py",
-    "symbols": " 变量：__version__\n函数：\n类：\n导入语句：",
-    "last_modified": 1716119424.4041636,
-    "md5": "a3fa78334ea6623d657d138c6f9fd5b7"
+    "symbols": "变量：__version__\n函数：\n类：\n导入语句：",
+    "last_modified": 1716126271.1582355,
+    "md5": "6abb26825060e14bb50a28f7b30c2bba"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
@@ -100,9 +100,10 @@
     "md5": "3effc092f28eaf5ef4662a49e7a5bd48"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge.py": {
-    "symbols": "函数：parse_text,git_require_msg,merge_code\n变量：file_path,content_lines,total,md5,file_name\n类：PathAndCode,CodeAutoMerge\n导入语句：import os,from byzerllm.utils.client import code_utils,from autocoder.common import AutoCoderArgs,git_utils,from typing import List,import pydantic,from loguru import logger,import hashlib",
-    "last_modified": 1712112205.2725365,
-    "md5": "b04d758bc1ab5fe89898a970f964480c"
+    "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge.py",
+    "symbols": "函数：parse_whole_text_v2, parse_text, git_require_msg, merge_code\n变量：\n类：PathAndCode, CodeAutoMerge\n导入语句：import os,from byzerllm.utils.client import code_utils,from autocoder.common import AutoCoderArgs,git_utils,from typing import List,import pydantic,import byzerllm,from loguru import logger,import hashlib",
+    "last_modified": 1716269377.564324,
+    "md5": "cb90c3e2fc7ea592e2eac1330a364ac5"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/git_utils.py": {
     "symbols": "函数：init, get_repo, commit_changes, get_current_branch, revert_changes\n变量：\n类：\n导入语句：import os,from git import Repo, GitCommandError,from loguru import logger,from typing import List",
@@ -133,9 +134,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/tsproject/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/tsproject/__init__.py",
-    "symbols": " 函数：output, read_file_content, is_likely_useful_file, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, run, clone_repository\n变量：args, directory, git_url, target_file, sources, llm\n类：TSProject\n导入语句：from autocoder.common import SourceCode,AutoCoderArgs,from autocoder import common as FileUtils,from autocoder.utils.rest import HttpDoc,from autocoder.rag.simple_rag import SimpleRAG,import os,from typing import Optional,Generator,List,Dict,Any,from git import Repo,import byzerllm,from autocoder.common.search import Search,SearchEngine",
-    "last_modified": 1716125721.0191417,
-    "md5": "c5a7351e3e630ca5271b88f6117de8b0"
+    "symbols": "函数：auto_implement_function_template, output, read_file_content, is_likely_useful_file, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, get_simple_directory_structure, get_tree_like_directory_structure, run, clone_repository\n变量：\n类：TSProject\n导入语句：from autocoder.common import SourceCode,AutoCoderArgs,from autocoder import common as FileUtils,from autocoder.utils.rest import HttpDoc,from autocoder.rag.simple_rag import SimpleRAG,import os,from typing import Optional,Generator,List,Dict,Any,from git import Repo,import byzerllm,from autocoder.common.search import Search,SearchEngine",
+    "last_modified": 1716271656.0078657,
+    "md5": "80a4ff5917fdc5887f713aed6fce0f7e"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/image_to_page.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/image_to_page.py",
@@ -159,7 +160,6 @@
     "last_modified": 1713251238.3426147,
     "md5": "cb51d04bb706f8bb0c14a5964aed1edf"
   },
-
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/simple_rag.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/simple_rag.py",
     "symbols": " 函数：file_metadata_func, generate_file_md5, __init__, _get_indices, _get_query_engine, _get_retriever, stream_search, retrieve, stream_chat_oai, stream_chat_repl, search, build\n变量：\n类：SimpleRAG\n导入语句：from typing import Any, Dict, List, Optional, Tuple, from autocoder.common import SourceCode,AutoCoderArgs, from autocoder.common.llm_rerank import LLMRerank, import fsspec, from byzerllm.apps.llama_index.simple_retrieval import SimpleRetrieval, from byzerllm.apps.llama_index import get_service_context,get_storage_context, from byzerllm.apps.llama_index.collection_manager import CollectionManager,CollectionItem, from llama_index.core import QueryBundle,StorageContext, from llama_index.core.readers.file.base import default_file_metadata_func, from llama_index.core import SimpleDirectoryReader, VectorStoreIndex, ServiceContext, from llama_index.core.node_parser import SentenceSplitter,HierarchicalNodeParser,get_leaf_nodes, get_root_nodes, from llama_index.core.base.llms.types import ChatMessage,MessageRole, from llama_index.core.retrievers import AutoMergingRetriever, from llama_index.core.query_engine import RetrieverQueryEngine,RouterQueryEngine, from llama_index.core.tools import QueryEngineTool, from llama_index.core.selectors import LLMSingleSelector, import byzerllm, from loguru import logger, import hashlib, import json",
@@ -268,7 +268,6 @@
     "last_modified": 1713764606.5222874,
     "md5": "674562598c453e7070d042b058d6389b"
   },
-
   "/Users/allwefantasy/projects/auto-coder/actions/000_add_command_line_auto_merge.yml": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/actions/000_add_command_line_auto_merge.yml",
     "symbols": " 变量：source_dir, target_file, model, model_max_length, model_max_input_length, anti_quota_limit, skip_build_index\n函数：\n类：\n导入语句：",

@@ -113,6 +113,46 @@ class TSProject():
         for doc in docs:
             doc.tag = "RAG"
         return docs
+    
+    @byzerllm.prompt()
+    def get_simple_directory_structure(self) -> str: 
+        '''
+        当前项目目录结构：
+        1. 项目根目录： {{ directory }}
+        2. 项目子目录/文件列表：
+        {{ structure }}
+        '''       
+        structure = []
+        for source_code in self.get_source_codes():
+            relative_path = os.path.relpath(source_code.module_name, self.directory)
+            structure.append(relative_path)
+        
+        subs = "\n".join(sorted(structure))
+        return {
+            "directory": self.directory,
+            "structure": subs
+        }
+    
+    @byzerllm.prompt()
+    def get_tree_like_directory_structure(self) -> str: 
+        '''
+        当前项目目录结构（tree 命令）:
+        {{ structure }}
+        '''               
+        structure = []
+        for source_code in self.get_source_codes():
+            relative_path = os.path.relpath(source_code.module_name, self.directory)
+            parts = relative_path.split(os.sep)
+            for i in range(len(parts) - 1):
+                indent = ' ' * 4 * i
+                dir_path = os.path.join(*parts[:i+1])
+                if dir_path not in structure:
+                    structure.append(f"{indent}{parts[i]}/")
+            indent = ' ' * 4 * (len(parts) - 1)
+            structure.append(f"{indent}{parts[-1]}")
+
+        return {"structure":"\n".join(structure)}
+
 
     def get_search_source_codes(self):
         temp = self.get_rag_source_codes()

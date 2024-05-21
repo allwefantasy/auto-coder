@@ -1,7 +1,8 @@
 include_file: 
-   - ./common/remote.yml
+   - ./common/local.yml
 
+index_filter_level: 2
 query: |   
-   在定义了 SuffixProject 类的代码里优化 get_source_codes 方法，根据
-   default_exclude_dirs 参数排除不需要处理的目录。 
+   给 TSProject 生成一个测试用例， 在  tests 目录下。
+   注意： 需要收集 TSProject 类依赖的一些类对应的文件。
     
