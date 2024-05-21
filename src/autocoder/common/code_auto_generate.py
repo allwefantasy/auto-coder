@@ -5,9 +5,10 @@ import byzerllm
 
 
 class CodeAutoGenerate:
-    def __init__(self,llm:byzerllm.ByzerLLM,args:AutoCoderArgs) -> None:
+    def __init__(self,llm:byzerllm.ByzerLLM,args:AutoCoderArgs,action=None) -> None:
         self.llm = llm
         self.args = args       
+        self.action = action
 
 
     @byzerllm.prompt(llm = lambda self: self.llm)
@@ -30,6 +31,10 @@ class CodeAutoGenerate:
     @byzerllm.prompt(llm = lambda self: self.llm)
     def multi_round_instruction(self,instruction:str, content:str)->str:
         '''
+        {%- if structure %}        
+        {{ structure }}  
+        {%- endif %}
+        
         {%- if content %}
         下面是一些文件路径以及每个文件对应的源码：
 
@@ -57,10 +62,17 @@ class CodeAutoGenerate:
         每次生成一个文件的代码，然后询问我是否继续，当我回复继续，继续生成下一个文件的代码。当没有后续任务时，请回复 "__完成__" 或者 "__EOF__"。
         请确保每份代码的完整性，而不要只生成修改部分。
         '''
+        return {
+                "structure": self.action.pp.get_tree_like_directory_structure() if self.action else ""
+            }
 
     @byzerllm.prompt(llm = lambda self: self.llm)
     def single_round_instruction(self,instruction:str, content:str)->str:
         '''
+        {%- if structure %}        
+        {{ structure }}  
+        {%- endif %}
+
         {%- if content %}
         下面是一些文件路径以及每个文件对应的源码：
 
@@ -87,7 +99,10 @@ class CodeAutoGenerate:
         其中，{lang}是代码的语言，{CODE}是代码的内容, {FILE_PATH} 是文件的路径，他们都在代码块中，请严格按上面的格式进行内容生成。
             
         请确保每份代码的完整性，而不要只生成修改部分。
-        '''    
+        ''' 
+        return {
+                "structure": self.action.pp.get_tree_like_directory_structure() if self.action else ""
+            }   
     
     def single_round_run(self,query:str,source_content:str)-> Tuple[str,Dict[str,str]]:
         llm_config = {"human_as_model":self.args.human_as_model} 

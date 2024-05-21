@@ -84,7 +84,8 @@ def confirm_translation_parameters(translate_args: TranslateArgs) -> TranslateAr
 class ActionTranslate():
     def __init__(self,args:AutoCoderArgs,llm:Optional[byzerllm.ByzerLLM]=None) -> None:
         self.args = args
-        self.llm = llm        
+        self.llm = llm 
+        self.pp = None       
 
     def run(self):
         args = self.args        
@@ -126,6 +127,7 @@ class ActionTranslate():
         pp = SuffixProject(args=args, llm=self.llm,
                             file_filter=file_filter                               
                             ) 
+        self.pp = pp
         pp.run()                        
         for source in pp.sources:
             if translate_args.file_list and source.module_name not in translate_args.file_list:

@@ -17,12 +17,14 @@ class ActionTSProject:
     def __init__(self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None) -> None:
         self.args = args
         self.llm = llm
+        self.pp = None
 
     def run(self):
         args = self.args
         if args.project_type != "ts":
             return False
         pp = TSProject(args=args, llm=self.llm)
+        self.pp = pp
         pp.run()
 
         source_code = pp.output()         
@@ -55,7 +57,7 @@ class ActionTSProject:
                 content = content[:self.args.model_max_input_length]        
 
         if args.execute:
-            generate = CodeAutoGenerate(llm=self.llm, args=self.args)
+            generate = CodeAutoGenerate(llm=self.llm, args=self.args,action=self)
             if self.args.enable_multi_round_generate:
                 result,_ = generate.multi_round_run(query=args.query,source_content=content)            
             else:
@@ -108,13 +110,14 @@ class ActionPyProject:
     def __init__(self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None) -> None:
         self.args = args
         self.llm = llm
-      
+        self.pp = None
     
     def run(self):
         args = self.args
         if args.project_type != "py":
             return False
         pp = PyProject(args=self.args,llm=self.llm)
+        self.pp = pp
         pp.run(packages=args.py_packages.split(",") if args.py_packages else [])
 
         source_code = pp.output()        
@@ -133,7 +136,7 @@ class ActionPyProject:
                 content = content[:self.args.model_max_input_length]
 
         if args.execute:
-            generate = CodeAutoGenerate(llm=self.llm, args=self.args)
+            generate = CodeAutoGenerate(llm=self.llm, args=self.args,action=self)
             if self.args.enable_multi_round_generate:
                 result,_ = generate.multi_round_run(query=args.query,source_content=content)            
             else:
@@ -152,10 +155,12 @@ class ActionSuffixProject:
     def __init__(self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None) -> None:
         self.args = args
         self.llm = llm
+        self.pp = None
         
     def run(self):
         args = self.args        
         pp = SuffixProject(args=args, llm=self.llm)
+        self.pp = pp
         pp.run()
         source_code = pp.output()
         if self.llm:
@@ -171,7 +176,7 @@ class ActionSuffixProject:
                 content = content[:self.args.model_max_input_length]        
 
         if args.execute:
-            generate = CodeAutoGenerate(llm=self.llm, args=self.args)
+            generate = CodeAutoGenerate(llm=self.llm, args=self.args,action=self)
             if self.args.enable_multi_round_generate:
                 result,_ = generate.multi_round_run(query=args.query,source_content=content)            
             else:

@@ -136,22 +136,31 @@ class TSProject():
     @byzerllm.prompt()
     def get_tree_like_directory_structure(self) -> str: 
         '''
-        当前项目目录结构（tree 命令）:
+        当前项目目录结构：
+        1. 项目根目录： {{ directory }}
+        2. 项目子目录/文件列表(类似tree 命令输出)：        
         {{ structure }}
         '''               
-        structure = []
+        structure_dict = {}
         for source_code in self.get_source_codes():
             relative_path = os.path.relpath(source_code.module_name, self.directory)
             parts = relative_path.split(os.sep)
-            for i in range(len(parts) - 1):
-                indent = ' ' * 4 * i
-                dir_path = os.path.join(*parts[:i+1])
-                if dir_path not in structure:
-                    structure.append(f"{indent}{parts[i]}/")
-            indent = ' ' * 4 * (len(parts) - 1)
-            structure.append(f"{indent}{parts[-1]}")
+            current_level = structure_dict
+            for part in parts:
+                if part not in current_level:
+                    current_level[part] = {}
+                current_level = current_level[part]
 
-        return {"structure":"\n".join(structure)}
+        def generate_tree(d, indent=''):
+            tree = []
+            for k, v in d.items():
+                if v:
+                    tree.append(f"{indent}{k}/")
+                    tree.extend(generate_tree(v, indent + '    '))
+                else:
+                    tree.append(f"{indent}{k}")
+            return tree        
+        return {"structure":"\n".join(generate_tree(structure_dict)),"directory":self.directory}
 
 
     def get_search_source_codes(self):

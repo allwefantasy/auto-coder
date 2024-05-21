@@ -199,6 +199,54 @@ class PyProject():
                     if source_code is not None:
                         yield source_code
 
+    @byzerllm.prompt()
+    def get_simple_directory_structure(self) -> str: 
+        '''
+        当前项目目录结构：
+        1. 项目根目录： {{ directory }}
+        2. 项目子目录/文件列表：
+        {{ structure }}
+        '''       
+        structure = []
+        for source_code in self.get_source_codes():
+            relative_path = os.path.relpath(source_code.module_name, self.directory)
+            structure.append(relative_path)
+        
+        subs = "\n".join(sorted(structure))
+        return {
+            "directory": self.directory,
+            "structure": subs
+        }
+    
+    @byzerllm.prompt()
+    def get_tree_like_directory_structure(self) -> str: 
+        '''
+        当前项目目录结构：
+        1. 项目根目录： {{ directory }}
+        2. 项目子目录/文件列表(类似tree 命令输出)：        
+        {{ structure }}
+        '''               
+        structure_dict = {}
+        for source_code in self.get_source_codes():
+            relative_path = os.path.relpath(source_code.module_name, self.directory)
+            parts = relative_path.split(os.sep)
+            current_level = structure_dict
+            for part in parts:
+                if part not in current_level:
+                    current_level[part] = {}
+                current_level = current_level[part]
+
+        def generate_tree(d, indent=''):
+            tree = []
+            for k, v in d.items():
+                if v:
+                    tree.append(f"{indent}{k}/")
+                    tree.extend(generate_tree(v, indent + '    '))
+                else:
+                    tree.append(f"{indent}{k}")
+            return tree        
+        return {"structure":"\n".join(generate_tree(structure_dict)),"directory":self.directory}                    
+
 
     def run(self,packages:List[str]=[]):
         if self.git_url is not None:

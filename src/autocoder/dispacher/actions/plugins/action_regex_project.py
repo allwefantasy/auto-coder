@@ -4,13 +4,14 @@ from autocoder.common import AutoCoderArgs
 from autocoder.common.code_auto_generate import CodeAutoGenerate
 from autocoder.common.code_auto_merge import CodeAutoMerge
 from autocoder.index.index import build_index_and_filter_files
-from autocoder.regex_project import RegexProject
+from autocoder.regexproject import RegexProject
 from loguru import logger
 
 class ActionRegexProject:
     def __init__(self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None) -> None:
         self.args = args
         self.llm = llm
+        self.pp = None
 
     def run(self):
         args = self.args        
@@ -19,6 +20,7 @@ class ActionRegexProject:
         
         args = self.args
         pp = RegexProject(args=args, llm=self.llm)
+        self.pp = pp
         pp.run()
         source_code = pp.output()
         if self.llm:
@@ -34,7 +36,7 @@ class ActionRegexProject:
                 content = content[:self.args.model_max_input_length]
 
         if args.execute:
-            generate = CodeAutoGenerate(llm=self.llm, args=self.args)
+            generate = CodeAutoGenerate(llm=self.llm, args=self.args,action=self)
             if self.args.enable_multi_round_generate:
                 result, _ = generate.multi_round_run(query=args.query, source_content=content)
             else:
