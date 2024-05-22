@@ -47,7 +47,7 @@ src/autocoder/rag/api_server.py
 src/autocoder/rag/llm_wrapper.py
 src/autocoder/rag/simple_rag.py
 src/autocoder/rag/types.py
-src/autocoder/regex_project/__init__.py
+src/autocoder/regexproject/__init__.py
 src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py
 src/autocoder/utils/__init__.py
@@ -60,3 +60,4 @@ tests/test_init_command.py
 tests/test_llm_rerank.py
 tests/test_shell_client.py
 tests/test_simple_rag.py
+tests/test_tsproject.py

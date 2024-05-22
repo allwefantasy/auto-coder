@@ -38,7 +38,7 @@ def commit_changes(repo_path: str, message: str) -> bool:
             logger.info(f"Changed files: {changed_files}")
             for file in changed_files:
                 if file.strip():
-                    diff = repo.git.diff(commit.parents[0].hexsha, commit.hexsha, file)
+                    diff = repo.git.diff(commit.parents[0].hexsha, commit.hexsha, '--', file)
                     logger.info(f"Diff for {file}:\n{diff}")
         else:
             logger.info("This is the initial commit, no parent to compare against.")

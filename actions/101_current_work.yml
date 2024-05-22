@@ -1,8 +1,15 @@
 include_file: 
    - ./common/local.yml
 
-index_filter_level: 2
+index_filter_level: 1
 query: |   
-   给 TSProject 生成一个测试用例， 在  tests 目录下。
-   注意： 需要收集 TSProject 类依赖的一些类对应的文件。
+   使用 git_utils 中的 commit_changes，里面进行了 git diff 操作，结果导致失败：
+
+   2024-05-22 14:13:29.440 | ERROR    | autocoder.common.git_utils:commit_changes:47 - Error during commit operation: Cmd('git') failed due to: exit code(128)
+   cmdline: git diff 6ef732284761e3c114360cb1289607c8e9fe2895 e4fe0b3774c5eb3df5f52ff0c29e5b6ce63c8e0e "actions/022_\347\244\272\344\276\213\345\210\227\350\241\250\351\241\265\345\242\236\345\212\240\345\210\240\351\231\244.yml"
+   stderr: 'fatal: ambiguous argument '"actions/022_\347\244\272\344\276\213\345\210\227\350\241\250\351\241\265\345\242\236\345\212\240\345\210\240\351\231\244.yml"': unknown revision or path not in the working tree.
+   Use '--' to separate paths from revisions, like this:
+   'git <command> [<revision>...] -- [<file>...]''
+
+   如何修正上述错误？
     
