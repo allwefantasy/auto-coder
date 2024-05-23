@@ -87,12 +87,10 @@ class Anything2Images:
     def _save_conversation(self, conversations):
         pass
         # with open("conversations.json","w",encoding="utf-8") as f:
-        #     f.write((json.dumps(conversations,ensure_ascii=False,indent=4)))          
-        
-    def to_html(self, file_path: str) -> str:
-        images = self.convert(file_path)
-        conversations = []  
+        #     f.write((json.dumps(conversations,ensure_ascii=False,indent=4)))  
 
+    def to_html_from_images(self, images: List[str]) -> str:
+        conversations = []  
         if not self.args.single_file:      
             for i, image in enumerate(images):
                 img_path = image
@@ -194,6 +192,10 @@ class Anything2Images:
         self._save_conversation(conversations)
         return html
 
+        
+    def to_html(self, file_path: str) -> str:
+        images = self.convert(file_path)
+        return self.to_html_from_images(images)     
 
     def convert_pdf(self, file_path: str) -> List[str]:
         images = pdf2image.convert_from_path(file_path)
@@ -293,7 +295,11 @@ class Anything2Images:
             
         elif docx2pdf:
             pdf_path = os.path.join(self.output_dir, f"{os.path.basename(file_path)}.pdf")
-            docx2pdf.convert(file_path, pdf_path)
+            try:
+                docx2pdf.convert(file_path, pdf_path)                
+            except:
+                logger.info("docx2pdf failed. Trying to convert using pypandoc.")
+
             if not os.path.exists(pdf_path):
                 if pypandoc: 
                     logger.info("docx2pdf failed. Trying to convert using pypandoc. Downloading pandoc...")                   

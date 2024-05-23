@@ -159,6 +159,16 @@ def parse_args() -> AutoCoderArgs:
     screenshot_parser.add_argument("--output", required=True, help=desc["screenshot_output"])
     screenshot_parser.add_argument("--source_dir", default=".", help="")
 
+    doc2html_parser = subparsers.add_parser("doc2html", help="Convert word/pdf document to html")
+    doc2html_parser.add_argument("--file", default="", help=desc["file"])
+    doc2html_parser.add_argument("--model", default="", help=desc["model"])
+    doc2html_parser.add_argument("--vl_model", default="", help=desc["vl_model"])
+    doc2html_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
+    doc2html_parser.add_argument("--source_dir", default=".", help="")
+    doc2html_parser.add_argument("--urls", help="URL or path of the word/pdf document to convert")
+    doc2html_parser.add_argument("--output",help="Output directory to save the converted html file")
+
+
     args = parser.parse_args()
 
     return AutoCoderArgs(**vars(args)),args

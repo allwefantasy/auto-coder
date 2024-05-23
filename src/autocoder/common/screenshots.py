@@ -97,6 +97,7 @@ async def async_gen_screenshots(url,image_dir:Optional[str]=None,image_size:Imag
         p()
 
         await browser.close()
+        return f"{combined_img}.png"
 
 def gen_screenshots(url,image_dir:Optional[str]=None,image_size:ImageSize=ImageSize()):
     return asyncio.run(async_gen_screenshots(url,image_dir,image_size))

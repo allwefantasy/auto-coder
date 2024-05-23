@@ -8,7 +8,6 @@ from loguru import logger
 import os
 from pathlib import Path
 
-
 class HttpDoc:
     def __init__(self, args, llm: byzerllm.ByzerLLM,urls:Optional[List[str]]=None):
         self.args = args
@@ -139,34 +138,30 @@ class HttpDoc:
                     main_content = open(url, "r").read()
                     source_code = SourceCode(module_name=url, source_code=main_content)
                     source_codes.append(source_code)                                                
-            else:    
-                response = requests.get(url)
-                
-                if response.status_code == 200:
-                    html_content = self.clean_html_keep_text(response.text)
-                    if self.args.urls_use_model and self.llm:  
-                        try: 
-                            extra_llm_config = {}        
-                            if self.args.human_as_model:
-                                extra_llm_config["human_as_model"] = True
-                            prompt = self._extract_main_content(url, html_content)
-                            
-                            t = self.llm.chat_oai(conversations=[{
-                                "role":"user",
-                                "content":prompt
-                            }],llm_config={**extra_llm_config})
+            else:
+                if self.args.urls_use_model:
+                    from autocoder.common.screenshots import gen_screenshots
+                    from autocoder.common.anything2images import Anything2Images
 
-                            main_content = t[0].output
-                        except Exception as e:
-                            logger.warning(f"Failed to extract main content from URL: {url}, we will skip this clean step, and use the raw html. Error: {e}")
-                            main_content = html_content
-                    else:                    
+                    if not self.llm:
+                        raise ValueError("Please provide a valid model instance to use for URL content extraction.")
+                    
+                    if not self.llm.get_sub_client("vl_model"):
+                        raise ValueError("Please provide a valid vl_model to use for URL content extraction.")
+                    
+                    image_path = gen_screenshots(url=url,image_dir="screenshots")                    
+                    htmler = Anything2Images(self.llm,self.args)
+                    html = htmler.to_html_from_images(images=[image_path])
+                    main_content = html
+                else:    
+                    response = requests.get(url)                    
+                    if response.status_code == 200:
+                        html_content = self.clean_html_keep_text(response.text)                        
                         main_content = html_content   
-
-                    source_code = SourceCode(module_name=url, source_code=main_content)
-                    source_codes.append(source_code)
-                else:
-                    logger.warning(f"Failed to crawl URL: {url}. Status code: {response.status_code}")
+                        source_code = SourceCode(module_name=url, source_code=main_content)
+                        source_codes.append(source_code)
+                    else:
+                        logger.warning(f"Failed to crawl URL: {url}. Status code: {response.status_code}")
 
         return source_codes
     

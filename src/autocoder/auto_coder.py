@@ -112,6 +112,7 @@ def main():
         return
 
     if raw_args.command == "screenshot":
+        from autocoder.common.screenshots import gen_screenshots
         gen_screenshots(args.urls, args.output)
         print(f"Successfully captured screenshot of {args.urls} and saved to {args.output}")
         return
@@ -213,6 +214,17 @@ def main():
     if raw_args.command == "index-query":  # New subcommand logic
         from autocoder.index.for_command import index_query_command
         index_query_command(args,llm)
+        return
+    
+    if raw_args.command == "doc2html":
+        from autocoder.common.screenshots import gen_screenshots
+        from autocoder.common.anything2images import Anything2Images
+        a2i = Anything2Images(llm=llm, args=args)
+        html = a2i.to_html(args.urls)
+        output_path = os.path.join(args.output, f"{os.path.splitext(os.path.basename(args.urls))[0]}.html")
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(html)
+        print(f"Successfully converted {args.urls} to {output_path}")
         return
 
     if raw_args.command == "doc":            
