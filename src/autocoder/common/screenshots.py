@@ -101,4 +101,4 @@ async def async_gen_screenshots(url,image_dir:Optional[str]=None,image_size:Imag
 def gen_screenshots(url,image_dir:Optional[str]=None,image_size:ImageSize=ImageSize()):
     return asyncio.run(async_gen_screenshots(url,image_dir,image_size))
 
-# gen_screenshots("file:///Users/allwefantasy/projects/auto-coder/screenshots/html/zen.html")
+# gen_screenshots("https://kyligence.io/zen")

@@ -79,9 +79,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/screenshots.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/screenshots.py",
-    "symbols": " 函数：p, pause, set_window_size_for_screenshot, async_gen_screenshots, gen_screenshots\n变量：RS\n类：ImageSize\n导入语句：import io,import json,from PIL import Image,import asyncio,from urllib.parse import urlparse,from pathlib import Path,from typing import Optional,import pydantic,import os",
-    "last_modified": 1715939585.637999,
-    "md5": "0e947125bf22db6082c7e50fd7a30fb3"
+    "symbols": "函数：p, pause, set_window_size_for_screenshot, async_gen_screenshots, gen_screenshots\n变量：RS\n类：ImageSize\n导入语句：import io,import json,from PIL import Image,import asyncio,from urllib.parse import urlparse,from pathlib import Path,from typing import Optional,import pydantic,import os",
+    "last_modified": 1716430679.8836207,
+    "md5": "e50fa9d64aadf3679b48967942070205"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/ShellClient.py": {
     "symbols": "导入语句：import subprocess,import threading,import queue,import os,import time,from typing import Tuple\n类：ShellClient\n函数：__init__, _start_output_threads, add_and_run, close, enqueue_output",
@@ -106,9 +106,10 @@
     "md5": "cb90c3e2fc7ea592e2eac1330a364ac5"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/git_utils.py": {
-    "symbols": "函数：init, get_repo, commit_changes, get_current_branch, revert_changes\n变量：\n类：\n导入语句：import os,from git import Repo, GitCommandError,from loguru import logger,from typing import List",
-    "last_modified": 1714366090.1093445,
-    "md5": "679884bdb43cec048faa066ea2073ca3"
+    "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/git_utils.py",
+    "symbols": "函数：init, get_repo, commit_changes, get_current_branch, revert_changes\n变量：\n类：Repo\n导入语句：import os, from git import Repo, GitCommandError, from loguru import logger, from typing import List",
+    "last_modified": 1716370817.570471,
+    "md5": "0fa91266495772c26ad074fd705b8998"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/const.py": {
     "symbols": "函数：write_denial_function, read_denial_function\n变量：TOOLS_CODE, write_denial_function, read_denial_function, class_denial, GUARD_CODE, CODE_INTERPRETER_SYSTEM_PROMPT\n类：class_denial\n导入语句：import numpy as np,import pandas as pd,import matplotlib.pyplot as plt,import seaborn as sns,from scipy import stats,import os,import sys,import re,from datetime import datetime,from sympy import symbols, Eq, solve,import torch,import requests,from bs4 import BeautifulSoup,import json,import math,import yfinance,import time",

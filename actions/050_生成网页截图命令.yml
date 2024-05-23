@@ -1,0 +1,15 @@
+include_file: 
+   - ./common/local.yml
+
+index_filter_level: 2
+query: |   
+   在 auto_coder.py,command_args.py 中添加一个网页截图命令，该命令可以截取当前网页的截图，并保存到指定的文件夹中。
+   具体使用方法：
+   
+   ```bash
+   auto-coder screenshot --url https://www.baidu.com --output /tmp/baidu.png
+   ```
+
+   调用 screenshots.py 中的截图方法，将截图保存到指定的文件夹中。
+
+   
