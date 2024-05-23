@@ -51,6 +51,9 @@ lang_desc = {
         "init_dir": "The directory to initialize the auto-coder project in",
         "index_build_workers": "Number of workers to use for building index",
         "skip_confirm": "Skip any confirmation. Default is False",
+        "screenshot_desc": "Generate screenshots of a webpage",
+        "screenshot_url": "The URL of the webpage to capture",
+        "screenshot_output": "The directory to save the screenshots",
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -104,5 +107,8 @@ lang_desc = {
         "init_dir": "初始化auto-coder项目的目录",
         "index_build_workers": "用于构建索引的工作线程数",
         "skip_confirm": "跳过任何确认。默认为False",
+        "screenshot_desc": "生成网页的截图",
+        "screenshot_url": "要捕获的网页的URL",
+        "screenshot_output": "保存截图的目录",
     }
 }

@@ -112,8 +112,8 @@ def main():
         return
 
     if raw_args.command == "screenshot":
-        gen_screenshots(args.url, args.output)
-        print(f"Successfully captured screenshot of {args.url} and saved to {args.output}")
+        gen_screenshots(args.urls, args.output)
+        print(f"Successfully captured screenshot of {args.urls} and saved to {args.output}")
         return
         
     if args.model:

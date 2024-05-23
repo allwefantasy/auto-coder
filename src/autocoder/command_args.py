@@ -155,8 +155,9 @@ def parse_args() -> AutoCoderArgs:
     init_parser.add_argument("--source_dir", required=True, help=desc["init_dir"])
 
     screenshot_parser = subparsers.add_parser("screenshot", help=desc["screenshot_desc"])
-    screenshot_parser.add_argument("--url", required=True, help=desc["screenshot_url"])
+    screenshot_parser.add_argument("--urls", required=True, help=desc["screenshot_url"])
     screenshot_parser.add_argument("--output", required=True, help=desc["screenshot_output"])
+    screenshot_parser.add_argument("--source_dir", default=".", help="")
 
     args = parser.parse_args()
 

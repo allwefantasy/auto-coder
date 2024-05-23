@@ -1,0 +1,8 @@
+include_file: 
+   - ./common/local.yml
+
+index_filter_level: 1
+query: |   
+   对 anything2images.py 进行一些优化：
+   1. docx2pdf 不支持linux, 如果发现用户在Linux系统下，使用其他流行的库（如基于libreoffice的python3-uno 而不是命令行）来转换。
+   2. 如果原始文件路径有中文或者空格，要能够正确处理，避免docx2pdf等库失败。

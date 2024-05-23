@@ -66,3 +66,5 @@ anthropic
 google-generativeai
 protobuf
 azure-cognitiveservices-speech
+pdf2image
+docx2pdf
