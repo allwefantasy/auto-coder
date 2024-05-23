@@ -22,6 +22,12 @@ try:
 except ImportError:
     uno = None
 
+# Importing required library for docx to pdf conversion using pypandoc
+try:
+    import pypandoc
+except ImportError:
+    pypandoc = None
+
 class Anything2Images:
     def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs):
         self.llm = llm
@@ -50,7 +56,13 @@ class Anything2Images:
     def convert_docx(self, file_path: str) -> List[str]:
         if docx2pdf:
             pdf_path = os.path.join(self.output_dir, f"{os.path.basename(file_path)}.pdf")
-            docx2pdf.convert(file_path, pdf_path)            
+            docx2pdf.convert(file_path, pdf_path)
+            if not os.path.exists(pdf_path):
+                if pypandoc:
+                    pypandoc.convert_file(file_path, 'pdf', outputfile=pdf_path)
+                    print(f"Converted {file_path} to {pdf_path} using pypandoc")
+                else:
+                    raise ImportError("Neither docx2pdf nor pypandoc are available for DOCX conversion.")
         elif uno:
             pdf_path = self.convert_docx_linux(file_path)
             print(f"Converted {file_path} to {pdf_path} using LibreOffice")
