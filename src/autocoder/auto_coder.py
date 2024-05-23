@@ -21,6 +21,7 @@ from autocoder.command_args import parse_args
 from autocoder.rag.api_server import serve,ServerArgs
 from loguru import logger
 from autocoder.common.command_templates import init_command_template
+from autocoder.common.screenshots import gen_screenshots
 
 def resolve_include_path(base_path, include_path):
    if include_path.startswith('.') or include_path.startswith('..'):
@@ -110,6 +111,11 @@ def main():
         
         return
 
+    if raw_args.command == "screenshot":
+        gen_screenshots(args.url, args.output)
+        print(f"Successfully captured screenshot of {args.url} and saved to {args.output}")
+        return
+        
     if args.model:
         
         home = os.path.expanduser("~")

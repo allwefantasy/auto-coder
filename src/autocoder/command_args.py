@@ -154,6 +154,10 @@ def parse_args() -> AutoCoderArgs:
     init_parser = subparsers.add_parser("init", help=desc["init_desc"])
     init_parser.add_argument("--source_dir", required=True, help=desc["init_dir"])
 
+    screenshot_parser = subparsers.add_parser("screenshot", help=desc["screenshot_desc"])
+    screenshot_parser.add_argument("--url", required=True, help=desc["screenshot_url"])
+    screenshot_parser.add_argument("--output", required=True, help=desc["screenshot_output"])
+
     args = parser.parse_args()
 
     return AutoCoderArgs(**vars(args)),args
