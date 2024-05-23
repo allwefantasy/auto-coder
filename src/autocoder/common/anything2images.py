@@ -50,13 +50,15 @@ class Anything2Images:
     def convert_docx(self, file_path: str) -> List[str]:
         if docx2pdf:
             pdf_path = os.path.join(self.output_dir, f"{os.path.basename(file_path)}.pdf")
-            docx2pdf.convert(file_path, pdf_path)
-            print(f"Converted {file_path} to {pdf_path}")
+            docx2pdf.convert(file_path, pdf_path)            
         elif uno:
             pdf_path = self.convert_docx_linux(file_path)
             print(f"Converted {file_path} to {pdf_path} using LibreOffice")
         else:
             raise ImportError("Neither docx2pdf nor uno are available for DOCX conversion.")
+        
+        if not os.path.exists(pdf_path):
+            raise RuntimeError("Failed to convert DOCX to PDF")
         
         image_paths = self.convert_pdf(pdf_path)
         os.remove(pdf_path)
