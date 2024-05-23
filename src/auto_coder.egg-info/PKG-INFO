@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.63
+Version: 0.1.64
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -49,6 +49,12 @@ Requires-Dist: anthropic
 Requires-Dist: google-generativeai
 Requires-Dist: protobuf
 Requires-Dist: azure-cognitiveservices-speech
+Requires-Dist: python-docx
+Requires-Dist: reportlab
+Requires-Dist: pdf2image
+Requires-Dist: docx2pdf
+Requires-Dist: pandoc
+Requires-Dist: pypandoc
 
 <p align="center">
   <picture>    
