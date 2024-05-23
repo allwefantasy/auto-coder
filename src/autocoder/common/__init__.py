@@ -205,6 +205,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     skip_confirm: Optional[bool] = False
     exclude_files: Optional[Union[str,List[str]]] = ""    
     output:Optional[str] = ""
+    single_file:Optional[bool] = False
 
     class Config:
         protected_namespaces = ()

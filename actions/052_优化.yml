@@ -4,4 +4,4 @@ include_file:
 index_filter_level: 1
 query: |   
    对 anything2images.py 进行一些优化：
-   1. 如果 docx2pdf 生成失败（pdf路径不存在），则使用 pypandoc 生成 pdf
+   convert_pdf 中如果 self.single_file 为 True， 则合并所有图片为一张图片。

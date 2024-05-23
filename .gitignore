@@ -28,3 +28,5 @@ screenshots/
 ./output.txt
 
 .auto-coder/metadata.db
+notebooks/conversations.json
+notebooks/pandoc-3.2-x86_64-macOS.pkg

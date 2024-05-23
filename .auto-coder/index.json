@@ -153,8 +153,8 @@
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py",
     "symbols": "函数：auto_implement_function_template, has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments, detect_env, chat_with_llm_step_by_step\n变量：\n类：SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, EnvInfo, AutoCoderArgs\n导入语句：import pydantic,import ast,import sys,import subprocess,import os,import time,from typing import List,Dict,Any,Optional,Union",
-    "last_modified": 1716434647.847418,
-    "md5": "0a60da9efa0e5749eb01143fd6ba5792"
+    "last_modified": 1716451094.831821,
+    "md5": "c567fd116705aec801d60b80615814f1"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/for_command.py": {
     "symbols": "导入语句：from autocoder.index.index import IndexManager,TargetFile,from autocoder.suffixproject import SuffixProject,from autocoder.tsproject import TSProject,from autocoder.pyproject import PyProject,import tabulate,import textwrap,from loguru import logger\n函数：wrap_text_in_table, index_command, index_query_command\n变量：wrapped_data, project, sources, index_manager, pp, final_files, target_files, related_fiels, all_results, headers, table_data, table_output",
@@ -283,8 +283,8 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/anything2images.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/anything2images.py",
-    "symbols": "函数：convert, convert_pdf, convert_docx, convert_docx_linux, merge_table_images\n变量：docx2pdf, uno\n类：Anything2Images\n导入语句：import os,from typing import List,import pdf2image,from PIL import Image,import byzerllm,from autocoder.common import AutoCoderArgs,import docx2pdf,import uno,from com.sun.star.beans import PropertyValue,from com.sun.star.connection import NoConnectException,from com.sun.star.task import ErrorCodeIOException,from com.sun.star.uno import Exception as UnoException,from com.sun.star.uno import RuntimeException",
-    "last_modified": 1716443189.481022,
-    "md5": "56041ac274fefd55a97ec7f5a9353530"
+    "symbols": "函数：auto_implement_function_template, convert, html_prompt, to_html, convert_pdf, get_default_chinese_font, convert_word_to_pdf_v2, convert_docx, convert_docx_linux\n变量：\n类：Anything2Images\n导入语句：import os,from typing import List,import pdf2image,from PIL import Image,import byzerllm,from autocoder.common import AutoCoderArgs,from loguru import logger,import platform,from docx import Document,from reportlab.lib.pagesizes import letter,from reportlab.platypus import SimpleDocTemplate,Paragraph,Table,TableStyle,from reportlab.lib.styles import getSampleStyleSheet,from reportlab.lib import colors,from PIL import Image,ImageDraw,ImageFont,import os,import base64,import json,try:import docx2pdf,except ImportError:docx2pdf = None,try:import uno,from com.sun.star.beans import PropertyValue,from com.sun.star.connection import NoConnectException,from com.sun.star.task import ErrorCodeIOException,from com.sun.star.uno import Exception as UnoException,from com.sun.star.uno import RuntimeException,except ImportError:uno = None,try:import pypandoc,except ImportError:pypandoc = None",
+    "last_modified": 1716451623.6239831,
+    "md5": "3a381e24069d24d3ac0a8456773255e3"
   }
 }
