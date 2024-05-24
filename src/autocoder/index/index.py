@@ -451,8 +451,14 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
             final_filenames = []
         else:
             final_filenames = display_table_and_get_selections(target_files_data)
-        
-    print_selected([(file.file_path, file.reason) for file in final_files.values() if file.file_path in final_filenames])    
+
+    try:    
+        print_selected([(file.file_path, file.reason) for file in final_files.values() if file.file_path in final_filenames])    
+    except Exception as e:
+        logger.warning(f"Fails to display the selected files. You may not in a terminal environment. Try to use print function to display the selected files. ")        
+        print(f"Target Files You Selected")
+        for file in final_filenames:
+            print(f"{file} - {final_files[file].reason}")
 
     source_code = "" 
     for file in sources:

@@ -1,0 +1,9 @@
+include_file: 
+   - ./common/local.yml
+
+source_dir: /tmp/jack2 
+index_filter_level: 2
+query: |   
+   在 common/anything2images.py 中实现一个类，将 word,pdf 等各种文档转换成图片的功能。每页文档转换成一张图片，
+   图片的文件名为文档的文件名加上页码。   
+   代码要组织良好，并且要实现比较复杂的分页逻辑，比如word 某个表格跨页，要将其合并成一张图片。
