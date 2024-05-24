@@ -26,7 +26,7 @@ class HttpDoc:
         """    
         ## 任务 
 
-        你的目标是把 HTML 格式的文本内容转换为 Markdown。保持最后生成文档的可阅读性，同时去除广告、导航、版权声明等无关内容,
+        你的目标是把 HTML 格式的文本内容转换为 Markdown。保持最后生成文档的可阅读性，同时去除广告、导航、版权声明等非主体内容内容,
         如果里面有 html 表格，请将其转换为 Markdown表格。
         
         返回的结果务必要保持完整,不需要给出提取步骤。             
@@ -38,8 +38,8 @@ class HttpDoc:
         ## HTML内容
 
         {{ html }}
-        
-        ## Markdown内容        
+                
+        输出的内容请以 "<MARKER></MARKER> 标签对包裹。
         """
 
     def is_binary_file(self,filepath):    
@@ -152,7 +152,13 @@ class HttpDoc:
                     image_path = gen_screenshots(url=url,image_dir="screenshots")                    
                     htmler = Anything2Images(self.llm,self.args)
                     html = htmler.to_html_from_images(images=[image_path])
-                    main_content = html
+                    try:
+                        main_content = self._extract_main_content.with_llm(self.llm).with_response_markers(["<MARKER>", "</MARKER>"]).run(url=url,html=html)
+                    except Exception as e:
+                        logger.warning(f"Failed to extract main content from URL: {url}. {e}")                        
+                        main_content = html 
+                    source_code = SourceCode(module_name=url, source_code=main_content)
+                    source_codes.append(source_code)    
                 else:    
                     response = requests.get(url)                    
                     if response.status_code == 200:

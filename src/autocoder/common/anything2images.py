@@ -42,12 +42,14 @@ except ImportError:
     pypandoc = None
 
 class Anything2Images:
-    def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs):
+    def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs,keep_conversion:bool=False):
         self.llm = llm
         self.vl_model = llm.get_sub_client("vl_model")
         self.args = args
         self.output_dir = args.output
         os.makedirs(self.output_dir, exist_ok=True)
+        self.keep_conversion = keep_conversion
+
 
     def convert(self, file_path: str) -> List[str]:
         file_path = os.path.abspath(file_path)
@@ -84,10 +86,11 @@ class Anything2Images:
         请确保HTML的完整性，而不要只生成修改部分。
         '''   
 
-    def _save_conversation(self, conversations):
-        pass
-        # with open("conversations.json","w",encoding="utf-8") as f:
-        #     f.write((json.dumps(conversations,ensure_ascii=False,indent=4)))  
+    def _save_conversation(self, conversations):        
+        if self.keep_conversion:
+            with open(os.path.join(self.output_dir,"conversations.json"),"w",encoding="utf-8") as f:
+                f.write((json.dumps(conversations,ensure_ascii=False,indent=4)))  
+        
 
     def to_html_from_images(self, images: List[str]) -> str:
         conversations = []  
