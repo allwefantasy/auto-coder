@@ -153,6 +153,8 @@ class CodeAutoGenerateByDiff:
 
         To make a new file, show a diff from `--- /dev/null` to `+++ path/to/new/file.ext`.
         
+        The diff code should not contains any line numbers.
+        
         下面我们来看一个例子：
 
         用户需求： 请将下面的代码中的is_prime()函数替换为sympy。
@@ -213,11 +215,10 @@ class CodeAutoGenerateByDiff:
 
         {{ content }}  
         {%- endif %}
-
-
+    
         下面是用户的需求：
         
-        {{ instruction }}        
+        {{ instruction }}                
         ''' 
         return {
                 "structure": self.action.pp.get_tree_like_directory_structure() if self.action else ""
