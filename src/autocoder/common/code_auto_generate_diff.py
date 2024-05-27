@@ -151,9 +151,7 @@ class CodeAutoGenerateByDiff:
 
         To move code within a file, use 2 hunks: 1 to delete it from its current location, 1 to insert it in the new location.
 
-        To make a new file, show a diff from `--- /dev/null` to `+++ path/to/new/file.ext`.
-        
-        The diff code should not contains any line numbers.
+        To make a new file, show a diff from `--- /dev/null` to `+++ path/to/new/file.ext`.                
         
         下面我们来看一个例子：
 
