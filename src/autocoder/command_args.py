@@ -56,7 +56,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--enable_rag_search", nargs='?', const=True, default=False, help=desc["enable_rag_search"])
     parser.add_argument("--enable_rag_context", nargs='?',const=True, default=False, help=desc["enable_rag_context"])    
 
-    parser.add_argument("--auto_merge", action='store_true', help=desc["auto_merge"])
+    parser.add_argument("--auto_merge", nargs='?', const=True, default=False,  help=desc["auto_merge"])
 
     parser.add_argument("--image_file", default="", help=desc["image_file"])
     parser.add_argument("--image_mode", default="direct", help=desc["image_mode"])

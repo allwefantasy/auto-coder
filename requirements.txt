@@ -59,7 +59,8 @@ jieba
 
 # camelot-py
 # llama_index
-byzerllm>=0.1.89
+byzerllm>=0.1.91
+diff_match_patch
 GitPython
 openai>=1.14.3
 anthropic

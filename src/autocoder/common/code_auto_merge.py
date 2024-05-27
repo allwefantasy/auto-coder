@@ -1,3 +1,4 @@
+
 import os
 from byzerllm.utils.client import code_utils
 from autocoder.common import AutoCoderArgs,git_utils
@@ -138,7 +139,3 @@ class CodeAutoMerge:
         logger.info(f"Merged {total} files into the project.")
         if not force_skip_git:
             git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}")
-
-
-
-

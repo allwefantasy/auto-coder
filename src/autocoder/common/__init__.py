@@ -188,7 +188,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     search_engine_token: Optional[str] = ""
     enable_rag_search: Optional[bool] = False
     enable_rag_context: Optional[bool] = False
-    auto_merge: Optional[bool] = False
+    auto_merge: Optional[Union[bool,str]] = False
     image_file: Optional[str] = ""
     image_mode: Optional[str] = "direct"
     image_max_iter: Optional[int] = 1

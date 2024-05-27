@@ -4,7 +4,9 @@ from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
 from autocoder.index.index import build_index_and_filter_files
 from autocoder.common.code_auto_merge import CodeAutoMerge
+from autocoder.common.code_auto_merge_diff import CodeAutoMergeDiff
 from autocoder.common.code_auto_generate import CodeAutoGenerate
+from autocoder.common.code_auto_generate_diff import CodeAutoGenerateByDiff
 from typing import Optional,Generator
 import byzerllm
 import os
@@ -56,7 +58,7 @@ class ActionTSProject:
                 logger.warning(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
                 content = content[:self.args.model_max_input_length]        
 
-        if args.execute:
+        if args.execute:            
             generate = CodeAutoGenerate(llm=self.llm, args=self.args,action=self)
             if self.args.enable_multi_round_generate:
                 result,_ = generate.multi_round_run(query=args.query,source_content=content)            
@@ -135,22 +137,31 @@ class ActionPyProject:
                 logger.warning(f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...")
                 content = content[:self.args.model_max_input_length]
 
-        if args.execute:
-            generate = CodeAutoGenerate(llm=self.llm, args=self.args,action=self)
+        if args.execute:                        
+            if args.auto_merge == "diff":
+                generate = CodeAutoGenerateByDiff(llm=self.llm, args=self.args,action=self)
+            else:
+                generate = CodeAutoGenerate(llm=self.llm, args=self.args,action=self)
+                
             if self.args.enable_multi_round_generate:
                 result,_ = generate.multi_round_run(query=args.query,source_content=content)            
             else:
                 result,_ = generate.single_round_run(query=args.query,source_content=content)
-            content = "\n\n".join(result)
+            content = "\n\n".join(result)            
+
 
         with open(args.target_file, "w") as file:
             file.write(content)
 
         if args.execute and args.auto_merge:
             logger.info("Auto merge the code...")
-            code_merge = CodeAutoMerge(llm=self.llm,args=self.args)
-            code_merge.merge_code(content=content)    
-        
+            if args.auto_merge == "diff":
+                code_merge = CodeAutoMergeDiff(llm=self.llm,args=self.args)
+                code_merge.merge_code(content=content)    
+            else:
+                code_merge = CodeAutoMerge(llm=self.llm,args=self.args)
+                code_merge.merge_code(content=content)    
+            
 class ActionSuffixProject:
     def __init__(self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None) -> None:
         self.args = args

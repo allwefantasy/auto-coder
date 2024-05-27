@@ -46,7 +46,7 @@ class CodeAutoGenerate:
         
         {{ instruction }}
 
-        你生成的代码要符合这个格式：
+        如果你需要生成代码，你生成的代码要符合这个格式：
         
         ```{lang}
         ##File: {FILE_PATH}
@@ -84,7 +84,7 @@ class CodeAutoGenerate:
         
         {{ instruction }}
 
-        你生成的代码要符合这个格式：
+        如果你需要生成代码，你生成的代码要符合这个格式：
         
         ```{lang}
         ##File: {FILE_PATH}

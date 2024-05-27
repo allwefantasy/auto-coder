@@ -169,7 +169,7 @@ class IndexManager:
            
            logger.info(f"Parse and update index for {file_path} md5: {md5} took {time.monotonic() - start_time:.2f}s") 
            
-       except Exception as e:
+       except Exception as e:           
            logger.warning(f"Error: {e}")
            return None
 

@@ -21,7 +21,9 @@ src/autocoder/common/audio.py
 src/autocoder/common/cleaner.py
 src/autocoder/common/code_auto_execute.py
 src/autocoder/common/code_auto_generate.py
+src/autocoder/common/code_auto_generate_diff.py
 src/autocoder/common/code_auto_merge.py
+src/autocoder/common/code_auto_merge_diff.py
 src/autocoder/common/command_templates.py
 src/autocoder/common/const.py
 src/autocoder/common/git_utils.py

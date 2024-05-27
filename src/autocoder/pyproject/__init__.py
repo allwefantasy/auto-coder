@@ -120,6 +120,13 @@ class PyProject():
         return file_path.endswith(".py")
 
     def read_file_content(self,file_path):
+        if self.args.auto_merge == "diff":            
+            result = []
+            with open(file_path, 'r') as file:
+                for line_number, line in enumerate(file, start=1):
+                    result.append(f"{line_number}:{line}")
+            return "\n".join(result)        
+                    
         with open(file_path, "r") as file:
             return file.read()
 

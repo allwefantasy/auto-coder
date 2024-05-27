@@ -109,7 +109,7 @@ def init_command_template(source_dir:str):
     ## What you want the model to do
     ## 你想让模型做什么
     query: |  
-    YOUR QUERY HERE   
+      YOUR QUERY HERE   
   
     
     ## You can execute this file with the following command
