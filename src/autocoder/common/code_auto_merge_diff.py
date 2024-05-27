@@ -375,7 +375,21 @@ class CodeAutoMergeDiff:
 
         return edits
     
-    
+    @byzerllm.prompt(render="jinja2")
+    def git_require_msg(self,source_dir:str,error:str)->str:
+        '''
+        auto_merge only works for git repositories.
+         
+        Try to use git init in the source directory. 
+        
+        ```shell
+        cd {{ source_dir }}
+        git init .
+        ```
+
+        Then try to run auto-coder again.
+        Error: {{ error }}
+        '''
     
     def abs_root_path(self, path):
         if path.startswith(self.args.source_dir):

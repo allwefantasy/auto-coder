@@ -34,6 +34,8 @@ wudao
 SwissArmyTransformer
 jieba
 byzerllm>=0.1.91
+patch
+diff_match_patch
 GitPython
 openai>=1.14.3
 anthropic

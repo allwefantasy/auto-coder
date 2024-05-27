@@ -43,6 +43,8 @@ Requires-Dist: wudao
 Requires-Dist: SwissArmyTransformer
 Requires-Dist: jieba
 Requires-Dist: byzerllm>=0.1.91
+Requires-Dist: patch
+Requires-Dist: diff_match_patch
 Requires-Dist: GitPython
 Requires-Dist: openai>=1.14.3
 Requires-Dist: anthropic
