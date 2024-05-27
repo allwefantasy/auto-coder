@@ -192,8 +192,16 @@ class IndexManager:
        with ThreadPoolExecutor(max_workers=self.args.index_build_workers) as executor:
                         
            wait_to_build_files = []
-           for source in self.sources:
-               md5 = hashlib.md5(source.source_code.encode('utf-8')).hexdigest() 
+           for source in self.sources:  
+               source_code = source.source_code 
+               if self.args.auto_merge == "strict_diff":
+                   v = source.source_code.splitlines()                                
+                   new_v = []
+                   for line in v:
+                       new_v.append(line[line.find(":"):])
+                   source_code = "\n".join(new_v)        
+                       
+               md5 = hashlib.md5(source_code.encode('utf-8')).hexdigest() 
                if source.module_name not in index_data or index_data[source.module_name]["md5"] != md5:
                    wait_to_build_files.append(source)
 
