@@ -1,0 +1,9 @@
+include_file: 
+   - ./common/local.yml
+
+auto_merge: wholefile
+enable_multi_round_generate: false
+
+query: |   
+   diff(在 code_auto_merge_diff.py, code_auto_generate_diff.py) 目前的实现不需要有行号(@@ ... @@ 即可) 我们需要实现一个strict 版本，
+   让大模型严格生成 diff 的版本，并使用 difflib 来做合并。你需要修改 code_auto_merge_strict_diff.py, code_auto_generate_strict_diff.py,

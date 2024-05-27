@@ -378,6 +378,8 @@ class CodeAutoMergeDiff:
     
     
     def abs_root_path(self, path):
+        if path.startswith(self.args.source_dir):
+            return safe_abs_path(Path(path))
         res = Path(self.args.source_dir) / path
         return safe_abs_path(res)
 
