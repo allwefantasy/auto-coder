@@ -21,11 +21,12 @@ from autocoder.command_args import parse_args
 from autocoder.rag.api_server import serve,ServerArgs
 from loguru import logger
 from autocoder.common.command_templates import init_command_template
-from autocoder.common.screenshots import gen_screenshots
 
 def resolve_include_path(base_path, include_path):
-   if include_path.startswith('.') or include_path.startswith('..'):
-       return os.path.abspath(os.path.join(os.path.dirname(base_path), include_path))
+   if include_path.startswith('.') or include_path.startswith('..'):        
+       full_base_path = os.path.abspath(base_path)
+       parent_dir = os.path.dirname(full_base_path) 
+       return os.path.abspath(os.path.join(parent_dir, include_path))                       
    else:
        return include_path
 
@@ -46,7 +47,7 @@ def load_include_files(config,base_path, max_depth=10, current_depth=0):
                if not include_config:
                    logger.info(f"Include file {abs_include_path} is empty,skipping.")
                    continue
-               config.update({**load_include_files(include_config, max_depth, current_depth+1),**config})
+               config.update({**load_include_files(include_config,abs_include_path, max_depth, current_depth+1),**config})
        
        del config['include_file']
    

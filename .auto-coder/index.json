@@ -7,9 +7,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py",
-    "symbols": "函数：\n变量：lang_desc\n类：\n导入语句：",
-    "last_modified": 1716432143.3990753,
-    "md5": "43ee7cee8fcf9d9325a1e8aa82d10c6c"
+    "symbols": "变量：lang_desc\n函数：\n类：\n导入语句：",
+    "last_modified": 1716868852.9623468,
+    "md5": "3cdaf51b37fce5f2f9d90f410ecd48a5"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py",
@@ -19,9 +19,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
-    "symbols": "函数：resolve_include_path,load_include_files,main\n变量：\n类：\n导入语句：import byzerllm,from typing import List,Dict,Any,Optional,from autocoder.common import AutoCoderArgs,from autocoder.dispacher import Dispacher,from autocoder.common import git_utils,code_auto_execute,from autocoder.rag.simple_rag import SimpleRAG,from autocoder.rag.llm_wrapper import LLWrapper,from autocoder.utils.llm_client_interceptors import token_counter_interceptor,from autocoder.db.store import Store,import yaml,import os,from byzerllm.utils.client import EventCallbackResult,EventName,from prompt_toolkit import prompt,from prompt_toolkit.formatted_text import FormattedText,from jinja2 import Template,import hashlib,from autocoder.utils.rest import HttpDoc,from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib,from autocoder.command_args import parse_args,from autocoder.rag.api_server import serve,ServerArgs,from loguru import logger,from autocoder.common.command_templates import init_command_template,from autocoder.common.screenshots import gen_screenshots",
-    "last_modified": 1716464407.3755946,
-    "md5": "6352b11fe43d2da69102cfe8150e32fd"
+    "symbols": "函数：resolve_include_path,load_include_files,main\n变量：\n类：\n导入语句：import byzerllm,from typing import List,Dict,Any,Optional,from autocoder.common import AutoCoderArgs,from autocoder.dispacher import Dispacher,from autocoder.common import git_utils,code_auto_execute,from autocoder.rag.simple_rag import SimpleRAG,from autocoder.rag.llm_wrapper import LLWrapper,from autocoder.utils.llm_client_interceptors import token_counter_interceptor,from autocoder.db.store import Store,import yaml,import os,from byzerllm.utils.client import EventCallbackResult,EventName,from prompt_toolkit import prompt,from prompt_toolkit.formatted_text import FormattedText,from jinja2 import Template,import hashlib,from autocoder.utils.rest import HttpDoc,from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib,from autocoder.command_args import parse_args,from autocoder.rag.api_server import serve,ServerArgs,from loguru import logger,from autocoder.common.command_templates import init_command_template",
+    "last_modified": 1716870516.9848318,
+    "md5": "073e8b1f3b3932381f4ded86d6b61869"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py",
@@ -161,8 +161,8 @@
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py",
     "symbols": "函数：auto_implement_function_template, has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments, detect_env, chat_with_llm_step_by_step\n变量：\n类：SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, EnvInfo, AutoCoderArgs\n导入语句：import pydantic,import ast,import sys,import subprocess,import os,import time,from typing import List,Dict,Any,Optional,Union",
-    "last_modified": 1716782619.241267,
-    "md5": "d2b10ee680406209b55bf6e41ec051b8"
+    "last_modified": 1716868852.9591887,
+    "md5": "22e4d72f1f090d14cfc7f740420040f0"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/for_command.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/for_command.py",
@@ -185,8 +185,8 @@
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py",
     "symbols": "函数：parse_args\n变量：system_lang, lang, desc, parser, subparsers, args\n类：AutoCoderArgs\n导入语句：import argparse, from autocoder.common import AutoCoderArgs, from autocoder.lang import lang_desc, import locale",
-    "last_modified": 1716782575.614724,
-    "md5": "2739900e4a5003b80121f626f3e85133"
+    "last_modified": 1716868852.9575417,
+    "md5": "8303b7fe76e877dd1c981cea37c4ce82"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/api_server.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/api_server.py",
@@ -318,8 +318,8 @@
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_generate_diff.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_generate_diff.py",
     "symbols": "函数：multi_round_instruction, single_round_instruction, single_round_run, multi_round_run\n变量：\n类：CodeAutoGenerateDiff\n导入语句：from typing import List,Dict,Tuple,from autocoder.common.types import Mode,from autocoder.common import AutoCoderArgs,import byzerllm",
-    "last_modified": 1716868549.3810096,
-    "md5": "db290ddb778648ac8708a8def45d671d"
+    "last_modified": 1716868776.4522882,
+    "md5": "87f126125c9028411164983005b617b6"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_generate_strict_diff.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_generate_strict_diff.py",
