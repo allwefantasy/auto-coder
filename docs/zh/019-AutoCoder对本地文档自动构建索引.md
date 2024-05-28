@@ -27,16 +27,17 @@ AutoCoder已经支持对代码构建索引了，参考：
 还记得我们是怎么启动模型服务的么？类似下面这种：
 
 ```bash
-byzerllm deploy --pretrained_model_type saas/qianwen \
+byzerllm deploy --pretrained_model_type saas/openai \
 --cpus_per_worker 0.001 \
 --gpus_per_worker 0 \
---num_workers 2 \
---infer_params saas.api_key=${MODEL_QIANWEN_TOKEN}  saas.model=qwen-max \
---model qianwen_chat
+--worker_concurrency 30 \
+--num_workers 1 \
+--infer_params saas.base_url="https://api.deepseek.com/v1" saas.api_key=${MODEL_DEEPSEEK_TOKEN} saas.model=deepseek-chat \
+--model deepseek_chat
 ```
 
 
-通过运行上面的命令，我们就能得到一个 qianwen_chat 模型。
+通过运行上面的命令，我们就能得到一个 deepseek_chat 模型。
 
 现在我们可以用相同的命令启动一个索引服务：
 
@@ -47,17 +48,18 @@ byzerllm storage start
 
 ## 对文档进行索引构建
 
-在构建之前，你需要先部署两个模型，一个是 qianwen_chat, 一个是qianwen_emb。 
+在构建之前，你需要先部署两个模型，一个是 deepseek_chat, 一个是qianwen_emb。 
 
 qianwen_chat:
 
 ```bash
-byzerllm deploy --pretrained_model_type saas/qianwen \
+byzerllm deploy --pretrained_model_type saas/openai \
 --cpus_per_worker 0.001 \
 --gpus_per_worker 0 \
---num_workers 2 \
---infer_params saas.api_key=${MODEL_QIANWEN_TOKEN}  saas.model=qwen-max \
---model qianwen_chat
+--worker_concurrency 30 \
+--num_workers 1 \
+--infer_params saas.base_url="https://api.deepseek.com/v1" saas.api_key=${MODEL_DEEPSEEK_TOKEN} saas.model=deepseek-chat \
+--model deepseek_chat
 ```
 
 qianwen_emb:
@@ -74,7 +76,7 @@ byzerllm deploy --pretrained_model_type saas/qianwen \
 现在，可以构建你的文档了：
 
 ```bash
-auto-coder doc build --model qianwen_chat \
+auto-coder doc build --model deepseek_chat \
 --emb_model qianwen_emb \
 --source_dir 你存放文档的目录
 ```
@@ -85,10 +87,10 @@ auto-coder doc build --model qianwen_chat \
 source_dir: /Users/allwefantasy/projects/deploy_models
 target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
 
-model: qianwen_chat
+model: deepseek_chat
 model_max_length: 2000
-model_max_input_length: 6000
-anti_quota_limit: 5
+model_max_input_length: 30000
+anti_quota_limit: 0
 
 emb_model: qianwen_emb
 
@@ -215,7 +217,7 @@ generate.yml:
 source_dir: 你的项目路径
 target_file: 你的项目路径/output.txt 
 
-model: qianwen_chat
+model: deepseek_chat
 
 enable_rag_search: true
 emb_model: qianwen_emb
@@ -241,7 +243,7 @@ auto-coder --file generate.yml
 ## 提供OpenAI兼容接口
 
 ```bash
-auto-coder doc serve --model qianwen_chat --emb_model qianwen_emb --source_dir . --port 8000
+auto-coder doc serve --model deepseek_chat --emb_model qianwen_emb --source_dir . --port 8000
 ```
 
 
@@ -263,7 +265,7 @@ drwxr-xr-x    5 allwefantasy  staff    160  4 17 15:19 deploy_models/
 
 ```yml
 source_dir: /Users/allwefantasy/projects/doc_repo
-model: qianwen_chat
+model: deepseek_chat
 emb_model: qianwen_emb
 ```
 

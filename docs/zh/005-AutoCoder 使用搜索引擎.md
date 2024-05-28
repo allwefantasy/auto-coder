@@ -23,10 +23,10 @@
 source_dir: /tmp/t-py
 target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
 
-model: qianwen_chat
+model: deepseek_chat
 model_max_length: 2000
-model_max_input_length: 100000
-anti_quota_limit: 5
+model_max_input_length: 30000
+anti_quota_limit: 0
 
 search_engine: bing
 search_engine_token: ENV {{BING_SEARCH_TOKEN}}

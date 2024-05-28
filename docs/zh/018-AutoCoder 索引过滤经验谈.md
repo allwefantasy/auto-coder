@@ -38,10 +38,10 @@ source_dir: /Users/allwefantasy/projects/auto-coder
 target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
 project_type: py
 
-model: qianwen_chat
+model: deepseek_chat
 model_max_length: 2000
-model_max_input_length: 6000
-anti_quota_limit: 5
+model_max_input_length: 30000
+anti_quota_limit: 0
 
 index_model: sparkdesk_chat
 index_model_max_length: 2000

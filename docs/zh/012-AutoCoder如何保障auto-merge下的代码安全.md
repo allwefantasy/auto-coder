@@ -19,10 +19,10 @@
 source_dir: /home/winubuntu/projects/ByzerRawCopilot 
 target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
 
-model: qianwen_chat
+model: deepseek_chat
 model_max_length: 2000
-model_max_input_length: 6000
-anti_quota_limit: 5
+model_max_input_length: 30000
+anti_quota_limit: 0
 
 skip_build_index: false
 execute: true

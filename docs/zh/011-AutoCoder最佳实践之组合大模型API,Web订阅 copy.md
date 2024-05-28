@@ -28,7 +28,7 @@
 
 笔者本人的组合配置是：
 
-1. qwen-max API （目前免费送 100w token）
+1. deepseek V2 API
 2. Claude3 Opus Web 订阅
 
 目前实测效果成本最佳。

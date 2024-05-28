@@ -18,10 +18,10 @@ AutoCoder 会模拟程序的这种行为来完成代码的编写。我们来看�
 source_dir: /tmp/t-py
 target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
 
-model: qianwen_chat
+model: deepseek_chat
 model_max_length: 2000
-model_max_input_length: 100000
-anti_quota_limit: 5
+model_max_input_length: 30000
+anti_quota_limit: 0
 
 execute: true
 auto_merge: true
