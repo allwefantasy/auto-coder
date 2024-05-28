@@ -155,9 +155,9 @@ class PyProject():
                 if spec is None:
                     continue
                 module_path = spec.origin
-                source_code = self.convert_to_source_code(module_path)
-                source_code.tag = "PACKAGE"
+                source_code = self.convert_to_source_code(module_path)                
                 if source_code is not None:
+                    source_code.tag = "PACKAGE"
                     yield source_code
         except ModuleNotFoundError:
             print(f"Package {package_name} not found.") 
