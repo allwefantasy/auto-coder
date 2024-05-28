@@ -98,7 +98,7 @@ class CodeAutoGenerateStrictDiff:
         
         {{ instruction }}
         
-        每次生成一个文件的diff，然后询问我是否继续，当我回复继续，继续生成下一个文件的代码。当没有后续任务时，请回复 "__完成__" 或者 "__EOF__"。        
+        每次生成一个文件的diff，然后询问我是否继续，当我回复继续，继续生成下一个文件的diff。当没有后续任务时，请回复 "__完成__" 或者 "__EOF__"。        
         '''
         return {
                 "structure": self.action.pp.get_tree_like_directory_structure() if self.action else ""
