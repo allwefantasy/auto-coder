@@ -54,6 +54,7 @@ lang_desc = {
         "screenshot_desc": "Generate screenshots of a webpage",
         "screenshot_url": "The URL of the webpage to capture",
         "screenshot_output": "The directory to save the screenshots",
+        "code_model": "The name of the code model to use. Default is empty",
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -110,5 +111,6 @@ lang_desc = {
         "screenshot_desc": "生成网页的截图",
         "screenshot_url": "要捕获的网页的URL",
         "screenshot_output": "保存截图的目录",
+        "code_model": "要使用的代码模型的名称。默认为空",
     }
 }

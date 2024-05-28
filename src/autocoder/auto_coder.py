@@ -203,6 +203,11 @@ def main():
             emb_model.setup_template(model=args.emb_model,template="auto")            
             llm.setup_sub_client("emb_model",emb_model)       
 
+        if args.code_model:
+            code_model = byzerllm.ByzerLLM()  
+            code_model.setup_default_model_name(args.code_model)
+            llm.setup_sub_client("code_model",code_model)
+
     else:
         llm = None
 
