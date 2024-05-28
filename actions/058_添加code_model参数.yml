@@ -1,0 +1,6 @@
+include_file: 
+   - ./common/diff.yml
+
+query: |   
+   命令行添加一个 code_model 参数, 需要同时修改command_args.py, common/__init__.py, auto-coder.py,lang.py 等文件。
+   

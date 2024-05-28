@@ -1,0 +1,6 @@
+include_file: 
+   - ./local.yml
+
+auto_merge: diff
+enable_multi_round_generate: false
+index_filter_level: 2

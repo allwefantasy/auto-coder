@@ -34,6 +34,16 @@ class CodeAutoGenerateStrictDiff:
         
         下面我们来看一个例子：
 
+        当前项目目录结构：
+        1. 项目根目录： /tmp/projects/mathweb
+        2. 项目子目录/文件列表(类似tree 命令输出)
+        flask/
+            app.py
+            templates/
+                index.html
+            static/
+                style.css 
+
         用户需求： 请将下面的代码中的is_prime()函数替换为sympy。
         回答：
         好的，我会先罗列出需要的修改步骤，然后再列出diff。
@@ -41,12 +51,12 @@ class CodeAutoGenerateStrictDiff:
         1. 添加sympy的import 语句。
         2. 删除is_prime()函数。
         3. 将现有对is_prime()的调用替换为sympy.isprime()。
-               
+            
         下面是这些变更的diff：
 
         ```diff
-        --- mathweb/flask/app.py
-        +++ mathweb/flask/app.py
+        --- /tmp/projects/mathweb/flask/app.py
+        +++ /tmp/projects/mathweb/flask/app.py
         @@ ... @@
         -class MathWeb:
         +import sympy
@@ -125,8 +135,20 @@ class CodeAutoGenerateStrictDiff:
 
         To make a new file, show a diff from `--- /dev/null` to `+++ path/to/new/file.ext`.
         The code part of the diff content should not contains any line number.
+
+        The path start with `---` or `+++` should be the absolute path of the file or relative path from the project root.
         
         下面我们来看一个例子：
+
+        当前项目目录结构：
+        1. 项目根目录： /tmp/projects/mathweb
+        2. 项目子目录/文件列表(类似tree 命令输出)
+        flask/
+            app.py
+            templates/
+                index.html
+            static/
+                style.css 
 
         用户需求： 请将下面的代码中的is_prime()函数替换为sympy。
         回答：
@@ -135,12 +157,12 @@ class CodeAutoGenerateStrictDiff:
         1. 添加sympy的import 语句。
         2. 删除is_prime()函数。
         3. 将现有对is_prime()的调用替换为sympy.isprime()。
-               
+            
         下面是这些变更的diff：
 
         ```diff
-        --- mathweb/flask/app.py
-        +++ mathweb/flask/app.py
+        --- /tmp/projects/mathweb/flask/app.py
+        +++ /tmp/projects/mathweb/flask/app.py
         @@ ... @@
         -class MathWeb:
         +import sympy
