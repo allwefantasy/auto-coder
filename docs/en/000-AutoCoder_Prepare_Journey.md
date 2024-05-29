@@ -1,6 +1,6 @@
 # 000-AutoCoder_Prepare_Journey
 
-This article will introduce how to quickly convert your project to auto-coder using SaaS API.
+This article will introduce how to quickly help you to develop your existing project by auto-coder using SaaS API.
 
 ## Install auto-coder
 

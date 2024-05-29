@@ -1,6 +1,6 @@
 # 000-AutoCoder_准备旅程
 
-本篇会介绍使用 SaaS API 快速为你的项目转呗 auto-coder。
+本篇内容会介绍使用 SaaS API 快速为你的已有项目设置auto-coder。
 
 ## 安装 auto-coder
 
