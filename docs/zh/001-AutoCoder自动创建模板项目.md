@@ -4,7 +4,7 @@ AutoCoder 系列教程开始了。作为程序员，那得先从创建一个项�
 
 不过这里大家要注意的是，因为每个模型能力不一样，甚至同一个模型每次给的答案都不一定稳定，所以**这部分功能并不稳定**。
 
-这里我们依然推荐 Qwen-Max(他也不太稳定) 来完成下面的工作。
+这里我们依然推荐 QwenMax/DeepSeek(也不太稳定) 来完成下面的工作。
 
 实际上，大部人都是对已有项目进行开发，新建项目相对来说比较少，而且很多项目其实都有工具可以完成自动化创建，这里只是展示 AutoCoder 的的一些
 问题拆解，自我规划，执行的能力。
@@ -17,17 +17,14 @@ AutoCoder 系列教程开始了。作为程序员，那得先从创建一个项�
 
 我们实战一的目标: 在 /tmp 目录下，创建一个符合 pip 标准的 python项目 t-py,注意不需要创建conda/venv环境。
 
-那如何让 AutoCoder 自动完成这个事情？新建一个 001_create_python_project.yml,内容如下：
+那如何让 AutoCoder 自动完成这个事情？新建目录 /tmp/t-py， 在里面新建一个 001_create_python_project.yml,内容如下：
 
 ```yml
 
 source_dir: /tmp/t-py
-target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
+target_file: /tmp/t-py/output.txt
 
 model: deepseek_chat
-model_max_length: 2000
-model_max_input_length: 6000
-anti_quota_limit: 5
 execute: true
 
 project_type: "copilot/.py"
@@ -36,10 +33,10 @@ query: |
   在 /tmp 目录下，创建一个符合 pip 标准的 python项目 t-py,注意不需要创建conda/venv环境
 ```
 
-这里，你需要手动创建下 /tmp/t-py 目录，因为 source_dir 是必须要求的。执行下这个文件：
+执行下这个文件：
 
 ```bash
-auto-coder --file ./examples/from-zero-to-hero/001_create_python_project.yml
+auto-coder --file 001_create_python_project.yml
 ```
 
 这个时候系统输出如下：
@@ -272,12 +269,11 @@ Output:
 ```yml
 
 source_dir: /tmp/t-project
-target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
+target_file: /tmp/t-project/output.txt 
 
 model: deepseek_chat
 model_max_length: 2000
-model_max_input_length: 6000
-anti_quota_limit: 5
+model_max_input_length: 30000
 execute: true
 
 search_engine: bing
@@ -295,7 +291,7 @@ query: |
 
 ```bash
 
-auto-coder --file ./examples/from-zero-to-hero/001_create_python_project.yml
+auto-coder --file 001_create_python_project.yml
 ```
 
 输出如下：
