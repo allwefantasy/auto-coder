@@ -17,12 +17,16 @@ Auto-Coder (powered by Byzer-LLM)
 
 *Latest News* 🔥
 
-- [2024/05] Release Auto-Coder 0.1.63
+- [2024/05] Release Auto-Coder 0.1.68
 - [2024/04] Release Auto-Coder 0.1.46
 - [2024/03] Release Auto-Coder 0.1.25
 - [2024/03] Release Auto-Coder 0.1.24
 
 ---
+
+Auto-Coder is a command-line tool with YAML-based configuration that can automatically modify your project based on your requirements. 
+
+Auto-Coder aims to help developers to develop existing projects more efficiently. 
 
 
 ## Installation
