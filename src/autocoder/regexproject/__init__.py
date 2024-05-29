@@ -6,7 +6,13 @@ import os
 from typing import Optional, Generator, List, Dict, Any, Callable
 from git import Repo
 import byzerllm
+from loguru import logger
+import re
+from pydantic import BaseModel,Field
 from autocoder.common.search import Search,SearchEngine
+
+class RegPattern(BaseModel):
+    pattern: str = Field(..., title="Pattern", description="The regex pattern can be used by `re.search` in python.")
 from autocoder.rag.simple_rag import SimpleRAG
 from loguru import logger
 from pydantic import BaseModel,Field
@@ -49,6 +55,47 @@ class RegexProject():
             return v.pattern
         else:
             raise ValueError("Invalid project_type format. Expected 'regex//<pattern>'")
+        self.exclude_files = args.exclude_files
+        self.exclude_patterns = self.parse_exclude_files(self.exclude_files)
+        self.default_exclude_dirs = [".git", ".svn", ".hg", "build", "dist", "__pycache__"]
+
+    @byzerllm.prompt()
+    def generate_regex_pattern(self,desc:str)->RegPattern:
+        '''
+        Generate a regex pattern based on the following description:
+
+        {{ desc }}              
+        '''    
+
+    def parse_exclude_files(self, exclude_files):
+        if not exclude_files:
+            return []
+
+        if isinstance(exclude_files, str):
+            exclude_files = [exclude_files]
+
+        exclude_patterns = []
+        for pattern in exclude_files:
+            if pattern.startswith("regex://"):
+                pattern = pattern[8:]
+                exclude_patterns.append(re.compile(pattern))
+            elif pattern.startswith("human://"):
+                pattern = pattern[8:]
+                v = self.generate_regex_pattern.with_llm(self.llm).run(desc=pattern)
+                if not v:
+                    raise ValueError("Fail to generate regex pattern, try again.")
+                logger.info(f"Generated regex pattern: {v.pattern}")
+                exclude_patterns.append(re.compile(v.pattern))
+            else:
+                raise ValueError("Invalid exclude_files format. Expected 'regex://<pattern>' or 'human://<description>' ")                
+        return exclude_patterns
+
+    def should_exclude(self, file_path):        
+        for pattern in self.exclude_patterns:
+            if pattern.search(file_path):   
+                logger.info(f"Excluding file: {file_path}")             
+                return True
+        return False
 
     def output(self):
         return open(self.target_file, "r").read()                
@@ -67,12 +114,15 @@ class RegexProject():
     
     def get_source_codes(self) -> Generator[SourceCode, None, None]:
         for root, dirs, files in os.walk(self.directory):
+            dirs[:] = [d for d in dirs if d not in self.default_exclude_dirs]
             for file in files:
                 file_path = os.path.join(root, file)                            
                 if self.is_regex_match(file_path):                
                     if self.file_filter is None or self.file_filter(file_path, [self.regex_pattern]):
                         logger.info(f"collect file: {file_path}")
-                        source_code = self.convert_to_source_code(file_path)
+                        if self.should_exclude(file_path):                    
+                        continue
+                    source_code = self.convert_to_source_code(file_path)
                         if source_code is not None:
                             yield source_code
 
