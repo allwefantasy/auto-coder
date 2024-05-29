@@ -2,5 +2,5 @@ include_file:
    - ./common/diff.yml
 
 query: |   
-   参考SuffixProject，我们需要让 PyProject 和 TSProject 也支持排除功能。
+   参考SuffixProject，我们需要让 PyProject 和 TsProject 也支持排除功能。
    
