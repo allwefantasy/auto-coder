@@ -1,0 +1,52 @@
+# 000-AutoCoder_准备旅程
+
+本篇会介绍使用 SaaS API 快速为你的项目转呗 auto-coder。
+
+## 安装 auto-coder
+
+```shell
+conda create --name auto-coder python=3.10.11
+conda activate auto-coder
+pip install -U auto-coder
+ray start --head
+```
+
+## 启动推荐的模型代理
+
+大语言模型(你需要去deepseek官网申请token),然后执行下面的命令。
+
+```shell
+byzerllm deploy --pretrained_model_type saas/openai \
+--cpus_per_worker 0.001 \
+--gpus_per_worker 0 \
+--worker_concurrency 30 \
+--num_workers 1 \
+--infer_params saas.base_url="https://api.deepseek.com/v1" saas.api_key=${MODEL_DEEPSEEK_TOKEN} saas.model=deepseek-chat \
+--model deepseek_chat
+```
+
+向量模型(你需要去qwen官网申请token),然后执行下面的命令。
+
+```shell
+byzerllm deploy --pretrained_model_type saas/qianwen \
+--cpus_per_worker 0.001 \
+--gpus_per_worker 0 \
+--num_workers 2 \
+--infer_params saas.api_key=${MODEL_QIANWEN_TOKEN}  saas.model=text-embedding-v2 \
+--model qianwen_emb
+```
+
+## 初始化已有项目
+
+进入你的项目根目录，执行下面的命令。
+
+```shell
+auto-coder init --source_dir .
+```
+系统会自动在当前目录下生成 `.auto-coder`,`actions` 两个目录。
+在 actions 目录下会生成一个 `101_current_work.yaml` 文件，你可以以这个作为模板。
+
+## 开始你的旅程
+
+[002- 用 AutoCoder 添加和修改代码](./002-%20%E7%94%A8%20AutoCoder%20%E6%B7%BB%E5%8A%A0%E5%92%8C%E4%BF%AE%E6%94%B9%E4%BB%A3%E7%A0%81.md)
+
