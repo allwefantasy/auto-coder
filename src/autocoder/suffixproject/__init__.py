@@ -91,8 +91,7 @@ class SuffixProject():
                 if self.is_suffix_file(file_path):  
                     if self.should_exclude(file_path):                    
                         continue              
-                    if self.file_filter is None or self.file_filter(file_path,self.suffixs):
-                        logger.info(f"collect file: {file_path}")
+                    if self.file_filter is None or self.file_filter(file_path,self.suffixs):                        
                         source_code = self.convert_to_source_code(file_path)
                         if source_code is not None:
                             yield source_code
