@@ -26,7 +26,7 @@ Auto-Coder (powered by Byzer-LLM)
 
 Auto-Coder is a command-line tool with YAML-based configuration that can automatically modify your project based on your requirements. 
 
-Auto-Coder aims to help developers to develop existing projects more efficiently. 
+Auto-Coder aims to help developers to develop existing projects more efficiently.
 
 
 ## Installation
