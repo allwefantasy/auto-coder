@@ -1,6 +1,6 @@
 # 031-AutoCoder_Regular Expression Exclude Directory
 
-When you use file suffix to filter files, the system will automatically exclude the following directories:
+When auto-coder to filter files, the system will automatically exclude the following directories:
 
 ```
 [".git", ".svn", ".hg", "build", "dist", "__pycache__", "node_modules"]
