@@ -1,0 +1,21 @@
+source_dir: /Users/allwefantasy/projects/auto-coder
+target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
+project_type: translate
+
+# ray_address: "ray://192.168.3.123:10001"
+model: gpt3_5_chat
+
+skip_build_index: false
+execute: true
+
+query: |  
+   把项目中的markdown文档翻译成中文,
+   需要翻译的文件列表：
+  
+   1. /Users/allwefantasy/projects/auto-coder/README.md
+   
+   保存到 /Users/allwefantasy/projects/auto-coder 目录下。
+
+   注意：
+   1. new_file_mark 设置为cn
+   2. 最后新生成的文件名不要翻译
