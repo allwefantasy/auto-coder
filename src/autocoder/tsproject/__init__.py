@@ -7,64 +7,17 @@ from typing import Optional,Generator,List,Dict,Any
 
 from git import Repo
 import byzerllm
-from loguru import logger
-import re
-from pydantic import BaseModel,Field
 from autocoder.common.search import Search,SearchEngine
-
-class RegPattern(BaseModel):
-    pattern: str = Field(..., title="Pattern", description="The regex pattern can be used by `re.search` in python.")
 
 class TSProject():
     
-
     def __init__(self,args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None):        
         self.args = args
         self.directory = args.source_dir
         self.git_url = args.git_url        
         self.target_file = args.target_file 
         self.sources = []   
-        self.llm = llm
-        self.exclude_files = args.exclude_files
-        self.exclude_patterns = self.parse_exclude_files(self.exclude_files)
-
-    @byzerllm.prompt()
-    def generate_regex_pattern(self,desc:str)->RegPattern:
-        '''
-        Generate a regex pattern based on the following description:
-
-        {{ desc }}              
-        '''
-
-    def parse_exclude_files(self, exclude_files):
-        if not exclude_files:
-            return []
-
-        if isinstance(exclude_files, str):
-            exclude_files = [exclude_files]
-
-        exclude_patterns = []
-        for pattern in exclude_files:
-            if pattern.startswith("regex://"):
-                pattern = pattern[8:]
-                exclude_patterns.append(re.compile(pattern))
-            elif pattern.startswith("human://"):
-                pattern = pattern[8:]
-                v = self.generate_regex_pattern.with_llm(self.llm).run(desc=pattern)
-                if not v:
-                    raise ValueError("Fail to generate regex pattern, try again.")
-                logger.info(f"Generated regex pattern: {v.pattern}")
-                exclude_patterns.append(re.compile(v.pattern))
-            else:
-                raise ValueError("Invalid exclude_files format. Expected 'regex://<pattern>' or 'human://<description>' ")                
-        return exclude_patterns
-
-    def should_exclude(self, file_path):        
-        for pattern in self.exclude_patterns:
-            if pattern.search(file_path):   
-                logger.info(f"Excluding file: {file_path}")             
-                return True
-        return False
+        self.llm = llm    
 
     def output(self):
         return open(self.target_file, "r").read()                    
@@ -122,10 +75,6 @@ class TSProject():
     def convert_to_source_code(self,file_path):        
         if not self.is_likely_useful_file(file_path):
             return None
-
-        if self.should_exclude(file_path):                    
-            return None
-
                
         module_name = file_path
         source_code = self.read_file_content(file_path)
