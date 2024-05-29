@@ -115,7 +115,7 @@ def detect_env() -> EnvInfo:
             
         return EnvInfo(
             os_name=os_name,
-            os_version=os_version,
+            os_version=str(os_version),
             python_version=python_version,
             conda_env=conda_env,
             virtualenv=virtualenv,
