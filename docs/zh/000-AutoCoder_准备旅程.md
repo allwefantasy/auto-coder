@@ -91,12 +91,30 @@ query: |
 auto-coder --file actions/000_example.yml
 ```
 
-最后结果是这样的：
+最后在自己的项目里就可以看到这么一个文件了。
 
+```python
+# src/server.py
+from fastapi import FastAPI
 
+app = FastAPI()
+
+@app.get("/hello")
+async def hello():
+    return "world"
+```
 
 
 ## 给自己构建一个本地 auto-coder 小助手
+
+因为 auto-coder 本身是一个命令行+YAML配置文件的编程辅助工具，所以就会涉及到一些配置和用法，然后又不愿意自己去一个文档一个文档查。
+这个时候你有两个选择：
+
+1. 使用 auto-coder 的知识库功能，自己构建一个小助手。
+2. 使用 devv.ai 的 github 知识库功能，问询 auto-coder 相关的问题。
+
+
+### 使用 auto-coder 的知识库功能
 
 这一步依赖前面启动的向量模型。
 
@@ -139,7 +157,13 @@ auto-coder doc serve --model deepseek_chat --emb_model qianwen_emb  --collection
 
 密码随意填写。
 
-## 开始你的旅程
+### 使用 devv.ai 的 github 知识库功能
+
+点击链接： https://devv.ai/search?threadId=dn913itmjchs 直接使用。
+
+![](../images/000-04.png)
+
+## 继续你的旅程
 
 [002- 用 AutoCoder 添加和修改代码](./002-%20%E7%94%A8%20AutoCoder%20%E6%B7%BB%E5%8A%A0%E5%92%8C%E4%BF%AE%E6%94%B9%E4%BB%A3%E7%A0%81.md)
 
