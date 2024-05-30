@@ -15,6 +15,8 @@ ray start --head
 
 大语言模型(你需要去deepseek官网申请token),然后执行下面的命令。
 
+> 注意要替换 ${MODEL_DEEPSEEK_TOKEN} 和 ${MODEL_QIANWEN_TOKEN} 为你的实际token。
+
 ```shell
 byzerllm deploy --pretrained_model_type saas/openai \
 --cpus_per_worker 0.001 \
@@ -25,7 +27,7 @@ byzerllm deploy --pretrained_model_type saas/openai \
 --model deepseek_chat
 ```
 
-向量模型(你需要去qwen官网申请token),然后执行下面的命令。
+向量模型(可选，你需要去qwen官网申请token，如果麻烦，可以跳过先),然后执行下面的命令。
 
 ```shell
 byzerllm deploy --pretrained_model_type saas/qianwen \
