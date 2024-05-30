@@ -131,6 +131,8 @@ async def hello():
     return "world"
 ```
 
+> 如果要应对真实项目，请开启 human_as_model 模式,并结合Web版本的 Claude Opus 模型来获得最佳体验。
+
 ## 给自己构建一个本地 auto-coder 小助手
 
 因为 auto-coder 本身是一个命令行+YAML配置文件的编程辅助工具，所以就会涉及到一些配置和用法，然后你如果不愿意自己去一个文档一个文档查。
