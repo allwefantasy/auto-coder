@@ -19,3 +19,4 @@ query: |
    注意：
    1. new_file_mark 设置为CN
    2. 不要翻译文件名称自身
+   3. Auto-Coder 这个单词不要做任何翻译。
