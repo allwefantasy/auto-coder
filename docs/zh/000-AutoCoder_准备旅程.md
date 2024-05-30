@@ -70,6 +70,8 @@ query: |
   YOUR QUERY HERE
 ```
 
+前面我们启动的模型，实际上都配置在 `actions/base/base.yml`中。
+
 你可以在 `query` 字段中填写你的功能或者业务需求，并且临时关闭 human_as_model模式,可以让deepseek 模型直接生成代码。
 
 另外我们修改了 project_type参数，该参数定义了你的项目类型，方便过滤掉一些无用的文件。
