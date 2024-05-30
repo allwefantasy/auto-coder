@@ -2,6 +2,8 @@
 
 本篇内容会介绍使用 SaaS API 快速为你的已有项目设置auto-coder。
 
+> auto-coder 是一个基于YAML配置的命令行开发辅助工具，可以根据您的需求自动迭代开发已有项目。
+
 ## 安装 auto-coder
 
 ```shell
