@@ -56,6 +56,46 @@ auto-coder init --source_dir .
 2. ts
 3. 任何文件后缀名组合，使用逗号分隔，比如：.java,.scala
 
+## 让 auto-coder 开始为你编程
+
+打开 actions/000_example.yml 文件,内容打开是这这样的：
+
+```yaml
+include_file:
+  - ./base/base.yml
+  - ./base/enable_index.yml
+  - ./base/enable_wholefile.yml    
+
+query: |
+  YOUR QUERY HERE
+```
+
+你可以在 `query` 字段中填写你的功能或者业务需求，并且临时关闭 human_as_model模式,可以让deepseek 模型直接生成代码。
+最后看起来是这样的：
+
+```yaml
+include_file:
+  - ./base/base.yml
+  - ./base/enable_index.yml
+  - ./base/enable_wholefile.yml    
+
+human_as_model: false  
+
+query: |  
+  帮我在项目根目录下创建一个 src/server.py, 使用 fastapi ，创建一个 /hello 接口，返回 world.
+```
+
+运行 auto-coder:
+
+```shell
+auto-coder --file actions/000_example.yml
+```
+
+最后结果是这样的：
+
+
+
+
 ## 给自己构建一个本地 auto-coder 小助手
 
 这一步依赖前面启动的向量模型。

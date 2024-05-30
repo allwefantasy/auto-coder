@@ -142,7 +142,12 @@ def create_actions(source_dir:str,params:Dict[str,str]):
         base_dir = os.path.join(source_dir, "actions","base")
         if not os.path.exists(base_dir):
             os.makedirs(base_dir)
+                     
         file_path = os.path.join(source_dir, "actions","base", f"{k}.yml")
+        
+        if k == "000_example":
+            file_path = os.path.join(source_dir, "actions", f"{k}.yml")
+
         with open(file_path, "w") as f:
             f.write(v)    
 
