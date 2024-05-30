@@ -86,7 +86,7 @@ class SuffixProject():
     def get_source_codes(self) -> Generator[SourceCode, None, None]:
         for root, dirs, files in os.walk(self.directory):
             dirs[:] = [d for d in dirs if d not in self.default_exclude_dirs]
-            for file in files:
+            for file in files:                
                 file_path = os.path.join(root, file)                                             
                 if self.is_suffix_file(file_path):  
                     if self.should_exclude(file_path):                    

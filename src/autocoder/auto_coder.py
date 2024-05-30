@@ -20,7 +20,6 @@ from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib
 from autocoder.command_args import parse_args
 from autocoder.rag.api_server import serve,ServerArgs
 from loguru import logger
-from autocoder.common.command_templates import init_command_template
 
 def resolve_include_path(base_path, include_path):
    if include_path.startswith('.') or include_path.startswith('..'):        
@@ -100,16 +99,17 @@ def main():
         return
     
     if raw_args.command == "init":
+        if not args.project_type:
+            logger.error("Please specify the project type.The available project types are: py|ts| or any other file extension(for example: .java,.scala), you can specify multiple file extensions separated by commas.")
+            return
         os.makedirs(os.path.join(args.source_dir, "actions"), exist_ok=True)
         os.makedirs(os.path.join(args.source_dir, ".auto-coder"), exist_ok=True)
 
-        init_file_path = os.path.join(args.source_dir, "actions", "101_current_work.yml")
-        with open(init_file_path, "w") as f:
-            f.write(init_command_template.prompt(source_dir=os.path.abspath(args.source_dir)))
-        
+        from autocoder.common.command_templates import create_actions
+        source_dir=os.path.abspath(args.source_dir)
+        create_actions(source_dir=source_dir,params={"project_type":args.project_type,"source_dir":source_dir})        
         git_utils.init(os.path.abspath(args.source_dir))
-        print(f'''Successfully initialized auto-coder project in {os.path.abspath(args.source_dir)}.''')
-        
+        print(f'''Successfully initialized auto-coder project in {os.path.abspath(args.source_dir)}.''')        
         return
 
     if raw_args.command == "screenshot":

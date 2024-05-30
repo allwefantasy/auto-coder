@@ -46,6 +46,12 @@ auto-coder init --source_dir .
 系统会自动在当前目录下生成 `.auto-coder`,`actions` 两个目录。
 在 actions 目录下会生成一个 `101_current_work.yaml` 文件，你可以以这个作为模板。
 
+记得在 actions/base/base.yml 或者你独立的yaml文件中修改你的 project_type，支持：
+
+1. py
+2. ts
+3. 任何文件后缀名组合，使用逗号分隔，比如：.java,.scala
+
 ## 开始你的旅程
 
 [002- 用 AutoCoder 添加和修改代码](./002-%20%E7%94%A8%20AutoCoder%20%E6%B7%BB%E5%8A%A0%E5%92%8C%E4%BF%AE%E6%94%B9%E4%BB%A3%E7%A0%81.md)

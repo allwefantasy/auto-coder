@@ -1,4 +1,8 @@
 import byzerllm
+from pathlib import Path
+from typing import Dict
+import os
+from loguru import logger
 
 @byzerllm.prompt()
 def init_command_template(source_dir:str):
@@ -118,3 +122,106 @@ def init_command_template(source_dir:str):
     ## 并在目标文件中检查输出
     ## auto-coder --file 101_current_work.yml
     '''
+
+def create_actions(source_dir:str,params:Dict[str,str]):    
+    mapping =  {        
+        "base": base_base.prompt(**params),
+        "enable_index": base_enable_index.prompt(),
+        "enable_search_engine": base_enable_search_engine.prompt(),
+        "enable_rag_search": base_enable_rag_search.prompt(),
+        "exclude_files": base_exclude_files.prompt(),
+        "enable_diff": base_enable_diff.prompt(),
+        "enable_wholefile": base_enable_wholefile.prompt(),
+        "000_example": base_000_example.prompt(),
+    }
+    init_file_path = os.path.join(source_dir, "actions", "101_current_work.yml")
+    with open(init_file_path, "w") as f:
+        f.write(init_command_template.prompt(source_dir=source_dir))
+
+    for k,v in mapping.items():
+        base_dir = os.path.join(source_dir, "actions","base")
+        if not os.path.exists(base_dir):
+            os.makedirs(base_dir)
+        file_path = os.path.join(source_dir, "actions","base", f"{k}.yml")
+        with open(file_path, "w") as f:
+            f.write(v)    
+
+@byzerllm.prompt()
+def base_000_example()->str:
+    '''
+    include_file:
+      - ./base/base.yml
+      - ./base/enable_index.yml
+      - ./base/enable_wholefile.yml    
+
+    query: |
+      YOUR QUERY HERE
+    '''
+
+@byzerllm.prompt()
+def base_base(source_dir:str,project_type:str)->str:    
+    '''
+    project_type: {{ project_type }}
+    source_dir: {{ source_dir }}
+    target_file: {{ target_file }}
+
+    model: deepseek_chat
+    model_max_input_length: 30000
+    enable_multi_round_generate: false
+
+    execute: true
+    auto_merge: true
+    human_as_model: true
+    '''
+    return {
+        "target_file": Path(source_dir) / "output.txt"
+    }
+
+@byzerllm.prompt()
+def base_enable_index()->str:
+    '''
+    skip_build_index: false
+    anti_quota_limit: 0
+    index_filter_level: 1
+    index_filter_workers: 4
+    index_build_workers: 4
+    '''
+
+@byzerllm.prompt()
+def base_enable_search_engine()->str:
+    '''
+    ## Get the search engine token in the environment variable
+    ## 在环境变量中获取搜索引擎令牌
+    ## Ask for Bing Search API Token. You can visit https://www.microsoft.com/en-us/bing/apis/bing-web-search-api to get the token.
+    ## 申请 Bing 搜索API Token。你可以访问 https://www.microsoft.com/en-us/bing/apis/bing-web-search-api 获取 token。
+    search_engine: bing
+    search_engine_token: ENV {{BING_SEARCH_TOKEN}}
+    '''    
+
+@byzerllm.prompt()
+def base_enable_rag_search()->str:
+    '''
+    collections: default
+    enable_rag_search: |
+      byzerllm  使用 openai_tts模型的 python 代码
+    '''
+
+@byzerllm.prompt()
+def base_exclude_files()->str:
+    '''
+    exclude_files:
+      - human://所有包含xxxx目录的路径
+      - regex://.*\.git.*
+    '''
+
+@byzerllm.prompt()
+def base_enable_diff()->str:
+    '''
+    auto_merge: diff
+    '''    
+
+@byzerllm.prompt()
+def base_enable_wholefile()->str:
+    '''
+    auto_merge: wholefile
+    '''    
