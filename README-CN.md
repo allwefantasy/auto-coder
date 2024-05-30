@@ -39,7 +39,8 @@ ray start --head
 
 ## 教程
 
-[AutoCoder_准备旅程](./docs/zh/000-AutoCoder_准备旅程.md)
+1. [Setup auto-coder](./docs/en/000-AutoCoder_Prepare_Journey.md)
+2. [AutoCoder_准备旅程](./docs/zh/000-AutoCoder_准备旅程.md)
 
 ## 示例项目
 
