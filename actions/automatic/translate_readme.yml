@@ -17,5 +17,5 @@ query: |
    保存到 /Users/allwefantasy/projects/auto-coder 目录下。
 
    注意：
-   1. new_file_mark 设置为cn
-   2. 最后新生成的文件名不要翻译
+   1. new_file_mark 设置为CN
+   2. 不要翻译文件名称自身

@@ -9,7 +9,7 @@ Auto-Coder (由Byzer-LLM提供支持)
 </h3>
 
 <p align="center">
-| <a href="./docs/en"><b>English</b></a> | <a href="./docs/zh"><b>中文</b></a> |
+| <a href="./docs/en"><b>英文</b></a> | <a href="./docs/zh"><b>中文</b></a> |
 
 </p>
 
@@ -24,9 +24,7 @@ Auto-Coder (由Byzer-LLM提供支持)
 
 ---
 
-Auto-Coder 是一个基于YAML配置的命令行工具，可以根据您的需求自动修改项目。
-
-Auto-Coder旨在帮助开发人员更高效地开发现有项目。
+Auto-Coder 是一个基于YAML配置的命令行工具，可以根据您的需求自动开发现有项目。
 
 ## 安装
 
@@ -34,10 +32,14 @@ Auto-Coder旨在帮助开发人员更高效地开发现有项目。
 conda create --name autocoder python=3.10.11
 conda activate autocoder
 pip install -U auto-coder
-## 如果您想使用私有/开源模型，请取消注释此行。
+## 如果您想使用私有/开源模型，请取消此行的注释。
 # pip install -U vllm
 ray start --head
 ```
+
+## 教程
+
+[AutoCoder_准备旅程](./docs/zh/000-AutoCoder_准备旅程.md)
 
 ## 示例项目
 
