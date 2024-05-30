@@ -54,10 +54,6 @@ auto-coder init --source_dir .
 2. ts
 3. 任何文件后缀名组合，使用逗号分隔，比如：.java,.scala
 
-## 开始你的旅程
-
-[002- 用 AutoCoder 添加和修改代码](./002-%20%E7%94%A8%20AutoCoder%20%E6%B7%BB%E5%8A%A0%E5%92%8C%E4%BF%AE%E6%94%B9%E4%BB%A3%E7%A0%81.md)
-
 ## 给自己构建一个本地 auto-coder 小助手
 
 这一步依赖前面启动的向量模型。
@@ -100,5 +96,11 @@ auto-coder doc serve --model deepseek_chat --emb_model qianwen_emb  --collection
 ![](../images/000-03.png)
 
 密码随意填写。
+
+## 开始你的旅程
+
+[002- 用 AutoCoder 添加和修改代码](./002-%20%E7%94%A8%20AutoCoder%20%E6%B7%BB%E5%8A%A0%E5%92%8C%E4%BF%AE%E6%94%B9%E4%BB%A3%E7%A0%81.md)
+
+
 
 
