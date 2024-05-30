@@ -119,7 +119,6 @@ async def hello():
     return "world"
 ```
 
-
 ## 给自己构建一个本地 auto-coder 小助手
 
 因为 auto-coder 本身是一个命令行+YAML配置文件的编程辅助工具，所以就会涉及到一些配置和用法，然后你如果不愿意自己去一个文档一个文档查。
