@@ -58,3 +58,47 @@ auto-coder init --source_dir .
 
 [002- 用 AutoCoder 添加和修改代码](./002-%20%E7%94%A8%20AutoCoder%20%E6%B7%BB%E5%8A%A0%E5%92%8C%E4%BF%AE%E6%94%B9%E4%BB%A3%E7%A0%81.md)
 
+## 给自己构建一个本地 auto-coder 小助手
+
+这一步依赖前面启动的向量模型。
+
+启动知识库：
+
+```shell
+byzerllm storage start
+```
+
+导入 auto-coder 文档：
+
+```shell
+git clone https://github.com/allwefantasy/auto-coder
+cd auto-coder 
+auto-coder doc build --model deepseek_chat --emb_model qianwen_emb --source_dir ./docs/zh --collection auto-coder --description "AutoCoder文档"
+```
+
+大概等个几分钟，完工。
+
+现在可以和小助手聊天了：
+
+```shell
+auto-coder doc query --model deepseek_chat --emb_model qianwen_emb --query "如何开启搜索引擎" --collection auto-coder
+```
+
+你也可以启动一个服务，方便使用一些聊天软件：
+
+```shell
+auto-coder doc serve --model deepseek_chat --emb_model qianwen_emb  --collection auto-coder
+```
+
+下面是一些效果：
+
+![](../images/000-01.png)
+![](../images/000-02.png)
+
+以 NextChat 软件为例，配置如下：
+
+![](../images/000-03.png)
+
+密码随意填写。
+
+
