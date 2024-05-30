@@ -155,7 +155,7 @@ class IndexManager:
            start_time = time.monotonic()
            source_code = source.source_code
            if len(source.source_code) > self.max_input_length:
-               logger.warning(f"Warning: The length of source code is too long ({len(source.source_code)}) > model_max_input_length({self.max_input_length}), splitting into chunks...")
+               logger.warning(f"Warning: The length of source code({source.module_name}) is too long ({len(source.source_code)}) > model_max_input_length({self.max_input_length}), splitting into chunks...")
                chunks = self.split_text_into_chunks(source_code,self.max_input_length-1000)
                symbols = []
                for chunk in chunks:
