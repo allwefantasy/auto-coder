@@ -48,13 +48,13 @@ byzerllm deploy --pretrained_model_type saas/qianwen \
 auto-coder init --source_dir .
 ```
 系统会自动在当前目录下生成 `.auto-coder`,`actions` 两个目录。
-在 actions 目录下会生成一个 `101_current_work.yaml` 文件，你可以以这个作为模板。
 
-记得在 actions/base/base.yml 或者你独立的yaml文件中修改你的 project_type，支持：
+在 actions 目录下会包含一些YAML 模板文件(auto-coder 主要是负责执行这些 yaml文件完成代码相关的工作)
 
-1. py
-2. ts
-3. 任何文件后缀名组合，使用逗号分隔，比如：.java,.scala
+1.  `101_current_work.yaml` 提供中英文解释的参数列表。
+2.  `actions/base` 目录下的提供了一些基础的能力，你可以在你的新建的YAML 文件中引用这些文件从而开启特定的能力。
+
+最佳实践是将你新的 YAML 文件放在 actions 目录，并且以 00x_ 开头，比如我们已经在 actions 提供了一个范例文件:`000_example.yml`。
 
 ## 让 auto-coder 开始为你编程
 
@@ -71,16 +71,29 @@ query: |
 ```
 
 你可以在 `query` 字段中填写你的功能或者业务需求，并且临时关闭 human_as_model模式,可以让deepseek 模型直接生成代码。
+
+另外我们修改了 project_type参数，该参数定义了你的项目类型，方便过滤掉一些无用的文件。
+
+具体支持以下类型：
+
+1. py
+2. ts
+3. 任何文件后缀名组合，使用逗号分隔，比如：.java,.scala
+
 最后看起来是这样的：
 
 ```yaml
+## 变化 1
+project_type: py
 include_file:
   - ./base/base.yml
   - ./base/enable_index.yml
   - ./base/enable_wholefile.yml    
 
+## 变化2
 human_as_model: false  
 
+## 变化3
 query: |  
   帮我在项目根目录下创建一个 src/server.py, 使用 fastapi ，创建一个 /hello 接口，返回 world.
 ```
