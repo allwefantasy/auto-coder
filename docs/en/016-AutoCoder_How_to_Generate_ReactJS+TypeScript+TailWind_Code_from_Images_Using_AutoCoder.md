@@ -28,7 +28,7 @@ image_max_iter: 1
 
 model: deepseek_chat
 model_max_length: 2000
-model_max_input_length: 6000
+model_max_input_length: 30000
 anti_quota_limit: 5
 
 vl_model: gpt4o_chat
