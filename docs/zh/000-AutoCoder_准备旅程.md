@@ -29,6 +29,28 @@ byzerllm deploy --pretrained_model_type saas/openai \
 --model deepseek_chat
 ```
 
+运行起来后，你可以通过下面的命令快速验证下：
+
+```bash
+byzerllm query --model deepseek_chat --query "你好"
+```
+
+如果遇到异常，打开 [Actors页面](http://127.0.0.1:8265/#/actors)，
+
+![](../images/000-05.png)
+
+点击worker的链接，进去后是这样的：
+![](../images/000-06.png)
+
+切换 STDOUT/STDERR 标签查看是否有什么异常。
+
+如果有异常，可以通过下面命令来删除模型，再重新部署。
+
+```bash
+byzerllm undeploy  --model deepseek_chat --force
+```
+
+
 向量模型(可选，你需要去qwen官网申请token，如果麻烦，可以跳过先),然后执行下面的命令。
 
 ```shell
