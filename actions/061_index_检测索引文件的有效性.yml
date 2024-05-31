@@ -1,0 +1,7 @@
+include_file: 
+   - ./common/diff.yml
+
+query: |   
+   index.py 文件加载索引文件后，检测 source_dir 和 索引文件里的路径前缀是否一致。
+   如果不一致，抛出异常，告诉用户索引文件无效，用户可以通过编辑器对路径做一次替换。
+   
