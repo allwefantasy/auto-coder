@@ -39,7 +39,7 @@ sqlmodel
 wudao
 
 # dependencies only for visualglm
-SwissArmyTransformer
+# SwissArmyTransformer
 
 # dependencies only for chatglm
 jieba
