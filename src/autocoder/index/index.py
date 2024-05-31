@@ -184,6 +184,7 @@ class IndexManager:
        if os.path.exists(self.index_file):
            with open(self.index_file, "r") as file:
                index_data = json.load(file)
+               self._validate_index(index_data)
        else:
            index_data = {}                   
 
@@ -232,6 +233,7 @@ class IndexManager:
 
        with open(self.index_file, "r") as file:
            index_data = json.load(file)
+           self._validate_index(index_data)
 
        index_items = []
        for module_name, data in index_data.items():
@@ -476,4 +478,9 @@ def build_index_and_filter_files(llm,args:AutoCoderArgs,sources:List[SourceCode]
         if file.module_name in final_filenames:
             source_code += f"##File: {file.module_name}\n"
             source_code += f"{file.source_code}\n\n" 
-    return source_code
+    return source_code       self.source_dir = os.path.abspath(args.source_dir)
+   def _validate_index(self, index_data):
+       for module_name in index_data:
+           if not module_name.startswith(self.source_dir):
+               raise Exception(f"Invalid index file: Path '{module_name}' in the index file does not match the source directory '{self.source_dir}'. Please update the paths in the index file to match the current source directory.")
+
