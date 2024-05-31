@@ -187,7 +187,11 @@ class IndexManager:
        else:
            index_data = {}                   
 
-       updated_sources = []
+       # 检查source_dir与索引文件中的路径前缀是否一致
+      if not all(item.startswith(self.source_dir) for item in index_data.keys()):
+          raise ValueError("索引文件无效，请检查路径是否需要替换。")
+
+      updated_sources = []
 
        with ThreadPoolExecutor(max_workers=self.args.index_build_workers) as executor:
                         
