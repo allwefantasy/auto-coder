@@ -140,8 +140,9 @@ class CodeAutoGenerateEditBlock:
 
         Here are the *SEARCH/REPLACE* blocks:
 
-        /tmp/projects/mathweb/hello.py
+        
         {{ fence_0 }}python
+        ##File: /tmp/projects/mathweb/hello.py
         <<<<<<< SEARCH
         =======
         def hello():
@@ -150,9 +151,9 @@ class CodeAutoGenerateEditBlock:
             print("hello")
         >>>>>>> REPLACE
         {{ fence_1 }}
-
-        /tmp/projects/mathweb/main.py
+        
         {{ fence_0 }}python
+        ##File: /tmp/projects/mathweb/main.py
         <<<<<<< SEARCH
         def hello():
             "print a greeting"
@@ -288,9 +289,9 @@ class CodeAutoGenerateEditBlock:
         2. Remove hello() from main.py and replace it with an import.
 
         Here are the *SEARCH/REPLACE* blocks:
-
-        /tmp/projects/mathweb/hello.py
+        
         {{ fence_0 }}python
+        ##File: /tmp/projects/mathweb/hello.py
         <<<<<<< SEARCH
         =======
         def hello():
@@ -299,9 +300,9 @@ class CodeAutoGenerateEditBlock:
             print("hello")
         >>>>>>> REPLACE
         {{ fence_1 }}
-
-        /tmp/projects/mathweb/main.py
+        
         {{ fence_0 }}python
+        ##File: /tmp/projects/mathweb/main.py
         <<<<<<< SEARCH
         def hello():
             "print a greeting"

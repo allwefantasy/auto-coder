@@ -110,6 +110,7 @@ class CodeAutoMergeEditBlock:
                     in_head = True
                     continue
                 if line.strip()==DIVIDER:
+                    in_head= False
                     in_updated = True
                     continue
                 if line.strip()==UPDATED:
@@ -155,7 +156,11 @@ class CodeAutoMergeEditBlock:
                 continue
             with open(file_path, "r") as f:
                 existing_content = f.read()
-            existing_content = existing_content.replace(head,update)
+            logger.info(f'''in:\n {file_path}
+replace:\n{head}
+with:\n{update}''')    
+            existing_content = existing_content.replace(head,update,1)
+            logger.info(f"Upsert Result: {existing_content}")            
             with open(file_path, "w") as f:
                 f.write(existing_content)                    
          
