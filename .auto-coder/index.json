@@ -13,9 +13,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py",
-    "symbols": "变量：__version__\n函数：\n类：\n导入语句：",
-    "last_modified": 1717054591.3110373,
-    "md5": "72df716d7f4f21388b7c2899a8208d4b"
+    "symbols": "变量：__version__",
+    "last_modified": 1717143689.0792253,
+    "md5": "a7aef699cf031a688f0fece50e1aad2e"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
@@ -131,9 +131,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/index.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/index.py",
-    "symbols": "函数：_get_related_files, get_all_file_symbols, split_text_into_chunks, build_index_for_single_source, build_index, read_index, _get_meta_str, get_related_files, _query_index_with_thread, get_target_files_by_query, _get_target_files_by_query, error_message\n变量：self.sources, self.source_dir, self.anti_quota_limit, self.index_dir, self.index_file, self.index_llm, self.llm, self.args, self.max_input_length, source_code, md5, index_data, updated_sources, wait_to_build_files, counter, num_files, total_files, futures, all_results, lock, temp_result, all_results, final_files, selected_files, wrapped_data, table_output\n类：IndexItem, TargetFile, FileList, IndexManager\n导入语句：import os,import json,import time,from typing import List, Dict, Any,from datetime import datetime,from autocoder.common import SourceCode, AutoCoderArgs,from concurrent.futures import ThreadPoolExecutor, as_completed,import threading,import pydantic,import byzerllm,import hashlib,import textwrap,import tabulate,from loguru import logger",
-    "last_modified": 1717124821.5334074,
-    "md5": "6bd47c306d69fab8676c0f7bac658434"
+    "symbols": "导入语句：import os,import json,import time,from typing import List, Dict, Any,from datetime import datetime,from autocoder.common import SourceCode, AutoCoderArgs,from concurrent.futures import ThreadPoolExecutor, as_completed,import threading,import pydantic,import byzerllm,import hashlib,import textwrap,import tabulate,from loguru import logger\n类：IndexItem, TargetFile, FileList, IndexManager\n函数：split_text_into_chunks, build_index_for_single_source, build_index, read_index, _get_meta_str, get_related_files, _get_target_files_by_query, build_index_and_filter_files\n变量：indices, file_paths, path, code, source_dir, anti_quota_limit, index_dir, index_file, llm, args, max_input_length, start_time, source_code, md5, chunks, symbols, file_path, ext, text, chunk, current_chunk, current_length, wait_to_build_files, counter, num_files, total_files, futures, result, item, module_name, data, index_items, output, current_chunk, current_size, chunk_count, all_results, lock, query, func, temp_result, all_results, sources, final_files, file_path, final_filenames, source_code, e",
+    "last_modified": 1717124914.628997,
+    "md5": "9228f3dda0fb7101f087a195f206ce3c"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/suffixproject/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/suffixproject/__init__.py",
@@ -160,9 +160,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py",
-    "symbols": "函数：auto_implement_function_template, has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments, detect_env, chat_with_llm_step_by_step\n变量：\n类：SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, EnvInfo, AutoCoderArgs\n导入语句：import pydantic,import ast,import sys,import subprocess,import os,import time,from typing import List,Dict,Any,Optional,Union",
-    "last_modified": 1716868852.9591887,
-    "md5": "22e4d72f1f090d14cfc7f740420040f0"
+    "symbols": "类：SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, EnvInfo\n函数：has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments, detect_env, chat_with_llm_step_by_step\n变量：\n导入语句：import pydantic,import ast,import sys,import subprocess,import os,import time,from typing import List,Dict,Any,Optional,Union",
+    "last_modified": 1717143639.8080053,
+    "md5": "77d6d9aed5f50f979aeca1fb5091ac04"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/for_command.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/for_command.py",

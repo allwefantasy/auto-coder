@@ -2,8 +2,8 @@ source_dir: /Users/allwefantasy/projects/auto-coder
 target_file: /Users/allwefantasy/projects/auto-coder/output.txt 
 project_type: py
 
-model: qwen110b_chat
-index_model: qwen110b_chat
+model: deepseek_chat
+index_model: deepseek_chat
 emb_model: gpt_emb
 
 index_filter_level: 1
