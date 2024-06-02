@@ -1,0 +1,52 @@
+好的,我已经理解你的需求。下面是生成的代码:
+
+```python
+##File: /Users/allwefantasy/projects/auto-coder.example_01/src/server.py
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
+app = FastAPI()
+
+# 允许所有域名访问
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+items = []
+
+class Item(BaseModel):
+    name: str
+    content: str
+
+@app.post("/api/add_item")
+def add_item(item: Item):
+    items.append(item)
+    return {"message": "Item added successfully"}
+
+@app.get("/api/get_items")
+def get_items():
+    return items
+```
+
+这段代码做了以下事情:
+
+1. 导入了需要的模块,包括FastAPI、CORSMiddleware和BaseModel。
+
+2. 创建了一个FastAPI实例app。
+
+3. 通过add_middleware方法添加了CORS中间件,允许所有域名访问。
+
+4. 定义了一个空列表items用于存储数据。  
+
+5. 定义了一个Item模型,包含name和content两个字段。
+
+6. 定义了一个add_item路由,接受POST请求,将接收到的Item对象添加到items列表中。
+
+7. 定义了一个get_items路由,接受GET请求,返回items列表中的所有数据。
+
+现在你可以运行这个FastAPI服务器,访问定义好的两个API接口来添加和获取数据了。数据会临时存储在items这个全局变量中。
