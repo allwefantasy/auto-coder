@@ -10,6 +10,8 @@
 
 > https://github.com/allwefantasy/auto-coder.example_01
 
+在你的笔记本上准备 auto-coder,可以参考[这里](./000-AutoCoder_准备旅程.md)
+
 本实践展示 auto-coder 的前后端协同开发，支持：
 
 1. Figma设计或者网页截图 到前端代码的转换
