@@ -1,5 +1,16 @@
 # 037-AutoCoder_项目快速修bug实战
 
+## auto-coder 项目开发流程
+
+使用 auto-coder 的开发流程如下：
+
+1. 编写一个YAML文件来描述您的需求，Auto-Coder将生成代码并将代码合并到您的项目中。
+2. 检查Auto-Coder的提交，并在vscode或其他IDE中审查代码。
+3. 如果提交是基本满足需求，您可能仍需要使用github copilot或其他工具手动修改代码。
+4. 如果auto-coder提交的代码不满足你需求，您需要撤销提交并修改YAML文件，并 1 步骤重新开始。
+5. 重复上述步骤，直到您对auto-coder生成的代码满意。
+
+今天这个实例会展示如何使用上述流程快速修复一个bug。
 
 ## Bug描述
 
