@@ -162,6 +162,7 @@ def parse_args() -> AutoCoderArgs:
 
     next_parser = subparsers.add_parser("next", help="Create a new action file based on the previous one")
     next_parser.add_argument("name", help="Name for the new action file")
+    next_parser.add_argument("--source_dir", default=".", help="")
 
     doc2html_parser = subparsers.add_parser("doc2html", help="Convert word/pdf document to html")
     doc2html_parser.add_argument("--file", default="", help=desc["file"])

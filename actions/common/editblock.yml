@@ -3,4 +3,4 @@ include_file:
 
 auto_merge: editblock
 enable_multi_round_generate: false
-index_filter_level: 2
+index_filter_level: 1

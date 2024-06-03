@@ -124,7 +124,7 @@ def main():
             print("Current directory does not have an actions directory")
             return
         
-        action_files = [f for f in os.listdir(actions_dir) if f.startswith("000")]
+        action_files = [f for f in os.listdir(actions_dir) if f[:3].isdigit() and f.endswith(".yml") and f[:3] != "101"]
         if not action_files:
             max_seq = 0
         else:
@@ -133,7 +133,7 @@ def main():
         
         new_seq = str(max_seq + 1).zfill(3)
         prev_file = os.path.join(actions_dir, f"{str(max_seq).zfill(3)}_{raw_args.name}")
-        new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}")
+        new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}.yml")
         
         if os.path.exists(prev_file):
             with open(prev_file, "r") as f:

@@ -1,0 +1,6 @@
+include_file: 
+   - ./common/editblock.yml
+
+query: |   
+   关注 auto_coder.py 中的next命令，新创建的文件的内容需要是上一个比他序列号小的那个文件的内容。   
+   
