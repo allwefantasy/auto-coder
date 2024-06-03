@@ -1,0 +1,16 @@
+include_file: 
+   - ./common/editblock.yml
+
+query: |   
+   关注 auto_coder.py, command_args.py, lang.py 三个文件。添加一个 next 命令
+
+   ```
+   auto-coder next [name]
+   ```
+
+   具体功能为：
+
+   1. 在当前目录下，寻找是否有 actions 目录，如果没有则告诉用户 "当前目录下没有 actions 目录(用英文逗号分隔)" 并退出。
+   2. 如果有 actions 目录，获得 actions 所有以 000 这样的序列号开头的文件名，然后找到最大的序列号，然后在这个序列号上加 1，得到新的序列号。
+   3. 将得到的序列号，转换为 3 位的字符串，然后在 actions 目录下创建一个新的文件，文件名为这个序列号加上下划线加上 name，文件为上一个文件（序列号比他小一）的内容。   
+   
