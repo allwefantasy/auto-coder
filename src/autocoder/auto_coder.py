@@ -117,6 +117,35 @@ def main():
         gen_screenshots(args.urls, args.output)
         print(f"Successfully captured screenshot of {args.urls} and saved to {args.output}")
         return
+    
+    if raw_args.command == "next":
+        actions_dir = os.path.join(os.getcwd(), "actions")
+        if not os.path.exists(actions_dir):
+            print("Current directory does not have an actions directory")
+            return
+        
+        action_files = [f for f in os.listdir(actions_dir) if f.startswith("000")]
+        if not action_files:
+            max_seq = 0
+        else:
+            seqs = [int(f[:3]) for f in action_files]
+            max_seq = max(seqs)
+        
+        new_seq = str(max_seq + 1).zfill(3)
+        prev_file = os.path.join(actions_dir, f"{str(max_seq).zfill(3)}_{raw_args.name}")
+        new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}")
+        
+        if os.path.exists(prev_file):
+            with open(prev_file, "r") as f:
+                content = f.read()
+            with open(new_file, "w") as f:  
+                f.write(content)
+        else:
+            with open(new_file, "w") as f:
+                pass
+        
+        print(f"Successfully created new action file: {new_file}")
+        return
         
     if args.model:
         
