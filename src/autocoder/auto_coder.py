@@ -20,6 +20,8 @@ from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib
 from autocoder.command_args import parse_args
 from autocoder.rag.api_server import serve,ServerArgs
 from loguru import logger
+import shutil
+import subprocess
 
 def resolve_include_path(base_path, include_path):
    if include_path.startswith('.') or include_path.startswith('..'):        
@@ -146,14 +148,16 @@ def main():
             with open(new_file, "w") as f:
                 f.write(content)
         
-        print(f"Successfully created new action file: {new_file}")
+        print(f"Successfully created new action file: {new_file}")        
         
-        if shutil.which("code"):
-            subprocess.run(["code", "-r", new_file])
-        elif shutil.which("idea"):
+        if os.environ.get("TERMINAL_EMULATOR") == "JetBrains-JediTerm":            
             subprocess.run(["idea", new_file])
-        
-        return
+        else:            
+            if shutil.which("code"):
+                subprocess.run(["code", "-r", new_file])
+            elif shutil.which("idea"):
+                subprocess.run(["idea", new_file])                
+        return        
         
     if args.model:
         
