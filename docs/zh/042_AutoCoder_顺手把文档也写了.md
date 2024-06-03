@@ -8,10 +8,8 @@ include_file:
 
 query: |   
    关注 auto_coder.py, command_args.py, lang.py 三个文件。添加一个 next 命令
-
-   ```
-   auto-coder next [name]
-   ```
+   
+   auto-coder next [name]   
 
    具体功能为：
 
