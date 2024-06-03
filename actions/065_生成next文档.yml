@@ -1,0 +1,8 @@
+include_file: 
+   - ./common/editblock.yml
+
+query: |   
+   关注 auto_coder.py 中的next命令，生成一份名字叫 `041_AutoCoder_快速生成下一个需求YAML文件.md` 的文档，
+   放在 docs/zh 目录下。
+   要说明解决的问题是什么，怎么解决，如何使用。
+   
