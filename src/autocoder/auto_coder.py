@@ -147,6 +147,12 @@ def main():
                 f.write(content)
         
         print(f"Successfully created new action file: {new_file}")
+        
+        if shutil.which("code"):
+            subprocess.run(["code", "-r", new_file])
+        elif shutil.which("idea"):
+            subprocess.run(["idea", new_file])
+        
         return
         
     if args.model:
