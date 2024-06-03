@@ -1,5 +1,5 @@
 include_file: 
-   - ./common/editblock.yml
+   - ./common/local.yml
 
 query: |   
    关注 auto_coder.py 中的next命令，生成一份名字叫 `041_AutoCoder_快速生成下一个需求YAML文件.md` 的文档，
