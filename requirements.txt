@@ -74,3 +74,4 @@ pdf2image
 docx2pdf
 pandoc
 pypandoc
+pydantic-core==2.18.2
