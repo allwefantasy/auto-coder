@@ -10,7 +10,7 @@ Windows 下安装有两种方式。
 经过测试：
 
 1. Windows 7/10 可以正常安装。
-2. Windows 11 家庭版有用户反馈存在一定问题，Ray 无法正常启动。
+2. Windows 11 家庭版有用户反馈存在一定问题，Ray 无法正常启动 。
 3. Python官方目前说 3.10.xx系列已经不支持 Windows 7，可以到这里下载一个第三方包： https://github.com/adang1345/PythonWin7/tree/master/3.10.11 （经过测试）， 或者 https://github.com/NulAsh/cpython/releases/tag/v3.10.1win7-1 (未经过测试)
 
 ### 不通过 Conda
@@ -18,72 +18,54 @@ Windows 下安装有两种方式。
 1.安装python([3.10.11-python-3.10.11-amd64-full.exe](https://www.python.org/downloads/release/python-31011/))，客户端和服务端python和ray版本需保持一致。
 
 2.设置环境变量
-
-    ```
+    
     高级系统设置->环境变量->RAY_ENABLE_WINDOWS_OR_OSX_CLUSTER，默认值给1。
-    高级系统设置->环境变量->PYTHONUTF8，默认值给1。
-    ```
+    高级系统设置->环境变量->PYTHONUTF8，默认值给1。    
 
 3.配置pip源 
-
-    ```bash
-    pip config set global.index-url  https://pypi.tuna.tsinghua.edu.cn/simple
-    ```
+    
+    pip config set global.index-url  https://pypi.tuna.tsinghua.edu.cn/simple    
 
 4.安装auto-coder
-
-    ```bash
+    
     pip install -U auto-coder
-    ray start --head
-    ```
+    ray start --head    
 
 5.安装完成后，可以通过下面的命令快速验证下：
-
-    ```bash
-    auto-coder -h
-    ```
+    
+    auto-coder -h    
 
 
 后续步骤可以回到： [000-AutoCoder_准备旅程.md](./000-AutoCoder_%E5%87%86%E5%A4%87%E6%97%85%E7%A8%8B.md) 即可。
 
-### 通过 Conda (待完成)
+### 通过 Conda 
 
 1.安装 Conda 并且创建环境：
 
     下载 Windows 版本的 [Miniconda 安装包](https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe)。安装
     完成后在 shell 中执行下面的命令：
 
-
-    ```bash
+    
     conda create --name auto-coder python==3.10.11
-    conda activate auto-coder
-    ```
+    conda activate auto-coder    
 
 2.设置环境变量
-
-    ```
+    
     高级系统设置->环境变量->RAY_ENABLE_WINDOWS_OR_OSX_CLUSTER，默认值给1。
-    高级系统设置->环境变量->PYTHONUTF8，默认值给1。
-    ```
+    高级系统设置->环境变量->PYTHONUTF8，默认值给1。    
 
 3.配置pip源 
-
-    ```bash
+    
     pip config set global.index-url  https://pypi.tuna.tsinghua.edu.cn/simple
-    ```
 
 4.安装auto-coder
-
-    ```bash
+    
     pip install -U auto-coder
-    ray start --head
-    ```
+    ray start --head    
 
 5.安装完成后，可以通过下面的命令快速验证下：
-
-    ```bash
-    auto-coder -h
-    ```
+    
+    auto-coder -h    
 
 
 后续步骤可以回到： [000-AutoCoder_准备旅程.md](./000-AutoCoder_%E5%87%86%E5%A4%87%E6%97%85%E7%A8%8B.md) 即可。
