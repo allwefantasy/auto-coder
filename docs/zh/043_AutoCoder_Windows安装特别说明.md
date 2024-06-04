@@ -47,7 +47,7 @@ Windows 下安装有两种方式。
 
 ### 通过 Conda (待完成)
 
-安装 Conda 并且创建环境：
+1.安装 Conda 并且创建环境：
 
     下载 Windows 版本的 [Miniconda 安装包](https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe)。安装
     完成后在 shell 中执行下面的命令：
@@ -78,7 +78,7 @@ Windows 下安装有两种方式。
     ray start --head
     ```
 
-5. 安装完成后，可以通过下面的命令快速验证下：
+5.安装完成后，可以通过下面的命令快速验证下：
 
     ```bash
     auto-coder -h
