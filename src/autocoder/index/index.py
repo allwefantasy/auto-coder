@@ -201,14 +201,14 @@ class IndexManager:
                 index_data = json.load(file)
         else:
             index_data = {}
-        
+
         @byzerllm.prompt()
         def error_message(source_dir: str, file_path: str):
             """
             The source_dir is different from the path in index file (e.g. file_path:{{ file_path }} source_dir:{{ source_dir }}).
             You may need to replace the prefix with the source_dir in the index file or Just delete the index file to rebuild it.
             """
-                            
+
         for item in index_data.keys():
             if not item.startswith(self.source_dir):
                 logger.warning(
