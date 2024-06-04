@@ -15,7 +15,7 @@ paramiko
 einops
 tqdm
 loguru
-pyjava>=0.6.20
+pyjava>=0.6.21
 tiktoken
 transformers_stream_generator
 optimum
