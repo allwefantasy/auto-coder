@@ -123,6 +123,19 @@ Try running sudo lsof -i :6379 to check if there are other processes listening t
 
 后续步骤可以回到： [000-AutoCoder_准备旅程.md](./000-AutoCoder_%E5%87%86%E5%A4%87%E6%97%85%E7%A8%8B.md) 即可。
 
+### 常见问题
+
+Windows有个路径长度问题:
+
+![](../images/043-02.png)
+
+可以通过改注册表解决：
+
+1.win+r：regedit；
+2.HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled，改为1
+
+
+
 ### 另外一位网友补充
 
 在 Windows 11 上通过 Windows Subsystem for Linux (WSL) 安装 Ubuntu 22.04 的步骤如下：
