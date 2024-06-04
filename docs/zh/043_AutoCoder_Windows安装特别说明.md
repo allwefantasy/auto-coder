@@ -11,7 +11,7 @@ Windows 下安装有两种方式。
 
 经过测试：
 
-1. Windows 7/10 可以自己正常安装。
+1. Windows 7/10 可以正常安装。
 2. Windows 11 家庭版有用户反馈存在一定问题。
 3. Python官方目前说 3.10.xx系列已经不支持 Windows 7，可以到这里下载一个第三方包： https://github.com/adang1345/PythonWin7/tree/master/3.10.11 （经过测试）， 或者 https://github.com/NulAsh/cpython/releases/tag/v3.10.1win7-1 (未经过测试)
 
