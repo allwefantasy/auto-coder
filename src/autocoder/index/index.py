@@ -214,7 +214,7 @@ class IndexManager:
                 logger.warning(
                     error_message(source_dir=self.source_dir, file_path=item)
                 )
-                break
+                break            
 
         updated_sources = []
 
