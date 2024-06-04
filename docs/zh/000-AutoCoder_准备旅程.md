@@ -13,6 +13,8 @@ pip install -U auto-coder
 ray start --head
 ```
 
+如果你是 Windows 用户，可以参考这个[043_AutoCoder_Windows安装特别说明](../zh/043_AutoCoder_Windows%E5%AE%89%E8%A3%85%E7%89%B9%E5%88%AB%E8%AF%B4%E6%98%8E.md)。
+
 ## 启动推荐的模型代理
 
 大语言模型(你需要去deepseek官网申请token),然后执行下面的命令。
