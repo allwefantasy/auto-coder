@@ -125,7 +125,7 @@ Try running sudo lsof -i :6379 to check if there are other processes listening t
 
 ### 常见问题
 
-Windows有个路径长度问题:
+Windows有个路径长度问题(win10/win11):
 
 ![](../images/043-02.png)
 
@@ -133,7 +133,6 @@ Windows有个路径长度问题:
 
 1.win+r：regedit；
 2.HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem\LongPathsEnabled，改为1
-
 
 
 ### 另外一位网友补充
