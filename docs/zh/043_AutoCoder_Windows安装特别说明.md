@@ -7,8 +7,6 @@ Windows 下安装有两种方式。
 
 ## 直接安装
 
-参考： [000-AutoCoder_准备旅程.md](./000-AutoCoder_%E5%87%86%E5%A4%87%E6%97%85%E7%A8%8B.md) 即可。
-
 经过测试：
 
 1. Windows 7/10 可以正常安装。
@@ -44,6 +42,9 @@ Windows 下安装有两种方式。
     ```bash
     auto-coder -h
     ```
+
+
+后续步骤可以回到： [000-AutoCoder_准备旅程.md](./000-AutoCoder_%E5%87%86%E5%A4%87%E6%97%85%E7%A8%8B.md) 即可。
 
 ### 通过 Conda (待完成)
 
@@ -83,6 +84,9 @@ Windows 下安装有两种方式。
     ```bash
     auto-coder -h
     ```
+
+
+后续步骤可以回到： [000-AutoCoder_准备旅程.md](./000-AutoCoder_%E5%87%86%E5%A4%87%E6%97%85%E7%A8%8B.md) 即可。
 
 
 ## 通过WSL安装
@@ -133,7 +137,7 @@ it indicates the server fails to start because the port is already used by other
 Try running sudo lsof -i :6379 to check if there are other processes listening to the port.
 ```
 
-后续参考  [000-AutoCoder_准备旅程.md](./000-AutoCoder_%E5%87%86%E5%A4%87%E6%97%85%E7%A8%8B.md) 即可。
+后续步骤可以回到： [000-AutoCoder_准备旅程.md](./000-AutoCoder_%E5%87%86%E5%A4%87%E6%97%85%E7%A8%8B.md) 即可。
 
 ### 另外一位网友补充
 
@@ -185,3 +189,5 @@ wsl --update
 ![image](../images/043-01.png)
 
 参考图片中的参数进行配置。
+
+后续步骤可以回到： [000-AutoCoder_准备旅程.md](./000-AutoCoder_%E5%87%86%E5%A4%87%E6%97%85%E7%A8%8B.md) 即可。
