@@ -1,7 +1,7 @@
 include_file: 
    - ./common/local.yml
 
-human_as_model: false
+human_as_model: true
 
 query: |   
   帮我在  docs/zh/目录下生成一个新的文档，文档的标题是“044_AutoCoder_新手顺手指南.md”，内容是为空。
