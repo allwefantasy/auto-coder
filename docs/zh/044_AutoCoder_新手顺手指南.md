@@ -165,7 +165,7 @@ auto-coder --file ./actions/001_我的第一个修改.yml
 
 如果在公司推广 auto-coder ,推广者可以自己多调试各种参数，但是给到一线业务研发人员用的时候，推荐循序渐进：
 
-1. 一开始只教育他们调整 project_type/auto_merge/query 这三个参数。
+1. 一开始引导调整 project_type/auto_merge/query 这三个参数。
 2. 后续等推广者自己熟练了，有最佳实践，再慢慢推广其他参数给到一线业务研发人员。
 
 生成代码效果目前最好的是 GPT4o 或者 Claude Opus。如果企业只有API，建议搭建一个web服务出来（类似搭建了一个私有版本的web订阅版），然后给到一线业务研发人员配合 auto-coder 使用，也就是开启 human_as_model 模式,代码生成还是人工贴到web服务里来生成。
