@@ -170,7 +170,8 @@ auto-coder --file ./actions/001_我的第一个修改.yml
 
 生成代码效果目前最好的是 GPT4o 或者 Claude Opus。如果企业只有API，建议搭建一个web服务出来（类似搭建了一个私有版本的web订阅版），然后给到一线业务研发人员配合 auto-coder 使用，也就是开启 human_as_model 模式,代码生成还是人工贴到web服务里来生成。
 
-等完全掌握auto-coder后，则可以走API， 你可以配置 code_model 为较好的模型， model 配置为 deepseekv2,这样可会获得最好的成本和效果的平衡。
+等完全掌握auto-coder后，则可以走API， 你可以通过 code_model 参数，单独配置为代码生成部分配置一个好的模型。
+model 则可以配置为 deepseekv2,用来构建索引，查询索引，驱动 auto-coder 运行。这样可会获得最好的成本和效果的平衡。
 
 ## 总结
 
