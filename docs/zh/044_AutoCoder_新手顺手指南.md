@@ -161,6 +161,12 @@ auto-coder --file ./actions/001_我的第一个修改.yml
 2. human_as_model 设置为 false, 可以跳过第二次交互,默认为 true。参考这里: [human_as_model](./003-%20AutoCoder%20使用Web版大模型，性感的Human%20As%20Model%20模式.md)
 3. auto_merge 可以控制生成的代码样式以及合并方式，默认为 wholefile。参考这里: [auto_merge](./035-AutoCoder_auto_merge详解.md)
 
+## 很重要的一点
+
+如果在公司推广 auto-coder ,推广者可以自己多调试各种参数，但是给到一线业务研发人员用的时候，推荐循序渐进：
+
+1. 一开始只教育他们调整 project_type/auto_merge/query 这三个参数。
+2. 后续等推广者自己熟练了，有最佳实践，再慢慢推广其他参数给到一线业务研发人员。
 
 ## 总结
 
