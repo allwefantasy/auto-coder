@@ -309,6 +309,7 @@ def main():
         
         elif raw_args.doc_command == "serve":  
             server_args = ServerArgs(**{arg: getattr(raw_args, arg) for arg in vars(ServerArgs())})
+            server_args.served_model_name = server_args.served_model_name or args.model            
             rag = SimpleRAG(llm=llm, args=args, path="")  
             llm_wrapper = LLWrapper(llm=llm, rag=rag)
             serve(llm=llm_wrapper, args=server_args)

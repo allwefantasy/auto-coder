@@ -111,6 +111,9 @@ def parse_args() -> AutoCoderArgs:
         help=desc["enable_rag_context"],
     )
 
+    parser.add_argument("--rag_token", default="", help="")
+    parser.add_argument("--rag_url", default="", help="")
+
     parser.add_argument(
         "--auto_merge", nargs="?", const=True, default=False, help=desc["auto_merge"]
     )

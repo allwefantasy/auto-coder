@@ -189,6 +189,8 @@ class AutoCoderArgs(pydantic.BaseModel):
     search_engine_token: Optional[str] = ""
     enable_rag_search: Optional[bool] = False
     enable_rag_context: Optional[bool] = False
+    rag_url: Optional[str] = ""
+    rag_token: Optional[str] = ""
     auto_merge: Optional[Union[bool,str]] = False
     image_file: Optional[str] = ""
     image_mode: Optional[str] = "direct"

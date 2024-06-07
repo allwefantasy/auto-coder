@@ -10,6 +10,7 @@ from byzerllm.apps.llama_index.collection_manager import (
     CollectionManager,
     CollectionItem,
 )
+from byzerllm.utils.ray_utils import is_ray_in_client_mode
 
 from llama_index.core import QueryBundle, StorageContext
 from llama_index.core.readers.file.base import default_file_metadata_func
@@ -27,6 +28,7 @@ import byzerllm
 from loguru import logger
 import hashlib
 import json
+from openai import OpenAI
 
 
 def file_metadata_func(
@@ -55,8 +57,13 @@ class SimpleRAG:
     def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs, path: str) -> None:
         self.llm = llm
         self.args = args
-        self.retrieval = byzerllm.ByzerRetrieval()
-        self.retrieval.launch_gateway()
+        self.retrieval = byzerllm.ByzerRetrieval()        
+        if not is_ray_in_client_mode():
+            self.retrieval.launch_gateway()
+        else:
+            if not args.rag_url:
+                raise ValueError("You are in client mode, please provide the RAG URL. e.g. rag_url: http://localhost:8000/v1")
+            self.client = OpenAI(api_key=args.rag_token,base_url=args.rag_url)  
 
         self.path = path
 
@@ -251,6 +258,19 @@ You can set the collection by passing the `--collections`argument in command lin
         chat_engine.streaming_chat_repl()
 
     def search(self, query: str) -> List[SourceCode]:
+        if not is_ray_in_client_mode():
+            return self.inner_search(query)
+        response = self.client.chat.completions.create(
+                                    messages=[{
+                                        "role": "user",
+                                        "content": query
+                                    }],
+                                    model="xxxx",                                                   
+                                )
+        return [SourceCode(module_name="RAG", source_code=response.choices[0].message.content)]
+        
+
+    def inner_search(self, query: str) -> List[SourceCode]:
         if self.args.enable_rag_search:
             target_query = query
             if isinstance(self.args.enable_rag_search, str):
