@@ -24,7 +24,7 @@ def wrap_text_in_table(data, max_width=60):
 
 
 def index_command(args,llm):      
-    source_dir = os.abspath(args.source_dir)
+    source_dir = os.path.abspath(args.source_dir)
     args.source_dir = source_dir
     logger.info(f"Beging to index source code in {source_dir}")
     if args.project_type == "ts":
