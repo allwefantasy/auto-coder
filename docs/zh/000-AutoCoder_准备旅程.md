@@ -183,6 +183,10 @@ async def hello():
 byzerllm storage start
 ```
 
+访问 Ray Dashboard http://127.0.0.1:8265/#/actors 如果看到有三个 Actor 表示检索服务启动成功：
+
+![](../images/000-07.png)
+
 导入 auto-coder 文档：
 
 ```shell
@@ -192,6 +196,8 @@ auto-coder doc build --model deepseek_chat --emb_model qianwen_emb --source_dir 
 ```
 
 大概等个几分钟，完工。
+
+注意：若 doc build 失败，请根据上一步检查 Actor 是否启动成功，若 Actor 启动成功，此处构建失败可能与 emb_model 有关，可以更换一个向量模型尝试下。
 
 现在可以和小助手聊天了：
 
@@ -210,7 +216,7 @@ auto-coder doc serve --model deepseek_chat --emb_model qianwen_emb  --collection
 ![](../images/000-01.png)
 ![](../images/000-02.png)
 
-以 NextChat 软件为例，配置如下：
+以 [NextChat](https://github.com/ChatGPTNextWeb/ChatGPT-Next-Web/releases) 软件为例，配置如下：
 
 ![](../images/000-03.png)
 
