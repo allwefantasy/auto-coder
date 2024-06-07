@@ -38,7 +38,7 @@ ray_address: "ray://127.0.0.1:10001"
 
 rag_url: http://127.0.0.1:8001/v1
 rag_token: 123456
-enable_rag_search: auto_merge方式
+enable_rag_search: 你希望查找的东西的描述
 collections: auto-coder
 ```
 
