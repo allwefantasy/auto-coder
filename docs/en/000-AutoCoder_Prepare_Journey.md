@@ -123,6 +123,10 @@ Start the knowledge base:
 byzerllm storage start
 ```
 
+Access the Ray Dashboard at http://127.0.0.1:8265/#/actors. If you see three actors, it indicates that the retrieval service has started successfully.
+
+![](../images/000-07.png)
+
 Import auto-coder documents:
 
 ```shell
@@ -132,6 +136,8 @@ auto-coder doc build --model deepseek_chat --emb_model qianwen_emb --source_dir 
 ```
 
 Wait for a few minutes, and it will be done.
+
+Note: If doc build fails, please check in the previous step whether the Actor has started successfully. If the Actor has started successfully, the build failure here may be related to the emb_model. You can try using a different embedding model.
 
 Now you can chat with the assistant:
 
@@ -150,7 +156,7 @@ Here are some examples:
 ![](../images/000-01.png)
 ![](../images/000-02.png)
 
-Taking NextChat software as an example, configure as follows:
+Taking [NextChat](https://github.com/ChatGPTNextWeb/ChatGPT-Next-Web/releases) software as an example, configure as follows:
 
 ![](../images/000-03.png)
 
