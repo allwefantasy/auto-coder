@@ -306,6 +306,9 @@ You can set the collection by passing the `--collections`argument in command lin
 
         if len(self.collections) != 1:
             raise ValueError("When build, only one collection should be set")
+        
+        if is_ray_in_client_mode():
+            raise ValueError("You are in client mode, please run the build in the server.")
 
         collection = self.collections[0]
 
