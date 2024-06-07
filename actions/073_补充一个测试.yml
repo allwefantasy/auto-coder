@@ -17,7 +17,7 @@ query: |
    函数：auto_implement_function_template
    变量：a
    类：
-   导入语句：import os,import time,from loguru import logger,import byzerllm
+   导入语句：import os^^import time^^from loguru import logger^^import byzerllm
    ```
   
    以及:
@@ -27,5 +27,5 @@ query: |
    函数：_get_related_files, get_all_file_symbols, split_text_into_chunks, build_index_for_single_source, build_index, read_index, _get_meta_str, get_related_files, _query_index_with_thread, get_target_files_by_query, _get_target_files_by_query
    变量：a
    类：IndexItem, TargetFile, FileList, IndexManager
-   导入语句：import os,import json,import time,from typing import List, Dict, Any,from datetime import datetime,from autocoder.common import SourceCode, AutoCoderArgs,from concurrent.futures import ThreadPoolExecutor, as_completed,import threading,import pydantic,import byzerllm,import hashlib,import textwrap,import tabulate,from loguru import logger
+   导入语句：import os^^import json^^import time^^from typing import List, Dict, Any^^from datetime import datetime^^from autocoder.common import SourceCode, AutoCoderArgs
    ```

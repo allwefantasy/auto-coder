@@ -24,7 +24,7 @@ def extract_symbols(text: str) -> SymbolsInfo:
         if match:
             value = match.group(1).strip()
             if field != "usage":
-                value = re.split(r"[,，\s]+", value)
+                value = [v.strip() for v in value.split("^^")]
             setattr(info, field, value)
 
     return info

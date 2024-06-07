@@ -97,6 +97,7 @@ class IndexManager:
         1. 直接输出结果，不要尝试使用任何代码
         2. 不要分析代码的内容和目的
         3. 用途的长度不能超过100字符
+        4. 导入语句的分隔符为^^
 
         下面是一段示例：
 
@@ -118,7 +119,7 @@ class IndexManager:
         函数：auto_implement_function_template
         变量：a
         类：
-        导入语句：import os,import time,from loguru import logger,import byzerllm
+        导入语句：import os^^import time^^from loguru import logger^^import byzerllm
 
         现在，让我们开始一个新的任务:
 
