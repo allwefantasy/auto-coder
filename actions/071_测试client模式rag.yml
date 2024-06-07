@@ -1,0 +1,17 @@
+include_file: 
+   - ./common/local.yml
+
+human_as_model: true
+auto_merge: editblock
+
+ray_address: "ray://127.0.0.1:10001"
+
+rag_url: http://127.0.0.1:8001/v1
+rag_token: 123456
+enable_rag_search: auto_merge方式
+collections: auto-coder
+
+
+query: |   
+  修改 auto_coder.py,byzerllm_client.py,command_args.py,common/__init__.py  等几个文件，
+  新增命令行参数 rag_url 和 rag_token，用于指定rag服务的url和token。

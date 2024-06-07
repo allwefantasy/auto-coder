@@ -57,15 +57,8 @@ class SimpleRAG:
     def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs, path: str) -> None:
         self.llm = llm
         self.args = args
-        self.retrieval = byzerllm.ByzerRetrieval()        
-        if not is_ray_in_client_mode():
-            self.retrieval.launch_gateway()
-        else:
-            if not args.rag_url:
-                raise ValueError("You are in client mode, please provide the RAG URL. e.g. rag_url: http://localhost:8000/v1")
-            self.client = OpenAI(api_key=args.rag_token,base_url=args.rag_url)  
-
         self.path = path
+        self.collection_manager = CollectionManager("")
 
         self.collections = self.args.collection
         if self.args.collections:
@@ -83,22 +76,31 @@ You can set the collection by passing the `--collections`argument in command lin
         if not self.llm.default_emb_model_name:
             raise ValueError("emb_model should be set")
 
-        self.service_context = get_service_context(self.llm)
-        self.storage_context_dict: Dict[str, StorageContext] = {}
-        for collection in self.collections:
-            self.storage_context_dict[collection] = get_storage_context(
-                self.llm,
-                self.retrieval,
-                chunk_collection=collection,
-                namespace=collection,
-            )
+        self.retrieval = byzerllm.ByzerRetrieval()
 
-        self.simple_retrieval_dict: Dict[str, SimpleRetrieval] = {}
-        for collection in self.collections:
-            self.simple_retrieval_dict[collection] = SimpleRetrieval(
-                llm=llm, retrieval=self.retrieval, chunk_collection=collection
-            )
-        self.collection_manager = CollectionManager("")
+        if not is_ray_in_client_mode():
+            self.retrieval.launch_gateway()
+            self.service_context = get_service_context(self.llm)
+            self.storage_context_dict: Dict[str, StorageContext] = {}
+            for collection in self.collections:
+                self.storage_context_dict[collection] = get_storage_context(
+                    self.llm,
+                    self.retrieval,
+                    chunk_collection=collection,
+                    namespace=collection,
+                )
+
+            self.simple_retrieval_dict: Dict[str, SimpleRetrieval] = {}
+            for collection in self.collections:
+                self.simple_retrieval_dict[collection] = SimpleRetrieval(
+                    llm=llm, retrieval=self.retrieval, chunk_collection=collection
+                )
+        else:
+            if not args.rag_url:
+                raise ValueError(
+                    "You are in client mode, please provide the RAG URL. e.g. rag_url: http://localhost:8000/v1"
+                )
+            self.client = OpenAI(api_key=args.rag_token, base_url=args.rag_url)
 
     def _get_indices(self) -> List[Tuple[CollectionItem, VectorStoreIndex]]:
         indices = []
@@ -260,15 +262,21 @@ You can set the collection by passing the `--collections`argument in command lin
     def search(self, query: str) -> List[SourceCode]:
         if not is_ray_in_client_mode():
             return self.inner_search(query)
-        response = self.client.chat.completions.create(
-                                    messages=[{
-                                        "role": "user",
-                                        "content": query
-                                    }],
-                                    model="xxxx",                                                   
-                                )
-        return [SourceCode(module_name="RAG", source_code=response.choices[0].message.content)]
+                
+        target_query = query        
         
+        if isinstance(self.args.enable_rag_search, str):
+            target_query = self.args.enable_rag_search
+        
+        response = self.client.chat.completions.create(
+            messages=[{"role": "user", "content": target_query}],
+            model="xxxx",
+        )
+        return [
+            SourceCode(
+                module_name=f"RAG:{target_query}", source_code=response.choices[0].message.content
+            )
+        ]
 
     def inner_search(self, query: str) -> List[SourceCode]:
         if self.args.enable_rag_search:
@@ -306,9 +314,11 @@ You can set the collection by passing the `--collections`argument in command lin
 
         if len(self.collections) != 1:
             raise ValueError("When build, only one collection should be set")
-        
+
         if is_ray_in_client_mode():
-            raise ValueError("You are in client mode, please run the build in the server.")
+            raise ValueError(
+                "You are in client mode, please run the build in the server."
+            )
 
         collection = self.collections[0]
 
