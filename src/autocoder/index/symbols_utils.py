@@ -1,6 +1,7 @@
 import re
 from pydantic import BaseModel, Field
 from typing import List, Optional
+from enum import Enum
 
 class SymbolsInfo(BaseModel):
     usage: Optional[str] = Field(None, alias="用途")
@@ -23,8 +24,10 @@ def extract_symbols(text: str) -> SymbolsInfo:
         match = re.search(pattern, text)
         if match:
             value = match.group(1).strip()
-            if field != "usage":
+            if field == "import_statements":
                 value = [v.strip() for v in value.split("^^")]
+            elif field == "functions" or field == "variables" or field == "classes":
+                value = [v.strip() for v in value.split(",")]
             setattr(info, field, value)
 
     return info

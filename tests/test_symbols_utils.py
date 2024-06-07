@@ -25,6 +25,7 @@ class TestSymbolsUtils(unittest.TestCase):
 导入语句：import os^^import json^^import time^^from typing import List, Dict, Any^^from datetime import datetime^^from autocoder.common import SourceCode, AutoCoderArgs
 """
         info2 = extract_symbols(text2)
+        print(info2)
         self.assertEqual(info2.usage, "主要用于自动编码器的索引管理和文件处理。")
         self.assertEqual(info2.functions, [
             "_get_related_files",

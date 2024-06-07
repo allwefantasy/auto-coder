@@ -4,6 +4,7 @@ import time
 from typing import List, Dict, Any
 from datetime import datetime
 from autocoder.common import SourceCode, AutoCoderArgs
+from autocoder.index.symbols_utils import extract_symbols, SymbolsInfo
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 
@@ -283,8 +284,7 @@ class IndexManager:
         return index_items
     
     def _get_meta_str(self, max_chunk_size=4096, skip_symbols: bool = False):
-        index_items = self.read_index()
-        output = []
+        index_items = self.read_index()        
         current_chunk = []
         current_size = 0
 
