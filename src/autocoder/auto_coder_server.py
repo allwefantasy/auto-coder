@@ -18,9 +18,40 @@ from typing import List, Optional, Union
 from autocoder.index.for_command import index_command, index_query_command
 from autocoder.common import AutoCoderArgs
 from loguru import logger
+from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib
 
 import byzerllm
 import hashlib
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--upload_dir",
+    type=str,
+    default="./uploads",
+    help="Directory to store uploaded files",
+)
+parser.add_argument(
+    "--ray_address",
+    type=str,
+    default="auto",
+    help="Address of the ray cluster to connect to. default is auto.",
+)
+command_args, _ = parser.parse_known_args()
+
+try:        
+    home = os.path.expanduser("~")
+    auto_coder_dir = os.path.join(home, ".auto-coder")
+    libs_dir = os.path.join(auto_coder_dir, "storage", "libs")                
+    code_search_path = None
+    if os.path.exists(libs_dir):        
+        retrieval_libs_dir = os.path.join(libs_dir,get_latest_byzer_retrieval_lib(libs_dir))            
+        if os.path.exists(retrieval_libs_dir):
+            code_search_path = [retrieval_libs_dir]
+    byzerllm.connect_cluster(address=command_args.ray_address,code_search_path=code_search_path)        
+except Exception as e:
+    logger.warning(f"Detecting error when connecting to ray cluster: {e}, try to connect to ray cluster without storage support.")
+    byzerllm.connect_cluster(address=command_args.ray_address)
 
 app = FastAPI()
 
@@ -82,15 +113,8 @@ class AutoCoderRunArgs(AutoCoderArgs):
     pass
 
 async def setup_llm(args: AutoCoderArgs):
-    if args.model:
-        try:        
-            byzerllm.connect_cluster(address=args.ray_address)        
-        except Exception as e:
-            logger.warning(f"Detecting error when connecting to ray cluster: {e}, try to connect to ray cluster without storage support.")
-            byzerllm.connect_cluster(address=args.ray_address)
-
+    if args.model:        
         llm = byzerllm.ByzerLLM(verbose=args.print_request)
-
         llm.setup_template(model=args.model,template="auto")
         llm.setup_default_model_name(args.model)
         llm.setup_max_output_length(args.model,args.model_max_length)

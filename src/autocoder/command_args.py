@@ -188,7 +188,7 @@ def parse_args() -> AutoCoderArgs:
         "--ray_address", default="auto", help=desc["ray_address"]
     )
     doc_build_parse.add_argument(
-        "--required_exts", default="", help=desc["doc_build_parse_required_exts"]
+        "--required_exts", default=None, help=desc["doc_build_parse_required_exts"]
     )
     doc_build_parse.add_argument(
         "--collection", default="default", help="Collection name for indexing"
