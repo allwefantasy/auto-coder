@@ -404,5 +404,11 @@
     "symbols": "函数：auto_implement_function_template, index, index_query, revert, init, screenshot, next_action, run, doc_build, doc_query, doc_chat, doc_serve\n变量：command_args, home, auto_coder_dir, libs_dir, code_search_path\n类：DocBuildArgs, DocQueryArgs, DocChatArgs, AutoCoderRevertArgs, AutoCoderInitArgs, AutoCoderScreenshotArgs, AutoCoderNextArgs, AutoCoderRunArgs, ServerArgs\n导入语句：import os,import time,import uvicorn,from fastapi import FastAPI, Request,from fastapi.middleware.cors import CORSMiddleware,from fastapi.responses import JSONResponse,from autocoder.command_args import parse_args,from autocoder.auto_coder import load_include_files,resolve_include_path,Dispacher,main,from autocoder.rag.api_server import ServerArgs,from autocoder.rag.simple_rag import SimpleRAG,from autocoder.rag.llm_wrapper import LLWrapper,from autocoder.common import git_utils,from autocoder.common.screenshots import gen_screenshots,from pydantic import BaseModel,from typing import List, Optional, Union,from autocoder.index.for_command import index_command, index_query_command,from autocoder.common import AutoCoderArgs,from loguru import logger,from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib,import byzerllm,import hashlib,import argparse",
     "last_modified": 1717683174.8750436,
     "md5": "5ae1539373f384f210d954dfab34799a"
+  },
+  "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/symbols_utils.py": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/symbols_utils.py",
+    "symbols": "用途：用于从文本中提取符号信息。\n函数：extract_symbols\n类：SymbolsInfo\n变量：\n导入语句：import re,from pydantic import BaseModel, Field,from typing import List, Optional",
+    "last_modified": 1717768936.399399,
+    "md5": "24cf29469632b5f3a7b06db7f2586cbe"
   }
 }
