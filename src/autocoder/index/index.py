@@ -280,7 +280,7 @@ class IndexManager:
             index_items.append(index_item)
 
         return index_items
-
+    
     def _get_meta_str(self, max_chunk_size=4096, skip_symbols: bool = False):
         index_items = self.read_index()
         output = []
@@ -400,7 +400,7 @@ class IndexManager:
         现在，请根据用户的问题以及的前面的文件以及符号信息，寻找相关文件路径。如果没有找到，返回空即可。
         提示：
         1. 你可以通过 “导入语句” 语句信息得到每个文件依赖了哪些其他文件。
-        2. 你可以通过函数、类、变量等信息得到每个文件的功能和目的。
+        2. 你可以通过用途，函数、类、变量等信息得到每个文件的功能和目的。
         """
 
 
