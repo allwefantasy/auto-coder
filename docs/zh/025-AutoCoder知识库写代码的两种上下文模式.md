@@ -19,7 +19,7 @@ enable_rag_search 会对 topN 个chunk 根据问题进行回答，把回答结�
 
 ## 如果你使用 ray://xxxx:10001 的方式连接知识库
 
-如果你使用 ray://xxxx:10001 的方式连接知识库，你需要在服务器上启动知识库服务：
+如果你使用 ray://xxxx:10001 的方式连接知识库，你需要在服务器上先启动一个知识库服务service：
 
 ```bash
 auto-coder doc serve --host 127.0.0.1 --port 8001 --model deepseek_chat --emb_model gpt_emb  --collection auto-coder
@@ -46,7 +46,10 @@ collections: auto-coder
 
 这里简单解释下， rag_url 是我们启动的知识库服务的地址，rag_token 是我们启动知识库服务的时候指定的 token，如果没有指定 token,那么在使用时可以随意指定，但不能为空。
 
-collections 则可以指定知识库名称,当前一次只能支持一个知识库。
+当前客户端模式的一些限制：
+
+1. collections 则可以指定知识库名称,当前一次只能支持一个知识库。
+2. 当前只支持 enable_rag_search 参数，不支持 enable_rag_context 参数。
 
 ## 最佳使用实践
 
