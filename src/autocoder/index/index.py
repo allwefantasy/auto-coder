@@ -96,6 +96,7 @@ class IndexManager:
         注意：
         1. 直接输出结果，不要尝试使用任何代码
         2. 不要分析代码的内容和目的
+        3. 用途的长度不能超过100字符
 
         下面是一段示例：
 
@@ -113,7 +114,7 @@ class IndexManager:
         def auto_implement_function_template(instruction:str, content:str)->str:
 
         ## 输出
-
+        用途：主要用于提供自动实现函数模板的功能。
         函数：auto_implement_function_template
         变量：a
         类：
