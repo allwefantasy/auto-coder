@@ -13,9 +13,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py",
-    "symbols": "变量：__version__\n函数：\n类：\n导入语句：",
-    "last_modified": 1717509805.3218467,
-    "md5": "867b88421cccbf4de67c98095d87c30a"
+    "symbols": "用途：主要用于定义软件版本号。\n函数：\n变量：__version__\n类：\n导入语句：",
+    "last_modified": 1717753909.9548383,
+    "md5": "2d9c6ccb4326c719984698591eab7081"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
@@ -131,9 +131,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/index.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/index.py",
-    "symbols": "函数：_get_related_files, get_all_file_symbols, split_text_into_chunks, build_index_for_single_source, build_index, read_index, _get_meta_str, get_related_files, _query_index_with_thread, get_target_files_by_query, _get_target_files_by_query, build_index_and_filter_files\n变量：a\n类：IndexItem, TargetFile, FileList, IndexManager\n导入语句：import os,import json,import time,from typing import List, Dict, Any,from datetime import datetime,from autocoder.common import SourceCode, AutoCoderArgs,from concurrent.futures import ThreadPoolExecutor, as_completed,import threading,import pydantic,import byzerllm,import hashlib,import textwrap,import tabulate,from loguru import logger",
-    "last_modified": 1717507334.6671288,
-    "md5": "e62412c78465b7efdbfbfb776e5298bb"
+    "symbols": "用途：主要用于自动编码器的索引管理和文件处理。\n函数：_get_related_files, get_all_file_symbols, split_text_into_chunks, build_index_for_single_source, build_index, read_index, _get_meta_str, get_related_files, _query_index_with_thread, get_target_files_by_query, _get_target_files_by_query\n变量：a\n类：IndexItem, TargetFile, FileList, IndexManager\n导入语句：import os,import json,import time,from typing import List, Dict, Any,from datetime import datetime,from autocoder.common import SourceCode, AutoCoderArgs,from concurrent.futures import ThreadPoolExecutor, as_completed,import threading,import pydantic,import byzerllm,import hashlib,import textwrap,import tabulate,from loguru import logger",
+    "last_modified": 1717766959.4566534,
+    "md5": "70a0d163a677185a3d53a1e00612cc27"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/suffixproject/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/suffixproject/__init__.py",
@@ -172,9 +172,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/simple_rag.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/simple_rag.py",
-    "symbols": "函数：auto_implement_function_template, file_metadata_func, generate_file_md5, inner_search, search, stream_chat_oai, stream_chat_repl, stream_search, retrieve\n变量：\n类：SimpleRAG\n导入语句：from typing import Any, Dict, List, Optional, Tuple, from autocoder.common import SourceCode, AutoCoderArgs, from autocoder.common.llm_rerank import LLMRerank, from autocoder.rag.simple_directory_reader import AutoCoderSimpleDirectoryReader, import fsspec, from byzerllm.apps.llama_index.simple_retrieval import SimpleRetrieval, from byzerllm.apps.llama_index import get_service_context, get_storage_context, from byzerllm.apps.llama_index.collection_manager import CollectionManager, CollectionItem, from byzerllm.utils.ray_utils import is_ray_in_client_mode, from llama_index.core import QueryBundle, StorageContext, from llama_index.core.readers.file.base import default_file_metadata_func, from llama_index.core import VectorStoreIndex, from llama_index.core.node_parser import HierarchicalNodeParser, get_leaf_nodes, from llama_index.core.base.llms.types import ChatMessage, MessageRole, from llama_index.core.retrievers import AutoMergingRetriever, from llama_index.core.query_engine import RetrieverQueryEngine, RouterQueryEngine, from llama_index.core.tools import QueryEngineTool, from llama_index.core.selectors import LLMSingleSelector, import byzerllm, from loguru import logger, import hashlib, import json, from openai import OpenAI",
-    "last_modified": 1717749851.915897,
-    "md5": "dda6dbc5496e13b4d1a0121c3cab30d5"
+    "symbols": "用途：主要用于实现简单的检索增强生成（RAG）功能。\n函数：file_metadata_func, stream_search, retrieve, stream_chat_oai, stream_chat_repl, search, inner_search, build\n变量：\n类：SimpleRAG\n导入语句：from typing import Any, Dict, List, Optional, Tuple, from autocoder.common import SourceCode, AutoCoderArgs, from autocoder.common.llm_rerank import LLMRerank, from autocoder.rag.simple_directory_reader import AutoCoderSimpleDirectoryReader, import fsspec, from byzerllm.apps.llama_index.simple_retrieval import SimpleRetrieval, from byzerllm.apps.llama_index import get_service_context, get_storage_context, from byzerllm.apps.llama_index.collection_manager import CollectionManager, CollectionItem, from byzerllm.utils.ray_utils import is_ray_in_client_mode, from llama_index.core import QueryBundle, StorageContext, from llama_index.core.readers.file.base import default_file_metadata_func, from llama_index.core import VectorStoreIndex, from llama_index.core.node_parser import HierarchicalNodeParser, get_leaf_nodes, from llama_index.core.base.llms.types import ChatMessage, MessageRole, from llama_index.core.retrievers import AutoMergingRetriever, from llama_index.core.query_engine import RetrieverQueryEngine, RouterQueryEngine, from llama_index.core.tools import QueryEngineTool, from llama_index.core.selectors import LLMSingleSelector, import byzerllm, from loguru import logger, import hashlib, import json, from openai import OpenAI",
+    "last_modified": 1717750083.256338,
+    "md5": "0a4032e9bb64ebfcca7ea83cc8003a81"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_execute.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_execute.py",
@@ -395,9 +395,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/simple_directory_reader.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/simple_directory_reader.py",
-    "symbols": "函数：_try_loading_included_file_formats, _format_file_timestamp, default_file_metadata_func, get_default_fs, is_default_fs, _add_files, _exclude_metadata, load_file, aload_file, load_data, aload_data, iter_data\n变量：logger\n类：_DefaultFileMetadataFunc, AutoCoderSimpleDirectoryReader\n导入语句：import os,import logging,import mimetypes,import multiprocessing,import warnings,from datetime import datetime,from functools import reduce,import asyncio,from itertools import repeat,from pathlib import Path, PurePosixPath,import fsspec,from fsspec.implementations.local import LocalFileSystem,from typing import Any, Callable, Dict, Generator, List, Optional, Type,from llama_index.core.readers.base import BaseReader,from llama_index.core.async_utils import run_jobs, get_asyncio_module,from llama_index.core.schema import Document,from tqdm import tqdm",
-    "last_modified": 1717730067.4541311,
-    "md5": "280a876d9bfce70c3ce24fd7b3f581a5"
+    "symbols": "用途：主要用于从目录中读取不同格式的文件，并自动选择最佳的文件读取器。\n函数：_try_loading_included_file_formats, _format_file_timestamp, default_file_metadata_func, get_default_fs, is_default_fs, AutoCoderSimpleDirectoryReader.load_file, AutoCoderSimpleDirectoryReader.aload_file, AutoCoderSimpleDirectoryReader.load_data, AutoCoderSimpleDirectoryReader.aload_data, AutoCoderSimpleDirectoryReader.iter_data\n变量：\n类：_DefaultFileMetadataFunc, AutoCoderSimpleDirectoryReader\n导入语句：import os,import logging,import mimetypes,import multiprocessing,import warnings,from datetime import datetime,from functools import reduce,import asyncio,from itertools import repeat,from pathlib import Path, PurePosixPath,import fsspec,from fsspec.implementations.local import LocalFileSystem,from typing import Any, Callable, Dict, Generator, List, Optional, Type,from llama_index.core.readers.base import BaseReader,from llama_index.core.async_utils import run_jobs, get_asyncio_module,from llama_index.core.schema import Document,from tqdm import tqdm",
+    "last_modified": 1717750226.578763,
+    "md5": "575fae26e3edd01fc49a1f211ec9e0c4"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py",
