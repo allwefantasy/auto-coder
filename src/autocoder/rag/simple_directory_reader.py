@@ -311,7 +311,7 @@ class AutoCoderSimpleDirectoryReader(BaseReader):
 
         # print total number of files added
         logger.debug(
-            f"> [SimpleDirectoryReader] Total files added: {len(new_input_files)}"
+            f"> [AutoCoderSimpleDirectoryReader] Total files added: {len(new_input_files)}"
         )
 
         return new_input_files
@@ -393,7 +393,7 @@ class AutoCoderSimpleDirectoryReader(BaseReader):
             List[Document]: loaded documents
         """
         # TODO: make this less redundant
-        default_file_reader_cls = SimpleDirectoryReader.supported_suffix_fn()
+        default_file_reader_cls = AutoCoderSimpleDirectoryReader.supported_suffix_fn()
         default_file_reader_suffix = list(default_file_reader_cls.keys())
         metadata: Optional[dict] = None
         documents: List[Document] = []
@@ -453,7 +453,7 @@ class AutoCoderSimpleDirectoryReader(BaseReader):
     async def aload_file(self, input_file: Path) -> List[Document]:
         """Load file asynchronously."""
         # TODO: make this less redundant
-        default_file_reader_cls = SimpleDirectoryReader.supported_suffix_fn()
+        default_file_reader_cls = AutoCoderSimpleDirectoryReader.supported_suffix_fn()
         default_file_reader_suffix = list(default_file_reader_cls.keys())
         metadata: Optional[dict] = None
         documents: List[Document] = []
@@ -543,7 +543,7 @@ class AutoCoderSimpleDirectoryReader(BaseReader):
                 )
             with multiprocessing.get_context("spawn").Pool(num_workers) as p:
                 results = p.starmap(
-                    SimpleDirectoryReader.load_file,
+                    AutoCoderSimpleDirectoryReader.load_file,
                     zip(
                         files_to_process,
                         repeat(self.file_metadata),
@@ -564,7 +564,7 @@ class AutoCoderSimpleDirectoryReader(BaseReader):
                 )
             for input_file in files_to_process:
                 documents.extend(
-                    SimpleDirectoryReader.load_file(
+                    AutoCoderSimpleDirectoryReader.load_file(
                         input_file=input_file,
                         file_metadata=self.file_metadata,
                         file_extractor=self.file_extractor,
@@ -629,7 +629,7 @@ class AutoCoderSimpleDirectoryReader(BaseReader):
             files_to_process = tqdm(self.input_files, desc="Loading files", unit="file")
 
         for input_file in files_to_process:
-            documents = SimpleDirectoryReader.load_file(
+            documents = AutoCoderSimpleDirectoryReader.load_file(
                 input_file=input_file,
                 file_metadata=self.file_metadata,
                 file_extractor=self.file_extractor,
