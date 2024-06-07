@@ -19,32 +19,6 @@ from pydantic import BaseModel,Field
 class RegPattern(BaseModel):
     pattern: str = Field(..., title="Pattern", description="The regex pattern can be used by `re.search` in python.")
 
-def is_likely_useful_file(file_path):
-    """Determine if the file is likely to be useful by excluding certain directories and specific file types."""
-    excluded_dirs = ["docs", "examples", "tests", "test", "__pycache__", "scripts", "benchmarks","build"]
-    utility_or_config_files = ["hubconf.py", "setup.py"]
-    github_workflow_or_docs = ["stale.py", "gen-card-", "write_model_card"]
-    
-    if any(part.startswith('.') for part in file_path.split('/')):
-        return False
-    if 'test' in file_path.lower():
-        return False
-    for excluded_dir in excluded_dirs:
-        if f"/{excluded_dir}/" in file_path or file_path.startswith(excluded_dir + "/"):
-            return False
-    for file_name in utility_or_config_files:
-        if file_name in file_path:
-            return False
-    for doc_file in github_workflow_or_docs:
-        if doc_file in file_path:
-            return False
-    return True
-
-def is_test_file(file_content):
-    """Determine if the file content suggests it is a test file."""
-    test_indicators = ["import unittest", "import pytest", "from unittest", "from pytest"]
-    return any(indicator in file_content for indicator in test_indicators)
-
 class Level1PyProject():
     
     def __init__(self,script_path,package_name):
@@ -177,18 +151,9 @@ class PyProject():
         with open(file_path, "r") as file:
             return file.read()
 
-    def convert_to_source_code(self,file_path):        
-        if not is_likely_useful_file(file_path):
-            return None
-               
+    def convert_to_source_code(self,file_path):                
         module_name = file_path
         source_code = self.read_file_content(file_path)
-
-        if not FileUtils.has_sufficient_content(source_code,min_line_count=1):
-            return None
-        
-        if is_test_file(source_code):
-            return None
         return SourceCode(module_name=module_name, source_code=source_code)
     
     def get_package_source_codes(self, package_name: str) -> Generator[SourceCode, None, None]:

@@ -150,13 +150,16 @@ def main():
         
         print(f"Successfully created new action file: {new_file}")        
         
-        if os.environ.get("TERMINAL_EMULATOR") == "JetBrains-JediTerm":            
-            subprocess.run(["idea", new_file])
-        else:            
-            if shutil.which("code"):
-                subprocess.run(["code", "-r", new_file])
-            elif shutil.which("idea"):
-                subprocess.run(["idea", new_file])                
+        try:
+            if os.environ.get("TERMINAL_EMULATOR") == "JetBrains-JediTerm":            
+                subprocess.run(["idea", new_file])
+            else:            
+                if shutil.which("code"):
+                    subprocess.run(["code", "-r", new_file])
+                elif shutil.which("idea"):
+                    subprocess.run(["idea", new_file])  
+        except Exception as e:
+            logger.info(f"Error opening editor, you can manually open the file: {new_file}")                          
         return        
         
     if args.model:

@@ -74,11 +74,7 @@ class TSProject():
         with open(file_path, "r") as file:
             return file.read()            
 
-    def is_likely_useful_file(self,file_path):
-        # Ignore hidden files and directories            
-        if any(part.startswith(".") for part in file_path.split(os.path.sep)):
-            return False
-
+    def is_likely_useful_file(self,file_path):        
         # Ignore common build output, dependency and configuration directories
         ignore_dirs = [
             "node_modules",

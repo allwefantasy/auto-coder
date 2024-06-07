@@ -5,6 +5,7 @@ from autocoder.pyproject import PyProject
 import tabulate
 import textwrap
 from loguru import logger
+import os
 
 def wrap_text_in_table(data, max_width=60):
     """
@@ -22,20 +23,28 @@ def wrap_text_in_table(data, max_width=60):
     return wrapped_data
 
 
-def index_command(args,llm):   
-    project = SuffixProject(args,llm) 
-    project.run()
-    sources = project.sources
+def index_command(args,llm):      
+    source_dir = os.abspath(args.source_dir)
+    args.source_dir = source_dir
+    logger.info(f"Beging to index source code in {source_dir}")
+    if args.project_type == "ts":
+        pp = TSProject(args=args,llm = llm)
+    elif args.project_type == "py":
+        pp = PyProject(args=args,llm = llm)
+    else:
+        pp = SuffixProject(args=args,llm = llm,file_filter=None) 
+    pp.run()
+    sources = pp.sources
     index_manager = IndexManager(llm=llm, sources=sources, args=args)
     index_manager.build_index()    
 
 def index_query_command(args,llm):    
-    if args.project_type in [".ts","ts"]:
+    if args.project_type == "ts":
         pp = TSProject(args=args,llm = llm)
-    elif args.project_type in [".py","py"]:
+    elif args.project_type == "py":
         pp = PyProject(args=args,llm = llm)
     else:
-        pp = SuffixProject(args=args,llm = llm,file_filter=None) 
+        pp = SuffixProject(args=args,llm = llm,file_filter=None)
     pp.run()    
     sources = pp.sources 
 

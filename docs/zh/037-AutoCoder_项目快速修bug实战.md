@@ -53,7 +53,7 @@ auto-coder --file actions/061_index_检测索引文件的有效性.yml
 ![](../images/037-05.png)
 
 
-这个时候auto-coder 会以diff模式提交代码（也支持wholefile, wholefile 模式更稳定，但消耗的token也非常巨大）。auto-coder 运行完成后，
+这个时候auto-coder 会以diff模式提交代码（推荐 editblock, 也支持wholefile, wholefile 模式更稳定，但消耗的token也非常巨大）。auto-coder 运行完成后，
 你可以打开 vscode 的侧边栏看提交记录：
 
 ![](../images/037-06.png)
