@@ -3,6 +3,13 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from enum import Enum
 
+class SymbolType(Enum):
+    USAGE = "usage"
+    FUNCTIONS = "functions"
+    VARIABLES = "variables" 
+    CLASSES = "classes"
+    IMPORT_STATEMENTS = "import_statements"
+
 class SymbolsInfo(BaseModel):
     usage: Optional[str] = Field(None, alias="用途")
     functions: List[str] = Field([], alias="函数")
@@ -31,3 +38,18 @@ def extract_symbols(text: str) -> SymbolsInfo:
             setattr(info, field, value)
 
     return info
+
+def symbols_info_to_str(info: SymbolsInfo, symbol_types: List[SymbolType]) -> str:
+    result = []
+    for symbol_type in symbol_types:
+        value = getattr(info, symbol_type.value)
+        if value:
+            if symbol_type == SymbolType.IMPORT_STATEMENTS:
+                value_str = "^^".join(value)
+            elif symbol_type in [SymbolType.FUNCTIONS, SymbolType.VARIABLES, SymbolType.CLASSES]:
+                value_str = ", ".join(value)
+            else:
+                value_str = value
+            result.append(f"{symbol_type.value}：{value_str}")
+    
+    return "\n".join(result)
