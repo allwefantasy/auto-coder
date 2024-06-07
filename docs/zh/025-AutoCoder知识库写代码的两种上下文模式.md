@@ -17,6 +17,36 @@ enable_rag_context 会取第一个chunk 对应的文章，作为上下文，这�
 
 enable_rag_search 会对 topN 个chunk 根据问题进行回答，把回答结果作为上下文，这个上下文也会被作为一个普通的文件给到大模型。
 
+## 如果你使用 ray://xxxx:10001 的方式连接知识库
+
+如果你使用 ray://xxxx:10001 的方式连接知识库，你需要在服务器上启动知识库服务：
+
+```bash
+auto-coder doc serve --host 127.0.0.1 --port 8001 --model deepseek_chat --emb_model gpt_emb  --collection auto-coder
+```
+
+如果是企业使用，你还可以通过添加一个 api_key 启动鉴权：
+
+```bash
+auto-coder doc serve .... --api_key 123456
+```            
+
+然后客户端使用时，需要使用如下配置：
+
+```yaml
+ray_address: "ray://127.0.0.1:10001"
+
+rag_url: http://127.0.0.1:8001/v1
+rag_token: 123456
+enable_rag_search: auto_merge方式
+collections: auto-coder
+```
+
+除了 enable_rag_search 参数，你可以把其他参数都放到一个独立的 YAML文件，然后通过 include_file 指令引入，避免重复。
+
+这里简单解释下， rag_url 是我们启动的知识库服务的地址，rag_token 是我们启动知识库服务的时候指定的 token，如果没有指定 token,那么在使用时可以随意指定，但不能为空。
+
+collections 则可以指定知识库名称,当前一次只能支持一个知识库。
 
 ## 最佳使用实践
 
