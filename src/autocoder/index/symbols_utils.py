@@ -1,3 +1,21 @@
+from enum import Enum
+
+
+class SymbolType(Enum):
+    USAGE = "usage"
+    FUNCTIONS = "functions"
+    VARIABLES = "variables"
+    CLASSES = "classes"
+    IMPORT_STATEMENTS = "import_statements"
+
+
+class SymbolsInfo(BaseModel):
+    usage: Optional[str] = Field(None, alias="用途")
+    functions: List[str] = Field([], alias="函数")
+    variables: List[str] = Field([], alias="变量")
+    classes: List[str] = Field([], alias="类")
+    import_statements: List[str] = Field([], alias="导入语句")
+
 import re
 from pydantic import BaseModel, Field
 from typing import List, Optional

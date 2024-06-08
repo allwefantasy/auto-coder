@@ -51,5 +51,20 @@ class TestSymbolsUtils(unittest.TestCase):
             "from autocoder.common import SourceCode, AutoCoderArgs"
         ])
 
+    def test_symbols_info_to_str(self):
+        info = SymbolsInfo(
+            usage="Test usage",
+            functions=["func1", "func2"],
+            variables=["var1", "var2"],
+            classes=["Class1", "Class2"],
+            import_statements=["import os", "from typing import List"]
+        )
+        
+        result1 = symbols_info_to_str(info, [SymbolType.USAGE, SymbolType.FUNCTIONS])
+        self.assertEqual(result1, "usage：Test usage\nfunctions：func1,func2")
+
+        result2 = symbols_info_to_str(info, [SymbolType.CLASSES, SymbolType.IMPORT_STATEMENTS])  
+        self.assertEqual(result2, "classes：Class1,Class2\nimport_statements：import os^^from typing import List")
+
 if __name__ == "__main__":
     unittest.main()
