@@ -73,9 +73,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/tests/base.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/tests/base.py",
-    "symbols": "用途：主要用于自动编码器的测试，包括连接集群、设置模型和嵌入模型等操作。\n函数：get_llm\n变量：MODEL, EMB_MODEL, RAY_ADDRESS, QUERY\n类：SimpleRAG, AutoCoderArgs\n导入语句：import os^^import tempfile^^import shutil^^from autocoder.rag.simple_rag import SimpleRAG^^from autocoder.common import AutoCoderArgs^^import byzerllm^^import pytest^^from loguru import logger^^from byzerllm.apps.command import get_latest_byzer_retrieval_lib",
-    "last_modified": 1713764606.5222874,
-    "md5": "674562598c453e7070d042b058d6389b"
+    "symbols": "用途：主要用于自动编码器的测试，包括连接到Ray集群和设置模型参数。\n函数：get_llm\n变量：MODEL, EMB_MODEL, RAY_ADDRESS, QUERY\n类：SimpleRAG, AutoCoderArgs\n导入语句：import os^^import tempfile^^import shutil^^from autocoder.rag.simple_rag import SimpleRAG^^from autocoder.common import AutoCoderArgs^^import byzerllm^^import pytest^^from loguru import logger^^from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib",
+    "last_modified": 1717830132.2496338,
+    "md5": "310dd9a9a868aa43248bedf3d458bbed"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py",

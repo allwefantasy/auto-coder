@@ -1,0 +1,10 @@
+include_file: 
+   - ./common/local.yml
+
+human_as_model: true
+auto_merge: editblock
+
+# model: o_deepseek_chat
+
+query: |   
+   在 auto-coder/agent 目录新增一个 planning_agent.py 文件。
