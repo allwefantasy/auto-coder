@@ -370,5 +370,11 @@
     "symbols": "用途：主要用于自动化代码生成和管理项目目录结构。\n函数：generate_regex_pattern, parse_exclude_files, should_exclude, output, read_file_content, is_likely_useful_file, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_simple_directory_structure, get_tree_like_directory_structure, get_search_source_codes, run, clone_repository\n变量：args, directory, git_url, target_file, sources, llm, exclude_files, exclude_patterns, default_exclude_dirs\n类：RegPattern, TSProject\n导入语句：from autocoder.common import SourceCode,AutoCoderArgs^^from autocoder import common as FileUtils^^from autocoder.utils.rest import HttpDoc^^from autocoder.rag.simple_rag import SimpleRAG^^import os^^from typing import Optional,Generator,List,Dict,Any^^from git import Repo^^import byzerllm^^from autocoder.common.search import Search,SearchEngine^^from loguru import logger^^import re^^from pydantic import BaseModel,Field",
     "last_modified": 1717508325.9090035,
     "md5": "9f698a41c3ff84e01fc39b7ec9661304"
+  },
+  "/Users/allwefantasy/projects/auto-coder/src/autocoder/agent/planner.py": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/agent/planner.py",
+    "symbols": "用途：主要用于实现自动编码器的规划功能。\n函数：coder\n类：Planner\n变量：\n导入语句：from llama_index.core.agent import ReActAgent^^from llama_index.core.tools import FunctionTool^^from byzerllm.apps.llama_index.byzerai import ByzerAI^^import byzerllm",
+    "last_modified": 1717857212.1422362,
+    "md5": "fdf17343f8b9def6313c5c54856759a3"
   }
 }
