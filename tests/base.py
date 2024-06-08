@@ -6,7 +6,7 @@ from autocoder.common import AutoCoderArgs
 import byzerllm
 import pytest
 from loguru import logger
-from byzerllm.apps.command import get_latest_byzer_retrieval_lib
+from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib
 
 MODEL = "gpt3_5_chat"
 EMB_MODEL = "gpt_emb"
