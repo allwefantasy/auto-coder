@@ -1,10 +1,10 @@
 import os
 import json
 import time
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime
 from autocoder.common import SourceCode, AutoCoderArgs
-from autocoder.index.symbols_utils import extract_symbols, SymbolsInfo
+from autocoder.index.symbols_utils import extract_symbols, SymbolsInfo, SymbolType, symbols_info_to_str
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 
@@ -217,7 +217,7 @@ class IndexManager:
                 logger.warning(
                     error_message(source_dir=self.source_dir, file_path=item)
                 )
-                break            
+                break
 
         updated_sources = []
 
@@ -282,14 +282,24 @@ class IndexManager:
             index_items.append(index_item)
 
         return index_items
-    
-    def _get_meta_str(self, max_chunk_size=4096, skip_symbols: bool = False):
-        index_items = self.read_index()        
+
+    def _get_meta_str(
+        self,
+        max_chunk_size=4096,
+        skip_symbols: bool = False,
+        includes: Optional[List[SymbolType]] = None,
+    ):
+        index_items = self.read_index()
         current_chunk = []
         current_size = 0
 
         for item in index_items:
-            item_str = f"##{item.module_name}\n{item.symbols}\n\n"
+            symbols_str = item.symbols
+            if includes:
+                symbol_info = extract_symbols(symbols_str)
+                symbols_str = symbols_info_to_str(symbol_info, includes)
+            item_str = f"##{item.module_name}\n{symbols_str}\n\n"
+            
             if skip_symbols:
                 item_str = f"{item.module_name}\n"
             item_size = len(item_str)

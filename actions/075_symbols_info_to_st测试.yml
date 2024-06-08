@@ -1,0 +1,11 @@
+include_file: 
+   - ./common/local.yml
+
+human_as_model: true
+auto_merge: editblock
+
+# model: o_deepseek_chat
+
+query: |   
+   给symbols_utis.py 的 symbols_info_to_str 添加测试。
+   测试放在 test_symbols_utils.py 中。
