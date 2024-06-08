@@ -298,6 +298,7 @@ class IndexManager:
             if includes:
                 symbol_info = extract_symbols(symbols_str)
                 symbols_str = symbols_info_to_str(symbol_info, includes)
+                                
             item_str = f"##{item.module_name}\n{symbols_str}\n\n"
             
             if skip_symbols:
@@ -376,7 +377,7 @@ class IndexManager:
 
         def w():
             return self._get_meta_str(
-                skip_symbols=True, max_chunk_size=self.max_input_length - 1000
+                skip_symbols=False, max_chunk_size=self.max_input_length - 1000, includes=[SymbolType.USAGE]
             )
 
         logger.info("Find the related files by query according to the files...")
