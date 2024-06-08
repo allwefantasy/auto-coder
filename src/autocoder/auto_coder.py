@@ -266,6 +266,10 @@ def main():
         index_query_command(args,llm)
         return
     
+    if raw_args.command == "agent":
+        # Placeholder for agent command implementation
+        pass
+
     if raw_args.command == "doc2html":
         from autocoder.common.screenshots import gen_screenshots
         from autocoder.common.anything2images import Anything2Images

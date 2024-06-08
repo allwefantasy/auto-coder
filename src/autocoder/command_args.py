@@ -261,6 +261,10 @@ def parse_args() -> AutoCoderArgs:
         "--collections", default="default", help="Collection name for indexing"
     )
 
+    agent_parser = subparsers.add_parser("agent", help="Run an agent")
+    agent_subparsers = agent_parser.add_subparsers(dest="agent_command")
+
+
     init_parser = subparsers.add_parser("init", help=desc["init_desc"])
     init_parser.add_argument("--source_dir", required=True, help=desc["init_dir"])
 

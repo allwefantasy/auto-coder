@@ -209,6 +209,8 @@ class AutoCoderArgs(pydantic.BaseModel):
     exclude_files: Optional[Union[str,List[str]]] = ""    
     output:Optional[str] = ""
     single_file:Optional[bool] = False
+    query_prefix: Optional[str] = None
+    query_suffix: Optional[str] = None
 
     class Config:
         protected_namespaces = ()
