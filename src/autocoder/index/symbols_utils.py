@@ -1,21 +1,3 @@
-from enum import Enum
-
-
-class SymbolType(Enum):
-    USAGE = "usage"
-    FUNCTIONS = "functions"
-    VARIABLES = "variables"
-    CLASSES = "classes"
-    IMPORT_STATEMENTS = "import_statements"
-
-
-class SymbolsInfo(BaseModel):
-    usage: Optional[str] = Field(None, alias="用途")
-    functions: List[str] = Field([], alias="函数")
-    variables: List[str] = Field([], alias="变量")
-    classes: List[str] = Field([], alias="类")
-    import_statements: List[str] = Field([], alias="导入语句")
-
 import re
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -31,11 +13,11 @@ class SymbolType(Enum):
 
 
 class SymbolsInfo(BaseModel):
-    usage: Optional[str] = Field(None, alias="用途")
-    functions: List[str] = Field([], alias="函数")
-    variables: List[str] = Field([], alias="变量")
-    classes: List[str] = Field([], alias="类")
-    import_statements: List[str] = Field([], alias="导入语句")
+    usage: Optional[str] = Field(None, description="用途")
+    functions: List[str] = Field([], description="函数")
+    variables: List[str] = Field([], description="变量")
+    classes: List[str] = Field([], description="类")
+    import_statements: List[str] = Field([], description="导入语句")
 
 
 def extract_symbols(text: str) -> SymbolsInfo:
@@ -64,7 +46,7 @@ def extract_symbols(text: str) -> SymbolsInfo:
 def symbols_info_to_str(info: SymbolsInfo, symbol_types: List[SymbolType]) -> str:
     result = []
     for symbol_type in symbol_types:
-        value = getattr(info, symbol_type.value)
+        value = getattr(info, symbol_type.value)        
         if value:
             if symbol_type == SymbolType.IMPORT_STATEMENTS:
                 value_str = "^^".join(value)
