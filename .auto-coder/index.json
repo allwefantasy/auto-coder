@@ -80,8 +80,8 @@
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py",
     "symbols": "用途：主要用于解析命令行参数，支持多种命令和配置选项。\n函数：parse_args\n变量：\n类：AutoCoderArgs\n导入语句：import argparse^^from autocoder.common import AutoCoderArgs^^from autocoder.lang import lang_desc^^import locale",
-    "last_modified": 1717749340.0797822,
-    "md5": "709efa1815fb0dc7930ff08e511d5b42"
+    "last_modified": 1717862901.656014,
+    "md5": "00f8e7c6e831cda8c26e467ea224cd66"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py",
@@ -91,9 +91,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
-    "symbols": "用途：主要用于自动化代码编写和项目管理，包括代码生成、项目初始化、版本控制等。\n函数：resolve_include_path, load_include_files, main\n变量：\n类：AutoCoderArgs, Dispacher, SimpleRAG, LLWrapper, Store\n导入语句：import byzerllm^^from typing import List,Dict,Any,Optional^^from autocoder.common import AutoCoderArgs^^from autocoder.dispacher import Dispacher^^from autocoder.common import git_utils,code_auto_execute^^from autocoder.rag.simple_rag import SimpleRAG^^from autocoder.rag.llm_wrapper import LLWrapper^^from autocoder.utils.llm_client_interceptors import token_counter_interceptor^^from autocoder.db.store import Store^^import yaml^^import os^^from byzerllm.utils.client import EventCallbackResult,EventName^^from prompt_toolkit import prompt^^from prompt_toolkit.formatted_text import FormattedText^^from jinja2 import Template^^import hashlib^^from autocoder.utils.rest import HttpDoc^^from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib^^from autocoder.command_args import parse_args^^from autocoder.rag.api_server import serve,ServerArgs^^from loguru import logger^^import shutil^^import subprocess",
-    "last_modified": 1717749340.0794578,
-    "md5": "0bdf46e09de5b8009b01beab29913ae1"
+    "symbols": "用途：主要用于自动化代码编写和项目管理，包括代码生成、版本控制、文档处理等功能。\n函数：resolve_include_path, load_include_files, main\n变量：args, raw_args, config, include_files, abs_include_path, include_config, store, tc, actions_dir, action_files, seqs, max_seq, new_seq, prev_files, prev_file, content, new_file, home, auto_coder_dir, libs_dir, code_search_path, llm, vl_model, sd_model, index_model, emb_model, code_model, rag, http_doc, source_codes\n类：AutoCoderArgs, Dispacher, SimpleRAG, LLWrapper, Store, ServerArgs\n导入语句：import byzerllm^^from typing import List,Dict,Any,Optional^^from autocoder.common import AutoCoderArgs^^from autocoder.dispacher import Dispacher^^from autocoder.common import git_utils,code_auto_execute^^from autocoder.rag.simple_rag import SimpleRAG^^from autocoder.rag.llm_wrapper import LLWrapper^^from autocoder.utils.llm_client_interceptors import token_counter_interceptor^^from autocoder.db.store import Store^^import yaml^^import os^^from byzerllm.utils.client import EventCallbackResult,EventName^^from prompt_toolkit import prompt^^from prompt_toolkit.formatted_text import FormattedText^^from jinja2 import Template^^import hashlib^^from autocoder.utils.rest import HttpDoc^^from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib^^from autocoder.command_args import parse_args^^from autocoder.rag.api_server import serve,ServerArgs^^from loguru import logger^^import shutil^^import subprocess",
+    "last_modified": 1717862901.6582305,
+    "md5": "b2e4cda01db5027c92c272c2074a9ff4"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py",
@@ -265,9 +265,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py",
-    "symbols": "用途：主要用于提供自动编码器的功能，包括代码翻译、环境检测、代码分割等。\n函数：has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments, detect_env, chat_with_llm_step_by_step\n类：SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, EnvInfo, AutoCoderArgs\n导入语句：import pydantic^^import ast^^import sys^^import subprocess^^import os^^import time^^from typing import List,Dict,Any,Optional,Union",
-    "last_modified": 1717749340.0801044,
-    "md5": "d62815b5fdeb9323a21e7dc15f1ebaa3"
+    "symbols": "用途：主要用于自动化代码生成和环境检测。\n函数：has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments, detect_env, chat_with_llm_step_by_step\n类：SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, EnvInfo, AutoCoderArgs\n导入语句：import pydantic^^import ast^^import sys^^import subprocess^^import os^^import time^^from typing import List,Dict,Any,Optional,Union",
+    "last_modified": 1717862901.6664753,
+    "md5": "8f3b8d98095fbedb8ededa05b203bdd3"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/ShellClient.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/ShellClient.py",
@@ -373,8 +373,8 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/agent/planner.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/agent/planner.py",
-    "symbols": "用途：主要用于实现自动编码器的规划功能。\n函数：coder\n类：Planner\n变量：\n导入语句：from llama_index.core.agent import ReActAgent^^from llama_index.core.tools import FunctionTool^^from byzerllm.apps.llama_index.byzerai import ByzerAI^^import byzerllm",
-    "last_modified": 1717857212.1422362,
-    "md5": "fdf17343f8b9def6313c5c54856759a3"
+    "symbols": "用途：主要用于提供自动代码生成和规划的功能。\n函数：context, get_project_related_files, generate_auto_coder_yaml, get_auto_coder_knowledge\n变量：\n类：Planner\n导入语句：from llama_index.core.agent import ReActAgent^^from llama_index.core.tools import FunctionTool^^from autocoder.index.index import IndexManager^^from autocoder.pyproject import PyProject^^from autocoder.tsproject import TSProject^^from autocoder.suffixproject import SuffixProject^^from autocoder.common import AutoCoderArgs^^from autocoder.rag.simple_rag import SimpleRAG^^from byzerllm.apps.llama_index.byzerai import ByzerAI^^import os^^import byzerllm^^import yaml",
+    "last_modified": 1718016783.7961051,
+    "md5": "ce713ba352050e30dbaba35e98c9272c"
   }
 }
