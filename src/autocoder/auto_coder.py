@@ -267,8 +267,14 @@ def main():
         return
     
     if raw_args.command == "agent":
-        # Placeholder for agent command implementation
-        pass
+        if raw_args.agent_name == "planner":
+            from autocoder.agent.planner import Planner
+            planner = Planner(args, llm)
+            v = planner.run("我想索引默认支持并发为8")
+            print(v)
+        else:
+            # Placeholder for other agent command implementations
+            pass
 
     if raw_args.command == "doc2html":
         from autocoder.common.screenshots import gen_screenshots
