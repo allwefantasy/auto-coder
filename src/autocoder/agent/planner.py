@@ -15,7 +15,17 @@ import yaml
 @byzerllm.prompt()
 def context():
     """
-    auto-coder 是一个命令行 + YAML 配置文件的工具，用于阅读和生成代码。
+    
+    auto-coder 是一个命令行 + YAML 配置文件编程辅助工具。
+    程序员通过在 YAML 文件里撰写修改代码的逻辑，然后就可以通过下面的命令来执行：
+    
+    ```
+    auto-file --file actions/xxxx.yml 
+    ```
+
+    auto-coder 会自动完成后续的代码修改工作。
+    
+    你的目标是根据用户的问题，生成一个或者多个 yaml 配置文件。
 
     下面是 auto-coder 的基本配置：
 
@@ -25,24 +35,25 @@ def context():
       添加一个 byzerllm agent 命令
     ```
 
-    生成时，以上面为模板，根据需要修改 query 字段即可。
+    以上面为模板，根据需要修改 query 字段即可。
 
-    用户的需求往往是一个目标描述。比如，我想实现 byzerllm agent 命令。
-    对应到项目里，我们需要将其转化实现逻辑，通常你可以按照下面的方式进行思考：
+    注意，用户的需求往往是一个目标描述，请按如下思路思索问题：
 
-    1. 我需要能够找到项目中和用户命令行功能相关的文件，为了能够找到相关的文件，我需要将 query 转换成 "从目录结构以及源码描述中找到项目的命令行入口相关的文件"。假设此时找到了 byzerllm.py 为命令行相关的文件。
+    1. 你总是需要找到当前问题需要涉及到的文件。注意，你需要对问题进行理解，然后转换成一个查询。比如用户说：我想增加一个 agent命令。那我们的查询应该是："项目的命令行入口相关文件"
     2. 如果在生成的过程中遇到 yaml 配置相关的问题，可以查阅 auto-coder 的相关知识。
     3. 生成 auto-coder 的 yaml 配置文件，
-        通常 auto-coder YAML 文件的query 要覆盖以下几个方面：
+        
+        通常 auto-coder YAML 文件的 query 要覆盖以下几个方面：
 
         1. 需要修改的文件是什么
         2. 修改逻辑是什么
         3. 具体的修改范例是什么（可选）
 
-        所以我们将yaml中的query 要转换成： "关注byzerllm.py文件，添加一个 byzerllm agent 命令"，
-        这样 auto-coder 就知道应该修改哪些文件，以及怎么修改。
+        这里也需要对用户的问题进行转换，将前面我们得到的文件和改写后的问题合并到一起作为 yaml 中的query。
+        比如用户说：我想增加一个 agent命令，此时将yaml中的 query 比较合适的是： "关注byzerllm.py文件，添加一个 byzerllm agent 命令"，
+        这样 auto-coder 就知道应该修改哪些文件，以及怎么修改，满足我们前面的要求。
 
-    我们提供了相关的工具，你可以使用这些工具并且按照上面的大致思路来解决问题。
+    如果用户的问题比较复杂，你可能需要拆解成多个步骤，每个步骤生成一个对应一个 yaml 配置文件。
     """
 
 
@@ -64,14 +75,15 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         index_manager = IndexManager(llm=llm, sources=sources, args=args)
         target_files = index_manager.get_target_files_by_query(query)
         file_list = target_files.file_list
-        return "\n".join([file.file_path for file in file_list])
+        return ",".join([file.file_path for file in file_list])
 
     def generate_auto_coder_yaml(yaml_file_name: str, yaml_str: str) -> str:
         """
         该工具主要用于生成 auto-coder yaml 配置文件。
+        参数 yaml_file_name 不要带后缀名。
         返回生成的 yaml 文件路径。
-        """
-        actions_dir = os.path.join(os.getcwd(), "actions")
+        """        
+        actions_dir = os.path.join(args.source_dir, "actions")
         if not os.path.exists(actions_dir):
             print("Current directory does not have an actions directory")
             return
@@ -99,9 +111,16 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
             with open(os.path.join(actions_dir, prev_file), "r") as f:
                 content = f.read()
 
-            yaml_content = yaml.load(content)
-            yaml_content["query"] = yaml_str
-            new_content = yaml.dump(yaml_content)
+            yaml_content = yaml.safe_load(content)
+            if yaml_content is None:
+                raise Exception("The previous yaml file is empty. Please check it.")
+            
+            new_temp_yaml_content = yaml.load(yaml_str)
+            
+            for k, v in new_temp_yaml_content.items():
+                yaml_content[k] = v             
+
+            new_content = yaml.safe_dump(yaml_content, encoding='utf-8',allow_unicode=True).decode('utf-8')
             new_file = os.path.join(actions_dir, f"{new_seq}_{yaml_file_name}.yml")
             with open(new_file, "w") as f:
                 f.write(new_content)
@@ -128,7 +147,8 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
 class Planner:
     def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         self.llm = llm
-        self.tools = get_tools(args=args, llm=llm)
+        self.args = args
+        self.tools = get_tools(args=args, llm=llm)    
 
     def run(self, query: str, max_iterations: int = 10):
         agent = ReActAgent.from_tools(

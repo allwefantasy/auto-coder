@@ -1,10 +1,7 @@
 import os
-import tempfile
-import shutil
 from autocoder.rag.simple_rag import SimpleRAG
 from autocoder.common import AutoCoderArgs
 import byzerllm
-import pytest
 from loguru import logger
 from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib
 
@@ -35,4 +32,6 @@ def get_llm(args:AutoCoderArgs):
     llm.setup_default_emb_model_name(args.emb_model)
     llm.setup_template(model=args.model, template='auto')
         
-    return llm    
+    return llm  
+
+  
