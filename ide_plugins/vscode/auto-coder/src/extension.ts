@@ -13,10 +13,20 @@ export function activate(context: vscode.ExtensionContext) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('auto-coder.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from auto-coder!');
+	let disposable = vscode.commands.registerCommand('auto-coder.runInTerminal', (uri) => {
+		const filePath = uri.fsPath;
+		
+		const terminals = vscode.window.terminals;
+		let terminal;
+
+		if (terminals.length === 0) {
+			terminal = vscode.window.createTerminal();
+		} else {
+			terminal = terminals[0];
+		}
+		
+		terminal.show();
+		terminal.sendText(`auto-coder --file ${filePath}`);
 	});
 
 	context.subscriptions.push(disposable);
