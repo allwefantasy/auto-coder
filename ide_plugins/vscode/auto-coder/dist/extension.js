@@ -44,6 +44,11 @@ function activate(context) {
     // The commandId parameter must match the command field in package.json
     let disposable = vscode.commands.registerCommand('auto-coder.runInTerminal', (uri) => {
         const filePath = uri.fsPath;
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        let projectRoot;
+        if (workspaceFolders) {
+            projectRoot = workspaceFolders[0].uri.fsPath;
+        }
         const terminals = vscode.window.terminals;
         let terminal;
         if (terminals.length === 0) {
@@ -53,9 +58,47 @@ function activate(context) {
             terminal = terminals[0];
         }
         terminal.show();
+        if (projectRoot) {
+            terminal.sendText(`cd ${projectRoot}`);
+        }
         terminal.sendText(`auto-coder --file ${filePath}`);
     });
     context.subscriptions.push(disposable);
+    let createRequirementDisposable = vscode.commands.registerCommand('auto-coder.createRequirement', async (uri) => {
+        const requirement = await vscode.window.showInputBox({
+            placeHolder: '请输入需求',
+            prompt: '需求'
+        });
+        const model = await vscode.window.showInputBox({
+            placeHolder: '请输入模型名',
+            prompt: '模型名'
+        });
+        const embModel = await vscode.window.showInputBox({
+            placeHolder: '请输入向量模型名',
+            prompt: '向量模型名'
+        });
+        if (requirement && model && embModel) {
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            let projectRoot;
+            if (workspaceFolders) {
+                projectRoot = workspaceFolders[0].uri.fsPath;
+            }
+            const terminals = vscode.window.terminals;
+            let terminal;
+            if (terminals.length === 0) {
+                terminal = vscode.window.createTerminal();
+            }
+            else {
+                terminal = terminals[0];
+            }
+            terminal.show();
+            if (projectRoot) {
+                terminal.sendText(`cd ${projectRoot}`);
+            }
+            terminal.sendText(`auto-coder agent planner --model ${model} --emb_model ${embModel} --query "${requirement}"`);
+        }
+    });
+    context.subscriptions.push(createRequirementDisposable);
 }
 exports.activate = activate;
 // This method is called when your extension is deactivated

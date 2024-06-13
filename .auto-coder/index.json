@@ -403,9 +403,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts",
-    "symbols": "用途：主要用于在VS Code中激活自动编码器扩展，并在终端中运行命令。\n函数：activate, deactivate\n变量：disposable\n类：\n导入语句：import * as vscode from 'vscode'",
-    "last_modified": 1718248412.1380036,
-    "md5": "7b604abfab9220fbd673fb1612c49f43"
+    "symbols": "用途：主要用于在VSCode中激活自动编码器扩展，提供在终端运行代码和创建需求的功能。\n函数：activate, deactivate\n变量：\n类：\n导入语句：import * as vscode from 'vscode'",
+    "last_modified": 1718261919.8718915,
+    "md5": "a73138bf35391dc8d4f213aad0cc55dd"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json",
@@ -415,9 +415,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json",
-    "symbols": "用途：主要用于定义VSCode插件的配置和脚本。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718260869.111431,
-    "md5": "7105b6731578823df5b9b5d7e3f466c4"
+    "symbols": "用途：主要用于描述VSCode插件的配置和依赖。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718261460.9251926,
+    "md5": "d81be8ada83f4ebc51506036c81240dd"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json",
@@ -425,7 +425,6 @@
     "last_modified": 1718173684.8309536,
     "md5": "37f5660caded135fd8f1bd91814a5add"
   },
-
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json",
     "symbols": "用途：用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：用于管理项目依赖的锁定文件。\n函数：\n变量：\n类：\n导入语句：\n函数:\n变量:\n类:\n导入语句:\n用途：主要用于管理项目的依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于管理项目的依赖和版本信息。\n函数：\n变量：\n类：\n导入语句：",

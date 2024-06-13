@@ -15,7 +15,13 @@ export function activate(context: vscode.ExtensionContext) {
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('auto-coder.runInTerminal', (uri) => {
 		const filePath = uri.fsPath;
-		
+
+		const workspaceFolders = vscode.workspace.workspaceFolders;
+		let projectRoot;
+		if (workspaceFolders) {
+			projectRoot = workspaceFolders[0].uri.fsPath;
+		}
+
 		const terminals = vscode.window.terminals;
 		let terminal;
 
@@ -24,8 +30,13 @@ export function activate(context: vscode.ExtensionContext) {
 		} else {
 			terminal = terminals[0];
 		}
-		
+
 		terminal.show();
+
+		if (projectRoot) {
+			terminal.sendText(`cd ${projectRoot}`);
+		}
+		
 		terminal.sendText(`auto-coder --file ${filePath}`);
 	});
 
@@ -75,4 +86,4 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 // This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { }

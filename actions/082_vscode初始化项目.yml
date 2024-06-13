@@ -1,0 +1,23 @@
+auto_merge: editblock
+human_as_model: true
+project_type: .ts,.json,.js 
+include_file:
+- ./common/local.yml
+
+exclude_files:      
+  - human://文件名是conversation.json的文件
+
+query: |
+  在 vscode 目录下的 auto-coder vscode插件，我想在该插件添加一个功能：
+  在 vscode 的 explorer 中任何区域，右键单击,
+  
+  添加一个选项： auto-coder: 初始化项目
+
+  如果当前vscoce存在一个intergrated terminal，cd 进入项目根目录,就在这个terminal中执行命令 
+  
+  auto-coder init --source_dir .
+
+  如果当前vscode不存在一个intergrated terminal,就新建一个intergrated terminal,cd 进入项目根目录，并执行如上命令。
+
+
+  注意：同时你还要关注 package.json,webpack.config.js
