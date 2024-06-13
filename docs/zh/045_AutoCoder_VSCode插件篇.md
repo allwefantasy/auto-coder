@@ -55,7 +55,7 @@ emb_model: "your_model_name"
 
 ## 创建YAML文件
 
-`创建需求` 菜单是有一个agent支持的，如果失败或者你需要agent来完成，你可以直接手动创建yaml 文件。
+`创建需求` 菜单是通过agent来完成的，会比较慢以及可能会失败，你可以直接手动创建yaml 文件。
 
 ![045-07](../images/045-07.png)
 
