@@ -264,6 +264,42 @@ def parse_args() -> AutoCoderArgs:
     agent_parser = subparsers.add_parser("agent", help="Run an agent")
     agent_subparsers = agent_parser.add_subparsers(dest="agent_command")
 
+    planner_parser = agent_subparsers.add_parser("planner", help="Run the planner agent")
+    planner_parser.add_argument("--source_dir", default=".", help="Source directory")
+    planner_parser.add_argument("--query", help="Query for the planner")    
+    planner_parser.add_argument("--model", default="", help=desc["model"])
+    planner_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
+    planner_parser.add_argument("--file", default="", help=desc["file"])
+    planner_parser.add_argument(
+        "--ray_address", default="auto", help=desc["ray_address"]
+    )
+    planner_parser.add_argument("--execute", action="store_true", help=desc["execute"])
+    planner_parser.add_argument(
+        "--collections",
+        default="default",
+        help="Comma-separated list of collections to search",
+    )
+    planner_parser.add_argument(
+        "--description", default="", help="Description to route the query"
+    )
+    planner_parser.add_argument(
+        "--enable_rag_search",
+        nargs="?",
+        const=True,
+        default=False,
+        help=desc["enable_rag_search"],
+    )
+    planner_parser.add_argument(
+        "--enable_rag_context",
+        nargs="?",
+        const=True,
+        default=False,
+        help=desc["enable_rag_context"],
+    )
+
+    planner_parser.add_argument("--rag_token", default="", help="")
+    planner_parser.add_argument("--rag_url", default="", help="")
+    planner_parser.add_argument("--target_file", default="./output.txt", help="")
 
     init_parser = subparsers.add_parser("init", help=desc["init_desc"])
     init_parser.add_argument("--source_dir", required=True, help=desc["init_dir"])

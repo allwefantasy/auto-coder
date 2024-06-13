@@ -4,9 +4,10 @@ from autocoder.index.index import IndexManager
 from autocoder.pyproject import PyProject
 from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
-from autocoder.common import AutoCoderArgs
+from autocoder.common import AutoCoderArgs,SourceCode
 from autocoder.rag.simple_rag import SimpleRAG
 from byzerllm.apps.llama_index.byzerai import ByzerAI
+from loguru import logger
 import os
 import byzerllm
 import yaml
@@ -23,35 +24,44 @@ def context():
     auto-file --file actions/xxxx.yml 
     ```
 
-    auto-coder 会自动完成后续的代码修改工作。
-    
-    你的目标是根据用户的问题，生成一个或者多个 yaml 配置文件。
-
-    下面是 auto-coder 的基本配置：
+    下面是 auto-coder YAML 文件的一个基本配置：
 
     ```
     query: |
       关注 byzerllm_client.py,command_args.py,common/__init__.py  等几个文件，
       添加一个 byzerllm agent 命令
     ```
+    其中 query 部分就是对如何修改代码进行的一个较为详细的描述。 有了这个描述，auto-coder 会自动完成后续的代码修改工作。
+    所以 auto-coder 工具实现了代码的”设计“到”实现“。
+    
+    如果你希望auto-coder能够在解决问题的时候自动查找知识库，那么在YAML中新增一个配置：
 
-    以上面为模板，根据需要修改 query 字段即可。
+    ```
+    enable_rag_search: <你希望auto-coder自动查找的query>
+    ```
+            
+    你的目标是根据用户的问题，从”需求/目标“到”设计“，生成一个或者多个 yaml 配置文件。    
 
-    注意，用户的需求往往是一个目标描述，请按如下思路思索问题：
+    注意，用户的需求往往是一个"需求/目标"，参考如下思路：
 
     1. 你总是需要找到当前问题需要涉及到的文件。注意，你需要对问题进行理解，然后转换成一个查询。比如用户说：我想增加一个 agent命令。那我们的查询应该是："项目的命令行入口相关文件"
-    2. 如果在生成的过程中遇到 yaml 配置相关的问题，可以查阅 auto-coder 的相关知识。
-    3. 生成 auto-coder 的 yaml 配置文件，
+    2. 如果有必要，去查看你感兴趣的某个文件的源码。 
+    3. 如果在生成的过程中遇到 yaml 配置相关的问题，可以查阅 auto-coder 的相关知识。    
+    4. 生成 auto-coder 的 yaml 配置文件。
         
-        通常 auto-coder YAML 文件的 query 要覆盖以下几个方面：
+    通常 auto-coder YAML 文件的 query 内容要覆盖以下几个方面：
 
-        1. 需要修改的文件是什么
-        2. 修改逻辑是什么
-        3. 具体的修改范例是什么（可选）
+    1. 需要修改的文件是什么
+    2. 修改逻辑是什么
+    3. 具体的修改范例是什么（可选）
 
-        这里也需要对用户的问题进行转换，将前面我们得到的文件和改写后的问题合并到一起作为 yaml 中的query。
-        比如用户说：我想增加一个 agent命令，此时将yaml中的 query 比较合适的是： "关注byzerllm.py文件，添加一个 byzerllm agent 命令"，
-        这样 auto-coder 就知道应该修改哪些文件，以及怎么修改，满足我们前面的要求。
+    你需要将用户的原始问题修改成满足上面的描述。
+    
+    比如用户说：我想增加一个 agent命令，因为我们查找了相关文件路径，
+    然后根据get_project_related_files这个工具我们知道用户的目标涉及到 byzerllm_client.py,command_args.py,common/__init__.py 等几个文件。
+    通过read_source_codes查看文件源码，我们确认 command_args.py 是最合适的文件，并且获得了更详细的信息，所以我们最终将 query 改成：
+    "关注command_args.py 以及它相关的文件，在里面参考 byzerllm deploy  实现一个新的命令 byzerllm agent 命令"，
+    这样 auto-coder 就知道应该修改哪些文件，以及怎么修改，满足我们前面的要求。
 
     如果用户的问题比较复杂，你可能需要拆解成多个步骤，每个步骤生成一个对应一个 yaml 配置文件。
     """
@@ -115,31 +125,63 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
             if yaml_content is None:
                 raise Exception("The previous yaml file is empty. Please check it.")
             
-            new_temp_yaml_content = yaml.load(yaml_str)
+            new_temp_yaml_content = yaml.safe_load(yaml_str)            
             
             for k, v in new_temp_yaml_content.items():
-                yaml_content[k] = v             
-
-            new_content = yaml.safe_dump(yaml_content, encoding='utf-8',allow_unicode=True).decode('utf-8')
+                del yaml_content[k]
+                         
+            new_content = yaml.safe_dump(yaml_content, encoding='utf-8',allow_unicode=True, default_flow_style=False).decode('utf-8')
             new_file = os.path.join(actions_dir, f"{new_seq}_{yaml_file_name}.yml")
             with open(new_file, "w") as f:
-                f.write(new_content)
+                f.write(new_content + "\n" + yaml_str)
 
         return new_file
+    
+    def read_source_codes(paths:str)->str:
+        '''
+        你可以通过使用该工具获取相关文件的源代码。
+        输入参数 paths: 逗号分隔的文件路径列表,需要时绝对路径
+        返回值是文件的源代码    
+        '''
+        paths = [p.strip() for p in paths.split(",")]
+        source_code_str = ""
+        for path in paths:
+            with open(path, "r") as f:
+                source_code = f.read()
+                sc = SourceCode(module_name=path, source_code=source_code)
+                source_code_str += f"##File: {sc.module_name}\n"
+                source_code_str += f"{sc.source_code}\n\n"
+
+        return source_code_str
+
 
     def get_auto_coder_knowledge(query: str):
         """
         你可以通过使用该工具来获得 auto-coder 相关问题的回答。
         返回相关的知识文本。
         """
+        old_enable_rag_search = args.enable_rag_search
+        old_collections = args.collections
+
+        if not args.enable_rag_search:
+            args.enable_rag_search= True,
+        if not args.collections:
+            args.collections="auto-coder"  
+
+        logger.info(f"collections: {args.collections}")
         rag = SimpleRAG(llm=llm, args=args, path="")
         source_codes = rag.search(query)
+
+        args.enable_rag_search = old_enable_rag_search
+        args.collections = old_collections
+
         return "\n".join([sc.source_code for sc in source_codes])
 
     tools = [
         FunctionTool.from_defaults(get_project_related_files),
         FunctionTool.from_defaults(generate_auto_coder_yaml),
         FunctionTool.from_defaults(get_auto_coder_knowledge),
+        FunctionTool.from_defaults(read_source_codes)
     ]
     return tools
 

@@ -187,8 +187,8 @@ class AutoCoderArgs(pydantic.BaseModel):
     search: Optional[Union[str,List[str]]] = ""
     search_engine: Optional[str] = ""
     search_engine_token: Optional[str] = ""
-    enable_rag_search: Optional[bool] = False
-    enable_rag_context: Optional[bool] = False
+    enable_rag_search: Optional[Union[bool,str]] = False
+    enable_rag_context: Optional[Union[bool,str]] = False
     rag_url: Optional[str] = ""
     rag_token: Optional[str] = ""
     auto_merge: Optional[Union[bool,str]] = False

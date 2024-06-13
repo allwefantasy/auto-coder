@@ -7,11 +7,7 @@ auto_merge: editblock
 # model: qwen2_chat
 
 query: |   
-   关注 planner.py,command_args.py 文件,在 auto_coder.py 中修改 command agent
-   添加一个位置参数 agent_name ，如果 agent_name 为 planner, 那么调用如下语句：
+   关注 auto_coder.py,command_args.py 文件, 要实现如下效果：
 
-   planner = Planner(args, llm)
-   v = planner.run("我想索引默认支持并发为8")
-   print(v)
-
+   auto-coder agent planner --source_dir . --query "你好"
    

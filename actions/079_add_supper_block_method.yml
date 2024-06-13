@@ -1,0 +1,9 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./common/local.yml
+
+query: |
+  关注 /Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_editblock.py, /Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_strict_diff.py, /Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_diff.py, /Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge.py 等几个文件，
+  添加一个名为 supper_block 的代码合并方式，
+  参考现有的代码合并方法实现，确保新的合并方式能够正确处理代码差异并更新文件内容。

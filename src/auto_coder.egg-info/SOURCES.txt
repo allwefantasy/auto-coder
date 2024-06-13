@@ -67,4 +67,6 @@ src/autocoder/utils/llm_client_interceptors.py
 src/autocoder/utils/multi_turn.py
 src/autocoder/utils/print_table.py
 src/autocoder/utils/rest.py
+src/autocoder/utils/tests.py
+tests/test_planner.py
 tests/test_symbols_utils.py
