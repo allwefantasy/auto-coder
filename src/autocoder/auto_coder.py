@@ -19,9 +19,8 @@ from autocoder.utils.rest import HttpDoc
 from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib
 from autocoder.command_args import parse_args
 from autocoder.rag.api_server import serve, ServerArgs
+from autocoder.utils import open_yaml_file_in_editor, get_last_yaml_file
 from loguru import logger
-import shutil
-import subprocess
 
 
 def resolve_include_path(base_path, include_path):
@@ -168,7 +167,7 @@ def main():
 
         new_seq = str(max_seq + 1).zfill(3)
         prev_files = [f for f in action_files if int(f[:3]) < int(new_seq)]
-
+        
         if not prev_files:
             new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}.yml")
             with open(new_file, "w") as f:
@@ -183,18 +182,7 @@ def main():
 
         print(f"Successfully created new action file: {new_file}")
 
-        try:
-            if os.environ.get("TERMINAL_EMULATOR") == "JetBrains-JediTerm":
-                subprocess.run(["idea", new_file])
-            else:
-                if shutil.which("code"):
-                    subprocess.run(["code", "-r", new_file])
-                elif shutil.which("idea"):
-                    subprocess.run(["idea", new_file])
-        except Exception as e:
-            logger.info(
-                f"Error opening editor, you can manually open the file: {new_file}"
-            )
+        open_yaml_file_in_editor(new_file)
         return
 
     if args.model:
@@ -335,9 +323,18 @@ def main():
     if raw_args.command == "agent":
         if raw_args.agent_command == "planner":
             from autocoder.agent.planner import Planner
+
             planner = Planner(args, llm)
             v = planner.run(args.query)
             print(v)
+
+            open_yaml_file_in_editor(
+                get_last_yaml_file(
+                    actions_dir=os.path.abspath(
+                        os.path.join(args.source_dir, "actions")
+                    )
+                )
+            )
             return
         else:
             raise ValueError(f"Unknown agent name: {raw_args.agent_command}")

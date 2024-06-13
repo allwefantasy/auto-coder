@@ -45,27 +45,31 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(disposable);
 
 	let createRequirementDisposable = vscode.commands.registerCommand('auto-coder.createRequirement', async (uri) => {
-  const workspaceFolders = vscode.workspace.workspaceFolders;
-  if (!workspaceFolders) {
-    vscode.window.showErrorMessage('请先打开一个工作区');
-    return;
-  }
-  const projectRoot = workspaceFolders[0].uri.fsPath;
-  const autoCorderDir = path.join(projectRoot, '.auto-coder');
-  if (!fs.existsSync(autoCorderDir)) {
-    const action = await vscode.window.showErrorMessage(
-      '当前工作区尚未初始化auto-coder项目,是否立即初始化?', 
-      '立即初始化'
-    );
-    if (action === '立即初始化') {
-      vscode.commands.executeCommand('auto-coder.initProject');
-    }
-    return;
-  }
+		const workspaceFolders = vscode.workspace.workspaceFolders;
+		if (!workspaceFolders) {
+			vscode.window.showErrorMessage('请先打开一个工作区');
+			return;
+		}
+		const projectRoot = workspaceFolders[0].uri.fsPath;
+		const autoCorderDir = path.join(projectRoot, '.auto-coder');
+		if (!fs.existsSync(autoCorderDir)) {
+			const action = await vscode.window.showErrorMessage(
+				'当前工作区尚未初始化auto-coder项目,是否立即初始化?',
+				'立即初始化'
+			);
+			if (action === '立即初始化') {
+				vscode.commands.executeCommand('auto-coder.initProject');
+			}
+			return;
+		}
 		const requirement = await vscode.window.showInputBox({
 			placeHolder: '请输入需求',
 			prompt: '需求'
 		});
+
+		if (!requirement) {
+			return;
+		}
 
 		const model = await vscode.window.showInputBox({
 			placeHolder: '请输入模型名',
@@ -126,7 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
 		terminal.sendText('auto-coder init --source_dir .');
 	});
 
-	context.subscriptions.push(initProjectDisposable);	
+	context.subscriptions.push(initProjectDisposable);
 }
 
 

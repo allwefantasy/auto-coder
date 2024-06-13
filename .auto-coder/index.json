@@ -391,9 +391,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/webpack.config.js": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/webpack.config.js",
-    "symbols": "用途：主要用于配置VS Code扩展的Webpack设置。\n函数：\n变量：extensionConfig\n类：\n导入语句：const path = require('path')",
-    "last_modified": 1718248278.4380667,
-    "md5": "40fe4f70c99277bbb0123c6aa325b6ee"
+    "symbols": "用途：主要用于配置VS Code扩展的Webpack构建过程。\n函数：\n变量：extensionConfig\n类：\n导入语句：const path = require('path')",
+    "last_modified": 1718265239.8279102,
+    "md5": "787663b940349c2fe3274c778aacb661"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts",
@@ -403,9 +403,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts",
-    "symbols": "用途：主要用于在VSCode中激活自动编码器扩展，提供终端命令执行功能。\n函数：activate, deactivate\n变量：\n类：\n导入语句：import * as vscode from 'vscode'^^*^import path = require('path')^^*^import fs = require('fs')",
-    "last_modified": 1718264700.1229072,
-    "md5": "b2221d34aa5e041520eecc8c9b952b68"
+    "symbols": "用途：主要用于在VSCode中激活auto-coder扩展，提供终端操作和项目初始化功能。\n函数：activate, deactivate\n类：\n变量：\n导入语句：import * as vscode from 'vscode'^^*import path = require('path')^^*import fs = require('fs')",
+    "last_modified": 1718265386.6110187,
+    "md5": "27cda87e8f887555a6258d39058dcfe5"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json",
