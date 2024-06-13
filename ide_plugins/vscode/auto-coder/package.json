@@ -6,7 +6,7 @@
     "url": "https://github.com/allwefantasy/auto-coder/tree/master/ide_plugins/vscode/auto-coder"
   },
   "description": "",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.59.0"
   },
