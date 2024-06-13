@@ -3,7 +3,6 @@
 import * as vscode from 'vscode';
 import path = require('path');
 import fs = require('fs');
-import yaml = require('js-yaml');
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -40,42 +39,7 @@ export function activate(context: vscode.ExtensionContext) {
 			terminal.sendText(`cd ${projectRoot}`);
 		}
 
-		const autoCorderDir = path.join(projectRoot, '.auto-coder');
-    		if (!fs.existsSync(autoCorderDir)) {
-      			const action = await vscode.window.showErrorMessage(
-        			'当前工作区尚未初始化auto-coder项目,是否立即初始化?', 
-        			'立即初始化'
-      			);
-      			if (action === '立即初始化') {
-        			vscode.commands.executeCommand('auto-coder.initProject');
-      			}
-      			return;
-    		}
-    
-    		const baseConfigFile = path.join(autoCorderDir, 'actions', 'base', 'base.yml');
-    		let model, embModel;
-    		if (fs.existsSync(baseConfigFile)) {
-      			const baseConfig = yaml.load(fs.readFileSync(baseConfigFile, 'utf8'));
-      			model = baseConfig.model;
-      			embModel = baseConfig.emb_model;
-    		}
-    
-    		if (!model) {
-      			model = await vscode.window.showInputBox({
-        			placeHolder: '请输入模型名',
-       				prompt: '模型名'
-      			});
-    		}
-    
-    		if (!embModel) {   
-      			embModel = await vscode.window.showInputBox({
-        			placeHolder: '请输入向量模型名',
-        			prompt: '向量模型名'  
-      			});
-    		}
-
-		terminal.sendText(`auto-coder --file ${filePath} --model ${model} --emb_model ${embModel}`);
-
+		terminal.sendText(`auto-coder --file ${filePath}`);
 	});
 
 	context.subscriptions.push(disposable);
