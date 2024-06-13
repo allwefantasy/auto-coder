@@ -1,0 +1,19 @@
+auto_merge: editblock
+human_as_model: true
+project_type: .ts,.json,.js 
+include_file:
+- ./common/local.yml
+
+exclude_files:      
+  - regex://.*/conversations.json
+
+query: |
+  在 vscode 目录下的 auto-coder vscode插件，
+
+  模仿 auto-coder.createRequirement ,新增一个功能： auto-coder: 创建YAML文件
+
+  弹出一个需求输入框，然后执行命令：
+
+  auto-coder next "用户输入的需求"
+  
+  注意：同时你还要关注 package.json,webpack.config.js
