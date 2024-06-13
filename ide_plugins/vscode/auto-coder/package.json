@@ -1,6 +1,10 @@
 {
-  "name": "auto-coder",
+  "name": "auto-coder-extension",
   "displayName": "auto-coder",
+  "publisher": "allwefantasy",
+  "repository": {
+        "url": "https://github.com/allwefantasy/auto-coder/tree/master/ide_plugins/vscode/auto-coder"
+    },
   "description": "",
   "version": "0.0.1",
   "engines": {
