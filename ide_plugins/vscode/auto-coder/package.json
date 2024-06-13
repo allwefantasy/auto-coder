@@ -6,7 +6,7 @@
     "url": "https://github.com/allwefantasy/auto-coder/tree/master/ide_plugins/vscode/auto-coder"
   },
   "description": "",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "engines": {
     "vscode": "^1.59.0"
   },
@@ -28,12 +28,12 @@
         "title": "auto-coder: 创建需求"
       },
       {
-        "command": "auto-coder.initProject",  
+        "command": "auto-coder.initProject",
         "title": "auto-coder: 初始化项目"
       },
       {
         "command": "auto-coder.createYaml",
-        "title": "auto-coder: 创建YAML文件"  
+        "title": "auto-coder: 创建YAML文件"
       }
     ],
     "menus": {
@@ -49,12 +49,12 @@
         },
         {
           "command": "auto-coder.initProject",
-          "group": "navigation"  
+          "group": "navigation"
         },
         {
           "command": "auto-coder.createYaml",
           "group": "navigation"
-        }  
+        }
       ]
     }
   },
@@ -69,8 +69,9 @@
     "lint": "eslint src --ext ts",
     "test": "vscode-test"
   },
-  "dependencies": {
-    "js-yaml": "^4.0.9"
+  "dependencies": {    
+    "js-yaml": "^4.1.0",
+    "yaml": "^2.4.5"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

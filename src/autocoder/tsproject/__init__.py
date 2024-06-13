@@ -30,12 +30,21 @@ class TSProject():
         self.default_exclude_dirs = [".git", ".svn", ".hg", "build", "dist", "__pycache__", "node_modules"]
 
     @byzerllm.prompt()
-    def generate_regex_pattern(self,desc:str)->RegPattern:
-        '''
-        Generate a regex pattern based on the following description:
+    def generate_regex_pattern(self, desc: str) -> str:
+        """
+        根据下面的描述生成一个正则表达式，要符合python re.compile 库的要求。
 
-        {{ desc }}              
-        '''    
+        {{ desc }}
+
+        最后生成的正则表达式要在<REGEX></REGEX>标签对里。
+        """    
+
+    def extract_regex_pattern(self, regex_block: str) -> str:    
+        pattern = re.search(r"<REGEX>(.*)</REGEX>", regex_block, re.DOTALL)
+        if pattern is None:
+            logger.warning("No regex pattern found in the generated block:\n {regex_block}")
+            raise None
+        return pattern.group(1)   
 
     def parse_exclude_files(self, exclude_files):
         if not exclude_files:
@@ -51,7 +60,7 @@ class TSProject():
                 exclude_patterns.append(re.compile(pattern))
             elif pattern.startswith("human://"):
                 pattern = pattern[8:]
-                v = self.generate_regex_pattern.with_llm(self.llm).run(desc=pattern)
+                v = self.extract_regex_pattern(self.generate_regex_pattern.with_llm(self.llm).run(desc=pattern))
                 if not v:
                     raise ValueError("Fail to generate regex pattern, try again.")
                 logger.info(f"Generated regex pattern: {v.pattern}")

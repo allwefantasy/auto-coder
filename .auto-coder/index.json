@@ -391,9 +391,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/webpack.config.js": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/webpack.config.js",
-    "symbols": "用途：主要用于配置VS Code扩展的Webpack构建过程。\n函数：\n变量：extensionConfig\n类：\n导入语句：const path = require('path')",
-    "last_modified": 1718267130.2056038,
-    "md5": "7a74667021daabe42268cce491165dd2"
+    "symbols": "用途：主要用于配置VS Code扩展的Webpack设置。\n函数：\n变量：extensionConfig\n类：\n导入语句：const path = require('path')",
+    "last_modified": 1718276620.4843347,
+    "md5": "7f864090cdadef5f030a19fdd5be0c03"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts",
@@ -403,9 +403,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts",
-    "symbols": "用途：主要用于在VSCode中激活auto-coder扩展，实现终端命令执行和需求创建功能。\n函数：activate, deactivate\n变量：\n类：\n导入语句：import * as vscode^^import path^^import fs^^import yaml",
-    "last_modified": 1718267563.3705485,
-    "md5": "3d4d68bfdfd96b6e5b6b98e055f81f41"
+    "symbols": "用途：主要用于提供VSCode扩展，实现自动化代码编写和项目管理功能。\n函数：activate, deactivate\n变量：outputChannel, disposable, createRequirementDisposable, initProjectDisposable, createYamlDisposable\n类：\n导入语句：import * as vscode^^import path^^import fs^^import yaml",
+    "last_modified": 1718275365.2653086,
+    "md5": "3916f831848e9156d77f4467f021b642"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json",
@@ -415,9 +415,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json",
-    "symbols": "用途：用于配置Visual Studio Code插件的元数据和脚本。\n函数：\n类：\n变量：\n导入语句：",
-    "last_modified": 1718267816.507984,
-    "md5": "e6ba438a773b7198bab7a8896d6e7e93"
+    "symbols": "用途：用于描述Visual Studio Code插件的配置和依赖。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718276710.47105,
+    "md5": "c160f542e5a2ab6a7256a9a523e9ce72"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json",
@@ -425,10 +425,22 @@
     "last_modified": 1718173684.8309536,
     "md5": "37f5660caded135fd8f1bd91814a5add"
   },
-  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json",
-    "symbols": "用途：主要用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：用于管理项目依赖的版本锁定文件。\n函数：\n变量：\n类：\n导入语句：\n函数:\n变量:\n类:\n导入语句:\n用途：主要用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于记录和管理项目的依赖关系。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718267821.340099,
-    "md5": "20359c517038c01da76d58de114325a4"
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.vscodeignore": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.vscodeignore",
+    "symbols": "用途：主要用于忽略特定文件和目录。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718173684.819184,
+    "md5": "a5ddc13d452c721e7cc7d2b14e384f82"
+  },
+  "/Users/allwefantasy/projects/auto-coder/package.json": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/package.json",
+    "symbols": "用途：主要用于定义项目依赖。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718277212.1562889,
+    "md5": "703c99a6a15982119b36c0f078ccb66b"
+  },
+  "/Users/allwefantasy/projects/auto-coder/package-lock.json": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/package-lock.json",
+    "symbols": "用途：主要用于记录和管理项目依赖的版本信息。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718277212.1621895,
+    "md5": "f814cadb13f64f2cda8e112f0f3ae6e7"
   }
 }
