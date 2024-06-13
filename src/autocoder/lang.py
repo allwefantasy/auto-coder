@@ -55,6 +55,8 @@ lang_desc = {
         "screenshot_url": "The URL of the webpage to capture",
         "screenshot_output": "The directory to save the screenshots",
         "code_model": "The name of the code model to use. Default is empty",
+        "next_desc": "create a new action file based one the last action file",
+        "base_dir": "Alternative path for /~/.auto-coder to store or retrieve text embeddings. Using /~/.auto-coder/ if not specified"
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -112,6 +114,7 @@ lang_desc = {
         "screenshot_url": "要捕获的网页的URL",
         "screenshot_output": "保存截图的目录",
         "code_model": "要使用的代码模型的名称。默认为空",
-        "next_desc": "基于上一个action文件创建一个新的action文件"
+        "next_desc": "基于上一个action文件创建一个新的action文件",
+        "base_dir": "用于替代byzerllm中/~/.auto-coder的路径存放或读取向量化后的文本。不指定则使用默认路径"
     }
 }

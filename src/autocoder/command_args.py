@@ -199,6 +199,9 @@ def parse_args() -> AutoCoderArgs:
     doc_build_parse.add_argument(
         "--description", default="", help="Description of the indexed content"
     )
+    doc_build_parse.add_argument(
+        "--base_dir", default="", help="Path to store the processed text embeddings"
+    )
 
     doc_query_parse = doc_subparsers.add_parser("query", help="")
     doc_query_parse.add_argument("--query", default="", help="")
@@ -218,6 +221,9 @@ def parse_args() -> AutoCoderArgs:
     doc_query_parse.add_argument(
         "--description", default="", help="Description to route the query"
     )
+    doc_query_parse.add_argument(
+        "--base_dir", default="", help="Path where the processed text embeddings were stored"
+    )
 
     doc_chat_parse = doc_subparsers.add_parser("chat", help="")
     doc_chat_parse.add_argument("--file", default="", help=desc["file"])
@@ -234,6 +240,9 @@ def parse_args() -> AutoCoderArgs:
     )
     doc_chat_parse.add_argument(
         "--description", default="", help="Description to route the query"
+    )
+    doc_chat_parse.add_argument(
+        "--base_dir", default="", help="Path where the processed text embeddings were stored"
     )
 
     doc_serve_parse = doc_subparsers.add_parser("serve", help="")
@@ -259,6 +268,9 @@ def parse_args() -> AutoCoderArgs:
     doc_serve_parse.add_argument("--response_role", default="assistant", help="")
     doc_serve_parse.add_argument(
         "--collections", default="default", help="Collection name for indexing"
+    )
+    doc_serve_parse.add_argument(
+        "--base_dir", default="", help="Path where the processed text embeddings were stored"
     )
 
     agent_parser = subparsers.add_parser("agent", help="Run an agent")
