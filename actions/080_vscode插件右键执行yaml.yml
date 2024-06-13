@@ -1,0 +1,18 @@
+auto_merge: editblock
+human_as_model: true
+project_type: .ts,.json,.js 
+include_file:
+- ./common/local.yml
+
+
+
+query: |
+  在 vscode 目录下的 auto-coder vscode插件，我想在该插件添加一个功能：
+  在yaml文件的右键菜单新增一个 "使用auto-coder执行" 选项，当点击执行后，
+  如果当前vscoce存在一个intergrated terminal,就在这个terminal中执行命令 
+
+  auto-coder --file $file_path 
+
+  如果当前vscode不存在一个intergrated terminal,就新建一个intergrated terminal,并执行如上命令。
+
+  注意：同时你还要关注 package.json,webpack.config.js
