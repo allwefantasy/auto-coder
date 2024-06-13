@@ -1,6 +1,6 @@
 {
-  "name": "auto-coder-extension",
-  "displayName": "auto-coder",
+  "name": "auto-coder-copilot",
+  "displayName": "auto-coder-copilot",
   "publisher": "allwefantasy",
   "repository": {
         "url": "https://github.com/allwefantasy/auto-coder/tree/master/ide_plugins/vscode/auto-coder"
