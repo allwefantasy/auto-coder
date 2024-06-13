@@ -391,9 +391,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/webpack.config.js": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/webpack.config.js",
-    "symbols": "用途：主要用于配置VS Code扩展的Webpack构建过程。\n函数：\n变量：extensionConfig\n类：\n导入语句：const path = require('path')",
-    "last_modified": 1718173684.8202178,
-    "md5": "89db393a4e67ac6f760b9146d6ef852a"
+    "symbols": "用途：主要用于配置VS Code扩展的Webpack设置。\n函数：\n变量：extensionConfig\n类：\n导入语句：const path = require('path')",
+    "last_modified": 1718248278.4380667,
+    "md5": "40fe4f70c99277bbb0123c6aa325b6ee"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts",
@@ -403,9 +403,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts",
-    "symbols": "用途：主要用于在VS Code中激活自动编码器扩展，并提供Hello World命令。\n函数：activate, deactivate\n变量：disposable\n类：\n导入语句：import * as vscode from 'vscode'",
-    "last_modified": 1718173684.8251047,
-    "md5": "59d8ac1d65de7cc88beee496a950a3c3"
+    "symbols": "用途：主要用于在VS Code中激活自动编码器扩展，并在终端中运行命令。\n函数：activate, deactivate\n变量：disposable\n类：\n导入语句：import * as vscode from 'vscode'",
+    "last_modified": 1718248412.1380036,
+    "md5": "7b604abfab9220fbd673fb1612c49f43"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json",
@@ -415,9 +415,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json",
-    "symbols": "用途：主要用于描述Visual Studio Code插件的配置和依赖。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718173684.8167489,
-    "md5": "5e62fe2fe7d50ce4f3d3897999f00959"
+    "symbols": "用途：主要用于定义VSCode插件的配置和脚本。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718260869.111431,
+    "md5": "7105b6731578823df5b9b5d7e3f466c4"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json",
@@ -425,40 +425,11 @@
     "last_modified": 1718173684.8309536,
     "md5": "37f5660caded135fd8f1bd91814a5add"
   },
-  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.vscode/settings.json": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.vscode/settings.json",
-    "symbols": "用途：用于配置VSCode编辑器的设置，包括文件排除和搜索排除设置。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718173684.8138638,
-    "md5": "a97884414aebb162c72dfbc607bf6003"
-  },
-  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.vscode/extensions.json": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.vscode/extensions.json",
-    "symbols": "用途：用于配置Visual Studio Code推荐的扩展。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718173684.8111227,
-    "md5": "f2a8bbbbf369ed824ef3b92ebda1dd8c"
-  },
-  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.vscode/launch.json": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.vscode/launch.json",
-    "symbols": "用途：主要用于配置Visual Studio Code扩展的运行设置。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718173684.8124185,
-    "md5": "4baeb7b0bbd99d41101ebd0d85932f91"
-  },
-  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.vscode/tasks.json": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.vscode/tasks.json",
-    "symbols": "用途：用于配置VSCode中的任务，以便自动执行npm脚本。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718173684.81507,
-    "md5": "f10c3702be51da40971cab231061e5d8"
-  },
+
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json",
     "symbols": "用途：用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：用于管理项目依赖的锁定文件。\n函数：\n变量：\n类：\n导入语句：\n函数:\n变量:\n类:\n导入语句:\n用途：主要用于管理项目的依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于管理项目的依赖和版本信息。\n函数：\n变量：\n类：\n导入语句：",
     "last_modified": 1718173723.768612,
     "md5": "f247118a596f72a89f63d9e451d4dc85"
-  },
-  "/Users/allwefantasy/projects/auto-coder/.auto-coder/index.json": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/.auto-coder/index.json",
-    "symbols": "用途：主要用于将任何内容转换为图像的功能。\n函数：\n变量：\n类：Anything2Images\n导入语句：\n函数：auto_implement_function_template, convert, single_file_html_prompt, html_prompt, merge_table_html_prompt, _save_conversation, to_html_from_images, to_html, convert_pdf, get_default_chinese_font, convert_word_to_pdf_v2, convert_docx, convert_docx_linux\n变量：\n类：Anything2Images\n导入语句：import os^^from typing import List^^import pdf2image^^from PIL import Image^^import byzerllm^^from autocoder.common import AutoCoderArgs^^from loguru import logger^^import platform^^from docx import Document^^from reportlab.lib.pagesizes import letter^^from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle^^from reportlab.lib.styles import getSampleStyleSheet^^from reportlab.lib import colors^^from PIL import Image, ImageDraw, ImageFont^^import os^^import base64^^import json^^from byzerllm.utils.client import code_utils^^try:^^import docx2pdf^^except ImportError:^^docx2pdf = None^^try:^^import uno^^from com.sun.star.beans import PropertyValue^^from com.sun.star.connection import NoConnectException^^from com.sun.star.task import ErrorCodeIOException^^from com.sun.star.uno import Exception as UnoException^^from com.sun.star.uno import RuntimeException^^except ImportError:^^uno = None^^try:^^import pypandoc^^except ImportError:^^pypandoc = None",
-    "last_modified": 1718247871.7591162,
-    "md5": "18cb8e65181da233fea6abfa476bd291"
   }
 }

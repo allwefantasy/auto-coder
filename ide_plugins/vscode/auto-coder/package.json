@@ -6,9 +6,9 @@
         "url": "https://github.com/allwefantasy/auto-coder/tree/master/ide_plugins/vscode/auto-coder"
     },
   "description": "",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
-    "vscode": "^1.90.0"
+    "vscode": "^1.59.0"
   },
   "categories": [
     "Other"
@@ -21,7 +21,7 @@
     "commands": [
       {
         "command": "auto-coder.runInTerminal",
-        "title": "使用auto-coder执行"
+        "title": "auto-coder: 执行"
       }
     ],
     "menus": {
