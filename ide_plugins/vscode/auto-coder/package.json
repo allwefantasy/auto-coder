@@ -28,8 +28,12 @@
         "title": "auto-coder: 创建需求"
       },
       {
-        "command": "auto-coder.initProject",
+        "command": "auto-coder.initProject",  
         "title": "auto-coder: 初始化项目"
+      },
+      {
+        "command": "auto-coder.createYaml",
+        "title": "auto-coder: 创建YAML文件"  
       }
     ],
     "menus": {
@@ -45,8 +49,12 @@
         },
         {
           "command": "auto-coder.initProject",
+          "group": "navigation"  
+        },
+        {
+          "command": "auto-coder.createYaml",
           "group": "navigation"
-        }
+        }  
       ]
     }
   },
