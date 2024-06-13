@@ -21,7 +21,8 @@ const extensionConfig = {
   },
   externals: {
     vscode: 'commonjs vscode', // the vscode-module is created on-the-fly and must be excluded. Add other modules that cannot be webpack'ed, 📖 -> https://webpack.js.org/configuration/externals/
-    child_process: 'commonjs child_process'
+    child_process: 'commonjs child_process',
+    fs: 'commonjs fs'
     // modules added here also need to be added in the .vscodeignore file    
   },
   resolve: {
