@@ -403,9 +403,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts",
-    "symbols": "用途：主要用于在VSCode中激活自动编码器扩展，提供在终端运行代码和创建需求的功能。\n函数：activate, deactivate\n变量：\n类：\n导入语句：import * as vscode from 'vscode'",
-    "last_modified": 1718261919.8718915,
-    "md5": "a73138bf35391dc8d4f213aad0cc55dd"
+    "symbols": "用途：主要用于在VSCode中激活自动编码器扩展，提供终端命令执行功能。\n函数：activate, deactivate\n变量：\n类：\n导入语句：import * as vscode from 'vscode'^^*^import path = require('path')^^*^import fs = require('fs')",
+    "last_modified": 1718264700.1229072,
+    "md5": "b2221d34aa5e041520eecc8c9b952b68"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json",
@@ -415,9 +415,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json",
-    "symbols": "用途：主要用于描述VSCode插件的配置和依赖。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718261460.9251926,
-    "md5": "d81be8ada83f4ebc51506036c81240dd"
+    "symbols": "用途：用于配置Visual Studio Code插件的元数据和脚本。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718264687.781562,
+    "md5": "9a5843a3d5a1b49467798a3e4ab6573d"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json",

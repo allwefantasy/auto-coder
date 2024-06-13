@@ -43,7 +43,7 @@
           "command": "auto-coder.createRequirement",
           "group": "navigation"
         },
-        {
+        {          
           "command": "auto-coder.initProject",
           "group": "navigation"
         }

@@ -99,9 +99,29 @@ function activate(context) {
         }
     });
     context.subscriptions.push(createRequirementDisposable);
+    let initProjectDisposable = vscode.commands.registerCommand('auto-coder.initProject', async (uri) => {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        let projectRoot;
+        if (workspaceFolders) {
+            projectRoot = workspaceFolders[0].uri.fsPath;
+        }
+        const terminals = vscode.window.terminals;
+        let terminal;
+        if (terminals.length === 0) {
+            terminal = vscode.window.createTerminal();
+        }
+        else {
+            terminal = terminals[0];
+        }
+        terminal.show();
+        if (projectRoot) {
+            terminal.sendText(`cd ${projectRoot}`);
+        }
+        terminal.sendText('auto-coder init --source_dir .');
+    });
+    context.subscriptions.push(initProjectDisposable);
 }
 exports.activate = activate;
-// This method is called when your extension is deactivated
 function deactivate() { }
 exports.deactivate = deactivate;
 
