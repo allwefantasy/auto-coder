@@ -61,6 +61,9 @@
     "lint": "eslint src --ext ts",
     "test": "vscode-test"
   },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
   "devDependencies": {
     "@types/vscode": "^1.90.0",
     "@types/mocha": "^10.0.6",
