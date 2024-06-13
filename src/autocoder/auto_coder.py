@@ -327,14 +327,15 @@ def main():
             planner = Planner(args, llm)
             v = planner.run(args.query)
             print(v)
-
-            open_yaml_file_in_editor(
-                get_last_yaml_file(
-                    actions_dir=os.path.abspath(
-                        os.path.join(args.source_dir, "actions")
-                    )
-                )
-            )
+            # import time
+            # time.sleep(3)
+            # open_yaml_file_in_editor(
+            #     get_last_yaml_file(
+            #         actions_dir=os.path.abspath(
+            #             os.path.join(args.source_dir, "actions")
+            #         )
+            #     )
+            # )
             return
         else:
             raise ValueError(f"Unknown agent name: {raw_args.agent_command}")
