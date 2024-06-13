@@ -22,6 +22,10 @@
       {
         "command": "auto-coder.runInTerminal",
         "title": "auto-coder: 执行"
+      },
+      {
+        "command": "auto-coder.createRequirement",
+        "title": "auto-coder: 创建需求"
       }
     ],
     "menus": {
@@ -29,6 +33,10 @@
         {
           "when": "resourceLangId == yaml",
           "command": "auto-coder.runInTerminal",
+          "group": "navigation"
+        },
+        {
+          "command": "auto-coder.createRequirement",
           "group": "navigation"
         }
       ]
