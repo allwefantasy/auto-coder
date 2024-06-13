@@ -3,6 +3,7 @@
 import * as vscode from 'vscode';
 import path = require('path');
 import fs = require('fs');
+import yaml = require('js-yaml');
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -62,6 +63,16 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			return;
 		}
+        
+		const baseConfigFile = path.join(projectRoot, 'actions', 'base', 'base.yml');
+		let model, embModel;
+		
+		if (fs.existsSync(baseConfigFile)) {			
+			const baseConfig = yaml.load(fs.readFileSync(baseConfigFile, 'utf8')) as Record<string, unknown>;
+			model = baseConfig?.model as string;
+			embModel = baseConfig?.emb_model as string;
+		}
+
 		const requirement = await vscode.window.showInputBox({
 			placeHolder: '请输入需求',
 			prompt: '需求'
@@ -70,16 +81,20 @@ export function activate(context: vscode.ExtensionContext) {
 		if (!requirement) {
 			return;
 		}
+        
+		if (!model) {
+			model = await vscode.window.showInputBox({
+				placeHolder: '请输入模型名',
+				prompt: '模型名'
+			});
+		}
 
-		const model = await vscode.window.showInputBox({
-			placeHolder: '请输入模型名',
-			prompt: '模型名'
-		});
-
-		const embModel = await vscode.window.showInputBox({
-			placeHolder: '请输入向量模型名',
-			prompt: '向量模型名'
-		});
+		if (!embModel) {
+			embModel = await vscode.window.showInputBox({
+				placeHolder: '请输入向量模型名',
+				prompt: '向量模型名'
+			});
+		}	
 
 		if (requirement && model && embModel) {
 			const workspaceFolders = vscode.workspace.workspaceFolders;
