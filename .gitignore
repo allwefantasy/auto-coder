@@ -36,3 +36,5 @@ screenshots/
 notebooks/conversations.json
 notebooks/pandoc-3.2-x86_64-macOS.pkg
 docs/zh/.auto-coder/metadata.db
+ide_plugins/vscode/auto-cocder/node_modules
+ide_plugins/vscode/auto-cocder/build
