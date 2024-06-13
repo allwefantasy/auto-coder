@@ -175,12 +175,6 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const workspaceFolders = vscode.workspace.workspaceFolders;
-		let projectRoot;
-		if (workspaceFolders) {
-			projectRoot = workspaceFolders[0].uri.fsPath;
-		}
-
 		const terminals = vscode.window.terminals;
 		let terminal;
 
