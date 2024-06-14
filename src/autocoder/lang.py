@@ -54,8 +54,7 @@ lang_desc = {
         "screenshot_desc": "Generate screenshots of a webpage",
         "screenshot_url": "The URL of the webpage to capture",
         "screenshot_output": "The directory to save the screenshots",
-        "code_model": "The name of the code model to use. Default is empty",
-        "code_model": "The name of the code model to use. Default is empty",
+        "code_model": "The name of the code model to use. Default is empty",        
         "planner_model": "The name of the planner model to use. Default is empty",
     },
     "zh": {
@@ -114,6 +113,7 @@ lang_desc = {
         "screenshot_url": "要捕获的网页的URL",
         "screenshot_output": "保存截图的目录",
         "code_model": "要使用的代码模型的名称。默认为空",
-        "next_desc": "基于上一个action文件创建一个新的action文件"
+        "next_desc": "基于上一个action文件创建一个新的action文件",
+        "planner_model": "要使用的规划模型的名称。默认为空",
     }
 }
