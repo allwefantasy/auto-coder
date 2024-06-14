@@ -321,6 +321,7 @@ def parse_args() -> AutoCoderArgs:
     )
     next_parser.add_argument("name", help="Name for the new action file")
     next_parser.add_argument("--source_dir", default=".", help="")
+    next_parser.add_argument("--from_yaml", help=desc["next_from_yaml"])
 
     doc2html_parser = subparsers.add_parser(
         "doc2html", help="Convert word/pdf document to html"

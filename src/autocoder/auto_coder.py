@@ -168,17 +168,32 @@ def main():
         new_seq = str(max_seq + 1).zfill(3)
         prev_files = [f for f in action_files if int(f[:3]) < int(new_seq)]
         
-        if not prev_files:
-            new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}.yml")
-            with open(new_file, "w") as f:
-                pass
+        if raw_args.from_yaml:
+            # If --from_yaml is specified, copy content from the matching YAML file
+            from_files = [f for f in action_files if f.startswith(raw_args.from_yaml)]
+            if from_files:
+                from_file = from_files[0]  # Take the first match
+                with open(os.path.join(actions_dir, from_file), "r") as f:
+                    content = f.read()
+                new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}.yml")
+                with open(new_file, "w") as f:
+                    f.write(content)
+            else:
+                print(f"No YAML file found matching prefix: {raw_args.from_yaml}")
+                return
         else:
-            prev_file = sorted(prev_files)[-1]  # 取序号最大的文件
-            with open(os.path.join(actions_dir, prev_file), "r") as f:
-                content = f.read()
-            new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}.yml")
-            with open(new_file, "w") as f:
-                f.write(content)
+            # If --from_yaml is not specified, use the previous logic
+            if not prev_files:
+                new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}.yml")
+                with open(new_file, "w") as f:
+                    pass
+            else:
+                prev_file = sorted(prev_files)[-1]  # 取序号最大的文件 
+                with open(os.path.join(actions_dir, prev_file), "r") as f:
+                    content = f.read()
+                new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}.yml")
+                with open(new_file, "w") as f:
+                    f.write(content)
 
         print(f"Successfully created new action file: {new_file}")
 

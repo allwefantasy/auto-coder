@@ -212,6 +212,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     single_file:Optional[bool] = False
     query_prefix: Optional[str] = None
     query_suffix: Optional[str] = None
+    from_yaml: Optional[str] = None
 
     class Config:
         protected_namespaces = ()

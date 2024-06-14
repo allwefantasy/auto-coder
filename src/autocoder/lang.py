@@ -58,6 +58,7 @@ lang_desc = {
         "planner_model": "The name of the planner model to use. Default is empty",
         "query_prefix": "The query prefix",
         "query_suffix": "The query suffix",
+        "next_from_yaml": "The YAML file to copy content from when creating a new action file. It supports prefix matching, e.g., specifying '001' will match '001_abc.yml'.",
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
