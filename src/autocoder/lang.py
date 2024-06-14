@@ -55,6 +55,8 @@ lang_desc = {
         "screenshot_url": "The URL of the webpage to capture",
         "screenshot_output": "The directory to save the screenshots",
         "code_model": "The name of the code model to use. Default is empty",
+        "code_model": "The name of the code model to use. Default is empty",
+        "planner_model": "The name of the planner model to use. Default is empty",
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",

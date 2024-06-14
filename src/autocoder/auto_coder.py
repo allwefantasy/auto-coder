@@ -304,6 +304,11 @@ def main():
             code_model = byzerllm.ByzerLLM()
             code_model.setup_default_model_name(args.code_model)
             llm.setup_sub_client("code_model", code_model)
+        
+    if args.planner_model:
+        planner_model = byzerllm.ByzerLLM()
+        planner_model.setup_default_model_name(args.planner_model)
+        llm.setup_sub_client("planner_model", planner_model)
 
     else:
         llm = None

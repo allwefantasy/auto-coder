@@ -194,6 +194,8 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
 class Planner:
     def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         self.llm = llm
+        if args.planner_model:
+            self.llm.setup_default_model_name(args.planner_model)
         self.args = args
         self.tools = get_tools(args=args, llm=llm)    
 

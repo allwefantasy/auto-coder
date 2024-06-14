@@ -78,6 +78,7 @@ def parse_args() -> AutoCoderArgs:
         "--print_request", action="store_true", help=desc["print_request"]
     )
     parser.add_argument("--code_model", default="", help=desc["code_model"])
+    parser.add_argument("--planner_model", default="", help="The name of the planner model to use. Default is empty")
     parser.add_argument(
         "--py_packages", required=False, default="", help=desc["py_packages"]
     )
