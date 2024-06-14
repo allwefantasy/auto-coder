@@ -312,6 +312,12 @@ def main():
 
     else:
         llm = None
+    
+    # Add query prefix and suffix
+    if args.query_prefix:
+        args.query = f"{args.query_prefix}\n{args.query}"
+    if args.query_suffix:
+        args.query = f"{args.query}\n{args.query_suffix}"    
 
     if raw_args.command == "index":  # New subcommand logic
         from autocoder.index.for_command import index_command
