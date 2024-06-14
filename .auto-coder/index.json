@@ -43,9 +43,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py",
-    "symbols": "用途：主要用于自动实现Python脚本中缺失的方法。\n函数：\n变量：lang_desc\n类：\n导入语句：",
-    "last_modified": 1718374197.3658059,
-    "md5": "3c20dd299ae7547e85ede5db210e10ce"
+    "symbols": "用途：主要用于定义和描述语言相关的配置和参数。\n函数：\n变量：lang_desc\n类：\n导入语句：",
+    "last_modified": 1718375522.3828883,
+    "md5": "1f5f318a76e51d666d56ff3a2cd6924b"
   },
   "/Users/allwefantasy/projects/auto-coder/tests/test_image_to_page.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/tests/test_image_to_page.py",
@@ -73,9 +73,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py",
-    "symbols": "用途：主要用于解析命令行参数，支持多种命令和配置选项。\n函数：parse_args\n变量：system_lang, lang, desc, parser, subparsers, args\n类：AutoCoderArgs\n导入语句：import argparse^^from autocoder.common import AutoCoderArgs^^from autocoder.lang import lang_desc^^import locale",
-    "last_modified": 1718374930.0114756,
-    "md5": "4a3d3600fb64ee69135b8e5b37bea08e"
+    "symbols": "用途：主要用于解析命令行参数，支持多种命令和配置选项。\n函数：parse_args\n变量：system_lang, lang, desc\n类：AutoCoderArgs\n导入语句：import argparse^^from autocoder.common import AutoCoderArgs^^from autocoder.lang import lang_desc^^import locale",
+    "last_modified": 1718375577.0776165,
+    "md5": "521b470f6aec688258d18e1837f268c4"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py",
@@ -85,9 +85,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
-    "symbols": "用途：主要用于自动化代码编写和项目管理，包括代码生成、版本控制、文档构建等功能。\n函数：resolve_include_path, load_include_files, main\n变量：args, raw_args, config, include_files, abs_include_path, include_config, store, tc, llm, vl_model, sd_model, index_model, emb_model, code_model, planner_model, rag, server_args, http_doc, source_codes\n类：AutoCoderArgs, Dispacher, SimpleRAG, LLWrapper, Store, ServerArgs, Planner, Anything2Images, CodeAutoExecute, HttpDoc\n导入语句：import byzerllm^^from typing import List, Dict, Any, Optional^^from autocoder.common import AutoCoderArgs^^from autocoder.dispacher import Dispacher^^from autocoder.common import git_utils, code_auto_execute^^from autocoder.rag.simple_rag import SimpleRAG^^from autocoder.rag.llm_wrapper import LLWrapper^^from autocoder.utils.llm_client_interceptors import token_counter_interceptor^^from autocoder.db.store import Store^^import yaml^^import os^^from byzerllm.utils.client import EventCallbackResult, EventName^^from prompt_toolkit import prompt^^from prompt_toolkit.formatted_text import FormattedText^^from jinja2 import Template^^import hashlib^^from autocoder.utils.rest import HttpDoc^^from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib^^from autocoder.command_args import parse_args^^from autocoder.rag.api_server import serve, ServerArgs^^from autocoder.utils import open_yaml_file_in_editor, get_last_yaml_file^^from loguru import logger",
-    "last_modified": 1718374059.2920723,
-    "md5": "6fe626ec09fba17fa8e33f14a73bc093"
+    "symbols": "用途：主要用于自动化代码编写和项目管理，包括代码生成、版本控制、文档构建等功能。\n函数：resolve_include_path, load_include_files, main\n变量：args, raw_args, config, include_files, abs_include_path, include_config, tc, llm, store, vl_model, sd_model, index_model, emb_model, code_model, planner_model, v, a2i, html, output_path, rag, response, contexts, executor, query, context, source_code, server_args, llm_wrapper\n类：AutoCoderArgs, Dispacher, SimpleRAG, LLWrapper, Store, ServerArgs, Planner, Anything2Images, CodeAutoExecute, HttpDoc\n导入语句：import byzerllm^^from typing import List, Dict, Any, Optional^^from autocoder.common import AutoCoderArgs^^from autocoder.dispacher import Dispacher^^from autocoder.common import git_utils, code_auto_execute^^from autocoder.rag.simple_rag import SimpleRAG^^from autocoder.rag.llm_wrapper import LLWrapper^^from autocoder.utils.llm_client_interceptors import token_counter_interceptor^^from autocoder.db.store import Store^^import yaml^^import os^^from byzerllm.utils.client import EventCallbackResult, EventName^^from prompt_toolkit import prompt^^from prompt_toolkit.formatted_text import FormattedText^^from jinja2 import Template^^import hashlib^^from autocoder.utils.rest import HttpDoc^^from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib^^from autocoder.command_args import parse_args^^from autocoder.rag.api_server import serve, ServerArgs^^from autocoder.utils import open_yaml_file_in_editor, get_last_yaml_file^^from loguru import logger",
+    "last_modified": 1718375855.4703777,
+    "md5": "6748de1cc6342c8727aa2da1691a5532"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py",

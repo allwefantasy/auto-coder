@@ -8,7 +8,6 @@ src/auto_coder.egg-info/requires.txt
 src/auto_coder.egg-info/top_level.txt
 src/autocoder/__init__.py
 src/autocoder/auto_coder.py
-src/autocoder/auto_coder_server.py
 src/autocoder/command_args.py
 src/autocoder/lang.py
 src/autocoder/version.py

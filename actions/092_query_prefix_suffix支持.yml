@@ -1,5 +1,6 @@
 include_file:
 - ./base/base.yml
+- ./common/添加参数.yml
 
 query: |
-  在 command_args.py, common/__init__.py, auto_coder.py,lang.py 中添加 --query_prefix 和 --query_suffix 参数。
+  添加 --system 参数，用于指定系统参数
