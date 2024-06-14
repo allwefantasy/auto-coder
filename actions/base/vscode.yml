@@ -1,0 +1,10 @@
+auto_merge: editblock
+human_as_model: true
+project_type: .ts,.json,.js 
+include_file:
+- ./base/base.yml
+
+exclude_files:      
+  - human://文件名是conversations.json
+  - human://文件名是package-lock.json
+

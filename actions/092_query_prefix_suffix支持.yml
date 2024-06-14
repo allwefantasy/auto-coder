@@ -1,0 +1,5 @@
+include_file:
+- ./base/base.yml
+
+query: |
+  在 command_args.py, common/__init__.py, auto_coder.py,lang.py 中添加 --query_prefix 和 --query_suffix 参数。

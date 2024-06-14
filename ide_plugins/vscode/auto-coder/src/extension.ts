@@ -168,8 +168,8 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		const requirement = await vscode.window.showInputBox({
-			placeHolder: '请输入需求',
-			prompt: '需求'
+			placeHolder: '请输入文件名',
+			prompt: '文件名'
 		});
 
 		if (!requirement) {
