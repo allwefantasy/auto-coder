@@ -56,6 +56,8 @@ lang_desc = {
         "screenshot_output": "The directory to save the screenshots",
         "code_model": "The name of the code model to use. Default is empty",        
         "planner_model": "The name of the planner model to use. Default is empty",
+        "query_prefix": "The query prefix",
+        "query_suffix": "The query suffix",
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -115,5 +117,7 @@ lang_desc = {
         "code_model": "要使用的代码模型的名称。默认为空",
         "next_desc": "基于上一个action文件创建一个新的action文件",
         "planner_model": "要使用的规划模型的名称。默认为空",
+        "query_prefix": "查询前缀",
+        "query_suffix": "查询后缀",
     }
 }

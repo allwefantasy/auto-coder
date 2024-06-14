@@ -21,7 +21,7 @@ def parse_args() -> AutoCoderArgs:
     parser.add_argument("--execute", action="store_true", help=desc["execute"])
     parser.add_argument("--package_name", default="", help=desc["package_name"])
     parser.add_argument("--script_path", default="", help=desc["script_path"])
-    
+
     parser.add_argument("--model", default="", help=desc["model"])
     parser.add_argument(
         "--model_max_length", type=int, default=2000, help=desc["model_max_length"]
@@ -90,8 +90,8 @@ def parse_args() -> AutoCoderArgs:
         "--urls_use_model", action="store_true", help=desc["urls_use_model"]
     )
     parser.add_argument("--exclude_files", default="", help="")
-    parser.add_argument("--query_prefix", default=None, help="")
-    parser.add_argument("--query_suffix", default=None, help="")
+    parser.add_argument("--query_prefix", default=None, help=desc["query_prefix"])
+    parser.add_argument("--query_suffix", default=None, help=desc["query_suffix"])
 
     parser.add_argument("--search", default="", help="")
     parser.add_argument("--search_engine", default="", help=desc["search_engine"])
