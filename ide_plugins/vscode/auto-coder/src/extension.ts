@@ -167,29 +167,73 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const fileName = await vscode.window.showInputBox({
-			placeHolder: '请输入文件名',
-			prompt: '文件名'
-		});
+		const panel = vscode.window.createWebviewPanel(
+      'createYamlForm',
+      'Create YAML File',
+      vscode.ViewColumn.One,
+      {}
+    );
 
-		if (!fileName) {
-			return;
-		}
+    panel.webview.html = `
+      <html>
+        <body>
+          <form>
+            <label for="prefix">Prefix:</label><br>
+            <input type="text" id="prefix" name="prefix"><br>
+            <label for="filename">File name:</label><br>
+            <input type="text" id="filename" name="filename"><br><br>
+            <input type="button" value="Create" onclick="submit()">
+          </form> 
+          
+          <script>
+            const vscode = acquireVsCodeApi();
 
-		const terminals = vscode.window.terminals;
-		let terminal;
+            function submit() {
+              const prefix = document.getElementById('prefix').value;
+              const filename = document.getElementById('filename').value;
+              
+              vscode.postMessage({
+                command: 'createFile',
+                prefix: prefix,
+                filename: filename
+              });
+            }
+          </script>
+        </body>
+      </html>
+    `;
 
-		if (terminals.length === 0) {
-			terminal = vscode.window.createTerminal();
-		} else {
-			terminal = terminals[0];
-		}
+    // Handle messages from the webview
+    panel.webview.onDidReceiveMessage(
+      async message => {
+        switch (message.command) {
+          case 'createFile':
+            const terminals = vscode.window.terminals;
+            let terminal;
 
-		terminal.show();
-		if (projectRoot) {
-			terminal.sendText(`cd ${projectRoot}`);
-		}
-		terminal.sendText(`auto-coder next "${fileName}"`);
+            if (terminals.length === 0) {
+              terminal = vscode.window.createTerminal();
+            } else {
+              terminal = terminals[0];
+            }
+
+            terminal.show();
+            if (projectRoot) {
+              terminal.sendText(`cd ${projectRoot}`);
+            }
+
+            if(message.prefix) {
+              terminal.sendText(`auto-coder next "${message.filename}" --from_yaml "${message.prefix}"`);  
+            } else {
+              terminal.sendText(`auto-coder next "${message.filename}"`);
+            }
+            
+            return;
+        }
+      },
+      undefined,
+      context.subscriptions
+    );
 	});
 
 	context.subscriptions.push(createYamlDisposable);
