@@ -70,7 +70,7 @@ export function activate(context: vscode.ExtensionContext) {
 		
 		if (fs.existsSync(baseConfigFile)) {			
 			const baseConfig = yaml.load(fs.readFileSync(baseConfigFile, 'utf8')) as Record<string, unknown>;
-			model = baseConfig?.model as string;
+			model = baseConfig?.planner_model as string || baseConfig?.model as string;
 			embModel = baseConfig?.emb_model as string;
 		}
 
