@@ -397,9 +397,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts",
-    "symbols": "用途：主要用于提供VSCode扩展，实现自动化代码编写和项目管理功能。\n函数：activate, deactivate\n变量：outputChannel, disposable, createRequirementDisposable, initProjectDisposable, createYamlDisposable\n类：\n导入语句：import * as vscode^^import path^^import fs^^import yaml",
-    "last_modified": 1718275365.2653086,
-    "md5": "3916f831848e9156d77f4467f021b642"
+    "symbols": "用途：主要用于提供VSCode扩展，实现自动化代码生成和项目初始化功能。\n函数：activate, deactivate\n变量：outputChannel, disposable, createRequirementDisposable, initProjectDisposable, createYamlDisposable\n类：\n导入语句：import * as vscode^^import path^^import fs^^import yaml",
+    "last_modified": 1718377413.4843757,
+    "md5": "517760d4a9ac278c669536bf536dbae2"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json",
@@ -436,5 +436,11 @@
     "symbols": "用途：主要用于获取和打开YAML文件的功能。\n函数：get_last_yaml_file, open_yaml_file_in_editor\n变量：\n类：\n导入语句：import os^^from typing import Optional^^import subprocess^^import shutil^^from loguru import logger",
     "last_modified": 1718270164.3788033,
     "md5": "3c31f6c2c5dc82225da1a4a8a8439c96"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json",
+    "symbols": "用途：主要用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于提供自动实现函数模板的功能。\n函数：auto_implement_function_template\n变量：a\n类：\n导入语句：import os^^import time^^from loguru import logger^^import byzerllm\n用途：用于管理项目依赖的版本锁定文件。\n函数：\n变量：\n类：\n导入语句：\n函数:\n变量:\n类:\n导入语句:\n用途：管理 webpack 的命令行接口。\n函数：\n变量：\n类：\n导入语句：import os^^import time^^from loguru import logger^^import byzerllm\n用途：主要用于管理项目的依赖关系和版本锁定。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718276602.5079374,
+    "md5": "a72c412284de13478cf29f59041481a1"
   }
 }

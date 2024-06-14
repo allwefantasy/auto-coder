@@ -167,12 +167,12 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const requirement = await vscode.window.showInputBox({
+		const fileName = await vscode.window.showInputBox({
 			placeHolder: '请输入文件名',
 			prompt: '文件名'
 		});
 
-		if (!requirement) {
+		if (!fileName) {
 			return;
 		}
 
@@ -189,7 +189,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (projectRoot) {
 			terminal.sendText(`cd ${projectRoot}`);
 		}
-		terminal.sendText(`auto-coder next "${requirement}"`);
+		terminal.sendText(`auto-coder next "${fileName}"`);
 	});
 
 	context.subscriptions.push(createYamlDisposable);
