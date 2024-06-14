@@ -11,12 +11,6 @@
     "last_modified": 1714363934.3556216,
     "md5": "3a02a954c1c7b2a2b666a42b9a3bbd20"
   },
-  "/Users/allwefantasy/projects/auto-coder/run.py": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/run.py",
-    "symbols": "用途：主要用于自动编码器的运行逻辑。\n函数：main\n变量：file\n类：AutoCoderArgs, Dispacher\n导入语句：import byzerllm^^from typing import List,Dict,Any,Optional^^import argparse^^from autocoder.common import AutoCoderArgs^^from autocoder.dispacher import Dispacher",
-    "last_modified": 1711809217.9133615,
-    "md5": "3c479f948d8d8a7a030bd5887db72eec"
-  },
   "/Users/allwefantasy/projects/auto-coder/tests/test_shell_client.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/tests/test_shell_client.py",
     "symbols": "用途：主要用于测试ShellClient类的功能。\n函数：setup_method, teardown_method, test_add_and_run\n类：TestShellClient, ShellClient\n变量：test_dir\n导入语句：import tempfile^^import os^^import pytest^^from autocoder.common.ShellClient import ShellClient^^import shutil",
@@ -437,16 +431,11 @@
     "last_modified": 1718277212.1562889,
     "md5": "703c99a6a15982119b36c0f078ccb66b"
   },
-  "/Users/allwefantasy/projects/auto-coder/package-lock.json": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/package-lock.json",
-    "symbols": "用途：主要用于记录和管理项目依赖的版本信息。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718277212.1621895,
-    "md5": "f814cadb13f64f2cda8e112f0f3ae6e7"
-  },
+  
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/utils/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/utils/__init__.py",
     "symbols": "用途：主要用于获取和打开YAML文件的功能。\n函数：get_last_yaml_file, open_yaml_file_in_editor\n变量：\n类：\n导入语句：import os^^from typing import Optional^^import subprocess^^import shutil^^from loguru import logger",
     "last_modified": 1718270164.3788033,
     "md5": "3c31f6c2c5dc82225da1a4a8a8439c96"
-  }
+  }  
 }
