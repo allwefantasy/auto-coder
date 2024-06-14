@@ -235,9 +235,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_editblock.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_editblock.py",
-    "symbols": "用途：主要用于自动合并代码编辑块，支持git仓库的自动合并操作。\n函数：parse_whole_text, git_require_msg, get_edits, merge_code\n类：PathAndCode, CodeAutoMergeEditBlock\n导入语句：import os^^from byzerllm.utils.client import code_utils^^from autocoder.common import AutoCoderArgs, git_utils^^from typing import List^^import pydantic^^import byzerllm^^from loguru import logger^^import hashlib",
-    "last_modified": 1717336796.1230483,
-    "md5": "597cc8c60b51e7e260e07221878f5bbb"
+    "symbols": "用途：主要用于自动合并代码编辑块，支持git仓库操作。\n函数：parse_whole_text, git_require_msg, get_edits, merge_code\n变量：\n类：PathAndCode, CodeAutoMergeEditBlock\n导入语句：import os^^from byzerllm.utils.client import code_utils^^from autocoder.common import AutoCoderArgs, git_utils^^import pydantic^^import byzerllm^^from loguru import logger^^import hashlib",
+    "last_modified": 1718372596.076916,
+    "md5": "72a9ef2668b7d9d07decf9f6a28ffebf"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_strict_diff.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_strict_diff.py",
@@ -355,9 +355,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/suffixproject/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/suffixproject/__init__.py",
-    "symbols": "用途：主要用于自动化代码生成和项目管理，包括文件过滤、正则表达式生成、目录结构展示等功能。\n函数：generate_regex_pattern, parse_exclude_files, should_exclude, output, is_suffix_file, read_file_content, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, get_simple_directory_structure, get_tree_like_directory_structure, run, clone_repository\n类：RegPattern, SuffixProject\n变量：\n导入语句：from autocoder.common import SourceCode, AutoCoderArgs^^from autocoder import common as FileUtils^^from autocoder.utils.rest import HttpDoc^^import os^^from typing import Optional, Generator, List, Dict, Any, Callable^^from git import Repo^^import byzerllm^^from autocoder.common.search import Search, SearchEngine^^from autocoder.rag.simple_rag import SimpleRAG^^from loguru import logger^^import re^^from pydantic import BaseModel, Field",
-    "last_modified": 1718261165.332014,
-    "md5": "cd4a4a814c583cce0e2547bbb061cf9d"
+    "symbols": "用途：主要用于自动化代码生成和项目管理，包括文件过滤、正则表达式生成、目录结构展示等功能。\n函数：generate_regex_pattern, extract_regex_pattern, parse_exclude_files, should_exclude, output, is_suffix_file, read_file_content, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, get_simple_directory_structure, get_tree_like_directory_structure, run, clone_repository\n变量：args, directory, git_url, target_file, project_type, suffixs, file_filter, sources, llm, exclude_files, exclude_patterns, default_exclude_dirs\n类：RegPattern, SuffixProject\n导入语句：from autocoder.common import SourceCode, AutoCoderArgs^^from autocoder import common as FileUtils^^from autocoder.utils.rest import HttpDoc^^import os^^from typing import Optional, Generator, List, Dict, Any, Callable^^from git import Repo^^import byzerllm^^from autocoder.common.search import Search, SearchEngine^^from autocoder.rag.simple_rag import SimpleRAG^^from loguru import logger^^import re^^from pydantic import BaseModel, Field",
+    "last_modified": 1718347756.2605407,
+    "md5": "b2a617eed0fecd45f758308567032f16"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/index.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/index.py",
