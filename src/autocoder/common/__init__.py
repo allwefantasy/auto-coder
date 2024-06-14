@@ -211,6 +211,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     output:Optional[str] = ""
     single_file:Optional[bool] = False
     query_prefix: Optional[str] = None
+    query_suffix: Optional[str] = None    query_prefix: Optional[str] = None
     query_suffix: Optional[str] = None
 
     class Config:
