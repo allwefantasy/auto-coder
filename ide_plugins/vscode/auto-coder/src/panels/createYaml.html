@@ -1,0 +1,26 @@
+<html>
+  <body>
+    <form>
+      <label for="prefix">Prefix:</label><br>
+      <input type="text" id="prefix" name="prefix"><br>
+      <label for="filename">File name:</label><br>
+      <input type="text" id="filename" name="filename"><br><br>
+      <input type="button" value="Create" onclick="submit()">
+    </form> 
+    
+    <script>
+      const vscode = acquireVsCodeApi();
+
+      function submit() {
+        const prefix = document.getElementById('prefix').value;
+        const filename = document.getElementById('filename').value;
+        
+        vscode.postMessage({
+          command: 'createFile',
+          prefix: prefix,
+          filename: filename
+        });
+      }
+    </script>
+  </body>
+</html>

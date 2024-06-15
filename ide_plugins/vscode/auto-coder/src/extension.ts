@@ -171,37 +171,16 @@ export function activate(context: vscode.ExtensionContext) {
       'createYamlForm',
       'Create YAML File',
       vscode.ViewColumn.One,
-      {}
+      {
+        enableScripts: true,
+      }
     );
 
-    panel.webview.html = `
-      <html>
-        <body>
-          <form>
-            <label for="prefix">Prefix:</label><br>
-            <input type="text" id="prefix" name="prefix"><br>
-            <label for="filename">File name:</label><br>
-            <input type="text" id="filename" name="filename"><br><br>
-            <input type="button" value="Create" onclick="submit()">
-          </form> 
-          
-          <script>
-            const vscode = acquireVsCodeApi();
+    const htmlPath = path.join(context.extensionPath, 'src', 'panels', 'createYaml.html');
+    const cssPath = path.join(context.extensionPath, 'src', 'panels', 'createYaml.css');
+    const htmlContent = fs.readFileSync(htmlPath, 'utf8').replace('</head>', `<link rel="stylesheet" type="text/css" href="${cssPath}"></head>`);
 
-            function submit() {
-              const prefix = document.getElementById('prefix').value;
-              const filename = document.getElementById('filename').value;
-              
-              vscode.postMessage({
-                command: 'createFile',
-                prefix: prefix,
-                filename: filename
-              });
-            }
-          </script>
-        </body>
-      </html>
-    `;
+    panel.webview.html = htmlContent;
 
     // Handle messages from the webview
     panel.webview.onDidReceiveMessage(
