@@ -1,0 +1,6 @@
+include_file:
+- ./base/vscode.yml
+- ./common/vscode.yml
+
+query: |
+  添加 reactjs + tailwindcss 支持，使用 reactjs + tailwindcss 开发 extension.ts里的 webview 界面。

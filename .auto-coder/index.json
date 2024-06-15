@@ -397,9 +397,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts",
-    "symbols": "用途：主要用于提供VSCode扩展，实现自动化代码生成和项目初始化功能。\n函数：activate, deactivate\n变量：outputChannel, disposable, createRequirementDisposable, initProjectDisposable, createYamlDisposable\n类：\n导入语句：import * as vscode^^import path^^import fs^^import yaml",
-    "last_modified": 1718377413.4843757,
-    "md5": "517760d4a9ac278c669536bf536dbae2"
+    "symbols": "用途：主要用于提供VS Code扩展功能，包括在终端运行命令、创建需求、初始化项目和创建YAML文件。\n函数：activate, deactivate\n变量：outputChannel\n类：\n导入语句：import * as vscode from 'vscode'^^*^import path = require('path')^^*^import fs = require('fs')^^*^import yaml = require('js-yaml')",
+    "last_modified": 1718378150.466815,
+    "md5": "c06c38119cd50060d99ea662ffacc2cd"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json",
@@ -409,9 +409,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json",
-    "symbols": "用途：用于描述Visual Studio Code插件的配置和依赖。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718276710.47105,
-    "md5": "c160f542e5a2ab6a7256a9a523e9ce72"
+    "symbols": "用途：描述VSCode插件的配置和依赖。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718378038.2576845,
+    "md5": "85917ae701b57d47e3b6a37d7ba12b30"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json",
@@ -436,11 +436,5 @@
     "symbols": "用途：主要用于获取和打开YAML文件的功能。\n函数：get_last_yaml_file, open_yaml_file_in_editor\n变量：\n类：\n导入语句：import os^^from typing import Optional^^import subprocess^^import shutil^^from loguru import logger",
     "last_modified": 1718270164.3788033,
     "md5": "3c31f6c2c5dc82225da1a4a8a8439c96"
-  },
-  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json",
-    "symbols": "用途：主要用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于提供自动实现函数模板的功能。\n函数：auto_implement_function_template\n变量：a\n类：\n导入语句：import os^^import time^^from loguru import logger^^import byzerllm\n用途：用于管理项目依赖的版本锁定文件。\n函数：\n变量：\n类：\n导入语句：\n函数:\n变量:\n类:\n导入语句:\n用途：管理 webpack 的命令行接口。\n函数：\n变量：\n类：\n导入语句：import os^^import time^^from loguru import logger^^import byzerllm\n用途：主要用于管理项目的依赖关系和版本锁定。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718276602.5079374,
-    "md5": "a72c412284de13478cf29f59041481a1"
   }
 }

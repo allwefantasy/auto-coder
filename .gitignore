@@ -39,3 +39,7 @@ docs/zh/.auto-coder/metadata.db
 ide_plugins/vscode/auto-cocder/node_modules
 ide_plugins/vscode/auto-cocder/build
 ide_plugins/vscode/auto-coder/*.vsix
+ide_plugins/vscode/auto-coder/dist/extension.js
+ide_plugins/vscode/auto-coder/dist/extension.js.map
+ide_plugins/vscode/auto-coder/package-lock.json
+.auto-coder/metadata.db

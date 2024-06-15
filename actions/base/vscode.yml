@@ -5,6 +5,6 @@ include_file:
 - ./base.yml
 
 exclude_files:      
-  - human://文件名是conversations.json
-  - human://文件名是package-lock.json
+  - human://路径包含conversations.json
+  - human://路径包含package-lock.json
 
