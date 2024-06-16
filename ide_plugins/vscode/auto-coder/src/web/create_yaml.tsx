@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useState } from 'react';
+import './dark.css';
 
 interface CreateYAMLViewProps {
     isDarkMode: boolean;
@@ -32,7 +33,7 @@ export const CreateYAMLView = ({ isDarkMode,vscode }: CreateYAMLViewProps) => {
                             id="fileName"
                             value={fileName}
                             onChange={(e) => setFileName(e.target.value)}
-                            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                            className={`block w-full sm:text-sm rounded-md ${isDarkMode ? 'dark' : ''}`}
                         />
                     </div>
                 </div>
@@ -47,7 +48,7 @@ export const CreateYAMLView = ({ isDarkMode,vscode }: CreateYAMLViewProps) => {
                             id="prefix"
                             value={prefix}
                             onChange={(e) => setPrefix(e.target.value)}
-                            className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                            className={`block w-full sm:text-sm rounded-md ${isDarkMode ? 'dark' : ''}`}
                         />
                     </div>
                 </div>

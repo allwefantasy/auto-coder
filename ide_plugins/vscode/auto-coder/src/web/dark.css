@@ -1,4 +1,14 @@
 /* dark.css */
+.dark input {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border-color: #4a4a4a;
+}
+
+.dark input:focus {
+    border-color: #007acc;
+    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.25);
+}/* dark.css */
 
 .dark {
     background-color: #1e1e1e;
