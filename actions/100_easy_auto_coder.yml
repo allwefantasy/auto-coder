@@ -1,0 +1,65 @@
+include_file:
+- ./common/local.yml
+
+auto_merge: wholefile
+human_as_model: true
+
+query: |
+  参考 auto_coder.py,command_args.py,common/__init__.py, 
+  新增一个 easy_auto_coder.py, 实现一个命令行聊天机器人。
+
+  命令行聊天机器人可以用 prompt_toolkit 实现,保持现代和好用。
+
+  维护一个全局的 memory对象，用于存储聊天记录，格式类似于：
+  
+  ```
+  {
+   "conversation":[
+     {
+       "role":"user",
+       "content":"你好"
+     },
+     {
+       "role":"assistant",
+       "content":"你好"
+     }
+   ],
+  }
+  ```
+
+  维护一个全局 current_files 字段，{
+    "files":[
+      {""a.py"":["文件1"，"文件2"]}      
+    ]
+  }
+  
+  进入命令行，如果用户直接输入文本，那么默认调用 /chat 指令。
+
+  /add_files 指令，用户可以指定一个或者多个文件名，比如 /files a.py b.py, 遍历当前项目
+  然后找到包含了 a.py, b.py 的所有文件
+
+  /remove_files 指令，
+
+  /chat 指令， 参考  auto_coder.py 中 Next 的逻辑，自动生成一个yaml文件，yaml文件格式如下：
+
+  ```  
+  include_file:
+    - ./base/base.yml
+
+  auto_merge: editblock
+  human_as_model: false  
+
+  urls: 
+  - <文件1>
+  - <文件2> 
+
+  query: |
+    <YOUR QUERY HERE>
+  ```
+  替换 <YOUR QUERY HERE> 为用户输入的文本。
+  替换 urls 中的文件名为 current_files values中的文件名。
+  并且执行yaml文件。
+  
+  其他则对应 auto_coder.py中的命令，比如 auto-coder index query 对应 /index/query 指令。
+
+  
