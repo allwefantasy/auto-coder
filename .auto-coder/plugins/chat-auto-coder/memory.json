@@ -11,6 +11,10 @@
     {
       "role": "user",
       "content": "添加 /list_files 指令 罗列出当前文件"
+    },
+    {
+      "role": "user",
+      "content": "对当前所有指令提供自动补全"
     }
   ],
   "current_files": {

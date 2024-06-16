@@ -8,38 +8,60 @@ from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.completion import WordCompleter
-
+from prompt_toolkit.completion import WordCompleter, Completer, Completion
 from autocoder.common import AutoCoderArgs
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.command_args import parse_args
 from autocoder.utils import get_last_yaml_file
 import os
 
-memory = {
-    "conversation": [],
-    "current_files": {
-        "files": []
-    }
-}
+memory = {"conversation": [], "current_files": {"files": []}}
 
-base_persist_dir = os.path.join(".auto-coder","plugins","chat-auto-coder")
+base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
+
+commands = [
+    "/add_files",
+    "/remove_files",
+    "/chat",
+    "/index/query",
+    "/list_files",
+    "/help",
+    "/exit",
+]
+
+# word_completer = WordCompleter(commands)
+
+class CommandCompleter(Completer):
+    def __init__(self, commands):
+        self.commands = commands
+
+    def get_completions(self, document, complete_event):        
+        text = document.text_before_cursor
+        for command in self.commands:
+            if command.startswith(text):
+                yield Completion(command, start_position=-len(text))
+
+
+completer = CommandCompleter(commands)
+
 
 def save_memory():
-    with open(os.path.join(base_persist_dir,"memory.json"), "w") as f:
-        json.dump(memory, f, indent=2,ensure_ascii=False)
+    with open(os.path.join(base_persist_dir, "memory.json"), "w") as f:
+        json.dump(memory, f, indent=2, ensure_ascii=False)
+
 
 def load_memory():
     global memory
-    memory_path = os.path.join(base_persist_dir,"memory.json")
+    memory_path = os.path.join(base_persist_dir, "memory.json")
     if os.path.exists(memory_path):
         with open(memory_path, "r") as f:
             memory = json.load(f)
 
+
 def find_files_in_project(file_names: List[str]) -> List[str]:
     project_root = os.getcwd()
     matched_files = []
-    exclude_dirs = ['.git', 'node_modules', 'dist']
+    exclude_dirs = [".git", "node_modules", "dist"]
     for root, dirs, files in os.walk(project_root):
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
         for file in files:
@@ -47,10 +69,12 @@ def find_files_in_project(file_names: List[str]) -> List[str]:
                 matched_files.append(os.path.join(root, file))
     return matched_files
 
+
 def add_files(file_names: List[str]):
     new_files = find_files_in_project(file_names)
     memory["current_files"]["files"].extend(new_files)
     save_memory()
+
 
 def remove_files(file_names: List[str]):
     removed_files = []
@@ -61,12 +85,13 @@ def remove_files(file_names: List[str]):
         memory["current_files"]["files"].remove(file)
     save_memory()
 
+
 def chat(query: str):
     memory["conversation"].append({"role": "user", "content": query})
-    
+
     current_files = memory["current_files"]["files"]
     files_list = "\n".join([f"- {file}" for file in current_files])
-    
+
     yaml_content = f"""
 include_file:
   - ./base/base.yml
@@ -85,19 +110,23 @@ query: |
     # latest_yaml_file = get_last_yaml_file("actions")
     with open("./actions/temp_action.yml", "w") as f:
         f.write(yaml_content)
-    
+
     auto_coder_main(["--file", "./actions/temp_action.yml"])
 
     os.remove("./actions/temp_action.yml")
-    
+
     save_memory()
+
 
 def index_query(args: List[str]):
     auto_coder_main(["index", "query"] + args)
 
-def main():   
+
+def main():
     if not os.path.exists(".auto-coder"):
-        print("Please run this command in the root directory of your project which have been inited by auto-coder.")
+        print(
+            "Please run this command in the root directory of your project which have been inited by auto-coder."
+        )
         exit(1)
 
     if not os.path.exists(base_persist_dir):
@@ -105,32 +134,37 @@ def main():
 
     load_memory()
 
-    commands = WordCompleter(["/add_files", "/remove_files", "/chat", "/index/query", "/list_files", "/help", "/exit"])
-
-    session = PromptSession(history=InMemoryHistory(),
-                            auto_suggest=AutoSuggestFromHistory(),
-                            enable_history_search=True,
-                            completer=commands,
-                            complete_while_typing=True)
-
     kb = KeyBindings()
 
-    @kb.add('c-c')
+    @kb.add("c-c")
     def _(event):
         event.app.exit()
+
+    @kb.add("tab")
+    def _(event):
+        event.current_buffer.complete_next()
+
+    session = PromptSession(
+        history=InMemoryHistory(),
+        auto_suggest=AutoSuggestFromHistory(),
+        enable_history_search=False,
+        completer=completer,
+        complete_while_typing=True,
+        key_bindings=kb,
+    )
 
     while True:
         try:
             prompt_message = [
-                ('class:username', 'chat-auto-coder'),
-                ('class:at', '@'),
-                ('class:host', 'localhost'),
-                ('class:colon', ':'),
-                ('class:path', '~'),
-                ('class:dollar', '$ '),
+                ("class:username", "chat-auto-coder"),
+                ("class:at", "@"),
+                ("class:host", "localhost"),
+                ("class:colon", ":"),
+                ("class:path", "~"),
+                ("class:dollar", "$ "),
             ]
-            user_input = session.prompt(FormattedText(prompt_message), key_bindings=kb)
-            
+            user_input = session.prompt(FormattedText(prompt_message))
+
             if user_input.startswith("/add_files"):
                 file_names = user_input.split(" ")[1:]
                 add_files(file_names)
@@ -148,29 +182,38 @@ def main():
                     print(file)
             elif user_input.startswith("/help"):
                 print("Supported commands:")
-                print("/add_files <file1> <file2> ... - Add files to the current session")
-                print("/remove_files <file1> <file2> ... - Remove files from the current session")  
+                print(
+                    "/add_files <file1> <file2> ... - Add files to the current session"
+                )
+                print(
+                    "/remove_files <file1> <file2> ... - Remove files from the current session"
+                )
                 print("/chat <query> - Chat with the AI about the current files")
                 print("/index/query <args> - Query the project index")
                 print("/list_files - List all files in the current session")
                 print("/help - Show this help message")
                 print("/exit - Exit the program")
             elif user_input.startswith("/exit"):
-                raise KeyboardInterrupt
-            elif user_input.startswith("/chat"):
-                query = user_input[len("/chat"):].strip()
+                raise KeyboardInterrupt            
+            else:
+                if user_input.startswith("/") and not user_input.startswith("/chat"):
+                    print("Invalid command. Please type /help to see the list of supported commands.")
+                    continue
+                if not user_input.startswith("/chat"):
+                    query = user_input.strip()
+                else:
+                    query = user_input[len("/chat") :].strip()
                 if not query:
                     print("Please enter your request.")
                 else:
-                    chat(query)
-            else:
-                print(f"Unknown command: {user_input}. Type /help for available commands.")
+                    chat(query)            
 
         except KeyboardInterrupt:
             print("Exiting...")
             break
         except Exception as e:
             pass
+
 
 if __name__ == "__main__":
     main()
