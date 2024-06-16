@@ -50,14 +50,15 @@ def find_files_in_project(file_names: List[str]) -> List[str]:
     return matched_files
 
 def show_help():
-    print("Supported commands:")
-    print("/add_files <file1> <file2> ... - Add files to the current session")
-    print("/remove_files <file1> <file2> ... - Remove files from the current session")
-    print("/chat <query> - Chat with the AI about the current files")
-    print("/index/query <args> - Query the project index") 
-    print("/list_files - List all files in the current session")
-    print("/help - Show this help message")
-    print("/exit - Exit the program")
+    print("\033[1mSupported commands:\033[0m")
+    print("  \033[94m/add_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92mAdd files to the current session\033[0m")
+    print("  \033[94m/remove_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92mRemove files from the current session\033[0m")
+    print("  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current files\033[0m")
+    print("  \033[94m/index/query\033[0m \033[93m<args>\033[0m - \033[92mQuery the project index\033[0m")
+    print("  \033[94m/list_files\033[0m - \033[92mList all files in the current session\033[0m")
+    print("  \033[94m/help\033[0m - \033[92mShow this help message\033[0m")
+    print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
+    print()
 
 # word_completer = WordCompleter(commands)
 
