@@ -5,6 +5,11 @@ import path = require('path');
 import fs = require('fs');
 import yaml = require('js-yaml');
 
+import * as ReactDOMServer from 'react-dom/server';
+import * as React from 'react';
+import './web/index.css'
+import { CreateYAMLView } from './web/create_yaml';
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -12,7 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated	
 	const outputChannel = vscode.window.createOutputChannel('auto-coder-copilot-extension');
-  	outputChannel.appendLine('Congratulations, your extension "auto-coder" is now active!');
+	outputChannel.appendLine('Congratulations, your extension "auto-coder" is now active!');
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
@@ -34,7 +39,7 @@ export function activate(context: vscode.ExtensionContext) {
 		} else {
 			terminal = terminals[0];
 		}
-				
+
 		terminal.show();
 
 		if (projectRoot) {
@@ -64,11 +69,11 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			return;
 		}
-        
+
 		const baseConfigFile = path.join(projectRoot, 'actions', 'base', 'base.yml');
 		let model, embModel;
-		
-		if (fs.existsSync(baseConfigFile)) {			
+
+		if (fs.existsSync(baseConfigFile)) {
 			const baseConfig = yaml.load(fs.readFileSync(baseConfigFile, 'utf8')) as Record<string, unknown>;
 			model = baseConfig?.planner_model as string || baseConfig?.model as string;
 			embModel = baseConfig?.emb_model as string;
@@ -82,7 +87,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (!requirement) {
 			return;
 		}
-        
+
 		if (!model) {
 			model = await vscode.window.showInputBox({
 				placeHolder: '请输入模型名',
@@ -95,7 +100,7 @@ export function activate(context: vscode.ExtensionContext) {
 				placeHolder: '请输入向量模型名',
 				prompt: '向量模型名'
 			});
-		}	
+		}
 
 		if (requirement && model && embModel) {
 			const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -168,55 +173,53 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		const panel = vscode.window.createWebviewPanel(
-      'createYamlForm',
-      'Create YAML File',
-      vscode.ViewColumn.One,
-      {
-        enableScripts: true,
-      }
-    );
+			'createYamlForm',
+			'Create YAML File',
+			vscode.ViewColumn.One
+		);
 
-    const htmlPath = path.join(context.extensionPath, 'src', 'panels', 'createYaml.html');
-    const cssPath = path.join(context.extensionPath, 'src', 'panels', 'createYaml.css');
-    const htmlContent = fs.readFileSync(htmlPath, 'utf8').replace('</head>', `<link rel="stylesheet" type="text/css" href="${cssPath}"></head>`);
+		panel.webview.html = getWebviewContent();
+		// Handle messages from the webview
+		const terminals = vscode.window.terminals;
+		let terminal;
 
-    panel.webview.html = htmlContent;
+		if (terminals.length === 0) {
+			terminal = vscode.window.createTerminal();
+		} else {
+			terminal = terminals[0];
+		}
 
-    // Handle messages from the webview
-    panel.webview.onDidReceiveMessage(
-      async message => {
-        switch (message.command) {
-          case 'createFile':
-            const terminals = vscode.window.terminals;
-            let terminal;
+		terminal.show();
+		if (projectRoot) {
+			terminal.sendText(`cd ${projectRoot}`);
+		}
 
-            if (terminals.length === 0) {
-              terminal = vscode.window.createTerminal();
-            } else {
-              terminal = terminals[0];
-            }
-
-            terminal.show();
-            if (projectRoot) {
-              terminal.sendText(`cd ${projectRoot}`);
-            }
-
-            if(message.prefix) {
-              terminal.sendText(`auto-coder next "${message.filename}" --from_yaml "${message.prefix}"`);  
-            } else {
-              terminal.sendText(`auto-coder next "${message.filename}"`);
-            }
-            
-            return;
-        }
-      },
-      undefined,
-      context.subscriptions
-    );
+		// if (message.prefix) {
+		// 	terminal.sendText(`auto-coder next "${message.filename}" --from_yaml "${message.prefix}"`);
+		// } else {
+		// 	terminal.sendText(`auto-coder next "${message.filename}"`);
+		// }
 	});
 
 	context.subscriptions.push(createYamlDisposable);
 }
+
+function getWebviewContent() {
+	const reactApp = ReactDOMServer.renderToString(React.createElement(CreateYAMLView));
+	return `
+	  <!DOCTYPE html>
+	  <html lang="en">
+	  <head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Create YAML</title>
+	  </head>
+	  <body>
+		<div id="root">${reactApp}</div>
+	  </body>
+	  </html>
+	`;
+  }
 
 
 export function deactivate() { }
