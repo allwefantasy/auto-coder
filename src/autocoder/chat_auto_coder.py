@@ -15,7 +15,7 @@ from autocoder.command_args import parse_args
 from autocoder.utils import get_last_yaml_file
 import os
 
-memory = {"conversation": [], "current_files": {"files": []}, "conf":{}}
+memory = {"conversation": [], "current_files": {"files": []}, "conf": {}}
 
 base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
 
@@ -25,9 +25,9 @@ commands = [
     "/add_files",
     "/remove_files",
     "/list_files",
-    "/conf"
+    "/conf",
     "/chat",
-    "/index/query",    
+    "/index/query",
     "/help",
     "/exit",
 ]
@@ -51,6 +51,7 @@ def find_files_in_project(file_names: List[str]) -> List[str]:
             if file in file_names:
                 matched_files.append(os.path.join(root, file))
     return matched_files
+
 
 def configure(conf: str):
     key, value = conf.split(":", 1)
@@ -135,7 +136,7 @@ def load_memory():
     if os.path.exists(memory_path):
         with open(memory_path, "r") as f:
             memory = json.load(f)
-    completer.update_current_files(memory["current_files"]["files"])        
+    completer.update_current_files(memory["current_files"]["files"])
 
 
 def add_files(file_names: List[str]):
@@ -164,16 +165,16 @@ def remove_files(file_names: List[str]):
 
 def chat(query: str):
     memory["conversation"].append({"role": "user", "content": query})
-    conf = memory["conf"]
+    conf = memory.get("conf", {})
 
     current_files = memory["current_files"]["files"]
     files_list = "\n".join([f"- {file}" for file in current_files])
-    
-    def prepare_chat_yaml():    
+
+    def prepare_chat_yaml():
         auto_coder_main(["next", "chat_action"])
 
-    prepare_chat_yaml()    
-    
+    prepare_chat_yaml()
+
     latest_yaml_file = get_last_yaml_file("actions")
 
     if latest_yaml_file:
@@ -181,7 +182,7 @@ def chat(query: str):
 include_file:
   - ./base/base.yml
 
-auto_merge: editblock 
+auto_merge: {conf.get("auto_merge", "editblock")} 
 human_as_model: {conf.get("human_as_model", "false")}
 skip_build_index: {conf.get("skip_build_index", "true")}
 skip_confirm: {conf.get("skip_confirm", "true")}
@@ -191,14 +192,15 @@ urls:
 
 query: |
   {query}
-"""     
-        execute_file = os.path.join("actions",latest_yaml_file)
+"""
+        execute_file = os.path.join("actions", latest_yaml_file)
         with open(os.path.join(execute_file), "w") as f:
             f.write(yaml_content)
 
         def execute_chat():
             auto_coder_main(["--file", execute_file])
-        execute_chat()    
+
+        execute_chat()
     else:
         print("Failed to create new YAML file.")
 
@@ -281,8 +283,11 @@ def main():
                 for file in memory["current_files"]["files"]:
                     print(file)
             elif user_input.startswith("/conf"):
-                conf = user_input[len("/conf"):].strip()
-                configure(conf)        
+                conf = user_input[len("/conf") :].strip()
+                if not conf:
+                    print(memory["conf"])
+                else:
+                    configure(conf)
             elif user_input.startswith("/help"):
                 show_help()
             elif user_input.startswith("/exit"):
@@ -306,7 +311,7 @@ def main():
             print("Exiting...")
             break
         except Exception as e:
-            pass
+            print(f"An error occurred: {e}")            
 
 
 if __name__ == "__main__":

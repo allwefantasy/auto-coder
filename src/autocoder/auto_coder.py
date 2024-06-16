@@ -157,7 +157,7 @@ def main(input_args: Optional[List[str]] = None):
         action_files = [
             f
             for f in os.listdir(actions_dir)
-            if f[:3].isdigit() and f.endswith(".yml") and f[:3] != "101"
+            if f[:3].isdigit() and f.endswith(".yml")
         ]
         if not action_files:
             max_seq = 0
