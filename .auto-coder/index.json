@@ -385,9 +385,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/webpack.config.js": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/webpack.config.js",
-    "symbols": "用途：主要用于配置VS Code扩展的Webpack设置。\n函数：\n变量：extensionConfig\n类：\n导入语句：const path = require('path')",
-    "last_modified": 1718276620.4843347,
-    "md5": "7f864090cdadef5f030a19fdd5be0c03"
+    "symbols": "用途：主要用于配置Webpack以构建VS Code扩展。\n函数：\n变量：extensionConfig\n类：\n导入语句：const path = require('path')^const webpack = require('webpack')",
+    "last_modified": 1718505466.5179503,
+    "md5": "f8f3ec4708f2675d0b2d5545eec81f8b"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts",
@@ -397,21 +397,21 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts",
-    "symbols": "用途：主要用于提供VS Code扩展功能，包括在终端运行命令、创建需求、初始化项目和创建YAML文件。\n函数：activate, deactivate\n变量：outputChannel\n类：\n导入语句：import * as vscode from 'vscode'^^*^import path = require('path')^^*^import fs = require('fs')^^*^import yaml = require('js-yaml')",
-    "last_modified": 1718378150.466815,
-    "md5": "c06c38119cd50060d99ea662ffacc2cd"
+    "symbols": "用途：主要用于提供VS Code扩展功能，包括在终端运行命令、创建需求、初始化项目和创建YAML文件。\n函数：activate, deactivate, getWebviewContent\n变量：\n类：\n导入语句：import * as vscode from 'vscode'^^*^import path = require('path')^^*^import fs = require('fs')^^*^import yaml = require('js-yaml')",
+    "last_modified": 1718510408.9398198,
+    "md5": "e59fe7d933ee38b9fd87e5b1b90f04d2"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json",
-    "symbols": "用途：主要用于配置TypeScript编译器选项。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718173684.8179436,
-    "md5": "f2caf1f078c1525d128ab0c124ecdfee"
+    "symbols": "用途：主要用于配置 TypeScript 编译器选项。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718505174.5365112,
+    "md5": "26cf8fefbdd3344b86ed88f0f0a05a4a"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json",
-    "symbols": "用途：描述VSCode插件的配置和依赖。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718378038.2576845,
-    "md5": "85917ae701b57d47e3b6a37d7ba12b30"
+    "symbols": "用途：用于配置Visual Studio Code插件的元数据和脚本。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718470274.844462,
+    "md5": "4dc5e1790a46436704e684bc05a6d8c5"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json",
@@ -436,5 +436,41 @@
     "symbols": "用途：主要用于获取和打开YAML文件的功能。\n函数：get_last_yaml_file, open_yaml_file_in_editor\n变量：\n类：\n导入语句：import os^^from typing import Optional^^import subprocess^^import shutil^^from loguru import logger",
     "last_modified": 1718270164.3788033,
     "md5": "3c31f6c2c5dc82225da1a4a8a8439c96"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tailwind.config.js": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tailwind.config.js",
+    "symbols": "用途：主要用于配置 Tailwind CSS 的样式和插件。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718467654.7901266,
+    "md5": "21076ff68c0e2eada98b42b48bcac3ef"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/C1.tsx": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/C1.tsx",
+    "symbols": "用途：主要用于定义React组件。\n函数：\n变量：\n类：MyComponent\n导入语句：import * as React from 'react'",
+    "last_modified": 1718467704.509671,
+    "md5": "fd1341ef140ec0fec5121e487fd2a602"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/create_yaml.tsx": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/create_yaml.tsx",
+    "symbols": "用途：主要用于创建一个React组件，展示\"Hello from React!\"的标题。\n函数：CreateYAMLView\n变量：\n类：\n导入语句：import * as React",
+    "last_modified": 1718502467.9806752,
+    "md5": "28498ffe5ab8debed748d7b8243d7020"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/postcss.config.js": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/postcss.config.js",
+    "symbols": "用途：主要用于配置PostCSS插件。\n函数：\n类：\n变量：\n导入语句：\n\n输出解释：\n- 该代码片段是一个JavaScript文件，用于配置PostCSS插件，没有定义函数、类或变量，也没有导入语句。因此，所有相关项均为空。",
+    "last_modified": 1718503843.44586,
+    "md5": "f67bf145648c2f34af959393ef540a37"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.tsx": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.tsx",
+    "symbols": "用途：主要用于在VSCode插件中渲染CreateYAMLView组件。\n函数：\n变量：\n类：\n导入语句：import * as React from 'react'^^*^import { createRoot } from 'react-dom/client'^^import './index.css'^^import { CreateYAMLView } from './create_yaml'",
+    "last_modified": 1718510298.5967722,
+    "md5": "e54f29b2626802a7211c0d6c412fa040"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json",
+    "symbols": "函数：\n变量：\n类：\n导入语句：\n用途：主要用于提供自动实现函数模板的功能。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于提供自动实现函数模板的功能。\n函数：\n变量：\n类：\n导入语句：\n用途：用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：用于管理项目依赖和锁定版本信息。\n函数：\n变量：\n类：\n导入语句：\n用途：用于管理项目的依赖关系和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n函数:\n变量:\n类:\n导入语句:\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于管理项目的依赖和版本信息。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718470275.1107929,
+    "md5": "9ee85af4e5958373b18d913c89f60979"
   }
 }

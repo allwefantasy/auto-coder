@@ -1,6 +1,6 @@
 auto_merge: editblock
 human_as_model: true
-project_type: .ts,.json,.js 
+project_type: .ts,.json,.js,.jsx,.tsx 
 include_file:
 - ./base.yml
 

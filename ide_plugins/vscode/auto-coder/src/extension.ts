@@ -5,11 +5,6 @@ import path = require('path');
 import fs = require('fs');
 import yaml = require('js-yaml');
 
-import * as ReactDOMServer from 'react-dom/server';
-import * as React from 'react';
-import './web/index.css'
-import { CreateYAMLView } from './web/create_yaml';
-
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
@@ -175,10 +170,14 @@ export function activate(context: vscode.ExtensionContext) {
 		const panel = vscode.window.createWebviewPanel(
 			'createYamlForm',
 			'Create YAML File',
-			vscode.ViewColumn.One
+			vscode.ViewColumn.One,{
+				enableScripts: true
+			}
 		);
 
-		panel.webview.html = getWebviewContent();
+		const scriptPathOnDisk = vscode.Uri.file(path.join(context.extensionPath, 'dist', 'web.js'));
+  		const scriptUri = panel.webview.asWebviewUri(scriptPathOnDisk);
+		panel.webview.html = getWebviewContent(scriptUri);
 		// Handle messages from the webview
 		const terminals = vscode.window.terminals;
 		let terminal;
@@ -204,18 +203,18 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(createYamlDisposable);
 }
 
-function getWebviewContent() {
-	const reactApp = ReactDOMServer.renderToString(React.createElement(CreateYAMLView));
+function getWebviewContent(scriptUri: vscode.Uri) {	
 	return `
 	  <!DOCTYPE html>
 	  <html lang="en">
 	  <head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Create YAML</title>
+		<title>Create YAML</title>		
 	  </head>
 	  <body>
-		<div id="root">${reactApp}</div>
+		<div id="root"></div>	
+		<script src="${scriptUri}"></script>			
 	  </body>
 	  </html>
 	`;
