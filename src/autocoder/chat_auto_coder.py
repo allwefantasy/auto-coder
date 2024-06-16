@@ -118,7 +118,13 @@ def load_memory():
 
 def add_files(file_names: List[str]):
     new_files = find_files_in_project(file_names)
-    memory["current_files"]["files"].extend(new_files)
+    existing_files = memory["current_files"]["files"]
+    files_to_add = [f for f in new_files if f not in existing_files]
+    if files_to_add:
+        memory["current_files"]["files"].extend(files_to_add)
+        print(f"Added files: {[os.path.basename(f) for f in files_to_add]}")  
+    else:
+        print("All specified files are already in the current session.")
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
 
