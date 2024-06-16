@@ -39,7 +39,9 @@ def load_memory():
 def find_files_in_project(file_names: List[str]) -> List[str]:
     project_root = os.getcwd()
     matched_files = []
+    exclude_dirs = ['.git', 'node_modules', 'dist']
     for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in exclude_dirs]
         for file in files:
             if file in file_names:
                 matched_files.append(os.path.join(root, file))
