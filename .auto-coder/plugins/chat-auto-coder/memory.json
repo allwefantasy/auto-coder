@@ -3,6 +3,10 @@
     {
       "role": "user",
       "content": ""
+    },
+    {
+      "role": "user",
+      "content": "query strip()后为空 则提示用户输入需求"
     }
   ],
   "current_files": {

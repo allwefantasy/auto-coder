@@ -11,4 +11,4 @@ urls:
 - /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
 
 query: |
-  query strip()后为空 则提示用户输入需求
+  添加 /list_files 指令 罗列出当前文件
