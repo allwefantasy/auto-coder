@@ -156,6 +156,8 @@ def main():
         except KeyboardInterrupt:
             print("Exiting...")
             break
+        except Exception as e:
+            pass
 
 if __name__ == "__main__":
     main()

@@ -11,4 +11,4 @@ urls:
 - /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
 
 query: |
-  添加 /list_files 指令 罗列出当前文件
+  对当前所有指令提供自动补全
