@@ -14,6 +14,7 @@ from autocoder.common import AutoCoderArgs
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.command_args import parse_args
 from autocoder.utils import get_last_yaml_file
+import os
 
 memory = {
     "conversation": [],
@@ -22,14 +23,17 @@ memory = {
     }
 }
 
+base_persist_dir = os.path.join(".auto-coder","plugins","chat-auto-coder")
+
 def save_memory():
-    with open(".auto-coder/plugins/chat-auto-coder/memory.json", "w") as f:
+    with open(os.path.join(base_persist_dir,"memory.json"), "w") as f:
         json.dump(memory, f, indent=2)
 
 def load_memory():
     global memory
-    if os.path.exists(".auto-coder/plugins/chat-auto-coder/memory.json"):
-        with open(".auto-coder/plugins/chat-auto-coder/memory.json", "r") as f:
+    memory_path = os.path.join(base_persist_dir,"memory.json")
+    if os.path.exists(memory_path):
+        with open(memory_path, "r") as f:
             memory = json.load(f)
 
 def find_files_in_project(file_names: List[str]) -> List[str]:
@@ -71,7 +75,7 @@ include_file:
   - ./base/base.yml
 
 auto_merge: editblock 
-human_as_model: false
+human_as_model: true
 skip_build_index: true
 
 urls:

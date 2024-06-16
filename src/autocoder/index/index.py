@@ -427,15 +427,14 @@ def build_index_and_filter_files(
 
     final_files: Dict[str, TargetFile] = {}
 
-    if not args.skip_build_index and llm:
+    ## keep Rest/RAG/Search sources
+    for source in sources:
+        if source.tag in ["REST", "RAG", "SEARCH"]:
+            final_files[get_file_path(source.module_name)] = TargetFile(
+                file_path=source.module_name, reason="Rest/Rag/Search"
+            )
 
-        ## keep Rest/RAG/Search sources
-        for source in sources:
-            if source.tag in ["REST", "RAG", "SEARCH"]:
-                final_files[get_file_path(source.module_name)] = TargetFile(
-                    file_path=source.module_name, reason="Rest/Rag/Search"
-                )
-
+    if not args.skip_build_index and llm:     
         logger.info("Building index for all files...")
         index_manager = IndexManager(llm=llm, sources=sources, args=args)
         index_manager.build_index()
@@ -472,13 +471,8 @@ def build_index_and_filter_files(
                     reason="No related files found, use all files",
                 )
 
-        logger.info(f"Find related files took {time.monotonic() - start_time:.2f}s")
-    else:
-        for source in sources:
-            final_files[get_file_path(source.module_name)] = TargetFile(
-                file_path=source.module_name,
-                reason="Index is not enabled or the model is not available. Use all files.",
-            )
+        logger.info(f"Find related files took {time.monotonic() - start_time:.2f}s")    
+
 
     def display_table_and_get_selections(data):
         from prompt_toolkit.shortcuts import checkboxlist_dialog

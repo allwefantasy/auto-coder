@@ -3,11 +3,11 @@ include_file:
   - ./base/base.yml
 
 auto_merge: editblock 
-human_as_model: false
+human_as_model: true
 skip_build_index: true
 
 urls:
-- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+
 
 query: |
-  memory.json 文件要放在 .auto-coder/plugins/chat-auto-coder 目录下
+  find_files_in_project 排除掉 .git node_modules dist  目录
