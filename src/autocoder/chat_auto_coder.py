@@ -34,12 +34,34 @@ commands = [
 class CommandCompleter(Completer):
     def __init__(self, commands):
         self.commands = commands
+        self.all_file_names = get_all_file_names_in_project()
+        self.current_file_names = []
 
-    def get_completions(self, document, complete_event):        
+    def get_completions(self, document, complete_event):
         text = document.text_before_cursor
-        for command in self.commands:
-            if command.startswith(text):
-                yield Completion(command, start_position=-len(text))
+        words = text.split()
+
+        if len(words) > 0:
+            if words[0] == "/add_files":
+                for file_name in self.all_file_names:
+                    if file_name.startswith(words[-1]):
+                        yield Completion(file_name, start_position=-len(words[-1]))
+            elif words[0] == "/remove_files":
+                for file_name in self.current_file_names:
+                    if file_name.startswith(words[-1]):
+                        yield Completion(file_name, start_position=-len(words[-1]))
+            else:
+                for command in self.commands:
+                    if command.startswith(text):
+                        yield Completion(command, start_position=-len(text))
+
+        else:
+            for command in self.commands:
+                if command.startswith(text):
+                    yield Completion(command, start_position=-len(text))
+
+    def update_current_files(self, files):
+        self.current_file_names = [os.path.basename(f) for f in files]
 
 
 completer = CommandCompleter(commands)
@@ -58,6 +80,15 @@ def load_memory():
             memory = json.load(f)
 
 
+def get_all_file_names_in_project() -> List[str]:
+    project_root = os.getcwd()
+    file_names = []
+    exclude_dirs = [".git", "node_modules", "dist"]
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+        file_names.extend(files)
+    return file_names
+
 def find_files_in_project(file_names: List[str]) -> List[str]:
     project_root = os.getcwd()
     matched_files = []
@@ -73,6 +104,7 @@ def find_files_in_project(file_names: List[str]) -> List[str]:
 def add_files(file_names: List[str]):
     new_files = find_files_in_project(file_names)
     memory["current_files"]["files"].extend(new_files)
+    completer.update_current_files(memory["current_files"]["files"])
     save_memory()
 
 
@@ -83,6 +115,7 @@ def remove_files(file_names: List[str]):
             removed_files.append(file)
     for file in removed_files:
         memory["current_files"]["files"].remove(file)
+    completer.update_current_files(memory["current_files"]["files"])
     save_memory()
 
 
