@@ -105,7 +105,7 @@ def main():
 
     load_memory()
 
-    commands = WordCompleter(["/add_files", "/remove_files", "/chat", "/index/query", "/list_files"])
+    commands = WordCompleter(["/add_files", "/remove_files", "/chat", "/index/query", "/list_files", "/help", "/exit"])
 
     session = PromptSession(history=InMemoryHistory(),
                             auto_suggest=AutoSuggestFromHistory(),
@@ -146,12 +146,25 @@ def main():
                 print("Current files:")
                 for file in memory["current_files"]["files"]:
                     print(file)
-            else:
-                query = user_input.lstrip("/chat").strip()
+            elif user_input.startswith("/help"):
+                print("Supported commands:")
+                print("/add_files <file1> <file2> ... - Add files to the current session")
+                print("/remove_files <file1> <file2> ... - Remove files from the current session")  
+                print("/chat <query> - Chat with the AI about the current files")
+                print("/index/query <args> - Query the project index")
+                print("/list_files - List all files in the current session")
+                print("/help - Show this help message")
+                print("/exit - Exit the program")
+            elif user_input.startswith("/exit"):
+                raise KeyboardInterrupt
+            elif user_input.startswith("/chat"):
+                query = user_input[len("/chat"):].strip()
                 if not query:
                     print("Please enter your request.")
                 else:
                     chat(query)
+            else:
+                print(f"Unknown command: {user_input}. Type /help for available commands.")
 
         except KeyboardInterrupt:
             print("Exiting...")
