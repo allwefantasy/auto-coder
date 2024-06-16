@@ -11,4 +11,4 @@ urls:
 - /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
 
 query: |
-  第一次进入命令行后 自动显示/help 命令
+  格式化打印欢迎语 让他更加漂亮
