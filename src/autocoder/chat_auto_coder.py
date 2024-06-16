@@ -207,16 +207,20 @@ query: |
     save_memory()
 
 
+import tempfile
+
 def index_query(query: str):
-    yaml_content = f"""
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
+        yaml_content = f"""
 include_file:
   - ./base/base.yml
 query: |
   {query}
 """
-    yaml_file = ""
-    auto_coder_main(["index-query", "--file",yaml_file] )
-
+        temp_file.write(yaml_content)
+        temp_file.flush()
+        yaml_file = temp_file.name
+        auto_coder_main(["index-query", "--file", yaml_file])
 
 def main():
     if not os.path.exists(".auto-coder"):
