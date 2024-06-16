@@ -67,10 +67,10 @@ def show_help():
     print()
     print("  \033[94mCommands\033[0m - \033[93mDescription\033[0m")
     print(
-        "  \033[94m/add_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92mAdd files to the current session\033[0m"
+        "  \033[94m/add_files\033[0m \033[93m<file1>,<file2> ...\033[0m - \033[92mAdd files to the current session\033[0m"
     )
     print(
-        "  \033[94m/remove_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92mRemove files from the current session\033[0m"
+        "  \033[94m/remove_files\033[0m \033[93m<file1>,<file2> ...\033[0m - \033[92mRemove files from the current session\033[0m"
     )
     print(
         "  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current files\033[0m"
@@ -210,6 +210,7 @@ query: |
 import uuid
 import os
 
+
 def index_query(query: str):
     yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
     yaml_content = f"""
@@ -220,9 +221,11 @@ query: |
 """
     with open(yaml_file, "w") as f:
         f.write(yaml_content)
+    try:
+        auto_coder_main(["index-query", "--file", yaml_file])
+    finally:
+        os.remove(yaml_file)
 
-    auto_coder_main(["index-query", "--file", yaml_file])
-    os.remove(yaml_file)
 
 def main():
     if not os.path.exists(".auto-coder"):
@@ -324,7 +327,7 @@ def main():
             print("Exiting...")
             break
         except Exception as e:
-            print(f"An error occurred: {e}")            
+            print(f"An error occurred: {e}")
 
 
 if __name__ == "__main__":

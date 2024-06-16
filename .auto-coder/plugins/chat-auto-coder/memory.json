@@ -51,6 +51,10 @@
     {
       "role": "user",
       "content": "修改index_query, yaml_file 为一临时文件,然后yaml_content写入到该临时文件"
+    },
+    {
+      "role": "user",
+      "content": "index_query里面不使用临时文件,而是在actions目录使用uuid作为文件名构建一个文件,使用完后删除"
     }
   ],
   "current_files": {
