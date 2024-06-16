@@ -279,15 +279,15 @@ def main():
             user_input = session.prompt(FormattedText(prompt_message))
 
             if user_input.startswith("/add_files"):
-                file_names = user_input.split(" ")[1:]
+                file_names = user_input.split(",")[1:]
                 add_files(file_names)
                 print(f"Added files: {file_names}")
             elif user_input.startswith("/remove_files"):
-                file_names = user_input.split(" ")[1:]
+                file_names = user_input.split(",")[1:]
                 remove_files(file_names)
                 print(f"Removed files: {file_names}")
             elif user_input.startswith("/index/query"):
-                args = user_input.split(" ")[1:]
+                args = conf = user_input[len("/index/query") :].strip()
                 index_query(args)
             elif user_input.startswith("/list_files"):
                 print("Current files:")

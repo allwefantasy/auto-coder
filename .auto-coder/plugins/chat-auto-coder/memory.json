@@ -47,6 +47,10 @@
     {
       "role": "user",
       "content": "欢迎词要重新生成, 内容为: chat-auto-coder"
+    },
+    {
+      "role": "user",
+      "content": "修改index_query, yaml_file 为一临时文件,然后yaml_content写入到该临时文件"
     }
   ],
   "current_files": {
