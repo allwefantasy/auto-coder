@@ -222,7 +222,14 @@ query: |
     with open(yaml_file, "w") as f:
         f.write(yaml_content)
     try:
-        auto_coder_main(["index-query", "--file", yaml_file])
+        import io
+        from contextlib import redirect_stdout
+        f = io.StringIO()
+        with redirect_stdout(f):
+            auto_coder_main(["index-query", "--file", yaml_file])
+        output = f.getvalue()        
+        print(output)
+        
     finally:
         os.remove(yaml_file)
 
