@@ -207,8 +207,15 @@ query: |
     save_memory()
 
 
-def index_query(args: List[str]):
-    auto_coder_main(["index", "query"] + args)
+def index_query(query: str):
+    yaml_content = f"""
+include_file:
+  - ./base/base.yml
+query: |
+  {query}
+"""
+    yaml_file = ""
+    auto_coder_main(["index-query", "--file",yaml_file] )
 
 
 def main():

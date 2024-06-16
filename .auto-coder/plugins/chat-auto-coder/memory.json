@@ -43,6 +43,10 @@
     {
       "role": "user",
       "content": "添加一个 /conf 命令,使用方式为  /conf auto_merge: editblock  然后保存到 memory 字段里去"
+    },
+    {
+      "role": "user",
+      "content": "欢迎词要重新生成, 内容为: chat-auto-coder"
     }
   ],
   "current_files": {
@@ -50,5 +54,7 @@
       "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py"
     ]
   },
-  "conf": {}
+  "conf": {
+    "human_as_model": "true"
+  }
 }
