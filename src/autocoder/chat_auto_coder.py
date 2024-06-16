@@ -23,13 +23,13 @@ memory = {
 }
 
 def save_memory():
-    with open("memory.json", "w") as f:
+    with open(".auto-coder/plugins/chat-auto-coder/memory.json", "w") as f:
         json.dump(memory, f, indent=2)
 
 def load_memory():
     global memory
-    if os.path.exists("memory.json"):
-        with open("memory.json", "r") as f:
+    if os.path.exists(".auto-coder/plugins/chat-auto-coder/memory.json"):
+        with open(".auto-coder/plugins/chat-auto-coder/memory.json", "r") as f:
             memory = json.load(f)
 
 def find_files_in_project(file_names: List[str]) -> List[str]:
