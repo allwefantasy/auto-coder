@@ -9,6 +9,7 @@ skip_confirm: true
 
 urls:
 - /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
 
 query: |
-  添加文件需要检测文件是不是已经存在
+  chat 里面需要通过调用 auto-coder next 创建一个新的yaml文件,然后通过get_last_yaml_file 获取这个最新创建的文件,之后再写入和执行.不要删除

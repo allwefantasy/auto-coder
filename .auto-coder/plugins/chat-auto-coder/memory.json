@@ -31,11 +31,16 @@
     {
       "role": "user",
       "content": "美化下 help() 命令输出"
+    },
+    {
+      "role": "user",
+      "content": "添加文件需要检测文件是不是已经存在"
     }
   ],
   "current_files": {
     "files": [
-      "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py"
+      "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py",
+      "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py"
     ]
   }
 }

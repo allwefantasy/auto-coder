@@ -19,6 +19,8 @@ memory = {"conversation": [], "current_files": {"files": []}}
 
 base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
 
+exclude_dirs = [".git", "node_modules", "dist", "build"]
+
 commands = [
     "/add_files",
     "/remove_files",
@@ -29,19 +31,19 @@ commands = [
     "/exit",
 ]
 
+
 def get_all_file_names_in_project() -> List[str]:
     project_root = os.getcwd()
     file_names = []
-    exclude_dirs = [".git", "node_modules", "dist","build"]
     for root, dirs, files in os.walk(project_root):
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
         file_names.extend(files)
     return file_names
 
+
 def find_files_in_project(file_names: List[str]) -> List[str]:
     project_root = os.getcwd()
     matched_files = []
-    exclude_dirs = [".git", "node_modules", "dist"]
     for root, dirs, files in os.walk(project_root):
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
         for file in files:
@@ -49,20 +51,33 @@ def find_files_in_project(file_names: List[str]) -> List[str]:
                 matched_files.append(os.path.join(root, file))
     return matched_files
 
+
 def show_help():
     print("\033[1mSupported commands:\033[0m")
     print()
     print("  \033[94mCommands\033[0m - \033[93mDescription\033[0m")
-    print("  \033[94m/add_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92mAdd files to the current session\033[0m")
-    print("  \033[94m/remove_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92mRemove files from the current session\033[0m")
-    print("  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current files\033[0m")
-    print("  \033[94m/index/query\033[0m \033[93m<args>\033[0m - \033[92mQuery the project index\033[0m")
-    print("  \033[94m/list_files\033[0m - \033[92mList all files in the current session\033[0m")
+    print(
+        "  \033[94m/add_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92mAdd files to the current session\033[0m"
+    )
+    print(
+        "  \033[94m/remove_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92mRemove files from the current session\033[0m"
+    )
+    print(
+        "  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current files\033[0m"
+    )
+    print(
+        "  \033[94m/index/query\033[0m \033[93m<args>\033[0m - \033[92mQuery the project index\033[0m"
+    )
+    print(
+        "  \033[94m/list_files\033[0m - \033[92mList all files in the current session\033[0m"
+    )
     print("  \033[94m/help\033[0m - \033[92mShow this help message\033[0m")
     print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
     print()
 
+
 # word_completer = WordCompleter(commands)
+
 
 class CommandCompleter(Completer):
     def __init__(self, commands):
@@ -113,16 +128,13 @@ def load_memory():
             memory = json.load(f)
 
 
-
-
-
 def add_files(file_names: List[str]):
     new_files = find_files_in_project(file_names)
     existing_files = memory["current_files"]["files"]
     files_to_add = [f for f in new_files if f not in existing_files]
     if files_to_add:
         memory["current_files"]["files"].extend(files_to_add)
-        print(f"Added files: {[os.path.basename(f) for f in files_to_add]}")  
+        print(f"Added files: {[os.path.basename(f) for f in files_to_add]}")
     else:
         print("All specified files are already in the current session.")
     completer.update_current_files(memory["current_files"]["files"])
@@ -207,14 +219,16 @@ def main():
         key_bindings=kb,
     )
 
-    print("""
+    print(
+        """
 \033[1;32m__        __   _                            _          ____ _           _             _         _____           _           _ 
 \ \      / /__| | ___ ___  _ __ ___   ___  | |_ ___   / ___| |__   __ _| |_       /\ | |_ ___  |_   _|__   ___ | |__   __ _| |_
  \ \ /\ / / _ \ |/ __/ _ \| '_ ` _ \ / _ \ | __/ _ \ | |   | '_ \ / _` | __|____ /  \| __/ _ \   | |/ _ \ / _ \| '_ \ / _` | __|
   \ V  V /  __/ | (_| (_) | | | | | |  __/ | || (_) || |   | | | | (_| | ||_____/ /\ \ || (_) |  | | (_) | (_) | | | | (_| | |_ 
    \_/\_/ \___|_|\___\___/|_| |_| |_|\___|  \__\___/  \____|_| |_|\__,_|\__|    \/  \/\__\___/   |_|\___/ \___/|_| |_|\__,_|\__|
                                                                                                                                
-\033[0m""")
+\033[0m"""
+    )
     print("\033[1;34mType /help to see available commands.\033[0m\n")
     show_help()
 
@@ -248,10 +262,12 @@ def main():
             elif user_input.startswith("/help"):
                 show_help()
             elif user_input.startswith("/exit"):
-                raise KeyboardInterrupt            
+                raise KeyboardInterrupt
             else:
                 if user_input.startswith("/") and not user_input.startswith("/chat"):
-                    print("Invalid command. Please type /help to see the list of supported commands.")
+                    print(
+                        "Invalid command. Please type /help to see the list of supported commands."
+                    )
                     continue
                 if not user_input.startswith("/chat"):
                     query = user_input.strip()
@@ -260,7 +276,7 @@ def main():
                 if not query:
                     print("Please enter your request.")
                 else:
-                    chat(query)            
+                    chat(query)
 
         except KeyboardInterrupt:
             print("Exiting...")
