@@ -8,7 +8,7 @@ def get_last_yaml_file(actions_dir:str)->Optional[str]:
     action_files = [
         f
         for f in os.listdir(actions_dir)
-        if f[:3].isdigit() and f.endswith(".yml") and f[:3] != "101"
+        if f[:3].isdigit() and f.endswith(".yml")
     ]
     if not action_files:
         max_seq = 0
@@ -22,7 +22,7 @@ def get_last_yaml_file(actions_dir:str)->Optional[str]:
     if not prev_files:
         return None
     else:
-        prev_file = sorted(prev_files)[-1]  # 取序号最大的文件
+        prev_file = sorted(prev_files)[-1]  # 取序号最大的文件        
         return prev_file
 
 def open_yaml_file_in_editor(new_file:str):
