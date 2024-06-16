@@ -15,6 +15,10 @@
     {
       "role": "user",
       "content": "对当前所有指令提供自动补全"
+    },
+    {
+      "role": "user",
+      "content": "当用户add_files 的时候,需要获取所有文件名然后自动补全 当用户remove_files 的时候,则需要从 files_list 拿到文件名进行补全"
     }
   ],
   "current_files": {

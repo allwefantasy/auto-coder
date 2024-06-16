@@ -29,6 +29,36 @@ commands = [
     "/exit",
 ]
 
+def get_all_file_names_in_project() -> List[str]:
+    project_root = os.getcwd()
+    file_names = []
+    exclude_dirs = [".git", "node_modules", "dist"]
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+        file_names.extend(files)
+    return file_names
+
+def find_files_in_project(file_names: List[str]) -> List[str]:
+    project_root = os.getcwd()
+    matched_files = []
+    exclude_dirs = [".git", "node_modules", "dist"]
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+        for file in files:
+            if file in file_names:
+                matched_files.append(os.path.join(root, file))
+    return matched_files
+
+def show_help():
+    print("Supported commands:")
+    print("/add_files <file1> <file2> ... - Add files to the current session")
+    print("/remove_files <file1> <file2> ... - Remove files from the current session")
+    print("/chat <query> - Chat with the AI about the current files")
+    print("/index/query <args> - Query the project index") 
+    print("/list_files - List all files in the current session")
+    print("/help - Show this help message")
+    print("/exit - Exit the program")
+
 # word_completer = WordCompleter(commands)
 
 class CommandCompleter(Completer):
@@ -80,25 +110,7 @@ def load_memory():
             memory = json.load(f)
 
 
-def get_all_file_names_in_project() -> List[str]:
-    project_root = os.getcwd()
-    file_names = []
-    exclude_dirs = [".git", "node_modules", "dist"]
-    for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not in exclude_dirs]
-        file_names.extend(files)
-    return file_names
 
-def find_files_in_project(file_names: List[str]) -> List[str]:
-    project_root = os.getcwd()
-    matched_files = []
-    exclude_dirs = [".git", "node_modules", "dist"]
-    for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not in exclude_dirs]
-        for file in files:
-            if file in file_names:
-                matched_files.append(os.path.join(root, file))
-    return matched_files
 
 
 def add_files(file_names: List[str]):
@@ -186,6 +198,10 @@ def main():
         key_bindings=kb,
     )
 
+    print("Welcome to Chat-Auto-Coder!")
+    print("Type /help to see available commands.\n")
+    show_help()
+
     while True:
         try:
             prompt_message = [
@@ -214,18 +230,7 @@ def main():
                 for file in memory["current_files"]["files"]:
                     print(file)
             elif user_input.startswith("/help"):
-                print("Supported commands:")
-                print(
-                    "/add_files <file1> <file2> ... - Add files to the current session"
-                )
-                print(
-                    "/remove_files <file1> <file2> ... - Remove files from the current session"
-                )
-                print("/chat <query> - Chat with the AI about the current files")
-                print("/index/query <args> - Query the project index")
-                print("/list_files - List all files in the current session")
-                print("/help - Show this help message")
-                print("/exit - Exit the program")
+                show_help()
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt            
             else:

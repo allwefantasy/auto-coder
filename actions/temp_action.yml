@@ -11,4 +11,4 @@ urls:
 - /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
 
 query: |
-  当用户add_files 的时候,需要获取所有文件名然后自动补全 当用户remove_files 的时候,则需要从 files_list 拿到文件名进行补全
+  第一次进入命令行后 自动显示/help 命令
