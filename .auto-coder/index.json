@@ -386,8 +386,8 @@
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/webpack.config.js": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/webpack.config.js",
     "symbols": "用途：主要用于配置Webpack以构建VS Code扩展。\n函数：\n变量：extensionConfig\n类：\n导入语句：const path = require('path')^const webpack = require('webpack')",
-    "last_modified": 1718505466.5179503,
-    "md5": "f8f3ec4708f2675d0b2d5545eec81f8b"
+    "last_modified": 1718510808.588958,
+    "md5": "20a3d0bcfdbd41debdd03dbcfca7e676"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts",
@@ -397,9 +397,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts",
-    "symbols": "用途：主要用于提供VS Code扩展功能，包括在终端运行命令、创建需求、初始化项目和创建YAML文件。\n函数：activate, deactivate, getWebviewContent\n变量：\n类：\n导入语句：import * as vscode from 'vscode'^^*^import path = require('path')^^*^import fs = require('fs')^^*^import yaml = require('js-yaml')",
-    "last_modified": 1718510408.9398198,
-    "md5": "e59fe7d933ee38b9fd87e5b1b90f04d2"
+    "symbols": "用途：主要用于提供VS Code扩展，实现自动编码功能。\n函数：activate, deactivate\n变量：outputChannel, disposable, createRequirementDisposable, initProjectDisposable, createYamlDisposable\n类：\n导入语句：import * as vscode from 'vscode'^^*path = require('path')^^*fs = require('fs')^^*yaml = require('js-yaml')",
+    "last_modified": 1718516028.479128,
+    "md5": "564e8957eff64c4be6087981e4b99f0a"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json",
@@ -409,9 +409,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json",
-    "symbols": "用途：用于配置Visual Studio Code插件的元数据和脚本。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718470274.844462,
-    "md5": "4dc5e1790a46436704e684bc05a6d8c5"
+    "symbols": "用途：主要用于配置VSCode插件“auto-coder-copilot”的元数据和依赖。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718510972.1894019,
+    "md5": "0ff04705a8b26c9c3975d7421b553fbd"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json",
@@ -451,9 +451,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/create_yaml.tsx": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/create_yaml.tsx",
-    "symbols": "用途：主要用于创建一个React组件，展示\"Hello from React!\"的标题。\n函数：CreateYAMLView\n变量：\n类：\n导入语句：import * as React",
-    "last_modified": 1718502467.9806752,
-    "md5": "28498ffe5ab8debed748d7b8243d7020"
+    "symbols": "用途：主要用于创建YAML文件的React组件。\n函数：handleSubmit\n变量：fileName, prefix\n类：\n导入语句：import * as React from 'react'^^* from 'react'\n\n解释：\n- 函数：handleSubmit 是一个定义在 CreateYAMLView 组件中的函数。\n- 变量：fileName 和 prefix 是在 CreateYAMLView 组件中定义的状态变量。\n- 类：没有定义类。\n- 导入语句：从 'react' 导入 * 和 useState。",
+    "last_modified": 1718515742.6639986,
+    "md5": "2bbb84e81c1886c5f98e4be03c68fbd5"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/postcss.config.js": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/postcss.config.js",
@@ -463,9 +463,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.tsx": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.tsx",
-    "symbols": "用途：主要用于在VSCode插件中渲染CreateYAMLView组件。\n函数：\n变量：\n类：\n导入语句：import * as React from 'react'^^*^import { createRoot } from 'react-dom/client'^^import './index.css'^^import { CreateYAMLView } from './create_yaml'",
-    "last_modified": 1718510298.5967722,
-    "md5": "e54f29b2626802a7211c0d6c412fa040"
+    "symbols": "用途：主要用于在VSCode插件中渲染YAML视图，并根据VSCode主题调整样式。\n函数：\n变量：colorTheme, vscode, isDarkMode\n类：\n导入语句：import * as React from 'react'^^*^import { createRoot } from 'react-dom/client'^^import './index.css'^^import { CreateYAMLView } from './create_yaml'",
+    "last_modified": 1718515708.0158677,
+    "md5": "024eb6423d532b4df6915a4ef2450cd4"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json",

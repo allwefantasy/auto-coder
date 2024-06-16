@@ -181,8 +181,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const colorTheme = vscode.window.activeColorTheme;
 		panel.webview.html = getWebviewContent(scriptUri, colorTheme);
 	
-		
-		// Handle messages from the webview
+			
 		const terminals = vscode.window.terminals;
 		let terminal;
 
