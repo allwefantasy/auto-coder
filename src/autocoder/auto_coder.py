@@ -68,8 +68,8 @@ def load_include_files(config, base_path, max_depth=10, current_depth=0):
     return config
 
 
-def main():
-    args, raw_args = parse_args()
+def main(input_args: Optional[List[str]] = None):
+    args, raw_args = parse_args(input_args)
     args: AutoCoderArgs = args
 
     if args.file:

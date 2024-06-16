@@ -1,0 +1,13 @@
+
+include_file:
+  - ./base/base.yml
+
+auto_merge: editblock 
+human_as_model: false
+skip_build_index: true
+
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+
+query: |
+  memory.json 文件要放在 .auto-coder/plugins/chat-auto-coder 目录下

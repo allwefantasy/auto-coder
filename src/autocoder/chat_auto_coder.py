@@ -72,6 +72,7 @@ include_file:
 
 auto_merge: editblock 
 human_as_model: false
+skip_build_index: true
 
 urls:
 {files_list}
@@ -80,18 +81,17 @@ query: |
   {query}
 """
     # latest_yaml_file = get_last_yaml_file("actions")
-    with open("temp_action.yml", "w") as f:
+    with open("./actions/temp_action.yml", "w") as f:
         f.write(yaml_content)
+    
+    auto_coder_main(["--file", "./actions/temp_action.yml"])
 
-    args = parse_args(["--file", "temp_action.yml"])
-    auto_coder_main(args)
-
-    os.remove("temp_action.yml")
+    os.remove("./actions/temp_action.yml")
     
     save_memory()
 
 def index_query(args: List[str]):
-    auto_coder_main(parse_args(["index", "query"] + args))
+    auto_coder_main(["index", "query"] + args)
 
 def main():           
     load_memory()

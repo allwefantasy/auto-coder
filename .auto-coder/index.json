@@ -85,9 +85,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
-    "symbols": "用途：主要用于自动化代码编写和项目管理，包括代码生成、项目初始化、文档构建等功能。\n函数：resolve_include_path, load_include_files, main\n变量：args, raw_args, config, include_files, include_config, store, tc, llm, vl_model, sd_model, index_model, emb_model, code_model, planner_model\n类：AutoCoderArgs, Dispacher, SimpleRAG, LLWrapper, Store, ServerArgs, Planner, Anything2Images, HttpDoc\n导入语句：import byzerllm^^from typing import List, Dict, Any, Optional^^from autocoder.common import AutoCoderArgs^^from autocoder.dispacher import Dispacher^^from autocoder.common import git_utils, code_auto_execute^^from autocoder.rag.simple_rag import SimpleRAG^^from autocoder.rag.llm_wrapper import LLWrapper^^from autocoder.utils.llm_client_interceptors import token_counter_interceptor^^from autocoder.db.store import Store^^import yaml^^import os^^from byzerllm.utils.client import EventCallbackResult, EventName^^from prompt_toolkit import prompt^^from prompt_toolkit.formatted_text import FormattedText^^from jinja2 import Template^^import hashlib^^from autocoder.utils.rest import HttpDoc^^from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib^^from autocoder.command_args import parse_args^^from autocoder.rag.api_server import serve, ServerArgs^^from autocoder.utils import open_yaml_file_in_editor, get_last_yaml_file^^from loguru import logger",
-    "last_modified": 1718377115.4958453,
-    "md5": "131dbb92d0edb47ebe44d05e8809b086"
+    "symbols": "用途：主要用于自动化代码编写和管理，包括代码生成、版本控制、文档构建等功能。\n函数：resolve_include_path, load_include_files, main\n变量：\n类：AutoCoderArgs, Dispacher, SimpleRAG, LLWrapper, Store\n导入语句：import byzerllm^^from typing import List, Dict, Any, Optional^^from autocoder.common import AutoCoderArgs^^from autocoder.dispacher import Dispacher^^from autocoder.common import git_utils, code_auto_execute^^from autocoder.rag.simple_rag import SimpleRAG^^from autocoder.rag.llm_wrapper import LLWrapper^^from autocoder.utils.llm_client_interceptors import token_counter_interceptor^^from autocoder.db.store import Store^^import yaml^^import os^^from byzerllm.utils.client import EventCallbackResult, EventName^^from prompt_toolkit import prompt^^from prompt_toolkit.formatted_text import FormattedText^^from jinja2 import Template^^import hashlib^^from autocoder.utils.rest import HttpDoc^^from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib^^from autocoder.command_args import parse_args^^from autocoder.rag.api_server import serve, ServerArgs^^from autocoder.utils import open_yaml_file_in_editor, get_last_yaml_file^^from loguru import logger",
+    "last_modified": 1718543417.5131845,
+    "md5": "d485f943c7eee04229226ba629b8b03d"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py",
@@ -475,8 +475,8 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py",
-    "symbols": "用途：主要用于实现一个自动代码编写助手的聊天功能。\n函数：save_memory, load_memory, find_files_in_project, add_files, remove_files, chat, index_query, main\n变量：memory\n类：\n导入语句：import argparse^^import os^^import yaml^^import json^^from typing import List, Dict, Any^^from prompt_toolkit import PromptSession^^from prompt_toolkit.history import InMemoryHistory^^from prompt_toolkit.auto_suggest import AutoSuggestFromHistory^^from prompt_toolkit.formatted_text import FormattedText^^from prompt_toolkit.key_binding import KeyBindings^^from prompt_toolkit.completion import WordCompleter^^from autocoder.common import AutoCoderArgs^^from autocoder.auto_coder import main as auto_coder_main^^from autocoder.command_args import parse_args^^from autocoder.utils import get_last_yaml_file",
-    "last_modified": 1718542640.753259,
-    "md5": "0fbc2fb976c3bbc86ceb4987b06f7a27"
+    "symbols": "用途：主要用于实现自动代码编写器的聊天功能，包括文件管理、查询处理等。\n函数：save_memory, load_memory, find_files_in_project, add_files, remove_files, chat, index_query, main\n变量：memory\n类：\n导入语句：import argparse^^import os^^import yaml^^import json^^from typing import List, Dict, Any^^from prompt_toolkit import PromptSession^^from prompt_toolkit.history import InMemoryHistory^^from prompt_toolkit.auto_suggest import AutoSuggestFromHistory^^from prompt_toolkit.formatted_text import FormattedText^^from prompt_toolkit.key_binding import KeyBindings^^from prompt_toolkit.completion import WordCompleter^^from autocoder.common import AutoCoderArgs^^from autocoder.auto_coder import main as auto_coder_main^^from autocoder.command_args import parse_args^^from autocoder.utils import get_last_yaml_file",
+    "last_modified": 1718543806.9021537,
+    "md5": "08b8eb97e0cdd37d8f9015d39e3b39c3"
   }
 }
