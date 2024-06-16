@@ -158,7 +158,13 @@ def chat(query: str):
     current_files = memory["current_files"]["files"]
     files_list = "\n".join([f"- {file}" for file in current_files])
 
-    yaml_content = f"""
+    from autocoder import auto_coder
+    auto_coder.main(["next", "--name", "chat_action"])
+    
+    latest_yaml_file = get_last_yaml_file("actions")
+
+    if latest_yaml_file:
+        yaml_content = f"""
 include_file:
   - ./base/base.yml
 
@@ -173,13 +179,12 @@ urls:
 query: |
   {query}
 """
-    # latest_yaml_file = get_last_yaml_file("actions")
-    with open("./actions/temp_action.yml", "w") as f:
-        f.write(yaml_content)
+        with open(latest_yaml_file, "w") as f:
+            f.write(yaml_content)
 
-    auto_coder_main(["--file", "./actions/temp_action.yml"])
-
-    os.remove("./actions/temp_action.yml")
+        auto_coder_main(["--file", latest_yaml_file])
+    else:
+        print("Failed to create new YAML file.")
 
     save_memory()
 
