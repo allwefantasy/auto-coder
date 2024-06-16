@@ -287,8 +287,8 @@ def main():
                 remove_files(file_names)
                 print(f"Removed files: {file_names}")
             elif user_input.startswith("/index/query"):
-                args = conf = user_input[len("/index/query") :].strip()
-                index_query(args)
+                query = user_input[len("/index/query") :].strip()
+                index_query(query)
             elif user_input.startswith("/list_files"):
                 print("Current files:")
                 for file in memory["current_files"]["files"]:
