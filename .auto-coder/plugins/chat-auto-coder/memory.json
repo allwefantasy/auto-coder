@@ -23,6 +23,10 @@
     {
       "role": "user",
       "content": "第一次进入命令行后 自动显示/help 命令"
+    },
+    {
+      "role": "user",
+      "content": "格式化打印欢迎语 让他更加漂亮"
     }
   ],
   "current_files": {

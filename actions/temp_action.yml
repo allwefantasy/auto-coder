@@ -11,4 +11,4 @@ urls:
 - /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
 
 query: |
-  格式化打印欢迎语 让他更加漂亮
+  美化下 help() 命令输出
