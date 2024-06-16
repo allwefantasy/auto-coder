@@ -144,7 +144,10 @@ def main():
                 index_query(args)
             else:  
                 query = user_input.lstrip("/chat").strip()
-                chat(query)
+                if not query:
+                    print("Please enter your request.")
+                else:
+                    chat(query)
 
         except KeyboardInterrupt:
             print("Exiting...")
