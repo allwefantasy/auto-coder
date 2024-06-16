@@ -3,15 +3,16 @@ import { useState } from 'react';
 
 interface CreateYAMLViewProps {
     isDarkMode: boolean;
+    vscode: any;
 }
 
-export const CreateYAMLView = ({ isDarkMode }: CreateYAMLViewProps) => {
+export const CreateYAMLView = ({ isDarkMode,vscode }: CreateYAMLViewProps) => {
     const [fileName, setFileName] = useState('');
     const [prefix, setPrefix] = useState('');
 
-    const handleSubmit = () => {
+    const handleSubmit = () => {        
         const message = { fileName, prefix };
-        window.parent.postMessage({ type: 'submitForm', value: message }, '*');
+        vscode.postMessage({ type: 'submitForm', value: message }, '*');
     };
 
     const theme = isDarkMode ? 'dark' : 'light';

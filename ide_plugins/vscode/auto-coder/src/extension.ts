@@ -202,6 +202,8 @@ export function activate(context: vscode.ExtensionContext) {
 			message => {
 				switch (message.type) {
 					case 'submitForm':
+						// close the webview
+						panel.dispose();
 						if (message.value.prefix) {
 							terminal.sendText(`auto-coder next "${message.value.fileName}" --from_yaml "${message.value.prefix}"`);
 						} else {
