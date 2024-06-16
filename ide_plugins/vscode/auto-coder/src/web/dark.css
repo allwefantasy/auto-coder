@@ -1,0 +1,20 @@
+/* dark.css */
+
+.dark {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+  }
+  
+  .dark input {
+    background-color: #2d2d2d;
+    border-color: #4b5563;
+    color: #000000;
+  }
+  
+  .dark button {
+    background-color: #3b82f6;
+  }
+  
+  .dark button:hover {
+    background-color: #2563eb;
+  }

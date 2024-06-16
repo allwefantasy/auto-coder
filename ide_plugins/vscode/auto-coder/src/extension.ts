@@ -170,7 +170,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const panel = vscode.window.createWebviewPanel(
 			'createYamlForm',
 			'Create YAML File',
-			vscode.ViewColumn.Active,
+			vscode.ViewColumn.One,
 			{
 				enableScripts: true
 			}
@@ -178,7 +178,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const scriptPathOnDisk = vscode.Uri.file(path.join(context.extensionPath, 'dist', 'web.js'));
   		const scriptUri = panel.webview.asWebviewUri(scriptPathOnDisk);
-		panel.webview.html = getWebviewContent(scriptUri);
+		const colorTheme = vscode.window.activeColorTheme;
+		panel.webview.html = getWebviewContent(scriptUri, colorTheme);
+	
 		
 		// Handle messages from the webview
 		const terminals = vscode.window.terminals;
@@ -216,7 +218,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(createYamlDisposable);
 }
 
-function getWebviewContent(scriptUri: vscode.Uri) {	
+function getWebviewContent(scriptUri: vscode.Uri,colorTheme: vscode.ColorTheme) {	
 	return `
 	  <!DOCTYPE html>
 	  <html lang="en">
@@ -227,6 +229,9 @@ function getWebviewContent(scriptUri: vscode.Uri) {
 	  </head>
 	  <body>
 		<div id="root"></div>	
+		<script>
+		  window.vscodeColorTheme = ${JSON.stringify(colorTheme.kind)};
+		</script>
 		<script src="${scriptUri}"></script>			
 	  </body>
 	  </html>
