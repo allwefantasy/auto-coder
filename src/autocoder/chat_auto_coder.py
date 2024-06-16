@@ -74,6 +74,7 @@ include_file:
 auto_merge: editblock 
 human_as_model: true
 skip_build_index: true
+skip_confirm: true
 
 urls:
 {files_list}

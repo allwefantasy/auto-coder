@@ -5,9 +5,10 @@ include_file:
 auto_merge: editblock 
 human_as_model: true
 skip_build_index: true
+skip_confirm: true
 
 urls:
 - /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
 
 query: |
-  
+  query strip()后为空 则提示用户输入需求

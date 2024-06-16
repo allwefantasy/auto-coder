@@ -1,5 +1,10 @@
 {
-  "conversation": [],
+  "conversation": [
+    {
+      "role": "user",
+      "content": ""
+    }
+  ],
   "current_files": {
     "files": [
       "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py"
