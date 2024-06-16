@@ -32,7 +32,7 @@ commands = [
 def get_all_file_names_in_project() -> List[str]:
     project_root = os.getcwd()
     file_names = []
-    exclude_dirs = [".git", "node_modules", "dist"]
+    exclude_dirs = [".git", "node_modules", "dist","build"]
     for root, dirs, files in os.walk(project_root):
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
         file_names.extend(files)
@@ -51,6 +51,8 @@ def find_files_in_project(file_names: List[str]) -> List[str]:
 
 def show_help():
     print("\033[1mSupported commands:\033[0m")
+    print()
+    print("  \033[94mCommands\033[0m - \033[93mDescription\033[0m")
     print("  \033[94m/add_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92mAdd files to the current session\033[0m")
     print("  \033[94m/remove_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92mRemove files from the current session\033[0m")
     print("  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current files\033[0m")

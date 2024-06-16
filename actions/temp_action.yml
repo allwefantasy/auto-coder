@@ -11,4 +11,4 @@ urls:
 - /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
 
 query: |
-  美化下 help() 命令输出
+  添加文件需要检测文件是不是已经存在

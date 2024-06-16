@@ -27,6 +27,10 @@
     {
       "role": "user",
       "content": "格式化打印欢迎语 让他更加漂亮"
+    },
+    {
+      "role": "user",
+      "content": "美化下 help() 命令输出"
     }
   ],
   "current_files": {
