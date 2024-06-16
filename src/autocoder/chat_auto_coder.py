@@ -105,7 +105,7 @@ def main():
 
     load_memory()
 
-    commands = WordCompleter(["/add_files", "/remove_files", "/chat", "/index/query"])
+    commands = WordCompleter(["/add_files", "/remove_files", "/chat", "/index/query", "/list_files"])
 
     session = PromptSession(history=InMemoryHistory(),
                             auto_suggest=AutoSuggestFromHistory(),
@@ -142,7 +142,11 @@ def main():
             elif user_input.startswith("/index/query"):
                 args = user_input.split(" ")[1:]
                 index_query(args)
-            else:  
+            elif user_input.startswith("/list_files"):
+                print("Current files:")
+                for file in memory["current_files"]["files"]:
+                    print(file)
+            else:
                 query = user_input.lstrip("/chat").strip()
                 if not query:
                     print("Please enter your request.")
