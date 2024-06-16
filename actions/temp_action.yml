@@ -7,7 +7,7 @@ human_as_model: true
 skip_build_index: true
 
 urls:
-
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
 
 query: |
-  find_files_in_project 排除掉 .git node_modules dist  目录
+  

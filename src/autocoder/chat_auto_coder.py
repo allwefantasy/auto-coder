@@ -27,7 +27,7 @@ base_persist_dir = os.path.join(".auto-coder","plugins","chat-auto-coder")
 
 def save_memory():
     with open(os.path.join(base_persist_dir,"memory.json"), "w") as f:
-        json.dump(memory, f, indent=2)
+        json.dump(memory, f, indent=2,ensure_ascii=False)
 
 def load_memory():
     global memory
@@ -60,11 +60,6 @@ def remove_files(file_names: List[str]):
     save_memory()
 
 def chat(query: str):
-    
-    if not os.path.exists(".auto-coder"):
-        print("Please run this command in the root directory of your project which have been inited by auto-coder.")
-        return
-    
     memory["conversation"].append({"role": "user", "content": query})
     
     current_files = memory["current_files"]["files"]
@@ -97,7 +92,14 @@ query: |
 def index_query(args: List[str]):
     auto_coder_main(["index", "query"] + args)
 
-def main():           
+def main():   
+    if not os.path.exists(".auto-coder"):
+        print("Please run this command in the root directory of your project which have been inited by auto-coder.")
+        exit(1)
+
+    if not os.path.exists(base_persist_dir):
+        os.makedirs(base_persist_dir, exist_ok=True)
+
     load_memory()
 
     commands = WordCompleter(["/add_files", "/remove_files", "/chat", "/index/query"])
