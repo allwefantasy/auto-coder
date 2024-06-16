@@ -13,6 +13,7 @@ from prompt_toolkit.completion import WordCompleter
 from autocoder.common import AutoCoderArgs
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.command_args import parse_args
+from autocoder.utils import get_last_yaml_file
 
 memory = {
     "conversation": [],
@@ -55,6 +56,11 @@ def remove_files(file_names: List[str]):
     save_memory()
 
 def chat(query: str):
+    
+    if not os.path.exists(".auto-coder"):
+        print("Please run this command in the root directory of your project which have been inited by auto-coder.")
+        return
+    
     memory["conversation"].append({"role": "user", "content": query})
     
     yaml_content = f"""
@@ -67,6 +73,7 @@ human_as_model: false
 query: |
   {query}
 """
+    # latest_yaml_file = get_last_yaml_file("actions")
     with open("temp_action.yml", "w") as f:
         f.write(yaml_content)
 
@@ -80,7 +87,7 @@ query: |
 def index_query(args: List[str]):
     auto_coder_main(parse_args(["index", "query"] + args))
 
-def main():
+def main():           
     load_memory()
 
     commands = WordCompleter(["/add_files", "/remove_files", "/chat", "/index/query"])
@@ -100,7 +107,7 @@ def main():
     while True:
         try:
             prompt_message = [
-                ('class:username', 'auto-coder'),
+                ('class:username', 'chat-auto-coder'),
                 ('class:at', '@'),
                 ('class:host', 'localhost'),
                 ('class:colon', ':'),

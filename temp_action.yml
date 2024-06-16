@@ -1,0 +1,9 @@
+
+include_file:
+  - ./base/base.yml
+
+auto_merge: editblock
+human_as_model: false   
+
+query: |
+  easy_auto_coder cd /Users/allwefantasy/projects/auto-coder

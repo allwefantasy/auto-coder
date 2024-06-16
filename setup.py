@@ -31,6 +31,7 @@ setup(
     entry_points={
         'console_scripts': [
             'auto-coder = autocoder.auto_coder:main',
+            'chat-auto-coder = autocoder.chat_auto_coder:main',
         ],
     },
     package_dir={"": "src"},

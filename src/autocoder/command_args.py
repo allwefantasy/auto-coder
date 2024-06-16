@@ -2,9 +2,10 @@ import argparse
 from autocoder.common import AutoCoderArgs
 from autocoder.lang import lang_desc
 import locale
+from typing import Optional,List
 
 
-def parse_args() -> AutoCoderArgs:
+def parse_args(input_args:Optional[List[str]]=None) -> AutoCoderArgs:
     system_lang, _ = locale.getdefaultlocale()
     lang = "zh" if system_lang and system_lang.startswith("zh") else "en"
     desc = lang_desc[lang]
@@ -340,6 +341,9 @@ def parse_args() -> AutoCoderArgs:
         "--output", help="Output directory to save the converted html file"
     )
 
-    args = parser.parse_args()
+    if input_args: 
+        args = parser.parse_args(input_args)
+    else:
+        args = parser.parse_args()
 
     return AutoCoderArgs(**vars(args)), args

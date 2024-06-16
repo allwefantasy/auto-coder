@@ -1,9 +1,9 @@
 {
   "/Users/allwefantasy/projects/auto-coder/setup.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/setup.py",
-    "symbols": "用途：用于设置和安装AutoCoder项目。\n函数：\n变量：folder, __version__, install_requires, readme_contents\n类：\n导入语句：import os^^from setuptools import find_packages^^from setuptools import setup",
-    "last_modified": 1711809217.9135008,
-    "md5": "755d4c909428aca6751b50c4f9f1fb0f"
+    "symbols": "用途：用于设置和安装AutoCoder项目。\n函数：\n变量：folder, version_path, __version__, req_path, install_requires, readme_path, readme_contents\n类：\n导入语句：import os^^from setuptools import find_packages^^from setuptools import setup",
+    "last_modified": 1718542634.0642846,
+    "md5": "e7f5f1652a975c3d9d7c3a1b306faec2"
   },
   "/Users/allwefantasy/projects/auto-coder/tests/test_init_command.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/tests/test_init_command.py",
@@ -73,9 +73,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py",
-    "symbols": "用途：主要用于解析命令行参数并配置自动编码器。\n函数：parse_args\n变量：system_lang, lang, desc\n类：AutoCoderArgs\n导入语句：import argparse^^from autocoder.common import AutoCoderArgs^^from autocoder.lang import lang_desc^^import locale",
-    "last_modified": 1718376934.2287645,
-    "md5": "5c592f1b3d1fb5253500b10865dace03"
+    "symbols": "用途：主要用于解析命令行参数并执行相应的操作。\n函数：parse_args\n变量：system_lang, lang, desc, parser, subparsers, args\n类：AutoCoderArgs\n导入语句：import argparse^^from autocoder.common import AutoCoderArgs^^from autocoder.lang import lang_desc^^import locale^^from typing import Optional,List",
+    "last_modified": 1718542486.2902362,
+    "md5": "dfa74b5c0901068cedea6c1f48c7d485"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py",
@@ -472,5 +472,11 @@
     "symbols": "函数：\n变量：\n类：\n导入语句：\n用途：主要用于提供自动实现函数模板的功能。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于提供自动实现函数模板的功能。\n函数：\n变量：\n类：\n导入语句：\n用途：用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：用于管理项目依赖和锁定版本信息。\n函数：\n变量：\n类：\n导入语句：\n用途：用于管理项目的依赖关系和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n函数:\n变量:\n类:\n导入语句:\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于管理项目的依赖和版本信息。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：",
     "last_modified": 1718470275.1107929,
     "md5": "9ee85af4e5958373b18d913c89f60979"
+  },
+  "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py",
+    "symbols": "用途：主要用于实现一个自动代码编写助手的聊天功能。\n函数：save_memory, load_memory, find_files_in_project, add_files, remove_files, chat, index_query, main\n变量：memory\n类：\n导入语句：import argparse^^import os^^import yaml^^import json^^from typing import List, Dict, Any^^from prompt_toolkit import PromptSession^^from prompt_toolkit.history import InMemoryHistory^^from prompt_toolkit.auto_suggest import AutoSuggestFromHistory^^from prompt_toolkit.formatted_text import FormattedText^^from prompt_toolkit.key_binding import KeyBindings^^from prompt_toolkit.completion import WordCompleter^^from autocoder.common import AutoCoderArgs^^from autocoder.auto_coder import main as auto_coder_main^^from autocoder.command_args import parse_args^^from autocoder.utils import get_last_yaml_file",
+    "last_modified": 1718542640.753259,
+    "md5": "0fbc2fb976c3bbc86ceb4987b06f7a27"
   }
 }

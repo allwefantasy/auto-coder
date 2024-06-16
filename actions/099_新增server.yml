@@ -7,7 +7,7 @@ human_as_model: true
 query: |
   参考 auto_coder.py,command_args.py,common/__init__.py, 使用 fastapi 实现一个web server, 和 auto_coder.py 在同一目录，auto_coder_server.py,
   该 server 需要实现 command_args.py 所有的命令，具体实现逻辑在 auto_coder.py中。
-
+    
   比如对于 auto-coder doc query 对应的 url 为 /v1/doc/query, 请求方式为 post, 请求参数为 json 格式，返回值为 json 格式。
   还有比如 auto-coder revert 对应的 url 为 /v1/revert, 请求方式为 post, 请求参数为 json 格式，返回值为 json 格式。
   有一个特殊情况是， auto-coder 根命令 对应 /v1/run。
