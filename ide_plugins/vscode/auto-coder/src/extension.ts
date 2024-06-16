@@ -179,6 +179,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const scriptPathOnDisk = vscode.Uri.file(path.join(context.extensionPath, 'dist', 'web.js'));
   		const scriptUri = panel.webview.asWebviewUri(scriptPathOnDisk);
 		panel.webview.html = getWebviewContent(scriptUri);
+		
 		// Handle messages from the webview
 		const terminals = vscode.window.terminals;
 		let terminal;
