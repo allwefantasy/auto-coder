@@ -63,12 +63,18 @@ def chat(query: str):
     
     memory["conversation"].append({"role": "user", "content": query})
     
+    current_files = memory["current_files"]["files"]
+    files_list = "\n".join([f"- {file}" for file in current_files])
+    
     yaml_content = f"""
 include_file:
   - ./base/base.yml
 
-auto_merge: editblock
-human_as_model: false   
+auto_merge: editblock 
+human_as_model: false
+
+urls:
+{files_list}
 
 query: |
   {query}
