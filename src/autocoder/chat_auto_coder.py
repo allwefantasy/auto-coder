@@ -207,20 +207,22 @@ query: |
     save_memory()
 
 
-import tempfile
+import uuid
+import os
 
 def index_query(query: str):
-    with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
-        yaml_content = f"""
+    yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+    yaml_content = f"""
 include_file:
-  - ./base/base.yml
+  - ./base/base.yml  
 query: |
   {query}
 """
-        temp_file.write(yaml_content)
-        temp_file.flush()
-        yaml_file = temp_file.name
-        auto_coder_main(["index-query", "--file", yaml_file])
+    with open(yaml_file, "w") as f:
+        f.write(yaml_content)
+
+    auto_coder_main(["index-query", "--file", yaml_file])
+    os.remove(yaml_file)
 
 def main():
     if not os.path.exists(".auto-coder"):
