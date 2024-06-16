@@ -70,6 +70,7 @@
     "test": "vscode-test"
   },
   "dependencies": {
+    "@tailwindcss/forms": "^0.5.3",
     "@tailwindcss/typography": "^0.5.13",
     "@vscode/webview-ui-toolkit": "^1.2.1",
     "js-yaml": "^4.1.0",

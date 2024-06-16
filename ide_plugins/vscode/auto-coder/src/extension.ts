@@ -170,7 +170,8 @@ export function activate(context: vscode.ExtensionContext) {
 		const panel = vscode.window.createWebviewPanel(
 			'createYamlForm',
 			'Create YAML File',
-			vscode.ViewColumn.One,{
+			vscode.ViewColumn.Active,
+			{
 				enableScripts: true
 			}
 		);
@@ -193,11 +194,22 @@ export function activate(context: vscode.ExtensionContext) {
 			terminal.sendText(`cd ${projectRoot}`);
 		}
 
-		// if (message.prefix) {
-		// 	terminal.sendText(`auto-coder next "${message.filename}" --from_yaml "${message.prefix}"`);
-		// } else {
-		// 	terminal.sendText(`auto-coder next "${message.filename}"`);
-		// }
+		// Handle messages from the webview
+		panel.webview.onDidReceiveMessage(
+			message => {
+				switch (message.type) {
+					case 'submitForm':
+						if (message.value.prefix) {
+							terminal.sendText(`auto-coder next "${message.value.fileName}" --from_yaml "${message.value.prefix}"`);
+						} else {
+							terminal.sendText(`auto-coder next "${message.value.fileName}"`);
+						}
+						return;
+				}
+			},
+			undefined,
+			context.subscriptions
+		);
 	});
 
 	context.subscriptions.push(createYamlDisposable);
