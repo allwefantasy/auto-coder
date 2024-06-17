@@ -31,6 +31,7 @@ commands = [
     "/list_files",
     "/conf", 
     "/chat",
+    "/revert",
     "/index/query",
     "/revert",
     "/help",
@@ -89,6 +90,9 @@ def show_help():
     )
     print(
         "  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current files\033[0m"
+    )
+    print(
+        "  \033[94m/revert\033[0m - \033[92mRevert commits from last chat\033[0m"
     )
     print(
         "  \033[94m/index/query\033[0m \033[93m<args>\033[0m - \033[92mQuery the project index\033[0m"
