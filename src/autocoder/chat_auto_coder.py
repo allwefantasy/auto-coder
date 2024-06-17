@@ -91,7 +91,7 @@ def redirect_stdout():
     original_stdout = sys.stdout
     sys.stdout = f = io.StringIO()
     try:
-        yield f.getvalue()
+        yield f
     finally:
         sys.stdout = original_stdout
 
@@ -343,7 +343,7 @@ query: |
     try:
         with redirect_stdout() as output:
             auto_coder_main(["index-query", "--file", yaml_file])
-        print(output)
+        print(output.getvalue(),flush=True)        
 
     finally:
         os.remove(yaml_file)
