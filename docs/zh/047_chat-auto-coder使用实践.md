@@ -76,4 +76,6 @@ chat-auto-coder
 
 review 完代码后，我们发现，这次修改没有修改 help() 方法：
 
+![](../images/047-07.png)
+
 
