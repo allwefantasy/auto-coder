@@ -161,13 +161,8 @@ class CommandCompleter(Completer):
 
             elif words[0] == "/remove_files":
                 new_words = text[len("/remove_files") :].strip().split(",")
-                current_word = new_words[-1]
-
-                for file_name in self.all_file_names:
-                    if file_name.startswith(current_word):
-                        yield Completion(file_name, start_position=-len(current_word))
-
-                for file_name in self.all_files:
+                current_word = new_words[-1]                
+                for file_name in self.current_file_names:
                     if current_word and current_word in file_name:
                         yield Completion(file_name, start_position=-len(current_word))
 
@@ -196,7 +191,7 @@ class CommandCompleter(Completer):
                     yield Completion(command, start_position=-len(text))
 
     def update_current_files(self, files):
-        self.current_file_names = [os.path.basename(f) for f in files]
+        self.current_file_names = [f for f in files]
 
     def refresh_files(self):
         self.all_file_names = get_all_file_names_in_project()

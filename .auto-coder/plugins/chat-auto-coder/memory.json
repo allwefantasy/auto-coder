@@ -107,13 +107,15 @@
     {
       "role": "user",
       "content": "chat 方法中,yaml_config[key] = value 我们需要根据AutoCoderArgs的字段类型来对value进行类型转换.value 是字符串,key 必定会出现在 AutoCoderArgs里"
+    },
+    {
+      "role": "user",
+      "content": "chat 方法里的类型判断还有更好的办法么?"
     }
   ],
   "current_files": {
     "files": [
-      "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py",
-      "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
-      "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py"
+      "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py"
     ]
   },
   "conf": {
