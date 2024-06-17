@@ -291,7 +291,7 @@ def chat(query: str):
                 "skip_build_index",
                 "skip_confirm",
             ]:
-                if value == "true":
+                if value in ["true","false"]:
                     yaml_config[key] = value == "true"
                 else:
                     yaml_config[key] = value
