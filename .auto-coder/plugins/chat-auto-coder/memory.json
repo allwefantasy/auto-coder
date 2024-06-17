@@ -63,6 +63,10 @@
     {
       "role": "user",
       "content": "把 sys.stdout = f = io.StringIO() 那部分代码封装成一个with 语句的函数"
+    },
+    {
+      "role": "user",
+      "content": "main里的欢迎词改成  Chat-Auto-Coder"
     }
   ],
   "current_files": {
