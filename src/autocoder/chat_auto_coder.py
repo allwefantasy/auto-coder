@@ -194,21 +194,23 @@ def chat(query: str):
     latest_yaml_file = get_last_yaml_file("actions")
 
     if latest_yaml_file:
-        yaml_content = f"""
-include_file:
-  - ./base/base.yml
+        yaml_config = {
+        "include_file": ["./base/base.yml"],
+        "auto_merge": conf.get("auto_merge", "editblock"),
+        "human_as_model": conf.get("human_as_model", "false"),
+        "skip_build_index": conf.get("skip_build_index", "true"),
+        "skip_confirm": conf.get("skip_confirm", "true")        
+    }
+        
+    # Add other conf items to yaml_config
+    for key, value in conf.items():
+        if key not in ["auto_merge", "human_as_model", "skip_build_index", "skip_confirm"]:
+            yaml_config[key] = value
 
-auto_merge: {conf.get("auto_merge", "editblock")} 
-human_as_model: {conf.get("human_as_model", "false")}
-skip_build_index: {conf.get("skip_build_index", "true")}
-skip_confirm: {conf.get("skip_confirm", "true")}
+    yaml_config["urls"] = current_files
+    yaml_config["query"] = query
 
-urls:
-{files_list}
-
-query: |
-  {query}
-"""
+    yaml_content = yaml.dump(yaml_config, sort_keys=False)
         execute_file = os.path.join("actions", latest_yaml_file)
         with open(os.path.join(execute_file), "w") as f:
             f.write(yaml_content)
