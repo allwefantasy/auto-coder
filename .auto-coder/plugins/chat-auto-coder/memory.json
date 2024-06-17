@@ -111,6 +111,10 @@
     {
       "role": "user",
       "content": "chat 方法里的类型判断还有更好的办法么?"
+    },
+    {
+      "role": "user",
+      "content": "把chat里key,value的类型判断抽取成一个方法"
     }
   ],
   "current_files": {

@@ -85,6 +85,20 @@ def find_files_in_project(file_names: List[str]) -> List[str]:
                 matched_files.append(os.path.join(root, file))
     return matched_files
 
+def convert_config_value(key, value):
+    field_info = AutoCoderArgs.model_fields.get(key)
+    if field_info:
+        if value.lower() in ['true', 'false']:
+            return value.lower() == 'true'
+        elif "int" in str(field_info.annotation):
+            return int(value)
+        elif "float" in str(field_info.annotation):
+            return float(value)
+        else:
+            return value
+    else:
+        print(f"Invalid configuration key: {key}")
+        return None
 
 @contextmanager
 def redirect_stdout():
@@ -277,23 +291,7 @@ def chat(query: str):
             "human_as_model": conf.get("human_as_model", "false") == "true",
             "skip_build_index": conf.get("skip_build_index", "true") == "true",
             "skip_confirm": conf.get("skip_confirm", "true") == "true",
-        }
-
-
-        def convert_config_value(key, value):
-            field_info = AutoCoderArgs.model_fields.get(key)
-            if field_info:
-                if value.lower() in ['true', 'false']:
-                    return value.lower() == 'true'
-                elif "int" in str(field_info.annotation):
-                    return int(value)
-                elif "float" in str(field_info.annotation):
-                    return float(value)
-                else:
-                    return value
-            else:
-                print(f"Invalid configuration key: {key}")
-                return None
+        }        
 
         for key, value in conf.items():
             converted_value = convert_config_value(key, value)
