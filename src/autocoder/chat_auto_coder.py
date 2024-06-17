@@ -285,14 +285,14 @@ def chat(query: str):
         }
 
         for key, value in conf.items():
-            if key not in [
-                "auto_merge",
-                "human_as_model",
-                "skip_build_index",
-                "skip_confirm",
-            ]:
-                if value in ["true","false"]:
-                    yaml_config[key] = value == "true"
+            if key in AutoCoderArgs.model_fields:
+                field_type = AutoCoderArgs.model_fields[key].outer_type_
+                if field_type is bool:
+                    yaml_config[key] = value.lower() == "true"
+                elif field_type in (int, float):
+                    yaml_config[key] = field_type(value)
+                elif field_type is list:
+                    yaml_config[key] = value.split(",") if value else []
                 else:
                     yaml_config[key] = value
 
