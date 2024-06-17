@@ -1,3 +1,12 @@
+def revert():
+    last_yaml_file = get_last_yaml_file("actions")
+    if last_yaml_file:
+        file_path = os.path.join("actions", last_yaml_file)
+        args = AutoCoderArgs()
+        args.file = file_path
+        auto_coder_main(["revert", "--file", file_path])
+    else:
+        print("No previous chat action found to revert.")
 import argparse
 import os
 import yaml
@@ -29,9 +38,10 @@ commands = [
     "/add_files",
     "/remove_files",
     "/list_files",
-    "/conf",
+    "/conf", 
     "/chat",
     "/index/query",
+    "/revert",
     "/help",
     "/exit",
 ]
@@ -325,8 +335,10 @@ def main():
                     print(memory["conf"])
                 else:
                     configure(conf)
+            elif user_input.startswith("/revert"):
+                revert()
             elif user_input.startswith("/help"):
-                show_help()
+                show_help()   
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt
             else:
