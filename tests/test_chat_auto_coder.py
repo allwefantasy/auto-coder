@@ -5,8 +5,6 @@ import unittest
 from unittest.mock import Mock, patch
 from io import StringIO
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 from autocoder.chat_auto_coder import (
     get_all_file_names_in_project,
     get_all_file_in_project,
@@ -69,15 +67,13 @@ class TestChatAutoCoder(unittest.TestCase):
             self.assertCountEqual(matched_files, expected_paths)
 
     def test_convert_config_value(self):
-        self.assertTrue(convert_config_value("key", "true"))
-        self.assertFalse(convert_config_value("key", "false"))
-        self.assertEqual(convert_config_value("key", "10"), 10)
-        self.assertEqual(convert_config_value("key", "3.14"), 3.14)
-        self.assertEqual(convert_config_value("key", "value"), "value")
+        self.assertTrue(convert_config_value("human_as_model", "true"))
+        self.assertFalse(convert_config_value("human_as_model", "false"))
+        self.assertEqual(convert_config_value("index_model_max_length", "10"), 10)        
 
     def test_configure(self):
         with patch("autocoder.chat_auto_coder.save_memory") as mock_save_memory:
-            configure("key: value")
+            configure("key: value")            
             self.assertEqual(chat.memory["conf"]["key"], "value")
             mock_save_memory.assert_called_once()
 

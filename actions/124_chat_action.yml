@@ -1,0 +1,10 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: test_configure 该如何修改正 chat 是个方法,这么用肯定不会
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/tests/test_chat_auto_coder.py

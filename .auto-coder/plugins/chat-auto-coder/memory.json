@@ -115,11 +115,16 @@
     {
       "role": "user",
       "content": "把chat里key,value的类型判断抽取成一个方法"
+    },
+    {
+      "role": "user",
+      "content": "给第一层级的方法都用unitest写个测试 放在 tests 目录下"
     }
   ],
   "current_files": {
     "files": [
-      "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py"
+      "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py",
+      "/Users/allwefantasy/projects/auto-coder/tests/test_chat_auto_coder.py"
     ]
   },
   "conf": {
