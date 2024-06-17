@@ -20,7 +20,7 @@ from autocoder.command_args import parse_args
 from autocoder.utils import get_last_yaml_file
 
 
-memory = {"conversation": [], "current_files": {"files": []}, "conf": {}}
+memory = {"conversation": [], "current_files": {"files": []}, "conf": {}, "exclude_dirs": []}
 
 base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
 
@@ -35,6 +35,7 @@ commands = [
     "/revert",
     "/index/query",
     "/revert",
+    "/exclude_dirs",
     "/help",
     "/exit",
 ]
@@ -282,6 +283,19 @@ def chat(query: str):
     save_memory()
 
 
+
+def exclude_dirs(dir_names: List[str]):
+    new_dirs = dir_names
+    existing_dirs = memory["exclude_dirs"]
+    dirs_to_add = [d for d in new_dirs if d not in existing_dirs]
+    if dirs_to_add:
+        memory["exclude_dirs"].extend(dirs_to_add)
+        print(f"Added exclude dirs: {dirs_to_add}")
+    else:
+        print("All specified dirs are already in the exclude list.")
+    save_memory()
+
+
 def index_query(query: str):
     yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
     yaml_content = f"""
@@ -380,6 +394,10 @@ def main():
                 revert()
             elif user_input.startswith("/help"):
                 show_help()
+            elif user_input.startswith("/exclude_dirs"):
+                dir_names = user_input[len("/exclude_dirs") :].strip().split(",")
+                exclude_dirs(dir_names)
+
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt
             else:
