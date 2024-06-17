@@ -59,6 +59,10 @@
     {
       "role": "user",
       "content": "如何获得命令行user_input 之后的所有输出"
+    },
+    {
+      "role": "user",
+      "content": "把 sys.stdout = f = io.StringIO() 那部分代码封装成一个with 语句的函数"
     }
   ],
   "current_files": {

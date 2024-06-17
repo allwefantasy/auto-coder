@@ -2,6 +2,10 @@ import argparse
 import os
 import yaml
 import json
+import sys
+import io
+import uuid
+from contextlib import contextmanager
 from typing import List, Dict, Any
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
@@ -13,9 +17,7 @@ from autocoder.common import AutoCoderArgs
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.command_args import parse_args
 from autocoder.utils import get_last_yaml_file
-import sys
-import io
-import uuid
+
 
 memory = {"conversation": [], "current_files": {"files": []}, "conf": {}}
 
@@ -53,6 +55,16 @@ def find_files_in_project(file_names: List[str]) -> List[str]:
             if file in file_names:
                 matched_files.append(os.path.join(root, file))
     return matched_files
+
+
+@contextmanager
+def redirect_stdout():
+    original_stdout = sys.stdout
+    sys.stdout = f = io.StringIO()
+    try:
+        yield f.getvalue()
+    finally:
+        sys.stdout = original_stdout
 
 
 def configure(conf: str):
@@ -219,24 +231,13 @@ query: |
 """
     with open(yaml_file, "w") as f:
         f.write(yaml_content)
-    try:        
+    try:
         with redirect_stdout() as output:
             auto_coder_main(["index-query", "--file", yaml_file])
-        print(output)        
-        
+        print(output)
+
     finally:
         os.remove(yaml_file)
-
-from contextlib import contextmanager
-
-@contextmanager
-def redirect_stdout():
-    original_stdout = sys.stdout
-    sys.stdout = f = io.StringIO()
-    try:
-        yield f.getvalue()
-    finally:
-        sys.stdout = original_stdout
 
 
 def main():
