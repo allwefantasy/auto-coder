@@ -73,8 +73,8 @@ class TestChatAutoCoder(unittest.TestCase):
 
     def test_configure(self):
         with patch("autocoder.chat_auto_coder.save_memory") as mock_save_memory:
-            configure("key: value")            
-            self.assertEqual(chat.memory["conf"]["key"], "value")
+            configure("key: value")
+            self.assertEqual(memory["conf"]["key"], "value")
             mock_save_memory.assert_called_once()
 
     def test_show_help(self):
