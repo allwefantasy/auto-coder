@@ -1,0 +1,11 @@
+auto_merge: editblock
+human_as_model: 'true'
+include_file:
+- ./base/base.yml
+query: 在docs/zh/ 中生成一个 047_chat-auto-coder使用实践.md 文件,标题为文件名.
+skip_build_index: 'true'
+skip_confirm: 'true'
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py
