@@ -55,6 +55,10 @@
     {
       "role": "user",
       "content": "index_query里面不使用临时文件,而是在actions目录使用uuid作为文件名构建一个文件,使用完后删除"
+    },
+    {
+      "role": "user",
+      "content": "如何获得命令行user_input 之后的所有输出"
     }
   ],
   "current_files": {

@@ -13,7 +13,9 @@ from autocoder.common import AutoCoderArgs
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.command_args import parse_args
 from autocoder.utils import get_last_yaml_file
-import os
+import sys
+import io
+import uuid
 
 memory = {"conversation": [], "current_files": {"files": []}, "conf": {}}
 
@@ -207,10 +209,6 @@ query: |
     save_memory()
 
 
-import uuid
-import os
-
-
 def index_query(query: str):
     yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
     yaml_content = f"""
@@ -221,14 +219,17 @@ query: |
 """
     with open(yaml_file, "w") as f:
         f.write(yaml_content)
-    try:
-        import io
-        from contextlib import redirect_stdout
-        f = io.StringIO()
-        with redirect_stdout(f):
+    try:        
+        original_stdout = sys.stdout
+        sys.stdout = f = io.StringIO()
+
+        try:
             auto_coder_main(["index-query", "--file", yaml_file])
+        finally:
+            sys.stdout = original_stdout
+
         output = f.getvalue()        
-        print(output)
+        print(output)        
         
     finally:
         os.remove(yaml_file)
