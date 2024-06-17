@@ -91,6 +91,10 @@
     {
       "role": "user",
       "content": "conf 命令需要也支持自动补全.补全的字段名称来自 AutoCoderArgs 的属性"
+    },
+    {
+      "role": "user",
+      "content": "在docs/zh/ 中生成一个 047_chat-auto-coder使用实践.md 文件,标题为文件名."
     }
   ],
   "current_files": {

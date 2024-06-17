@@ -1,0 +1,12 @@
+auto_merge: editblock
+human_as_model: 'true'
+include_file:
+- ./base/base.yml
+query: 新增/exclude_dirs 指令, 逻辑和/add_files 指令一样,只是保存到 memory 的exclude_dirs 字段下,和 current_files
+  同级别
+skip_build_index: 'true'
+skip_confirm: 'true'
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py
