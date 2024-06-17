@@ -23,7 +23,7 @@ memory = {"conversation": [], "current_files": {"files": []}, "conf": {}}
 
 base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
 
-exclude_dirs = [".git", "node_modules", "dist", "build"]
+exclude_dirs = [".git", "node_modules", "dist", "build","__pycache__"]
 
 commands = [
     "/add_files",
@@ -47,6 +47,15 @@ def get_all_file_names_in_project() -> List[str]:
         file_names.extend(files)
     return file_names
 
+def get_all_file_in_project() -> List[str]:
+    project_root = os.getcwd()
+    file_names = []
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+        for file in files:            
+            file_names.append(os.path.join(root, file))
+    return file_names
+
 
 def find_files_in_project(file_names: List[str]) -> List[str]:
     project_root = os.getcwd()
@@ -55,6 +64,8 @@ def find_files_in_project(file_names: List[str]) -> List[str]:
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
         for file in files:
             if file in file_names:
+                matched_files.append(os.path.join(root, file))
+            elif os.path.join(root, file) in file_names:
                 matched_files.append(os.path.join(root, file))
     return matched_files
 
@@ -112,6 +123,7 @@ class CommandCompleter(Completer):
     def __init__(self, commands):
         self.commands = commands
         self.all_file_names = get_all_file_names_in_project()
+        self.all_files = get_all_file_in_project()
         self.current_file_names = []
 
     def get_completions(self, document, complete_event):
@@ -121,14 +133,26 @@ class CommandCompleter(Completer):
         if len(words) > 0:
             if words[0] == "/add_files":
                 new_words = text[len("/add_files") :].strip().split(",")
+                current_word = new_words[-1]
                 for file_name in self.all_file_names:
-                    if file_name.startswith(new_words[-1]):
-                        yield Completion(file_name, start_position=-len(new_words[-1]))
+                    if file_name.startswith(current_word):
+                        yield Completion(file_name, start_position=-len(current_word))
+                
+                for file_name in self.all_files:        
+                    if current_word and current_word in file_name:                        
+                        yield Completion(file_name, start_position=-len(current_word))
+
             elif words[0] == "/remove_files":
                 new_words = text[len("/remove_files") :].strip().split(",")
-                for file_name in self.current_file_names:
-                    if file_name.startswith(new_words[-1]):
-                        yield Completion(file_name, start_position=-len(new_words[-1]))
+                current_word = new_words[-1]
+
+                for file_name in self.all_file_names:
+                    if file_name.startswith(current_word):
+                        yield Completion(file_name, start_position=-len(current_word))
+            
+                for file_name in self.all_files:
+                    if current_word in file_name:
+                        yield Completion(file_name, start_position=-len(current_word))        
             else:
                 for command in self.commands:
                     if command.startswith(text):
@@ -187,6 +211,8 @@ def remove_files(file_names: List[str]):
     removed_files = []
     for file in memory["current_files"]["files"]:
         if os.path.basename(file) in file_names:
+            removed_files.append(file)
+        elif file in file_names:
             removed_files.append(file)
     for file in removed_files:
         memory["current_files"]["files"].remove(file)

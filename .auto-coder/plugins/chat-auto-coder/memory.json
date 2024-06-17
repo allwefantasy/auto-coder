@@ -83,12 +83,17 @@
     {
       "role": "user",
       "content": "参考auto_coder.py 在 chat_auto_coder中添加revert 命令"
+    },
+    {
+      "role": "user",
+      "content": "删除from autocoder.common import AutoCoderArgs"
     }
   ],
   "current_files": {
     "files": [
       "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py",
-      "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py"
+      "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
+      "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py"
     ]
   },
   "conf": {
