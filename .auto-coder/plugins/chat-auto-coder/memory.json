@@ -71,11 +71,16 @@
     {
       "role": "user",
       "content": "在 docs/zh 下基于 chat_auto_coder.py 生成一份markdown文档,名字叫 046_AutoCoder_Chat-Auto-Coder指南.md 要符合主流开源项目介绍的方式"
+    },
+    {
+      "role": "user",
+      "content": "add_files, remove_files 自动补全,要支持按逗号分隔,如果遇到逗号,那么要重新开始计算起始点"
     }
   ],
   "current_files": {
     "files": [
-      "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py"
+      "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py",
+      "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py"
     ]
   },
   "conf": {

@@ -115,13 +115,15 @@ class CommandCompleter(Completer):
 
         if len(words) > 0:
             if words[0] == "/add_files":
+                new_words = text[len("/add_files") :].strip().split(",")
                 for file_name in self.all_file_names:
-                    if file_name.startswith(words[-1]):
-                        yield Completion(file_name, start_position=-len(words[-1]))
-            elif words[0] == "/remove_files":                
+                    if file_name.startswith(new_words[-1]):
+                        yield Completion(file_name, start_position=-len(new_words[-1]))
+            elif words[0] == "/remove_files":     
+                new_words = text[len("/remove_files") :].strip().split(",")           
                 for file_name in self.current_file_names:                    
-                    if file_name.startswith(words[-1]):
-                        yield Completion(file_name, start_position=-len(words[-1]))
+                    if file_name.startswith(new_words[-1]):
+                        yield Completion(file_name, start_position=-len(new_words[-1]))
             else:
                 for command in self.commands:
                     if command.startswith(text):
@@ -170,7 +172,7 @@ def remove_files(file_names: List[str]):
     removed_files = []
     for file in memory["current_files"]["files"]:
         if os.path.basename(file) in file_names:
-            removed_files.append(file)
+            removed_files.append(file)    
     for file in removed_files:
         memory["current_files"]["files"].remove(file)
     completer.update_current_files(memory["current_files"]["files"])
@@ -296,9 +298,8 @@ def main():
             user_input = session.prompt(FormattedText(prompt_message))
 
             if user_input.startswith("/add_files"):
-                file_names = conf = user_input[len("/add_files") :].strip().split(",")
-                add_files(file_names)
-                print(f"Added files: {file_names}")
+                file_names = user_input[len("/add_files") :].strip().split(",")
+                add_files(file_names)                
             elif user_input.startswith("/remove_files"):
                 file_names = user_input[len("/remove_files") :].strip().split(",")
                 remove_files(file_names)
