@@ -155,9 +155,7 @@ def main(input_args: Optional[List[str]] = None):
             return
 
         action_files = [
-            f
-            for f in os.listdir(actions_dir)
-            if f[:3].isdigit() and f.endswith(".yml")
+            f for f in os.listdir(actions_dir) if f[:3].isdigit() and f.endswith(".yml")
         ]
         if not action_files:
             max_seq = 0
@@ -167,7 +165,7 @@ def main(input_args: Optional[List[str]] = None):
 
         new_seq = str(max_seq + 1).zfill(3)
         prev_files = [f for f in action_files if int(f[:3]) < int(new_seq)]
-        
+
         if raw_args.from_yaml:
             # If --from_yaml is specified, copy content from the matching YAML file
             from_files = [f for f in action_files if f.startswith(raw_args.from_yaml)]
@@ -188,7 +186,7 @@ def main(input_args: Optional[List[str]] = None):
                 with open(new_file, "w") as f:
                     pass
             else:
-                prev_file = sorted(prev_files)[-1]  # 取序号最大的文件 
+                prev_file = sorted(prev_files)[-1]  # 取序号最大的文件
                 with open(os.path.join(actions_dir, prev_file), "r") as f:
                     content = f.read()
                 new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}.yml")
@@ -224,6 +222,11 @@ def main(input_args: Optional[List[str]] = None):
             byzerllm.connect_cluster(address=args.ray_address)
 
         llm = byzerllm.ByzerLLM(verbose=args.print_request)
+
+        if args.code_model:
+            code_model = byzerllm.ByzerLLM()
+            code_model.setup_default_model_name(args.code_model)
+            llm.setup_sub_client("code_model", code_model)
 
         if args.human_as_model:
 
@@ -270,7 +273,16 @@ def main(input_args: Optional[List[str]] = None):
                     return False, v
 
             llm.add_event_callback(EventName.BEFORE_CALL_MODEL, intercept_callback)
+            code_model = llm.get_sub_client("code_model")
+            if code_model:
+                code_model.add_event_callback(
+                    EventName.BEFORE_CALL_MODEL, intercept_callback
+                )
         llm.add_event_callback(EventName.AFTER_CALL_MODEL, token_counter_interceptor)
+
+        code_model = llm.get_sub_client("code_model")
+        if code_model:
+            code_model.add_event_callback(EventName.AFTER_CALL_MODEL, token_counter_interceptor)
 
         llm.setup_template(model=args.model, template="auto")
         llm.setup_default_model_name(args.model)
@@ -315,11 +327,6 @@ def main(input_args: Optional[List[str]] = None):
             emb_model.setup_template(model=args.emb_model, template="auto")
             llm.setup_sub_client("emb_model", emb_model)
 
-        if args.code_model:
-            code_model = byzerllm.ByzerLLM()
-            code_model.setup_default_model_name(args.code_model)
-            llm.setup_sub_client("code_model", code_model)
-        
         if args.planner_model:
             planner_model = byzerllm.ByzerLLM()
             planner_model.setup_default_model_name(args.planner_model)
@@ -327,12 +334,12 @@ def main(input_args: Optional[List[str]] = None):
 
     else:
         llm = None
-    
+
     # Add query prefix and suffix
     if args.query_prefix:
         args.query = f"{args.query_prefix}\n{args.query}"
     if args.query_suffix:
-        args.query = f"{args.query}\n{args.query_suffix}"    
+        args.query = f"{args.query}\n{args.query_suffix}"
 
     if raw_args.command == "index":  # New subcommand logic
         from autocoder.index.for_command import index_command

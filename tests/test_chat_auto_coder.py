@@ -20,7 +20,8 @@ from autocoder.chat_auto_coder import (
     remove_files,
     chat,
     exclude_dirs,
-    index_query
+    index_query,
+    memory,
 )
 
 class TestChatAutoCoder(unittest.TestCase):

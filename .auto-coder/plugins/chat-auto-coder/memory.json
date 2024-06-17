@@ -119,6 +119,10 @@
     {
       "role": "user",
       "content": "给第一层级的方法都用unitest写个测试 放在 tests 目录下"
+    },
+    {
+      "role": "user",
+      "content": "test_configure 该如何修改正 chat 是个方法,这么用肯定不会"
     }
   ],
   "current_files": {

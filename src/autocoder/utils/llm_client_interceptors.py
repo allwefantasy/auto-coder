@@ -13,7 +13,7 @@ def token_counter_interceptor(llm,model,response) -> EventCallbackResult:
         metadata = v["metadata"]
         input_tokens_count = metadata.get("input_tokens_count",0)
         generated_tokens_count = metadata.get("generated_tokens_count",0)
-        logger.info(f"Input tokens count: {input_tokens_count}, Generated tokens count: {generated_tokens_count}")
+        logger.info(f"{model} consume Input tokens count: {input_tokens_count}, Generated tokens count: {generated_tokens_count}")
         store.update_token_counter(project=None,input_tokens_count=input_tokens_count,generated_tokens_count = generated_tokens_count)
     return True,None    
         
