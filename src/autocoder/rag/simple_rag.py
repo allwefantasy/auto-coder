@@ -58,7 +58,7 @@ class SimpleRAG:
         self.llm = llm
         self.args = args
         self.path = path
-        self.collection_manager = CollectionManager("")
+        self.collection_manager = CollectionManager(args.base_dir)
 
         self.collections = self.args.collection
         if self.args.collections:

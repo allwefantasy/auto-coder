@@ -59,6 +59,8 @@ lang_desc = {
         "query_prefix": "The query prefix",
         "query_suffix": "The query suffix",
         "next_from_yaml": "The YAML file to copy content from when creating a new action file. It supports prefix matching, e.g., specifying '001' will match '001_abc.yml'.",
+        "next_desc": "create a new action file based one the last action file",
+        "base_dir": "Alternative path for /~/.auto-coder to store or retrieve text embeddings. Using /~/.auto-coder/ if not specified"
     },
     "zh": {
         "parser_desc": "自动为Python脚本实现缺失的方法。",
@@ -121,5 +123,6 @@ lang_desc = {
         "query_prefix": "查询前缀",
         "query_suffix": "查询后缀",
         "next_from_yaml": "创建新的action文件时要从中复制内容的YAML文件。支持前缀匹配，例如，指定'001'将匹配'001_abc.yml'。"
+        "base_dir": "用于替代byzerllm中/~/.auto-coder的路径存放或读取向量化后的文本。不指定则使用默认路径"
     }
 }
