@@ -75,6 +75,10 @@
     {
       "role": "user",
       "content": "add_files, remove_files 自动补全,要支持按逗号分隔,如果遇到逗号,那么要重新开始计算起始点"
+    },
+    {
+      "role": "user",
+      "content": "chat方法里conf其他参数也需要通过拼接成yaml片段的方式放到yaml_content里"
     }
   ],
   "current_files": {

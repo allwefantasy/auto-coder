@@ -51,7 +51,7 @@ def find_files_in_project(file_names: List[str]) -> List[str]:
     matched_files = []
     for root, dirs, files in os.walk(project_root):
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
-        for file in files:            
+        for file in files:
             if file in file_names:
                 matched_files.append(os.path.join(root, file))
     return matched_files
@@ -119,9 +119,9 @@ class CommandCompleter(Completer):
                 for file_name in self.all_file_names:
                     if file_name.startswith(new_words[-1]):
                         yield Completion(file_name, start_position=-len(new_words[-1]))
-            elif words[0] == "/remove_files":     
-                new_words = text[len("/remove_files") :].strip().split(",")           
-                for file_name in self.current_file_names:                    
+            elif words[0] == "/remove_files":
+                new_words = text[len("/remove_files") :].strip().split(",")
+                for file_name in self.current_file_names:
                     if file_name.startswith(new_words[-1]):
                         yield Completion(file_name, start_position=-len(new_words[-1]))
             else:
@@ -156,7 +156,7 @@ def load_memory():
 
 
 def add_files(file_names: List[str]):
-    new_files = find_files_in_project(file_names)    
+    new_files = find_files_in_project(file_names)
     existing_files = memory["current_files"]["files"]
     files_to_add = [f for f in new_files if f not in existing_files]
     if files_to_add:
@@ -172,7 +172,7 @@ def remove_files(file_names: List[str]):
     removed_files = []
     for file in memory["current_files"]["files"]:
         if os.path.basename(file) in file_names:
-            removed_files.append(file)    
+            removed_files.append(file)
     for file in removed_files:
         memory["current_files"]["files"].remove(file)
     completer.update_current_files(memory["current_files"]["files"])
@@ -195,22 +195,26 @@ def chat(query: str):
 
     if latest_yaml_file:
         yaml_config = {
-        "include_file": ["./base/base.yml"],
-        "auto_merge": conf.get("auto_merge", "editblock"),
-        "human_as_model": conf.get("human_as_model", "false"),
-        "skip_build_index": conf.get("skip_build_index", "true"),
-        "skip_confirm": conf.get("skip_confirm", "true")        
-    }
+            "include_file": ["./base/base.yml"],
+            "auto_merge": conf.get("auto_merge", "editblock"),
+            "human_as_model": conf.get("human_as_model", "false"),
+            "skip_build_index": conf.get("skip_build_index", "true"),
+            "skip_confirm": conf.get("skip_confirm", "true"),
+        }
         
-    # Add other conf items to yaml_config
-    for key, value in conf.items():
-        if key not in ["auto_merge", "human_as_model", "skip_build_index", "skip_confirm"]:
-            yaml_config[key] = value
+        for key, value in conf.items():
+            if key not in [
+                "auto_merge",
+                "human_as_model",
+                "skip_build_index",
+                "skip_confirm",
+            ]:
+                yaml_config[key] = value
 
-    yaml_config["urls"] = current_files
-    yaml_config["query"] = query
+        yaml_config["urls"] = current_files
+        yaml_config["query"] = query
 
-    yaml_content = yaml.dump(yaml_config, sort_keys=False)
+        yaml_content = yaml.safe_dump(yaml_config, encoding='utf-8',allow_unicode=True, default_flow_style=False).decode('utf-8')
         execute_file = os.path.join("actions", latest_yaml_file)
         with open(os.path.join(execute_file), "w") as f:
             f.write(yaml_content)
@@ -301,7 +305,7 @@ def main():
 
             if user_input.startswith("/add_files"):
                 file_names = user_input[len("/add_files") :].strip().split(",")
-                add_files(file_names)                
+                add_files(file_names)
             elif user_input.startswith("/remove_files"):
                 file_names = user_input[len("/remove_files") :].strip().split(",")
                 remove_files(file_names)
