@@ -279,19 +279,26 @@ def chat(query: str):
             "skip_confirm": conf.get("skip_confirm", "true") == "true",
         }
 
-        for key, value in conf.items():
+
+        def convert_config_value(key, value):
             field_info = AutoCoderArgs.model_fields.get(key)
             if field_info:
-                if  value.lower() in ['true', 'false']:
-                    yaml_config[key] = value.lower() == 'true'
+                if value.lower() in ['true', 'false']:
+                    return value.lower() == 'true'
                 elif "int" in str(field_info.annotation):
-                    yaml_config[key] = int(value)
+                    return int(value)
                 elif "float" in str(field_info.annotation):
-                    yaml_config[key] = float(value)
+                    return float(value)
                 else:
-                    yaml_config[key] = value
+                    return value
             else:
-                print(f"Invalid configuration key: {key}")        
+                print(f"Invalid configuration key: {key}")
+                return None
+
+        for key, value in conf.items():
+            converted_value = convert_config_value(key, value)
+            if converted_value is not None:
+                yaml_config[key] = converted_value
 
         yaml_config["urls"] = current_files
         yaml_config["query"] = query
