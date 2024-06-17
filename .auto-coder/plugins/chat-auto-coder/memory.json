@@ -87,6 +87,10 @@
     {
       "role": "user",
       "content": "删除from autocoder.common import AutoCoderArgs"
+    },
+    {
+      "role": "user",
+      "content": "conf 命令需要也支持自动补全.补全的字段名称来自 AutoCoderArgs 的属性"
     }
   ],
   "current_files": {

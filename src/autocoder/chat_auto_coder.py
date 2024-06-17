@@ -24,13 +24,13 @@ memory = {"conversation": [], "current_files": {"files": []}, "conf": {}}
 
 base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
 
-exclude_dirs = [".git", "node_modules", "dist", "build","__pycache__"]
+exclude_dirs = [".git", "node_modules", "dist", "build", "__pycache__"]
 
 commands = [
     "/add_files",
     "/remove_files",
     "/list_files",
-    "/conf", 
+    "/conf",
     "/chat",
     "/revert",
     "/index/query",
@@ -48,12 +48,13 @@ def get_all_file_names_in_project() -> List[str]:
         file_names.extend(files)
     return file_names
 
+
 def get_all_file_in_project() -> List[str]:
     project_root = os.getcwd()
     file_names = []
     for root, dirs, files in os.walk(project_root):
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
-        for file in files:            
+        for file in files:
             file_names.append(os.path.join(root, file))
     return file_names
 
@@ -103,9 +104,8 @@ def show_help():
     print(
         "  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current files\033[0m"
     )
-    print(
-        "  \033[94m/revert\033[0m - \033[92mRevert commits from last chat\033[0m"
-    )
+    print("  \033[94m/revert\033[0m - \033[92mRevert commits from last chat\033[0m")
+    print("  \033[94m/conf\033[0m - \033[92mSet configuration\033[0m")
     print(
         "  \033[94m/index/query\033[0m \033[93m<args>\033[0m - \033[92mQuery the project index\033[0m"
     )
@@ -138,9 +138,9 @@ class CommandCompleter(Completer):
                 for file_name in self.all_file_names:
                     if file_name.startswith(current_word):
                         yield Completion(file_name, start_position=-len(current_word))
-                
-                for file_name in self.all_files:        
-                    if current_word and current_word in file_name:                        
+
+                for file_name in self.all_files:
+                    if current_word and current_word in file_name:
                         yield Completion(file_name, start_position=-len(current_word))
 
             elif words[0] == "/remove_files":
@@ -150,10 +150,16 @@ class CommandCompleter(Completer):
                 for file_name in self.all_file_names:
                     if file_name.startswith(current_word):
                         yield Completion(file_name, start_position=-len(current_word))
-            
+
                 for file_name in self.all_files:
                     if current_word in file_name:
-                        yield Completion(file_name, start_position=-len(current_word))        
+                        yield Completion(file_name, start_position=-len(current_word))
+            if words[0] == "/conf":
+                new_words = [text[len("/conf") :].strip()]
+                current_word = new_words[0]
+                for field_name, field in AutoCoderArgs.model_fields.items():
+                    if field_name.startswith(current_word) and ":" not in current_word:
+                        yield Completion(field_name, start_position=-len(current_word),display=field.description)
             else:
                 for command in self.commands:
                     if command.startswith(text):
@@ -184,15 +190,18 @@ def load_memory():
             memory = json.load(f)
     completer.update_current_files(memory["current_files"]["files"])
 
+
 def revert():
     last_yaml_file = get_last_yaml_file("actions")
     if last_yaml_file:
-        file_path = os.path.join("actions", last_yaml_file)        
+        file_path = os.path.join("actions", last_yaml_file)
         auto_coder_main(["revert", "--file", file_path])
-        print("Reverted the last chat action successfully. Remove the yaml file {file_path}")
+        print(
+            "Reverted the last chat action successfully. Remove the yaml file {file_path}"
+        )
         os.remove(file_path)
     else:
-        print("No previous chat action found to revert.")    
+        print("No previous chat action found to revert.")
 
 
 def add_files(file_names: List[str]):
@@ -370,7 +379,7 @@ def main():
             elif user_input.startswith("/revert"):
                 revert()
             elif user_input.startswith("/help"):
-                show_help()   
+                show_help()
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt
             else:
