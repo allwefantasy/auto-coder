@@ -95,6 +95,10 @@
     {
       "role": "user",
       "content": "在docs/zh/ 中生成一个 047_chat-auto-coder使用实践.md 文件,标题为文件名."
+    },
+    {
+      "role": "user",
+      "content": "新增/exclude_dirs 指令, 逻辑和/add_files 指令一样,只是保存到 memory 的exclude_dirs 字段下,和 current_files 同级别"
     }
   ],
   "current_files": {

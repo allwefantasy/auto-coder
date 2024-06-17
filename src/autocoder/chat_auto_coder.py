@@ -24,7 +24,7 @@ memory = {"conversation": [], "current_files": {"files": []}, "conf": {}, "exclu
 
 base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
 
-exclude_dirs = [".git", "node_modules", "dist", "build", "__pycache__"]
+defaut_exclude_dirs = [".git", "node_modules", "dist", "build", "__pycache__"]
 
 commands = [
     "/add_files",
@@ -44,8 +44,9 @@ commands = [
 def get_all_file_names_in_project() -> List[str]:
     project_root = os.getcwd()
     file_names = []
+    final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
     for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+        dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
         file_names.extend(files)
     return file_names
 
@@ -53,8 +54,9 @@ def get_all_file_names_in_project() -> List[str]:
 def get_all_file_in_project() -> List[str]:
     project_root = os.getcwd()
     file_names = []
+    final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
     for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+        dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
         for file in files:
             file_names.append(os.path.join(root, file))
     return file_names
@@ -63,8 +65,9 @@ def get_all_file_in_project() -> List[str]:
 def find_files_in_project(file_names: List[str]) -> List[str]:
     project_root = os.getcwd()
     matched_files = []
+    final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
     for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+        dirs[:] = [d for d in dirs if d not final_exclude_dirs]
         for file in files:
             if file in file_names:
                 matched_files.append(os.path.join(root, file))

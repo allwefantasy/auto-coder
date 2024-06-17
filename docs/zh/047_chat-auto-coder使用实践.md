@@ -50,5 +50,21 @@ chat-auto-coder
 
 我通过 `/chat` 指令对 chat_auto_coder.py 进行修改,我现在想新增一个 `/exclude_dirs` 指令，用于排除目录。
 
+下面是我的需求描述：
+
+```
+新增/exclude_dirs 指令, 逻辑和/add_files 指令一样,
+只是保存到 memory 的exclude_dirs 字段下,和 current_files 同级别
+```
+
 ![](../images/047-04.png)
+
+点击回车后，AI 会自动帮你修改代码。在终端你可以看到提交后diff 的内容：
+
+![](../images/047-05.png)
+
+此外，你还可以点击 vscode 右侧的 source_control 查看提交：
+
+![](../images/047-06.png)
+
 
