@@ -117,6 +117,7 @@ def show_help():
         "  \033[94m/list_files\033[0m - \033[92mList all files in the current session\033[0m"
     )
     print("  \033[94m/help\033[0m - \033[92mShow this help message\033[0m")
+    print("  \033[94m/exclude_dirs\033[0m \033[93m<dir1>,<dir2> ...\033[0m - \033[92mAdd directories to exclude from project\033[0m")
     print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
     print()
 
