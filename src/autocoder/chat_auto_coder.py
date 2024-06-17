@@ -220,19 +220,23 @@ query: |
     with open(yaml_file, "w") as f:
         f.write(yaml_content)
     try:        
-        original_stdout = sys.stdout
-        sys.stdout = f = io.StringIO()
-
-        try:
+        with redirect_stdout() as output:
             auto_coder_main(["index-query", "--file", yaml_file])
-        finally:
-            sys.stdout = original_stdout
-
-        output = f.getvalue()        
         print(output)        
         
     finally:
         os.remove(yaml_file)
+
+from contextlib import contextmanager
+
+@contextmanager
+def redirect_stdout():
+    original_stdout = sys.stdout
+    sys.stdout = f = io.StringIO()
+    try:
+        yield f.getvalue()
+    finally:
+        sys.stdout = original_stdout
 
 
 def main():
