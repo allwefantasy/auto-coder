@@ -38,7 +38,7 @@ Chat-Auto-Coder 是一款基于 AutoCoder 开发的交互式聊天工具,可以�
 
 该命令被包含在 `auto-coder` 包中，你可以通过以下命令安装。你可以参考以下文档来安装配置 `auto-coder`。
 
-[](./000-AutoCoder_准备旅程.md)
+[000-AutoCoder_准备旅程](./000-AutoCoder_准备旅程.md)
 
 
 ## 示例
@@ -56,14 +56,23 @@ Set human_as_model to true (这个时候可以拦截auto-coder 和大模型的�
 Exiting...
 ```
 
+## 常见配置
+
+1. human_as_model: 是否使用人类作为模型，默认为 false。 你可以通过 `/conf human_as_model: true` 来设置。[003-使用Web版本大模型，性感的Human As Model 模式](./003-%20AutoCoder%20使用Web版大模型，性感的Human%20As%20Model%20模式.md)
+2. code_model: 代码生成模型，默认为 deepseek_chat。 你可以通过 `/conf code_model: xxxx` 来设置其他通过 byzerllm 启动的模型。 
+
 ## 常见问题
 
 Q: 如何选择项目文件?
+
 A: 使用 `/add_files` 命令,多个文件用逗号分隔。文件路径支持自动补全。
 
 Q: AI 生成的代码如何合并?
+
 A: 默认使用 editblock 方式合并。你可以通过 `/conf auto_merge: xxx` 命令修改合并方式。
 
+
 Q: Chat-Auto-Coder 适合什么样的项目?
+
 A: 理论上支持任何编程语言的项目。但建议项目文件数不要过多,否则可能影响效率。
   

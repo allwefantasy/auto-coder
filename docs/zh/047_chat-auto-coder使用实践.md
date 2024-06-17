@@ -2,6 +2,9 @@
 
 Chat-Auto-Coder 是一个命令行聊天工具，可以让你以对话的方式与 AI 进行沟通，可以无需打开编辑器，就能完成代码的开发。
 
+> 本文使用 Claude Opus 作为代码生成模型。
+> 你可以通过 /conf code_model: opus_chat 来选择使用该模型。具体参看: [046_AutoCoder_Chat-Auto-Coder指南](./046_AutoCoder_Chat-Auto-Coder指南.md)
+
 ## 准备工作
 
 首先，进入你的项目，并且初始化
@@ -77,5 +80,42 @@ chat-auto-coder
 review 完代码后，我们发现，这次修改没有修改 help() 方法：
 
 ![](../images/047-07.png)
+
+可以看到，没有 `/exclude_dirs` 指令的介绍和描述。没关系，我们现在加：
+
+![](../images/047-08.png)
+
+然后看下执行结果：
+
+![](../images/047-09.png)
+
+代码改好了，我们验证下：
+
+![](../images/047-10.png)
+
+可以看到有了。
+
+接着我们测试下功能：
+
+![](../images/047-11.png)
+
+可以过滤出图片。
+
+然后我们排除images目录：
+
+![](../images/047-12.png)
+
+
+接着可以看到， images 目录已经不会被提示了：
+
+![](../images/047-13.png)
+
+
+## 总结
+
+通过这次实践，我们学会了如何使用 chat-auto-coder 给 chat-auto-coder 添加排除目录的功能。整个过程以对话形式完成，非常方便，真正实现了
+在谈笑间完成代码的开发。
+
+
 
 

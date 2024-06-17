@@ -61,13 +61,23 @@ def get_all_file_in_project() -> List[str]:
             file_names.append(os.path.join(root, file))
     return file_names
 
+def get_all_dir_names_in_project() -> List[str]:
+    project_root = os.getcwd()
+    dir_names = []
+    final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
+        for dir in dirs:
+            dir_names.append(dir)
+    return dir_names
+
 
 def find_files_in_project(file_names: List[str]) -> List[str]:
     project_root = os.getcwd()
     matched_files = []
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
     for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not final_exclude_dirs]
+        dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
         for file in files:
             if file in file_names:
                 matched_files.append(os.path.join(root, file))
@@ -130,6 +140,7 @@ class CommandCompleter(Completer):
         self.commands = commands
         self.all_file_names = get_all_file_names_in_project()
         self.all_files = get_all_file_in_project()
+        self.all_dir_names = get_all_dir_names_in_project()
         self.current_file_names = []
 
     def get_completions(self, document, complete_event):
@@ -157,8 +168,17 @@ class CommandCompleter(Completer):
                         yield Completion(file_name, start_position=-len(current_word))
 
                 for file_name in self.all_files:
-                    if current_word in file_name:
+                    if current_word and current_word in file_name:
                         yield Completion(file_name, start_position=-len(current_word))
+
+            elif words[0] == "/exclude_dirs":
+                new_words = text[len("/exclude_dirs") :].strip().split(",")
+                current_word = new_words[-1]
+
+                for file_name in self.all_dir_names:
+                    if current_word and current_word in file_name:
+                        yield Completion(file_name, start_position=-len(current_word))                
+
             if words[0] == "/conf":
                 new_words = [text[len("/conf") :].strip()]
                 current_word = new_words[0]
@@ -178,6 +198,11 @@ class CommandCompleter(Completer):
     def update_current_files(self, files):
         self.current_file_names = [os.path.basename(f) for f in files]
 
+    def refresh_files(self):
+        self.all_file_names = get_all_file_names_in_project()
+        self.all_files = get_all_file_in_project()
+        self.all_dir_names = get_all_dir_names_in_project()    
+
 
 completer = CommandCompleter(commands)
 
@@ -185,6 +210,7 @@ completer = CommandCompleter(commands)
 def save_memory():
     with open(os.path.join(base_persist_dir, "memory.json"), "w") as f:
         json.dump(memory, f, indent=2, ensure_ascii=False)
+    load_memory()    
 
 
 def load_memory():
@@ -285,19 +311,23 @@ def chat(query: str):
         print("Failed to create new YAML file.")
 
     save_memory()
+    completer.refresh_files()
 
 
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
-    existing_dirs = memory["exclude_dirs"]
+    existing_dirs = memory.get("exclude_dirs",[])
     dirs_to_add = [d for d in new_dirs if d not in existing_dirs]
     if dirs_to_add:
-        memory["exclude_dirs"].extend(dirs_to_add)
+        existing_dirs.extend(dirs_to_add)
+        if "exclude_dirs" not in memory:
+            memory["exclude_dirs"] = existing_dirs
         print(f"Added exclude dirs: {dirs_to_add}")
     else:
-        print("All specified dirs are already in the exclude list.")
+        print("All specified dirs are already in the exclude list.")    
     save_memory()
+    completer.refresh_files()
 
 
 def index_query(query: str):

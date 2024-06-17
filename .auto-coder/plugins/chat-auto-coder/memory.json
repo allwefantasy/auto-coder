@@ -99,6 +99,10 @@
     {
       "role": "user",
       "content": "新增/exclude_dirs 指令, 逻辑和/add_files 指令一样,只是保存到 memory 的exclude_dirs 字段下,和 current_files 同级别"
+    },
+    {
+      "role": "user",
+      "content": "在 help() 方法里,添加 /exclude_dirs 指令的帮助信息"
     }
   ],
   "current_files": {
@@ -110,5 +114,8 @@
   },
   "conf": {
     "human_as_model": "true"
-  }
+  },
+  "exclude_dirs": [
+    "images"
+  ]
 }
