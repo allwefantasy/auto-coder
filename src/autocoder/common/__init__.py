@@ -178,6 +178,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     index_filter_workers: Optional[int] = 1
     code_model: Optional[str] = ""
     index_build_workers: Optional[int] = 1
+    planner_model: Optional[str] = ""
     file: Optional[str] = ""
     ray_address: Optional[str] = ""
     anti_quota_limit: Optional[int] = 1
@@ -211,7 +212,9 @@ class AutoCoderArgs(pydantic.BaseModel):
     single_file:Optional[bool] = False
     query_prefix: Optional[str] = None
     query_suffix: Optional[str] = None
+    from_yaml: Optional[str] = None
     base_dir: Optional[str] = None
+
 
     class Config:
         protected_namespaces = ()

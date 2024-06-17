@@ -54,7 +54,11 @@ lang_desc = {
         "screenshot_desc": "Generate screenshots of a webpage",
         "screenshot_url": "The URL of the webpage to capture",
         "screenshot_output": "The directory to save the screenshots",
-        "code_model": "The name of the code model to use. Default is empty",
+        "code_model": "The name of the code model to use. Default is empty",        
+        "planner_model": "The name of the planner model to use. Default is empty",
+        "query_prefix": "The query prefix",
+        "query_suffix": "The query suffix",
+        "next_from_yaml": "The YAML file to copy content from when creating a new action file. It supports prefix matching, e.g., specifying '001' will match '001_abc.yml'.",
         "next_desc": "create a new action file based one the last action file",
         "base_dir": "Alternative path for /~/.auto-coder to store or retrieve text embeddings. Using /~/.auto-coder/ if not specified"
     },
@@ -115,6 +119,10 @@ lang_desc = {
         "screenshot_output": "保存截图的目录",
         "code_model": "要使用的代码模型的名称。默认为空",
         "next_desc": "基于上一个action文件创建一个新的action文件",
+        "planner_model": "要使用的规划模型的名称。默认为空",
+        "query_prefix": "查询前缀",
+        "query_suffix": "查询后缀",
+        "next_from_yaml": "创建新的action文件时要从中复制内容的YAML文件。支持前缀匹配，例如，指定'001'将匹配'001_abc.yml'。"
         "base_dir": "用于替代byzerllm中/~/.auto-coder的路径存放或读取向量化后的文本。不指定则使用默认路径"
     }
 }

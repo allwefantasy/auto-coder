@@ -2,9 +2,10 @@ import argparse
 from autocoder.common import AutoCoderArgs
 from autocoder.lang import lang_desc
 import locale
+from typing import Optional,List
 
 
-def parse_args() -> AutoCoderArgs:
+def parse_args(input_args:Optional[List[str]]=None) -> AutoCoderArgs:
     system_lang, _ = locale.getdefaultlocale()
     lang = "zh" if system_lang and system_lang.startswith("zh") else "en"
     desc = lang_desc[lang]
@@ -78,6 +79,7 @@ def parse_args() -> AutoCoderArgs:
         "--print_request", action="store_true", help=desc["print_request"]
     )
     parser.add_argument("--code_model", default="", help=desc["code_model"])
+    parser.add_argument("--planner_model", default="", help=desc["planner_model"])
     parser.add_argument(
         "--py_packages", required=False, default="", help=desc["py_packages"]
     )
@@ -89,6 +91,8 @@ def parse_args() -> AutoCoderArgs:
         "--urls_use_model", action="store_true", help=desc["urls_use_model"]
     )
     parser.add_argument("--exclude_files", default="", help="")
+    parser.add_argument("--query_prefix", default=None, help=desc["query_prefix"])
+    parser.add_argument("--query_suffix", default=None, help=desc["query_suffix"])
 
     parser.add_argument("--search", default="", help="")
     parser.add_argument("--search_engine", default="", help=desc["search_engine"])
@@ -330,6 +334,7 @@ def parse_args() -> AutoCoderArgs:
     )
     next_parser.add_argument("name", help="Name for the new action file")
     next_parser.add_argument("--source_dir", default=".", help="")
+    next_parser.add_argument("--from_yaml", help=desc["next_from_yaml"])
 
     doc2html_parser = subparsers.add_parser(
         "doc2html", help="Convert word/pdf document to html"
@@ -348,6 +353,9 @@ def parse_args() -> AutoCoderArgs:
         "--output", help="Output directory to save the converted html file"
     )
 
-    args = parser.parse_args()
+    if input_args: 
+        args = parser.parse_args(input_args)
+    else:
+        args = parser.parse_args()
 
     return AutoCoderArgs(**vars(args)), args

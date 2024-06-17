@@ -1,0 +1,11 @@
+include_file:
+- ./base/vscode.yml
+- ./common/vscode.yml
+
+query_suffix: ""
+query: |  
+  create_yaml.tsx 的输入框在dark模式下，配色和格式，以及输入的文本颜色，输入文字和变宽距离还是有点问题。
+  修正下，用经典搭配。
+
+  同步关注 dark.css
+

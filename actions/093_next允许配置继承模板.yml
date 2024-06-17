@@ -1,0 +1,11 @@
+include_file:
+- ./base/base.yml
+- ./common/添加参数.yml
+query: |
+
+  在 auto_coder.py 中，next 命令目前是从最后一个文件拷贝内容的。我们要支持用户选择已有的YAML文件。
+  1. 新增一个命令行参数 --from_yaml，用于指定从哪个YAML文件拷贝内容。
+  2. 如果用户指定了 --from_yaml 参数，则从指定的YAML文件拷贝内容。
+
+  --from_yaml 要支持前缀使用，比如 001_abc.yml, 用户只需要指定 001 既可以，因为所有的文件都是以数字+下划线开头的。
+  

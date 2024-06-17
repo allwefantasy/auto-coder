@@ -60,7 +60,7 @@ class TSProject():
                 exclude_patterns.append(re.compile(pattern))
             elif pattern.startswith("human://"):
                 pattern = pattern[8:]
-                v = self.extract_regex_pattern(self.generate_regex_pattern.with_llm(self.llm).run(desc=pattern))
+                v = self.generate_regex_pattern.with_llm(self.llm).with_extractor(self.extract_regex_pattern).run(desc=pattern)
                 if not v:
                     raise ValueError("Fail to generate regex pattern, try again.")
                 logger.info(f"Generated regex pattern: {v.pattern}")

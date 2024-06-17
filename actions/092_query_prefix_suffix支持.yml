@@ -1,0 +1,6 @@
+include_file:
+- ./base/base.yml
+- ./common/添加参数.yml
+
+query: |
+  添加 --system 参数，用于指定系统参数

@@ -75,7 +75,7 @@ class CodeAutoMergeEditBlock:
             elif start_marker_count > 0:
                 block.append(line)
 
-        return path_and_code_list   
+        return path_and_code_list
 
     @byzerllm.prompt()
     def git_require_msg(self, source_dir: str, error: str) -> str:
@@ -93,7 +93,7 @@ class CodeAutoMergeEditBlock:
         Error: {{ error }}
         """
 
-    def get_edits(self,content: str):                
+    def get_edits(self, content: str):
         edits = self.parse_whole_text(content)
         HEAD = "<<<<<<< SEARCH"
         DIVIDER = "======="
@@ -106,14 +106,14 @@ class CodeAutoMergeEditBlock:
             in_head = False
             in_updated = False
             for line in c.splitlines():
-                if line.strip()==HEAD:
+                if line.strip() == HEAD:
                     in_head = True
                     continue
-                if line.strip()==DIVIDER:
-                    in_head= False
+                if line.strip() == DIVIDER:
+                    in_head = False
                     in_updated = True
                     continue
-                if line.strip()==UPDATED:
+                if line.strip() == UPDATED:
                     in_head = False
                     in_updated = False
                     continue
@@ -121,10 +121,10 @@ class CodeAutoMergeEditBlock:
                     heads.append(line)
                 if in_updated:
                     updates.append(line)
-            result.append((edit.path,"\n".join(heads),"\n".join(updates)))
-        return result        
+            result.append((edit.path, "\n".join(heads), "\n".join(updates)))
+        return result
 
-    def merge_code(self, content: str, force_skip_git: bool = False):        
+    def merge_code(self, content: str, force_skip_git: bool = False):
         file_content = open(self.args.file).read()
         md5 = hashlib.md5(file_content.encode("utf-8")).hexdigest()
         # get the file name
@@ -140,30 +140,32 @@ class CodeAutoMergeEditBlock:
                     self.git_require_msg(source_dir=self.args.source_dir, error=str(e))
                 )
                 return
-      
+
         codes = self.get_edits(content)
-        updated_files  = []
+        updated_files = []
         for block in codes:
             file_path = block[0]
             updated_files.append(file_path)
             head = block[1]
             update = block[2]
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            if not os.path.exists(file_path):                
+            if not os.path.exists(file_path):
                 with open(file_path, "w") as f:
-                    logger.info(f"Upsert path: {file_path}")                    
+                    logger.info(f"Upsert path: {file_path}")
                     f.write(update)
                 continue
             with open(file_path, "r") as f:
                 existing_content = f.read()
-            logger.info(f'''in:\n {file_path}
+            logger.info(
+                f"""in:\n {file_path}
 replace:\n{head}
-with:\n{update}''')    
-            existing_content = existing_content.replace(head,update,1)
-            logger.info(f"Upsert Result: {existing_content}")            
+with:\n{update}"""
+            )
+            existing_content = existing_content.replace(head, update, 1)
+            logger.info(f"Upsert Result: {existing_content}")
             with open(file_path, "w") as f:
-                f.write(existing_content)                    
-         
+                f.write(existing_content)
+
         logger.info(f"Merged {len(set(updated_files))} files into the project.")
         if not force_skip_git:
             git_utils.commit_changes(

@@ -1,0 +1,12 @@
+include_file:
+- ./base/base.yml
+
+auto_merge: editblock
+human_as_model: true
+project_type: py
+
+query: |    
+  命令行添加一个 planner_model 参数, 需要同时修改command_args.py, common/__init__.py, auto_coder.py,lang.py 等文件。
+  关注 planner.py 文件，我们需要检测下 llm 是不是有个 planner_model 值存在。
+  参考 rest.py 中检测 vl_model 的方式。
+  如果 code_model存在，那么我们需要使用 planner_model 而不是模型的llm 来处理。

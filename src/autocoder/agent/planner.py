@@ -106,7 +106,7 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         action_files = [
             f
             for f in os.listdir(actions_dir)
-            if f[:3].isdigit() and f.endswith(".yml") and f[:3] != "101"
+            if f[:3].isdigit() and f.endswith(".yml")
         ]
         if not action_files:
             max_seq = 0
@@ -194,6 +194,8 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
 class Planner:
     def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         self.llm = llm
+        if args.planner_model:
+            self.llm = self.llm.get_sub_client("planner_model")
         self.args = args
         self.tools = get_tools(args=args, llm=llm)    
 

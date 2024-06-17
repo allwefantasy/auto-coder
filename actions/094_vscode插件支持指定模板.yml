@@ -1,0 +1,15 @@
+include_file:
+- ./base/vscode.yml
+- ./common/vscode.yml
+
+query: |
+  createYaml 命令中，填写文件名的时候，多加一个输入框，允许填写一个文件前缀，比如 001_abc.yml，用户只需要输入 001 即可。
+  如果用户填写了前缀,则命令为：
+
+  auto-coder next "${fileName}" --from_yaml "${prefix}"
+
+  如果用户没有填写前缀，则命令为：
+
+  auto-coder next "${fileName}"
+
+  只弹出一个框，里面有两个输入框，一个是文件名，一个是前缀。

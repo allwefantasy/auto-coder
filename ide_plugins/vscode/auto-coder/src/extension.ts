@@ -12,7 +12,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated	
 	const outputChannel = vscode.window.createOutputChannel('auto-coder-copilot-extension');
-  	outputChannel.appendLine('Congratulations, your extension "auto-coder" is now active!');
+	outputChannel.appendLine('Congratulations, your extension "auto-coder" is now active!');
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
@@ -34,7 +34,7 @@ export function activate(context: vscode.ExtensionContext) {
 		} else {
 			terminal = terminals[0];
 		}
-				
+
 		terminal.show();
 
 		if (projectRoot) {
@@ -64,13 +64,13 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			return;
 		}
-        
+
 		const baseConfigFile = path.join(projectRoot, 'actions', 'base', 'base.yml');
 		let model, embModel;
-		
-		if (fs.existsSync(baseConfigFile)) {			
+
+		if (fs.existsSync(baseConfigFile)) {
 			const baseConfig = yaml.load(fs.readFileSync(baseConfigFile, 'utf8')) as Record<string, unknown>;
-			model = baseConfig?.model as string;
+			model = baseConfig?.planner_model as string || baseConfig?.model as string;
 			embModel = baseConfig?.emb_model as string;
 		}
 
@@ -82,7 +82,7 @@ export function activate(context: vscode.ExtensionContext) {
 		if (!requirement) {
 			return;
 		}
-        
+
 		if (!model) {
 			model = await vscode.window.showInputBox({
 				placeHolder: '请输入模型名',
@@ -95,7 +95,7 @@ export function activate(context: vscode.ExtensionContext) {
 				placeHolder: '请输入向量模型名',
 				prompt: '向量模型名'
 			});
-		}	
+		}
 
 		if (requirement && model && embModel) {
 			const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -167,15 +167,21 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		const requirement = await vscode.window.showInputBox({
-			placeHolder: '请输入需求',
-			prompt: '需求'
-		});
+		const panel = vscode.window.createWebviewPanel(
+			'createYamlForm',
+			'Create YAML File',
+			vscode.ViewColumn.One,
+			{
+				enableScripts: true
+			}
+		);
 
-		if (!requirement) {
-			return;
-		}
-
+		const scriptPathOnDisk = vscode.Uri.file(path.join(context.extensionPath, 'dist', 'web.js'));
+  		const scriptUri = panel.webview.asWebviewUri(scriptPathOnDisk);
+		const colorTheme = vscode.window.activeColorTheme;
+		panel.webview.html = getWebviewContent(scriptUri, colorTheme);
+	
+			
 		const terminals = vscode.window.terminals;
 		let terminal;
 
@@ -189,11 +195,49 @@ export function activate(context: vscode.ExtensionContext) {
 		if (projectRoot) {
 			terminal.sendText(`cd ${projectRoot}`);
 		}
-		terminal.sendText(`auto-coder next "${requirement}"`);
+
+		// Handle messages from the webview
+		panel.webview.onDidReceiveMessage(
+			message => {
+				switch (message.type) {
+					case 'submitForm':
+						// close the webview
+						panel.dispose();
+						if (message.value.prefix) {
+							terminal.sendText(`auto-coder next "${message.value.fileName}" --from_yaml "${message.value.prefix}"`);
+						} else {
+							terminal.sendText(`auto-coder next "${message.value.fileName}"`);
+						}
+						return;
+				}
+			},
+			undefined,
+			context.subscriptions
+		);
 	});
 
 	context.subscriptions.push(createYamlDisposable);
 }
+
+function getWebviewContent(scriptUri: vscode.Uri,colorTheme: vscode.ColorTheme) {	
+	return `
+	  <!DOCTYPE html>
+	  <html lang="en">
+	  <head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Create YAML</title>		
+	  </head>
+	  <body>
+		<div id="root"></div>	
+		<script>
+		  window.vscodeColorTheme = ${JSON.stringify(colorTheme.kind)};
+		</script>
+		<script src="${scriptUri}"></script>			
+	  </body>
+	  </html>
+	`;
+  }
 
 
 export function deactivate() { }

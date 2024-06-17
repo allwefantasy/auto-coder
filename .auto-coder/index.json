@@ -1,21 +1,15 @@
 {
   "/Users/allwefantasy/projects/auto-coder/setup.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/setup.py",
-    "symbols": "用途：用于设置和安装AutoCoder项目。\n函数：\n变量：folder, __version__, install_requires, readme_contents\n类：\n导入语句：import os^^from setuptools import find_packages^^from setuptools import setup",
-    "last_modified": 1711809217.9135008,
-    "md5": "755d4c909428aca6751b50c4f9f1fb0f"
+    "symbols": "用途：用于设置和安装AutoCoder项目。\n函数：\n变量：folder, version_path, __version__, req_path, install_requires, readme_path, readme_contents\n类：\n导入语句：import os^^from setuptools import find_packages^^from setuptools import setup",
+    "last_modified": 1718542634.0642846,
+    "md5": "e7f5f1652a975c3d9d7c3a1b306faec2"
   },
   "/Users/allwefantasy/projects/auto-coder/tests/test_init_command.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/tests/test_init_command.py",
     "symbols": "用途：主要用于测试自动编码器的初始化命令功能。\n函数：test_init_command\n变量：test_dir\n类：\n导入语句：import os^^import shutil^^from autocoder.auto_coder import main^^from autocoder.command_args import parse_args",
     "last_modified": 1714363934.3556216,
     "md5": "3a02a954c1c7b2a2b666a42b9a3bbd20"
-  },
-  "/Users/allwefantasy/projects/auto-coder/run.py": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/run.py",
-    "symbols": "用途：主要用于自动编码器的运行逻辑。\n函数：main\n变量：file\n类：AutoCoderArgs, Dispacher\n导入语句：import byzerllm^^from typing import List,Dict,Any,Optional^^import argparse^^from autocoder.common import AutoCoderArgs^^from autocoder.dispacher import Dispacher",
-    "last_modified": 1711809217.9133615,
-    "md5": "3c479f948d8d8a7a030bd5887db72eec"
   },
   "/Users/allwefantasy/projects/auto-coder/tests/test_shell_client.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/tests/test_shell_client.py",
@@ -49,9 +43,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py",
-    "symbols": "用途：定义语言描述字典，用于自动实现Python脚本中缺失的方法。\n函数：\n变量：lang_desc\n类：\n导入语句：",
-    "last_modified": 1717393754.7216878,
-    "md5": "9bfa90b199d887cb80fbc674beefedaa"
+    "symbols": "用途：主要用于定义语言描述，包括各种配置和指令的描述。\n函数：\n变量：lang_desc\n类：\n导入语句：",
+    "last_modified": 1718376955.601235,
+    "md5": "521e5ea2656bd20bc4992f87a4173af6"
   },
   "/Users/allwefantasy/projects/auto-coder/tests/test_image_to_page.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/tests/test_image_to_page.py",
@@ -68,8 +62,8 @@
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/version.py",
     "symbols": "用途：主要用于定义软件版本号。\n函数：\n变量：__version__\n类：\n导入语句：",
-    "last_modified": 1717753909.9548383,
-    "md5": "2d9c6ccb4326c719984698591eab7081"
+    "last_modified": 1718281504.4002151,
+    "md5": "617a6282c2b0d34ad34fc5aeeae72dad"
   },
   "/Users/allwefantasy/projects/auto-coder/tests/base.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/tests/base.py",
@@ -79,9 +73,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py",
-    "symbols": "用途：主要用于解析命令行参数并配置自动编码器。\n函数：parse_args\n变量：system_lang, lang, desc, parser, subparsers, args\n类：AutoCoderArgs\n导入语句：import argparse^^from autocoder.common import AutoCoderArgs^^from autocoder.lang import lang_desc^^import locale",
-    "last_modified": 1718029710.501786,
-    "md5": "6442c87775b2beaa9fc823668e651d29"
+    "symbols": "用途：主要用于解析命令行参数并执行相应的操作。\n函数：parse_args\n变量：system_lang, lang, desc, parser, subparsers, args\n类：AutoCoderArgs\n导入语句：import argparse^^from autocoder.common import AutoCoderArgs^^from autocoder.lang import lang_desc^^import locale^^from typing import Optional,List",
+    "last_modified": 1718542486.2902362,
+    "md5": "dfa74b5c0901068cedea6c1f48c7d485"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/__init__.py",
@@ -91,15 +85,15 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
-    "symbols": "用途：主要用于自动化代码编写和管理，包括代码生成、版本控制、文档处理等功能。\n函数：resolve_include_path, load_include_files, main\n变量：args, raw_args, config, include_files, abs_include_path, include_config, store, tc, home, auto_coder_dir, libs_dir, code_search_path, llm, vl_model, sd_model, index_model, emb_model, code_model\n类：AutoCoderArgs, Dispacher, SimpleRAG, LLWrapper, ServerArgs, Planner, Anything2Images, CodeAutoExecute\n导入语句：import byzerllm^^from typing import List, Dict, Any, Optional^^from autocoder.common import AutoCoderArgs^^from autocoder.dispacher import Dispacher^^from autocoder.common import git_utils, code_auto_execute^^from autocoder.rag.simple_rag import SimpleRAG^^from autocoder.rag.llm_wrapper import LLWrapper^^from autocoder.utils.llm_client_interceptors import token_counter_interceptor^^from autocoder.db.store import Store^^import yaml^^import os^^from byzerllm.utils.client import EventCallbackResult, EventName^^from prompt_toolkit import prompt^^from prompt_toolkit.formatted_text import FormattedText^^from jinja2 import Template^^import hashlib^^from autocoder.utils.rest import HttpDoc^^from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib^^from autocoder.command_args import parse_args^^from autocoder.rag.api_server import serve, ServerArgs^^from loguru import logger^^import shutil^^import subprocess",
-    "last_modified": 1718029010.0949998,
-    "md5": "bb4d52935193a4b5a40c2951fb44c892"
+    "symbols": "用途：主要用于自动化代码编写和管理，包括代码生成、版本控制、文档构建等功能。\n函数：resolve_include_path, load_include_files, main\n变量：\n类：AutoCoderArgs, Dispacher, SimpleRAG, LLWrapper, Store\n导入语句：import byzerllm^^from typing import List, Dict, Any, Optional^^from autocoder.common import AutoCoderArgs^^from autocoder.dispacher import Dispacher^^from autocoder.common import git_utils, code_auto_execute^^from autocoder.rag.simple_rag import SimpleRAG^^from autocoder.rag.llm_wrapper import LLWrapper^^from autocoder.utils.llm_client_interceptors import token_counter_interceptor^^from autocoder.db.store import Store^^import yaml^^import os^^from byzerllm.utils.client import EventCallbackResult, EventName^^from prompt_toolkit import prompt^^from prompt_toolkit.formatted_text import FormattedText^^from jinja2 import Template^^import hashlib^^from autocoder.utils.rest import HttpDoc^^from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib^^from autocoder.command_args import parse_args^^from autocoder.rag.api_server import serve, ServerArgs^^from autocoder.utils import open_yaml_file_in_editor, get_last_yaml_file^^from loguru import logger",
+    "last_modified": 1718543417.5131845,
+    "md5": "d485f943c7eee04229226ba629b8b03d"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py",
-    "symbols": "用途：主要用于提供自动编码服务器的功能。\n函数：index, index_query, revert, init, screenshot, next_action, run, doc_build, doc_query, doc_chat, doc_serve\n变量：command_args, home, auto_coder_dir, libs_dir, code_search_path\n类：DocBuildArgs, DocQueryArgs, DocChatArgs, AutoCoderRevertArgs, AutoCoderInitArgs, AutoCoderScreenshotArgs, AutoCoderNextArgs, AutoCoderRunArgs, ServerArgs\n导入语句：import os^^import time^^import uvicorn^^from fastapi import FastAPI, Request^^from fastapi.middleware.cors import CORSMiddleware^^from fastapi.responses import JSONResponse^^from autocoder.command_args import parse_args^^from autocoder.auto_coder import load_include_files,resolve_include_path,Dispacher,main^^from autocoder.rag.api_server import ServerArgs^^from autocoder.rag.simple_rag import SimpleRAG^^from autocoder.rag.llm_wrapper import LLWrapper^^from autocoder.common import git_utils^^from autocoder.common.screenshots import gen_screenshots^^from pydantic import BaseModel^^from typing import List, Optional, Union^^from autocoder.index.for_command import index_command, index_query_command^^from autocoder.common import AutoCoderArgs^^from loguru import logger^^from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib^^import byzerllm^^import hashlib^^import argparse",
-    "last_modified": 1717683174.8750436,
-    "md5": "5ae1539373f384f210d954dfab34799a"
+    "symbols": "用途：主要用于提供自动编码服务器的功能。\n函数：run, revert, store, init, screenshot, agent_planner, index, index_query, doc_build, doc_query, doc_chat, doc_serve, doc2html\n变量：app\n类：Dispacher, Planner, SimpleRAG, Anything2Images, Store, ServerArgs\n导入语句：from fastapi import FastAPI, Request^^from autocoder.command_args import parse_args^^from autocoder.auto_coder import Dispacher, resolve_include_path, load_include_files^^from autocoder.common import AutoCoderArgs^^from autocoder.utils.rest import HttpDoc^^from autocoder.agent.planner import Planner^^from autocoder.common.screenshots import gen_screenshots^^from autocoder.common.anything2images import Anything2Images^^from autocoder.rag.simple_rag import SimpleRAG^^from autocoder.index.for_command import index_command, index_query_command^^from autocoder.common import git_utils, code_auto_execute^^from autocoder.rag.llm_wrapper import LLWrapper^^from autocoder.utils.llm_client_interceptors import token_counter_interceptor^^from autocoder.db.store import Store^^from autocoder.rag.api_server import serve, ServerArgs^^from loguru import logger^^import byzerllm^^import yaml^^import os^^import hashlib",
+    "last_modified": 1718537186.5232825,
+    "md5": "e2b90f5ba7f0d0dec311b152125a9dc2"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/actions/copilot.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/actions/copilot.py",
@@ -169,9 +163,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/pyproject/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/pyproject/__init__.py",
-    "symbols": "用途：主要用于自动化代码获取和处理，包括从文件系统、网络和搜索引擎中获取代码，并进行相应的处理和输出。\n函数：get_imports_from_script, filter_imports, fetch_source_code, auto_implement, run, generate_regex_pattern, parse_exclude_files, should_exclude, output, is_python_file, read_file_content, convert_to_source_code, get_package_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, get_source_codes, get_simple_directory_structure, get_tree_like_directory_structure, clone_repository\n变量：script_path, package_name, args, directory, git_url, target_file, sources, llm, exclude_files, exclude_patterns, default_exclude_dirs\n类：RegPattern, Level1PyProject, PyProject\n导入语句：from autocoder.common import SourceCode, AutoCoderArgs^^from autocoder import common as FileUtils^^from autocoder.utils.rest import HttpDoc^^import os^^from typing import Optional, Generator, List, Dict, Any^^from git import Repo^^import ast^^import importlib^^import byzerllm^^import importlib^^import pkgutil^^from autocoder.common.search import Search, SearchEngine^^from autocoder.rag.simple_rag import SimpleRAG^^from loguru import logger^^import re^^from pydantic import BaseModel, Field",
-    "last_modified": 1717508068.8865027,
-    "md5": "c2aa5100b56ec09f23c699bc0bad9358"
+    "symbols": "用途：主要用于自动化代码生成和管理项目结构。\n函数：get_imports_from_script, filter_imports, fetch_source_code, auto_implement, generate_regex_pattern, extract_regex_pattern, parse_exclude_files, should_exclude, is_python_file, read_file_content, convert_to_source_code, get_package_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, get_source_codes, get_simple_directory_structure, get_tree_like_directory_structure, run, clone_repository\n变量：script_path, package_name, file_path, args, directory, git_url, target_file, sources, llm, exclude_files, exclude_patterns, default_exclude_dirs\n类：RegPattern, Level1PyProject, PyProject\n导入语句：from autocoder.common import SourceCode,AutoCoderArgs^^from autocoder import common as FileUtils^^from autocoder.utils.rest import HttpDoc^^import os^^from typing import Optional,Generator,List,Dict,Any^^from git import Repo^^import ast^^import importlib^^import byzerllm^^import importlib^^import pkgutil^^from autocoder.common.search import Search,SearchEngine^^from autocoder.rag.simple_rag import SimpleRAG^^from loguru import logger^^import re^^from pydantic import BaseModel,Field",
+    "last_modified": 1718281310.189498,
+    "md5": "e69369977823bd782cccaa2b0a87d02b"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/simple_directory_reader.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/rag/simple_directory_reader.py",
@@ -235,9 +229,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_editblock.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_editblock.py",
-    "symbols": "用途：主要用于自动合并代码编辑块，支持git仓库的自动合并操作。\n函数：parse_whole_text, git_require_msg, get_edits, merge_code\n类：PathAndCode, CodeAutoMergeEditBlock\n导入语句：import os^^from byzerllm.utils.client import code_utils^^from autocoder.common import AutoCoderArgs, git_utils^^from typing import List^^import pydantic^^import byzerllm^^from loguru import logger^^import hashlib",
-    "last_modified": 1717336796.1230483,
-    "md5": "597cc8c60b51e7e260e07221878f5bbb"
+    "symbols": "用途：主要用于自动合并代码编辑块，支持git仓库操作。\n函数：parse_whole_text, git_require_msg, get_edits, merge_code\n变量：\n类：PathAndCode, CodeAutoMergeEditBlock\n导入语句：import os^^from byzerllm.utils.client import code_utils^^from autocoder.common import AutoCoderArgs, git_utils^^import pydantic^^import byzerllm^^from loguru import logger^^import hashlib",
+    "last_modified": 1718372596.076916,
+    "md5": "72a9ef2668b7d9d07decf9f6a28ffebf"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_strict_diff.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_strict_diff.py",
@@ -265,9 +259,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py",
-    "symbols": "用途：主要用于自动化代码生成和环境检测。\n函数：has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments, detect_env, chat_with_llm_step_by_step\n类：SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, EnvInfo, AutoCoderArgs\n导入语句：import pydantic^^import ast^^import sys^^import subprocess^^import os^^import time^^from typing import List,Dict,Any,Optional,Union",
-    "last_modified": 1718082833.2427526,
-    "md5": "8987d6d1e9e7fc8071a89b37d858a540"
+    "symbols": "用途：主要用于自动化代码编写和环境检测。\n函数：has_sufficient_content, remove_comments_and_docstrings, split_code_into_segments, detect_env, chat_with_llm_step_by_step\n变量：\n类：SourceCode, TranslateReadme, Translates, TranslateArgs, ExecuteStep, ExecuteSteps, EnvInfo, AutoCoderArgs\n导入语句：import pydantic^^import ast^^import sys^^import subprocess^^import os^^import time^^from typing import List,Dict,Any,Optional,Union",
+    "last_modified": 1718376934.2384498,
+    "md5": "ef099894b0580d2540250fae178ef295"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/ShellClient.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/common/ShellClient.py",
@@ -355,9 +349,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/suffixproject/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/suffixproject/__init__.py",
-    "symbols": "用途：主要用于自动化代码生成和项目管理，包括文件过滤、正则表达式生成、REST和RAG搜索等功能。\n函数：generate_regex_pattern, parse_exclude_files, should_exclude, output, is_suffix_file, read_file_content, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, get_simple_directory_structure, get_tree_like_directory_structure, run, clone_repository\n变量：args, directory, git_url, target_file, project_type, suffixs, file_filter, sources, llm, exclude_files, exclude_patterns, default_exclude_dirs\n类：RegPattern, SuffixProject\n导入语句：from autocoder.common import SourceCode,AutoCoderArgs^^from autocoder import common as FileUtils^^from autocoder.utils.rest import HttpDoc^^import os^^from typing import Optional, Generator, List, Dict, Any, Callable^^from git import Repo^^import byzerllm^^from autocoder.common.search import Search,SearchEngine^^from autocoder.rag.simple_rag import SimpleRAG^^from loguru import logger^^import re^^from pydantic import BaseModel,Field",
-    "last_modified": 1717042702.8270895,
-    "md5": "104f979cf225e2eae8bd6f03cd0af446"
+    "symbols": "用途：主要用于自动化代码生成和项目管理，包括文件过滤、正则表达式生成、目录结构展示等功能。\n函数：generate_regex_pattern, extract_regex_pattern, parse_exclude_files, should_exclude, output, is_suffix_file, read_file_content, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_search_source_codes, get_simple_directory_structure, get_tree_like_directory_structure, run, clone_repository\n变量：args, directory, git_url, target_file, project_type, suffixs, file_filter, sources, llm, exclude_files, exclude_patterns, default_exclude_dirs\n类：RegPattern, SuffixProject\n导入语句：from autocoder.common import SourceCode, AutoCoderArgs^^from autocoder import common as FileUtils^^from autocoder.utils.rest import HttpDoc^^import os^^from typing import Optional, Generator, List, Dict, Any, Callable^^from git import Repo^^import byzerllm^^from autocoder.common.search import Search, SearchEngine^^from autocoder.rag.simple_rag import SimpleRAG^^from loguru import logger^^import re^^from pydantic import BaseModel, Field",
+    "last_modified": 1718347756.2605407,
+    "md5": "b2a617eed0fecd45f758308567032f16"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/index.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/index/index.py",
@@ -367,15 +361,15 @@
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/tsproject/__init__.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/tsproject/__init__.py",
-    "symbols": "用途：主要用于自动化代码生成和管理项目目录结构。\n函数：generate_regex_pattern, parse_exclude_files, should_exclude, output, read_file_content, is_likely_useful_file, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_simple_directory_structure, get_tree_like_directory_structure, get_search_source_codes, run, clone_repository\n变量：args, directory, git_url, target_file, sources, llm, exclude_files, exclude_patterns, default_exclude_dirs\n类：RegPattern, TSProject\n导入语句：from autocoder.common import SourceCode,AutoCoderArgs^^from autocoder import common as FileUtils^^from autocoder.utils.rest import HttpDoc^^from autocoder.rag.simple_rag import SimpleRAG^^import os^^from typing import Optional,Generator,List,Dict,Any^^from git import Repo^^import byzerllm^^from autocoder.common.search import Search,SearchEngine^^from loguru import logger^^import re^^from pydantic import BaseModel,Field",
-    "last_modified": 1717508325.9090035,
-    "md5": "9f698a41c3ff84e01fc39b7ec9661304"
+    "symbols": "用途：主要用于自动化代码生成和管理项目目录结构。\n函数：generate_regex_pattern, extract_regex_pattern, parse_exclude_files, should_exclude, output, read_file_content, is_likely_useful_file, convert_to_source_code, get_source_codes, get_rest_source_codes, get_rag_source_codes, get_simple_directory_structure, get_tree_like_directory_structure, get_search_source_codes, run, clone_repository\n变量：args, directory, git_url, target_file, sources, llm, exclude_files, exclude_patterns, default_exclude_dirs\n类：RegPattern, TSProject\n导入语句：from autocoder.common import SourceCode,AutoCoderArgs^^from autocoder import common as FileUtils^^from autocoder.utils.rest import HttpDoc^^from autocoder.rag.simple_rag import SimpleRAG^^import os^^from typing import Optional,Generator,List,Dict,Any^^from git import Repo^^import byzerllm^^from autocoder.common.search import Search,SearchEngine^^from loguru import logger^^import re^^from pydantic import BaseModel,Field",
+    "last_modified": 1718281299.525872,
+    "md5": "4cda71a3304bef19fb521df1432953df"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/agent/planner.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/agent/planner.py",
-    "symbols": "用途：主要用于提供命令行 + YAML 配置文件编程辅助工具，实现从“需求/目标”到“设计”的代码自动修改。\n函数：context, get_tools, get_project_related_files, generate_auto_coder_yaml, read_source_codes, get_auto_coder_knowledge\n变量：\n类：Planner\n导入语句：from llama_index.core.agent import ReActAgent^^from llama_index.core.tools import FunctionTool^^from autocoder.index.index import IndexManager^^from autocoder.pyproject import PyProject^^from autocoder.tsproject import TSProject^^from autocoder.suffixproject import SuffixProject^^from autocoder.common import AutoCoderArgs,SourceCode^^from autocoder.rag.simple_rag import SimpleRAG^^from byzerllm.apps.llama_index.byzerai import ByzerAI^^from loguru import logger^^import os^^import byzerllm^^import yaml",
-    "last_modified": 1718074566.3380773,
-    "md5": "b04476aab458199ff8ed73c93433d416"
+    "symbols": "用途：主要用于提供命令行 + YAML 配置文件编程辅助工具，实现从“需求/目标”到“设计”的转换，并生成 yaml 配置文件。\n函数：context, get_tools, get_project_related_files, generate_auto_coder_yaml, read_source_codes, get_auto_coder_knowledge\n变量：\n类：Planner\n导入语句：from llama_index.core.agent import ReActAgent^^from llama_index.core.tools import FunctionTool^^from autocoder.index.index import IndexManager^^from autocoder.pyproject import PyProject^^from autocoder.tsproject import TSProject^^from autocoder.suffixproject import SuffixProject^^from autocoder.common import AutoCoderArgs,SourceCode^^from autocoder.rag.simple_rag import SimpleRAG^^from byzerllm.apps.llama_index.byzerai import ByzerAI^^from loguru import logger^^import os^^import byzerllm^^import yaml",
+    "last_modified": 1718374007.131218,
+    "md5": "b027a58753fd2d8adcea543c69d92620"
   },
   "/Users/allwefantasy/projects/auto-coder/src/autocoder/utils/tests.py": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/utils/tests.py",
@@ -391,9 +385,9 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/webpack.config.js": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/webpack.config.js",
-    "symbols": "用途：主要用于配置VS Code扩展的Webpack设置。\n函数：\n变量：extensionConfig\n类：\n导入语句：const path = require('path')",
-    "last_modified": 1718276620.4843347,
-    "md5": "7f864090cdadef5f030a19fdd5be0c03"
+    "symbols": "用途：主要用于配置Webpack以构建VS Code扩展。\n函数：\n变量：extensionConfig\n类：\n导入语句：const path = require('path')^const webpack = require('webpack')",
+    "last_modified": 1718510808.588958,
+    "md5": "20a3d0bcfdbd41debdd03dbcfca7e676"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts",
@@ -403,21 +397,21 @@
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts",
-    "symbols": "用途：主要用于提供VSCode扩展，实现自动化代码编写和项目管理功能。\n函数：activate, deactivate\n变量：outputChannel, disposable, createRequirementDisposable, initProjectDisposable, createYamlDisposable\n类：\n导入语句：import * as vscode^^import path^^import fs^^import yaml",
-    "last_modified": 1718275365.2653086,
-    "md5": "3916f831848e9156d77f4467f021b642"
+    "symbols": "用途：主要用于提供VS Code扩展，实现自动编码功能。\n函数：activate, deactivate\n变量：outputChannel, disposable, createRequirementDisposable, initProjectDisposable, createYamlDisposable\n类：\n导入语句：import * as vscode from 'vscode'^^*path = require('path')^^*fs = require('fs')^^*yaml = require('js-yaml')",
+    "last_modified": 1718516028.479128,
+    "md5": "564e8957eff64c4be6087981e4b99f0a"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tsconfig.json",
-    "symbols": "用途：主要用于配置TypeScript编译器选项。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718173684.8179436,
-    "md5": "f2caf1f078c1525d128ab0c124ecdfee"
+    "symbols": "用途：主要用于配置 TypeScript 编译器选项。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718505174.5365112,
+    "md5": "26cf8fefbdd3344b86ed88f0f0a05a4a"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json",
-    "symbols": "用途：用于描述Visual Studio Code插件的配置和依赖。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718276710.47105,
-    "md5": "c160f542e5a2ab6a7256a9a523e9ce72"
+    "symbols": "用途：主要用于配置VSCode插件“auto-coder-copilot”的元数据和依赖。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718510972.1894019,
+    "md5": "0ff04705a8b26c9c3975d7421b553fbd"
   },
   "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json": {
     "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/.eslintrc.json",
@@ -437,10 +431,52 @@
     "last_modified": 1718277212.1562889,
     "md5": "703c99a6a15982119b36c0f078ccb66b"
   },
-  "/Users/allwefantasy/projects/auto-coder/package-lock.json": {
-    "module_name": "/Users/allwefantasy/projects/auto-coder/package-lock.json",
-    "symbols": "用途：主要用于记录和管理项目依赖的版本信息。\n函数：\n变量：\n类：\n导入语句：",
-    "last_modified": 1718277212.1621895,
-    "md5": "f814cadb13f64f2cda8e112f0f3ae6e7"
+  "/Users/allwefantasy/projects/auto-coder/src/autocoder/utils/__init__.py": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/utils/__init__.py",
+    "symbols": "用途：主要用于获取和打开YAML文件的功能。\n函数：get_last_yaml_file, open_yaml_file_in_editor\n变量：\n类：\n导入语句：import os^^from typing import Optional^^import subprocess^^import shutil^^from loguru import logger",
+    "last_modified": 1718270164.3788033,
+    "md5": "3c31f6c2c5dc82225da1a4a8a8439c96"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tailwind.config.js": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/tailwind.config.js",
+    "symbols": "用途：主要用于配置 Tailwind CSS 的样式和插件。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718467654.7901266,
+    "md5": "21076ff68c0e2eada98b42b48bcac3ef"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/C1.tsx": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/C1.tsx",
+    "symbols": "用途：主要用于定义React组件。\n函数：\n变量：\n类：MyComponent\n导入语句：import * as React from 'react'",
+    "last_modified": 1718467704.509671,
+    "md5": "fd1341ef140ec0fec5121e487fd2a602"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/create_yaml.tsx": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/create_yaml.tsx",
+    "symbols": "用途：主要用于创建YAML文件的React组件。\n函数：handleSubmit\n变量：fileName, prefix\n类：\n导入语句：import * as React from 'react'^^* from 'react'\n\n解释：\n- 函数：handleSubmit 是一个定义在 CreateYAMLView 组件中的函数。\n- 变量：fileName 和 prefix 是在 CreateYAMLView 组件中定义的状态变量。\n- 类：没有定义类。\n- 导入语句：从 'react' 导入 * 和 useState。",
+    "last_modified": 1718515742.6639986,
+    "md5": "2bbb84e81c1886c5f98e4be03c68fbd5"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/postcss.config.js": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/postcss.config.js",
+    "symbols": "用途：主要用于配置PostCSS插件。\n函数：\n类：\n变量：\n导入语句：\n\n输出解释：\n- 该代码片段是一个JavaScript文件，用于配置PostCSS插件，没有定义函数、类或变量，也没有导入语句。因此，所有相关项均为空。",
+    "last_modified": 1718503843.44586,
+    "md5": "f67bf145648c2f34af959393ef540a37"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.tsx": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.tsx",
+    "symbols": "用途：主要用于在VSCode插件中渲染YAML视图，并根据VSCode主题调整样式。\n函数：\n变量：colorTheme, vscode, isDarkMode\n类：\n导入语句：import * as React from 'react'^^*^import { createRoot } from 'react-dom/client'^^import './index.css'^^import { CreateYAMLView } from './create_yaml'",
+    "last_modified": 1718515708.0158677,
+    "md5": "024eb6423d532b4df6915a4ef2450cd4"
+  },
+  "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package-lock.json",
+    "symbols": "函数：\n变量：\n类：\n导入语句：\n用途：主要用于提供自动实现函数模板的功能。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于提供自动实现函数模板的功能。\n函数：\n变量：\n类：\n导入语句：\n用途：用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n用途：用于管理项目依赖和锁定版本信息。\n函数：\n变量：\n类：\n导入语句：\n用途：用于管理项目的依赖关系和版本锁定。\n函数：\n变量：\n类：\n导入语句：\n函数:\n变量:\n类:\n导入语句:\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于管理项目的依赖和版本信息。\n函数：\n变量：\n类：\n导入语句：\n用途：主要用于管理项目依赖和版本锁定。\n函数：\n变量：\n类：\n导入语句：",
+    "last_modified": 1718470275.1107929,
+    "md5": "9ee85af4e5958373b18d913c89f60979"
+  },
+  "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py": {
+    "module_name": "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py",
+    "symbols": "用途：主要用于实现自动代码编写器的聊天功能，包括文件管理、查询处理等。\n函数：save_memory, load_memory, find_files_in_project, add_files, remove_files, chat, index_query, main\n变量：memory\n类：\n导入语句：import argparse^^import os^^import yaml^^import json^^from typing import List, Dict, Any^^from prompt_toolkit import PromptSession^^from prompt_toolkit.history import InMemoryHistory^^from prompt_toolkit.auto_suggest import AutoSuggestFromHistory^^from prompt_toolkit.formatted_text import FormattedText^^from prompt_toolkit.key_binding import KeyBindings^^from prompt_toolkit.completion import WordCompleter^^from autocoder.common import AutoCoderArgs^^from autocoder.auto_coder import main as auto_coder_main^^from autocoder.command_args import parse_args^^from autocoder.utils import get_last_yaml_file",
+    "last_modified": 1718543806.9021537,
+    "md5": "08b8eb97e0cdd37d8f9015d39e3b39c3"
   }
 }
