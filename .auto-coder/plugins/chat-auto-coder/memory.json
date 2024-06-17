@@ -79,6 +79,10 @@
     {
       "role": "user",
       "content": "chat方法里conf其他参数也需要通过拼接成yaml片段的方式放到yaml_content里"
+    },
+    {
+      "role": "user",
+      "content": "参考auto_coder.py 在 chat_auto_coder中添加revert 命令"
     }
   ],
   "current_files": {

@@ -19,8 +19,9 @@ Chat-Auto-Coder 是一款基于 AutoCoder 开发的交互式聊天工具,可以�
 2. 在项目根目录下运行 `chat-auto-coder` 启动工具，进入命令行交互界面
 3. 通过 `/add_files` 命令添加需要讨论的项目文件  
 4. 通过 `/chat` 命令开始与 AI 对话
-5. 使用其他命令如 `/conf`, `/index/query` 进行辅助操作
-6. `/exit` 退出程序
+5. 对上次commit的代码不满意，可以通过 `/revert` 命令进行回滚
+6. 使用其他命令如 `/conf`, `/index/query` 进行辅助操作
+7. `/exit` 退出程序
 
 
 比如我想修改一个然后我只需要说出需求即可：

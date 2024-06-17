@@ -1,12 +1,3 @@
-def revert():
-    last_yaml_file = get_last_yaml_file("actions")
-    if last_yaml_file:
-        file_path = os.path.join("actions", last_yaml_file)
-        args = AutoCoderArgs()
-        args.file = file_path
-        auto_coder_main(["revert", "--file", file_path])
-    else:
-        print("No previous chat action found to revert.")
 import argparse
 import os
 import yaml
@@ -163,6 +154,16 @@ def load_memory():
         with open(memory_path, "r") as f:
             memory = json.load(f)
     completer.update_current_files(memory["current_files"]["files"])
+
+def revert():
+    last_yaml_file = get_last_yaml_file("actions")
+    if last_yaml_file:
+        file_path = os.path.join("actions", last_yaml_file)        
+        auto_coder_main(["revert", "--file", file_path])
+        print("Reverted the last chat action successfully. Remove the yaml file {file_path}")
+        os.remove(file_path)
+    else:
+        print("No previous chat action found to revert.")    
 
 
 def add_files(file_names: List[str]):
