@@ -201,7 +201,7 @@ def chat(query: str):
             "skip_build_index": conf.get("skip_build_index", "true"),
             "skip_confirm": conf.get("skip_confirm", "true"),
         }
-        
+
         for key, value in conf.items():
             if key not in [
                 "auto_merge",
@@ -214,7 +214,9 @@ def chat(query: str):
         yaml_config["urls"] = current_files
         yaml_config["query"] = query
 
-        yaml_content = yaml.safe_dump(yaml_config, encoding='utf-8',allow_unicode=True, default_flow_style=False).decode('utf-8')
+        yaml_content = yaml.safe_dump(
+            yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
+        ).decode("utf-8")
         execute_file = os.path.join("actions", latest_yaml_file)
         with open(os.path.join(execute_file), "w") as f:
             f.write(yaml_content)
