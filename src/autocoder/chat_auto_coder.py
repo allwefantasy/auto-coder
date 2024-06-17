@@ -51,7 +51,7 @@ def find_files_in_project(file_names: List[str]) -> List[str]:
     matched_files = []
     for root, dirs, files in os.walk(project_root):
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
-        for file in files:
+        for file in files:            
             if file in file_names:
                 matched_files.append(os.path.join(root, file))
     return matched_files
@@ -118,8 +118,8 @@ class CommandCompleter(Completer):
                 for file_name in self.all_file_names:
                     if file_name.startswith(words[-1]):
                         yield Completion(file_name, start_position=-len(words[-1]))
-            elif words[0] == "/remove_files":
-                for file_name in self.current_file_names:
+            elif words[0] == "/remove_files":                
+                for file_name in self.current_file_names:                    
                     if file_name.startswith(words[-1]):
                         yield Completion(file_name, start_position=-len(words[-1]))
             else:
@@ -154,7 +154,7 @@ def load_memory():
 
 
 def add_files(file_names: List[str]):
-    new_files = find_files_in_project(file_names)
+    new_files = find_files_in_project(file_names)    
     existing_files = memory["current_files"]["files"]
     files_to_add = [f for f in new_files if f not in existing_files]
     if files_to_add:
@@ -296,11 +296,11 @@ def main():
             user_input = session.prompt(FormattedText(prompt_message))
 
             if user_input.startswith("/add_files"):
-                file_names = user_input.split(",")[1:]
+                file_names = conf = user_input[len("/add_files") :].strip().split(",")
                 add_files(file_names)
                 print(f"Added files: {file_names}")
             elif user_input.startswith("/remove_files"):
-                file_names = user_input.split(",")[1:]
+                file_names = user_input[len("/remove_files") :].strip().split(",")
                 remove_files(file_names)
                 print(f"Removed files: {file_names}")
             elif user_input.startswith("/index/query"):

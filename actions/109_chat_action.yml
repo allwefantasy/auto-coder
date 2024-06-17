@@ -1,0 +1,14 @@
+
+include_file:
+  - ./base/base.yml
+
+auto_merge: editblock 
+human_as_model: true
+skip_build_index: true
+skip_confirm: true
+
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+
+query: |
+  修正下/remove_files代码补全不正常工作

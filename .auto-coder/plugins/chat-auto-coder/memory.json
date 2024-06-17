@@ -67,6 +67,10 @@
     {
       "role": "user",
       "content": "main里的欢迎词改成  Chat-Auto-Coder"
+    },
+    {
+      "role": "user",
+      "content": "在 docs/zh 下基于 chat_auto_coder.py 生成一份markdown文档,名字叫 046_AutoCoder_Chat-Auto-Coder指南.md 要符合主流开源项目介绍的方式"
     }
   ],
   "current_files": {
