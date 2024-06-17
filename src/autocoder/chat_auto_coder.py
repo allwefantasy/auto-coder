@@ -279,9 +279,9 @@ def chat(query: str):
         yaml_config = {
             "include_file": ["./base/base.yml"],
             "auto_merge": conf.get("auto_merge", "editblock"),
-            "human_as_model": conf.get("human_as_model", "false"),
-            "skip_build_index": conf.get("skip_build_index", "true"),
-            "skip_confirm": conf.get("skip_confirm", "true"),
+            "human_as_model": conf.get("human_as_model", "false") == "true",
+            "skip_build_index": conf.get("skip_build_index", "true") == "true",
+            "skip_confirm": conf.get("skip_confirm", "true") == "true",
         }
 
         for key, value in conf.items():
@@ -291,7 +291,10 @@ def chat(query: str):
                 "skip_build_index",
                 "skip_confirm",
             ]:
-                yaml_config[key] = value
+                if value == "true":
+                    yaml_config[key] = value == "true"
+                else:
+                    yaml_config[key] = value
 
         yaml_config["urls"] = current_files
         yaml_config["query"] = query
@@ -343,7 +346,8 @@ query: |
     try:
         with redirect_stdout() as output:
             auto_coder_main(["index-query", "--file", yaml_file])
-        print(output.getvalue(),flush=True)        
+        print(output.getvalue(),flush=True)
+        
 
     finally:
         os.remove(yaml_file)
