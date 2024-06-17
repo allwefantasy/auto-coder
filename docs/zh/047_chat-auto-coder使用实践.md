@@ -67,4 +67,13 @@ chat-auto-coder
 
 ![](../images/047-06.png)
 
+如果你对这次修改不满意，可以使用 
+
+```bash
+/revert
+```    
+进行回滚。
+
+review 完代码后，我们发现，这次修改没有修改 help() 方法：
+
 
