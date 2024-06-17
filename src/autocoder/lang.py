@@ -122,7 +122,7 @@ lang_desc = {
         "planner_model": "要使用的规划模型的名称。默认为空",
         "query_prefix": "查询前缀",
         "query_suffix": "查询后缀",
-        "next_from_yaml": "创建新的action文件时要从中复制内容的YAML文件。支持前缀匹配，例如，指定'001'将匹配'001_abc.yml'。"
+        "next_from_yaml": "创建新的action文件时要从中复制内容的YAML文件。支持前缀匹配，例如，指定'001'将匹配'001_abc.yml'。",
         "base_dir": "用于替代byzerllm中/~/.auto-coder的路径存放或读取向量化后的文本。不指定则使用默认路径"
     }
 }

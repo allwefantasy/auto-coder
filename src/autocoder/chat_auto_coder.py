@@ -285,16 +285,18 @@ def chat(query: str):
         }
 
         for key, value in conf.items():
-            if key in AutoCoderArgs.model_fields:
-                field_type = AutoCoderArgs.model_fields[key].outer_type_
-                if field_type is bool:
-                    yaml_config[key] = value.lower() == "true"
-                elif field_type in (int, float):
-                    yaml_config[key] = field_type(value)
-                elif field_type is list:
-                    yaml_config[key] = value.split(",") if value else []
+            field_info = AutoCoderArgs.model_fields.get(key)
+            if field_info:
+                if  value.lower() in ['true', 'false']:
+                    yaml_config[key] = value.lower() == 'true'
+                elif "int" in str(field_info.annotation):
+                    yaml_config[key] = int(value)
+                elif "float" in str(field_info.annotation):
+                    yaml_config[key] = float(value)
                 else:
                     yaml_config[key] = value
+            else:
+                print(f"Invalid configuration key: {key}")        
 
         yaml_config["urls"] = current_files
         yaml_config["query"] = query

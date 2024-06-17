@@ -103,6 +103,10 @@
     {
       "role": "user",
       "content": "在 help() 方法里,添加 /exclude_dirs 指令的帮助信息"
+    },
+    {
+      "role": "user",
+      "content": "chat 方法中,yaml_config[key] = value 我们需要根据AutoCoderArgs的字段类型来对value进行类型转换.value 是字符串,key 必定会出现在 AutoCoderArgs里"
     }
   ],
   "current_files": {
