@@ -42,10 +42,10 @@ class HttpDoc:
         输出的内容请以 "<MARKER></MARKER> 标签对包裹。
         """
 
-    def is_binary_file(self,filepath):    
+    def is_binary_file(self,filepath):            
         try:
             with open(filepath, 'rb') as file:
-                chunk = file.read(1024)  # Read first 1024 bytes
+                chunk = file.read(1024*8)  # Read first 1024 bytes
                 if b'\x00' in chunk:  # Binary files often contain null bytes
                     return True
                 # Attempt to decode as UTF-8 (or any encoding you expect your text files to be in)
@@ -104,10 +104,10 @@ class HttpDoc:
                  exts = self.get_file_extractor()
                  documents = []   
 
-                 def process_single_file(file_path: str): 
+                 def process_single_file(file_path: str,skip_binary_file_test:bool=False): 
                     temp_documents = []
                     ext = os.path.splitext(file_path)[1].lower()                    
-                    if self.is_binary_file(file_path):
+                    if  not skip_binary_file_test and self.is_binary_file(file_path):
                         logger.warning(f"Skipping binary file: {file_path}")
                         return temp_documents
                     
@@ -124,7 +124,7 @@ class HttpDoc:
                         dirs[:] = [d for d in dirs if d not in ['.git',"node_modules"]]  # Exclude .git directory
                         for file in files:
                             file_path = os.path.join(root, file)                            
-                            documents.extend(process_single_file(file_path))
+                            documents.extend(process_single_file(file_path,skip_binary_file_test=True))
                     
                  else:
                     documents.extend(process_single_file(url))
