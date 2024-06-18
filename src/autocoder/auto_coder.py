@@ -251,8 +251,11 @@ def main(input_args: Optional[List[str]] = None):
                 instruction = input_value[0]["instruction"]
                 final_ins = instruction
 
-                import pyperclip
-                pyperclip.copy(final_ins)
+                try:
+                    import pyperclip
+                    pyperclip.copy(final_ins)
+                except ImportError:
+                    logger.warning("pyperclip not installed, instruction will not be copied to clipboard.")
                 print(
                     f"""\033[92m {final_ins[0:100]}....\n\n(The instruction to model have be saved in: {args.target_file} and copied to clipboard)\033[0m"""
                 )
