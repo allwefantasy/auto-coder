@@ -1,0 +1,12 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: 优化chat_auto_coder.py 中的main方法里的异常打印,让消息更加格式化和丰富
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/version.py
+- /Users/allwefantasy/projects/byzer-llm/docs/zh/003_byzerllm_大模型编程快速指南.md
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
