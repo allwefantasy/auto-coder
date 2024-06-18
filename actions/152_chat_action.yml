@@ -1,0 +1,11 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: '执行 /shell tree 报错: An error occurred: UnicodeDecodeError - ''utf-8'' codec
+  can''t decode byte 0xe6 in position 2623: invalid continuation byte'
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/version.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
