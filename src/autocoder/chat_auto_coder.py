@@ -519,11 +519,9 @@ def main():
                 else:
                     try:
                         result = subprocess.run(command, shell=True, capture_output=True, text=True)
-                        if result.returncode == 0:
-                            print(f"\033[92mCommand executed successfully:\033[0m")
+                        if result.returncode == 0:                            
                             print(result.stdout)
-                        else:
-                            print(f"\033[91mError executing command (exit code {result.returncode}):\033[0m")
+                        else:                            
                             print(result.stderr)
                     except FileNotFoundError:
                         print(f"\033[91mCommand not found: \033[93m{command}\033[0m")
