@@ -60,7 +60,11 @@ func installMiniconda() {
 }
 
 func createEnvironment() {
-	exec.Command("conda", "create", "--name", "auto-coder", "python=3.10.11", "-y").Run()
+	pythonVersion := "3.10.11"
+	if runtime.GOOS == "windows" {
+		pythonVersion = "3.11.9"
+	}
+	exec.Command("conda", "create", "--name", "auto-coder", "python="+pythonVersion, "-y").Run()
 }
 
 func installAutoCoder() {
