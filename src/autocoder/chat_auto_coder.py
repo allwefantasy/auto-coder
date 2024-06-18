@@ -353,8 +353,6 @@ def ask(query: str):
 
     query = f"下面是一些背景信息，如果用户的问题不涉及下面信息，则忽略：\n{all_file_content}\n 用户的问题:{query}"
 
-    
-
     yaml_config = {
         "include_file": ["./base/base.yml"],
     }
