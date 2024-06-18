@@ -2,9 +2,15 @@ auto_merge: editblock
 human_as_model: true
 include_file:
 - ./base/base.yml
-query: mkdir install_script
+query: '使用  Cobra CLI  创建命令行,自动下载Miniconda,然后进行安装,然后执行如下命令:conda create --name auto-coder
+  python=3.10.11
+
+  conda activate auto-coder
+
+  pip install -U auto-coder
+
+  ray start --head'
 skip_build_index: true
 skip_confirm: true
 urls:
-- /Users/allwefantasy/projects/auto-coder/src/autocoder/version.py
-- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/go.mod
