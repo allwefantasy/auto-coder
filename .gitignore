@@ -45,3 +45,4 @@ ide_plugins/vscode/auto-coder/package-lock.json
 ide_plugins/vscode/auto-coder/web/package-lock.json
 .auto-coder/
 output.txt
+auto_coder_installer/bin
