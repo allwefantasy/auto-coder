@@ -251,8 +251,10 @@ def main(input_args: Optional[List[str]] = None):
                 instruction = input_value[0]["instruction"]
                 final_ins = instruction
 
+                import pyperclip
+                pyperclip.copy(final_ins)
                 print(
-                    f"""\033[92m {final_ins[0:100]}....\n\n(The instruction to model have be saved in: {args.target_file})\033[0m"""
+                    f"""\033[92m {final_ins[0:100]}....\n\n(The instruction to model have be saved in: {args.target_file} and copied to clipboard)\033[0m"""
                 )
 
                 lines = []
