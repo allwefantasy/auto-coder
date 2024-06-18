@@ -127,6 +127,10 @@
     {
       "role": "user",
       "content": "增加 /ask 指令.该指令主要是用来做和大模型聊天,会自动带上当前活动文件,但不会去修改项目.注意同步修改 commands/show_help()等地方."
+    },
+    {
+      "role": "user",
+      "content": "针对 action_regex_project 写一个unitest 测试,放在 tests 目录里"
     }
   ],
   "current_files": {
@@ -134,8 +138,7 @@
       "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py",
       "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
       "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py",
-      "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py",
-      "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/actions/plugins/action_regex_project.py"
+      "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py"
     ]
   },
   "conf": {

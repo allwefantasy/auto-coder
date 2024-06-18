@@ -21,6 +21,7 @@ from autocoder.command_args import parse_args
 from autocoder.rag.api_server import serve, ServerArgs
 from autocoder.utils import open_yaml_file_in_editor, get_last_yaml_file
 from loguru import logger
+import json
 
 
 def resolve_include_path(base_path, include_path):
@@ -265,7 +266,7 @@ def main(input_args: Optional[List[str]] = None):
 
                 if result.lower() == "c":
                     return True, None
-                else:
+                else:                    
                     v = [
                         {
                             "predict": result,
@@ -384,7 +385,7 @@ def main(input_args: Optional[List[str]] = None):
             for res in v:
                 print(res[0], end="")
             print()
-            print()    
+            print()
             return
 
         else:

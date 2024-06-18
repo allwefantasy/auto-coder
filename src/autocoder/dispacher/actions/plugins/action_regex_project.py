@@ -11,6 +11,7 @@ from autocoder.common.code_auto_generate_strict_diff import CodeAutoGenerateStri
 from autocoder.common.code_auto_generate_editblock import CodeAutoGenerateEditBlock
 from autocoder.index.index import build_index_and_filter_files
 from autocoder.regexproject import RegexProject
+from autocoder.utils.converation import store_code_model_result
 from loguru import logger
 
 
@@ -76,6 +77,12 @@ class ActionRegexProject:
                 )
             content = "\n\n".join(result)
 
+        store_code_model_result(
+            args=self.args,
+            instruction=self.args.query,
+            result=content,
+            model=self.llm.default_model_name,
+        )
         with open(args.target_file, "w") as file:
             file.write(content)
 
