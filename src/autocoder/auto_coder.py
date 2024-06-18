@@ -260,7 +260,7 @@ def main(input_args: Optional[List[str]] = None):
                         "pyperclip not installed, instruction will not be copied to clipboard."
                     )
                 print(
-                    f"""\033[92m {final_ins[0:100]}....\n\n(The instruction to model have be saved in: {args.target_file} and copied to clipboard)\033[0m"""
+                    f"""\033[92mInstruction to model saved in \033[94m{args.target_file}\033[92m and copied to clipboard:\n\n\033[93m{final_ins[0:100]}...\033[0m"""
                 )
 
                 lines = []
