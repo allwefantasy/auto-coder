@@ -6,7 +6,6 @@ import (
 	"runtime"
 
 	"github.com/spf13/cobra"
-	"os/exec"
 )
 
 func checkCondaExists() bool {
@@ -63,7 +62,7 @@ func downloadMiniconda() {
 
 func installMiniconda() {
 	if runtime.GOOS == "windows" {
-		exec.Command("miniconda.exe", "/S", "/D=%UserProfile%\Miniconda3").Run()
+		exec.Command("miniconda.exe", "/S", "/D=%UserProfile%\\Miniconda3").Run()  
 	} else {
 		exec.Command("bash", "miniconda.sh", "-b").Run()
 	}
