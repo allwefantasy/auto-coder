@@ -384,16 +384,33 @@ def main(input_args: Optional[List[str]] = None):
             #     )
             # )
             return
-        elif raw_args.agent_command == "chat":
-            v = llm.stream_chat_oai(
-                conversations=[{"role": "user", "content": args.query}], delta_mode=True
-            )
+                elif raw_args.agent_command == "chat":
+            memory_dir = os.path.join(os.getcwd(), "memory")
+            os.makedirs(memory_dir, exist_ok=True)
+            memory_file = os.path.join(memory_dir, "chat_history.json")
 
+            if os.path.exists(memory_file):
+                with open(memory_file, "r") as f:
+                    chat_history = json.load(f)
+            else:
+                chat_history = {"ask_conversation": []}
+
+            chat_history["ask_conversation"].append({"role": "user", "content": args.query})
+
+            v = llm.stream_chat_oai(conversations=chat_history["ask_conversation"], delta_mode=True)
+
+            assistant_response = ""
             print("\n\n=============RESPONSE==================\n\n")
             for res in v:
                 print(res[0], end="")
+                assistant_response += res[0]
             print()
             print()
+
+            chat_history["ask_conversation"].append({"role": "assistant", "content": assistant_response})
+
+            with open(memory_file, "w") as f:
+                json.dump(chat_history, f)
             return
 
         else:
