@@ -2,10 +2,10 @@ import argparse
 from autocoder.common import AutoCoderArgs
 from autocoder.lang import lang_desc
 import locale
-from typing import Optional,List
+from typing import Optional, List
 
 
-def parse_args(input_args:Optional[List[str]]=None) -> AutoCoderArgs:
+def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     system_lang, _ = locale.getdefaultlocale()
     lang = "zh" if system_lang and system_lang.startswith("zh") else "en"
     desc = lang_desc[lang]
@@ -226,7 +226,9 @@ def parse_args(input_args:Optional[List[str]]=None) -> AutoCoderArgs:
         "--description", default="", help="Description to route the query"
     )
     doc_query_parse.add_argument(
-        "--base_dir", default="", help="Path where the processed text embeddings were stored"
+        "--base_dir",
+        default="",
+        help="Path where the processed text embeddings were stored",
     )
 
     doc_chat_parse = doc_subparsers.add_parser("chat", help="")
@@ -246,7 +248,9 @@ def parse_args(input_args:Optional[List[str]]=None) -> AutoCoderArgs:
         "--description", default="", help="Description to route the query"
     )
     doc_chat_parse.add_argument(
-        "--base_dir", default="", help="Path where the processed text embeddings were stored"
+        "--base_dir",
+        default="",
+        help="Path where the processed text embeddings were stored",
     )
 
     doc_serve_parse = doc_subparsers.add_parser("serve", help="")
@@ -274,15 +278,56 @@ def parse_args(input_args:Optional[List[str]]=None) -> AutoCoderArgs:
         "--collections", default="default", help="Collection name for indexing"
     )
     doc_serve_parse.add_argument(
-        "--base_dir", default="", help="Path where the processed text embeddings were stored"
+        "--base_dir",
+        default="",
+        help="Path where the processed text embeddings were stored",
     )
 
     agent_parser = subparsers.add_parser("agent", help="Run an agent")
     agent_subparsers = agent_parser.add_subparsers(dest="agent_command")
 
-    planner_parser = agent_subparsers.add_parser("planner", help="Run the planner agent")
+    chat_parser = agent_subparsers.add_parser("chat", help="Run the chat agent")
+
+    chat_parser.add_argument("--source_dir", default=".", help="Source directory")
+    chat_parser.add_argument("--query", help="Query for the planner")
+    chat_parser.add_argument("--model", default="", help=desc["model"])
+    chat_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
+    chat_parser.add_argument("--file", default="", help=desc["file"])
+    chat_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
+    chat_parser.add_argument("--execute", action="store_true", help=desc["execute"])
+    chat_parser.add_argument(
+        "--collections",
+        default="default",
+        help="Comma-separated list of collections to search",
+    )
+    chat_parser.add_argument(
+        "--description", default="", help="Description to route the query"
+    )
+    chat_parser.add_argument(
+        "--enable_rag_search",
+        nargs="?",
+        const=True,
+        default=False,
+        help=desc["enable_rag_search"],
+    )
+    chat_parser.add_argument(
+        "--enable_rag_context",
+        nargs="?",
+        const=True,
+        default=False,
+        help=desc["enable_rag_context"],
+    )
+
+    chat_parser.add_argument("--rag_token", default="", help="")
+    chat_parser.add_argument("--rag_url", default="", help="")
+    chat_parser.add_argument("--target_file", default="./output.txt", help="")
+
+    planner_parser = agent_subparsers.add_parser(
+        "planner", help="Run the planner agent"
+    )
+
     planner_parser.add_argument("--source_dir", default=".", help="Source directory")
-    planner_parser.add_argument("--query", help="Query for the planner")    
+    planner_parser.add_argument("--query", help="Query for the planner")
     planner_parser.add_argument("--model", default="", help=desc["model"])
     planner_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
     planner_parser.add_argument("--file", default="", help=desc["file"])
@@ -353,7 +398,7 @@ def parse_args(input_args:Optional[List[str]]=None) -> AutoCoderArgs:
         "--output", help="Output directory to save the converted html file"
     )
 
-    if input_args: 
+    if input_args:
         args = parser.parse_args(input_args)
     else:
         args = parser.parse_args()

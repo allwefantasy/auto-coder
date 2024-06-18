@@ -100,6 +100,9 @@ def main(input_args: Optional[List[str]] = None):
             print(f"Failed to revert changes for {args.file}")
         return
 
+    if not os.path.isabs(args.source_dir):
+        args.source_dir = os.path.abspath(args.source_dir)
+
     print("Command Line Arguments:")
     print("-" * 50)
     for arg, value in vars(args).items():
@@ -282,7 +285,9 @@ def main(input_args: Optional[List[str]] = None):
 
         code_model = llm.get_sub_client("code_model")
         if code_model:
-            code_model.add_event_callback(EventName.AFTER_CALL_MODEL, token_counter_interceptor)
+            code_model.add_event_callback(
+                EventName.AFTER_CALL_MODEL, token_counter_interceptor
+            )
 
         llm.setup_template(model=args.model, template="auto")
         llm.setup_default_model_name(args.model)
@@ -370,6 +375,18 @@ def main(input_args: Optional[List[str]] = None):
             #     )
             # )
             return
+        elif raw_args.agent_command == "chat":
+            v = llm.stream_chat_oai(
+                conversations=[{"role": "user", "content": args.query}], delta_mode=True
+            )
+
+            print("\n\n=============RESPONSE==================\n\n")
+            for res in v:
+                print(res[0], end="")
+            print()
+            print()    
+            return
+
         else:
             raise ValueError(f"Unknown agent name: {raw_args.agent_command}")
 
