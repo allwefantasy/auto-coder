@@ -123,6 +123,10 @@
     {
       "role": "user",
       "content": "test_configure 该如何修改正 chat 是个方法,这么用肯定不会"
+    },
+    {
+      "role": "user",
+      "content": "增加 /ask 指令.该指令主要是用来做和大模型聊天,会自动带上当前活动文件,但不会去修改项目.注意同步修改 commands/show_help()等地方."
     }
   ],
   "current_files": {

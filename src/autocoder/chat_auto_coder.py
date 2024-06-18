@@ -1,40 +1,4 @@
-
-def ask(query: str):
-    memory["conversation"].append({"role": "user", "content": query})
-    conf = memory.get("conf", {})
-
-    current_files = memory["current_files"]["files"]
-    files_list = "\n".join([f"- {file}" for file in current_files])
-
-    def prepare_ask_yaml():
-        auto_coder_main(["next", "ask_action"])
-
-    prepare_ask_yaml()
-
-    latest_yaml_file = get_last_yaml_file("actions")
-
-    if latest_yaml_file:
-        yaml_config = {
-            "include_file": ["./base/base.yml"],
-            "human_as_model": conf.get("human_as_model", "false") == "true",
-        }        
-        yaml_config["query"] = query
-        yaml_config["urls"] = current_files
-        yaml_content = yaml.safe_dump(
-            yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
-        ).decode("utf-8")
-        execute_file = os.path.join("actions", latest_yaml_file)
-        with open(os.path.join(execute_file), "w") as f:
-            f.write(yaml_content)
-
-        def execute_ask():
-            auto_coder_main(["agent","chat", "--file", execute_file])
-
-        execute_ask()
-    else:
-        print("Failed to create new YAML file.")
-
-    save_memory()import argparse
+import argparse
 import os
 import yaml
 import json
@@ -56,7 +20,12 @@ from autocoder.command_args import parse_args
 from autocoder.utils import get_last_yaml_file
 
 
-memory = {"conversation": [], "current_files": {"files": []}, "conf": {}, "exclude_dirs": []}
+memory = {
+    "conversation": [],
+    "current_files": {"files": []},
+    "conf": {},
+    "exclude_dirs": [],
+}
 
 base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
 
@@ -98,6 +67,7 @@ def get_all_file_in_project() -> List[str]:
             file_names.append(os.path.join(root, file))
     return file_names
 
+
 def get_all_dir_names_in_project() -> List[str]:
     project_root = os.getcwd()
     dir_names = []
@@ -122,11 +92,12 @@ def find_files_in_project(file_names: List[str]) -> List[str]:
                 matched_files.append(os.path.join(root, file))
     return matched_files
 
+
 def convert_config_value(key, value):
     field_info = AutoCoderArgs.model_fields.get(key)
     if field_info:
-        if value.lower() in ['true', 'false']:
-            return value.lower() == 'true'
+        if value.lower() in ["true", "false"]:
+            return value.lower() == "true"
         elif "int" in str(field_info.annotation):
             return int(value)
         elif "float" in str(field_info.annotation):
@@ -136,6 +107,7 @@ def convert_config_value(key, value):
     else:
         print(f"Invalid configuration key: {key}")
         return None
+
 
 @contextmanager
 def redirect_stdout():
@@ -170,7 +142,7 @@ def show_help():
         "  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current files\033[0m"
     )
     print(
-        "  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92mAsk the AI a question using the current files as context, without modifying the project\033[0m"  
+        "  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92mAsk the AI a question using the current files as context, without modifying the project\033[0m"
     )
     print("  \033[94m/revert\033[0m - \033[92mRevert commits from last chat\033[0m")
     print("  \033[94m/conf\033[0m - \033[92mSet configuration\033[0m")
@@ -181,7 +153,9 @@ def show_help():
         "  \033[94m/list_files\033[0m - \033[92mList all files in the current session\033[0m"
     )
     print("  \033[94m/help\033[0m - \033[92mShow this help message\033[0m")
-    print("  \033[94m/exclude_dirs\033[0m \033[93m<dir1>,<dir2> ...\033[0m - \033[92mAdd directories to exclude from project\033[0m")
+    print(
+        "  \033[94m/exclude_dirs\033[0m \033[93m<dir1>,<dir2> ...\033[0m - \033[92mAdd directories to exclude from project\033[0m"
+    )
     print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
     print()
 
@@ -215,7 +189,7 @@ class CommandCompleter(Completer):
 
             elif words[0] == "/remove_files":
                 new_words = text[len("/remove_files") :].strip().split(",")
-                current_word = new_words[-1]                
+                current_word = new_words[-1]
                 for file_name in self.current_file_names:
                     if current_word and current_word in file_name:
                         yield Completion(file_name, start_position=-len(current_word))
@@ -226,14 +200,18 @@ class CommandCompleter(Completer):
 
                 for file_name in self.all_dir_names:
                     if current_word and current_word in file_name:
-                        yield Completion(file_name, start_position=-len(current_word))                
+                        yield Completion(file_name, start_position=-len(current_word))
 
             if words[0] == "/conf":
                 new_words = [text[len("/conf") :].strip()]
                 current_word = new_words[0]
                 for field_name, field in AutoCoderArgs.model_fields.items():
                     if field_name.startswith(current_word) and ":" not in current_word:
-                        yield Completion(field_name, start_position=-len(current_word),display=field.description)
+                        yield Completion(
+                            field_name,
+                            start_position=-len(current_word),
+                            display=field.description,
+                        )
             else:
                 for command in self.commands:
                     if command.startswith(text):
@@ -250,7 +228,7 @@ class CommandCompleter(Completer):
     def refresh_files(self):
         self.all_file_names = get_all_file_names_in_project()
         self.all_files = get_all_file_in_project()
-        self.all_dir_names = get_all_dir_names_in_project()    
+        self.all_dir_names = get_all_dir_names_in_project()
 
 
 completer = CommandCompleter(commands)
@@ -259,7 +237,7 @@ completer = CommandCompleter(commands)
 def save_memory():
     with open(os.path.join(base_persist_dir, "memory.json"), "w") as f:
         json.dump(memory, f, indent=2, ensure_ascii=False)
-    load_memory()    
+    load_memory()
 
 
 def load_memory():
@@ -331,7 +309,7 @@ def chat(query: str):
             "human_as_model": conf.get("human_as_model", "false") == "true",
             "skip_build_index": conf.get("skip_build_index", "true") == "true",
             "skip_confirm": conf.get("skip_confirm", "true") == "true",
-        }        
+        }
 
         for key, value in conf.items():
             converted_value = convert_config_value(key, value)
@@ -359,10 +337,49 @@ def chat(query: str):
     completer.refresh_files()
 
 
+def ask(query: str):
+    conf = memory.get("conf", {})
+    current_files = memory["current_files"]["files"]
+
+    file_contents = []
+    for file in current_files:
+        if os.path.exists(file):
+            with open(file, "r") as f:
+                content = f.read()
+                s = f"##File: {file}\n{content}\n\n"
+                file_contents.append(s)
+
+    all_file_content = "".join(file_contents)
+
+    query = f"下面是一些背景信息，如果用户的问题不涉及下面信息，则忽略：\n{all_file_content}\n 用户的问题:{query}"
+
+    
+
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+    }
+    yaml_config["query"] = query
+    yaml_content = yaml.safe_dump(
+        yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
+    ).decode("utf-8")
+
+    execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+
+    with open(os.path.join(execute_file), "w") as f:
+        f.write(yaml_content)
+
+    def execute_ask():
+        auto_coder_main(["agent", "chat", "--file", execute_file])
+
+    try:
+        execute_ask()
+    finally:
+        os.remove(execute_file)
+
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
-    existing_dirs = memory.get("exclude_dirs",[])
+    existing_dirs = memory.get("exclude_dirs", [])
     dirs_to_add = [d for d in new_dirs if d not in existing_dirs]
     if dirs_to_add:
         existing_dirs.extend(dirs_to_add)
@@ -370,7 +387,7 @@ def exclude_dirs(dir_names: List[str]):
             memory["exclude_dirs"] = existing_dirs
         print(f"Added exclude dirs: {dirs_to_add}")
     else:
-        print("All specified dirs are already in the exclude list.")    
+        print("All specified dirs are already in the exclude list.")
     save_memory()
     completer.refresh_files()
 
@@ -388,8 +405,7 @@ query: |
     try:
         with redirect_stdout() as output:
             auto_coder_main(["index-query", "--file", yaml_file])
-        print(output.getvalue(),flush=True)
-        
+        print(output.getvalue(), flush=True)
 
     finally:
         os.remove(yaml_file)
