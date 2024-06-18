@@ -263,9 +263,8 @@ def revert():
 
 
 def add_files(file_names: List[str]):
-    new_files = find_files_in_project(file_names)
     existing_files = memory["current_files"]["files"]
-    files_to_add = [f for f in new_files if f not in existing_files]
+    files_to_add = [f for f in file_names if f not in existing_files]
     if files_to_add:
         memory["current_files"]["files"].extend(files_to_add)
         print(f"Added files: {[os.path.basename(f) for f in files_to_add]}")
