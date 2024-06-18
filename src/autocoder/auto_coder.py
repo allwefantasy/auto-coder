@@ -410,7 +410,7 @@ def main(input_args: Optional[List[str]] = None):
             chat_history["ask_conversation"].append({"role": "assistant", "content": assistant_response})
 
             with open(memory_file, "w") as f:
-                json.dump(chat_history, f)
+                json.dump(chat_history, f,ensure_ascii=False)
             return
 
         else:
