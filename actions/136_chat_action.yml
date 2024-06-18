@@ -1,0 +1,9 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: '"The instruction to model have be saved in" 这部分是提醒用户,我们把prompt准备好了,放在对应的文件里,并且给了一些预览数据,优化下,让他更加齐心移动,并且加上合适的色彩'
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
