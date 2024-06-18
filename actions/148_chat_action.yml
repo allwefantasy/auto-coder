@@ -1,0 +1,12 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: 添加一个 --silence 参数,默认为 false
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/version.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py
