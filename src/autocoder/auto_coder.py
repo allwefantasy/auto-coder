@@ -396,6 +396,7 @@ def main(input_args: Optional[List[str]] = None):
                 chat_history = {"ask_conversation": []}
 
             chat_history["ask_conversation"].append({"role": "user", "content": args.query})
+            chat_history["ask_conversation"] = chat_history["ask_conversation"][-10:]  # Keep only the last 10 records
 
             v = llm.stream_chat_oai(conversations=chat_history["ask_conversation"], delta_mode=True)
 
