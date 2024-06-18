@@ -61,6 +61,10 @@ Exiting...
 1. human_as_model: 是否使用人类作为模型，默认为 false。 你可以通过 `/conf human_as_model: true` 来设置。[003-使用Web版本大模型，性感的Human As Model 模式](./003-%20AutoCoder%20使用Web版大模型，性感的Human%20As%20Model%20模式.md)
 2. code_model: 代码生成模型，默认为 deepseek_chat。 你可以通过 `/conf code_model: xxxx` 来设置其他通过 byzerllm 启动的模型。 
 
+## 了解项目，但不想改代码
+
+可以用 `/ask` 指令， 该指令会自动带上活动文件，然后回答你的问题，但不会对你的代码做任何变更。
+
 ## 对项目不熟悉，但是又想改项目怎办？
 
 默认我们是通过 `/add_files` 来添加 chat-auto-coder 关注的文件，这需要你清晰的知道你想修改的文件，以及为了修改这个文件，你还需要哪些文件。
