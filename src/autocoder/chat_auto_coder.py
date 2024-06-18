@@ -263,8 +263,19 @@ def revert():
 
 
 def add_files(file_names: List[str]):
+    project_root = os.getcwd()
     existing_files = memory["current_files"]["files"]
-    files_to_add = [f for f in file_names if f not in existing_files]
+    absolute_file_names = []
+    for file_name in file_names:
+        if not os.path.isabs(file_name):
+            matched_files = find_files_in_project([file_name])
+            if matched_files:
+                absolute_file_names.extend(matched_files)
+            else:
+                print(f"Warning: No match found for {file_name}")
+        else:
+            absolute_file_names.append(file_name)
+    files_to_add = [f for f in absolute_file_names if f not in existing_files]
     if files_to_add:
         memory["current_files"]["files"].extend(files_to_add)
         print(f"Added files: {[os.path.basename(f) for f in files_to_add]}")
