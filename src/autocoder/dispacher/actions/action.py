@@ -97,17 +97,20 @@ class ActionTSProject:
             else:
                 generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
             if self.args.enable_multi_round_generate:
-                result, _ = generate.multi_round_run(
+                result, conversations = generate.multi_round_run(
                     query=args.query, source_content=content
                 )
             else:
-                result, _ = generate.single_round_run(
+                result, conversations = generate.single_round_run(
                     query=args.query, source_content=content
                 )
             content = "\n\n".join(result)
 
         store_code_model_result(
-            args=self.args, instruction=self.args.query, result=content, model=self.llm.default_model_name
+            args=self.args,
+            instruction=self.args.query,
+            conversations=conversations,
+            model=self.llm.default_model_name,
         )
         with open(args.target_file, "w") as file:
             file.write(content)
@@ -164,11 +167,11 @@ class ActionPyScriptProject:
             else:
                 generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
             if self.args.enable_multi_round_generate:
-                result, _ = generate.multi_round_run(
+                result, conversations = generate.multi_round_run(
                     query=args.query, source_content=content
                 )
             else:
-                result, _ = generate.single_round_run(
+                result, conversations = generate.single_round_run(
                     query=args.query, source_content=content
                 )
             content = "\n\n".join(result)
@@ -176,7 +179,7 @@ class ActionPyScriptProject:
         store_code_model_result(
             args=self.args,
             instruction=self.args.query,
-            result=content,
+            conversations=conversations,
             model=self.llm.default_model_name,
         )
         with open(self.args.target_file, "w") as file:
@@ -252,17 +255,20 @@ class ActionPyProject:
                 generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
 
             if self.args.enable_multi_round_generate:
-                result, _ = generate.multi_round_run(
+                result, conversations = generate.multi_round_run(
                     query=args.query, source_content=content
                 )
             else:
-                result, _ = generate.single_round_run(
+                result, conversations = generate.single_round_run(
                     query=args.query, source_content=content
                 )
             content = "\n\n".join(result)
-        
+
         store_code_model_result(
-            args=self.args, instruction=self.args.query, result=content, model=self.llm.default_model_name
+            args=self.args,
+            instruction=self.args.query,
+            conversations=conversations,
+            model=self.llm.default_model_name,
         )
         with open(args.target_file, "w") as file:
             file.write(content)
@@ -330,17 +336,20 @@ class ActionSuffixProject:
             else:
                 generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
             if self.args.enable_multi_round_generate:
-                result, _ = generate.multi_round_run(
+                result, conversations = generate.multi_round_run(
                     query=args.query, source_content=content
                 )
             else:
-                result, _ = generate.single_round_run(
+                result, conversations = generate.single_round_run(
                     query=args.query, source_content=content
                 )
             content = "\n\n".join(result)
 
         store_code_model_result(
-            args=self.args, instruction=self.args.query, result=content, model=self.llm.default_model_name
+            args=self.args,
+            instruction=self.args.query,
+            conversations=conversations,
+            model=self.llm.default_model_name,
         )
         with open(args.target_file, "w") as file:
             file.write(content)

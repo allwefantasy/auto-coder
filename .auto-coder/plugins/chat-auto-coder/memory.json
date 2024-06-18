@@ -131,6 +131,10 @@
     {
       "role": "user",
       "content": "针对 action_regex_project 写一个unitest 测试,放在 tests 目录里"
+    },
+    {
+      "role": "user",
+      "content": "configure 方法里,排除 _chat_ 开头的key"
     }
   ],
   "current_files": {
@@ -138,7 +142,8 @@
       "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py",
       "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
       "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py",
-      "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py"
+      "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py",
+      "/Users/allwefantasy/projects/auto-coder/notebooks/conversations.json"
     ]
   },
   "conf": {

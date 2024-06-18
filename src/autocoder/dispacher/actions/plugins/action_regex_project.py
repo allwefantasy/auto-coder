@@ -68,11 +68,11 @@ class ActionRegexProject:
             else:
                 generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
             if self.args.enable_multi_round_generate:
-                result, _ = generate.multi_round_run(
+                result, conversations = generate.multi_round_run(
                     query=args.query, source_content=content
                 )
             else:
-                result, _ = generate.single_round_run(
+                result, conversations = generate.single_round_run(
                     query=args.query, source_content=content
                 )
             content = "\n\n".join(result)
@@ -80,7 +80,7 @@ class ActionRegexProject:
         store_code_model_result(
             args=self.args,
             instruction=self.args.query,
-            result=content,
+            conversations=conversations,
             model=self.llm.default_model_name,
         )
         with open(args.target_file, "w") as file:
