@@ -156,12 +156,21 @@ class CodeAutoMergeEditBlock:
                 continue
             with open(file_path, "r") as f:
                 existing_content = f.read()
-            logger.info(
-                f"""in:\n {file_path}
-replace:\n{head}
-with:\n{update}"""
-            )
-            existing_content = existing_content.replace(head, update, 1)
+            
+            if head:
+                logger.info(
+                    f"""in:\n {file_path}
+    replace:\n{head}
+    with:\n{update}"""
+                )
+                existing_content = existing_content.replace(head, update, 1)
+            else:
+                logger.info(
+                    f"""in:\n {file_path}
+    append:\n{update}"""
+                )
+                existing_content = existing_content + "\n" + update    
+                
             logger.info(f"Upsert Result: {existing_content}")
             with open(file_path, "w") as f:
                 f.write(existing_content)
