@@ -1,3 +1,18 @@
+def load_code_model_conversation_from_store(args: AutoCoderArgs):
+    persit_dir = os.path.join(
+        args.source_dir, ".auto-coder", "human_as_model_conversation"
+    )
+    conversation_file = os.path.join(persit_dir, "data.jsonl")
+    
+    if not os.path.exists(conversation_file):
+        return []
+    
+    conversations = []
+    with open(conversation_file, "r") as f:
+        for line in f:
+            conversations.append(json.loads(line))
+    
+    return conversations
 import os
 import json
 from autocoder.common import AutoCoderArgs
