@@ -6,7 +6,13 @@ import (
 	"runtime"
 
 	"github.com/spf13/cobra"
+	"os/exec"
 )
+
+func checkCondaExists() bool {
+	_, err := exec.LookPath("conda")
+	return err == nil
+}
 
 func init() {
 	rootCmd.AddCommand(installCmd)
@@ -17,11 +23,15 @@ var installCmd = &cobra.Command{
 	Short: "Install Auto-Coder",
 	Long:  `Download and install Miniconda, create the auto-coder environment, and install the auto-coder package.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Downloading Miniconda...")
-		downloadMiniconda()
+        if !checkCondaExists() {
+            fmt.Println("Downloading Miniconda...")
+            downloadMiniconda()
 
-		fmt.Println("Installing Miniconda...")
-        installMiniconda()
+            fmt.Println("Installing Miniconda...")
+            installMiniconda()
+        } else {
+            fmt.Println("Conda is already installed. Skipping Miniconda download and install.")
+        }
 
 		fmt.Println("Creating auto-coder environment...")
 		createEnvironment()
