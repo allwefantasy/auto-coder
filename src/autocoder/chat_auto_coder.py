@@ -1,4 +1,40 @@
-import argparse
+
+def ask(query: str):
+    memory["conversation"].append({"role": "user", "content": query})
+    conf = memory.get("conf", {})
+
+    current_files = memory["current_files"]["files"]
+    files_list = "\n".join([f"- {file}" for file in current_files])
+
+    def prepare_ask_yaml():
+        auto_coder_main(["next", "ask_action"])
+
+    prepare_ask_yaml()
+
+    latest_yaml_file = get_last_yaml_file("actions")
+
+    if latest_yaml_file:
+        yaml_config = {
+            "include_file": ["./base/base.yml"],
+            "human_as_model": conf.get("human_as_model", "false") == "true",
+        }        
+        yaml_config["query"] = query
+        yaml_config["urls"] = current_files
+        yaml_content = yaml.safe_dump(
+            yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
+        ).decode("utf-8")
+        execute_file = os.path.join("actions", latest_yaml_file)
+        with open(os.path.join(execute_file), "w") as f:
+            f.write(yaml_content)
+
+        def execute_ask():
+            auto_coder_main(["agent","chat", "--file", execute_file])
+
+        execute_ask()
+    else:
+        print("Failed to create new YAML file.")
+
+    save_memory()import argparse
 import os
 import yaml
 import json
@@ -32,6 +68,7 @@ commands = [
     "/list_files",
     "/conf",
     "/chat",
+    "/ask",
     "/revert",
     "/index/query",
     "/revert",
@@ -131,6 +168,9 @@ def show_help():
     )
     print(
         "  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current files\033[0m"
+    )
+    print(
+        "  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92mAsk the AI a question using the current files as context, without modifying the project\033[0m"  
     )
     print("  \033[94m/revert\033[0m - \033[92mRevert commits from last chat\033[0m")
     print("  \033[94m/conf\033[0m - \033[92mSet configuration\033[0m")
@@ -437,6 +477,12 @@ def main():
             elif user_input.startswith("/exclude_dirs"):
                 dir_names = user_input[len("/exclude_dirs") :].strip().split(",")
                 exclude_dirs(dir_names)
+            elif user_input.startswith("/ask"):
+                query = user_input[len("/ask") :].strip()
+                if not query:
+                    print("Please enter your question.")
+                else:
+                    ask(query)
 
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt
