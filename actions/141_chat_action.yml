@@ -1,0 +1,11 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: 在 add_files里如果 files_names里不是绝对路径,那么需要将其转化为绝对路径在放到memory里去
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/version.py
+- /Users/allwefantasy/projects/byzer-llm/docs/zh/003_byzerllm_大模型编程快速指南.md
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
