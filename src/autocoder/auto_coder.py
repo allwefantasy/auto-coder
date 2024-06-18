@@ -385,7 +385,7 @@ def main(input_args: Optional[List[str]] = None):
             # )
             return
         elif raw_args.agent_command == "chat":
-            memory_dir = os.path.join(os.getcwd(), "memory")
+            memory_dir = os.path.join(args.source_dir, ".auto-coder", "memory")
             os.makedirs(memory_dir, exist_ok=True)
             memory_file = os.path.join(memory_dir, "chat_history.json")
 
