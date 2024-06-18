@@ -207,6 +207,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     collections: Optional[str] = None
     description: Optional[str] = ""
     skip_confirm: Optional[bool] = False
+    silence: Optional[bool] = False
     exclude_files: Optional[Union[str,List[str]]] = ""    
     output:Optional[str] = ""
     single_file:Optional[bool] = False
