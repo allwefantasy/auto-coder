@@ -1,0 +1,11 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: 去掉 add_files函数里对于文件需要校验是否在在当前项目里的限制
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/version.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py

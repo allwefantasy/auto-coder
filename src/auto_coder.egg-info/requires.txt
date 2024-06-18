@@ -47,3 +47,4 @@ pdf2image
 docx2pdf
 pandoc
 pypandoc
+pyperclip
