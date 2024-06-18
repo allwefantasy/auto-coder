@@ -104,11 +104,12 @@ def main(input_args: Optional[List[str]] = None):
     if not os.path.isabs(args.source_dir):
         args.source_dir = os.path.abspath(args.source_dir)
 
-    print("Command Line Arguments:")
-    print("-" * 50)
-    for arg, value in vars(args).items():
-        print(f"{arg:20}: {value}")
-    print("-" * 50)
+    if not args.silence:
+        print("Command Line Arguments:")
+        print("-" * 50)
+        for arg, value in vars(args).items():
+            print(f"{arg:20}: {value}")
+        print("-" * 50)
 
     # init store
     store = Store(os.path.join(args.source_dir, ".auto-coder", "metadata.db"))

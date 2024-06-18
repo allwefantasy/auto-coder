@@ -136,6 +136,9 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     parser.add_argument(
         "--skip_confirm", action="store_true", help=desc["skip_confirm"]
     )
+    parser.add_argument(
+        "--silence", action="store_true", help="是否静默执行,不打印任何信息。默认为False"
+    )
 
     revert_parser = subparsers.add_parser("revert", help=desc["revert_desc"])
     revert_parser.add_argument("--file", help=desc["revert_desc"])
