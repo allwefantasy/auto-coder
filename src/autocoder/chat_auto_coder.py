@@ -123,12 +123,9 @@ def configure(conf: str):
     key, value = conf.split(":", 1)
     key = key.strip()
     value = value.strip()
-    if key.startswith("_chat_"):
-        print(f"Ignoring configuration key starting with '_chat_': {key}")
-    else:
-        memory["conf"][key] = value
-        save_memory()
-        print(f"Set {key} to {value}")
+    memory["conf"][key] = value
+    save_memory()
+    print(f"Set {key} to {value}")
 
 
 def show_help():
