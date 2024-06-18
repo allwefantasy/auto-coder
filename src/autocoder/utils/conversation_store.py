@@ -3,7 +3,7 @@ import json
 from autocoder.common import AutoCoderArgs
 
 
-def store_code_model_result(
+def store_code_model_conversation(
     args: AutoCoderArgs, instruction: str, conversations: any, model: str
 ):
     persit_dir = os.path.join(

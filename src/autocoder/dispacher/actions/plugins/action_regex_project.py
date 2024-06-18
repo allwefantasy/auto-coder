@@ -11,7 +11,7 @@ from autocoder.common.code_auto_generate_strict_diff import CodeAutoGenerateStri
 from autocoder.common.code_auto_generate_editblock import CodeAutoGenerateEditBlock
 from autocoder.index.index import build_index_and_filter_files
 from autocoder.regexproject import RegexProject
-from autocoder.utils.converation import store_code_model_result
+from autocoder.utils.conversation_store import store_code_model_conversation
 from loguru import logger
 
 
@@ -77,7 +77,7 @@ class ActionRegexProject:
                 )
             content = "\n\n".join(result)
 
-        store_code_model_result(
+        store_code_model_conversation(
             args=self.args,
             instruction=self.args.query,
             conversations=conversations,

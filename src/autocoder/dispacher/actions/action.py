@@ -21,7 +21,7 @@ from typing import Optional, Generator
 import byzerllm
 import os
 from autocoder.common.image_to_page import ImageToPage, ImageToPageDirectly
-from autocoder.utils.converation import store_code_model_result
+from autocoder.utils.conversation_store import store_code_model_conversation
 from loguru import logger
 
 
@@ -106,7 +106,7 @@ class ActionTSProject:
                 )
             content = "\n\n".join(result)
 
-        store_code_model_result(
+        store_code_model_conversation(
             args=self.args,
             instruction=self.args.query,
             conversations=conversations,
@@ -176,7 +176,7 @@ class ActionPyScriptProject:
                 )
             content = "\n\n".join(result)
 
-        store_code_model_result(
+        store_code_model_conversation(
             args=self.args,
             instruction=self.args.query,
             conversations=conversations,
@@ -264,7 +264,7 @@ class ActionPyProject:
                 )
             content = "\n\n".join(result)
 
-        store_code_model_result(
+        store_code_model_conversation(
             args=self.args,
             instruction=self.args.query,
             conversations=conversations,
@@ -345,7 +345,7 @@ class ActionSuffixProject:
                 )
             content = "\n\n".join(result)
 
-        store_code_model_result(
+        store_code_model_conversation(
             args=self.args,
             instruction=self.args.query,
             conversations=conversations,
