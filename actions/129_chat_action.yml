@@ -1,0 +1,11 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: 添加一个 load_code_model_conversation_from_store 方法
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/actions/action.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/utils/conversation_store.py
