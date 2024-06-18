@@ -473,9 +473,9 @@ def main():
     while True:
         try:
             prompt_message = [
-                ("class:username", "chat-auto-coder"),
+                ("class:username", "coding-by-chat"),
                 ("class:at", "@"),
-                ("class:host", "localhost"),
+                ("class:host", "chat-auto-coder"),
                 ("class:colon", ":"),
                 ("class:path", "~"),
                 ("class:dollar", "$ "),

@@ -22,6 +22,7 @@ Chat-Auto-Coder 是一款基于 AutoCoder 开发的交互式聊天工具,可以�
 5. 对上次commit的代码不满意，可以通过 `/revert` 命令进行回滚
 6. 使用其他命令如 `/conf`, `/index/query` 进行辅助操作
 7. `/exit` 退出程序
+8. `/shell` 可以执行shell命令
 
 
 比如我想修改一个然后我只需要说出需求即可：
