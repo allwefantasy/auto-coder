@@ -43,6 +43,7 @@ commands = [
     "/revert",
     "/exclude_dirs",
     "/help",
+    "/shell",
     "/exit",
 ]
 
@@ -155,6 +156,9 @@ def show_help():
     print("  \033[94m/help\033[0m - \033[92mShow this help message\033[0m")
     print(
         "  \033[94m/exclude_dirs\033[0m \033[93m<dir1>,<dir2> ...\033[0m - \033[92mAdd directories to exclude from project\033[0m"
+    )
+    print(
+        "  \033[94m/shell\033[0m \033[93m<command>\033[0m - \033[92mExecute a shell command\033[0m"
     )
     print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
     print()
@@ -508,6 +512,17 @@ def main():
                 else:
                     ask(query)
 
+            elif user_input.startswith("/shell"):
+                command = user_input[len("/shell") :].strip()
+                if not command:
+                    print("Please enter a shell command to execute.")
+                else:
+                    try:
+                        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
+                        print(output)
+                    except subprocess.CalledProcessError as e:
+                        print(f"\033[91mError executing command:\033[0m \033[93m{e.returncode}\033[0m - {e.output}")
+            
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt
             else:
@@ -532,3 +547,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+import subprocess
