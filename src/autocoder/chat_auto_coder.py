@@ -523,9 +523,9 @@ def main():
                     try:
                         result = subprocess.run(command, shell=True, capture_output=True, text=True)
                         if result.returncode == 0:                            
-                            print(result.stdout)
-                        else:                            
-                            print(result.stderr)
+                            print(result.stdout.encode('utf-8', 'ignore').decode('utf-8'))
+                        else:
+                            print(result.stderr.encode('utf-8', 'ignore').decode('utf-8'))
                     except FileNotFoundError:
                         print(f"\033[91mCommand not found: \033[93m{command}\033[0m")
                     except subprocess.SubprocessError as e:
