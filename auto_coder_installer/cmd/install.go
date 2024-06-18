@@ -41,12 +41,22 @@ func downloadMiniconda() {
 		url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh"
 	case "linux":
 		url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+	case "windows":
+		url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe"
 	}
-	exec.Command("wget", "-O", "miniconda.sh", url).Run()
+	if runtime.GOOS == "windows" {
+		exec.Command("curl", "-o", "miniconda.exe", url).Run()
+	} else {
+		exec.Command("wget", "-O", "miniconda.sh", url).Run()
+	}
 }
 
 func installMiniconda() {
-    exec.Command("bash", "miniconda.sh", "-b").Run()
+	if runtime.GOOS == "windows" {
+		exec.Command("miniconda.exe", "/S", "/D=%UserProfile%\Miniconda3").Run()
+	} else {
+		exec.Command("bash", "miniconda.sh", "-b").Run()
+	}
 }
 
 func createEnvironment() {
