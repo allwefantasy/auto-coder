@@ -83,4 +83,11 @@ func installAutoCoder() {
 
 func startRayCluster() {
 	exec.Command("conda", "run", "-n", "auto-coder", "ray", "start", "--head").Run()
+
+	fmt.Println("Installing BytzerLLM storage...")
+	installStorage()
+}
+
+func installStorage() {
+	exec.Command("conda", "run", "-n", "auto-coder", "byzerllm", "storage", "start").Run()
 }
