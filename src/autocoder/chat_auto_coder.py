@@ -473,9 +473,9 @@ def main():
     while True:
         try:
             prompt_message = [
-                ("class:username", "\033[94mcoding-by-chat\033[0m"),  
-                ("class:at", "\033[90m@\033[0m"),
-                ("class:host", "\033[96mchat-auto-coder\033[0m"), 
+                ("class:username", "coding-by-chat"),
+                ("class:at", "@"),
+                ("class:host", "chat-auto-coder"),
                 ("class:colon", ":"),
                 ("class:path", "~"),
                 ("class:dollar", "$ "),
