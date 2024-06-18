@@ -1,0 +1,11 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: agent chat 命令下,路径是  args.source_dir .auto-coder  memory
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/version.py
+- /Users/allwefantasy/projects/byzer-llm/docs/zh/003_byzerllm_大模型编程快速指南.md
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
