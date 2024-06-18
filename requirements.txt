@@ -75,3 +75,4 @@ docx2pdf
 pandoc
 pypandoc
 pyperclip
+colorama

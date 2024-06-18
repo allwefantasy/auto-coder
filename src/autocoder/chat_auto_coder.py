@@ -18,7 +18,11 @@ from pydantic import Field, BaseModel
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.command_args import parse_args
 from autocoder.utils import get_last_yaml_file
+import platform
 
+if platform.system() == 'Windows':
+    from colorama import init
+    init()
 
 memory = {
     "conversation": [],
