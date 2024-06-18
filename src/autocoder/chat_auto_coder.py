@@ -518,10 +518,17 @@ def main():
                     print("Please enter a shell command to execute.")
                 else:
                     try:
-                        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT, universal_newlines=True)
-                        print(output)
-                    except subprocess.CalledProcessError as e:
-                        print(f"\033[91mError executing command:\033[0m \033[93m{e.returncode}\033[0m - {e.output}")
+                        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                        if result.returncode == 0:
+                            print(f"\033[92mCommand executed successfully:\033[0m")
+                            print(result.stdout)
+                        else:
+                            print(f"\033[91mError executing command (exit code {result.returncode}):\033[0m")
+                            print(result.stderr)
+                    except FileNotFoundError:
+                        print(f"\033[91mCommand not found: \033[93m{command}\033[0m")
+                    except subprocess.SubprocessError as e:
+                        print(f"\033[91mError executing command:\033[0m \033[93m{str(e)}\033[0m")
             
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt
