@@ -63,14 +63,16 @@ class SuffixProject:
         {{ desc }}
 
         最后生成的正则表达式要在<REGEX></REGEX>标签对里。
-        """ 
-    
-    def extract_regex_pattern(self, regex_block: str) -> str:    
+        """
+
+    def extract_regex_pattern(self, regex_block: str) -> str:
         pattern = re.search(r"<REGEX>(.*)</REGEX>", regex_block, re.DOTALL)
         if pattern is None:
-            logger.warning("No regex pattern found in the generated block:\n {regex_block}")
+            logger.warning(
+                "No regex pattern found in the generated block:\n {regex_block}"
+            )
             raise None
-        return pattern.group(1)        
+        return pattern.group(1)
 
     def parse_exclude_files(self, exclude_files):
         if not exclude_files:
@@ -86,7 +88,11 @@ class SuffixProject:
                 exclude_patterns.append(re.compile(pattern))
             elif pattern.startswith("human://"):
                 pattern = pattern[8:]
-                v = self.generate_regex_pattern.with_llm(self.llm).with_extractor(self.extract_regex_pattern).run(desc=pattern)
+                v = (
+                    self.generate_regex_pattern.with_llm(self.llm)
+                    .with_extractor(self.extract_regex_pattern)
+                    .run(desc=pattern)
+                )
                 if not v:
                     raise ValueError("Fail to generate regex pattern, try again.")
                 logger.info(f"Generated regex pattern: {v}")
@@ -233,23 +239,7 @@ class SuffixProject:
         if self.git_url is not None:
             self.clone_repository()
 
-        if self.target_file is None:
-            for code in self.get_source_codes():
-                self.sources.append(code)
-                print(f"##File: {code.module_name}")
-                print(code.source_code)
-
-            for code in self.get_rest_source_codes():
-                self.sources.append(code)
-                print(f"##File: {code.module_name}")
-                print(code.source_code)
-
-            for code in self.get_search_source_codes():
-                self.sources.append(code)
-                print(f"##File: {code.module_name}")
-                print(code.source_code)
-
-        else:
+        if self.target_file:
             with open(self.target_file, "w") as file:
                 for code in self.get_source_codes():
                     self.sources.append(code)

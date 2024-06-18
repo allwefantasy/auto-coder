@@ -134,7 +134,8 @@
       "/Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py",
       "/Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py",
       "/Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py",
-      "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py"
+      "/Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py",
+      "/Users/allwefantasy/projects/auto-coder/src/autocoder/dispacher/actions/plugins/action_regex_project.py"
     ]
   },
   "conf": {
