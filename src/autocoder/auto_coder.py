@@ -395,10 +395,9 @@ def main(input_args: Optional[List[str]] = None):
             else:
                 chat_history = {"ask_conversation": []}
 
-            chat_history["ask_conversation"].append({"role": "user", "content": args.query})
-            chat_history["ask_conversation"] = chat_history["ask_conversation"][-10:]  # Keep only the last 10 records
+            chat_history["ask_conversation"].append({"role": "user", "content": args.query})             
 
-            v = llm.stream_chat_oai(conversations=chat_history["ask_conversation"], delta_mode=True)
+            v = llm.stream_chat_oai(conversations=chat_history["ask_conversation"][-10:], delta_mode=True)
 
             assistant_response = ""
             print("\n\n=============RESPONSE==================\n\n")
