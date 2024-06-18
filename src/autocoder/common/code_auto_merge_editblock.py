@@ -156,12 +156,12 @@ class CodeAutoMergeEditBlock:
                 continue
             with open(file_path, "r") as f:
                 existing_content = f.read()
-            
+
             log_message = f"""in:\n {file_path}
     {"replace:" if head else "append:"}\n{head if head else update}
     {"with:" if head else ""}\n{update if head else ""}"""
             logger.info(log_message)
-            
+
             if head:
                 existing_content = existing_content.replace(head, update, 1)
             else:
