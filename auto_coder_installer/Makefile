@@ -5,6 +5,7 @@ build:
 	GOOS=linux GOARCH=amd64 go build -o ./bin/${BINARY_NAME}-linux main.go
 	GOOS=windows GOARCH=amd64 go build -o ./bin/${BINARY_NAME}-windows.exe -ldflags="-H windowsgui" -manifest gui.exe.manifest gui/main.go
 	cp gui.exe.manifest ./bin/
+	cd ./bin && zip ${BINARY_NAME}-windows.zip ${BINARY_NAME}-windows.exe gui.exe.manifest
 
 clean:
 	go clean
