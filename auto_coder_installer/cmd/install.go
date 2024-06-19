@@ -208,15 +208,15 @@ func startRayCluster() bool {
 	}
 	out, err := exec.Command(condaExe, "run", "-n", "auto-coder", "ray", "start", "--head").CombinedOutput()
 	fmt.Printf("%s\n", out)
-	if err != nil {
-		fmt.Println("Failed to start Ray cluster. Please try running 'ray start --head' manually.")
-		return false
-	}
 	return true
 }
 
 func installStorage() bool {
-	out, err := exec.Command("conda", "run", "-n", "auto-coder", "byzerllm", "storage", "start").CombinedOutput()
+	condaExe := "conda"
+	if runtime.GOOS == "windows" {
+		condaExe = os.Getenv("CONDA_EXE")
+	}
+	out, err := exec.Command(condaExe, "run", "-n", "auto-coder", "byzerllm", "storage", "start").CombinedOutput()
 	fmt.Printf("%s\n", out)
 	return err == nil
 }
