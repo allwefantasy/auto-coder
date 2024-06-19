@@ -202,12 +202,23 @@ func installAutoCoder() bool {
 }
 
 func startRayCluster() bool {
+	fmt.Println("Starting Ray cluster, please follow the prompts to complete the setup...")
+
 	condaExe := "conda"
 	if runtime.GOOS == "windows" {
 		condaExe = os.Getenv("CONDA_EXE")
 	}
-	out, err := exec.Command(condaExe, "run", "-n", "auto-coder", "ray", "start", "--head").CombinedOutput()
-	fmt.Printf("%s\n", out)
+
+	cmd := exec.Command(condaExe, "run", "-n", "auto-coder", "ray", "start", "--head")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println("Failed to start Ray cluster. Please try running 'ray start --head' manually.")
+		return false
+	}
 	return true
 }
 
