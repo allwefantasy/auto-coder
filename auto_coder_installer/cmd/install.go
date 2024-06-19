@@ -74,13 +74,13 @@ var installCmd = &cobra.Command{
 			fmt.Println("Auto-Coder installation encountered errors, but may still work.")
 		}
 
-		fmt.Println("\n提示: 在使用 chat-auto-coder 之前,请先运行以下命令启动模型服务 :")
+		fmt.Println("\n接下来,你需要打开 Anaconda Prompt, 然后运行如下命令启动模型:")
 		fmt.Println("  easy-byzerllm deepspeek-chat --token xxx")
-		fmt.Println("然后再运行 chat-auto-coder 即可使用Auto-Coder.")
+		fmt.Println("注意,你需要去deepseek官网申请token, 最后,你可以cd 到你的项目目录,然后运行 chat-auto-coder")
 
-		fmt.Println("\nTip: Before using chat-auto-coder, please run the following command to start the model service:")
-		fmt.Println("  easy-byzerllm deepspeek-chat --token xxx")
-		fmt.Println("Then run chat-auto-coder to use Auto-Coder.")
+		fmt.Println("\nNext, you need to open Anaconda Prompt and run the following command to start the model:")
+		fmt.Println("  easy-byzerllm deepspeek-chat --token xxx")  
+		fmt.Println("Note that you need to apply for a token on the deepseek website. Finally, you can cd to your project directory and run chat-auto-coder")
 	},
 }
 
