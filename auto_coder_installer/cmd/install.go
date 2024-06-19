@@ -78,45 +78,53 @@ func downloadMiniconda() bool {
 	case "windows":
 		url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe"
 	}
+	var out []byte
 	var err error
 	if runtime.GOOS == "windows" {
-		err = exec.Command("curl", "-o", "miniconda.exe", url).Run()
+		out, err = exec.Command("curl", "-o", "miniconda.exe", url).CombinedOutput()
 	} else {
-		err = exec.Command("wget", "-O", "miniconda.sh", url).Run()
+		out, err = exec.Command("wget", "-O", "miniconda.sh", url).CombinedOutput()
 	}
+	fmt.Printf("%s\n", out)
 	return err == nil
 }
 
 func installMiniconda() bool {
+	var out []byte
 	var err error
 	if runtime.GOOS == "windows" {
-		err = exec.Command("miniconda.exe", "/S", "/D=%UserProfile%\\Miniconda3").Run()
+		out, err = exec.Command("miniconda.exe", "/S", "/D=%UserProfile%\\Miniconda3").CombinedOutput()
 	} else {
-		err = exec.Command("bash", "miniconda.sh", "-b").Run()
+		out, err = exec.Command("bash", "miniconda.sh", "-b").CombinedOutput()
 	}
-	return err == nil  
+	fmt.Printf("%s\n", out)  
+	return err == nil
 }
 
 func createEnvironment() bool {  
 	pythonVersion := "3.10.11"
 	if runtime.GOOS == "windows" {
-		pythonVersion = "3.11.9"
+		pythonVersion = "3.11.9" 
 	}
-	err := exec.Command("conda", "create", "--name", "auto-coder", "python="+pythonVersion, "-y").Run()
-	return err == nil
+	out, err := exec.Command("conda", "create", "--name", "auto-coder", "python="+pythonVersion, "-y").CombinedOutput()
+	fmt.Printf("%s\n", out)
+	return err == nil  
 }  
 
 func installAutoCoder() bool {
-	err := exec.Command("conda", "run", "-n", "auto-coder", "pip", "install", "-U", "auto-coder").Run()
-	return err == nil
+	out, err := exec.Command("conda", "run", "-n", "auto-coder", "pip", "install", "-U", "auto-coder").CombinedOutput()
+	fmt.Printf("%s\n", out)
+	return err == nil  
 }
 
 func startRayCluster() bool {
-	err := exec.Command("conda", "run", "-n", "auto-coder", "ray", "start", "--head").Run()
+	out, err := exec.Command("conda", "run", "-n", "auto-coder", "ray", "start", "--head").CombinedOutput()
+	fmt.Printf("%s\n", out)
 	return err == nil
 }
 
 func installStorage() bool {
-	err := exec.Command("conda", "run", "-n", "auto-coder", "byzerllm", "storage", "start").Run()
+	out, err := exec.Command("conda", "run", "-n", "auto-coder", "byzerllm", "storage", "start").CombinedOutput()
+	fmt.Printf("%s\n", out) 
 	return err == nil
 }
