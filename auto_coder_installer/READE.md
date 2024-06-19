@@ -5,3 +5,5 @@
 ```shell
 auto-coder-installer-windows-cmd.exe install
 ```
+
+安装时长根据网速，此外,windows 版本默认不支持 byzerllm storage。
