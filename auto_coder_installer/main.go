@@ -1,7 +1,15 @@
 package main
 
-import "auto-coder/installer/cmd"
+import (
+	"auto-coder/installer/cmd"
+	"auto-coder/installer/gui"
+	"runtime"
+)
 
 func main() {
-	cmd.Execute()
+	if runtime.GOOS == "windows" {
+		gui.main()
+	} else {
+		cmd.Execute()
+	}
 }
