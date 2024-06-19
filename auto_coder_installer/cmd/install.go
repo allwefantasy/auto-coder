@@ -74,13 +74,11 @@ var installCmd = &cobra.Command{
 			fmt.Println("Auto-Coder installation encountered errors, but may still work.")
 		}
 
-		fmt.Println("You can now open `Anaconda Prompt` and run `chat-auto-coder`")
-		
 		fmt.Println("\n提示: 在使用 chat-auto-coder 之前,请先运行以下命令启动模型服务:")
 		fmt.Println("  easy-byzerllm deepspeek-chat --token xxx")
 		fmt.Println("然后再运行 chat-auto-coder 即可使用Auto-Coder.")
 
-		fmt.Println("\nTip: Before using chat-auto-coder, please run the following command to start the model service:")  
+		fmt.Println("\nTip: Before using chat-auto-coder, please run the following command to start the model service:")
 		fmt.Println("  easy-byzerllm deepspeek-chat --token xxx")
 		fmt.Println("Then run chat-auto-coder to use Auto-Coder.")
 	},
