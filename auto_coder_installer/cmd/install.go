@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 
 	"github.com/spf13/cobra"
@@ -125,7 +126,7 @@ func installMiniconda() bool {
 		// Re-check if conda is available using the full path
 		if _, err := os.Stat(os.Getenv("CONDA_EXE")); os.IsNotExist(err) {
 			fmt.Println("Miniconda installation may have failed. Conda not found at:", os.Getenv("CONDA_EXE"))
-			return false  
+			return false
 		}
 
 		return true
@@ -151,7 +152,7 @@ func createEnvironment() bool {
 }
 
 func installAutoCoder() bool {
-	condaExe := "conda" 
+	condaExe := "conda"
 	if runtime.GOOS == "windows" {
 		condaExe = os.Getenv("CONDA_EXE")
 	}
@@ -162,7 +163,7 @@ func installAutoCoder() bool {
 
 func startRayCluster() bool {
 	condaExe := "conda"
-	if runtime.GOOS == "windows" {  
+	if runtime.GOOS == "windows" {
 		condaExe = os.Getenv("CONDA_EXE")
 	}
 	out, err := exec.Command(condaExe, "run", "-n", "auto-coder", "ray", "start", "--head").CombinedOutput()
