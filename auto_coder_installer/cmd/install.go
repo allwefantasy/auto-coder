@@ -91,17 +91,14 @@ func downloadMiniconda() bool {
 
 func installMiniconda() bool {
 	if runtime.GOOS == "windows" {
-		fmt.Println("Starting Miniconda installation, this may take a few minutes...")
-		cmd := exec.Command("start", "/wait", "miniconda.exe", "/S", "/D=%UserProfile%\\Miniconda3")
+		fmt.Println("Please complete the Miniconda installation through the GUI.")
+		cmd := exec.Command("miniconda.exe")
 		err := cmd.Start()
 		if err != nil {
 			return false
 		}
-		err = cmd.Wait()
-		if err != nil {
-			return false
-		}
-		fmt.Println("Miniconda installation completed.")
+		fmt.Println("Press Enter when the Miniconda installation is complete...")
+		fmt.Scanln()
 		return true
 	} else {
 		out, err := exec.Command("bash", "miniconda.sh", "-b").CombinedOutput()
