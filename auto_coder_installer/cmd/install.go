@@ -22,28 +22,53 @@ var installCmd = &cobra.Command{
 	Short: "Install Auto-Coder",
 	Long:  `Download and install Miniconda, create the auto-coder environment, and install the auto-coder package.`,
 	Run: func(cmd *cobra.Command, args []string) {
-        if !checkCondaExists() {
-            fmt.Println("Downloading Miniconda...")
-            downloadMiniconda()
+		var downloadStatus, installStatus, envStatus, packageStatus, rayStatus, storageStatus bool
 
-            fmt.Println("Installing Miniconda...")
-            installMiniconda()
-        } else {
-            fmt.Println("Conda is already installed. Skipping Miniconda download and install.")
-        }
+		if !checkCondaExists() {
+			fmt.Println("Downloading Miniconda...")
+			downloadStatus = downloadMiniconda()
 
-		fmt.Println("Creating auto-coder environment...")
-		createEnvironment()
+			if downloadStatus {
+				fmt.Println("Installing Miniconda...")
+				installStatus = installMiniconda()
+			} else {
+				fmt.Println("Miniconda download failed. Aborting installation.")
+				return
+			}
+		} else {
+			fmt.Println("Conda is already installed. Skipping Miniconda download and install.")
+			downloadStatus, installStatus = true, true
+		}
 
-		fmt.Println("Installing auto-coder package...")
-		installAutoCoder()
+		if installStatus {
+			fmt.Println("Creating auto-coder environment...")
+			envStatus = createEnvironment()
+		}
 
-		fmt.Println("Starting Ray cluster...")
-		startRayCluster()
-	},
+		if envStatus {
+			fmt.Println("Installing auto-coder package...")
+			packageStatus = installAutoCoder()
+		}
+
+		if packageStatus {
+			fmt.Println("Starting Ray cluster...")
+			rayStatus = startRayCluster()
+
+			if rayStatus {
+				fmt.Println("Installing BytzerLLM storage...")
+				storageStatus = installStorage()
+			}
+		}
+
+		if downloadStatus && installStatus && envStatus && packageStatus && rayStatus && storageStatus {
+			fmt.Println("Auto-Coder installation completed successfully!")
+		} else {
+			fmt.Println("Auto-Coder installation encountered errors.")
+		}
+	},  
 }
 
-func downloadMiniconda() {
+func downloadMiniconda() bool {
 	url := ""
 	switch runtime.GOOS {
 	case "darwin":
@@ -56,37 +81,41 @@ func downloadMiniconda() {
 	if runtime.GOOS == "windows" {
 		exec.Command("curl", "-o", "miniconda.exe", url).Run()
 	} else {
-		exec.Command("wget", "-O", "miniconda.sh", url).Run()
+		err := exec.Command("wget", "-O", "miniconda.sh", url).Run()
+		return err == nil
 	}
 }
 
-func installMiniconda() {
+func installMiniconda() bool {
+	var err error
 	if runtime.GOOS == "windows" {
-		exec.Command("miniconda.exe", "/S", "/D=%UserProfile%\\Miniconda3").Run()  
+		err = exec.Command("miniconda.exe", "/S", "/D=%UserProfile%\\Miniconda3").Run()
 	} else {
-		exec.Command("bash", "miniconda.sh", "-b").Run()
+		err = exec.Command("bash", "miniconda.sh", "-b").Run()
 	}
+	return err == nil  
 }
 
-func createEnvironment() {
+func createEnvironment() bool {  
 	pythonVersion := "3.10.11"
 	if runtime.GOOS == "windows" {
 		pythonVersion = "3.11.9"
 	}
-	exec.Command("conda", "create", "--name", "auto-coder", "python="+pythonVersion, "-y").Run()
+	err := exec.Command("conda", "create", "--name", "auto-coder", "python="+pythonVersion, "-y").Run()
+	return err == nil
+}  
+
+func installAutoCoder() bool {
+	err := exec.Command("conda", "run", "-n", "auto-coder", "pip", "install", "-U", "auto-coder").Run()
+	return err == nil
 }
 
-func installAutoCoder() {
-	exec.Command("conda", "run", "-n", "auto-coder", "pip", "install", "-U", "auto-coder").Run()
+func startRayCluster() bool {
+	err := exec.Command("conda", "run", "-n", "auto-coder", "ray", "start", "--head").Run()
+	return err == nil
 }
 
-func startRayCluster() {
-	exec.Command("conda", "run", "-n", "auto-coder", "ray", "start", "--head").Run()
-
-	fmt.Println("Installing BytzerLLM storage...")
-	installStorage()
-}
-
-func installStorage() {
-	exec.Command("conda", "run", "-n", "auto-coder", "byzerllm", "storage", "start").Run()
+func installStorage() bool {
+	err := exec.Command("conda", "run", "-n", "auto-coder", "byzerllm", "storage", "start").Run()
+	return err == nil
 }
