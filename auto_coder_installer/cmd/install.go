@@ -102,14 +102,31 @@ func downloadMiniconda() bool {
 
 func installMiniconda() bool {
 	if runtime.GOOS == "windows" {
-		fmt.Println("Please complete the Miniconda installation through the GUI.")
-		cmd := exec.Command("miniconda.exe")
-		err := cmd.Start()
-		if err != nil {
+		fmt.Println("Starting Miniconda installation...")
+
+		// Check if miniconda.exe exists in the current directory
+		if _, err := os.Stat("miniconda.exe"); os.IsNotExist(err) {
+			fmt.Println("miniconda.exe not found in the current directory.")
 			return false
 		}
-		fmt.Println("Press Enter when the Miniconda installation is complete...")
+
+		// Launch miniconda.exe using cmd /C start
+		err := exec.Command("cmd", "/C", "start", "", "miniconda.exe").Start()
+		if err != nil {
+			fmt.Println("Error launching Miniconda installer:", err)
+			return false
+		}
+
+		fmt.Println("Miniconda installer launched. Please complete the installation.")
+		fmt.Println("Press Enter when the installation is finished...")
 		fmt.Scanln()
+
+		// Check if conda is now available
+		if !checkCondaExists() {
+			fmt.Println("Miniconda installation may have failed. Conda not found in PATH.")
+			return false
+		}
+
 		return true
 	} else {
 		out, err := exec.Command("bash", "miniconda.sh", "-b").CombinedOutput()
