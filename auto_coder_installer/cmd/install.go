@@ -93,12 +93,23 @@ func installMiniconda() bool {
 	var out []byte
 	var err error
 	if runtime.GOOS == "windows" {
-		out, err = exec.Command("miniconda.exe", "/S", "/D=%UserProfile%\\Miniconda3").CombinedOutput()
+		fmt.Println("Starting Miniconda installation, this may take a few minutes...")
+		cmd := exec.Command("start", "/wait", "miniconda.exe", "/S", "/D=%UserProfile%\\Miniconda3")
+		err := cmd.Start()
+		if err != nil {
+			return false
+		}
+		err = cmd.Wait()
+		if err != nil {
+			return false  
+		}
+		fmt.Println("Miniconda installation completed.")
+		return true
 	} else {
-		out, err = exec.Command("bash", "miniconda.sh", "-b").CombinedOutput()
-	}
-	fmt.Printf("%s\n", out)  
-	return err == nil
+		out, err := exec.Command("bash", "miniconda.sh", "-b").CombinedOutput()
+		fmt.Printf("%s\n", out)
+		return err == nil
+	}  
 }
 
 func createEnvironment() bool {  
