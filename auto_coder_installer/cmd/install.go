@@ -111,20 +111,21 @@ func installMiniconda() bool {
 		}
 
 		// Launch miniconda.exe using cmd /C start
-		err := exec.Command("cmd", "/C", "start", "", "miniconda.exe").Start()
+		condaPath := os.ExpandEnv("${UserProfile}\\Miniconda3")
+
+		err := exec.Command("cmd", "/C", "start", "/wait", "", "miniconda.exe", "/InstallationType=JustMe", "/RegisterPython=0", "/S", "/D="+condaPath).Run()
 		if err != nil {
-			fmt.Println("Error launching Miniconda installer:", err)
+			fmt.Println("Error during Miniconda installation:", err)
 			return false
 		}
 
-		fmt.Println("Miniconda installer launched. Please complete the installation.")
-		fmt.Println("Press Enter when the installation is finished...")
-		fmt.Scanln()
+		// Set the full path to conda.exe
+		os.Setenv("CONDA_EXE", filepath.Join(condaPath, "Scripts", "conda.exe"))
 
-		// Check if conda is now available
-		if !checkCondaExists() {
-			fmt.Println("Miniconda installation may have failed. Conda not found in PATH.")
-			return false
+		// Re-check if conda is available using the full path
+		if _, err := os.Stat(os.Getenv("CONDA_EXE")); os.IsNotExist(err) {
+			fmt.Println("Miniconda installation may have failed. Conda not found at:", os.Getenv("CONDA_EXE"))
+			return false  
 		}
 
 		return true
@@ -140,19 +141,31 @@ func createEnvironment() bool {
 	if runtime.GOOS == "windows" {
 		pythonVersion = "3.11.9"
 	}
-	out, err := exec.Command("conda", "create", "--name", "auto-coder", "python="+pythonVersion, "-y").CombinedOutput()
+	condaExe := "conda"
+	if runtime.GOOS == "windows" {
+		condaExe = os.Getenv("CONDA_EXE")
+	}
+	out, err := exec.Command(condaExe, "create", "--name", "auto-coder", "python="+pythonVersion, "-y").CombinedOutput()
 	fmt.Printf("%s\n", out)
 	return err == nil
 }
 
 func installAutoCoder() bool {
-	out, err := exec.Command("conda", "run", "-n", "auto-coder", "pip", "install", "-U", "auto-coder").CombinedOutput()
+	condaExe := "conda" 
+	if runtime.GOOS == "windows" {
+		condaExe = os.Getenv("CONDA_EXE")
+	}
+	out, err := exec.Command(condaExe, "run", "-n", "auto-coder", "pip", "install", "-U", "auto-coder").CombinedOutput()
 	fmt.Printf("%s\n", out)
 	return err == nil
 }
 
 func startRayCluster() bool {
-	out, err := exec.Command("conda", "run", "-n", "auto-coder", "ray", "start", "--head").CombinedOutput()
+	condaExe := "conda"
+	if runtime.GOOS == "windows" {  
+		condaExe = os.Getenv("CONDA_EXE")
+	}
+	out, err := exec.Command(condaExe, "run", "-n", "auto-coder", "ray", "start", "--head").CombinedOutput()
 	fmt.Printf("%s\n", out)
 	return err == nil
 }
