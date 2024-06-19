@@ -1,8 +1,6 @@
 BINARY_NAME=auto-coder-installer
 
-build:
-	mkdir -p ./bin/${BINARY_NAME}-darwin
-	mkdir -p ./bin/${BINARY_NAME}-linux
+build:	
 	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY_NAME}-darwin main.go
 	GOOS=linux GOARCH=amd64 go build -o ./bin/${BINARY_NAME}-linux main.go
 	
