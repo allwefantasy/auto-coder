@@ -70,6 +70,35 @@ var installCmd = &cobra.Command{
 	},
 }
 
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+
+	"github.com/spf13/cobra"
+)
+
+func downloadFile(filepath string, url string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	out, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
 func downloadMiniconda() bool {
 	var filename string
 	url := ""
@@ -90,14 +119,18 @@ func downloadMiniconda() bool {
 		return true
 	}
 
-	var out []byte
 	var err error
 	if runtime.GOOS == "windows" {
-		out, err = exec.Command("curl", "-o", filename, url).CombinedOutput()
+		_, err = exec.LookPath("curl")
+		if err != nil {
+			fmt.Println("curl not found, downloading file directly...")
+			err = downloadFile(filename, url)
+		} else {
+			_, err = exec.Command("curl", "-o", filename, url).CombinedOutput()
+		}
 	} else {
-		out, err = exec.Command("wget", "-O", filename, url).CombinedOutput()
+		_, err = exec.Command("wget", "-O", filename, url).CombinedOutput()
 	}
-	fmt.Printf("%s\n", out)
 	return err == nil
 }
 
