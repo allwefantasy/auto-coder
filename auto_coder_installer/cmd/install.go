@@ -74,7 +74,7 @@ var installCmd = &cobra.Command{
 			fmt.Println("Auto-Coder installation encountered errors, but may still work.")
 		}
 
-		fmt.Println("\n提示: 在使用 chat-auto-coder 之前,请先运行以下命令启动模型服务:")
+		fmt.Println("\n提示: 在使用 chat-auto-coder 之前,请先运行以下命令启动模型服务 :")
 		fmt.Println("  easy-byzerllm deepspeek-chat --token xxx")
 		fmt.Println("然后再运行 chat-auto-coder 即可使用Auto-Coder.")
 
