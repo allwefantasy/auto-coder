@@ -78,12 +78,13 @@ func downloadMiniconda() bool {
 	case "windows":
 		url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe"
 	}
+	var err error
 	if runtime.GOOS == "windows" {
-		exec.Command("curl", "-o", "miniconda.exe", url).Run()
+		err = exec.Command("curl", "-o", "miniconda.exe", url).Run()
 	} else {
-		err := exec.Command("wget", "-O", "miniconda.sh", url).Run()
-		return err == nil
+		err = exec.Command("wget", "-O", "miniconda.sh", url).Run()
 	}
+	return err == nil
 }
 
 func installMiniconda() bool {
