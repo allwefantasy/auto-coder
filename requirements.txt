@@ -59,7 +59,7 @@ jieba
 
 # camelot-py
 # llama_index
-byzerllm>=0.1.104
+byzerllm>=0.1.106
 patch
 diff_match_patch
 GitPython
