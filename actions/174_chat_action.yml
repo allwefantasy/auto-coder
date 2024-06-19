@@ -1,0 +1,15 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+project_type: .go
+query: ./ask miniconda.exe 是一个GUI 安装软件,我们现在这种运行方式是不是有问题?
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/go.mod
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/cmd/install.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/cmd/root.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/main.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/gui/main.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/Makefile
