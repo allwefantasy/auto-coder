@@ -69,21 +69,31 @@ var installCmd = &cobra.Command{
 }
 
 func downloadMiniconda() bool {
+	var filename string
 	url := ""
 	switch runtime.GOOS {
 	case "darwin":
+		filename = "miniconda.sh"
 		url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh"
 	case "linux":
+		filename = "miniconda.sh"
 		url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
 	case "windows":
+		filename = "miniconda.exe"
 		url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe"
 	}
+
+	if _, err := os.Stat(filename); err == nil {
+		fmt.Printf("File %s already exists. Skipping download.\n", filename)
+		return true
+	}
+
 	var out []byte
 	var err error
 	if runtime.GOOS == "windows" {
-		out, err = exec.Command("curl", "-o", "miniconda.exe", url).CombinedOutput()
+		out, err = exec.Command("curl", "-o", filename, url).CombinedOutput()
 	} else {
-		out, err = exec.Command("wget", "-O", "miniconda.sh", url).CombinedOutput()
+		out, err = exec.Command("wget", "-O", filename, url).CombinedOutput()
 	}
 	fmt.Printf("%s\n", out)
 	return err == nil
