@@ -1,0 +1,17 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+project_type: .go
+query: '参考这个来是吸纳 mincoda 的静默安装: start /wait "" Miniconda3-latest-Windows-x86_64.exe
+  /InstallationType=JustMe /RegisterPython=0 /S /D=%UserProfile%\Miniconda3  检查时自动获得Miniconda3
+  安装路径,后续使用完整conda路径'
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/go.mod
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/cmd/install.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/cmd/root.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/main.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/gui/main.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/Makefile
