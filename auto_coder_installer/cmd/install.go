@@ -56,9 +56,13 @@ var installCmd = &cobra.Command{
 			fmt.Println("Starting Ray cluster...")
 			rayStatus = startRayCluster()
 
-			if rayStatus {
-				fmt.Println("Installing BytzerLLM storage...")
-				storageStatus = installStorage()
+			if runtime.GOOS != "windows" {
+				if rayStatus {
+					fmt.Println("Installing BytzerLLM storage...")
+					storageStatus = installStorage()
+				}
+			} else {
+				storageStatus = true
 			}
 		}
 
@@ -201,7 +205,11 @@ func startRayCluster() bool {
 	}
 	out, err := exec.Command(condaExe, "run", "-n", "auto-coder", "ray", "start", "--head").CombinedOutput()
 	fmt.Printf("%s\n", out)
-	return err == nil
+	if err != nil {
+		fmt.Println("Failed to start Ray cluster. Please try running 'ray start --head' manually.")
+		return false
+	}
+	return true
 }
 
 func installStorage() bool {
