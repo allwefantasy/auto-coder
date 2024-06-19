@@ -19,4 +19,4 @@ build-win-cmd:
 
 clean:
 	go clean
-	rm ./bin/*
+	rm -rf ./bin/*
