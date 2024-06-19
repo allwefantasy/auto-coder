@@ -1,0 +1,15 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+project_type: .go
+query: 在最後打印一段文本,提供中英文版. 使用 easy-byzerllm deespseek-chat --token xxx 启动一个模型服务,然后在运行  chat-auto-coder
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/go.mod
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/cmd/install.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/cmd/root.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/main.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/gui/main.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/Makefile

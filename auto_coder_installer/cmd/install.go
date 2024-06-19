@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -69,22 +71,12 @@ var installCmd = &cobra.Command{
 		if downloadStatus && installStatus && envStatus && packageStatus && rayStatus && storageStatus {
 			fmt.Println("Auto-Coder installation completed successfully!")
 		} else {
-			fmt.Println("Auto-Coder installation encountered errors.")
+			fmt.Println("Auto-Coder installation encountered errors, but may still work.")
 		}
+
+		fmt.Println("You can now open `Anaconda Prompt` and run `chat-auto-coder")
 	},
 }
-
-import (
-	"fmt"
-	"io"
-	"net/http"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"runtime"
-
-	"github.com/spf13/cobra"
-)
 
 func downloadFile(filepath string, url string) error {
 	resp, err := http.Get(url)
