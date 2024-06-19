@@ -87,7 +87,19 @@ auto-coder init --source_dir .
 
 最佳实践是将你新的 YAML 文件放在 actions 目录，并且以 00x_ 开头，比如我们已经在 actions 提供了一个范例文件:`000_example.yml`。
 
-## 让 auto-coder 开始为你编程
+
+## 使用 chat-auto-coder 为你编程
+
+在项目根目录，执行
+
+```bash
+chat-auto-coder
+```
+
+此时就会进入交互模式，更多信息参考 [046_AutoCoder_Chat-Auto-Coder指南](./046_AutoCoder_Chat-Auto-Coder指南.md)
+和 [047_chat-auto-coder使用实践](./047_chat-auto-coder使用实践.md)
+
+## 使用基础 auto-coder 为你编程
 
 打开 actions/000_example.yml 文件,内容打开是这这样的：
 
