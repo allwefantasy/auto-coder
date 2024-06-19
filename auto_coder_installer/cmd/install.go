@@ -196,8 +196,10 @@ func installAutoCoder() bool {
 	if err != nil {
 		fmt.Println("Failed to set pip proxy. Proceeding with installation...")
 	}
-	out, err = exec.Command(condaExe, "run", "-n", "auto-coder", "pip", "install", "-U", "auto-coder").CombinedOutput()
-	fmt.Printf("%s\n", out)
+	cmd := exec.Command(condaExe, "run", "-n", "auto-coder", "pip", "install", "-U", "auto-coder")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err = cmd.Run()
 	return err == nil
 }
 
