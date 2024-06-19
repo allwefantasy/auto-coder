@@ -29,19 +29,13 @@ bash Miniconda3-py38_4.12.0-Linux-x86_64.sh
 > 注意要替换 ${MODEL_DEEPSEEK_TOKEN} 和 ${MODEL_QIANWEN_TOKEN} 为你的实际token。
 
 ```shell
-byzerllm deploy --pretrained_model_type saas/openai \
---cpus_per_worker 0.001 \
---gpus_per_worker 0 \
---worker_concurrency 30 \
---num_workers 1 \
---infer_params saas.base_url="https://api.deepseek.com/v1" saas.api_key=${MODEL_DEEPSEEK_TOKEN} saas.model=deepseek-chat \
---model deepseek_chat
+easy-byzerllm deploy deepseek-chat --token $MODEL_DEEPSEEK_TOKEN --alias deepseek_chat
 ```
 
 运行起来后，你可以通过下面的命令快速验证下：
 
 ```bash
-byzerllm query --model deepseek_chat --query "你好"
+easy-byzerllm chat deepseek_chat "你好"
 ```
 
 如果遇到异常，打开 [Actors页面](http://127.0.0.1:8265/#/actors)，
@@ -56,8 +50,10 @@ byzerllm query --model deepseek_chat --query "你好"
 如果有异常，可以通过下面命令来删除模型，再重新部署。
 
 ```bash
-byzerllm undeploy  --model deepseek_chat --force
+easy-byzerllm undeploy deepseek_chat --force
 ```
+
+更多模型参考： [easy-byzerllm](https://github.com/allwefantasy/byzer-llm/blob/master/docs/zh/004_easy_byzerllm_%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97.md)
 
 
 向量模型(可选，你需要去qwen官网申请token，如果麻烦，可以跳过先),然后执行下面的命令。
