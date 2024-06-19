@@ -13,7 +13,7 @@ Windows 下安装有两种方式。
 
 1. Windows 7/10 可以正常安装。
 2. Windows 11 家庭版有用户反馈存在一定问题，Ray 无法正常启动 （推荐尝试后文中的 WSL） 。
-3. Python官方目前说 3.10.xx系列已经不支持 Windows 7，可以到这里下载一个第三方包： https://github.com/adang1345/PythonWin7/tree/master/3.10.11 （经过测试）， 或者 https://github.com/NulAsh/cpython/releases/tag/v3.10.1win7-1 (未经过测试)
+3. Python官方目前说 3.10.xx系列已经不支持 Windows 7，可以到这里下载一个第三方包： https://github.com/adang1345/PythonWin7/tree/master/3.10.11 （经过测试）， 或者 https://github.com/NulAsh/cpython/releases/tag/v3.10.1win7-1 (未经过测试)。 你也可以使用 3.11.9 版本，但是这个版本还没有经过更多测试。
 
 ### 不通过 Conda
 
@@ -48,7 +48,7 @@ Windows 下安装有两种方式。
     完成后在 shell 中执行下面的命令：
 
     
-    conda create --name auto-coder python==3.10.11
+    conda create --name auto-coder python==3.11.9
     conda activate auto-coder    
 
 2.设置环境变量
