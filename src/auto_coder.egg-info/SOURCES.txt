@@ -16,6 +16,7 @@ src/autocoder/version.py
 src/autocoder/agent/__init__.py
 src/autocoder/agent/coder.py
 src/autocoder/agent/planner.py
+src/autocoder/agent/project_reader.py
 src/autocoder/common/JupyterClient.py
 src/autocoder/common/ShellClient.py
 src/autocoder/common/__init__.py

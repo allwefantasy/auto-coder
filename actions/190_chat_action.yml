@@ -1,0 +1,16 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+project_type: .go
+query: '添加 show_help()缺失的指令描述。coding 为根据需求修改代码。 chat 则正对当前活跃文件进行解读。ask 可以对当前项目做任何提问和解读。/index/build
+  触发索引构建，需要通过 /conf project_type: 设置合理的项目类型。'
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/go.mod
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/cmd/install.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/cmd/root.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/main.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/gui/main.go
+- /Users/allwefantasy/projects/auto-coder/auto_coder_installer/Makefile

@@ -20,8 +20,9 @@ from autocoder.command_args import parse_args
 from autocoder.utils import get_last_yaml_file
 import platform
 
-if platform.system() == 'Windows':
+if platform.system() == "Windows":
     from colorama import init
+
     init()
 
 memory = {
@@ -40,11 +41,12 @@ commands = [
     "/remove_files",
     "/list_files",
     "/conf",
+    "/coding",
     "/chat",
-    "/coding"
     "/ask",
     "/revert",
-    "/index/query",    
+    "/index/query",
+    "/index/build",
     "/exclude_dirs",
     "/help",
     "/shell",
@@ -305,8 +307,9 @@ def remove_files(file_names: List[str]):
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
 
+
 def ask(query: str):
-    
+
     yaml_config = {
         "include_file": ["./base/base.yml"],
     }
@@ -321,14 +324,12 @@ def ask(query: str):
         f.write(yaml_content)
 
     def execute_ask():
-        auto_coder_main(["agent", "read_project", "--file", execute_file])
+        auto_coder_main(["agent", "project_reader", "--file", execute_file])
 
     try:
         execute_ask()
     finally:
         os.remove(execute_file)
-
-
 
 
 def coding(query: str):
@@ -433,6 +434,23 @@ def exclude_dirs(dir_names: List[str]):
     completer.refresh_files()
 
 
+def index_build():
+    yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+    yaml_content = f"""
+include_file:
+  - ./base/base.yml  
+"""
+    with open(yaml_file, "w") as f:
+        f.write(yaml_content)
+    try:
+        with redirect_stdout() as output:
+            auto_coder_main(["index", "--file", yaml_file])
+        print(output.getvalue(), flush=True)
+
+    finally:
+        os.remove(yaml_file)
+
+
 def index_query(query: str):
     yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
     yaml_content = f"""
@@ -455,7 +473,8 @@ query: |
 def main():
     if not os.path.exists(".auto-coder"):
         print(
-            "Please run this command in the root directory of your project which have been inited by auto-coder."
+            "Please use chat-auto-coder in the root directory of your project which have been inited by auto-coder."
+            "auto-coder init --source_dir <your_project_dir>"
         )
         exit(1)
 
@@ -517,6 +536,11 @@ def main():
             elif user_input.startswith("/index/query"):
                 query = user_input[len("/index/query") :].strip()
                 index_query(query)
+
+            elif user_input.startswith("/index/build"):
+                query = user_input[len("/index/build") :].strip()
+                index_build(query)
+
             elif user_input.startswith("/list_files"):
                 print("Current files:")
                 for file in memory["current_files"]["files"]:
@@ -547,16 +571,20 @@ def main():
                     print("Please enter a shell command to execute.")
                 else:
                     try:
-                        result = subprocess.run(command, shell=True, capture_output=True, text=True)
-                        if result.returncode == 0:                            
+                        result = subprocess.run(
+                            command, shell=True, capture_output=True, text=True
+                        )
+                        if result.returncode == 0:
                             print(result.stdout)
-                        else:                            
+                        else:
                             print(result.stderr)
                     except FileNotFoundError:
                         print(f"\033[91mCommand not found: \033[93m{command}\033[0m")
                     except subprocess.SubprocessError as e:
-                        print(f"\033[91mError executing command:\033[0m \033[93m{str(e)}\033[0m")
-            
+                        print(
+                            f"\033[91mError executing command:\033[0m \033[93m{str(e)}\033[0m"
+                        )
+
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt
             elif user_input.startswith("/coding"):
@@ -566,7 +594,9 @@ def main():
                 coding(query)
             else:
                 if user_input.startswith("/") and not user_input.startswith("/chat"):
-                    print("\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands.")
+                    print(
+                        "\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands."
+                    )
                     continue
                 if not user_input.startswith("/chat"):
                     query = user_input.strip()
@@ -581,7 +611,9 @@ def main():
             print("\n\033[93mExiting Chat Auto Coder...\033[0m")
             break
         except Exception as e:
-            print(f"\033[91mAn error occurred:\033[0m \033[93m{type(e).__name__}\033[0m - {str(e)}")
+            print(
+                f"\033[91mAn error occurred:\033[0m \033[93m{type(e).__name__}\033[0m - {str(e)}"
+            )
 
 
 if __name__ == "__main__":

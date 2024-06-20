@@ -325,7 +325,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     chat_parser.add_argument("--rag_url", default="", help="")
     chat_parser.add_argument("--target_file", default="./output.txt", help="")
 
-    read_project_parser = agent_subparsers.add_parser("read_project", help="Run the chat agent")
+    read_project_parser = agent_subparsers.add_parser("project_reader", help="Run the chat agent")
 
     read_project_parser.add_argument("--source_dir", default=".", help="Source directory")
     read_project_parser.add_argument("--query", help="Query for the planner")

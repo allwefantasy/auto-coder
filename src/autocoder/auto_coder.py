@@ -374,6 +374,8 @@ def main(input_args: Optional[List[str]] = None):
 
             planner = Planner(args, llm)
             v = planner.run(args.query)
+            print()
+            print("\n\n=============RESPONSE==================\n\n")
             print(v)
             # import time
             # time.sleep(3)
@@ -390,6 +392,8 @@ def main(input_args: Optional[List[str]] = None):
 
             project_reader = ProjectReader(args, llm)
             v = project_reader.run(args.query)
+            print()
+            print("\n\n=============RESPONSE==================\n\n")
             print(v)
             return
 
