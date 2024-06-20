@@ -9,20 +9,25 @@ Chat-Auto-Coder 是一款基于 AutoCoder 开发的交互式聊天工具,可以�
 - 支持添加/移除项目文件到当前会话中
 - 支持与 AI 就选定文件进行对话交流 
 - 支持查询项目索引，获得相关文件
+- 支持阅读项目
 - 支持配置 AI 生成代码的参数
 - 命令行交互界面,操作便捷
 - 完善的自动补全功能
 
 ## 使用方法
 
-1. 将 Chat-Auto-Coder 集成到你的项目中
-2. 在项目根目录下运行 `chat-auto-coder` 启动工具，进入命令行交互界面
-3. 通过 `/add_files` 命令添加需要讨论的项目文件  
-4. 通过 `/chat` 命令开始与 AI 对话
-5. 对上次commit的代码不满意，可以通过 `/revert` 命令进行回滚
-6. 使用其他命令如 `/conf`, `/index/query` 进行辅助操作
-7. `/exit` 退出程序
-8. `/shell` 可以执行shell命令
+* 将 Chat-Auto-Coder 集成到你的项目中
+* 在项目根目录下运行 `chat-auto-coder` 启动工具，进入命令行交互界面
+* 通过 `/add_files` 命令添加需要讨论的项目文件  
+* 通过 `/ask` 命令开始与 AI 对话,了解该项目
+* 通过 `/chat` 可以随意聊天或者针对`/add_files` 内容提问。
+* 通过 `/coding` 让 AI 为你生成代码
+* 对上次commit的代码不满意，可以通过 `/revert` 命令进行回滚
+* 通过 `/conf` 命令配置 AI 生成代码的参数
+* 使用其他命令如 `/index/build`， `/index/query` 可以构建和查询索引
+* `/exit` 退出程序
+* `/shell` 可以执行shell命令
+
 
 
 比如我想修改一个然后我只需要说出需求即可：
@@ -45,9 +50,9 @@ Chat-Auto-Coder 是一款基于 AutoCoder 开发的交互式聊天工具,可以�
 ## 示例
 
 ```shell
-add_files main.py,utils.py
+/add_files main.py,utils.py
 Added files: ['main.py', 'utils.py'] (关注你想修改的文件)
-/chat 在main中新添加一个hello方法
+/coding 在main中新添加一个hello方法
 ... (AI 直接修改代码，然后你可以看到修改结果)
 /conf human_as_model: true
 Set human_as_model to true (这个时候可以拦截auto-coder 和大模型的交互)
@@ -64,7 +69,9 @@ Exiting...
 
 ## 了解项目，但不想改代码
 
-可以用 `/ask` 指令， 该指令会自动带上活动文件，然后回答你的问题，但不会对你的代码做任何变更。
+可以用 `/ask` 指令， 可以回答和项目相关的任何问题。
+
+或者通过 `/chat` 指令，可以随意聊天，或者针对`/add_files` 内容提问。
 
 ## 对项目不熟悉，但是又想改项目怎办？
 

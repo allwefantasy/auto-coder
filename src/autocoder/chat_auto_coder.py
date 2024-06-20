@@ -543,9 +543,8 @@ def main():
                 query = user_input[len("/index/query") :].strip()
                 index_query(query)
 
-            elif user_input.startswith("/index/build"):
-                query = user_input[len("/index/build") :].strip()
-                index_build(query)
+            elif user_input.startswith("/index/build"):                
+                index_build()
 
             elif user_input.startswith("/list_files"):
                 print("Current files:")
