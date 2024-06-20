@@ -325,6 +325,42 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     chat_parser.add_argument("--rag_url", default="", help="")
     chat_parser.add_argument("--target_file", default="./output.txt", help="")
 
+    read_project_parser = agent_subparsers.add_parser("read_project", help="Run the chat agent")
+
+    read_project_parser.add_argument("--source_dir", default=".", help="Source directory")
+    read_project_parser.add_argument("--query", help="Query for the planner")
+    read_project_parser.add_argument("--model", default="", help=desc["model"])
+    read_project_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
+    read_project_parser.add_argument("--file", default="", help=desc["file"])
+    read_project_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
+    read_project_parser.add_argument("--execute", action="store_true", help=desc["execute"])
+    read_project_parser.add_argument(
+        "--collections",
+        default="default",
+        help="Comma-separated list of collections to search",
+    )
+    read_project_parser.add_argument(
+        "--description", default="", help="Description to route the query"
+    )
+    read_project_parser.add_argument(
+        "--enable_rag_search",
+        nargs="?",
+        const=True,
+        default=False,
+        help=desc["enable_rag_search"],
+    )
+    read_project_parser.add_argument(
+        "--enable_rag_context",
+        nargs="?",
+        const=True,
+        default=False,
+        help=desc["enable_rag_context"],
+    )
+
+    read_project_parser.add_argument("--rag_token", default="", help="")
+    read_project_parser.add_argument("--rag_url", default="", help="")
+    read_project_parser.add_argument("--target_file", default="./output.txt", help="")
+
     planner_parser = agent_subparsers.add_parser(
         "planner", help="Run the planner agent"
     )

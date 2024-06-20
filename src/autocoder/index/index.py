@@ -4,7 +4,12 @@ import time
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from autocoder.common import SourceCode, AutoCoderArgs
-from autocoder.index.symbols_utils import extract_symbols, SymbolsInfo, SymbolType, symbols_info_to_str
+from autocoder.index.symbols_utils import (
+    extract_symbols,
+    SymbolsInfo,
+    SymbolType,
+    symbols_info_to_str,
+)
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 
@@ -264,6 +269,13 @@ class IndexManager:
 
         return index_data
 
+    def read_index_as_str(self):
+        if not os.path.exists(self.index_file):
+            return []
+
+        with open(self.index_file, "r") as file:
+            return file.read()
+
     def read_index(self) -> List[IndexItem]:
         if not os.path.exists(self.index_file):
             return []
@@ -298,9 +310,9 @@ class IndexManager:
             if includes:
                 symbol_info = extract_symbols(symbols_str)
                 symbols_str = symbols_info_to_str(symbol_info, includes)
-                                
+
             item_str = f"##{item.module_name}\n{symbols_str}\n\n"
-            
+
             if skip_symbols:
                 item_str = f"{item.module_name}\n"
             item_size = len(item_str)
@@ -377,7 +389,9 @@ class IndexManager:
 
         def w():
             return self._get_meta_str(
-                skip_symbols=False, max_chunk_size=self.max_input_length - 1000, includes=[SymbolType.USAGE]
+                skip_symbols=False,
+                max_chunk_size=self.max_input_length - 1000,
+                includes=[SymbolType.USAGE],
             )
 
         logger.info("Find the related files by query according to the files...")
@@ -434,7 +448,7 @@ def build_index_and_filter_files(
                 file_path=source.module_name, reason="Rest/Rag/Search"
             )
 
-    if not args.skip_build_index and llm:     
+    if not args.skip_build_index and llm:
         logger.info("Building index for all files...")
         index_manager = IndexManager(llm=llm, sources=sources, args=args)
         index_manager.build_index()
@@ -471,8 +485,7 @@ def build_index_and_filter_files(
                     reason="No related files found, use all files",
                 )
 
-        logger.info(f"Find related files took {time.monotonic() - start_time:.2f}s")    
-
+        logger.info(f"Find related files took {time.monotonic() - start_time:.2f}s")
 
     def display_table_and_get_selections(data):
         from prompt_toolkit.shortcuts import checkboxlist_dialog

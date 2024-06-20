@@ -41,6 +41,7 @@ commands = [
     "/list_files",
     "/conf",
     "/chat",
+    "/coding"
     "/ask",
     "/revert",
     "/index/query",    
@@ -304,8 +305,33 @@ def remove_files(file_names: List[str]):
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
 
+def ask(query: str):
+    
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+    }
+    yaml_config["query"] = query
+    yaml_content = yaml.safe_dump(
+        yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
+    ).decode("utf-8")
 
-def chat(query: str):
+    execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+
+    with open(os.path.join(execute_file), "w") as f:
+        f.write(yaml_content)
+
+    def execute_ask():
+        auto_coder_main(["agent", "read_project", "--file", execute_file])
+
+    try:
+        execute_ask()
+    finally:
+        os.remove(execute_file)
+
+
+
+
+def coding(query: str):
     memory["conversation"].append({"role": "user", "content": query})
     conf = memory.get("conf", {})
 
@@ -354,7 +380,7 @@ def chat(query: str):
     completer.refresh_files()
 
 
-def ask(query: str):
+def chat(query: str):
     conf = memory.get("conf", {})
     current_files = memory["current_files"]["files"]
 
@@ -533,6 +559,11 @@ def main():
             
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt
+            elif user_input.startswith("/coding"):
+                query = user_input[len("/coding") :].strip()
+                if not query:
+                    print("\033[91mPlease enter your request.\033[0m")
+                coding(query)
             else:
                 if user_input.startswith("/") and not user_input.startswith("/chat"):
                     print("\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands.")

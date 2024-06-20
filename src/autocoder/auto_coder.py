@@ -385,7 +385,16 @@ def main(input_args: Optional[List[str]] = None):
             #     )
             # )
             return
+        elif raw_args.agent_command == "project_reader":
+            from autocoder.agent.project_reader import ProjectReader
+
+            project_reader = ProjectReader(args, llm)
+            v = project_reader.run(args.query)
+            print(v)
+            return
+
         elif raw_args.agent_command == "chat":
+
             memory_dir = os.path.join(args.source_dir, ".auto-coder", "memory")
             os.makedirs(memory_dir, exist_ok=True)
             memory_file = os.path.join(memory_dir, "chat_history.json")
@@ -396,9 +405,13 @@ def main(input_args: Optional[List[str]] = None):
             else:
                 chat_history = {"ask_conversation": []}
 
-            chat_history["ask_conversation"].append({"role": "user", "content": args.query})             
+            chat_history["ask_conversation"].append(
+                {"role": "user", "content": args.query}
+            )
 
-            v = llm.stream_chat_oai(conversations=chat_history["ask_conversation"][-9:], delta_mode=True)
+            v = llm.stream_chat_oai(
+                conversations=chat_history["ask_conversation"][-9:], delta_mode=True
+            )
 
             assistant_response = ""
             print("\n\n=============RESPONSE==================\n\n")
@@ -408,10 +421,12 @@ def main(input_args: Optional[List[str]] = None):
             print()
             print()
 
-            chat_history["ask_conversation"].append({"role": "assistant", "content": assistant_response})
+            chat_history["ask_conversation"].append(
+                {"role": "assistant", "content": assistant_response}
+            )
 
             with open(memory_file, "w") as f:
-                json.dump(chat_history, f,ensure_ascii=False)
+                json.dump(chat_history, f, ensure_ascii=False)
             return
 
         else:
