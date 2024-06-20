@@ -500,6 +500,25 @@ def main():
     def _(event):
         event.current_buffer.complete_next()
 
+    from prompt_toolkit.key_binding import KeyBindings
+    from prompt_toolkit.filters import Condition
+    from prompt_toolkit.keys import Keys
+    from prompt_toolkit.enums import EditingMode
+
+    multiline = Condition(lambda: session.multiline)
+
+    @kb.add(Keys.Enter, filter=~multiline)
+    def _(event):
+        event.current_buffer.validate_and_handle()
+
+    @kb.add(Keys.Enter, filter=multiline)
+    def _(event):
+        event.current_buffer.insert_text('\n')
+
+    @kb.add(Keys.ControlJ, filter=multiline)
+    def _(event):
+        event.current_buffer.validate_and_handle()
+
     session = PromptSession(
         history=InMemoryHistory(),
         auto_suggest=AutoSuggestFromHistory(),
@@ -507,6 +526,9 @@ def main():
         completer=completer,
         complete_while_typing=True,
         key_bindings=kb,
+        multiline=True,
+        prompt_continuation=lambda width, line_number, is_soft_wrap: '.' * width,
+        editing_mode=EditingMode.EMACS
     )
 
     print(
