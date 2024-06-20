@@ -146,18 +146,24 @@ def show_help():
         "  \033[94m/remove_files\033[0m \033[93m<file1>,<file2> ...\033[0m - \033[92mRemove files from the current session\033[0m"
     )
     print(
-        "  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current files\033[0m"
+        "  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current active files to get insights\033[0m"  
     )
     print(
-        "  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92mAsk the AI a question using the current files as context, without modifying the project\033[0m"
+        "  \033[94m/coding\033[0m \033[93m<query>\033[0m - \033[92mRequest the AI to modify code based on requirements\033[0m"
     )
-    print("  \033[94m/revert\033[0m - \033[92mRevert commits from last chat\033[0m")
-    print("  \033[94m/conf\033[0m - \033[92mSet configuration\033[0m")
+    print(
+        "  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92mAsk the AI any questions or get insights about the current project, without modifying code\033[0m"
+    )
+    print("  \033[94m/revert\033[0m - \033[92mRevert commits from last coding chat\033[0m")
+    print("  \033[94m/conf\033[0m \033[93m<key>:<value>\033[0m  - \033[92mSet configuration. Use /conf project_type:<type> to set project type for indexing\033[0m")
     print(
         "  \033[94m/index/query\033[0m \033[93m<args>\033[0m - \033[92mQuery the project index\033[0m"
     )
     print(
-        "  \033[94m/list_files\033[0m - \033[92mList all files in the current session\033[0m"
+        "  \033[94m/index/build\033[0m - \033[92mTrigger building the project index\033[0m"  
+    )
+    print(
+        "  \033[94m/list_files\033[0m - \033[92mList all active files in the current session\033[0m"
     )
     print("  \033[94m/help\033[0m - \033[92mShow this help message\033[0m")
     print(
