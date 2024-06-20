@@ -19,6 +19,7 @@ from autocoder.auto_coder import main as auto_coder_main
 from autocoder.command_args import parse_args
 from autocoder.utils import get_last_yaml_file
 import platform
+import subprocess
 
 if platform.system() == "Windows":
     from colorama import init
@@ -624,4 +625,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-import subprocess
+
