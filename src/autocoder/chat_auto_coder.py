@@ -343,8 +343,7 @@ def coding(query: str):
     memory["conversation"].append({"role": "user", "content": query})
     conf = memory.get("conf", {})
 
-    current_files = memory["current_files"]["files"]
-    files_list = "\n".join([f"- {file}" for file in current_files])
+    current_files = memory["current_files"]["files"]    
 
     def prepare_chat_yaml():
         auto_coder_main(["next", "chat_action"])
