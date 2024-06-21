@@ -4,6 +4,7 @@ Chat-Auto-Coder 是一个命令行聊天工具，可以让你以对话的方式�
 
 > 本文使用 Claude Opus 作为代码生成模型。
 > 你可以通过 /conf code_model: opus_chat 来选择使用该模型。具体参看: [046_AutoCoder_Chat-Auto-Coder指南](./046_AutoCoder_Chat-Auto-Coder指南.md)
+> 最新的 chat-auto-coder 编写代码需要使用 /coding 指令，而不是 /chat 指令。默认不加任何指令则为 /chat 模式，进行闲聊模式。
 
 ## 准备工作
 
