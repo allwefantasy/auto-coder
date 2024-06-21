@@ -1,0 +1,10 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+project_type: .go
+query: '解析conf 时需要确保按 : 分割有两个值,如果用户输入类似 /conf key: 没有输入value 给出一个友好的错误提示'
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
