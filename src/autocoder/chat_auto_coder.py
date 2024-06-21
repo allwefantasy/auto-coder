@@ -128,12 +128,19 @@ def redirect_stdout():
 
 
 def configure(conf: str):
-    key, value = conf.split(":", 1)
+    parts = conf.split(":", 1)
+    if len(parts) != 2:
+        print("\033[91mError: Invalid configuration format. Use 'key:value'.\033[0m")
+        return
+    key, value = parts
     key = key.strip()
     value = value.strip()
+    if not value:
+        print("\033[91mError: Value cannot be empty. Use 'key:value'.\033[0m")
+        return
     memory["conf"][key] = value
     save_memory()
-    print(f"Set {key} to {value}")
+    print(f"\033[92mSet {key} to {value}\033[0m")
 
 
 def show_help():
