@@ -124,10 +124,10 @@ class HttpDoc:
                         dirs[:] = [d for d in dirs if d not in ['.git',"node_modules"]]  # Exclude .git directory
                         for file in files:
                             file_path = os.path.join(root, file)                            
-                            documents.extend(process_single_file(file_path,skip_binary_file_test=True))
+                            documents.extend(process_single_file(file_path))
                     
                  else:
-                    documents.extend(process_single_file(url))
+                    documents.extend(process_single_file(url,skip_binary_file_test=True))
                     
                  for document in documents:
                     source_code = SourceCode(module_name=document.metadata["file_path"], source_code=document.get_content())
