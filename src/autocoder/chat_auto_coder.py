@@ -236,21 +236,16 @@ class CommandCompleter(Completer):
                     if current_word and current_word in file_name:
                         yield Completion(file_name, start_position=-len(current_word))
 
-            if words[0] == "/conf" or words[0] in ["/drop", "/unset", "/remove"]:
-                if words[0] == "/conf" and len(words) > 1 and words[1] in ['/drop', '/unset', '/remove']:
-                    new_words = text[len(f"/conf {words[1]}") :].strip().split()
-                elif words[0] in ["/drop", "/unset", "/remove"]:
-                    new_words = text[len(words[0]) :].strip().split()
-                else:
-                    new_words = [text[len("/conf") :].strip()]
-                
-                current_word = new_words[-1] if new_words else ""
-                
-                if words[0] in ["/drop", "/unset", "/remove"] or (words[0] == "/conf" and len(words) > 1 and words[1] in ['/drop', '/unset', '/remove']):
+            if words[0] == "/conf":
+                if len(words) > 1 and words[1] in ['/drop', '/unset', '/remove']:
+                    new_words = text[len(f"/conf {words[1]}") :].strip().split()  
+                    current_word = new_words[-1] if new_words else ""
                     for conf_key in memory["conf"].keys():
                         if conf_key.startswith(current_word):
                             yield Completion(conf_key, start_position=-len(current_word))
                 else:
+                    new_words = [text[len("/conf") :].strip()]
+                    current_word = new_words[0]
                     for field_name, field in AutoCoderArgs.model_fields.items():
                         if field_name.startswith(current_word) and ":" not in current_word:
                             yield Completion(
