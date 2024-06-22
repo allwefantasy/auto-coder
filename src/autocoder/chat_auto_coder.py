@@ -129,7 +129,7 @@ def redirect_stdout():
 
 def configure(conf: str):
     parts = conf.split(None, 1)
-    if len(parts) == 2 and parts[0] in ['/drop', '/unset', '/remove']:
+    if len(parts) == 2 and parts[0] in ["/drop", "/unset", "/remove"]:
         key = parts[1].strip()
         if key in memory["conf"]:
             del memory["conf"][key]
@@ -140,7 +140,9 @@ def configure(conf: str):
     else:
         parts = conf.split(":", 1)
         if len(parts) != 2:
-            print("\033[91mError: Invalid configuration format. Use 'key:value' or '/drop key'.\033[0m")
+            print(
+                "\033[91mError: Invalid configuration format. Use 'key:value' or '/drop key'.\033[0m"
+            )
             return
         key, value = parts
         key = key.strip()
@@ -164,7 +166,7 @@ def show_help():
         "  \033[94m/remove_files\033[0m \033[93m<file1>,<file2> ...\033[0m - \033[92mRemove files from the current session\033[0m"
     )
     print(
-        "  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current active files to get insights\033[0m"  
+        "  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current active files to get insights\033[0m"
     )
     print(
         "  \033[94m/coding\033[0m \033[93m<query>\033[0m - \033[92mRequest the AI to modify code based on requirements\033[0m"
@@ -172,13 +174,17 @@ def show_help():
     print(
         "  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92mAsk the AI any questions or get insights about the current project, without modifying code\033[0m"
     )
-    print("  \033[94m/revert\033[0m - \033[92mRevert commits from last coding chat\033[0m")
-    print("  \033[94m/conf\033[0m \033[93m<key>:<value>\033[0m  - \033[92mSet configuration. Use /conf project_type:<type> to set project type for indexing\033[0m")
+    print(
+        "  \033[94m/revert\033[0m - \033[92mRevert commits from last coding chat\033[0m"
+    )
+    print(
+        "  \033[94m/conf\033[0m \033[93m<key>:<value>\033[0m  - \033[92mSet configuration. Use /conf project_type:<type> to set project type for indexing\033[0m"
+    )
     print(
         "  \033[94m/index/query\033[0m \033[93m<args>\033[0m - \033[92mQuery the project index\033[0m"
     )
     print(
-        "  \033[94m/index/build\033[0m - \033[92mTrigger building the project index\033[0m"  
+        "  \033[94m/index/build\033[0m - \033[92mTrigger building the project index\033[0m"
     )
     print(
         "  \033[94m/list_files\033[0m - \033[92mList all active files in the current session\033[0m"
@@ -237,15 +243,37 @@ class CommandCompleter(Completer):
                         yield Completion(file_name, start_position=-len(current_word))
 
             elif words[0] == "/conf":
-                new_words = [text[len("/conf") :].strip()]
-                current_word = new_words[0]
+                # /conf project_type:py
+                # /conf /drop project_type
+                new_words = text[len("/conf") :].strip().split(None)
+                current_word = new_words[-1] if len(new_words) >= 1 else ""
+                is_at_space = text[-1] == " "
+
+                if is_at_space and current_word == "/drop":
+                    for field_name in memory["conf"].keys():
+                        if field_name.startswith(current_word):
+                            yield Completion(
+                                field_name, start_position=-len(current_word)
+                            )
+                    return        
+                
+                for field_name in ["/drop"]:
+                    if field_name.startswith(current_word):
+                        yield Completion(
+                            field_name, start_position=-len(current_word)
+                        )
+
                 for field_name, field in AutoCoderArgs.model_fields.items():
-                    if field_name.startswith(current_word) and ":" not in current_word:
+                    if (
+                        field_name.startswith(current_word)
+                        and ":" not in current_word
+                    ):
                         yield Completion(
                             field_name,
                             start_position=-len(current_word),
                             display=field.description,
                         )
+
             else:
                 for command in self.commands:
                     if command.startswith(text):
@@ -365,7 +393,7 @@ def coding(query: str):
     memory["conversation"].append({"role": "user", "content": query})
     conf = memory.get("conf", {})
 
-    current_files = memory["current_files"]["files"]    
+    current_files = memory["current_files"]["files"]
 
     def prepare_chat_yaml():
         auto_coder_main(["next", "chat_action"])
@@ -565,7 +593,7 @@ def main():
                 query = user_input[len("/index/query") :].strip()
                 index_query(query)
 
-            elif user_input.startswith("/index/build"):                
+            elif user_input.startswith("/index/build"):
                 index_build()
 
             elif user_input.startswith("/list_files"):
@@ -645,5 +673,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
