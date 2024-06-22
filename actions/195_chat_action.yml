@@ -1,0 +1,10 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+project_type: .go
+query: '支持/conf 删除变量. 使用方式位: /conf /drop 变量名; 其中/drop 也可以被  /unset /remove 替换'
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
