@@ -246,33 +246,57 @@ class CommandCompleter(Completer):
                 # /conf project_type:py
                 # /conf /drop project_type
                 new_words = text[len("/conf") :].strip().split(None)
-                current_word = new_words[-1] if len(new_words) >= 1 else ""
+                
+                last_word = None
+                current_word = None
                 is_at_space = text[-1] == " "
 
-                if is_at_space and current_word == "/drop":
+                if is_at_space and len(new_words) ==0:
+                    last_word = ""
+                    current_word = ""
+
+                elif is_at_space and len(new_words) == 1:
+                    last_word = new_words[-1]
+                    current_word = ""
+
+                elif is_at_space and len(new_words) > 1:
+                    last_word = new_words[-2]
+                    current_word = new_words[-1]
+
+                elif len(new_words) == 0:
+                    last_word = ""
+                    current_word = ""            
+
+                elif len(new_words) == 1:
+                    last_word = ""
+                    current_word = new_words[-1]
+                elif len(new_words) > 1:
+                    last_word = new_words[-2]
+                    current_word = new_words[-1]                                                   
+
+                if last_word == "/drop" and current_word:
                     for field_name in memory["conf"].keys():
                         if field_name.startswith(current_word):
                             yield Completion(
                                 field_name, start_position=-len(current_word)
                             )
-                    return        
-                
-                for field_name in ["/drop"]:
-                    if field_name.startswith(current_word):
-                        yield Completion(
-                            field_name, start_position=-len(current_word)
-                        )
+                else:                    
+                    for field_name in ["/drop"]:
+                        if field_name.startswith(current_word):
+                            yield Completion(
+                                field_name, start_position=-len(current_word)
+                            )
 
-                for field_name, field in AutoCoderArgs.model_fields.items():
-                    if (
-                        field_name.startswith(current_word)
-                        and ":" not in current_word
-                    ):
-                        yield Completion(
-                            field_name,
-                            start_position=-len(current_word),
-                            display=field.description,
-                        )
+                    for field_name, field in AutoCoderArgs.model_fields.items():
+                        if (
+                            field_name.startswith(current_word)
+                            and ":" not in current_word
+                        ):
+                            yield Completion(
+                                field_name,
+                                start_position=-len(current_word),
+                                display=field.description,
+                            )
 
             else:
                 for command in self.commands:
