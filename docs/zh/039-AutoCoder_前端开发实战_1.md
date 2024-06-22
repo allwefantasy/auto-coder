@@ -271,7 +271,8 @@ auto-coder screenshot --urls https://www.baidu.com  --output /tmp/jack3/
 然后再手动将 project_type 设置为 ts, vl_model 设置为 gpt4o_chat:
 
 ```bash
-/conf project_type:ts,vl_model:gpt4o_chat
+/conf project_type:ts
+/conf vl_model:gpt4o_chat
 ```
 
 接着把后端接口添加到活动文件里去：

@@ -236,7 +236,7 @@ class CommandCompleter(Completer):
                     if current_word and current_word in file_name:
                         yield Completion(file_name, start_position=-len(current_word))
 
-            if words[0] == "/conf":
+            elif words[0] == "/conf":
                 new_words = [text[len("/conf") :].strip()]
                 current_word = new_words[0]
                 for field_name, field in AutoCoderArgs.model_fields.items():
