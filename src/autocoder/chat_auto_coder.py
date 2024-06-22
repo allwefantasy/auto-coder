@@ -229,10 +229,29 @@ class CommandCompleter(Completer):
 
             elif words[0] == "/remove_files":
                 new_words = text[len("/remove_files") :].strip().split(",")
-                current_word = new_words[-1]
-                for file_name in self.current_file_names:
-                    if current_word and current_word in file_name:
+
+                is_at_space = text[-1] == " "
+                last_word = new_words[-2] if len(new_words) > 1 else ""
+                current_word = new_words[-1] if new_words else ""
+
+                if is_at_space:
+                    last_word = current_word
+                    current_word = ""
+
+                if not last_word and not current_word:
+                    if "/all".startswith(current_word):
+                        yield Completion("/all", start_position=-len(current_word))
+                    for file_name in self.current_file_names:
                         yield Completion(file_name, start_position=-len(current_word))
+
+                if current_word:
+                    if "/all".startswith(current_word):
+                        yield Completion("/all", start_position=-len(current_word))
+                    for file_name in self.current_file_names:
+                        if current_word and current_word in file_name:
+                            yield Completion(
+                                file_name, start_position=-len(current_word)
+                            )
 
             elif words[0] == "/exclude_dirs":
                 new_words = text[len("/exclude_dirs") :].strip().split(",")
@@ -243,53 +262,38 @@ class CommandCompleter(Completer):
                         yield Completion(file_name, start_position=-len(current_word))
 
             elif words[0] == "/conf":
-                # /conf project_type:py
-                # /conf /drop project_type
-                new_words = text[len("/conf") :].strip().split(None)
+                new_words = text[len("/conf") :].strip().split()
+                is_at_space = text[-1] == " "
+                last_word = new_words[-2] if len(new_words) > 1 else ""
+                current_word = new_words[-1] if new_words else ""
+                completions = []
 
-                last_word = None
-                current_word = None
-                is_at_space = text[-1] == " "                                                
-
-                if is_at_space and len(new_words) == 0:
-                    last_word = ""
+                if is_at_space:
+                    last_word = current_word
                     current_word = ""
-
-                elif is_at_space and len(new_words) == 1:
-                    last_word = new_words[-1]
-                    current_word = ""
-
-                elif is_at_space and len(new_words) > 1:
-                    last_word = new_words[-2]
-                    current_word = new_words[-1]
-
-                elif len(new_words) == 0:
-                    last_word = ""
-                    current_word = ""
-
-                elif len(new_words) == 1:
-                    last_word = ""
-                    current_word = new_words[-1]
-                elif len(new_words) > 1:
-                    last_word = new_words[-2]
-                    current_word = new_words[-1]                
 
                 if last_word == "/drop":
-                    for field_name in memory["conf"].keys():
-                        if field_name.startswith(current_word):
-                            yield Completion(
-                                field_name, start_position=-len(current_word)
-                            )
-                else:
-                    if "/drop".startswith(current_word):
-                        yield Completion("/drop", start_position=-len(current_word))
-                    for field_name, field in AutoCoderArgs.model_fields.items():
-                        if field_name.startswith(current_word):
-                            yield Completion(
-                                f"{field_name}:",
-                                start_position=-len(current_word),
-                                display=field.description,
-                            )
+                    completions = [
+                        field_name
+                        for field_name in memory["conf"].keys()
+                        if field_name.startswith(current_word)
+                    ]
+                elif not last_word and not current_word:
+                    completions = ["/drop"] if "/drop".startswith(current_word) else []
+                    completions += [
+                        field_name + ":"
+                        for field_name in AutoCoderArgs.model_fields.keys()
+                        if field_name.startswith(current_word)
+                    ]
+                elif not last_word and current_word:
+                    completions += [
+                        field_name + ":"
+                        for field_name in AutoCoderArgs.model_fields.keys()
+                        if field_name.startswith(current_word)
+                    ]
+
+                for completion in completions:
+                    yield Completion(completion, start_position=-len(current_word))
 
             else:
                 for command in self.commands:
