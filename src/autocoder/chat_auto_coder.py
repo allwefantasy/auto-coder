@@ -310,14 +310,19 @@ def add_files(file_names: List[str]):
 
 
 def remove_files(file_names: List[str]):
-    removed_files = []
-    for file in memory["current_files"]["files"]:
-        if os.path.basename(file) in file_names:
-            removed_files.append(file)
-        elif file in file_names:
-            removed_files.append(file)
-    for file in removed_files:
-        memory["current_files"]["files"].remove(file)
+    if "/all" in file_names:
+        memory["current_files"]["files"] = []
+        print("Removed all files.")
+    else:
+        removed_files = []
+        for file in memory["current_files"]["files"]:
+            if os.path.basename(file) in file_names:
+                removed_files.append(file)
+            elif file in file_names:
+                removed_files.append(file)
+        for file in removed_files:
+            memory["current_files"]["files"].remove(file)
+        print(f"Removed files: {[os.path.basename(f) for f in removed_files]}")
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
 
