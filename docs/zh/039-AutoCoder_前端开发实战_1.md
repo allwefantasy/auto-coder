@@ -19,6 +19,10 @@
 
 ![](../images/039-01.png)
 
+## 前言
+
+本文包含 auto-coder演示，在文章最后也体积了在 chat-auto-coder 中如何完成相同功能。
+
 ## 准备一个项目/环境
 
 ```bash
@@ -254,6 +258,46 @@ auto-coder screenshot --urls https://www.baidu.com  --output /tmp/jack3/
 1. 通过 auto-coder 可以一次性完成前端页面生成，并且同时和后端对接。
 2. 我们通过拆解合适的粒度，让单次auto-coder 交互更加简单。
 3. 如果是已经存在的项目，你可以通过让他参考随意一张页面从而自动获得所使用的技术栈和页面整体风格，组件。
+
+
+## Chat-Auto-Coder 中如何实现
+
+在 chat-auto-coder 中,你可以通过 `/conf` 指令来设置图片：
+
+```bash
+/conf image_file:/Users/allwefantasy/projects/auto-coder.example_01/screens/add_example.png
+```
+
+然后再手动将 project_type 设置为 ts, vl_model 设置为 gpt4o_chat:
+
+```bash
+/conf project_type:ts,vl_model:gpt4o_chat
+```
+
+接着把后端接口添加到活动文件里去：
+
+```bash
+/add_files /Users/allwefantasy/projects/auto-coder.example_01/src/server.py
+```
+
+现在可以直接用 `/coding` 开始做生成了：
+
+```bash
+/coding 参考 server.py 中关于解读示例的接口 /api/add_item,
+  使用reactjs + typescript + tailwindcss ，将 html 转换为一张 reactjs 页面,名字为 AddExample.tsx，  
+  放在froontend/src/pages目录下。
+  注意，要严格确保 html 的页面完全一致。
+  与此同时，你需要完成和server.py中的接口对接。
+
+  此外，还要创建一个新的页面，名字为 ListExamples.tsx，对接的接口为/api/get_items，用来展示所有的items。
+  只输出有修改或者新增的文件。
+```
+
+这样就可以完成和前面一样的效果了。
+
+
+
+
 
   
 
