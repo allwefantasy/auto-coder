@@ -128,9 +128,9 @@ def redirect_stdout():
 
 
 def configure(conf: str):
-    parts = conf.split(None, 1)
-    if len(parts) == 2 and parts[0] in ['/drop', '/unset', '/remove']:
-        key = parts[1].strip()
+    if any(conf.startswith(cmd) for cmd in ["/drop", "/unset", "/remove"]):
+        _, key = conf.split(None, 1)
+        key = key.strip()
         if key in memory["conf"]:
             del memory["conf"][key]
             save_memory()
@@ -238,7 +238,7 @@ class CommandCompleter(Completer):
 
             if words[0] == "/conf":
                 if len(words) > 1 and words[1] in ['/drop', '/unset', '/remove']:
-                    new_words = text[len("/conf /remove") :].strip().split()
+                    new_words = text[len(f"/conf {words[1]}") :].strip().split()  
                     current_word = new_words[-1] if new_words else ""
                     for conf_key in memory["conf"].keys():
                         if conf_key.startswith(current_word):
