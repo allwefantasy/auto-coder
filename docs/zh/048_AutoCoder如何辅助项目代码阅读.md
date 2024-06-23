@@ -45,6 +45,12 @@ auto-coder agent project_reader --file ./base/base.yml --query "帮我找到 exc
 2. IndexManager 类都被哪些文件使用了？
 3. 帮我阅读下planner.py 为啥里面需要用 IndexManager?
 
+## 暂时无法解决的一些问题
+
+1. 可以指定文件检测语法错误，比如说： 看看 planner.py 中是否有语法错误， 但无法做到：项目中有哪些代码文件有语法错误（需要遍历整个项目文件，代价太大）。
+2. 无法任意查找一个文件，只能查找已经构建索引的文件。所以构建取决于 project_type 和是否执行了 /index/build 或者  auto-coder index 命令。
+3. 无法查找一个函数的调用者，只能查找一个函数的定义。
+
 
 ## 结论
 
