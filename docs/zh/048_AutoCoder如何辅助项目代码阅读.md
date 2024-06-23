@@ -44,12 +44,25 @@ auto-coder agent project_reader --file ./base/base.yml --query "帮我找到 exc
 1. 罗列 xxxx 中所有的类函数
 2. IndexManager 类都被哪些文件使用了？
 3. 帮我阅读下planner.py 为啥里面需要用 IndexManager?
+4. 该项目合并代码的方式都有哪些？
 
 ## 暂时无法解决的一些问题
 
 1. 可以指定文件检测语法错误，比如说： 看看 planner.py 中是否有语法错误， 但无法做到：项目中有哪些代码文件有语法错误（需要遍历整个项目文件，代价太大）。
 2. 无法任意查找一个文件，只能查找已经构建索引的文件。所以构建取决于 project_type 和是否执行了 /index/build 或者  auto-coder index 命令。
 3. 无法查找一个函数的调用者，只能查找一个函数的定义。
+
+## 问题
+
+因为采用了 Cot 来处理，有的时候会超出deepseek chat的最大窗口，会失败，可以换个问法。一般如果超出窗口长度，报错如下：
+
+```
+2024-06-23 22:16:09,104 ERROR serialization.py:414 -- Failed to unpickle serialized exception
+Traceback (most recent call last):
+  File "/opt/miniconda3/envs/byzerllm/lib/python3.10/site-packages/ray/exceptions.py", line 49, in from_ray_exception
+    return pickle.loads(ray_exception.serialized_exception)
+TypeError: APIStatusError.__init__() missing 2 required keyword-only arguments: 'response' and 'body'
+```
 
 
 ## 结论
