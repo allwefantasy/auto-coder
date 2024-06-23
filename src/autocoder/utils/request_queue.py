@@ -3,10 +3,12 @@ from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
 from typing import Dict
 
+
 class RequestValue(BaseModel):
     value: any
     last_accessed: datetime = Field(default_factory=datetime.now)
     created_at: datetime = Field(default_factory=datetime.now)
+
 
 class RequestQueue:
     _instance = None
@@ -20,11 +22,13 @@ class RequestQueue:
         return cls._instance
 
     def _initialize(self):
-        self._queue:Dict[str,RequestValue] = {}
+        self._queue: Dict[str, RequestValue] = {}
 
     def add_request(self, request_id, result):
         with self._lock:
-            self._queue[request_id] = RequestValue(value=result, last_accessed=datetime.now())
+            self._queue[request_id] = RequestValue(
+                value=result, created_at=datetime.now(), last_accessed=datetime.now()
+            )
 
     def get_request(self, request_id):
         with self._lock:
@@ -53,6 +57,7 @@ class RequestQueue:
             for request_id in old_requests:
                 del self._queue[request_id]
             return len(old_requests)
+
 
 # Global instance
 request_queue = RequestQueue()
