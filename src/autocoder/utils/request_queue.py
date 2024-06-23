@@ -1,4 +1,10 @@
 from threading import Lock
+from pydantic import BaseModel
+from datetime import datetime, timedelta
+
+class RequestValue(BaseModel):
+    value: any
+    last_accessed: datetime
 
 class RequestQueue:
     _instance = None
@@ -16,11 +22,15 @@ class RequestQueue:
 
     def add_request(self, request_id, result):
         with self._lock:
-            self._queue[request_id] = result
+            self._queue[request_id] = RequestValue(value=result, last_accessed=datetime.now())
 
     def get_request(self, request_id):
         with self._lock:
-            return self._queue.get(request_id)
+            request_value = self._queue.get(request_id)
+            if request_value:
+                request_value.last_accessed = datetime.now()
+                return request_value.value
+            return None
 
     def remove_request(self, request_id):
         with self._lock:
@@ -29,6 +39,18 @@ class RequestQueue:
     def clear(self):
         with self._lock:
             self._queue.clear()
+
+    def cleanup_old_requests(self):
+        with self._lock:
+            current_time = datetime.now()
+            old_requests = [
+                request_id
+                for request_id, request_value in self._queue.items()
+                if (current_time - request_value.last_accessed) > timedelta(minutes=10)
+            ]
+            for request_id in old_requests:
+                del self._queue[request_id]
+            return len(old_requests)
 
 # Global instance
 request_queue = RequestQueue()
