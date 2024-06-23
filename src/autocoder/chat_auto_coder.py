@@ -237,13 +237,15 @@ class CommandCompleter(Completer):
                 if is_at_space:
                     last_word = current_word
                     current_word = ""
-
+                
+                # /remove_files /all [cursor] or /remove_files /all p[cursor]
                 if not last_word and not current_word:
                     if "/all".startswith(current_word):
                         yield Completion("/all", start_position=-len(current_word))
                     for file_name in self.current_file_names:
                         yield Completion(file_name, start_position=-len(current_word))
-
+                
+                # /remove_files /a[cursor] or /remove_files p[cursor]
                 if current_word:
                     if "/all".startswith(current_word):
                         yield Completion("/all", start_position=-len(current_word))
