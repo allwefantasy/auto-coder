@@ -296,6 +296,13 @@ auto-coder screenshot --urls https://www.baidu.com  --output /tmp/jack3/
 
 这样就可以完成和前面一样的效果了。
 
+记得如果你不需要再转换图片到代码，需要移除图片和重置project_type设置：
+
+```bash
+/conf /drop image_file;
+/conf project_type:py
+```
+
 
 
 
