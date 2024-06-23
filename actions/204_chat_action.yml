@@ -1,0 +1,13 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: 添加一个 request_id 参数,记得同步修改 lang.py 和 __init__.py 文件
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/utils/request_queue.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py
