@@ -272,12 +272,14 @@ class CommandCompleter(Completer):
                     last_word = current_word
                     current_word = ""
 
+                # /conf /drop [curor] or /conf /drop p[cursor]
                 if last_word == "/drop":
                     completions = [
                         field_name
                         for field_name in memory["conf"].keys()
                         if field_name.startswith(current_word)
                     ]
+                # /conf [curosr]
                 elif not last_word and not current_word:
                     completions = ["/drop"] if "/drop".startswith(current_word) else []
                     completions += [
@@ -285,7 +287,14 @@ class CommandCompleter(Completer):
                         for field_name in AutoCoderArgs.model_fields.keys()
                         if field_name.startswith(current_word)
                     ]
+                # /conf p[cursor]
                 elif not last_word and current_word:
+                    completions = ["/drop"] if "/drop".startswith(current_word) else []
+                    completions += [
+                        field_name + ":"
+                        for field_name in AutoCoderArgs.model_fields.keys()
+                        if field_name.startswith(current_word)
+                    ]
                     completions += [
                         field_name + ":"
                         for field_name in AutoCoderArgs.model_fields.keys()
