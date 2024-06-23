@@ -20,26 +20,26 @@ class QueueCommunicate(metaclass=Singleton):
         # Create a response queue for the event
         response_queue = Queue()
         with self.lock:
-            # Store the response queue for the event
-            self.response_queues[event] = response_queue
-        # Send the event to the request queue
-        self.request_queue.put(event)
-        # Wait for the response
+            # Store the response queue for the event in the response_queues dict for the request_id
+            response_queues[event] = response_queue
+        # Send the event to the request queue for the request_id
+        request_queue.put(event)
+        # Wait for the response from the response queue for the event
         response = response_queue.get()
         with self.lock:
-            # Remove the response queue for the event
-            del self.response_queues[event]
+            # Remove the response queue for the event from the response_queues dict for the request_id
+            del response_queues[event]
         return response
 
     def consume_events(self,request_id:str, event_handler: Callable[[Any], Any]):
         while True:
-            # Get the next event from the request queue
-            event = self.request_queue.get()
+            # Get the next event from the request queue for the request_id
+            event = request_queue.get()
             # Process the event
             response = event_handler(event)
             with self.lock:
-                # Get the response queue for the event
-                response_queue = self.response_queues.get(event)
+                # Get the response queue for the event from the response_queues dict for the request_id
+                response_queue = response_queues.get(event)
             # Put the response in the response queue
             response_queue.put(response)
             self.request_queue.task_done()
