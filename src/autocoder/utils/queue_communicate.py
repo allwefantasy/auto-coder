@@ -28,7 +28,7 @@ class QueueCommunicate(metaclass=Singleton):
         self.send_event_executor.shutdown()
         self.consume_event_executor.shutdown()
         for request_queue in self.request_queues.values():
-            request_queue.put(None) 
+            request_queue.put(None)
         for request_id in list(self.request_queues.keys()):
             self.close(request_id)
 
