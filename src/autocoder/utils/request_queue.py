@@ -29,6 +29,8 @@ class RequestQueue:
             self._queue[request_id] = RequestValue(
                 value=result, created_at=datetime.now(), last_accessed=datetime.now()
             )
+        if len(self._queue) > 5000:
+            self.cleanup_old_requests()
 
     def get_request(self, request_id):
         with self._lock:
