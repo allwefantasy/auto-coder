@@ -10,6 +10,7 @@ class Sender:
     def send_event(self, event):
         response = queue_communicate.send_event(self.request_id, event)
         print(f"Sender {self.request_id} received response: {response}")
+        return response
 
 
 class Consumer:

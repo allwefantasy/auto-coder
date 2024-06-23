@@ -5,19 +5,15 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 
-class Singleton:
-    _instance = None
+class Singleton(type):
+    _instances = {}
     _lock = threading.Lock()
 
-    def __new__(cls, *args, **kwargs):
+    def __call__(cls, *args, **kwargs):
         with cls._lock:
-            if cls._instance is None:
-                cls._instance = super().__new__(cls)
-                cls._instance._initialize()
-        return cls._instance
-
-    def _initialize(self):
-        pass
+            if cls not in cls._instances:
+                cls._instances[cls] = super().__call__(*args, **kwargs)
+        return cls._instances[cls]
 
 
 class QueueCommunicate(metaclass=Singleton):
@@ -29,7 +25,9 @@ class QueueCommunicate(metaclass=Singleton):
         self.consume_event_executor = ThreadPoolExecutor(max_workers=10)
 
     def send_event(self, request_id: str, event: Any) -> Any:
-        future = self.send_event_executor.submit(self._send_event_task, request_id, event)
+        future = self.send_event_executor.submit(
+            self._send_event_task, request_id, event
+        )
         return future.result()
 
     def _send_event_task(self, request_id: str, event: Any) -> Any:
@@ -53,11 +51,15 @@ class QueueCommunicate(metaclass=Singleton):
         return response
 
     def consume_events(self, request_id: str, event_handler: Callable[[Any], Any]):
-        
-        future = self.consume_event_executor.submit(self._consume_events_task, request_id, event_handler)
+
+        future = self.consume_event_executor.submit(
+            self._consume_events_task, request_id, event_handler
+        )
         return future.result()
 
-    def _consume_events_task(self, request_id: str, event_handler: Callable[[Any], Any]):
+    def _consume_events_task(
+        self, request_id: str, event_handler: Callable[[Any], Any]
+    ):
         while True:
             with self.lock:
                 if request_id not in self.request_queues:

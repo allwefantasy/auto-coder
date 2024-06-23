@@ -1,0 +1,21 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: "运行 test_queue_communicate ,出错: test_queue_communicate.TestQueueCommunicate.test_send_and_consume_events\
+  \ failed: <class 'AssertionError'> None != 'Processed by request1: Event 1'\nTraceback\
+  \ (most recent call last):\n  File \"/opt/miniconda3/envs/byzerllm/lib/python3.10/unittest/case.py\"\
+  , line 59, in testPartExecutor\n    yield\n  File \"/opt/miniconda3/envs/byzerllm/lib/python3.10/unittest/case.py\"\
+  , line 591, in run\n    self._callTestMethod(testMethod)\n  File \"/opt/miniconda3/envs/byzerllm/lib/python3.10/unittest/case.py\"\
+  , line 549, in _callTestMethod\n    method()\n  File \"/Users/allwefantasy/projects/auto-coder/tests/test_queue_communicate.py\"\
+  , line 52, in test_send_and_consume_events\n    self.assertEqual(response1, \"Processed\
+  \ by request1: Event 1\")\nAssertionError: None != 'Processed by request1: Event\
+  \ 1'"
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/utils/request_queue.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/utils/queue_communicate.py
+- /Users/allwefantasy/projects/auto-coder/tests/test_queue_communicate.py
