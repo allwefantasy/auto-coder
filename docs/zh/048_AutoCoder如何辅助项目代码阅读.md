@@ -7,7 +7,7 @@ AutoCoder 提供了一系列工具和功能来辅助开发者进行项目代码�
 
 ## chat-auto-coder 中的/ask 命令
 
-chat-auto-coder 中是个命令行交互工具，其中的
+chat-auto-coder 是个命令行交互工具，其中的
 
 `/ask` 命令允许用户直接向 AI 提问，获取与当前项目相关的信息。
 
@@ -25,10 +25,21 @@ chat-auto-coder 中是个命令行交互工具，其中的
 /index/build
 ```
 
+此外，你也可以使用 `/chat` 来对通过 `/add_files` 添加的活动文件来进行提问。`/chat` 是不需要
+索引支持的。
+
+```
+/add_files chat_auto_coder.py
+/chat 这个文件里都有哪些指令？
+```
+
+这里，我们添加了一个文件 `chat_auto_coder.py`，然后使用 `/chat` 对这个问题进行提问。
+
 
 ## auto-coder 中的 agent/project_reader
 
-`agent/project_reader` 是另一个强大的工具，用于分析和提取项目中的关键信息。
+`agent/project_reader` 是另一个强大的工具，chat-auto-coder中的 `/ask` 也是基于该工具做的二次封装，
+用于分析和提取项目中的关键信息。
 
 ### 示例
 
