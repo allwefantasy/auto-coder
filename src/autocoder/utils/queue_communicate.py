@@ -29,8 +29,16 @@ class QueueCommunicate(metaclass=Singleton):
         self.consume_event_executor.shutdown()
         for request_queue in self.request_queues.values():
             request_queue.put(None) 
-        self.request_queues.clear()
-        self.response_queues.clear()
+        for request_id in list(self.request_queues.keys()):
+            self.close(request_id)
+
+    def close(self, request_id: str):
+        with self.lock:
+            if request_id in self.request_queues:
+                request_queue = self.request_queues.pop(request_id)
+                request_queue.put(None)
+            if request_id in self.response_queues:
+                self.response_queues.pop(request_id)
 
     def send_event(self, request_id: str, event: Any, timeout: int = 300) -> Any:
         future = self.send_event_executor.submit(
