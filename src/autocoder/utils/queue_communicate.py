@@ -57,6 +57,14 @@ class QueueCommunicate(metaclass=Singleton):
         )
         return future.result()
 
+    def consume_events_no_wait(
+        self, request_id: str, event_handler: Callable[[Any], Any]
+    ):
+        future = self.consume_event_executor.submit(
+            self._consume_events_task, request_id, event_handler
+        )
+        return future.result()
+
     def _consume_events_task(
         self, request_id: str, event_handler: Callable[[Any], Any]
     ):
