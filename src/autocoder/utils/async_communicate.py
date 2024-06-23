@@ -10,7 +10,7 @@ class Singleton(type):
             cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
 
-class AsyncCommunicate(metaclass=Singleton):
+class QueueCommunicate(metaclass=Singleton):
     def __init__(self):
         self.request_queue = Queue()
         self.response_queues = {}
@@ -45,11 +45,11 @@ class AsyncCommunicate(metaclass=Singleton):
             self.request_queue.task_done()
 
 # Global instance of AsyncCommunicate
-communicate = AsyncCommunicate()
+queue_communicate = QueueCommunicate()
 
 class Sender:
     def send_event(self, event):
-        response = communicate.send_event(event)
+        response = queue_communicate.send_event(event)
         print(f"Sender received response: {response}")
 
 class Consumer:
@@ -58,7 +58,7 @@ class Consumer:
             response = f"Processed: {event}"
             return response
 
-        communicate.consume_events(event_handler)
+        queue_communicate.consume_events(event_handler)
 
 def main():
     sender = Sender()
