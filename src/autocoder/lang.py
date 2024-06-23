@@ -61,8 +61,10 @@ lang_desc = {
         "next_from_yaml": "The YAML file to copy content from when creating a new action file. It supports prefix matching, e.g., specifying '001' will match '001_abc.yml'.",
         "next_desc": "create a new action file based one the last action file",
         "base_dir": "Alternative path for /~/.auto-coder to store or retrieve text embeddings. Using /~/.auto-coder/ if not specified"
+        "request_id": "请求ID",
     },
     "zh": {
+        "request_id": "Request ID",
         "parser_desc": "自动为Python脚本实现缺失的方法。",
         "source_dir": "项目源代码目录路径",
         "git_url": "用于克隆源代码的Git仓库URL",

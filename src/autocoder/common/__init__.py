@@ -155,6 +155,7 @@ def chat_with_llm_step_by_step(llm,conversations,
     return result, conversations
 
 class AutoCoderArgs(pydantic.BaseModel):
+    request_id: Optional[str] = None
     source_dir: Optional[str] = None
     git_url: Optional[str] = None
     target_file: Optional[str] = None
