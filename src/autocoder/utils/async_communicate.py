@@ -1,6 +1,7 @@
 import threading
 from queue import Queue
-from typing import Any, Callable
+from typing import Any, Callable, Dict
+
 
 class Singleton(type):
     _instances = {}
@@ -10,14 +11,22 @@ class Singleton(type):
             cls._instances[cls] = super().__call__(*args, **kwargs)
         return cls._instances[cls]
 
+
 class QueueCommunicate(metaclass=Singleton):
     def __init__(self):
-        self.request_queue = Queue()
+        self.request_queues = {}
         self.response_queues = {}
         self.lock = threading.Lock()
 
-    def send_event(self,request_id:str,event: Any) -> Any:
-        # Create a response queue for the event
+    def send_event(self, request_id: str, event: Any) -> Any:
+        if request_id not in self.request_queues:
+            with self.lock:
+                if request_id not in self.request_queues:
+                    self.request_queues[request_id] = Queue()
+                    self.response_queues[request_id] = {}
+
+        request_queue = self.request_queues[request_id]
+        response_queues = self.response_queues[request_id]
         response_queue = Queue()
         with self.lock:
             # Store the response queue for the event in the response_queues dict for the request_id
@@ -31,7 +40,11 @@ class QueueCommunicate(metaclass=Singleton):
             del response_queues[event]
         return response
 
-    def consume_events(self,request_id:str, event_handler: Callable[[Any], Any]):
+    def consume_events(self, request_id: str, event_handler: Callable[[Any], Any]):
+        # Get the request and response queues for the given request_id
+        request_queue = self.request_queues[request_id]
+        response_queues = self.response_queues[request_id]
+
         while True:
             # Get the next event from the request queue for the request_id
             event = request_queue.get()
@@ -42,7 +55,8 @@ class QueueCommunicate(metaclass=Singleton):
                 response_queue = response_queues.get(event)
             # Put the response in the response queue
             response_queue.put(response)
-            self.request_queue.task_done()
+            request_queue.task_done()
+
 
 # Global instance of AsyncCommunicate
 queue_communicate = QueueCommunicate()
