@@ -8,6 +8,8 @@ class RequestValue(BaseModel):
     value: any
     last_accessed: datetime = Field(default_factory=datetime.now)
     created_at: datetime = Field(default_factory=datetime.now)
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class RequestQueue:

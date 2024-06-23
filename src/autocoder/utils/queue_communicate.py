@@ -1,6 +1,7 @@
 import threading
 from queue import Queue
 from typing import Any, Callable, Dict
+import time
 
 
 class Singleton(type):
@@ -41,11 +42,14 @@ class QueueCommunicate(metaclass=Singleton):
         return response
 
     def consume_events(self, request_id: str, event_handler: Callable[[Any], Any]):
-        # Get the request and response queues for the given request_id
-        request_queue = self.request_queues[request_id]
-        response_queues = self.response_queues[request_id]
-
+        
         while True:
+            if request_id not in self.request_queues: 
+                time.sleep(0.001)               
+                continue
+
+            request_queue = self.request_queues[request_id]
+            response_queues = self.response_queues[request_id]
             # Get the next event from the request queue for the request_id
             event = request_queue.get()
             # Process the event

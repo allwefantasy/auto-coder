@@ -1,6 +1,6 @@
 import unittest
 import threading
-from src.autocoder.utils.async_communicate import queue_communicate
+from autocoder.utils.queue_communicate import queue_communicate
 
 
 class Sender:

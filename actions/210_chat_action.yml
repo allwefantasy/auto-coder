@@ -1,0 +1,13 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: queue_commuicate 实现蛮多问题的,修正下
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/utils/request_queue.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/utils/queue_communicate.py
+- /Users/allwefantasy/projects/auto-coder/tests/test_queue_communicate.py
