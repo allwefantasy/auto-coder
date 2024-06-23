@@ -1,0 +1,11 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: 参考 RequestQueue 新增一个 RequestEventQueue, RequestEventQueue 在单独的一个 request_event_queue.py
+  文件中.新的类里Value值需要时一个 queue 队列, add 时是往request_id 对应的queue队列追加.
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/utils/request_queue.py
