@@ -2,6 +2,7 @@ import threading
 from queue import Queue
 from typing import Any, Callable, Dict
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 
 class Singleton:
@@ -24,48 +25,54 @@ class QueueCommunicate(metaclass=Singleton):
         self.request_queues = {}
         self.response_queues = {}
         self.lock = threading.Lock()
+        self.send_event_executor = ThreadPoolExecutor(max_workers=10)
+        self.consume_event_executor = ThreadPoolExecutor(max_workers=10)
 
     def send_event(self, request_id: str, event: Any) -> Any:
-        if request_id not in self.request_queues:
-            with self.lock:
-                if request_id not in self.request_queues:
-                    self.request_queues[request_id] = Queue()
-                    self.response_queues[request_id] = {}
+        future = self.send_event_executor.submit(self._send_event_task, request_id, event)
+        return future.result()
 
-        request_queue = self.request_queues[request_id]
-        response_queues = self.response_queues[request_id]
-        response_queue = Queue()
+    def _send_event_task(self, request_id: str, event: Any) -> Any:
         with self.lock:
-            # Store the response queue for the event in the response_queues dict for the request_id
+            if request_id not in self.request_queues:
+                self.request_queues[request_id] = Queue()
+                self.response_queues[request_id] = {}
+
+        with self.lock:
+            request_queue = self.request_queues[request_id]
+            response_queues = self.response_queues[request_id]
+            response_queue = Queue()
             response_queues[event] = response_queue
-        # Send the event to the request queue for the request_id
+
         request_queue.put(event)
-        # Wait for the response from the response queue for the event
         response = response_queue.get()
+
         with self.lock:
-            # Remove the response queue for the event from the response_queues dict for the request_id
             del response_queues[event]
+
         return response
 
     def consume_events(self, request_id: str, event_handler: Callable[[Any], Any]):
         
-        while True:
-            if request_id not in self.request_queues: 
-                time.sleep(0.001)               
-                continue
+        future = self.consume_event_executor.submit(self._consume_events_task, request_id, event_handler)
+        return future.result()
 
-            request_queue = self.request_queues[request_id]
-            response_queues = self.response_queues[request_id]
-            # Get the next event from the request queue for the request_id
-            event = request_queue.get()
-            # Process the event
-            response = event_handler(event)
+    def _consume_events_task(self, request_id: str, event_handler: Callable[[Any], Any]):
+        while True:
             with self.lock:
-                # Get the response queue for the event from the response_queues dict for the request_id
+                if request_id not in self.request_queues:
+                    time.sleep(0.001)
+                    continue
+                request_queue = self.request_queues[request_id]
+                response_queues = self.response_queues[request_id]
+
+            event = request_queue.get()
+            response = event_handler(event)
+
+            with self.lock:
                 response_queue = response_queues.get(event)
-            # Put the response in the response queue
-            response_queue.put(response)
-            request_queue.task_done()
+                response_queue.put(response)
+                request_queue.task_done()
 
 
 # Global instance of AsyncCommunicate
