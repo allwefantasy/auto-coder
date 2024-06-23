@@ -1,6 +1,7 @@
 from threading import Lock
 from pydantic import BaseModel
 from datetime import datetime, timedelta
+from typing import Dict
 
 class RequestValue(BaseModel):
     value: any
@@ -18,7 +19,7 @@ class RequestQueue:
         return cls._instance
 
     def _initialize(self):
-        self._queue = {}
+        self._queue:Dict[str,RequestValue] = {}
 
     def add_request(self, request_id, result):
         with self._lock:
