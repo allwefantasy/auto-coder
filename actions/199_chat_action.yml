@@ -1,0 +1,9 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: 在utils 包实现一个 request_queue.py ,里面提供一个 RequestQueue class , 用来占存请求结果,要实现全局单例
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
