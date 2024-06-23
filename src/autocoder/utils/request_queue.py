@@ -26,6 +26,10 @@ class RequestQueue:
     def _initialize(self):
         self._queue: Dict[str, RequestValue] = {}
 
+    def close(self):
+        with self._lock:
+            self._queue.clear()
+
     def add_request(self, request_id, result):
         with self._lock:
             self._queue[request_id] = RequestValue(

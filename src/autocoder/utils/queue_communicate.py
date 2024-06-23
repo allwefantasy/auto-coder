@@ -24,6 +24,14 @@ class QueueCommunicate(metaclass=Singleton):
         self.send_event_executor = ThreadPoolExecutor(max_workers=10)
         self.consume_event_executor = ThreadPoolExecutor(max_workers=10)
 
+    def close(self):
+        self.send_event_executor.shutdown()
+        self.consume_event_executor.shutdown()
+        for request_queue in self.request_queues.values():
+            request_queue.put(None)  # Signal the consumer to stop
+        self.request_queues.clear()
+        self.response_queues.clear()
+
     def send_event(self, request_id: str, event: Any) -> Any:
         future = self.send_event_executor.submit(
             self._send_event_task, request_id, event
