@@ -77,12 +77,12 @@ class ActionRegexProject:
                 )
             content = "\n\n".join(result)
 
-        store_code_model_conversation(
-            args=self.args,
-            instruction=self.args.query,
-            conversations=conversations,
-            model=self.llm.default_model_name,
-        )
+            store_code_model_conversation(
+                args=self.args,
+                instruction=self.args.query,
+                conversations=conversations,
+                model=self.llm.default_model_name,
+            )
         with open(args.target_file, "w") as file:
             file.write(content)
 
