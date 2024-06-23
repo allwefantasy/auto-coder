@@ -13,6 +13,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     parser = argparse.ArgumentParser(description=desc["parser_desc"])
     subparsers = parser.add_subparsers(dest="command")
 
+    parser.add_argument("--request_id", default="", help=desc["request_id"])
     parser.add_argument("--source_dir", required=False, help=desc["source_dir"])
     parser.add_argument("--git_url", help=desc["git_url"])
     parser.add_argument("--target_file", required=False, help=desc["target_file"])
@@ -137,7 +138,9 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         "--skip_confirm", action="store_true", help=desc["skip_confirm"]
     )
     parser.add_argument(
-        "--silence", action="store_true", help="是否静默执行,不打印任何信息。默认为False"
+        "--silence",
+        action="store_true",
+        help="是否静默执行,不打印任何信息。默认为False",
     )
 
     revert_parser = subparsers.add_parser("revert", help=desc["revert_desc"])
@@ -325,15 +328,23 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     chat_parser.add_argument("--rag_url", default="", help="")
     chat_parser.add_argument("--target_file", default="./output.txt", help="")
 
-    read_project_parser = agent_subparsers.add_parser("project_reader", help="Run the chat agent")
+    read_project_parser = agent_subparsers.add_parser(
+        "project_reader", help="Run the chat agent"
+    )
 
-    read_project_parser.add_argument("--source_dir", default=".", help="Source directory")
+    read_project_parser.add_argument(
+        "--source_dir", default=".", help="Source directory"
+    )
     read_project_parser.add_argument("--query", help="Query for the planner")
     read_project_parser.add_argument("--model", default="", help=desc["model"])
     read_project_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
     read_project_parser.add_argument("--file", default="", help=desc["file"])
-    read_project_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
-    read_project_parser.add_argument("--execute", action="store_true", help=desc["execute"])
+    read_project_parser.add_argument(
+        "--ray_address", default="auto", help=desc["ray_address"]
+    )
+    read_project_parser.add_argument(
+        "--execute", action="store_true", help=desc["execute"]
+    )
     read_project_parser.add_argument(
         "--collections",
         default="default",

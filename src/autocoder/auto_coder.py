@@ -9,6 +9,7 @@ from autocoder.utils.llm_client_interceptors import token_counter_interceptor
 from autocoder.db.store import Store
 import yaml
 import os
+import uuid
 from byzerllm.utils.client import EventCallbackResult, EventName
 from prompt_toolkit import prompt
 from prompt_toolkit.formatted_text import FormattedText
@@ -85,6 +86,8 @@ def main(input_args: Optional[List[str]] = None):
                         template = Template(value.removeprefix("ENV").strip())
                         value = template.render(os.environ)
                     setattr(args, key, value)
+    if not args.request_id:
+        args.request_id = str(uuid.uuid4())
 
     if raw_args.command == "revert":
         repo_path = args.source_dir
@@ -376,7 +379,8 @@ def main(input_args: Optional[List[str]] = None):
             planner = Planner(args, llm)
             v = planner.run(args.query)
             print()
-            print("\n\n=============RESPONSE==================\n\n")            
+            print("\n\n=============RESPONSE==================\n\n")
+            request_queue.add_request(args.request_id, v)
             print(v)
             # import time
             # time.sleep(3)
@@ -395,6 +399,7 @@ def main(input_args: Optional[List[str]] = None):
             v = project_reader.run(args.query)
             print()
             print("\n\n=============RESPONSE==================\n\n")
+            request_queue.add_request(args.request_id, v)
             print(v)
             return
 
@@ -423,6 +428,7 @@ def main(input_args: Optional[List[str]] = None):
             for res in v:
                 print(res[0], end="")
                 assistant_response += res[0]
+            request_queue.add_request(args.request_id, assistant_response)    
             print()
             print()
 

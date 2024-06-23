@@ -5,7 +5,6 @@ from collections import deque
 from pydantic import BaseModel, Field
 from typing import Any
 
-
 class RequestEventQueue:
     _instance = None
     _lock = Lock()

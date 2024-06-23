@@ -1,5 +1,6 @@
 lang_desc = {
     "en": {
+        "request_id": "Request ID",
         "parser_desc": "Auto-implement missing methods in a Python script.",
         "source_dir": "Path to the project source code directory",
         "git_url": "URL of the git repository to clone the source code from",
@@ -60,8 +61,7 @@ lang_desc = {
         "query_suffix": "The query suffix",
         "next_from_yaml": "The YAML file to copy content from when creating a new action file. It supports prefix matching, e.g., specifying '001' will match '001_abc.yml'.",
         "next_desc": "create a new action file based one the last action file",
-        "base_dir": "Alternative path for /~/.auto-coder to store or retrieve text embeddings. Using /~/.auto-coder/ if not specified"
-        "request_id": "请求ID",
+        "base_dir": "Alternative path for /~/.auto-coder to store or retrieve text embeddings. Using /~/.auto-coder/ if not specified"        
     },
     "zh": {
         "request_id": "Request ID",
