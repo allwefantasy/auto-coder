@@ -59,19 +59,3 @@ class Consumer:
             return response
 
         queue_communicate.consume_events(event_handler)
-
-def main():
-    sender = Sender()
-    consumer = Consumer()
-
-    # Start the consumer thread
-    consumer_thread = threading.Thread(target=consumer.consume_events)
-    consumer_thread.daemon = True
-    consumer_thread.start()
-
-    # Send events from the sender
-    sender.send_event("Event 1")
-    sender.send_event("Event 2")
-
-if __name__ == "__main__":
-    main()
