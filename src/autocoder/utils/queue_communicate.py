@@ -76,6 +76,28 @@ class QueueCommunicate(metaclass=Singleton):
                 response_queue.put(response)
                 request_queue.task_done()
 
+    def _consume_events_task_no_wait(
+        self, request_id: str, event_handler: Callable[[Any], Any]
+    ):
+        with self.lock:
+            if request_id not in self.request_queues:
+                return None
+            request_queue = self.request_queues[request_id]
+            response_queues = self.response_queues[request_id]
+
+        if request_queue.empty():
+            return None
+
+        event = request_queue.get()
+        response = event_handler(event)
+
+        with self.lock:
+            response_queue = response_queues.get(event)
+            response_queue.put(response)
+            request_queue.task_done()
+
+        return response
+
 
 # Global instance of AsyncCommunicate
 queue_communicate = QueueCommunicate()
