@@ -24,21 +24,21 @@ class QueueCommunicate(metaclass=Singleton):
         self.send_event_executor = ThreadPoolExecutor(max_workers=10)
         self.consume_event_executor = ThreadPoolExecutor(max_workers=10)
 
-    def close(self):
+    def shutdown(self):
         self.send_event_executor.shutdown()
         self.consume_event_executor.shutdown()
         for request_queue in self.request_queues.values():
-            request_queue.put(None)  # Signal the consumer to stop
+            request_queue.put(None) 
         self.request_queues.clear()
         self.response_queues.clear()
 
-    def send_event(self, request_id: str, event: Any) -> Any:
+    def send_event(self, request_id: str, event: Any, timeout: int = 300) -> Any:
         future = self.send_event_executor.submit(
             self._send_event_task, request_id, event
         )
-        return future.result()
+        return future.result(timeout=timeout)
 
-    def _send_event_task(self, request_id: str, event: Any) -> Any:
+    def _send_event_task(self, request_id: str, event: Any, timeout: int = 300) -> Any:
         with self.lock:
             if request_id not in self.request_queues:
                 self.request_queues[request_id] = Queue()
@@ -51,7 +51,7 @@ class QueueCommunicate(metaclass=Singleton):
             response_queues[event] = response_queue
 
         request_queue.put(event)
-        response = response_queue.get()
+        response = response_queue.get(timeout=timeout)
 
         with self.lock:
             del response_queues[event]

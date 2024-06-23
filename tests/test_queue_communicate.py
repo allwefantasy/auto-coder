@@ -25,7 +25,7 @@ class Consumer:
         queue_communicate.consume_events(self.request_id, event_handler)
 
 
-class TestQueueCommunicate(unittest.TestCase):
+class TestQueueCommunicate(unittest.TestCase):    
     def test_send_and_consume_events(self):
         request_id1 = "request1"
         request_id2 = "request2"
