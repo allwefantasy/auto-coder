@@ -1,11 +1,26 @@
 import unittest
 import threading
 from queue import Queue
-from src.autocoder.utils.async_communicate import QueueCommunicate, Sender, Consumer
+from src.autocoder.utils.async_communicate import queue_communicate
+
+
+class Sender:
+    def send_event(self, event):
+        response = queue_communicate.send_event(event)
+        print(f"Sender received response: {response}")
+
+
+class Consumer:
+    def consume_events(self):
+        def event_handler(event):
+            response = f"Processed: {event}"
+            return response
+
+        queue_communicate.consume_events(event_handler)
+
 
 class TestAsyncCommunicate(unittest.TestCase):
-    def setUp(self):
-        self.queue_communicate = QueueCommunicate()
+    def setUp(self):        
         self.sender = Sender()
         self.consumer = Consumer()
 
@@ -22,7 +37,9 @@ class TestAsyncCommunicate(unittest.TestCase):
         def mock_print(message):
             response_queue.put(message)
 
-        self.sender.send_event = lambda event: mock_print(f"Sender received response: Processed: {event}")
+        self.sender.send_event = lambda event: mock_print(
+            f"Sender received response: Processed: {event}"
+        )
 
         # Send events from the sender
         self.sender.send_event("Event 1")
@@ -36,5 +53,6 @@ class TestAsyncCommunicate(unittest.TestCase):
         self.assertEqual(response1, "Sender received response: Processed: Event 1")
         self.assertEqual(response2, "Sender received response: Processed: Event 2")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

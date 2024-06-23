@@ -16,7 +16,7 @@ class QueueCommunicate(metaclass=Singleton):
         self.response_queues = {}
         self.lock = threading.Lock()
 
-    def send_event(self, event: Any) -> Any:
+    def send_event(self,request_id:str,event: Any) -> Any:
         # Create a response queue for the event
         response_queue = Queue()
         with self.lock:
@@ -31,7 +31,7 @@ class QueueCommunicate(metaclass=Singleton):
             del self.response_queues[event]
         return response
 
-    def consume_events(self, event_handler: Callable[[Any], Any]):
+    def consume_events(self,request_id:str, event_handler: Callable[[Any], Any]):
         while True:
             # Get the next event from the request queue
             event = self.request_queue.get()
@@ -46,16 +46,3 @@ class QueueCommunicate(metaclass=Singleton):
 
 # Global instance of AsyncCommunicate
 queue_communicate = QueueCommunicate()
-
-class Sender:
-    def send_event(self, event):
-        response = queue_communicate.send_event(event)
-        print(f"Sender received response: {response}")
-
-class Consumer:
-    def consume_events(self):
-        def event_handler(event):
-            response = f"Processed: {event}"
-            return response
-
-        queue_communicate.consume_events(event_handler)
