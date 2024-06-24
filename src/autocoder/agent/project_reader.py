@@ -59,7 +59,7 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
     def read_source_codes(paths:str)->str:
         '''
         你可以通过使用该工具获取相关文件的源代码。
-        输入参数 paths: 逗号分隔的文件路径列表,需要是绝对路径
+        输入参数 paths: 逗号分隔的文件路径列表,支持相对路径（相对于args.source_dir）或绝对路径
         返回值是文件的源代码。
         
         注意，paths数量务必不要太多，否则内容会太多，推荐输入最相关的2-3个文件来进行阅读。
@@ -67,6 +67,13 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         paths = [p.strip() for p in paths.split(",")]
         source_code_str = ""
         for path in paths:
+            if not os.path.isabs(path):
+                # Find the first matching absolute path by traversing args.source_dir
+                for root, _, _ in os.walk(self.args.source_dir):
+                    if path in root:
+                        path = os.path.join(root, path)
+                        break
+                        
             with open(path, "r") as f:
                 source_code = f.read()
                 sc = SourceCode(module_name=path, source_code=source_code)
