@@ -11,7 +11,7 @@ chat-auto-coder 是个命令行交互工具，其中的
 
 `/ask` 命令允许用户直接向 AI 提问，获取与当前项目相关的信息。
 
-### 示例
+### 基本用法
 
 以下是一个使用 `/ask` 命令的示例：
 
@@ -43,37 +43,9 @@ chat-auto-coder 是个命令行交互工具，其中的
 /conf project_type:.java,.scala
 ```
 
-`/ask` 命令会自动解析问题并返回相应的答案。如果你想要查看更多信息，可以使用 `/more` 命令：
+`/ask` 命令会自动解析问题并返回相应的答案。
 
-此外，你也可以使用 `/chat` 来对通过 `/add_files` 添加的活动文件来进行提问。`/chat` 是不需要
-索引支持的。
-
-```bash
-/add_files chat_auto_coder.py
-/chat 这个文件里都有哪些指令？
-```
-
-这里，我们添加了一个文件 `chat_auto_coder.py`，然后使用 `/chat` 对这个问题进行提问。
-
-此外，如果你想单纯的问大模型一些通用知识，可以直接使用 `/chat` 命令。
-
-```bash
-/chat  python 如何移除指定前缀
-```
-你可以清理掉当前的活动文件，从而使得响应更快：
-
-```bash
-/remove_files /all
-``` 
-
-最后 /chat 是支持知识库的，如果你已经启动了知识库，那么可以通过如下方式开启使用：
-
-```bash
-/conf collection:<collection_name>
-```
-
-此时 /chat 会结合知识库以及当前的活动文件来和你进行对话。
-
+### 更多用法
 
 还有一些常见的问题：
 
@@ -82,7 +54,7 @@ chat-auto-coder 是个命令行交互工具，其中的
 3. 帮我阅读下planner.py 为啥里面需要用 IndexManager?
 4. 该项目是如何完成自动代码合并的
 
-## 如何做一些统计
+还有比如，做统计
 
 ```bash
 /ask 该项目有多少行python代码
@@ -97,9 +69,7 @@ chat-auto-coder 是个命令行交互工具，其中的
 该项目有61228行Python代码。
 ```
 
-## 一些其他有意思的用法
-
-Test1:
+自动做一些推导：
 
 ```
 /ask 这个项目需要编译么?
@@ -113,13 +83,46 @@ Test1:
 
 The project does not require traditional compilation. Instead, it uses the setup.py file for packaging the project into a distributable format that can be installed using pip.
 ```
-
-Test2:
+或者编译：
 
 ```
 /ask 帮我编译下项目
 ```
 
+## chat-auto-coder 中的/chat 命令
+
+### 基本用法
+
+此外，你也可以使用 `/chat` 来对通过 `/add_files` 添加的活动文件来进行提问。`/chat` 是不需要
+索引支持的。
+
+```bash
+/add_files chat_auto_coder.py
+/chat 这个文件里都有哪些指令？
+```
+
+这里，我们添加了一个文件 `chat_auto_coder.py`，然后使用 `/chat` 对这个问题进行提问。
+
+此外，如果你想单纯的问大模型一些通用知识，可以直接使用 `/chat` 命令。
+
+```bash
+/chat python 如何移除指定前缀
+```
+你可以清理掉当前的活动文件，从而使得响应更快：
+
+```bash
+/remove_files /all
+``` 
+
+### 基于知识库的用法
+
+最后 `/chat` 是支持知识库的，如果你已经启动了知识库，那么可以通过如下方式开启你对话需要用的知识库名称：
+
+```bash
+/conf collection:<collection_name>
+```
+
+此时 /chat 会结合知识库以及当前的活动文件来和你进行对话。
 
 
 
