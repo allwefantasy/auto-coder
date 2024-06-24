@@ -422,15 +422,16 @@ def main(input_args: Optional[List[str]] = None):
             pre_conversations = []
             if args.context:
                 context = json.loads(args.context)
-                file_content = context["file_content"]
-                pre_conversations.append({
-                    "role": "user",
-                    "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：{file_content}"
-                },)
-                pre_conversations.append({
-                    "role": "assistant",
-                    "content": "read"
-                })
+                if "file_content" in context:
+                    file_content = context["file_content"]
+                    pre_conversations.append({
+                        "role": "user",
+                        "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：{file_content}"
+                    },)
+                    pre_conversations.append({
+                        "role": "assistant",
+                        "content": "read"
+                    })
 
             loaded_conversations = pre_conversations + chat_history["ask_conversation"][31:]
                         
