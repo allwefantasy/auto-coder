@@ -432,7 +432,7 @@ def main(input_args: Optional[List[str]] = None):
                     "content": "read"
                 })
 
-            loaded_conversations = pre_conversations + chat_history["ask_conversation"][-9:]
+            loaded_conversations = pre_conversations + chat_history["ask_conversation"][31:]
                         
             if args.collection or args.collections:               
                 rag = SimpleRAG(llm=llm, args=args, path=args.source_dir)
