@@ -55,7 +55,75 @@ auto-coder agent project_reader --file ./actions/base/base.yml --query "帮我�
 1. 罗列 xxxx 中所有的类函数
 2. IndexManager 类都被哪些文件使用了？
 3. 帮我阅读下planner.py 为啥里面需要用 IndexManager?
-4. 该项目合并代码的方式都有哪些？
+4. 该项目是如何完成自动代码合并的
+
+## 一些比较好的实践
+
+比如你可能好奇， chat-auto-coder 项目是如何实现代码自动合并的，此时你可以进入 auto-coder项目，然后直接问题：
+
+```
+/ask 该项目是如何完成自动代码合并的？
+```
+
+输出：
+
+```
+=============RESPONSE==================
+
+
+该项目通过`CodeAutoMerge`和`CodeAutoMergeDiff`两个类来完成自动代码合并。`CodeAutoMerge`类主要通过`merge_code`方法实现代码合并，该方法首先读取文件内容，计算MD5值，然后尝试将代码解析并写入到指定路径的文件中。如果文件不存在，则创建新文件。合并完成后，如果未强制跳过Git操作，则提交更改到Git仓库。
+
+`CodeAutoMergeDiff`类则通过`merge_code`方法实现更复杂的代码合并，它首先获取代码差异，然后应用这些差异到文件中。如果差异应用成功，则更新文件内容；如果失败，则抛出异常。同样，如果未强制跳过Git操作，合并完成后也会提交更改到Git仓库。
+
+这两个类都依赖于`byzerllm`和`autocoder`库中的其他工具和方法，如`git_utils`用于Git操作，`code_utils`用于代码处理等。通过这些工具和方法的组合，实现了自动化的代码合并功能。
+```
+
+可以看到，整体效果还是不错，但是还是有遗漏，因为大模型还是没把项目完全看全。
+
+此时我们可以分两个步骤来解决，先找到相关文件：
+
+```
+/index/query 自动代码合并相关的文件
+```
+
+这个是找到的内容：
+```
+index_filter_level:1, total files: 6 filter files by query: 自动代码合并相关的文件
+
++-----------------------------------------------------------+--------------------------------------------------------------+
+| file_path                                                 | reason                                                       |
++===========================================================+==============================================================+
+| /Users/allwefantasy/projects/auto-                        | This file contains functions related to automatic code       |
+| coder/src/autocoder/common/code_auto_merge.py             | merging, including parsing text and merging code.            |
++-----------------------------------------------------------+--------------------------------------------------------------+
+| /Users/allwefantasy/projects/auto-                        | This file focuses on merging code edit blocks, facilitating  |
+| coder/src/autocoder/common/code_auto_merge_editblock.py   | efficient code integration and modification.                 |
++-----------------------------------------------------------+--------------------------------------------------------------+
+| /Users/allwefantasy/projects/auto-                        | This file deals with strict diff handling in automatic code  |
+| coder/src/autocoder/common/code_auto_merge_strict_diff.py | merging, ensuring precise code integration.                  |
++-----------------------------------------------------------+--------------------------------------------------------------+
+| /Users/allwefantasy/projects/auto-                        | This file handles automatic code merging with diff           |
+| coder/src/autocoder/common/code_auto_merge_diff.py        | processing, including applying hunks and merging code.       |
++-----------------------------------------------------------+--------------------------------------------------------------+
+| /Users/allwefantasy/projects/auto-                        | Contains functions related to building and querying indexes, |
+| coder/src/autocoder/index/index.py                        | which might be involved in code merging processes.           |
++-----------------------------------------------------------+--------------------------------------------------------------+
+| /Users/allwefantasy/projects/auto-                        | Includes functions for managing files and directories, which |
+| coder/src/autocoder/chat_auto_coder.py                    | could be relevant for code merging.                          |
++-----------------------------------------------------------+--------------------------------------------------------------+
+```
+
+然后在 /ask 里让他主动关注下这几个文件：
+
+```
+/ask 直接阅读下下面几个文件：code_auto_merge.py,code_auto_merge_editblock.py,code_auto_merge_strict_diff.py,code_auto_merge_diff.py，然后告诉我这些文件是如何实现自动代码合并的？
+```
+
+这个时候的输出：
+
+```
+
+```
 
 ## 暂时无法解决的一些问题
 
