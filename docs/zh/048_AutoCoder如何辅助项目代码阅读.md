@@ -46,8 +46,8 @@ chat-auto-coder 是个命令行交互工具，其中的
 使用 `agent/project_reader` 可以生成一个包含项目关键文件和函数的详细报告：
 
 ```
-auto-coder index --file ./base/base.yml
-auto-coder agent project_reader --file ./base/base.yml --query "帮我找到 exclude_dirs函数，并且给出完整代码"
+auto-coder index --file ./actions/base/base.yml
+auto-coder agent project_reader --file ./actions/base/base.yml --query "帮我找到 exclude_dirs函数，并且给出完整代码"
 ```
 
 还有一些常见的问题：
