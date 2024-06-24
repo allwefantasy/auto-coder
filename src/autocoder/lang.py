@@ -1,7 +1,7 @@
 lang_desc = {
     "en": {
         "request_id": "Request ID",
-        "parser_desc": "Auto-implement missing methods in a Python script.",
+        "parser_desc": "Code with AI",
         "source_dir": "Path to the project source code directory",
         "git_url": "URL of the git repository to clone the source code from",
         "target_file": "The file path to write the generated source code to",
@@ -65,7 +65,7 @@ lang_desc = {
     },
     "zh": {
         "request_id": "Request ID",
-        "parser_desc": "自动为Python脚本实现缺失的方法。",
+        "parser_desc": "使用AI编程",
         "source_dir": "项目源代码目录路径",
         "git_url": "用于克隆源代码的Git仓库URL",
         "target_file": "生成的源代码的输出文件路径",

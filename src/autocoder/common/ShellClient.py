@@ -9,6 +9,7 @@ class ShellClient:
     def __init__(self, working_dir=os.getcwd(), shell="/bin/bash", timeout=300):
         self.shell = shell
         self.timeout = timeout
+        self.working_dir = working_dir
         self.process = subprocess.Popen([self.shell], stdin=subprocess.PIPE, cwd=working_dir,
                                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         self.output_queue = queue.Queue()
