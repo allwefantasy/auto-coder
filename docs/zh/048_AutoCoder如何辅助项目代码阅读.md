@@ -64,8 +64,29 @@ chat-auto-coder 是个命令行交互工具，其中的
 
 ```bash
 /remove_files /all
-```         
+``` 
 
+还有一些常见的问题：
+
+1. 罗列 xxxx 中所有的类函数
+2. IndexManager 类都被哪些文件使用了？
+3. 帮我阅读下planner.py 为啥里面需要用 IndexManager?
+4. 该项目是如何完成自动代码合并的
+
+## 如何做一些统计
+
+```bash
+/ask 该项目有多少行python代码
+```
+
+输出:
+
+```
+=============RESPONSE==================
+
+
+该项目有61228行Python代码。
+```
 
 
 ## auto-coder 中的 agent/project_reader
@@ -81,13 +102,6 @@ chat-auto-coder 是个命令行交互工具，其中的
 auto-coder index --file ./actions/base/base.yml
 auto-coder agent project_reader --file ./actions/base/base.yml --query "帮我找到 exclude_dirs函数，并且给出完整代码"
 ```
-
-还有一些常见的问题：
-
-1. 罗列 xxxx 中所有的类函数
-2. IndexManager 类都被哪些文件使用了？
-3. 帮我阅读下planner.py 为啥里面需要用 IndexManager?
-4. 该项目是如何完成自动代码合并的
 
 ## 一些比较好的实践
 
