@@ -11,6 +11,7 @@ from loguru import logger
 import os
 import byzerllm
 import yaml
+import json
 
 
 @byzerllm.prompt()
@@ -43,6 +44,7 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
     def get_project_map()->str:
         """
         该工具会返回项目中所有文件以及文件的信息，诸如该文件的用途，导入的包，定义的类，函数，变量等信息。
+        返回的是json格式文本。
         """
         if args.project_type == "ts":
             pp = TSProject(args=args, llm=llm)
@@ -54,7 +56,16 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         sources = pp.sources
 
         index_manager = IndexManager(llm=llm, sources=sources, args=args)        
-        return index_manager.read_index_as_str()    
+        s = index_manager.read_index_as_str()    
+        index_data = json.loads(s)
+
+        final_result = []
+        for k in index_data.values():
+            value = {}
+            value["module_name"] = k["module_name"]
+            value["symbols"] = k["symbols"]
+            final_result.append(value)
+        return json.dumps(final_result, ensure_ascii=False)                        
     
     def read_source_codes(paths:str)->str:
         '''
