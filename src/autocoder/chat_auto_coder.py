@@ -487,12 +487,15 @@ def chat(query: str):
 
     all_file_content = "".join(file_contents)
 
-    query = f"下面是一些背景信息，如果用户的问题不涉及下面信息，则忽略：\n{all_file_content}\n 用户的问题:{query}"
-
     yaml_config = {
         "include_file": ["./base/base.yml"],
     }
     yaml_config["query"] = query
+    yaml_config["context"] = json.dumps({"file_content":all_file_content},ensure_ascii=False)
+    
+    if "emb_model" in conf:
+        yaml_config["emb_model"] = conf["emb_model"]
+
     yaml_content = yaml.safe_dump(
         yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
     ).decode("utf-8")

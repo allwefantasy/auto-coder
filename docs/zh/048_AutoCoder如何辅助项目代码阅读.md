@@ -66,6 +66,14 @@ chat-auto-coder 是个命令行交互工具，其中的
 /remove_files /all
 ``` 
 
+最后 /chat 是支持知识库的，如果你已经启动了知识库，那么可以通过如下方式开启使用：
+
+```bash
+/conf collection:<collection_name>
+```
+
+此时 /chat 会结合知识库以及当前的活动文件来和你进行对话。
+
 还有一些常见的问题：
 
 1. 罗列 xxxx 中所有的类函数

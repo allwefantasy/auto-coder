@@ -216,6 +216,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     query_suffix: Optional[str] = None
     from_yaml: Optional[str] = None
     base_dir: Optional[str] = None
+    context: Optional[str] = None
 
 
     class Config:

@@ -32,7 +32,7 @@ websocket-client
 sqlmodel
 wudao
 jieba
-byzerllm>=0.1.107
+byzerllm>=0.1.108
 patch
 diff_match_patch
 GitPython

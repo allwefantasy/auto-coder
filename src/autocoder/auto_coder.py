@@ -418,10 +418,32 @@ def main(input_args: Optional[List[str]] = None):
             chat_history["ask_conversation"].append(
                 {"role": "user", "content": args.query}
             )
+            
+            pre_conversations = []
+            if args.context:
+                context = json.loads(args.context)
+                file_content = context["file_content"]
+                pre_conversations.append({
+                    "role": "user",
+                    "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：{file_content}"
+                },)
+                pre_conversations.append({
+                    "role": "assistant",
+                    "content": "read"
+                })
 
-            v = llm.stream_chat_oai(
-                conversations=chat_history["ask_conversation"][-9:], delta_mode=True
-            )
+            loaded_conversations = pre_conversations + chat_history["ask_conversation"][-9:]
+
+            print(json.dumps(loaded_conversations, indent=4,ensure_ascii=False))
+            
+            if args.collection or args.collections:               
+                rag = SimpleRAG(llm=llm, args=args, path=args.source_dir)
+                response = rag.stream_chat_oai(conversations=loaded_conversations)[0]
+                v = ([item,None] for item in response)                
+            else:                
+                v = llm.stream_chat_oai(
+                    conversations=loaded_conversations, delta_mode=True
+                )
 
             assistant_response = ""
             print("\n\n=============RESPONSE==================\n\n")
