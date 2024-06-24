@@ -103,8 +103,22 @@ auto-coder init --source_dir .
 chat-auto-coder
 ```
 
-此时就会进入交互模式，更多信息参考 [046_AutoCoder_Chat-Auto-Coder指南](./046_AutoCoder_Chat-Auto-Coder指南.md)
-和 [047_chat-auto-coder使用实践](./047_chat-auto-coder使用实践.md)
+输入coding指令进行编程：
+
+```bash
+/coding 在 src 目录下创建app.py, 在该文件中实现一个计算器，使用 gradio 来实现。 
+```
+
+然后等待一段时间，系统会自动在你的项目中生成一个文件 `src/app.py`。然后通过 `python src/app.py` 来启动服务，复制终端中的链接到浏览器中，就可以看到一个计算器的页面。
+
+恭喜，你已经使用 chat-auto-coder 完成了第一个编程任务。
+
+欢迎观看 [如何在聊天中完成代码编写](https://www.bilibili.com/video/BV17M4m1m7MW/) 视频，了解更多关于 chat-auto-coder 的使用。
+
+此外我们也提供了文字版本的教程： 
+
+1. [046_AutoCoder_Chat-Auto-Coder指南](./046_AutoCoder_Chat-Auto-Coder指南.md)
+2. [047_chat-auto-coder使用实践](./047_chat-auto-coder使用实践.md)
 
 ## 使用基础 auto-coder 为你编程
 
