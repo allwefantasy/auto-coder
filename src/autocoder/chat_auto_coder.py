@@ -398,11 +398,15 @@ def remove_files(file_names: List[str]):
 
 
 def ask(query: str):
-
+    conf = memory.get("conf", {})
     yaml_config = {
         "include_file": ["./base/base.yml"],
     }
     yaml_config["query"] = query
+    
+    if "project_type" in conf:
+        yaml_config["project_type"] = conf["project_type"]
+
     yaml_content = yaml.safe_dump(
         yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
     ).decode("utf-8")

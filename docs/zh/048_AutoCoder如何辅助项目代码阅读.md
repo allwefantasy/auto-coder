@@ -88,6 +88,31 @@ chat-auto-coder 是个命令行交互工具，其中的
 该项目有61228行Python代码。
 ```
 
+## 一些其他有意思的用法
+
+Test1:
+
+```
+/ask 这个项目需要编译么?
+```
+
+输出：
+
+```
+=============RESPONSE==================
+
+
+The project does not require traditional compilation. Instead, it uses the setup.py file for packaging the project into a distributable format that can be installed using pip.
+```
+
+Test2:
+
+```
+/ask 帮我编译下项目
+```
+
+
+
 
 ## auto-coder 中的 agent/project_reader
 

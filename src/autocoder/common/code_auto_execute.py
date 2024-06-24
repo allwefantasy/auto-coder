@@ -167,10 +167,10 @@ class CodeAutoExecute:
             # 执行步骤并保存结果
             if not final_v.steps:
                 logger.error("No steps to execute, this may be caused by the model's response")
-                return True
+                return
             
             result = self.execute_steps(final_v)
-            logger.info(result)
+            logger.info(result)            
 
 
 
