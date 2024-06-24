@@ -433,9 +433,7 @@ def main(input_args: Optional[List[str]] = None):
                 })
 
             loaded_conversations = pre_conversations + chat_history["ask_conversation"][-9:]
-
-            print(json.dumps(loaded_conversations, indent=4,ensure_ascii=False))
-            
+                        
             if args.collection or args.collections:               
                 rag = SimpleRAG(llm=llm, args=args, path=args.source_dir)
                 response = rag.stream_chat_oai(conversations=loaded_conversations)[0]
