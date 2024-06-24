@@ -7,6 +7,7 @@ from autocoder.suffixproject import SuffixProject
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.common.interpreter import Interpreter
 from autocoder.common import ExecuteSteps, ExecuteStep
+from autocoder.common import code_auto_execute
 from autocoder.rag.simple_rag import SimpleRAG
 from byzerllm.apps.llama_index.byzerai import ByzerAI
 from loguru import logger
@@ -16,6 +17,7 @@ import yaml
 import json
 from pydantic import BaseModel
 from byzerllm.types import Bool
+
 
 
 @byzerllm.prompt()
@@ -84,6 +86,22 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
             interpreter.close()
 
         return s
+    
+    def auto_run_job(job:str, context:str=""):
+        """
+        该工具会根据job描述，自动拆解任务，然后生成执行步骤，然后按执行步骤一个一个执行。
+        输入参数 job: 任务描述
+        输入参数 context: 上下文信息
+        返回值无，你可以关注该工具的执行输出。
+
+        该工具的主要用途是帮助用户自动执行一些任务，比如编译，运行，测试等。
+        你需要通过目录结构（比如包含了pom文件，那么就是maven项目）并且搭配工具read_source_codes(比如可以读取README.md)来获得一些context信息，
+        指导该工具生成合适的执行步骤，帮助用户自动化完成任务。
+        """
+        executor = code_auto_execute.CodeAutoExecute(
+                    llm, args, code_auto_execute.Mode.SINGLE_ROUND
+                )
+        executor.run(query=job, context=context, source_code="")
 
     def get_project_related_files(query: str) -> str:
         """
@@ -166,7 +184,7 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         FunctionTool.from_defaults(get_project_map),
         FunctionTool.from_defaults(read_source_codes),
         FunctionTool.from_defaults(run_python_code),
-        # FunctionTool.from_defaults(run_shell_code),
+        FunctionTool.from_defaults(auto_run_job),
     ]
     return tools
 
