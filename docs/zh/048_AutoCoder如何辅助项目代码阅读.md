@@ -25,6 +25,28 @@ chat-auto-coder 是个命令行交互工具，其中的
 /index/build
 ```
 
+特别注意：
+
+索引构建并不会对整个项目所有文件进行索引，而是根据 project_type 来选择性的构建索引，chat-auto-coder会读取 ./actions/base/base.yml 文件中的 project_type 来决定构建索引的文件类型
+
+你可以手动在当前会话里进行更改，
+
+前端项目你可以通过如下方式设置：
+
+```bash
+/conf project_type:ts
+```
+
+其他项目可以通过后缀设置,比如你可以同时设置索引.java,.scala后缀名的文件：
+
+```bash
+/conf project_type:.java,.scala
+```
+
+`/ask` 命令会自动解析问题并返回相应的答案。如果你想要查看更多信息，可以使用 `/more` 命令：
+
+```bash
+
 此外，你也可以使用 `/chat` 来对通过 `/add_files` 添加的活动文件来进行提问。`/chat` 是不需要
 索引支持的。
 
