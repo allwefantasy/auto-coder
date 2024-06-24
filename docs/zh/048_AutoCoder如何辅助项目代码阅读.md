@@ -78,9 +78,8 @@ auto-coder agent project_reader --file ./actions/base/base.yml --query "帮我�
 这两个类都依赖于`byzerllm`和`autocoder`库中的其他工具和方法，如`git_utils`用于Git操作，`code_utils`用于代码处理等。通过这些工具和方法的组合，实现了自动化的代码合并功能。
 ```
 
-可以看到，整体效果还是不错，但是还是有遗漏，因为大模型还是没把项目完全看全。
 
-此时我们可以分两个步骤来解决，先找到相关文件：
+另外，我们也可以更加手动挡一些，循序渐进的提问，比如第一次我先找到一些可能和我问题相关的文件：
 
 ```
 /index/query 自动代码合并相关的文件
@@ -113,7 +112,7 @@ index_filter_level:1, total files: 6 filter files by query: 自动代码合并�
 +-----------------------------------------------------------+--------------------------------------------------------------+
 ```
 
-然后在 /ask 里让他主动关注下这几个文件：
+这样我可以人工选一些文件（有的时候系统自动找的文件太多，会导致最后问询失败），然后在 /ask 里让他主动阅读者几个文件的源码来回答我的问题：
 
 ```
 /ask 直接阅读下下面几个文件：code_auto_merge.py,code_auto_merge_editblock.py,code_auto_merge_strict_diff.py,code_auto_merge_diff.py，然后告诉我这些文件是如何实现自动代码合并的？
@@ -122,7 +121,40 @@ index_filter_level:1, total files: 6 filter files by query: 自动代码合并�
 这个时候的输出：
 
 ```
+=============RESPONSE==================
 
+
+这些文件通过解析文本，提取代码块，并使用不同的方法将这些代码块合并到项目中。`code_auto_merge.py` 使用 `parse_whole_text_v2` 方法解析文本，`code_auto_merge_editblock.py` 支持编辑块的合并，而 `code_auto_merge_strict_diff.py` 和 `code_auto_merge_diff.py` 则通过解析 diff 格式的文本来处理代码差异。这些文件都依赖于 `byzerllm` 和 `autocoder.common` 中的工具和方法来实现自动代码合并。
+```
+
+接着你可以继续这么问：
+
+```
+/ask `code_auto_merge.py` 使用 `parse_whole_text_v2` 方法解析文本,该方法的具体实现是怎么样的?
+```
+
+这次的输出:
+
+```
+=============RESPONSE==================
+
+
+`parse_whole_text_v2` 方法的实现主要分为以下几个步骤：
+
+1. 首先，将输入的文本按行分割，存储在列表 `lines` 中。
+2. 定义了几个辅助函数来识别文本中的标记：
+   - `start_marker` 函数用于检测是否为代码块的开始标记，即行首是否为 '```'，并且下一行是否以 '##File:' 开始。
+   - `inline_start_marker` 函数用于检测内联代码块的开始标记，即行首是否为 '```'，并且该行不等于 '```'。
+   - `end_marker` 函数用于检测代码块的结束标记，即行首是否为 '```'，并且该行等于 '```'。
+3. 遍历每一行文本，根据不同的标记进行处理：
+   - 如果检测到代码块的开始标记，增加 `start_marker_count`。
+   - 如果检测到内联代码块的开始标记，增加 `inline_start_marker_count`，并将该行添加到 `block` 列表中。
+   - 如果检测到代码块的结束标记，并且 `start_marker_count` 为 1，`inline_start_marker_count` 为 0，则提取文件路径和内容，并将其添加到 `path_and_code_list` 列表中。
+   - 如果检测到内联代码块的结束标记，减少 `inline_start_marker_count`。
+   - 如果 `start_marker_count` 大于 0，将当前行添加到 `block` 列表中。
+4. 最后，返回包含所有解析出的文件路径和内容的列表 `path_and_code_list`。
+
+这个方法主要用于从文本中提取出格式化的代码块，包括文件路径和代码内容，以便后续处理。
 ```
 
 ## 暂时无法解决的一些问题
