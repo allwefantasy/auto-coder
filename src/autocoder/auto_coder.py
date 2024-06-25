@@ -111,7 +111,7 @@ def main(input_args: Optional[List[str]] = None):
     if not args.silence:
         print("Command Line Arguments:")
         print("-" * 50)
-        for arg, value in vars(args).items():            
+        for arg, value in vars(args).items():
             if arg == "context" and value:
                 print(f"{arg:20}: {value[:30]}...")
             else:
@@ -436,9 +436,9 @@ def main(input_args: Optional[List[str]] = None):
                     pre_conversations.append({"role": "assistant", "content": "read"})
 
             loaded_conversations = (
-                pre_conversations + chat_history["ask_conversation"][31:]
+                pre_conversations + chat_history["ask_conversation"][-31:]
             )
-
+            print(loaded_conversations)
             if args.collection or args.collections:
                 rag = SimpleRAG(llm=llm, args=args, path=args.source_dir)
                 response = rag.stream_chat_oai(conversations=loaded_conversations)[0]

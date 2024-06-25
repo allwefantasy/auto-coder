@@ -687,7 +687,7 @@ def main():
                     except FileNotFoundError:
                         print(f"\033[91mCommand not found: \033[93m{command}\033[0m")
                     except subprocess.SubprocessError as e:
-                        print(
+                         print(
                             f"\033[91mError executing command:\033[0m \033[93m{str(e)}\033[0m"
                         )
 
