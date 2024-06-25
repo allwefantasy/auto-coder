@@ -685,6 +685,7 @@ def main():
                 query = user_input[len("/coding") :].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
+                    continue
                 coding(query)
             else:
                 if user_input.startswith("/") and not user_input.startswith("/chat"):

@@ -111,8 +111,11 @@ def main(input_args: Optional[List[str]] = None):
     if not args.silence:
         print("Command Line Arguments:")
         print("-" * 50)
-        for arg, value in vars(args).items():
-            print(f"{arg:20}: {value}")
+        for arg, value in vars(args).items():            
+            if arg == "context" and value:
+                print(f"{arg:20}: {value[:30]}...")
+            else:
+                print(f"{arg:20}: {value}")
         print("-" * 50)
 
     # init store
@@ -418,28 +421,29 @@ def main(input_args: Optional[List[str]] = None):
             chat_history["ask_conversation"].append(
                 {"role": "user", "content": args.query}
             )
-            
+
             pre_conversations = []
             if args.context:
                 context = json.loads(args.context)
                 if "file_content" in context:
                     file_content = context["file_content"]
-                    pre_conversations.append({
-                        "role": "user",
-                        "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：{file_content}"
-                    },)
-                    pre_conversations.append({
-                        "role": "assistant",
-                        "content": "read"
-                    })
+                    pre_conversations.append(
+                        {
+                            "role": "user",
+                            "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：{file_content}",
+                        },
+                    )
+                    pre_conversations.append({"role": "assistant", "content": "read"})
 
-            loaded_conversations = pre_conversations + chat_history["ask_conversation"][31:]
-                        
-            if args.collection or args.collections:               
+            loaded_conversations = (
+                pre_conversations + chat_history["ask_conversation"][31:]
+            )
+
+            if args.collection or args.collections:
                 rag = SimpleRAG(llm=llm, args=args, path=args.source_dir)
                 response = rag.stream_chat_oai(conversations=loaded_conversations)[0]
-                v = ([item,None] for item in response)                
-            else:                
+                v = ([item, None] for item in response)
+            else:
                 v = llm.stream_chat_oai(
                     conversations=loaded_conversations, delta_mode=True
                 )
@@ -449,7 +453,7 @@ def main(input_args: Optional[List[str]] = None):
             for res in v:
                 print(res[0], end="")
                 assistant_response += res[0]
-            request_queue.add_request(args.request_id, assistant_response)    
+            request_queue.add_request(args.request_id, assistant_response)
             print()
             print()
 
