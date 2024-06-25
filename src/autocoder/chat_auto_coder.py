@@ -406,6 +406,18 @@ def ask(query: str):
     
     if "project_type" in conf:
         yaml_config["project_type"] = conf["project_type"]
+        
+    if "model" in conf:
+        yaml_config["model"] = conf["model"]
+    
+    if "index_model" in conf:
+        yaml_config["index_model"] = conf["index_model"]
+        
+    if "vl_model" in conf:
+        yaml_config["vl_model"] = conf["vl_model"]
+        
+    if "code_model" in conf:  
+        yaml_config["code_model"] = conf["code_model"]
 
     yaml_content = yaml.safe_dump(
         yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
