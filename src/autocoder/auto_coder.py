@@ -277,11 +277,11 @@ def main(input_args: Optional[List[str]] = None):
                     line_lower = line.strip().lower()
                     if line_lower in ["eof", "/eof"]:
                         break
-                    elif line_lower in ["/clear", "/clear"]:
+                    elif line_lower in ["/clear"]:
                         lines = []
                         print("\033[2J\033[H")  # Clear terminal screen
                         continue
-                    elif line_lower in ["/break", "/break"]:
+                    elif line_lower in ["/break"]:
                         raise Exception("User requested to break the operation.")
                     lines.append(line)
 

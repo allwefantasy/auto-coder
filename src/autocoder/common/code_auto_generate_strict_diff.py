@@ -268,7 +268,7 @@ class CodeAutoGenerateStrictDiff:
                 "content": t[0].output
         })
 
-        if "__完成__" in t[0].output:
+        if "__完成__" in t[0].output or "/done" in t[0].output or "__EOF__" in t[0].output:
             return result, conversations
 
         current_step = 0
@@ -292,7 +292,7 @@ class CodeAutoGenerateStrictDiff:
             })
             current_step += 1   
             
-            if "__完成__" in t[0].output or "__EOF__" in t[0].output:
+            if "__完成__" in t[0].output or "/done" in t[0].output or "__EOF__" in t[0].output:
                 return result, conversations         
             
 
