@@ -204,7 +204,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         "--required_exts", default="", help=desc["doc_build_parse_required_exts"]
     )
     doc_build_parse.add_argument(
-        "--collection", default="default", help="Collection name for indexing"
+        "--collection", default="", help="Collection name for indexing"
     )
     doc_build_parse.add_argument(
         "--description", default="", help="Description of the indexed content"
@@ -225,7 +225,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     doc_query_parse.add_argument("--execute", action="store_true", help=desc["execute"])
     doc_query_parse.add_argument(
         "--collections",
-        default="default",
+        default="",
         help="Comma-separated list of collections to search",
     )
     doc_query_parse.add_argument(
@@ -247,7 +247,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     doc_chat_parse.add_argument("--source_dir", default=".", help="")
     doc_chat_parse.add_argument(
         "--collections",
-        default="default",
+        default="",
         help="Comma-separated list of collections to search",
     )
     doc_chat_parse.add_argument(
@@ -281,7 +281,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     doc_serve_parse.add_argument("--ssl_certfile", default="", help="")
     doc_serve_parse.add_argument("--response_role", default="assistant", help="")
     doc_serve_parse.add_argument(
-        "--collections", default="default", help="Collection name for indexing"
+        "--collections", default="", help="Collection name for indexing"
     )
     doc_serve_parse.add_argument(
         "--base_dir",
@@ -303,7 +303,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     chat_parser.add_argument("--execute", action="store_true", help=desc["execute"])
     chat_parser.add_argument(
         "--collections",
-        default="default",
+        default="",
         help="Comma-separated list of collections to search",
     )
     chat_parser.add_argument(
@@ -347,7 +347,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     )
     read_project_parser.add_argument(
         "--collections",
-        default="default",
+        default="",
         help="Comma-separated list of collections to search",
     )
     read_project_parser.add_argument(
@@ -387,7 +387,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     planner_parser.add_argument("--execute", action="store_true", help=desc["execute"])
     planner_parser.add_argument(
         "--collections",
-        default="default",
+        default="",
         help="Comma-separated list of collections to search",
     )
     planner_parser.add_argument(

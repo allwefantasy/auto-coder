@@ -1,4 +1,3 @@
-import argparse
 import os
 import yaml
 import json
@@ -15,6 +14,7 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.completion import WordCompleter, Completer, Completion
 from autocoder.common import AutoCoderArgs
 from pydantic import Field, BaseModel
+from autocoder.version import __version__
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.command_args import parse_args
 from autocoder.utils import get_last_yaml_file
@@ -237,14 +237,14 @@ class CommandCompleter(Completer):
                 if is_at_space:
                     last_word = current_word
                     current_word = ""
-                
+
                 # /remove_files /all [cursor] or /remove_files /all p[cursor]
                 if not last_word and not current_word:
                     if "/all".startswith(current_word):
                         yield Completion("/all", start_position=-len(current_word))
                     for file_name in self.current_file_names:
                         yield Completion(file_name, start_position=-len(current_word))
-                
+
                 # /remove_files /a[cursor] or /remove_files p[cursor]
                 if current_word:
                     if "/all".startswith(current_word):
@@ -403,20 +403,20 @@ def ask(query: str):
         "include_file": ["./base/base.yml"],
     }
     yaml_config["query"] = query
-    
+
     if "project_type" in conf:
         yaml_config["project_type"] = conf["project_type"]
-        
+
     if "model" in conf:
         yaml_config["model"] = conf["model"]
-    
+
     if "index_model" in conf:
         yaml_config["index_model"] = conf["index_model"]
-        
+
     if "vl_model" in conf:
         yaml_config["vl_model"] = conf["vl_model"]
-        
-    if "code_model" in conf:  
+
+    if "code_model" in conf:
         yaml_config["code_model"] = conf["code_model"]
 
     yaml_content = yaml.safe_dump(
@@ -503,8 +503,10 @@ def chat(query: str):
         "include_file": ["./base/base.yml"],
     }
     yaml_config["query"] = query
-    yaml_config["context"] = json.dumps({"file_content":all_file_content},ensure_ascii=False)
-    
+    yaml_config["context"] = json.dumps(
+        {"file_content": all_file_content}, ensure_ascii=False
+    )
+
     if "emb_model" in conf:
         yaml_config["emb_model"] = conf["emb_model"]
 
@@ -608,17 +610,15 @@ def main():
         complete_while_typing=True,
         key_bindings=kb,
     )
-
-    from autocoder.version import __version__
-print(
+    print(
         f"""
-\033[1;32m  ____ _           _          _         _               ____          _           
-  / ___| |__   __ _| |_       / \  _   _| |_ ___        / ___|___   __| | ___ _ __ 
- | |   | '_ \ / _` | __|____ / _ \| | | | __/ _ \ _____| |   / _ \ / _` |/ _ \ '__|
- | |___| | | | (_| | ||_____/ ___ \ |_| | || (_) |_____| |__| (_) | (_| |  __/ |   
-  \____|_| |_|\__,_|\__|   /_/   \_\__,_|\__\___/       \____\___/ \__,_|\___|_| 
-                                                                    v{__version__}
-\033[0m"""
+    \033[1;32m  ____ _           _          _         _               ____          _           
+    / ___| |__   __ _| |_       / \  _   _| |_ ___        / ___|___   __| | ___ _ __ 
+    | |   | '_ \ / _` | __|____ / _ \| | | | __/ _ \ _____| |   / _ \ / _` |/ _ \ '__|
+    | |___| | | | (_| | ||_____/ ___ \ |_| | || (_) |_____| |__| (_) | (_| |  __/ |   
+    \____|_| |_|\__,_|\__|   /_/   \_\__,_|\__\___/       \____\___/ \__,_|\___|_| 
+                                                                        v{__version__}
+    \033[0m"""
     )
     print("\033[1;34mType /help to see available commands.\033[0m\n")
     show_help()
@@ -689,7 +689,7 @@ print(
                     except FileNotFoundError:
                         print(f"\033[91mCommand not found: \033[93m{command}\033[0m")
                     except subprocess.SubprocessError as e:
-                         print(
+                        print(
                             f"\033[91mError executing command:\033[0m \033[93m{str(e)}\033[0m"
                         )
 
