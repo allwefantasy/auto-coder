@@ -4,6 +4,7 @@ import json
 import sys
 import io
 import uuid
+import glob
 from contextlib import contextmanager
 from typing import List, Dict, Any
 from prompt_toolkit import PromptSession
@@ -87,18 +88,27 @@ def get_all_dir_names_in_project() -> List[str]:
     return dir_names
 
 
-def find_files_in_project(file_names: List[str]) -> List[str]:
+def find_files_in_project(patterns: List[str]) -> List[str]:
     project_root = os.getcwd()
     matched_files = []
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
-    for root, dirs, files in os.walk(project_root):
-        dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
-        for file in files:
-            if file in file_names:
-                matched_files.append(os.path.join(root, file))
-            elif os.path.join(root, file) in file_names:
-                matched_files.append(os.path.join(root, file))
-    return matched_files
+    
+    for pattern in patterns:
+        if '*' in pattern or '?' in pattern:
+            # 使用 glob 进行模式匹配
+            for file_path in glob.glob(pattern, recursive=True):
+                if os.path.isfile(file_path):
+                    abs_path = os.path.abspath(file_path)
+                    if not any(exclude_dir in abs_path.split(os.sep) for exclude_dir in final_exclude_dirs):
+                        matched_files.append(abs_path)
+        else:
+            # 对于没有通配符的文件名，使用原来的逻辑
+            for root, dirs, files in os.walk(project_root):
+                dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
+                if pattern in files or os.path.join(root, pattern) in files:
+                    matched_files.append(os.path.join(root, pattern))
+    
+    return list(set(matched_files))  # 去重
 
 
 def convert_config_value(key, value):
@@ -356,25 +366,18 @@ def revert():
         print("No previous chat action found to revert.")
 
 
-def add_files(file_names: List[str]):
+def add_files(patterns: List[str]):
     project_root = os.getcwd()
     existing_files = memory["current_files"]["files"]
-    absolute_file_names = []
-    for file_name in file_names:
-        if not os.path.isabs(file_name):
-            matched_files = find_files_in_project([file_name])
-            if matched_files:
-                absolute_file_names.extend(matched_files)
-            else:
-                print(f"Warning: No match found for {file_name}")
-        else:
-            absolute_file_names.append(file_name)
-    files_to_add = [f for f in absolute_file_names if f not in existing_files]
+    matched_files = find_files_in_project(patterns)
+    
+    files_to_add = [f for f in matched_files if f not in existing_files]
     if files_to_add:
         memory["current_files"]["files"].extend(files_to_add)
-        print(f"Added files: {[os.path.basename(f) for f in files_to_add]}")
+        print(f"Added files: {[os.path.relpath(f, project_root) for f in files_to_add]}")
     else:
-        print("All specified files are already in the current session.")
+        print("All specified files are already in the current session or no matches found.")
+    
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
 
