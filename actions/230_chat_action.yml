@@ -1,0 +1,13 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: 在intercept_callback中, EOF, /EOF 等价. /clear,/CLEAR表示清理当前lines内容,并且清理终端已有输入,然后等待重新输入;
+  /break, /BREAK 等价于 reault 等于 c
+query_suffix: 如果修改的是python代码,务必特别注意缩进
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
