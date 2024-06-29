@@ -274,8 +274,15 @@ def main(input_args: Optional[List[str]] = None):
                 lines = []
                 while True:
                     line = prompt(FormattedText([("#00FF00", "> ")]), multiline=False)
-                    if line.strip() == "EOF":
+                    line_lower = line.strip().lower()
+                    if line_lower in ["eof", "/eof"]:
                         break
+                    elif line_lower in ["/clear", "/clear"]:
+                        lines = []
+                        print("\033[2J\033[H")  # Clear terminal screen
+                        continue
+                    elif line_lower in ["/break", "/break"]:
+                        raise Exception("User requested to break the operation.")
                     lines.append(line)
 
                 result = "\n".join(lines)
