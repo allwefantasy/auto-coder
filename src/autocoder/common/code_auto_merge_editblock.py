@@ -127,10 +127,27 @@ class CodeAutoMergeEditBlock:
     def merge_code(self, content: str, force_skip_git: bool = False):
         file_content = open(self.args.file).read()
         md5 = hashlib.md5(file_content.encode("utf-8")).hexdigest()
-        # get the file name
         file_name = os.path.basename(self.args.file)
 
-        if not force_skip_git:
+        codes = self.get_edits(content)
+        changes_to_make = []
+        changes_made = False
+
+        # First, check if there are any changes to be made
+        for block in codes:
+            file_path, head, update = block
+            if not os.path.exists(file_path):
+                changes_to_make.append((file_path, None, update))
+                changes_made = True
+            else:
+                with open(file_path, "r") as f:
+                    existing_content = f.read()
+                new_content = existing_content.replace(head, update, 1) if head else existing_content + "\n" + update
+                if new_content != existing_content:
+                    changes_to_make.append((file_path, existing_content, new_content))
+                    changes_made = True
+
+        if changes_made and not force_skip_git:
             try:
                 git_utils.commit_changes(
                     self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}"
@@ -141,31 +158,24 @@ class CodeAutoMergeEditBlock:
                 )
                 return
 
-        codes = self.get_edits(content)
+        # Now, apply the changes
         updated_files = []
-        for block in codes:
-            file_path = block[0]
-            updated_files.append(file_path)
-            head = block[1]
-            update = block[2]
+        for file_path, old_content, new_content in changes_to_make:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            if not os.path.exists(file_path):
-                with open(file_path, "w") as f:                    
-                    f.write(update)
-                continue
-            with open(file_path, "r") as f:
-                existing_content = f.read()            
-
-            if head:
-                existing_content = existing_content.replace(head, update, 1)
-            else:
-                existing_content = existing_content + "\n" + update
-            
             with open(file_path, "w") as f:
-                f.write(existing_content)
+                f.write(new_content)
+            updated_files.append(file_path)
 
-        logger.info(f"Merged {len(set(updated_files))} files into the project.")
-        if not force_skip_git:
-            git_utils.commit_changes(
-                self.args.source_dir, f"auto_coder_{file_name}_{md5}"
-            )
+        if changes_made:
+            logger.info(f"Merged changes in {len(set(updated_files))} files.")
+            if not force_skip_git:
+                try:
+                    git_utils.commit_changes(
+                        self.args.source_dir, f"auto_coder_{file_name}_{md5}"
+                    )
+                except Exception as e:
+                    logger.error(
+                        self.git_require_msg(source_dir=self.args.source_dir, error=str(e))
+                    )
+        else:
+            logger.info("No changes were made to any files.")
