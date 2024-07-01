@@ -150,23 +150,17 @@ class CodeAutoMergeEditBlock:
             update = block[2]
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             if not os.path.exists(file_path):
-                with open(file_path, "w") as f:
-                    logger.info(f"Upsert path: {file_path}")
+                with open(file_path, "w") as f:                    
                     f.write(update)
                 continue
             with open(file_path, "r") as f:
-                existing_content = f.read()
-
-            log_message = f"""in:\n {file_path}
-    {"replace:" if head else "append:"}\n{head if head else update}
-    {"with:" if head else ""}\n{update if head else ""}"""
-            logger.info(log_message)
+                existing_content = f.read()            
 
             if head:
                 existing_content = existing_content.replace(head, update, 1)
             else:
                 existing_content = existing_content + "\n" + update
-            logger.info(f"Upsert Result: {existing_content}")
+            
             with open(file_path, "w") as f:
                 f.write(existing_content)
 

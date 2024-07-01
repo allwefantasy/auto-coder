@@ -94,21 +94,29 @@ def find_files_in_project(patterns: List[str]) -> List[str]:
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
     
     for pattern in patterns:
-        if '*' in pattern or '?' in pattern:
-            # 使用 glob 进行模式匹配
+        if '*' in pattern or '?' in pattern:            
             for file_path in glob.glob(pattern, recursive=True):
                 if os.path.isfile(file_path):
                     abs_path = os.path.abspath(file_path)
                     if not any(exclude_dir in abs_path.split(os.sep) for exclude_dir in final_exclude_dirs):
                         matched_files.append(abs_path)
-        else:
-            # 对于没有通配符的文件名，使用原来的逻辑
+        else:  
+            is_added = False                 
             for root, dirs, files in os.walk(project_root):
                 dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
-                if pattern in files or os.path.join(root, pattern) in files:
+                if pattern in files:
                     matched_files.append(os.path.join(root, pattern))
+                    is_added = True
+                else:
+                    for file in files:
+                        if pattern in os.path.join(root, file):
+                            matched_files.append(os.path.join(root, file)) 
+                            is_added = True
+            if not is_added:
+                matched_files.append(pattern)
+
     
-    return list(set(matched_files))  # 去重
+    return list(set(matched_files))
 
 
 def convert_config_value(key, value):
