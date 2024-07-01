@@ -1,0 +1,13 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: 如果没有任何更改,我们也会进行commit ,但这样就会导致 revert_changes 失败
+query_suffix: 如果修改的是python代码,务必特别注意缩进
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_editblock.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/git_utils.py
