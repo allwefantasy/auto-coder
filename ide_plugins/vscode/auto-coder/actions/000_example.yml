@@ -1,0 +1,8 @@
+
+include_file:
+  - ./base/base.yml
+  - ./base/enable_index.yml
+  - ./base/enable_wholefile.yml    
+
+query: |
+  YOUR QUERY HERE

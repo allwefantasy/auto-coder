@@ -1,0 +1,4 @@
+
+collections: default
+enable_rag_search: |
+  byzerllm  使用 openai_tts模型的 python 代码

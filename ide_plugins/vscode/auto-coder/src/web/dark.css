@@ -1,30 +1,48 @@
 /* dark.css */
+.dark {
+    background-color: #1e1e1e;
+    color: #d4d4d4;
+}
+
 .dark input {
-    background-color: #2d2d2d;
-    color: #ffffff;
-    border-color: #4a4a4a;
+    background-color: #3c3c3c;
+    color: #d4d4d4;
+    border-color: #4b5563;
 }
 
 .dark input:focus {
     border-color: #007acc;
     box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.25);
-}/* dark.css */
+}
 
-.dark {
-    background-color: #1e1e1e;
-    color: #d4d4d4;
-  }
-  
-  .dark input {
-    background-color: #2d2d2d;
-    border-color: #4b5563;
+.dark button {
+    background-color: #0e639c;
+}
+
+.dark button:hover {
+    background-color: #1177bb;
+}
+
+.light {
+    background-color: #ffffff;
     color: #000000;
-  }
-  
-  .dark button {
+}
+
+.light input {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #d1d5db;
+}
+
+.light input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.light button {
     background-color: #3b82f6;
-  }
-  
-  .dark button:hover {
+}
+
+.light button:hover {
     background-color: #2563eb;
-  }
+}

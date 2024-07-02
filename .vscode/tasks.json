@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "compile",
+			"path": "ide_plugins/vscode/auto-coder",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "npm: compile - ide_plugins/vscode/auto-coder",
+			"detail": "webpack"
+		}
+	]
+}

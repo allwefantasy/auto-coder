@@ -1,0 +1,4 @@
+
+exclude_files:
+  - human://所有包含xxxx目录的路径
+  - regex://.*\.git.*

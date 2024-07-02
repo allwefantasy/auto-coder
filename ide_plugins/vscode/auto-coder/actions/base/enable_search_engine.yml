@@ -1,0 +1,7 @@
+
+## Get the search engine token in the environment variable
+## 在环境变量中获取搜索引擎令牌
+## Ask for Bing Search API Token. You can visit https://www.microsoft.com/en-us/bing/apis/bing-web-search-api to get the token.
+## 申请 Bing 搜索API Token。你可以访问 https://www.microsoft.com/en-us/bing/apis/bing-web-search-api 获取 token。
+search_engine: bing
+search_engine_token: ENV 

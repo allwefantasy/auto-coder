@@ -1,0 +1,12 @@
+
+project_type: py
+source_dir: /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder
+target_file: /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/output.txt
+
+model: deepseek_chat
+model_max_input_length: 30000
+enable_multi_round_generate: false
+
+execute: true
+auto_merge: true
+human_as_model: true

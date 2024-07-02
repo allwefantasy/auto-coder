@@ -178,7 +178,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const scriptPathOnDisk = vscode.Uri.file(path.join(context.extensionPath, 'dist', 'web.js'));
   		const scriptUri = panel.webview.asWebviewUri(scriptPathOnDisk);
-		const colorTheme = vscode.window.activeColorTheme;
+		const colorTheme = vscode.window.activeColorTheme;					
+		
 		panel.webview.html = getWebviewContent(scriptUri, colorTheme);
 	
 			
@@ -219,7 +220,8 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(createYamlDisposable);
 }
 
-function getWebviewContent(scriptUri: vscode.Uri,colorTheme: vscode.ColorTheme) {	
+function getWebviewContent(scriptUri: vscode.Uri,colorTheme: vscode.ColorTheme) {
+	const isDark = colorTheme.kind === vscode.ColorThemeKind.Dark	
 	return `
 	  <!DOCTYPE html>
 	  <html lang="en">
@@ -231,7 +233,7 @@ function getWebviewContent(scriptUri: vscode.Uri,colorTheme: vscode.ColorTheme) 
 	  <body>
 		<div id="root"></div>	
 		<script>
-		  window.vscodeColorTheme = ${JSON.stringify(colorTheme.kind)};
+		  window.vscodeColorTheme = ${isDark};
 		</script>
 		<script src="${scriptUri}"></script>			
 	  </body>

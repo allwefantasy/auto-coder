@@ -189,7 +189,7 @@ class CodeAutoMergeEditBlock:
                     self._log_code_block(head, file_path)
                     print("Update block:",flush=True)
                     self._log_code_block(update, file_path)
-            logger.warning(f"There are unmerged blocks[{len(unmerged_blocks)}]. Please review them manually or revert the changes and try again.")        
+                logger.warning(f"There are unmerged blocks[{len(unmerged_blocks)}]. Please review them manually or revert the changes and try again.")        
         else:
             logger.info("No changes were made to any files.")
 
