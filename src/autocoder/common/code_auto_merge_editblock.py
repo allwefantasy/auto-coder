@@ -184,21 +184,16 @@ class CodeAutoMergeEditBlock:
             if unmerged_blocks:
                 logger.info("The following blocks were not merged due to no changes:")
                 for file_path, head, update in unmerged_blocks:
-                    logger.info(f"\nFile: {file_path}")
-                    logger.info("Original block:")
+                    print(f"\nFile: {file_path}",flush=True)
+                    print("Original block:",flush=True)
                     self._log_code_block(head, file_path)
-                    logger.info("Update block:")
+                    print("Update block:",flush=True)
                     self._log_code_block(update, file_path)
+            logger.warning(f"There are unmerged blocks[{len(unmerged_blocks)}]. Please review them manually or revert the changes and try again.")        
         else:
             logger.info("No changes were made to any files.")
 
-    def _log_code_block(self, code: str, file_path: str):
-        if file_path.endswith('.py'):
-            # For Python files, preserve indentation
-            for line in code.split('\n'):
-                logger.info(f"    {line}")
-        else:
-            # For other files, use a simple block format
-            logger.info("```")
-            logger.info(code)
-            logger.info("```")
+    def _log_code_block(self, code: str, file_path: str):                
+        print("```")
+        print(code,flush=True)
+        print("```")
