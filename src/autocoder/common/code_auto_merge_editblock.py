@@ -132,6 +132,7 @@ class CodeAutoMergeEditBlock:
         codes = self.get_edits(content)
         changes_to_make = []
         changes_made = False
+        unmerged_blocks = []
 
         # First, check if there are any changes to be made
         for block in codes:
@@ -146,6 +147,8 @@ class CodeAutoMergeEditBlock:
                 if new_content != existing_content:
                     changes_to_make.append((file_path, existing_content, new_content))
                     changes_made = True
+                else:
+                    unmerged_blocks.append((file_path, head, update))
 
         if changes_made and not force_skip_git:
             try:
@@ -176,6 +179,26 @@ class CodeAutoMergeEditBlock:
                     logger.error(
                         self.git_require_msg(source_dir=self.args.source_dir, error=str(e))
                     )
-            logger.info(f"Merged changes in {len(set(updated_files))} files.")        
+            logger.info(f"Merged changes in {len(set(updated_files))} files.")
+            
+            if unmerged_blocks:
+                logger.info("The following blocks were not merged due to no changes:")
+                for file_path, head, update in unmerged_blocks:
+                    logger.info(f"\nFile: {file_path}")
+                    logger.info("Original block:")
+                    self._log_code_block(head, file_path)
+                    logger.info("Update block:")
+                    self._log_code_block(update, file_path)
         else:
             logger.info("No changes were made to any files.")
+
+    def _log_code_block(self, code: str, file_path: str):
+        if file_path.endswith('.py'):
+            # For Python files, preserve indentation
+            for line in code.split('\n'):
+                logger.info(f"    {line}")
+        else:
+            # For other files, use a simple block format
+            logger.info("```")
+            logger.info(code)
+            logger.info("```")
