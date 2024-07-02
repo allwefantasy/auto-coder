@@ -1,0 +1,14 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: 收集 new_content == existing_content  的部分,并且logger.info(f"Merged changes in {len(set(updated_files))}
+  files.")    以一个非常友好易看的格式呈现给用户哪些block没有没有正确的合并进去
+query_suffix: 如果修改的是python代码,务必特别注意缩进
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_editblock.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/git_utils.py

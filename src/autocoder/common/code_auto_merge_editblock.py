@@ -166,8 +166,7 @@ class CodeAutoMergeEditBlock:
                 f.write(new_content)
             updated_files.append(file_path)
 
-        if changes_made:
-            logger.info(f"Merged changes in {len(set(updated_files))} files.")
+        if changes_made:            
             if not force_skip_git:
                 try:
                     git_utils.commit_changes(
@@ -177,5 +176,6 @@ class CodeAutoMergeEditBlock:
                     logger.error(
                         self.git_require_msg(source_dir=self.args.source_dir, error=str(e))
                     )
+            logger.info(f"Merged changes in {len(set(updated_files))} files.")        
         else:
             logger.info("No changes were made to any files.")
