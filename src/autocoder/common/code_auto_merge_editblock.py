@@ -29,7 +29,7 @@ class CodeAutoMergeEditBlock:
         self.fence_0 = fence_0
         self.fence_1 = fence_1
 
-    def run_pylint(self, code: str) -> bool:
+    def run_pylint(self, code: str) -> tuple[bool, str]:
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".py", delete=False
         ) as temp_file:
@@ -49,11 +49,16 @@ class CodeAutoMergeEditBlock:
                 check=False,
             )
             os.unlink(temp_file_path)
-            return result.returncode == 0
-        except subprocess.CalledProcessError:
-            logger.error("Error running pylint")
+            if result.returncode != 0:
+                error_message = result.stdout.strip() or result.stderr.strip()
+                logger.warning(f"Pylint check failed: {error_message}")
+                return False, error_message
+            return True, ""
+        except subprocess.CalledProcessError as e:
+            error_message = f"Error running pylint: {str(e)}"
+            logger.error(error_message)
             os.unlink(temp_file_path)
-            return False
+            return False, error_message
 
     def parse_whole_text(self, text: str) -> List[PathAndCode]:
         lines = text.split("\n")
@@ -212,9 +217,10 @@ class CodeAutoMergeEditBlock:
         ## lint check
         for file_path, new_content in file_content_mapping.items():
             if file_path.endswith(".py"):
-                if not self.run_pylint(new_content):
+                pylint_passed, error_message = self.run_pylint(new_content)
+                if not pylint_passed:
                     logger.warning(
-                        f"Pylint check failed for {file_path}. Changes not applied."
+                        f"Pylint check failed for {file_path}. Changes not applied. Error: {error_message}"
                     )
                     return
 
