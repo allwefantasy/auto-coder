@@ -1,0 +1,18 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: create_yaml.ts 支持新增参数human_as_model:true/false,默认false, auto_merge:editblock/wholefile/diff,默认editblock  skip_build_index:true/false
+  默认false,skip_confirm:true/false 默认 true,include_file,可以让用户选择文件,默认./base/base.yml,
+  此外还有query,是一个富文本输入框,urls 允许用户添加多个路径,要使用路径选择组件.
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/dark.css
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/create_yaml.tsx
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.tsx
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.css
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py

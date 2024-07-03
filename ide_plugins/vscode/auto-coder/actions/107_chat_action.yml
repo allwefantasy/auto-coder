@@ -1,0 +1,18 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: submitForm 中,遍历 actions目录里的文件,按 _ 分割文件,获取第一部分,然后转化成数字排序,得到最大的数字,然后加1,重新转化为三位数字,然后拼接
+  _plugin_action.yml,得到一个新文件,然后写入获取到的message字段,形成Yaml,写入到新文件.
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/dark.css
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/create_yaml.tsx
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.tsx
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.css
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/utils/__init__.py

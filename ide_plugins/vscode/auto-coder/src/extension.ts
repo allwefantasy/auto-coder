@@ -1,9 +1,20 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import path = require('path');
-import fs = require('fs');
-import yaml = require('js-yaml');
+import * as path from 'path';
+import * as fs from 'fs';
+import * as yaml from 'js-yaml';
+
+function getOrCreateAutoCoderTerminal(): vscode.Terminal {
+	const existingTerminal = vscode.window.terminals.find(t => t.name === 'auto-coder-vscode');
+	if (existingTerminal) {
+		return existingTerminal;
+	} else {
+		const newTerminal = vscode.window.createTerminal('auto-coder-vscode');
+		newTerminal.sendText('conda activate auto-coder');
+		return newTerminal;
+	}
+}
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -26,15 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
 			projectRoot = workspaceFolders[0].uri.fsPath;
 		}
 
-		const terminals = vscode.window.terminals;
-		let terminal;
-
-		if (terminals.length === 0) {
-			terminal = vscode.window.createTerminal();
-		} else {
-			terminal = terminals[0];
-		}
-
+		const terminal = getOrCreateAutoCoderTerminal();
 		terminal.show();
 
 		if (projectRoot) {
@@ -104,14 +107,7 @@ export function activate(context: vscode.ExtensionContext) {
 				projectRoot = workspaceFolders[0].uri.fsPath;
 			}
 
-			const terminals = vscode.window.terminals;
-			let terminal;
-
-			if (terminals.length === 0) {
-				terminal = vscode.window.createTerminal();
-			} else {
-				terminal = terminals[0];
-			}
+			const terminal = getOrCreateAutoCoderTerminal();
 
 			terminal.show();
 			if (projectRoot) {
@@ -130,14 +126,7 @@ export function activate(context: vscode.ExtensionContext) {
 			projectRoot = workspaceFolders[0].uri.fsPath;
 		}
 
-		const terminals = vscode.window.terminals;
-		let terminal;
-
-		if (terminals.length === 0) {
-			terminal = vscode.window.createTerminal();
-		} else {
-			terminal = terminals[0];
-		}
+		const terminal = getOrCreateAutoCoderTerminal();
 
 		terminal.show();
 		if (projectRoot) {
@@ -177,20 +166,13 @@ export function activate(context: vscode.ExtensionContext) {
 		);
 
 		const scriptPathOnDisk = vscode.Uri.file(path.join(context.extensionPath, 'dist', 'web.js'));
-  		const scriptUri = panel.webview.asWebviewUri(scriptPathOnDisk);
-		const colorTheme = vscode.window.activeColorTheme;					
-		
-		panel.webview.html = getWebviewContent(scriptUri, colorTheme);
-	
-			
-		const terminals = vscode.window.terminals;
-		let terminal;
+		const scriptUri = panel.webview.asWebviewUri(scriptPathOnDisk);
+		const colorTheme = vscode.window.activeColorTheme;
 
-		if (terminals.length === 0) {
-			terminal = vscode.window.createTerminal();
-		} else {
-			terminal = terminals[0];
-		}
+		panel.webview.html = getWebviewContent(scriptUri, colorTheme);
+
+
+		const terminal = getOrCreateAutoCoderTerminal();
 
 		terminal.show();
 		if (projectRoot) {
@@ -202,44 +184,90 @@ export function activate(context: vscode.ExtensionContext) {
 			message => {
 				switch (message.type) {
 					case 'submitForm':
-						// close the webview
-						panel.dispose();
-						if (message.value.prefix) {
-							terminal.sendText(`auto-coder next "${message.value.fileName}" --from_yaml "${message.value.prefix}"`);
-						} else {
-							terminal.sendText(`auto-coder next "${message.value.fileName}"`);
-						}
+						handleSubmitForm(message.value, panel, workspaceFolders[0].uri.fsPath);
+						return;
+					case 'selectPath':
+						vscode.window.showOpenDialog({
+							canSelectFiles: true,
+							canSelectFolders: true,
+							canSelectMany: false,
+							openLabel: 'Select'
+						}).then(fileUri => {
+							if (fileUri && fileUri[0]) {
+								panel.webview.postMessage({ type: 'selectedPath', value: fileUri[0].fsPath });
+							}
+						});
 						return;
 				}
 			},
 			undefined,
 			context.subscriptions
 		);
+
+		function handleSubmitForm(formData: any, panel: vscode.WebviewPanel, projectRoot: string) {
+			const actionsDir = path.join(projectRoot, 'actions');
+			fs.readdir(actionsDir, (err, files) => {
+				if (err) {
+					panel.webview.postMessage({ type: 'submitFormResponse', success: false, error: 'Failed to read actions directory' });
+					return;
+				}
+
+				let maxNumber = 0;
+				files.forEach(file => {
+					const parts = file.split('_');
+					if (parts.length > 1) {
+						const num = parseInt(parts[0]);
+						if (!isNaN(num) && num > maxNumber) {
+							maxNumber = num;
+						}
+					}
+				});
+
+				const newNumber = maxNumber + 1;
+				const newFileName = `${newNumber.toString().padStart(3, '0')}_plugin_action.yml`;
+				const newFilePath = path.join(actionsDir, newFileName);
+
+				const yamlContent = yaml.dump(formData);
+
+				fs.writeFile(newFilePath, yamlContent, (err) => {
+					if (err) {
+						panel.webview.postMessage({ type: 'submitFormResponse', success: false, error: 'Failed to write YAML file' });
+					} else {
+						// Open the newly created file in VSCode
+						vscode.workspace.openTextDocument(newFilePath).then(doc => {
+							vscode.window.showTextDocument(doc);
+						});
+						panel.webview.postMessage({ type: 'submitFormResponse', success: true });
+						panel.dispose();
+					}
+				});
+			});
+		}
 	});
 
 	context.subscriptions.push(createYamlDisposable);
 }
 
-function getWebviewContent(scriptUri: vscode.Uri,colorTheme: vscode.ColorTheme) {
-	const isDark = colorTheme.kind === vscode.ColorThemeKind.Dark	
+function getWebviewContent(scriptUri: vscode.Uri, colorTheme: vscode.ColorTheme) {
+	const isDark = colorTheme.kind === vscode.ColorThemeKind.Dark
 	return `
 	  <!DOCTYPE html>
 	  <html lang="en">
 	  <head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Create YAML</title>		
+		<title>Create YAML</title>
 	  </head>
 	  <body>
-		<div id="root"></div>	
+		<div id="root"></div>
 		<script>
 		  window.vscodeColorTheme = ${isDark};
 		</script>
-		<script src="${scriptUri}"></script>			
+		<script src="${scriptUri}"></script>
 	  </body>
 	  </html>
 	`;
-  }
+}
 
 
 export function deactivate() { }

@@ -135,17 +135,23 @@ class CodeAutoMergeEditBlock:
         unmerged_blocks = []
 
         # First, check if there are any changes to be made
+        file_content_mapping = {}
         for block in codes:
             file_path, head, update = block
             if not os.path.exists(file_path):
                 changes_to_make.append((file_path, None, update))
-                changes_made = True
+                file_content_mapping[file_path] = update                
+                changes_made = True                
             else:
-                with open(file_path, "r") as f:
-                    existing_content = f.read()
+                if file_path not in file_content_mapping:
+                    with open(file_path, "r") as f:
+                        temp = f.read()
+                        file_content_mapping[file_path] = temp
+                existing_content = file_content_mapping[file_path]        
                 new_content = existing_content.replace(head, update, 1) if head else existing_content + "\n" + update
                 if new_content != existing_content:
                     changes_to_make.append((file_path, existing_content, new_content))
+                    file_content_mapping[file_path] = new_content
                     changes_made = True
                 else:
                     unmerged_blocks.append((file_path, head, update))
@@ -162,12 +168,10 @@ class CodeAutoMergeEditBlock:
                 return
 
         # Now, apply the changes
-        updated_files = []
-        for file_path, old_content, new_content in changes_to_make:
+        for file_path,new_content in file_content_mapping.items():
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, "w") as f:
+            with open(file_path, "w") as f:                
                 f.write(new_content)
-            updated_files.append(file_path)
 
         if changes_made:            
             if not force_skip_git:
@@ -179,7 +183,7 @@ class CodeAutoMergeEditBlock:
                     logger.error(
                         self.git_require_msg(source_dir=self.args.source_dir, error=str(e))
                     )
-            logger.info(f"Merged changes in {len(set(updated_files))} files.")
+            logger.info(f"Merged changes in {len(file_content_mapping.keys())} files {len(changes_to_make)}/{len(codes)} blocks.")
             
             if unmerged_blocks:
                 logger.info("The following blocks were not merged due to no changes:")
@@ -189,9 +193,9 @@ class CodeAutoMergeEditBlock:
                     self._log_code_block(head, file_path)
                     print("Update block:",flush=True)
                     self._log_code_block(update, file_path)
-                logger.warning(f"There are unmerged blocks[{len(unmerged_blocks)}]. Please review them manually or revert the changes and try again.")        
+                logger.warning(f"There are unmerged blocks[{len(unmerged_blocks)}/{len(codes)}]. Please review them manually or revert the changes and try again.")        
         else:
-            logger.info("No changes were made to any files.")
+            logger.warning("No changes were made to any files.")
 
     def _log_code_block(self, code: str, file_path: str):                
         print("```")

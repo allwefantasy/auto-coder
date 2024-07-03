@@ -479,7 +479,11 @@ def coding(query: str):
         yaml_config["query"] = query
 
         yaml_content = yaml.safe_dump(
-            yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
+            yaml_config, 
+            encoding="utf-8", 
+            allow_unicode=True, 
+            default_flow_style=False,
+            default_style=None
         ).decode("utf-8")
         execute_file = os.path.join("actions", latest_yaml_file)
         with open(os.path.join(execute_file), "w") as f:
