@@ -30,13 +30,24 @@ class CodeAutoMergeEditBlock:
         self.fence_1 = fence_1
 
     def run_pylint(self, code: str) -> bool:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False
+        ) as temp_file:
             temp_file.write(code)
             temp_file_path = temp_file.name
 
         try:
-            result = subprocess.run(['pylint', '--disable=all', '--enable=E0001,W0311,W0312', temp_file_path], 
-                                    capture_output=True, text=True, check=False)
+            result = subprocess.run(
+                [
+                    "pylint",
+                    "--disable=all",
+                    "--enable=E0001,W0311,W0312",
+                    temp_file_path,
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
             os.unlink(temp_file_path)
             return result.returncode == 0
         except subprocess.CalledProcessError:
@@ -158,31 +169,54 @@ class CodeAutoMergeEditBlock:
             file_path, head, update = block
             if not os.path.exists(file_path):
                 changes_to_make.append((file_path, None, update))
-                file_content_mapping[file_path] = update                
-                changes_made = True                
+                file_content_mapping[file_path] = update
+                changes_made = True
             else:
                 if file_path not in file_content_mapping:
                     with open(file_path, "r") as f:
                         temp = f.read()
                         file_content_mapping[file_path] = temp
-                existing_content = file_content_mapping[file_path]        
-                new_content = existing_content.replace(head, update, 1) if head else existing_content + "\n" + update
+                existing_content = file_content_mapping[file_path]
+                new_content = (
+                    existing_content.replace(head, update, 1)
+                    if head
+                    else existing_content + "\n" + update
+                )
                 if new_content != existing_content:
                     changes_to_make.append((file_path, existing_content, new_content))
                     file_content_mapping[file_path] = new_content
                     changes_made = True
                 else:
-                    ## If the SEARCH BLOCK is not found exactly, then try to use 
+                    ## If the SEARCH BLOCK is not found exactly, then try to use
                     ## the similarity ratio to find the best matching block
-                    similarity,best_window = TextSimilarity(head,existing_content).get_best_matching_window()
+                    similarity, best_window = TextSimilarity(
+                        head, existing_content
+                    ).get_best_matching_window()
                     if similarity > self.args.editblock_similarity:
                         new_content = existing_content.replace(best_window, update, 1)
                         if new_content != existing_content:
-                            changes_to_make.append((file_path, existing_content, new_content))
+                            changes_to_make.append(
+                                (file_path, existing_content, new_content)
+                            )
                             file_content_mapping[file_path] = new_content
                             changes_made = True
-                    else:        
+                    else:
                         unmerged_blocks.append((file_path, head, update))
+
+        if unmerged_blocks:
+            logger.warning(
+                f"Found {len(unmerged_blocks)} unmerged blocks. Please review them manually then try again."
+            )
+            return
+
+        ## lint check
+        for file_path, new_content in file_content_mapping.items():
+            if file_path.endswith(".py"):
+                if not self.run_pylint(new_content):
+                    logger.warning(
+                        f"Pylint check failed for {file_path}. Changes not applied."
+                    )
+                    return
 
         if changes_made and not force_skip_git:
             try:
@@ -198,19 +232,10 @@ class CodeAutoMergeEditBlock:
         # Now, apply the changes
         for file_path, new_content in file_content_mapping.items():
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            if file_path.endswith('.py'):
-                if self.run_pylint(new_content):
-                    with open(file_path, "w") as f:                
-                        f.write(new_content)
-                else:
-                    logger.warning(f"Pylint check failed for {file_path}. Changes not applied.")
-                    unmerged_blocks.append((file_path, file_content_mapping[file_path], new_content))
-                    changes_made = False
-            else:
-                with open(file_path, "w") as f:                
-                    f.write(new_content)
+            with open(file_path, "w") as f:
+                f.write(new_content)
 
-        if changes_made:            
+        if changes_made:
             if not force_skip_git:
                 try:
                     git_utils.commit_changes(
@@ -218,23 +243,31 @@ class CodeAutoMergeEditBlock:
                     )
                 except Exception as e:
                     logger.error(
-                        self.git_require_msg(source_dir=self.args.source_dir, error=str(e))
+                        self.git_require_msg(
+                            source_dir=self.args.source_dir, error=str(e)
+                        )
                     )
-            logger.info(f"Merged changes in {len(file_content_mapping.keys())} files {len(changes_to_make)}/{len(codes)} blocks.")
-            
+            logger.info(
+                f"Merged changes in {len(file_content_mapping.keys())} files {len(changes_to_make)}/{len(codes)} blocks."
+            )
+
             if unmerged_blocks:
-                logger.info("The following blocks were not merged due to no changes or pylint errors:")
+                logger.info(
+                    "The following blocks were not merged due to no changes or pylint errors:"
+                )
                 for file_path, head, update in unmerged_blocks:
-                    print(f"\nFile: {file_path}",flush=True)
-                    print("Original block:",flush=True)
+                    print(f"\nFile: {file_path}", flush=True)
+                    print("Original block:", flush=True)
                     self._log_code_block(head, file_path)
-                    print("Update block:",flush=True)
+                    print("Update block:", flush=True)
                     self._log_code_block(update, file_path)
-                logger.warning(f"There are unmerged blocks[{len(unmerged_blocks)}/{len(codes)}]. Please review them manually or revert the changes and try again.")        
+                logger.warning(
+                    f"There are unmerged blocks[{len(unmerged_blocks)}/{len(codes)}]. Please review them manually or revert the changes and try again."
+                )
         else:
             logger.warning("No changes were made to any files.")
 
-    def _log_code_block(self, code: str, file_path: str):                
+    def _log_code_block(self, code: str, file_path: str):
         print("```")
-        print(code,flush=True)
+        print(code, flush=True)
         print("```")
