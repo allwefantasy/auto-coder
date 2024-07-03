@@ -36,9 +36,9 @@ def redirect_stdout():
 @byzerllm.prompt()
 def context(project_map: str) -> str:
     '''
-    你的目标是帮助用户阅读和理解一个项目。
+    你的目标是帮助用户阅读和理解一个项目。请仔细阅读以下信息，以便更好地完成任务。
 
-    环境信息如下:
+    环境信息:
 
     操作系统: {{ env_info.os_name }} {{ env_info.os_version }}
     Python版本: {{ env_info.python_version }}
@@ -56,12 +56,42 @@ def context(project_map: str) -> str:
 
     {{ project_map }}
 
-    ** 工具的使用指导 **
+    可用工具及使用指南:
 
-    1. 对于任何统计类，或者需要涉及到计算的问题，请优先使用 run_python_code 工具。比如多少行代码，多少文件数等。
-    2. 当你调用了 run_shell_code 工具时，需要参考环境信息,从而避免使用不支持的命令。
-    3. 获取项目信息，优先根据当前的目录结构，以及通过run_python_code 查找诸如 README 文件是否存在，然后通过 read_files 工具读取相关文件的信息，如果依然无法获得有用信息，再使用 get_project_related_files 工具。
+    1. get_related_files_by_symbols(query: str) -> str
+       - 根据类名、函数名或文件用途描述，返回项目中相关文件的路径列表。
+       - 返回结果为逗号分隔的文件路径。
 
+    2. read_files(paths: str) -> str
+       - 读取指定文件的内容。
+       - 输入为逗号分隔的文件路径列表（支持文件名或绝对路径）。
+       - 建议每次最多读取5-6个最相关的文件。
+
+    3. run_python_code(code: str) -> str
+       - 运行指定的Python代码。
+       - 返回代码的标准输出或错误信息。
+       - 使用时需指定项目根目录。
+
+    4. run_shell_code(script: str) -> str
+       - 运行指定的Shell代码，用于编译、运行、测试等任务。
+       - 返回代码的输出或错误信息。
+       - 注意：不允许执行包含rm命令的脚本。
+
+    5. get_project_map() -> str
+       - 返回项目中已索引文件的信息，包括文件用途、导入包、定义的类、函数、变量等。
+       - 返回JSON格式文本。
+       - 仅在其他方法无法获得所需信息时使用。
+
+    工作流程建议:
+
+    1. 首先使用get_related_files_by_symbols获取相关文件路径。
+    2. 然后使用read_files读取这些文件的内容。
+    3. 对于需要计算的问题（如代码行数、文件数量等），优先使用run_python_code。
+    4. 如需执行Shell命令，使用run_shell_code，但要注意环境兼容性。
+    5. 在无法通过上述方法获取足够信息时，可以使用get_project_map。
+    6. 需要时，可以多次组合使用get_related_files_by_symbols和read_files以获取更全面的信息。
+
+    请根据用户的具体需求，灵活运用这些工具来分析和理解项目。提供简洁、准确的回答，并在需要时主动提供深入解释的选项。
     '''
     return {"env_info": detect_env()}
 
@@ -138,6 +168,12 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         with redirect_stdout() as output:
             executor.run(query=job, context=context, source_code="")
         return output.getvalue()
+    
+    def get_related_files_by_symbols(query: str) -> str:
+        '''
+        你可以给出类名，函数名，以及文件的用途描述等信息，该工具会根据这些信息返回项目中相关的文件。
+        '''
+        return get_project_related_files(query)
 
     def get_project_related_files(query: str) -> str:
         """
@@ -217,7 +253,8 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         return source_code_str
 
     tools = [
-        FunctionTool.from_defaults(get_project_related_files),
+        # FunctionTool.from_defaults(get_project_related_files),
+        FunctionTool.from_defaults(get_related_files_by_symbols),
         FunctionTool.from_defaults(get_project_map),
         FunctionTool.from_defaults(read_files),
         FunctionTool.from_defaults(run_python_code),
@@ -245,7 +282,7 @@ class ProjectReader:
         self.pp.run()
         return self.pp.get_tree_like_directory_structure.prompt()
 
-    def run(self, query: str, max_iterations: int = 10):
+    def run(self, query: str, max_iterations: int = 20):
         agent = ReActAgent.from_tools(
             tools=self.tools,
             llm=ByzerAI(llm=self.llm),

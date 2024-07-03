@@ -1,0 +1,18 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: "while true里新增一个 elif user_input.startswith(\"/chat\")分支.最后 else 输出print(\n\
+  \                        \"\\033[91mInvalid command.\\033[0m Please type \\033[93m/help\\\
+  033[0m to see the list of supported commands.\"\n                    )"
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/tests/test_chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_editblock.py
