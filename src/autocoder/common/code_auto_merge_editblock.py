@@ -158,7 +158,7 @@ class CodeAutoMergeEditBlock:
                     ## If the SEARCH BLOCK is not found exactly, then try to use 
                     ## the similarity ratio to find the best matching block
                     similarity,best_window = TextSimilarity(head,existing_content).get_best_matching_window()
-                    if similarity > 0.9:
+                    if similarity > self.args.editblock_similarity:
                         new_content = existing_content.replace(best_window, update, 1)
                         if new_content != existing_content:
                             changes_to_make.append((file_path, existing_content, new_content))

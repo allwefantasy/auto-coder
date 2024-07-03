@@ -122,6 +122,9 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     parser.add_argument(
         "--auto_merge", nargs="?", const=True, default=False, help=desc["auto_merge"]
     )
+    parser.add_argument(
+        "--editblock_similarity", type=float, default=0.9, help=desc["editblock_similarity"]
+    )
 
     parser.add_argument("--image_file", default="", help=desc["image_file"])
     parser.add_argument("--image_mode", default="direct", help=desc["image_mode"])

@@ -217,6 +217,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     from_yaml: Optional[str] = None
     base_dir: Optional[str] = None
     context: Optional[str] = None
+    editblock_similarity: Optional[float] = 0.9
 
 
     class Config:
