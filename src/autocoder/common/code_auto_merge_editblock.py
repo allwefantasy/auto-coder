@@ -7,6 +7,8 @@ import pydantic
 import byzerllm
 from loguru import logger
 import hashlib
+import subprocess
+import tempfile
 
 
 class PathAndCode(pydantic.BaseModel):
@@ -26,6 +28,21 @@ class CodeAutoMergeEditBlock:
         self.args = args
         self.fence_0 = fence_0
         self.fence_1 = fence_1
+
+    def run_pylint(self, code: str) -> bool:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
+            temp_file.write(code)
+            temp_file_path = temp_file.name
+
+        try:
+            result = subprocess.run(['pylint', '--disable=all', '--enable=E0001,W0311,W0312', temp_file_path], 
+                                    capture_output=True, text=True, check=False)
+            os.unlink(temp_file_path)
+            return result.returncode == 0
+        except subprocess.CalledProcessError:
+            logger.error("Error running pylint")
+            os.unlink(temp_file_path)
+            return False
 
     def parse_whole_text(self, text: str) -> List[PathAndCode]:
         lines = text.split("\n")
@@ -179,10 +196,19 @@ class CodeAutoMergeEditBlock:
                 return
 
         # Now, apply the changes
-        for file_path,new_content in file_content_mapping.items():
+        for file_path, new_content in file_content_mapping.items():
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            with open(file_path, "w") as f:                
-                f.write(new_content)
+            if file_path.endswith('.py'):
+                if self.run_pylint(new_content):
+                    with open(file_path, "w") as f:                
+                        f.write(new_content)
+                else:
+                    logger.warning(f"Pylint check failed for {file_path}. Changes not applied.")
+                    unmerged_blocks.append((file_path, file_content_mapping[file_path], new_content))
+                    changes_made = False
+            else:
+                with open(file_path, "w") as f:                
+                    f.write(new_content)
 
         if changes_made:            
             if not force_skip_git:
@@ -197,7 +223,7 @@ class CodeAutoMergeEditBlock:
             logger.info(f"Merged changes in {len(file_content_mapping.keys())} files {len(changes_to_make)}/{len(codes)} blocks.")
             
             if unmerged_blocks:
-                logger.info("The following blocks were not merged due to no changes:")
+                logger.info("The following blocks were not merged due to no changes or pylint errors:")
                 for file_path, head, update in unmerged_blocks:
                     print(f"\nFile: {file_path}",flush=True)
                     print("Original block:",flush=True)
