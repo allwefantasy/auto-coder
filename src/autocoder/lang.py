@@ -61,7 +61,8 @@ lang_desc = {
         "query_suffix": "The query suffix",
         "next_from_yaml": "The YAML file to copy content from when creating a new action file. It supports prefix matching, e.g., specifying '001' will match '001_abc.yml'.",
         "next_desc": "create a new action file based one the last action file",
-        "base_dir": "Alternative path for /~/.auto-coder to store or retrieve text embeddings. Using /~/.auto-coder/ if not specified"        
+        "base_dir": "Alternative path for /~/.auto-coder to store or retrieve text embeddings. Using /~/.auto-coder/ if not specified",
+        "editblock_similarity": "The similarity threshold of TextSimilarity when merging edit blocks. Default is 0.9"
     },
     "zh": {
         "request_id": "Request ID",
