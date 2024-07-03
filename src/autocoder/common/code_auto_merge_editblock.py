@@ -1,6 +1,7 @@
 import os
 from byzerllm.utils.client import code_utils
 from autocoder.common import AutoCoderArgs, git_utils
+from autocoder.common.text import TextSimilarity
 from typing import List
 import pydantic
 import byzerllm
@@ -154,7 +155,17 @@ class CodeAutoMergeEditBlock:
                     file_content_mapping[file_path] = new_content
                     changes_made = True
                 else:
-                    unmerged_blocks.append((file_path, head, update))
+                    ## If the SEARCH BLOCK is not found exactly, then try to use 
+                    ## the similarity ratio to find the best matching block
+                    similarity,best_window = TextSimilarity(head,existing_content).get_best_matching_window()
+                    if similarity > 0.9:
+                        new_content = existing_content.replace(best_window, update, 1)
+                        if new_content != existing_content:
+                            changes_to_make.append((file_path, existing_content, new_content))
+                            file_content_mapping[file_path] = new_content
+                            changes_made = True
+                    else:        
+                        unmerged_blocks.append((file_path, head, update))
 
         if changes_made and not force_skip_git:
             try:
