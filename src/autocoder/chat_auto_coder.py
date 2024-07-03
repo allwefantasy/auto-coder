@@ -716,20 +716,16 @@ def main():
                     print("\033[91mPlease enter your request.\033[0m")
                     continue
                 coding(query)
-            else:
-                if user_input.startswith("/") and not user_input.startswith("/chat"):
-                    print(
-                        "\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands."
-                    )
-                    continue
-                if not user_input.startswith("/chat"):
-                    query = user_input.strip()
-                else:
-                    query = user_input[len("/chat") :].strip()
+            elif user_input.startswith("/chat"):
+                query = user_input[len("/chat") :].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
                 else:
                     chat(query)
+            else:
+                print(
+                    "\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands."
+                )
 
         except KeyboardInterrupt:
             print("\n\033[93mExiting Chat Auto Coder...\033[0m")
