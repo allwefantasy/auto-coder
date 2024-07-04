@@ -59,7 +59,37 @@ def get_current_branch(repo_path: str) -> str:
     return branch
 
 def revert_changes(repo_path: str, commit_hash: str) -> bool:
-    pass
+    repo = get_repo(repo_path)
+    if repo is None:
+        logger.error("Repository is not initialized.")
+        return False
+    
+    try:
+        # 获取从指定commit到HEAD的所有提交
+        commits = list(repo.iter_commits(f'{commit_hash}..HEAD'))
+        
+        if not commits:
+            logger.warning(f"No commits found after {commit_hash}")
+            return False
+        
+        # 从最新的提交开始，逐个回滚
+        for commit in reversed(commits):
+            try:
+                repo.git.revert(commit.hexsha, no_commit=True)
+                logger.info(f"Reverted changes from commit: {commit.hexsha}")
+            except GitCommandError as e:
+                logger.error(f"Error reverting commit {commit.hexsha}: {e}")
+                repo.git.revert('--abort')
+                return False
+        
+        # 提交所有的回滚更改
+        repo.git.commit(message=f"Reverted all changes up to {commit_hash}")
+        logger.info(f"Successfully reverted all changes up to {commit_hash}")
+        return True
+    
+    except GitCommandError as e:
+        logger.error(f"Error during revert operation: {e}")
+        return False
 
 def revert_change(repo_path: str, message: str) -> bool:
     repo = get_repo(repo_path)
