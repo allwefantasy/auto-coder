@@ -4,9 +4,10 @@ human_as_model: true
 include_file:
 - ./base/base.yml
 model: deepseek_chat
-query: revert_changes 改成不新增 commit 的 revert 方式
+query: 实现 revert_changes, 过滤出commit,但是该commit可能不是最后一个，需要一直revert 到该commit
 skip_build_index: true
 skip_confirm: true
 urls:
 - /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
 - /Users/allwefantasy/projects/auto-coder/src/autocoder/common/git_utils.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py

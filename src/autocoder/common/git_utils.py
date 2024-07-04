@@ -58,7 +58,10 @@ def get_current_branch(repo_path: str) -> str:
     branch = repo.active_branch.name
     return branch
 
-def revert_changes(repo_path: str, message: str) -> bool:
+def revert_changes(repo_path: str, commit_hash: str) -> bool:
+    pass
+
+def revert_change(repo_path: str, message: str) -> bool:
     repo = get_repo(repo_path)
     if repo is None:
         return False
