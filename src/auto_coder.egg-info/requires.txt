@@ -49,3 +49,4 @@ pandoc
 pypandoc
 pyperclip
 colorama
+pylint
