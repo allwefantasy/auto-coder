@@ -32,6 +32,7 @@ setup(
         'console_scripts': [
             'auto-coder = autocoder.auto_coder:main',
             'chat-auto-coder = autocoder.chat_auto_coder:main',
+            'auto-coder.chat = autocoder.chat_auto_coder:main',
         ],
     },
     package_dir={"": "src"},
