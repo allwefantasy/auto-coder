@@ -71,13 +71,13 @@ def revert_changes(repo_path: str, message: str) -> bool:
             logger.warning(f"No commit found with message: {message}")
             return False
         
-        commit_hash = commit.strip()
+        commit_hash = commit
         
         # 获取从指定commit到HEAD的所有提交
         commits = list(repo.iter_commits(f'{commit_hash}..HEAD'))
         
         if not commits:
-            logger.warning(f"No commits found after the commit with message: {message}")
+            repo.git.revert(commit, no_edit=True)            
             return False
         
         # 从最新的提交开始，逐个回滚

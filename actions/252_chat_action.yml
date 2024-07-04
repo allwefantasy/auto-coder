@@ -1,0 +1,14 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: 如果发现当前目录下没有 .auto-coder ,询问用户是否要初始化项目,如果选择是,则执行 auto-coder init --source_dir
+  . 进行初始化,否则退出.
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/git_utils.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
