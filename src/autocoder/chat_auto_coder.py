@@ -28,15 +28,23 @@ if platform.system() == "Windows":
 
     init()
 
+from prompt_toolkit import prompt
+from prompt_toolkit.shortcuts import radiolist_dialog
+from prompt_toolkit.formatted_text import HTML
+
 def initialize_system():
     print("Initializing system...")
     
     # Check if Ray is running
     ray_status = subprocess.run(["ray", "status"], capture_output=True, text=True)
-    if "Could not find any running Ray instance" in ray_status.stderr:
+    if ray_status.returncode != 0:
         print("Ray is not running. Starting Ray...")
-        subprocess.run(["ray", "start", "--head"], check=True)
-        print("Ray started successfully.")
+        try:
+            subprocess.run(["ray", "start", "--head"], check=True)
+            print("Ray started successfully.")
+        except subprocess.CalledProcessError:
+            print("Failed to start Ray. Please start it manually.")
+            return
     else:
         print("Ray is already running.")
     
@@ -48,7 +56,7 @@ def initialize_system():
             text=True,
             timeout=30
         )
-        if "error" not in result.stderr.lower():
+        if result.returncode == 0:
             print("deepseek_chat model is available.")
             return
     except subprocess.TimeoutExpired:
@@ -57,24 +65,50 @@ def initialize_system():
         print("Error occurred while checking deepseek_chat model.")
     
     # If deepseek_chat is not available, prompt user to choose a provider
-    print("\ndeepseek_chat model is not available. Please choose a provider:")
-    print("1. 硅基流动")
-    print("2. Deepseek官方")
+    choice = radiolist_dialog(
+        title="Provider Selection",
+        text="deepseek_chat model is not available. Please choose a provider:",
+        values=[
+            ("1", "硅基流动"),
+            ("2", "Deepseek官方"),
+        ]
+    ).run()
     
-    choice = input("Enter your choice (1 or 2): ").strip()
-    while choice not in ['1', '2']:
-        choice = input("Invalid choice. Please enter 1 or 2: ").strip()
+    if choice is None:
+        print("No provider selected. Exiting initialization.")
+        return
     
-    api_key = input("Please enter your API key: ").strip()
+    api_key = prompt(HTML("<b>Please enter your API key: </b>"))
     
-    if choice == '1':
+    if choice == "1":
         print("Deploying deepseek_chat model using 硅基流动...")
-        subprocess.run(["easy-byzerllm", "deploy", "deepseek-ai/deepseek-v2-chat", "--token", api_key,"--alias","deepseek_chat"], check=True)
+        deploy_cmd = ["easy-byzerllm", "deploy", "deepseek-ai/deepseek-v2-chat", "--token", api_key, "--alias", "deepseek_chat"]
     else:
         print("Deploying deepseek_chat model using Deepseek官方...")
-        subprocess.run(["easy-byzerllm","deploy", "deepseek-chat", "--token", api_key,"--alias","deepseek_chat"], check=True)
+        deploy_cmd = ["easy-byzerllm", "deploy", "deepseek-chat", "--token", api_key, "--alias", "deepseek_chat"]
     
-    print("Deployment completed.")
+    try:
+        subprocess.run(deploy_cmd, check=True)
+        print("Deployment completed.")
+    except subprocess.CalledProcessError:
+        print("Deployment failed. Please try again or deploy manually.")
+        return
+    
+    # Validate the deployment
+    print("Validating the deployment...")
+    try:
+        validation_result = subprocess.run(
+            ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True
+        )
+        print("Validation successful. deepseek_chat model is now available.")
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+        print("Validation failed. The model might not be deployed correctly.")
+        print("Please try to start the model manually using:")
+        print(f"easy-byzerllm chat deepseek_chat 你好")
     
     print("Initialization completed.")
 
