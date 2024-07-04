@@ -5,6 +5,7 @@ import sys
 import io
 import uuid
 import glob
+import time
 from contextlib import contextmanager
 from typing import List, Dict, Any
 from prompt_toolkit import PromptSession
@@ -26,6 +27,57 @@ if platform.system() == "Windows":
     from colorama import init
 
     init()
+
+def initialize_system():
+    print("Initializing system...")
+    
+    # Check if Ray is running
+    ray_status = subprocess.run(["ray", "status"], capture_output=True, text=True)
+    if "No Ray processes running" in ray_status.stdout:
+        print("Ray is not running. Starting Ray...")
+        subprocess.run(["ray", "start", "--head"], check=True)
+        print("Ray started successfully.")
+    else:
+        print("Ray is already running.")
+    
+    # Check if deepseek_chat model is available
+    try:
+        result = subprocess.run(
+            ["easy_byzerllm", "chat", "deepseek_chat", "你好"],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        if "error" not in result.stderr.lower():
+            print("deepseek_chat model is available.")
+            return
+    except subprocess.TimeoutExpired:
+        print("Command timed out. deepseek_chat model might not be available.")
+    except subprocess.CalledProcessError:
+        print("Error occurred while checking deepseek_chat model.")
+    
+    # If deepseek_chat is not available, prompt user to choose a provider
+    print("\ndeepseek_chat model is not available. Please choose a provider:")
+    print("1. 硅基流动")
+    print("2. Deepseek官方")
+    
+    choice = input("Enter your choice (1 or 2): ").strip()
+    while choice not in ['1', '2']:
+        choice = input("Invalid choice. Please enter 1 or 2: ").strip()
+    
+    api_key = input("Please enter your API key: ").strip()
+    
+    if choice == '1':
+        print("Deploying deepseek_chat model using 硅基流动...")
+        subprocess.run(["easy_byzerllm", "deploy", "deepseek-ai/deepseek-v2-chat", "--token", api_key], check=True)
+    else:
+        print("Deploying deepseek_chat model using Deepseek官方...")
+        subprocess.run(["easy_byzerllm", "deepseek-chat", "--token", api_key], check=True)
+    
+    print("Deployment completed. Waiting for the model to be ready...")
+    time.sleep(10)  # Wait for 10 seconds to allow the model to initialize
+    
+    print("Initialization completed.")
 
 memory = {
     "conversation": [],
@@ -604,6 +656,8 @@ def main():
 
     if not os.path.exists(base_persist_dir):
         os.makedirs(base_persist_dir, exist_ok=True)
+
+    initialize_system()
 
     load_memory()
 
