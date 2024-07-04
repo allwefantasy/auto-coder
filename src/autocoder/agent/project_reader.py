@@ -21,6 +21,7 @@ import contextlib2
 from pydantic import BaseModel
 from byzerllm.types import Bool
 from contextlib import contextmanager
+import fnmatch
 
 
 @contextmanager
@@ -252,6 +253,58 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
 
         return source_code_str
 
+    def find_files_by_name(keyword: str) -> str:
+        """
+        根据关键字在项目中搜索文件名。
+        输入参数 keyword: 要搜索的关键字
+        返回值是文件名包含该关键字的文件路径列表，以逗号分隔。
+
+        该工具会搜索文件名，返回所有匹配的文件。
+        如果结果过多，只返回前10个匹配项。
+        搜索不区分大小写。
+        """
+        matched_files = []
+        for root, _, files in os.walk(args.source_dir):
+            for file in files:
+                if keyword.lower() in file.lower():
+                    matched_files.append(os.path.join(root, file))
+                if len(matched_files) >= 10:
+                    break
+            if len(matched_files) >= 10:
+                break
+        
+        return ",".join(matched_files)
+
+    def find_files_by_content(keyword: str) -> str:
+        """
+        根据关键字在项目中搜索文件内容。
+        输入参数 keyword: 要搜索的关键字
+        返回值是内容包含该关键字的文件路径列表，以逗号分隔。
+
+        该工具会搜索文件内容，返回所有匹配的文件。
+        如果结果过多，只返回前10个匹配项。
+        搜索不区分大小写。
+        """
+        matched_files = []
+        for root, _, files in os.walk(args.source_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        if keyword.lower() in content.lower():
+                            matched_files.append(file_path)
+                except Exception:
+                    # Skip files that can't be read
+                    pass
+                
+                if len(matched_files) >= 10:
+                    break
+            if len(matched_files) >= 10:
+                break
+        
+        return ",".join(matched_files)
+
     tools = [
         # FunctionTool.from_defaults(get_project_related_files),
         FunctionTool.from_defaults(get_related_files_by_symbols),
@@ -259,6 +312,8 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         FunctionTool.from_defaults(read_files),
         FunctionTool.from_defaults(run_python_code),
         FunctionTool.from_defaults(run_shell_code),
+        FunctionTool.from_defaults(find_files_by_name),
+        FunctionTool.from_defaults(find_files_by_content),
         # FunctionTool.from_defaults(auto_run_job),
     ]
     return tools
