@@ -4,7 +4,6 @@ project_type: py
 
 model: deepseek_chat
 index_model: deepseek_chat
-emb_model: gpt_emb
 
 index_filter_level: 1
 index_model_max_input_length: 30000

@@ -33,7 +33,7 @@ def initialize_system():
     
     # Check if Ray is running
     ray_status = subprocess.run(["ray", "status"], capture_output=True, text=True)
-    if "No Ray processes running" in ray_status.stdout:
+    if "Could not find any running Ray instance" in ray_status.stderr:
         print("Ray is not running. Starting Ray...")
         subprocess.run(["ray", "start", "--head"], check=True)
         print("Ray started successfully.")
@@ -43,7 +43,7 @@ def initialize_system():
     # Check if deepseek_chat model is available
     try:
         result = subprocess.run(
-            ["easy_byzerllm", "chat", "deepseek_chat", "你好"],
+            ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
             capture_output=True,
             text=True,
             timeout=30
@@ -69,13 +69,12 @@ def initialize_system():
     
     if choice == '1':
         print("Deploying deepseek_chat model using 硅基流动...")
-        subprocess.run(["easy_byzerllm", "deploy", "deepseek-ai/deepseek-v2-chat", "--token", api_key], check=True)
+        subprocess.run(["easy-byzerllm", "deploy", "deepseek-ai/deepseek-v2-chat", "--token", api_key,"--alias","deepseek_chat"], check=True)
     else:
         print("Deploying deepseek_chat model using Deepseek官方...")
-        subprocess.run(["easy_byzerllm", "deepseek-chat", "--token", api_key], check=True)
+        subprocess.run(["easy-byzerllm","deploy", "deepseek-chat", "--token", api_key,"--alias","deepseek_chat"], check=True)
     
-    print("Deployment completed. Waiting for the model to be ready...")
-    time.sleep(10)  # Wait for 10 seconds to allow the model to initialize
+    print("Deployment completed.")
     
     print("Initialization completed.")
 
