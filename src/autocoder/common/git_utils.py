@@ -58,18 +58,26 @@ def get_current_branch(repo_path: str) -> str:
     branch = repo.active_branch.name
     return branch
 
-def revert_changes(repo_path: str, commit_hash: str) -> bool:
+def revert_changes(repo_path: str, message: str) -> bool:
     repo = get_repo(repo_path)
     if repo is None:
         logger.error("Repository is not initialized.")
         return False
     
     try:
+        # 通过message定位到commit_hash
+        commit = repo.git.log('--all', f'--grep={message}', '--format=%H', '-n', '1')
+        if not commit:
+            logger.warning(f"No commit found with message: {message}")
+            return False
+        
+        commit_hash = commit.strip()
+        
         # 获取从指定commit到HEAD的所有提交
         commits = list(repo.iter_commits(f'{commit_hash}..HEAD'))
         
         if not commits:
-            logger.warning(f"No commits found after {commit_hash}")
+            logger.warning(f"No commits found after the commit with message: {message}")
             return False
         
         # 从最新的提交开始，逐个回滚
