@@ -681,11 +681,18 @@ query: |
 
 def main():
     if not os.path.exists(".auto-coder"):
-        print(
-            "Please use chat-auto-coder in the root directory of your project which have been inited by auto-coder."
-            "auto-coder init --source_dir <your_project_dir>"
-        )
-        exit(1)
+        print("The current directory is not initialized as an auto-coder project.")
+        init_choice = input("Do you want to initialize the project now? (y/n): ").strip().lower()
+        if init_choice == 'y':
+            try:
+                subprocess.run(["auto-coder", "init", "--source_dir", "."], check=True)
+                print("Project initialized successfully.")
+            except subprocess.CalledProcessError:
+                print("Failed to initialize the project. Please try manually: auto-coder init --source_dir .")
+                exit(1)
+        else:
+            print("Exiting without initialization.")
+            exit(1)
 
     if not os.path.exists(base_persist_dir):
         os.makedirs(base_persist_dir, exist_ok=True)
