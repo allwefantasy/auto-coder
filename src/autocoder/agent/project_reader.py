@@ -6,7 +6,7 @@ from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.common.interpreter import Interpreter
-from autocoder.common import ExecuteSteps, ExecuteStep,detect_env
+from autocoder.common import ExecuteSteps, ExecuteStep, detect_env
 from autocoder.common import code_auto_execute
 from autocoder.rag.simple_rag import SimpleRAG
 from byzerllm.apps.llama_index.byzerai import ByzerAI
@@ -36,7 +36,7 @@ def redirect_stdout():
 
 @byzerllm.prompt()
 def context(project_map: str) -> str:
-    '''
+    """
     你的目标是帮助用户阅读和理解一个项目。请仔细阅读以下信息，以便更好地完成任务。
 
     环境信息:
@@ -83,17 +83,76 @@ def context(project_map: str) -> str:
        - 返回JSON格式文本。
        - 仅在其他方法无法获得所需信息时使用。
 
+    6. find_files_by_name(keyword: str) -> str
+        - 根据关键字搜索项目中的文件名。
+        - 返回文件名包含关键字的文件路径列表，以逗号分隔。
+
+    7. find_files_by_content(keyword: str) -> str
+        - 根据关键字搜索项目中的文件内容。
+        - 返回内容包含关键字的文件路径列表，以逗号分隔。
+
     工作流程建议:
 
-    1. 首先使用get_related_files_by_symbols获取相关文件路径。
-    2. 然后使用read_files读取这些文件的内容。
-    3. 对于需要计算的问题（如代码行数、文件数量等），优先使用run_python_code。
-    4. 如需执行Shell命令，使用run_shell_code，但要注意环境兼容性。
-    5. 在无法通过上述方法获取足够信息时，可以使用get_project_map。
-    6. 需要时，可以多次组合使用get_related_files_by_symbols和read_files以获取更全面的信息。
+    1. 首先使用get_related_files_by_symbols/find_files_by_name/find_files_by_content获取相关文件路径。
+    2. 然后使用read_files读取这些文件的内容(优先阅读markdown类文件)。        
+    3. 需要时，可以多次组合使用get_related_files_by_symbols/find_files_by_name/find_files_by_content和read_files以获取更全面的信息。
+
+    ## 特殊指导1
+    对于需要计算的问题（如代码行数、文件数量等），优先使用run_python_code。
+
+    ## 特殊指导2
+    如需执行Shell命令，使用run_shell_code，但要注意环境兼容性。 
+
+    ## 特殊指导3
+    如果用户问该项目的一个功能特性如何使用，优先通过 find_files_by_content 找到包含关键字的文件，然后优先阅读markdown类文件，如果还不行，则
+    思考应该先找到相关的类或函数，再通过 read_files 读取文件内容。 
+
+    ## 特殊指导4
+    为了梳理一个项目中特定特性的实现，可以遵循以下流程：
+
+    1. 确定特性的入口点：
+    - 使用 find_files_by_content 搜索与特性相关的关键词，找到可能的入口点文件。
+    - 优先查看 README.md 或其他文档文件，了解特性的概述。
+
+    2. 分析核心实现：
+    - 使用 get_related_files_by_symbols 找到与特性相关的核心类或函数。
+    - 用 read_files 读取这些文件的内容，分析核心逻辑。
+
+    3. 追踪依赖关系：
+    - 分析核心实现中import的模块和调用的其他函数。
+    - 再次使用 get_related_files_by_symbols 找到这些依赖的实现。
+
+    4. 分析配置和初始化：
+    - 查找与特性相关的配置文件或初始化代码。
+    - 使用 find_files_by_name 搜索可能的配置文件。
+
+    5. 检查测试用例：
+    - 使用 find_files_by_name 搜索测试文件，通常包含 "test" 或 "spec" 在文件名中。
+    - 阅读测试用例，了解特性的预期行为和边界条件。
+
+    6. 查看API接口：
+    - 如果特性涉及API，查找API定义文件或路由配置。
+    - 使用 find_files_by_content 搜索相关的API端点。
+
+    7. 检查数据流：
+    - 分析数据如何在不同组件间传递和处理。
+    - 可能需要多次使用 get_related_files_by_symbols 和 read_files 来追踪数据流。
+
+    8. 查看文档和注释：
+    - 仔细阅读相关文件中的文档字符串和注释。
+    - 特别注意 TODO 或 FIXME 等特殊注释。
+
+    9. 分析版本变化（如果可能）：
+    - 如果项目使用版本控制，可以查看相关文件的提交历史。
+
+    10. 总结和验证：
+        - 使用 run_python_code 或 run_shell_code 来验证关键部分的行为。
+        - 综合所有信息，总结特性的实现流程、主要组件和关键点。
+
+    在这个过程中，根据需要多次使用工具，特别是 get_related_files_by_symbols、read_files 和 find_files_by_content，以确保全面理解特性的实现。如果遇到不清楚的地方，我会提出进一步的问题或建议更深入的分析。   
 
     请根据用户的具体需求，灵活运用这些工具来分析和理解项目。提供简洁、准确的回答，并在需要时主动提供深入解释的选项。
-    '''
+    """
     return {"env_info": detect_env()}
 
 
@@ -169,11 +228,11 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         with redirect_stdout() as output:
             executor.run(query=job, context=context, source_code="")
         return output.getvalue()
-    
+
     def get_related_files_by_symbols(query: str) -> str:
-        '''
+        """
         你可以给出类名，函数名，以及文件的用途描述等信息，该工具会根据这些信息返回项目中相关的文件。
-        '''
+        """
         return get_project_related_files(query)
 
     def get_project_related_files(query: str) -> str:
@@ -242,7 +301,7 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
                 for root, _, files in os.walk(args.source_dir):
                     for file in files:
                         if path in os.path.join(root, file):
-                            path = os.path.join(root,file)
+                            path = os.path.join(root, file)
                             break
 
             with open(path, "r") as f:
@@ -260,7 +319,6 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         返回值是文件名包含该关键字的文件路径列表，以逗号分隔。
 
         该工具会搜索文件名，返回所有匹配的文件。
-        如果结果过多，只返回前10个匹配项。
         搜索不区分大小写。
         """
         matched_files = []
@@ -268,11 +326,7 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
             for file in files:
                 if keyword.lower() in file.lower():
                     matched_files.append(os.path.join(root, file))
-                if len(matched_files) >= 10:
-                    break
-            if len(matched_files) >= 10:
-                break
-        
+
         return ",".join(matched_files)
 
     def find_files_by_content(keyword: str) -> str:
@@ -290,19 +344,14 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
             for file in files:
                 file_path = os.path.join(root, file)
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         content = f.read()
                         if keyword.lower() in content.lower():
                             matched_files.append(file_path)
                 except Exception:
                     # Skip files that can't be read
                     pass
-                
-                if len(matched_files) >= 10:
-                    break
-            if len(matched_files) >= 10:
-                break
-        
+
         return ",".join(matched_files)
 
     tools = [
