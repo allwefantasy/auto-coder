@@ -114,21 +114,25 @@ def initialize_system():
     print("\033[1;32mInitialization completed.\033[0m\n")
 
     if not os.path.exists(".auto-coder"):
-        print("The current directory is not initialized as an auto-coder project.")
-        init_choice = input("Do you want to initialize the project now? (y/n): ").strip().lower()
+        print("\n\033[93mThe current directory is not initialized as an auto-coder project.\033[0m")
+        init_choice = input("\nDo you want to initialize the project now? (y/n): ").strip().lower()
         if init_choice == 'y':
             try:
                 subprocess.run(["auto-coder", "init", "--source_dir", "."], check=True)
-                print("Project initialized successfully.")
+                print("\n\033[92mProject initialized successfully.\033[0m")
             except subprocess.CalledProcessError:
-                print("Failed to initialize the project. Please try manually: auto-coder init --source_dir .")
+                print("\n\033[91mFailed to initialize the project.\033[0m")
+                print("\033[91mPlease try manually: auto-coder init --source_dir .\033[0m")
                 exit(1)
         else:
-            print("Exiting without initialization.")
+            print("\n\033[93mExiting without initialization.\033[0m")
             exit(1)
 
     if not os.path.exists(base_persist_dir):
         os.makedirs(base_persist_dir, exist_ok=True)
+        print(f"\n\033[92mCreated directory: {base_persist_dir}\033[0m")
+
+    print("\n\033[92mInitialization completed successfully.\033[0m\n")
 
 memory = {
     "conversation": [],
