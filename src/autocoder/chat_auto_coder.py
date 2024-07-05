@@ -33,20 +33,20 @@ from prompt_toolkit.shortcuts import radiolist_dialog
 from prompt_toolkit.formatted_text import HTML
 
 def initialize_system():
-    print("Initializing system...")
+    print("\n\033[1;34mInitializing system...\033[0m\n")
     
     # Check if Ray is running
     ray_status = subprocess.run(["ray", "status"], capture_output=True, text=True)
     if ray_status.returncode != 0:
-        print("Ray is not running. Starting Ray...")
+        print("\033[33mRay is not running. Starting Ray...\033[0m")
         try:
             subprocess.run(["ray", "start", "--head"], check=True)
-            print("Ray started successfully.")
+            print("\033[32mRay started successfully.\033[0m\n")
         except subprocess.CalledProcessError:
-            print("Failed to start Ray. Please start it manually.")
+            print("\033[31mFailed to start Ray. Please start it manually.\033[0m\n")
             return
     else:
-        print("Ray is already running.")
+        print("\033[32mRay is already running.\033[0m\n")
     
     # Check if deepseek_chat model is available
     try:
@@ -57,12 +57,13 @@ def initialize_system():
             timeout=30
         )
         if result.returncode == 0:
-            print("deepseek_chat model is available.")
+            print("\033[32mdeepseek_chat model is available.\033[0m\n")
+            print("\033[1;32mInitialization completed successfully.\033[0m\n")
             return
     except subprocess.TimeoutExpired:
-        print("Command timed out. deepseek_chat model might not be available.")
+        print("\033[31mCommand timed out. deepseek_chat model might not be available.\033[0m\n")
     except subprocess.CalledProcessError:
-        print("Error occurred while checking deepseek_chat model.")
+        print("\033[31mError occurred while checking deepseek_chat model.\033[0m\n")
     
     # If deepseek_chat is not available, prompt user to choose a provider
     choice = radiolist_dialog(
@@ -75,27 +76,27 @@ def initialize_system():
     ).run()
     
     if choice is None:
-        print("No provider selected. Exiting initialization.")
+        print("\n\033[31mNo provider selected. Exiting initialization.\033[0m\n")
         return
     
     api_key = prompt(HTML("<b>Please enter your API key: </b>"))
     
     if choice == "1":
-        print("Deploying deepseek_chat model using 硅基流动...")
+        print("\n\033[34mDeploying deepseek_chat model using 硅基流动...\033[0m")
         deploy_cmd = ["easy-byzerllm", "deploy", "deepseek-ai/deepseek-v2-chat", "--token", api_key, "--alias", "deepseek_chat"]
     else:
-        print("Deploying deepseek_chat model using Deepseek官方...")
+        print("\n\033[34mDeploying deepseek_chat model using Deepseek官方...\033[0m")
         deploy_cmd = ["easy-byzerllm", "deploy", "deepseek-chat", "--token", api_key, "--alias", "deepseek_chat"]
     
     try:
         subprocess.run(deploy_cmd, check=True)
-        print("Deployment completed.")
+        print("\033[32mDeployment completed.\033[0m\n")
     except subprocess.CalledProcessError:
-        print("Deployment failed. Please try again or deploy manually.")
+        print("\033[31mDeployment failed. Please try again or deploy manually.\033[0m\n")
         return
     
     # Validate the deployment
-    print("Validating the deployment...")
+    print("\033[34mValidating the deployment...\033[0m")
     try:
         validation_result = subprocess.run(
             ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
@@ -104,13 +105,13 @@ def initialize_system():
             timeout=30,
             check=True
         )
-        print("Validation successful. deepseek_chat model is now available.")
+        print("\033[32mValidation successful. deepseek_chat model is now available.\033[0m\n")
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-        print("Validation failed. The model might not be deployed correctly.")
-        print("Please try to start the model manually using:")
-        print(f"easy-byzerllm chat deepseek_chat 你好")
+        print("\033[31mValidation failed. The model might not be deployed correctly.\033[0m")
+        print("\033[33mPlease try to start the model manually using:\033[0m")
+        print("\033[33measy-byzerllm chat deepseek_chat 你好\033[0m\n")
     
-    print("Initialization completed.")
+    print("\033[1;32mInitialization completed.\033[0m\n")
 
 memory = {
     "conversation": [],
