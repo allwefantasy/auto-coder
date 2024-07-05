@@ -32,108 +32,6 @@ from prompt_toolkit import prompt
 from prompt_toolkit.shortcuts import radiolist_dialog
 from prompt_toolkit.formatted_text import HTML
 
-def initialize_system():
-    print("\n\033[1;34mInitializing system...\033[0m\n")
-    
-    # Check if Ray is running
-    ray_status = subprocess.run(["ray", "status"], capture_output=True, text=True)
-    if ray_status.returncode != 0:
-        print("\033[33mRay is not running. Starting Ray...\033[0m")
-        try:
-            subprocess.run(["ray", "start", "--head"], check=True)
-            print("\033[32mRay started successfully.\033[0m\n")
-        except subprocess.CalledProcessError:
-            print("\033[31mFailed to start Ray. Please start it manually.\033[0m\n")
-            return
-    else:
-        print("\033[32mRay is already running.\033[0m\n")
-    
-    # Check if deepseek_chat model is available
-    try:
-        result = subprocess.run(
-            ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
-        if result.returncode == 0:
-            print("\033[32mdeepseek_chat model is available.\033[0m\n")
-            print("\033[1;32mInitialization completed successfully.\033[0m\n")
-            return
-    except subprocess.TimeoutExpired:
-        print("\033[31mCommand timed out. deepseek_chat model might not be available.\033[0m\n")
-    except subprocess.CalledProcessError:
-        print("\033[31mError occurred while checking deepseek_chat model.\033[0m\n")
-    
-    # If deepseek_chat is not available, prompt user to choose a provider
-    choice = radiolist_dialog(
-        title="Provider Selection",
-        text="deepseek_chat model is not available. Please choose a provider:",
-        values=[
-            ("1", "硅基流动"),
-            ("2", "Deepseek官方"),
-        ]
-    ).run()
-    
-    if choice is None:
-        print("\n\033[31mNo provider selected. Exiting initialization.\033[0m\n")
-        return
-    
-    api_key = prompt(HTML("<b>Please enter your API key: </b>"))
-    
-    if choice == "1":
-        print("\n\033[34mDeploying deepseek_chat model using 硅基流动...\033[0m")
-        deploy_cmd = ["easy-byzerllm", "deploy", "deepseek-ai/deepseek-v2-chat", "--token", api_key, "--alias", "deepseek_chat"]
-    else:
-        print("\n\033[34mDeploying deepseek_chat model using Deepseek官方...\033[0m")
-        deploy_cmd = ["easy-byzerllm", "deploy", "deepseek-chat", "--token", api_key, "--alias", "deepseek_chat"]
-    
-    try:
-        subprocess.run(deploy_cmd, check=True)
-        print("\033[32mDeployment completed.\033[0m\n")
-    except subprocess.CalledProcessError:
-        print("\033[31mDeployment failed. Please try again or deploy manually.\033[0m\n")
-        return
-    
-    # Validate the deployment
-    print("\033[34mValidating the deployment...\033[0m")
-    try:
-        validation_result = subprocess.run(
-            ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=True
-        )
-        print("\033[32mValidation successful. deepseek_chat model is now available.\033[0m\n")
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-        print("\033[31mValidation failed. The model might not be deployed correctly.\033[0m")
-        print("\033[33mPlease try to start the model manually using:\033[0m")
-        print("\033[33measy-byzerllm chat deepseek_chat 你好\033[0m\n")
-    
-    print("\033[1;32mInitialization completed.\033[0m\n")
-
-    if not os.path.exists(".auto-coder"):
-        print("\n\033[93mThe current directory is not initialized as an auto-coder project.\033[0m")
-        init_choice = input("\nDo you want to initialize the project now? (y/n): ").strip().lower()
-        if init_choice == 'y':
-            try:
-                subprocess.run(["auto-coder", "init", "--source_dir", "."], check=True)
-                print("\n\033[92mProject initialized successfully.\033[0m")
-            except subprocess.CalledProcessError:
-                print("\n\033[91mFailed to initialize the project.\033[0m")
-                print("\033[91mPlease try manually: auto-coder init --source_dir .\033[0m")
-                exit(1)
-        else:
-            print("\n\033[93mExiting without initialization.\033[0m")
-            exit(1)
-
-    if not os.path.exists(base_persist_dir):
-        os.makedirs(base_persist_dir, exist_ok=True)
-        print(f"\n\033[92mCreated directory: {base_persist_dir}\033[0m")
-
-    print("\n\033[92mInitialization completed successfully.\033[0m\n")
-
 memory = {
     "conversation": [],
     "current_files": {"files": []},
@@ -161,6 +59,147 @@ commands = [
     "/shell",
     "/exit",
 ]
+
+
+def initialize_system():
+
+    def init_project():
+        if not os.path.exists(".auto-coder"):
+            print(
+                "\n\033[93mThe current directory is not initialized as an auto-coder project.\033[0m"
+            )
+            init_choice = (
+                input("\nDo you want to initialize the project now? (y/n): ")
+                .strip()
+                .lower()
+            )
+            if init_choice == "y":
+                try:
+                    subprocess.run(
+                        ["auto-coder", "init", "--source_dir", "."], check=True
+                    )
+                    print("\n\033[92mProject initialized successfully.\033[0m")
+                except subprocess.CalledProcessError:
+                    print("\n\033[91mFailed to initialize the project.\033[0m")
+                    print(
+                        "\033[91mPlease try manually: auto-coder init --source_dir .\033[0m"
+                    )
+                    exit(1)
+            else:
+                print("\n\033[93mExiting without initialization.\033[0m")
+                exit(1)
+
+        if not os.path.exists(base_persist_dir):
+            os.makedirs(base_persist_dir, exist_ok=True)
+            print(f"\n\033[92mCreated directory: {base_persist_dir}\033[0m")
+
+        print("\n\033[92mInitialization completed successfully.\033[0m\n")
+
+    print("\n\033[1;34mInitializing system...\033[0m\n")
+
+    # Check if Ray is running
+    ray_status = subprocess.run(["ray", "status"], capture_output=True, text=True)
+    if ray_status.returncode != 0:
+        print("\033[33mRay is not running. Starting Ray...\033[0m")
+        try:
+            subprocess.run(["ray", "start", "--head"], check=True)
+            print("\033[32mRay started successfully.\033[0m\n")
+        except subprocess.CalledProcessError:
+            print("\033[31mFailed to start Ray. Please start it manually.\033[0m\n")
+            return
+    else:
+        print("\033[32mRay is already running.\033[0m\n")
+
+    # Check if deepseek_chat model is available
+    try:
+        result = subprocess.run(
+            ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode == 0:
+            print("\033[32mdeepseek_chat model is available.\033[0m\n")
+            init_project()
+            print("\033[1;32mInitialization completed successfully.\033[0m\n")
+            return
+    except subprocess.TimeoutExpired:
+        print(
+            "\033[31mCommand timed out. deepseek_chat model might not be available.\033[0m\n"
+        )
+    except subprocess.CalledProcessError:
+        print("\033[31mError occurred while checking deepseek_chat model.\033[0m\n")
+
+    # If deepseek_chat is not available, prompt user to choose a provider
+    choice = radiolist_dialog(
+        title="Provider Selection",
+        text="deepseek_chat model is not available. Please choose a provider:",
+        values=[
+            ("1", "硅基流动(https://siliconflow.cn)"),
+            ("2", "Deepseek官方(https://www.deepseek.com/)"),
+        ],
+    ).run()
+
+    if choice is None:
+        print("\n\033[31mNo provider selected. Exiting initialization.\033[0m\n")
+        return
+
+    api_key = prompt(HTML("<b>Please enter your API key: </b>"))
+
+    if choice == "1":
+        print("\n\033[34mDeploying deepseek_chat model using 硅基流动...\033[0m")
+        deploy_cmd = [
+            "easy-byzerllm",
+            "deploy",
+            "deepseek-ai/deepseek-v2-chat",
+            "--token",
+            api_key,
+            "--alias",
+            "deepseek_chat",
+        ]
+    else:
+        print("\n\033[34mDeploying deepseek_chat model using Deepseek官方...\033[0m")
+        deploy_cmd = [
+            "easy-byzerllm",
+            "deploy",
+            "deepseek-chat",
+            "--token",
+            api_key,
+            "--alias",
+            "deepseek_chat",
+        ]
+
+    try:
+        subprocess.run(deploy_cmd, check=True)
+        print("\033[32mDeployment completed.\033[0m\n")
+    except subprocess.CalledProcessError:
+        print(
+            "\033[31mDeployment failed. Please try again or deploy manually.\033[0m\n"
+        )
+        return
+
+    # Validate the deployment
+    print("\033[34mValidating the deployment...\033[0m")
+    try:
+        validation_result = subprocess.run(
+            ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=True,
+        )
+        print(
+            "\033[32mValidation successful. deepseek_chat model is now available.\033[0m\n"
+        )
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+        print(
+            "\033[31mValidation failed. The model might not be deployed correctly.\033[0m"
+        )
+        print("\033[33mPlease try to start the model manually using:\033[0m")
+        print("\033[33measy-byzerllm chat deepseek_chat 你好\033[0m\n")
+
+    print("\033[1;32mInitialization completed.\033[0m\n")
+    init_project()
 
 
 def get_all_file_names_in_project() -> List[str]:
@@ -199,16 +238,19 @@ def find_files_in_project(patterns: List[str]) -> List[str]:
     project_root = os.getcwd()
     matched_files = []
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
-    
+
     for pattern in patterns:
-        if '*' in pattern or '?' in pattern:            
+        if "*" in pattern or "?" in pattern:
             for file_path in glob.glob(pattern, recursive=True):
                 if os.path.isfile(file_path):
                     abs_path = os.path.abspath(file_path)
-                    if not any(exclude_dir in abs_path.split(os.sep) for exclude_dir in final_exclude_dirs):
+                    if not any(
+                        exclude_dir in abs_path.split(os.sep)
+                        for exclude_dir in final_exclude_dirs
+                    ):
                         matched_files.append(abs_path)
-        else:  
-            is_added = False                 
+        else:
+            is_added = False
             for root, dirs, files in os.walk(project_root):
                 dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
                 if pattern in files:
@@ -217,12 +259,11 @@ def find_files_in_project(patterns: List[str]) -> List[str]:
                 else:
                     for file in files:
                         if pattern in os.path.join(root, file):
-                            matched_files.append(os.path.join(root, file)) 
+                            matched_files.append(os.path.join(root, file))
                             is_added = True
             if not is_added:
                 matched_files.append(pattern)
 
-    
     return list(set(matched_files))
 
 
@@ -485,14 +526,18 @@ def add_files(patterns: List[str]):
     project_root = os.getcwd()
     existing_files = memory["current_files"]["files"]
     matched_files = find_files_in_project(patterns)
-    
+
     files_to_add = [f for f in matched_files if f not in existing_files]
     if files_to_add:
         memory["current_files"]["files"].extend(files_to_add)
-        print(f"Added files: {[os.path.relpath(f, project_root) for f in files_to_add]}")
+        print(
+            f"Added files: {[os.path.relpath(f, project_root) for f in files_to_add]}"
+        )
     else:
-        print("All specified files are already in the current session or no matches found.")
-    
+        print(
+            "All specified files are already in the current session or no matches found."
+        )
+
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
 
@@ -586,11 +631,11 @@ def coding(query: str):
         yaml_config["query"] = query
 
         yaml_content = yaml.safe_dump(
-            yaml_config, 
-            encoding="utf-8", 
-            allow_unicode=True, 
+            yaml_config,
+            encoding="utf-8",
+            allow_unicode=True,
             default_flow_style=False,
-            default_style=None
+            default_style=None,
         ).decode("utf-8")
         execute_file = os.path.join("actions", latest_yaml_file)
         with open(os.path.join(execute_file), "w") as f:
@@ -701,7 +746,7 @@ query: |
         os.remove(yaml_file)
 
 
-def main():    
+def main():
     initialize_system()
 
     load_memory()
