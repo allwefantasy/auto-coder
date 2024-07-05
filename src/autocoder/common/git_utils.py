@@ -65,10 +65,20 @@ def revert_changes(repo_path: str, message: str) -> bool:
         return False
     
     try:
+        # 检查当前工作目录是否有未提交的更改
+        if repo.is_dirty():
+            logger.warning("Working directory is dirty. Stashing changes.")
+            repo.git.stash('save', 'Temporary stash before revert')
+            stashed = True
+        else:
+            stashed = False
+
         # 通过message定位到commit_hash
         commit = repo.git.log('--all', f'--grep={message}', '--format=%H', '-n', '1')
         if not commit:
             logger.warning(f"No commit found with message: {message}")
+            if stashed:
+                repo.git.stash('pop')
             return False
         
         commit_hash = commit
@@ -77,26 +87,41 @@ def revert_changes(repo_path: str, message: str) -> bool:
         commits = list(repo.iter_commits(f'{commit_hash}..HEAD'))
         
         if not commits:
-            repo.git.revert(commit, no_edit=True)            
-            return True
+            repo.git.revert(commit, no_edit=True)
+            logger.info(f"Reverted single commit: {commit}")
+        else:
+            # 从最新的提交开始，逐个回滚
+            for commit in reversed(commits):
+                try:
+                    repo.git.revert(commit.hexsha, no_commit=True)
+                    logger.info(f"Reverted changes from commit: {commit.hexsha}")
+                except GitCommandError as e:
+                    logger.error(f"Error reverting commit {commit.hexsha}: {e}")
+                    repo.git.revert('--abort')
+                    if stashed:
+                        repo.git.stash('pop')
+                    return False
+            
+            # 提交所有的回滚更改
+            repo.git.commit(message=f"Reverted all changes up to {commit_hash}")
         
-        # 从最新的提交开始，逐个回滚
-        for commit in reversed(commits):
+        logger.info(f"Successfully reverted changes up to {commit_hash}")
+
+        # 如果之前有stash，现在应用它
+        if stashed:
             try:
-                repo.git.revert(commit.hexsha, no_commit=True)
-                logger.info(f"Reverted changes from commit: {commit.hexsha}")
+                repo.git.stash('pop')
+                logger.info("Applied stashed changes.")
             except GitCommandError as e:
-                logger.error(f"Error reverting commit {commit.hexsha}: {e}")
-                repo.git.revert('--abort')
-                return False
-        
-        # 提交所有的回滚更改
-        repo.git.commit(message=f"Reverted all changes up to {commit_hash}")
-        logger.info(f"Successfully reverted all changes up to {commit_hash}")
+                logger.error(f"Error applying stashed changes: {e}")
+                logger.info("Please manually apply the stashed changes.")
+
         return True
     
     except GitCommandError as e:
         logger.error(f"Error during revert operation: {e}")
+        if stashed:
+            repo.git.stash('pop')
         return False
 
 def revert_change(repo_path: str, message: str) -> bool:
