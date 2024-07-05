@@ -1,11 +1,11 @@
 from threading import Lock
 from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
-from typing import Dict
+from typing import Dict,Any
 
 
 class RequestValue(BaseModel):
-    value: any
+    value: Any
     last_accessed: datetime = Field(default_factory=datetime.now)
     created_at: datetime = Field(default_factory=datetime.now)
     class Config:

@@ -78,7 +78,7 @@ def revert_changes(repo_path: str, message: str) -> bool:
         
         if not commits:
             repo.git.revert(commit, no_edit=True)            
-            return False
+            return True
         
         # 从最新的提交开始，逐个回滚
         for commit in reversed(commits):
