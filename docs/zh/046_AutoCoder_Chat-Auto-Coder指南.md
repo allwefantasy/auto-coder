@@ -68,6 +68,8 @@ easy-byzerllm chat sonnet_3_5_chat hello
 
 接着你可以通过 `/conf code_model:sonnet_3_5_chat` 来设置代码模型。
 
+[更多模型](https://github.com/allwefantasy/byzer-llm/blob/master/docs/zh/004_easy_byzerllm_%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97.md)
+
 ## 安装
 
 快捷方式：
