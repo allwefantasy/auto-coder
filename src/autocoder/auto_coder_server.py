@@ -9,6 +9,7 @@ import glob
 from autocoder.common import AutoCoderArgs
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.utils import get_last_yaml_file
+from autocoder.utils.request_queue import request_queue
 import subprocess
 
 app = FastAPI()
@@ -146,7 +147,7 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=500, detail="Failed to create new YAML file.")
 
 @app.post("/chat")
-async def chat(request: QueryRequest):
+async def chat(request: QueryRequest, background_tasks: BackgroundTasks):
     conf = memory.get("conf", {})
     current_files = memory["current_files"]["files"]
 
@@ -178,11 +179,17 @@ async def chat(request: QueryRequest):
     with open(execute_file, "w") as f:
         f.write(yaml_content)
 
-    try:
-        result = auto_coder_main(["agent", "chat", "--file", execute_file])
-        return {"result": result}
-    finally:
-        os.remove(execute_file)
+    request_id = str(uuid.uuid4())
+
+    def process_chat():
+        try:
+            result = auto_coder_main(["agent", "chat", "--file", execute_file, "--request_id", request_id])
+            request_queue.add_request(request_id, result)
+        finally:
+            os.remove(execute_file)
+
+    background_tasks.add_task(process_chat)
+    return {"request_id": request_id}
 
 @app.post("/ask")
 async def ask(request: QueryRequest):
@@ -284,6 +291,13 @@ async def execute_shell(request: QueryRequest):
             return {"error": result.stderr}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/result/{request_id}")
+async def get_result(request_id: str):
+    result = request_queue.get_request(request_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Result not found or not ready yet")
+    return {"result": result}
 
 # 辅助函数
 def find_files_in_project(patterns: List[str]) -> List[str]:
