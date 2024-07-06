@@ -53,9 +53,7 @@ This change is akin to the impact of the Industrial Revolution on social structu
 conda create --name autocoder python=3.10.11
 conda activate autocoder
 pip install -U auto-coder
-## if you want to use private/open-source models, uncomment this line.
-# pip install -U vllm
-ray start --head
+chat-auto-coder
 ```
 
 ## Tutorial

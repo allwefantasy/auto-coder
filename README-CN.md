@@ -17,6 +17,7 @@ Auto-Coder (由Byzer-LLM提供支持)
 
 *最新消息* 🔥
 
+- [2024/07] 发布 Auto-Coder 0.1.115
 - [2024/05] 发布 Auto-Coder 0.1.73
 - [2024/04] 发布 Auto-Coder 0.1.46
 - [2024/03] 发布 Auto-Coder 0.1.25
@@ -50,9 +51,7 @@ Auto-Coder 的影响则远远超过这个范畴。它不仅仅是一个代码生
 conda create --name autocoder python=3.10.11
 conda activate autocoder
 pip install -U auto-coder
-## 如果您想使用私有/开源模型，请取消注释此行。
-# pip install -U vllm
-ray start --head
+chat-auto-coder
 ```
 
 ## 教程
