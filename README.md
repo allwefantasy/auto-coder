@@ -16,7 +16,7 @@ Auto-Coder (powered by Byzer-LLM)
 ---
 
 *Latest News* 🔥
-
+- [2024/07] Release Auto-Coder 0.1.115
 - [2024/06] Release Auto-Coder 0.1.82
 - [2024/05] Release Auto-Coder 0.1.73
 - [2024/04] Release Auto-Coder 0.1.46
