@@ -123,7 +123,10 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         "--auto_merge", nargs="?", const=True, default=False, help=desc["auto_merge"]
     )
     parser.add_argument(
-        "--editblock_similarity", type=float, default=0.9, help=desc["editblock_similarity"]
+        "--editblock_similarity",
+        type=float,
+        default=0.9,
+        help=desc["editblock_similarity"],
     )
 
     parser.add_argument("--image_file", default="", help=desc["image_file"])
@@ -148,10 +151,12 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     revert_parser = subparsers.add_parser("revert", help=desc["revert_desc"])
     revert_parser.add_argument("--file", help=desc["revert_desc"])
+    revert_parser.add_argument("--request_id", default="", help=desc["request_id"])
 
     store_parser = subparsers.add_parser("store", help=desc["store_desc"])
     store_parser.add_argument("--source_dir", default=".", help=desc["source_dir"])
     store_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
+    store_parser.add_argument("--request_id", default="", help=desc["request_id"])
 
     index_parser = subparsers.add_parser("index", help=desc["index_desc"])
     index_parser.add_argument("--file", help=desc["file"])
@@ -160,11 +165,13 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     index_parser.add_argument("--source_dir", required=False, help=desc["source_dir"])
     index_parser.add_argument("--project_type", default="py", help=desc["project_type"])
     index_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
+    index_parser.add_argument("--request_id", default="", help=desc["request_id"])
 
     index_query_parser = subparsers.add_parser(
         "index-query", help=desc["index_query_desc"]
     )  # New subcommand
     index_query_parser.add_argument("--file", help=desc["file"])
+    index_query_parser.add_argument("--request_id", default="", help=desc["request_id"])
     index_query_parser.add_argument("--model", default="", help=desc["model"])
     index_query_parser.add_argument(
         "--index_model", default="", help=desc["index_model"]
@@ -181,6 +188,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     )
 
     doc_parser = subparsers.add_parser("doc", help=desc["doc_desc"])
+    doc_parser.add_argument("--request_id", default="", help=desc["request_id"])
     doc_parser.add_argument("--urls", default="", help=desc["urls"])
     doc_parser.add_argument("--model", default="", help=desc["model"])
     doc_parser.add_argument("--target_file", default="", help=desc["target_file"])
@@ -196,6 +204,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     doc_subparsers = doc_parser.add_subparsers(dest="doc_command")
     doc_build_parse = doc_subparsers.add_parser("build", help="")
+    doc_build_parse.add_argument("--request_id", default="", help=desc["request_id"])
     doc_build_parse.add_argument("--source_dir", default="", help="")
     doc_build_parse.add_argument("--model", default="", help=desc["model"])
     doc_build_parse.add_argument("--emb_model", default="", help=desc["emb_model"])
@@ -217,6 +226,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     )
 
     doc_query_parse = doc_subparsers.add_parser("query", help="")
+    doc_query_parse.add_argument("--request_id", default="", help=desc["request_id"])
     doc_query_parse.add_argument("--query", default="", help="")
     doc_query_parse.add_argument("--source_dir", default=".", help="")
     doc_query_parse.add_argument("--model", default="", help=desc["model"])
@@ -241,6 +251,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     )
 
     doc_chat_parse = doc_subparsers.add_parser("chat", help="")
+    doc_chat_parse.add_argument("--request_id", default="", help=desc["request_id"])
     doc_chat_parse.add_argument("--file", default="", help=desc["file"])
     doc_chat_parse.add_argument("--model", default="", help=desc["model"])
     doc_chat_parse.add_argument("--emb_model", default="", help=desc["emb_model"])
@@ -296,6 +307,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     agent_subparsers = agent_parser.add_subparsers(dest="agent_command")
 
     chat_parser = agent_subparsers.add_parser("chat", help="Run the chat agent")
+    chat_parser.add_argument("--request_id", default="", help=desc["request_id"])
 
     chat_parser.add_argument("--source_dir", default=".", help="Source directory")
     chat_parser.add_argument("--query", help="Query for the planner")
@@ -333,6 +345,9 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     read_project_parser = agent_subparsers.add_parser(
         "project_reader", help="Run the chat agent"
+    )
+    read_project_parser.add_argument(
+        "--request_id", default="", help=desc["request_id"]
     )
 
     read_project_parser.add_argument(
@@ -378,7 +393,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     planner_parser = agent_subparsers.add_parser(
         "planner", help="Run the planner agent"
     )
-
+    planner_parser.add_argument("--request_id", default="", help=desc["request_id"])
     planner_parser.add_argument("--source_dir", default=".", help="Source directory")
     planner_parser.add_argument("--query", help="Query for the planner")
     planner_parser.add_argument("--model", default="", help=desc["model"])

@@ -43,6 +43,7 @@ class RequestQueue:
             request_value = self._queue.get(request_id)
             if request_value:
                 request_value.last_accessed = datetime.now()
+                self._queue.pop(request_id, None)
                 return request_value.value
             return None
 

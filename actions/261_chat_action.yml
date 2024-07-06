@@ -1,0 +1,13 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: auto_coder_server 使用 ServerArgs 添加命令行參數
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/utils/request_queue.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/rag/api_server.py

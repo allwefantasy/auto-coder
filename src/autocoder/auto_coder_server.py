@@ -183,8 +183,7 @@ async def chat(request: QueryRequest, background_tasks: BackgroundTasks):
 
     def process_chat():
         try:
-            result = auto_coder_main(["agent", "chat", "--file", execute_file, "--request_id", request_id])
-            request_queue.add_request(request_id, result)
+            auto_coder_main(["agent", "chat", "--file", execute_file, "--request_id", request_id])            
         finally:
             os.remove(execute_file)
 
@@ -297,7 +296,8 @@ async def get_result(request_id: str):
     result = request_queue.get_request(request_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Result not found or not ready yet")
-    return {"result": result}
+    v = {"result": result}    
+    return v
 
 # 辅助函数
 def find_files_in_project(patterns: List[str]) -> List[str]:

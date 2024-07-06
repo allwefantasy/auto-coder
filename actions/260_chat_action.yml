@@ -1,0 +1,12 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: fastapi 輸出json不支持中文
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/utils/request_queue.py
