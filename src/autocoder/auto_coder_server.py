@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 import os
@@ -6,6 +7,7 @@ import yaml
 import json
 import uuid
 import glob
+import argparse
 from autocoder.common import AutoCoderArgs
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.utils import get_last_yaml_file
@@ -343,6 +345,70 @@ def convert_config_value(key, value):
     else:
         return None
 
+class ServerArgs(BaseModel):
+    host: str = None
+    port: int = 8000
+    uvicorn_log_level: str = "info"
+    allow_credentials: bool = False
+    allowed_origins: List[str] = ["*"]  
+    allowed_methods: List[str] = ["*"]
+    allowed_headers: List[str] = ["*"]
+    api_key: str = None
+    served_model_name: str = None
+    prompt_template: str = None
+    response_role: str = "assistant"
+    ssl_keyfile: str = None
+    ssl_certfile: str = None
+
+def parse_args() -> ServerArgs:
+    parser = argparse.ArgumentParser(description="Auto Coder Server")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind the server to")
+    parser.add_argument("--port", type=int, default=8000, help="Port to bind the server to")
+    parser.add_argument("--uvicorn-log-level", type=str, default="info", help="Uvicorn log level")
+    parser.add_argument("--allow-credentials", action="store_true", help="Allow credentials")
+    parser.add_argument("--allowed-origins", nargs="+", default=["*"], help="Allowed origins")
+    parser.add_argument("--allowed-methods", nargs="+", default=["*"], help="Allowed methods")
+    parser.add_argument("--allowed-headers", nargs="+", default=["*"], help="Allowed headers")
+    parser.add_argument("--api-key", type=str, help="API key for authentication")
+    parser.add_argument("--served-model-name", type=str, help="Name of the served model")
+    parser.add_argument("--prompt-template", type=str, help="Prompt template")
+    parser.add_argument("--response-role", type=str, default="assistant", help="Response role")
+    parser.add_argument("--ssl-keyfile", type=str, help="SSL key file")
+    parser.add_argument("--ssl-certfile", type=str, help="SSL certificate file")
+    
+    args = parser.parse_args()
+    return ServerArgs(**vars(args))
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    
+    args = parse_args()
+    
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=args.allowed_origins,
+        allow_credentials=args.allow_credentials,
+        allow_methods=args.allowed_methods,
+        allow_headers=args.allowed_headers,
+    )
+    
+    if args.api_key:
+        @app.middleware("http")
+        async def authentication(request: Request, call_next):
+            if not request.url.path.startswith("/v1"):
+                return await call_next(request)
+            if request.headers.get("Authorization") != "Bearer " + args.api_key:
+                return JSONResponse(
+                    content={"error": "Unauthorized"},
+                    status_code=401
+                )
+            return await call_next(request)
+
+    uvicorn.run(
+        app,
+        host=args.host,
+        port=args.port,
+        log_level=args.uvicorn_log_level,
+        ssl_keyfile=args.ssl_keyfile,
+        ssl_certfile=args.ssl_certfile
+    )
