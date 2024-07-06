@@ -4,25 +4,7 @@ Chat-Auto-Coder 是一款基于 AutoCoder 开发的交互式聊天工具,可以�
 
 ![](../images/046-01.png)
 
-Chat-Auto-Coder 默认集成了 deespseek_chat 模型, 然而该模型现阶段在代码生成方面还存在问题，
-我们强烈推荐设置下面的模型中的某一个作为编程模型。
 
-1. Sonnet 3.5/ Opus 模型
-2. GPT4o
-
-具体做法：
-
-```shell
-easy-byzerllm deploy sonnet3.5 --token ${MODEL_CLAUDE_TOEKN} --alias sonnet_3_5_chat
-```
-
-然后你可以通过如下命令来来测试是否正常运行：
-
-```shell
-easy-byzerllm chat sonnet_3_5_chat hello
-```
-
-接着你可以通过 `/conf code_model:sonnet_3_5_chat` 来设置代码模型。
 
 ## 功能特点
 
@@ -64,10 +46,38 @@ easy-byzerllm chat sonnet_3_5_chat hello
 
 你也可以打开编辑器自己再改改。
 
+## 设置代码生成模型
+
+Chat-Auto-Coder 默认集成了 deespseek_chat 模型, 然而该模型现阶段在代码生成方面还存在问题，
+我们强烈推荐设置下面的模型中的某一个作为编程模型。
+
+1. Sonnet 3.5/ Opus 模型
+2. GPT4o
+
+具体做法：
+
+```shell
+easy-byzerllm deploy sonnet3.5 --token ${MODEL_CLAUDE_TOEKN} --alias sonnet_3_5_chat
+```
+
+然后你可以通过如下命令来来测试是否正常运行：
+
+```shell
+easy-byzerllm chat sonnet_3_5_chat hello
+```
+
+接着你可以通过 `/conf code_model:sonnet_3_5_chat` 来设置代码模型。
+
 ## 安装
 
-该命令被包含在 `auto-coder` 包中，你可以通过以下命令安装。你可以参考以下文档来安装配置 `auto-coder`。
+快捷方式：
 
+```bash
+pip install -U auto-coder
+chat-auto-coder
+```
+
+如果有问题，参考这篇更详细的：
 [000-AutoCoder_准备旅程](./000-AutoCoder_准备旅程.md)
 
 
