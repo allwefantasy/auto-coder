@@ -4,30 +4,54 @@ Chat-Auto-Coder 是一款基于 AutoCoder 开发的交互式聊天工具,可以�
 
 ![](../images/046-01.png)
 
+Chat-Auto-Coder 默认集成了 deespseek_chat 模型, 然而该模型现阶段在代码生成方面还存在问题，
+我们强烈推荐设置下面的模型中的某一个作为编程模型。
+
+1. Sonnet 3.5/ Opus 模型
+2. GPT4o
+
+具体做法：
+
+```shell
+easy-byzerllm deploy sonnet3.5 --token ${MODEL_CLAUDE_TOEKN} --alias sonnet_3_5_chat
+```
+
+然后你可以通过如下命令来来测试是否正常运行：
+
+```shell
+easy-byzerllm chat sonnet_3_5_chat hello
+```
+
+接着你可以通过 `/conf code_model:sonnet_3_5_chat` 来设置代码模型。
+
 ## 功能特点
 
 - 支持添加/移除项目文件到当前会话中
 - 支持与 AI 就选定文件进行对话交流 
 - 支持查询项目索引，获得相关文件
 - 支持阅读项目
-- 支持配置 AI 生成代码的参数
+- 支持配置 AI 生成代码
 - 命令行交互界面,操作便捷
 - 完善的自动补全功能
+
 
 ## 使用方法
 
 * 将 Chat-Auto-Coder 集成到你的项目中
 * 在项目根目录下运行 `chat-auto-coder` 启动工具，进入命令行交互界面
-* 通过 `/add_files` 命令添加需要讨论的项目文件  
+* 通过 `/conf project_type:xxx` 配置项目类型,支持后缀名，比如 .py, .java, .js多个按逗号分隔。 提供了两个快捷方式： py 和 ts
+* 运行 `/index/build` 根据 project_type 选择文件构建文件索引。
 * 通过 `/ask` 命令开始与 AI 对话,了解该项目
+* 通过 `/add_files` 命令添加需要讨论的项目文件  
 * 通过 `/chat` 可以随意聊天或者针对`/add_files` 内容提问。
 * 通过 `/coding` 让 AI 为你生成代码
 * 对上次commit的代码不满意，可以通过 `/revert` 命令进行回滚
-* 通过 `/conf` 命令配置 AI 生成代码的参数
+* 通过 `/conf code_model:xxxx`  配置代码生成模型。
+* 通过 `/conf human_as_model:true` 设置人类作为模型
+* 通过 `/conf skip_build_index:false` 设置自动开启索引，当你进行 /coding 时，会自动寻找相关文件
 * 使用其他命令如 `/index/build`， `/index/query` 可以构建和查询索引
 * `/exit` 退出程序
 * `/shell` 可以执行shell命令
-
 
 
 比如我想修改一个然后我只需要说出需求即可：

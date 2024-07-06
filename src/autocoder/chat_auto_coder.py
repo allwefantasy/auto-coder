@@ -507,11 +507,16 @@ def revert():
     last_yaml_file = get_last_yaml_file("actions")
     if last_yaml_file:
         file_path = os.path.join("actions", last_yaml_file)
-        auto_coder_main(["revert", "--file", file_path])
-        print(
-            "Reverted the last chat action successfully. Remove the yaml file {file_path}"
-        )
-        os.remove(file_path)
+
+        with redirect_stdout() as output:
+            auto_coder_main(["revert", "--file", file_path])
+        s = output.getvalue()
+        print(s, flush=True)
+        if "Successfully reverted changes" in s:       
+            print(
+                "Reverted the last chat action successfully. Remove the yaml file {file_path}"
+            )
+            os.remove(file_path)
     else:
         print("No previous chat action found to revert.")
 
