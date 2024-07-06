@@ -18,6 +18,16 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Auto Coder",
+      "properties": {
+        "autoCoder.enableActiveEditorTracking": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable tracking of the active editor file"
+        }
+      }
+    },
     "commands": [
       {
         "command": "auto-coder.runInTerminal",
@@ -34,6 +44,10 @@
       {
         "command": "auto-coder.createYaml",
         "title": "auto-coder: 创建YAML文件"
+      },
+      {
+        "command": "auto-coder.chat",
+        "title": "auto-coder: 聊天"
       }
     ],
     "menus": {

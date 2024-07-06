@@ -1,9 +1,8 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
+import * as os from 'os';
 
 function getOrCreateAutoCoderTerminal(): vscode.Terminal {
 	const existingTerminal = vscode.window.terminals.find(t => t.name === 'auto-coder-vscode');
@@ -16,14 +15,55 @@ function getOrCreateAutoCoderTerminal(): vscode.Terminal {
 	}
 }
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated	
 	const outputChannel = vscode.window.createOutputChannel('auto-coder-copilot-extension');
 	outputChannel.appendLine('Congratulations, your extension "auto-coder" is now active!');
+
+function updateActiveEditorFile() {
+	const activeEditor = vscode.window.activeTextEditor;
+	const docs = vscode.workspace.textDocuments
+
+	if (activeEditor && activeEditor.document.uri.scheme === 'file') {
+		const activeFilePath = activeEditor.document.uri.fsPath;
+		const workspaceFolder = vscode.workspace.getWorkspaceFolder(activeEditor.document.uri);
+
+		if (workspaceFolder) {
+			const autoCoderId = path.join(workspaceFolder.uri.fsPath, '.auto-coder');			
+
+			if (fs.existsSync(autoCoderId)) {
+				const idePath = path.join(autoCoderId, 'ide');
+                if (!fs.existsSync(idePath)) {
+					fs.mkdirSync(idePath);
+				}
+				const activeEditorFile = path.join(idePath, 'active_editor.json');
+				const content = {
+					activeFile: { path: activeFilePath },
+					files: docs
+						.filter(doc => doc.uri.scheme === 'file' && doc.uri.fsPath !== activeFilePath)
+						.map(doc => ({ path: doc.uri.fsPath }))
+				};
+				fs.writeFileSync(activeEditorFile, JSON.stringify(content, null, 2));				
+			}
+		}
+	}
+}
+
+	// Register event listeners for editor changes
+	vscode.window.onDidChangeActiveTextEditor(() => {
+		updateActiveEditorFile();
+	});
+
+	vscode.workspace.onDidOpenTextDocument(() => {
+		updateActiveEditorFile();
+	});
+
+	vscode.workspace.onDidCloseTextDocument(() => {
+		updateActiveEditorFile();
+	});
+
+	// Update for the initial state
+	updateActiveEditorFile();
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
@@ -246,9 +286,43 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(createYamlDisposable);
+
+	let chatDisposable = vscode.commands.registerCommand('auto-coder.chat', () => {
+		const panel = vscode.window.createWebviewPanel(
+			'chatView',
+			'Auto Coder Chat',
+			vscode.ViewColumn.One,
+			{
+				enableScripts: true
+			}
+		);
+
+		const scriptPathOnDisk = vscode.Uri.file(path.join(context.extensionPath, 'dist', 'web.js'));
+		const scriptUri = panel.webview.asWebviewUri(scriptPathOnDisk);
+		const colorTheme = vscode.window.activeColorTheme;
+
+		panel.webview.html = getWebviewContent(scriptUri, colorTheme, 'chat');
+
+		// Handle messages from the webview
+		panel.webview.onDidReceiveMessage(
+			message => {
+				switch (message.type) {
+					case 'sendMessage':
+						// Here you would typically send the message to your chat backend
+						// For now, we'll just echo it back
+						panel.webview.postMessage({ type: 'receiveMessage', message: `Echo: ${message.text}` });
+						return;
+				}
+			},
+			undefined,
+			context.subscriptions
+		);
+	});
+
+	context.subscriptions.push(chatDisposable);
 }
 
-function getWebviewContent(scriptUri: vscode.Uri, colorTheme: vscode.ColorTheme) {
+function getWebviewContent(scriptUri: vscode.Uri, colorTheme: vscode.ColorTheme,view:string="create_yaml") {
 	const isDark = colorTheme.kind === vscode.ColorThemeKind.Dark
 	return `
 	  <!DOCTYPE html>
@@ -256,12 +330,13 @@ function getWebviewContent(scriptUri: vscode.Uri, colorTheme: vscode.ColorTheme)
 	  <head>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Create YAML</title>
+		<title></title>
 	  </head>
 	  <body>
 		<div id="root"></div>
 		<script>
 		  window.vscodeColorTheme = ${isDark};
+		  window.view = "${view}";
 		</script>
 		<script src="${scriptUri}"></script>
 	  </body>

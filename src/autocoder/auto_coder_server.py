@@ -1,345 +1,334 @@
-from fastapi import FastAPI, Request
-from autocoder.command_args import parse_args
-from autocoder.auto_coder import Dispacher, resolve_include_path, load_include_files
-from autocoder.common import AutoCoderArgs
-from autocoder.utils.rest import HttpDoc
-from autocoder.agent.planner import Planner
-from autocoder.common.screenshots import gen_screenshots
-from autocoder.common.anything2images import Anything2Images
-from autocoder.rag.simple_rag import SimpleRAG
-from autocoder.index.for_command import index_command, index_query_command
-from autocoder.common import git_utils, code_auto_execute
-from autocoder.rag.llm_wrapper import LLWrapper
-from autocoder.utils.llm_client_interceptors import token_counter_interceptor
-from autocoder.db.store import Store
-from autocoder.rag.api_server import serve, ServerArgs
-from loguru import logger
-import byzerllm
-import yaml
+from fastapi import FastAPI, HTTPException, BackgroundTasks
+from pydantic import BaseModel
+from typing import List, Dict, Optional
 import os
-import hashlib
+import yaml
+import json
+import uuid
+import glob
+from autocoder.common import AutoCoderArgs
+from autocoder.auto_coder import main as auto_coder_main
+from autocoder.utils import get_last_yaml_file
+import subprocess
 
 app = FastAPI()
 
-@app.post("/v1/run")
-async def run(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
-    
-    if args.file:
-        with open(args.file, "r") as f:
-            config = yaml.safe_load(f)
-            config = load_include_files(config, args.file)
-            for key, value in config.items():
-                if key != "file":  
-                    if isinstance(value, str) and value.startswith("ENV"):
-                        from jinja2 import Template
-                        template = Template(value.removeprefix("ENV").strip())
-                        value = template.render(os.environ)
-                    setattr(args, key, value)
+# 全局变量,模拟 chat_auto_coder.py 中的 memory
+memory = {
+    "conversation": [],
+    "current_files": {"files": []},
+    "conf": {},
+    "exclude_dirs": [],
+}
 
-    print("Command Line Arguments:")
-    print("-" * 50)
-    for arg, value in vars(args).items():
-        print(f"{arg:20}: {value}")
-    print("-" * 50)
+base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
+defaut_exclude_dirs = [".git", "node_modules", "dist", "build", "__pycache__"]
 
-    # init store
-    store = Store(os.path.join(args.source_dir, ".auto-coder", "metadata.db"))
-    store.update_token_counter(os.path.basename(args.source_dir), 0, 0)
-                        
-    llm = setup_llm(args)
+# 辅助函数
+def save_memory():
+    with open(os.path.join(base_persist_dir, "memory.json"), "w") as f:
+        json.dump(memory, f, indent=2, ensure_ascii=False)
 
-    args.query = add_query_prefix_suffix(args)
-    
-    dispacher = Dispacher(args, llm)
-    result = dispacher.dispach()
-    
-    return {"result": result}
+def load_memory():
+    global memory
+    memory_path = os.path.join(base_persist_dir, "memory.json")
+    if os.path.exists(memory_path):
+        with open(memory_path, "r") as f:
+            memory = json.load(f)
 
+# 加载内存
+load_memory()
 
-@app.post("/v1/revert")
-async def revert(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
-    
-    repo_path = args.source_dir
+# 定义请求模型
+class FileRequest(BaseModel):
+    files: List[str]
 
-    file_content = open(args.file).read()
-    md5 = hashlib.md5(file_content.encode("utf-8")).hexdigest()
-    file_name = os.path.basename(args.file)
+class QueryRequest(BaseModel):
+    query: str
 
-    revert_result = git_utils.revert_changes(repo_path, f"auto_coder_{file_name}_{md5}")
-    
-    if revert_result:
-        return {"message": f"Successfully reverted changes for {args.file}"}
+class ConfigRequest(BaseModel):
+    key: str
+    value: str
+
+# API 路由
+@app.post("/add_files")
+async def add_files(request: FileRequest):
+    project_root = os.getcwd()
+    existing_files = memory["current_files"]["files"]
+    matched_files = find_files_in_project(request.files)
+
+    files_to_add = [f for f in matched_files if f not in existing_files]
+    if files_to_add:
+        memory["current_files"]["files"].extend(files_to_add)
+        save_memory()
+        return {"message": f"Added files: {[os.path.relpath(f, project_root) for f in files_to_add]}"}
     else:
-        return {"message": f"Failed to revert changes for {args.file}"}
+        return {"message": "All specified files are already in the current session or no matches found."}
 
-@app.post("/v1/store")
-async def store(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
-    
-    from autocoder.utils.print_table import print_table
-    store = Store(os.path.join(args.source_dir, ".auto-coder", "metadata.db"))
-    tc = store.get_token_counter()
+@app.post("/remove_files")
+async def remove_files(request: FileRequest):
+    if "/all" in request.files:
+        memory["current_files"]["files"] = []
+        save_memory()
+        return {"message": "Removed all files."}
+    else:
+        removed_files = []
+        for file in memory["current_files"]["files"]:
+            if os.path.basename(file) in request.files or file in request.files:
+                removed_files.append(file)
+        for file in removed_files:
+            memory["current_files"]["files"].remove(file)
+        save_memory()
+        return {"message": f"Removed files: {[os.path.basename(f) for f in removed_files]}"}
 
-    return {"token_counter": tc}    
+@app.get("/list_files")
+async def list_files():
+    return {"files": memory["current_files"]["files"]}
 
-@app.post("/v1/init")
-async def init(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
-    
-    if not args.project_type:
-        logger.error(
-            "Please specify the project type.The available project types are: py|ts| or any other file extension(for example: .java,.scala), you can specify multiple file extensions separated by commas."
-        )
-        return {"message": "Please specify the project type."}
-    
-    os.makedirs(os.path.join(args.source_dir, "actions"), exist_ok=True)
-    os.makedirs(os.path.join(args.source_dir, ".auto-coder"), exist_ok=True)
+@app.post("/conf")
+async def configure(request: ConfigRequest):
+    memory["conf"][request.key] = request.value
+    save_memory()
+    return {"message": f"Set {request.key} to {request.value}"}
 
-    from autocoder.common.command_templates import create_actions
+@app.delete("/conf/{key}")
+async def delete_config(key: str):
+    if key in memory["conf"]:
+        del memory["conf"][key]
+        save_memory()
+        return {"message": f"Deleted configuration: {key}"}
+    else:
+        raise HTTPException(status_code=404, detail=f"Configuration not found: {key}")
 
-    source_dir = os.path.abspath(args.source_dir)
-    create_actions(
-        source_dir=source_dir,
-        params={"project_type": args.project_type, "source_dir": source_dir},
-    )
-    git_utils.init(os.path.abspath(args.source_dir))
-    
-    return {"message": f"""Successfully initialized auto-coder project in {os.path.abspath(args.source_dir)}."""}
+@app.post("/coding")
+async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
+    memory["conversation"].append({"role": "user", "content": request.query})
+    conf = memory.get("conf", {})
+    current_files = memory["current_files"]["files"]
 
-@app.post("/v1/screenshot")
-async def screenshot(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
-    
-    gen_screenshots(args.urls, args.output)
+    def prepare_chat_yaml():
+        auto_coder_main(["next", "chat_action"])
 
-    return {"message": f"Successfully captured screenshot of {args.urls} and saved to {args.output}"}
+    prepare_chat_yaml()
 
-@app.post("/v1/agent/planner")
-async def agent_planner(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
-    
-    llm = setup_llm(args)
-    planner = Planner(args, llm)
-    result = planner.run(args.query)
+    latest_yaml_file = get_last_yaml_file("actions")
 
-    return {"result": result}
+    if latest_yaml_file:
+        yaml_config = {
+            "include_file": ["./base/base.yml"],
+            "auto_merge": conf.get("auto_merge", "editblock"),
+            "human_as_model": conf.get("human_as_model", "false") == "true",
+            "skip_build_index": conf.get("skip_build_index", "true") == "true",
+            "skip_confirm": conf.get("skip_confirm", "true") == "true",
+            "urls": current_files,
+            "query": request.query
+        }
 
-@app.post("/v1/index")
-async def index(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
-    
-    llm = setup_llm(args)
-    index_command(args, llm)
-    
-    return {"message": "Indexing completed"}
+        for key, value in conf.items():
+            converted_value = convert_config_value(key, value)
+            if converted_value is not None:
+                yaml_config[key] = converted_value
 
-@app.post("/v1/index-query")
-async def index_query(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
-    
-    llm = setup_llm(args)
-    result = index_query_command(args, llm)
-    
-    return result
+        yaml_content = yaml.safe_dump(
+            yaml_config,
+            encoding="utf-8",
+            allow_unicode=True,
+            default_flow_style=False,
+            default_style=None,
+        ).decode("utf-8")
+        execute_file = os.path.join("actions", latest_yaml_file)
+        with open(execute_file, "w") as f:
+            f.write(yaml_content)
 
-@app.post("/v1/doc/build")
-async def doc_build(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
-    
-    llm = setup_llm(args)
-    rag = SimpleRAG(llm=llm, args=args, path=args.source_dir)
-    rag.build()
+        background_tasks.add_task(auto_coder_main, ["--file", execute_file])
+        return {"message": "Coding task started in background"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to create new YAML file.")
 
-    return {"message": "Successfully built the document index"}
+@app.post("/chat")
+async def chat(request: QueryRequest):
+    conf = memory.get("conf", {})
+    current_files = memory["current_files"]["files"]
 
-@app.post("/v1/doc/query")
-async def doc_query(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
+    file_contents = []
+    for file in current_files:
+        if os.path.exists(file):
+            with open(file, "r") as f:
+                content = f.read()
+                s = f"##File: {file}\n{content}\n\n"
+                file_contents.append(s)
 
-    llm = setup_llm(args)
-    rag = SimpleRAG(llm=llm, args=args, path="")
-    response, contexts = rag.stream_search(args.query)
+    all_file_content = "".join(file_contents)
 
-    s = ""
-    for res in response:
-        s += res
-
-    contexts_result = "\n".join(set([ctx["doc_url"] for ctx in contexts]))
-
-    if args.execute:
-        executor = code_auto_execute.CodeAutoExecute(
-            llm, args, code_auto_execute.Mode.SINGLE_ROUND
-        )
-        executor.run(query=args.query, context=s, source_code="")
-
-    result = {
-        "response": s,
-        "contexts": contexts_result
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+        "query": request.query,
+        "context": json.dumps({"file_content": all_file_content}, ensure_ascii=False)
     }
 
-    return result
+    if "emb_model" in conf:
+        yaml_config["emb_model"] = conf["emb_model"]
 
-@app.post("/v1/doc/chat")
-async def doc_chat(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
-    
-    llm = setup_llm(args)
-    rag = SimpleRAG(llm=llm, args=args, path="")
-    rag.stream_chat_repl(args.query)
-    
-    return {"message": "Chat session ended"}
+    yaml_content = yaml.safe_dump(
+        yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
+    ).decode("utf-8")
 
-@app.post("/v1/doc/serve")
-async def doc_serve(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
-    
-    llm = setup_llm(args)
-    server_args = ServerArgs(**{arg: getattr(args, arg) for arg in vars(ServerArgs())})
-    server_args.served_model_name = server_args.served_model_name or args.model
-    rag = SimpleRAG(llm=llm, args=args, path="")
-    llm_wrapper = LLWrapper(llm=llm, rag=rag)
-    serve(llm=llm_wrapper, args=server_args)
-    
-    return {"message": "Serving document retrieval API"}
+    execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-@app.post("/v1/doc2html")
-async def doc2html(request: Request):
-    args_dict = await request.json()
-    args = AutoCoderArgs(**args_dict)
-    
-    llm = setup_llm(args)
-    a2i = Anything2Images(llm=llm, args=args)
-    html = a2i.to_html(args.urls)
-    output_path = os.path.join(
-        args.output, f"{os.path.splitext(os.path.basename(args.urls))[0]}.html"
-    )
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(html)
-        
-    return {"message": f"Successfully converted {args.urls} to {output_path}"}
+    with open(execute_file, "w") as f:
+        f.write(yaml_content)
 
+    try:
+        result = auto_coder_main(["agent", "chat", "--file", execute_file])
+        return {"result": result}
+    finally:
+        os.remove(execute_file)
 
-def setup_llm(args):
-    byzerllm.connect_cluster(address=args.ray_address)
-    llm = byzerllm.ByzerLLM(verbose=args.print_request)
-    
-    if args.human_as_model:
-        from byzerllm.utils.client import EventCallbackResult, EventName
-        from prompt_toolkit import prompt
-        from prompt_toolkit.formatted_text import FormattedText
+@app.post("/ask")
+async def ask(request: QueryRequest):
+    conf = memory.get("conf", {})
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+        "query": request.query
+    }
 
-        def intercept_callback(llm, model: str, input_value):
-            if (
-                input_value[0].get("embedding", False)
-                or input_value[0].get("tokenizer", False)
-                or input_value[0].get("apply_chat_template", False)
-                or input_value[0].get("meta", False)
-            ):
-                return True, None
-            if not input_value[0].pop("human_as_model", None):
-                return True, None
+    if "project_type" in conf:
+        yaml_config["project_type"] = conf["project_type"]
 
-            print(f"Intercepted request to model: {model}")
-            instruction = input_value[0]["instruction"]
-            final_ins = instruction
+    for model_type in ["model", "index_model", "vl_model", "code_model"]:
+        if model_type in conf:
+            yaml_config[model_type] = conf[model_type]
 
-            print(
-                f"""\033[92m {final_ins[0:100]}....\n\n(The instruction to model have be saved in: {args.target_file})\033[0m"""
-            )
+    yaml_content = yaml.safe_dump(
+        yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
+    ).decode("utf-8")
 
-            lines = []
-            while True:
-                line = prompt(FormattedText([("#00FF00", "> ")]), multiline=False)
-                if line.strip() == "EOF":
-                    break
-                lines.append(line)
+    execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-            result = "\n".join(lines)
+    with open(execute_file, "w") as f:
+        f.write(yaml_content)
 
-            if result.lower() == "c":
-                return True, None
-            else:
-                v = [
-                    {
-                        "predict": result,
-                        "input": input_value[0]["instruction"],
-                        "metadata": {},
-                    }
-                ]
-                return False, v
+    try:
+        result = auto_coder_main(["agent", "project_reader", "--file", execute_file])
+        return {"result": result}
+    finally:
+        os.remove(execute_file)
 
-        llm.add_event_callback(EventName.BEFORE_CALL_MODEL, intercept_callback)
-        
-    llm.add_event_callback(EventName.AFTER_CALL_MODEL, token_counter_interceptor)
+@app.post("/revert")
+async def revert():
+    last_yaml_file = get_last_yaml_file("actions")
+    if last_yaml_file:
+        file_path = os.path.join("actions", last_yaml_file)
+        result = auto_coder_main(["revert", "--file", file_path])
+        if "Successfully reverted changes" in result:
+            os.remove(file_path)
+            return {"message": "Reverted the last chat action successfully"}
+        else:
+            return {"message": result}
+    else:
+        return {"message": "No previous chat action found to revert."}
 
-    llm.setup_template(model=args.model, template="auto")
-    llm.setup_default_model_name(args.model)
-    llm.setup_max_output_length(args.model, args.model_max_length)
-    llm.setup_max_input_length(args.model, args.model_max_input_length)
-    llm.setup_extra_generation_params(
-        args.model, {"max_length": args.model_max_length}
-    )
+@app.post("/index/build")
+async def index_build():
+    yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+    yaml_content = """
+include_file:
+  - ./base/base.yml  
+"""
+    with open(yaml_file, "w") as f:
+        f.write(yaml_content)
+    try:
+        result = auto_coder_main(["index", "--file", yaml_file])
+        return {"result": result}
+    finally:
+        os.remove(yaml_file)
 
-    if args.vl_model:
-        vl_model = byzerllm.ByzerLLM()
-        vl_model.setup_default_model_name(args.vl_model)
-        vl_model.setup_template(model=args.vl_model, template="auto")
-        llm.setup_sub_client("vl_model", vl_model)
-        
-    if args.sd_model:
-        sd_model = byzerllm.ByzerLLM()
-        sd_model.setup_default_model_name(args.sd_model)
-        sd_model.setup_template(model=args.sd_model, template="auto") 
-        llm.setup_sub_client("sd_model", sd_model)
-    
-    if args.index_model:
-        index_model = byzerllm.ByzerLLM()
-        index_model.setup_default_model_name(args.index_model)
-        index_model.setup_max_output_length(args.index_model, args.index_model_max_length or args.model_max_length)
-        index_model.setup_max_input_length(args.index_model, args.index_model_max_input_length or args.model_max_input_length)
-        index_model.setup_extra_generation_params(
-            args.index_model,
-            {"max_length": args.index_model_max_length or args.model_max_length},
-        )
-        llm.setup_sub_client("index_model", index_model)
-    
-    if args.emb_model:
-        llm.setup_default_emb_model_name(args.emb_model)
-        emb_model = byzerllm.ByzerLLM()
-        emb_model.setup_default_emb_model_name(args.emb_model)
-        emb_model.setup_template(model=args.emb_model, template="auto")
-        llm.setup_sub_client("emb_model", emb_model) 
-        
-    if args.code_model:
-        code_model = byzerllm.ByzerLLM()
-        code_model.setup_default_model_name(args.code_model)
-        llm.setup_sub_client("code_model", code_model)
-        
-    if args.planner_model:
-        planner_model = byzerllm.ByzerLLM()
-        planner_model.setup_default_model_name(args.planner_model)
-        llm.setup_sub_client("planner_model", planner_model)
-            
-    return llm
+@app.post("/index/query")
+async def index_query(request: QueryRequest):
+    yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+    yaml_content = f"""
+include_file:
+  - ./base/base.yml  
+query: |
+  {request.query}
+"""
+    with open(yaml_file, "w") as f:
+        f.write(yaml_content)
+    try:
+        result = auto_coder_main(["index-query", "--file", yaml_file])
+        return {"result": result}
+    finally:
+        os.remove(yaml_file)
 
-def add_query_prefix_suffix(args):
-    if args.query_prefix:
-        args.query = f"{args.query_prefix}\n{args.query}"
-    if args.query_suffix:
-        args.query = f"{args.query}\n{args.query_suffix}"
-    
-    return args.query
+@app.post("/exclude_dirs")
+async def exclude_dirs(request: FileRequest):
+    new_dirs = request.files
+    existing_dirs = memory.get("exclude_dirs", [])
+    dirs_to_add = [d for d in new_dirs if d not in existing_dirs]
+    if dirs_to_add:
+        existing_dirs.extend(dirs_to_add)
+        memory["exclude_dirs"] = existing_dirs
+        save_memory()
+        return {"message": f"Added exclude dirs: {dirs_to_add}"}
+    else:
+        return {"message": "All specified dirs are already in the exclude list."}
+
+@app.post("/shell")
+async def execute_shell(request: QueryRequest):
+    command = request.query
+    try:
+        result = subprocess.run(command, shell=True, capture_output=True, text=True)
+        if result.returncode == 0:
+            return {"output": result.stdout}
+        else:
+            return {"error": result.stderr}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# 辅助函数
+def find_files_in_project(patterns: List[str]) -> List[str]:
+    project_root = os.getcwd()
+    matched_files = []
+    final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
+
+    for pattern in patterns:
+        if "*" in pattern or "?" in pattern:
+            for file_path in glob.glob(pattern, recursive=True):
+                if os.path.isfile(file_path):
+                    abs_path = os.path.abspath(file_path)
+                    if not any(exclude_dir in abs_path.split(os.sep) for exclude_dir in final_exclude_dirs):
+                        matched_files.append(abs_path)
+        else:
+            is_added = False
+            for root, dirs, files in os.walk(project_root):
+                dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
+                if pattern in files:
+                    matched_files.append(os.path.join(root, pattern))
+                    is_added = True
+                else:
+                    for file in files:
+                        if pattern in os.path.join(root, file):
+                            matched_files.append(os.path.join(root, file))
+                            is_added = True
+            if not is_added:
+                matched_files.append(pattern)
+
+    return list(set(matched_files))
+
+def convert_config_value(key, value):
+    field_info = AutoCoderArgs.model_fields.get(key)
+    if field_info:
+        if value.lower() in ["true", "false"]:
+            return value.lower() == "true"
+        elif "int" in str(field_info.annotation):
+            return int(value)
+        elif "float" in str(field_info.annotation):
+            return float(value)
+        else:
+            return value
+    else:
+        return None
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
