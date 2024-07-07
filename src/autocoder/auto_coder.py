@@ -7,6 +7,13 @@ from autocoder.rag.simple_rag import SimpleRAG
 from autocoder.rag.llm_wrapper import LLWrapper
 from autocoder.utils.llm_client_interceptors import token_counter_interceptor
 from autocoder.db.store import Store
+
+from autocoder.utils.queue_communicate import (
+    queue_communicate,
+    CommunicateEvent,
+    CommunicateEventType,
+)
+
 import yaml
 import os
 import uuid
@@ -92,8 +99,8 @@ def main(input_args: Optional[List[str]] = None):
                         template = Template(value.removeprefix("ENV").strip())
                         value = template.render(os.environ)
                     setattr(args, key, value)
-    if not args.request_id:
-        args.request_id = str(uuid.uuid4())
+    # if not args.request_id:
+    #     args.request_id = str(uuid.uuid4())
 
     if raw_args.command == "revert":
         repo_path = args.source_dir
@@ -213,7 +220,7 @@ def main(input_args: Optional[List[str]] = None):
 
         print(f"Successfully created new action file: {new_file}")
 
-        open_yaml_file_in_editor(new_file)
+        # open_yaml_file_in_editor(new_file)
         return
 
     if args.model:
@@ -384,6 +391,7 @@ def main(input_args: Optional[List[str]] = None):
 
     if raw_args.command == "index-query":  # New subcommand logic
         from autocoder.index.for_command import index_query_command
+
         index_query_command(args, llm)
         return
 
@@ -397,7 +405,9 @@ def main(input_args: Optional[List[str]] = None):
             print("\n\n=============RESPONSE==================\n\n")
             request_queue.add_request(
                 args.request_id,
-                RequestValue(value=DefaultValue(value=v), status=RequestOption.COMPLETED),
+                RequestValue(
+                    value=DefaultValue(value=v), status=RequestOption.COMPLETED
+                ),
             )
             print(v)
             # import time
@@ -419,7 +429,9 @@ def main(input_args: Optional[List[str]] = None):
             print("\n\n=============RESPONSE==================\n\n")
             request_queue.add_request(
                 args.request_id,
-                RequestValue(value=DefaultValue(value=v), status=RequestOption.COMPLETED),
+                RequestValue(
+                    value=DefaultValue(value=v), status=RequestOption.COMPLETED
+                ),
             )
             print(v)
             return
@@ -479,7 +491,9 @@ def main(input_args: Optional[List[str]] = None):
 
             request_queue.add_request(
                 args.request_id,
-                RequestValue(value=StreamValue(value=[""]), status=RequestOption.COMPLETED),
+                RequestValue(
+                    value=StreamValue(value=[""]), status=RequestOption.COMPLETED
+                ),
             )
             print()
             print()
@@ -560,6 +574,13 @@ def main(input_args: Optional[List[str]] = None):
 
     dispacher = Dispacher(args, llm)
     dispacher.dispach()
+    if args.request_id:
+        _ = queue_communicate.send_event_no_wait(
+            request_id=args.request_id,
+            event=CommunicateEvent(
+                event_type=CommunicateEventType.CODE_END.value, data=""
+            ),
+        )
 
 
 if __name__ == "__main__":

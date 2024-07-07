@@ -1,15 +1,21 @@
-import { pollResult } from './utils';
+import { get } from "http";
 
 interface CodingEvent {
     event_type: string;
     data: string;
 }
 
-export async function handleCoding(query: string, port: number | null, updateMessages: (text: string, sender: 'user' | 'bot') => void) {
+export async function handleCoding(query: string, port: number | null,
+    updateMessages: (text: string, sender: 'user' | 'bot') => void,
+    setAwaitingUserResponse: (value: boolean) => void,
+    getMessages: () => { text: string, sender: 'user' | 'bot' }[],
+) {
     if (!port) {
         updateMessages("Error: Server port is not set.", 'bot');
         return;
     }
+
+    console.log(`handleCoding called, messages: ${getMessages().length}`);
 
     try {
         // Send initial coding request
@@ -48,49 +54,60 @@ export async function handleCoding(query: string, port: number | null, updateMes
 
             const eventData: CodingEvent = await eventResponse.json();
 
-            switch (eventData.event_type) {
-                case 'code_start':
-                    updateMessages("AI is ready to start coding. Do you want to proceed? (y/n)", 'bot');
-                    const userResponse = await getUserResponse();
-                    await sendEventResponse(port, requestId, eventData, userResponse);
-                    if (userResponse.toLowerCase() !== 'y') {
-                        updateMessages("Coding process cancelled by user.", 'bot');
-                        return;
-                    }
-                    break;
-                case 'code_merge':
-                    updateMessages("AI has completed coding. Merging changes...", 'bot');
-                    await sendEventResponse(port, requestId, eventData, 'proceed');
-                    break;
-                // Add more cases for other event types as needed
-                default:
-                    updateMessages(`Received event: ${eventData.event_type}`, 'bot');
-                    await sendEventResponse(port, requestId, eventData, 'acknowledged');
+            console.log('Received event:', eventData);
+
+            if (!eventData) {
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1s before polling again
+                continue;
+            }
+
+
+            if (eventData.event_type === 'code_end') {
+                updateMessages('Coding process completed.', 'bot');
+                setAwaitingUserResponse(false);
+                break;
+            }
+            if (eventData.event_type === 'code_start') {
+                await sendEventResponse(port, requestId, eventData, 'proceed');
+            }
+
+            if (eventData.event_type === 'code_merge') {
+                updateMessages(`${eventData.data}.\n Should we merge the code(y/n)？`, 'bot');
+                const userResponse = await getUserResponse(updateMessages, setAwaitingUserResponse, getMessages);
+                await sendEventResponse(port, requestId, eventData, userResponse);
+                if (userResponse.toLowerCase() !== 'y') {
+                    updateMessages("Coding merging cancelled by user.", 'bot');
+                }
             }
         }
-
-        // After all events are processed, poll for the final result
-        const finalResult = await pollResult(port, requestId, (text) => {
-            updateMessages(text, 'bot');
-        });
-
-        if (finalResult.status === 'completed') {
-            updateMessages("Coding process completed successfully.", 'bot');
-        } else {
-            updateMessages("Coding process failed or was interrupted.", 'bot');
-        }
-
     } catch (error) {
         console.error('Error in coding process:', error);
         updateMessages(`An error occurred during the coding process: ${error}`, 'bot');
     }
 }
 
-async function getUserResponse(): Promise<string> {
-    // In a real implementation, this would wait for user input
-    // For now, we'll simulate a "yes" response after a short delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    return 'y';
+async function getUserResponse(updateMessages: (text: string, sender: 'user' | 'bot') => void,
+    setAwaitingUserResponse: (value: boolean) => void,
+    getMessages: () => { text: string, sender: 'user' | 'bot' }[],): Promise<string> {
+    setAwaitingUserResponse(true);
+
+    const messages = getMessages();
+    const initialMessageCount = messages.length;
+    while (true) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const currentMessages = getMessages();
+        console.log(`newMessageCount:${currentMessages.length} initialMessageCount:${initialMessageCount}`);
+        if (getMessages().length > initialMessageCount) {
+            const lastMessage = getMessages()[getMessages().length - 1];
+            if (lastMessage.sender === 'user') {
+                setAwaitingUserResponse(false);
+                const v = lastMessage.text;
+                console.log(`getUserResponse: ${v} ${lastMessage.sender}`);
+                return v;
+            }
+
+        }
+    }
 }
 
 async function sendEventResponse(port: number, requestId: string, event: CodingEvent, response: string) {

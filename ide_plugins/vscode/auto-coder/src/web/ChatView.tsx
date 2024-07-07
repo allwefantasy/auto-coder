@@ -46,6 +46,10 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
     const [confSubCommand, setConfSubCommand] = useState('/set');
     const [configOptions, setConfigOptions] = useState<string[]>([]);
 
+    const [awaitingUserResponse, setAwaitingUserResponse] = useState(false);
+
+    const messagesRef = useRef(messages);
+
     //输入框添加自动补全功能的状态存储
     const [showAutoComplete, setShowAutoComplete] = useState(false);
     const [filteredOptions, setFilteredOptions] = useState<string[]>([]);
@@ -126,6 +130,7 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        messagesRef.current = messages;
     }, [messages]);
 
 
@@ -149,8 +154,7 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
     const sendMessage = async () => {
         if (!isLoading) {
             setIsLoading(true);
-            setMessages(prevMessages => [...prevMessages, { text: inputMessage, sender: 'user' }]);
-
+            setMessages(prevMessages => [...prevMessages, { text: inputMessage, sender: 'user' }]);            
             try {
                 const port = autoCoderServerPort;
                 let request: ApiRequest;
@@ -199,6 +203,27 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                         break;
                 }
 
+                const endpoint = request.endpoint;
+
+                if (endpoint === '/coding') {
+                    if (!awaitingUserResponse) {
+                        handleCoding(
+                            inputMessage,
+                            autoCoderServerPort,
+                            (text, sender) => {
+                                setMessages(prevMessages => {
+                                    const newMessages = [...prevMessages, { text, sender }];
+                                    return newMessages;
+                                });
+                            },
+                            setAwaitingUserResponse,
+                            () => messagesRef.current
+                        );
+
+                    }
+                    return;
+                }
+
                 const response = await fetch(`http://127.0.0.1:${port}${request.endpoint}`, {
                     method: confSubCommand === '/drop' ? 'DELETE' : 'POST',
                     headers: {
@@ -208,14 +233,6 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                 });
 
                 const data = await response.json();
-                const endpoint = request.endpoint;
-
-                if (endpoint === '/coding') {                                        
-                    handleCoding(inputMessage, autoCoderServerPort, (text, sender) => {
-                        setMessages(prevMessages => [...prevMessages, { text, sender }]);
-                    });
-                    return;
-                }
 
                 if (endpoint === '/chat' || endpoint == "/ask") {
                     const requestId = data.request_id;
@@ -291,6 +308,12 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
         setShowAutoComplete(false);
     };
 
+    const handleInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    };
+
     if (!isBackendReady)
         return (
             <div className="flex items-center justify-center h-full">
@@ -348,7 +371,7 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                             type="text"
                             value={inputMessage}
                             onChange={handleInputChange}
-                            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                            onKeyPress={handleInputKeyPress}
                             className={`flex-1 p-2 border rounded-lg ${theme}`}
                             placeholder="Type a message..."
                             disabled={isLoading}

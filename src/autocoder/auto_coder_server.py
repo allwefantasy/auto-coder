@@ -222,7 +222,7 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
 
             auto_coder_main(["--file", execute_file, "--request_id", request_id])
 
-    queue_communicate.send_event(
+    _ = queue_communicate.send_event_no_wait(
         request_id=request_id,
         event=CommunicateEvent(
             event_type=CommunicateEventType.CODE_START.value, data=request.query
@@ -504,7 +504,7 @@ async def extra_event_response(request: EventResponseRequest):
     if not request_id:
         raise HTTPException(status_code=400, detail="request_id is required")
 
-    event = CommunicateEvent(**request.event.dict())
+    event = CommunicateEvent(**request.event)
     response = request.response
     queue_communicate.response_event(request_id, event, response=response)
     return {"message": "success"}

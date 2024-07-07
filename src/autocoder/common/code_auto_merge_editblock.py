@@ -238,7 +238,18 @@ class CodeAutoMergeEditBlock:
                     self.git_require_msg(source_dir=self.args.source_dir, error=str(e))
                 )
                 return
-
+        
+        if self.args.request_id:
+            logger.info("Requesting user permission to merge the code.")
+            response = queue_communicate.send_event(
+                request_id=self.args.request_id,
+                event=CommunicateEvent(
+                    event_type=CommunicateEventType.CODE_MERGE.value, data="我们将修改6文件"
+                ),
+            )
+            if response != "y":
+                logger.warning("User cancelled the code merge operation.")
+                return
         # Now, apply the changes
         for file_path, new_content in file_content_mapping.items():
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -259,7 +270,7 @@ class CodeAutoMergeEditBlock:
                     )
             logger.info(
                 f"Merged changes in {len(file_content_mapping.keys())} files {len(changes_to_make)}/{len(codes)} blocks."
-            )                        
+            )
 
             if unmerged_blocks:
                 logger.info(
@@ -276,6 +287,7 @@ class CodeAutoMergeEditBlock:
                 )
         else:
             logger.warning("No changes were made to any files.")
+                    
 
     def _log_code_block(self, code: str, file_path: str):
         print("```")

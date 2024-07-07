@@ -98,11 +98,11 @@ async function startAutoCoderServer(context: vscode.ExtensionContext) {
 	});
 
 	serverProcess.stdout.on('data', (data) => {
-		console.log(`auto-coder server stdout: ${data}`);
+		// console.log(`auto-coder server stdout: ${data}`);
 	});
 
 	serverProcess.stderr.on('data', (data) => {
-		console.error(`auto-coder server stderr: ${data}`);
+		// console.error(`auto-coder server stderr: ${data}`);
 	});
 
 	serverProcess.on('error', (error) => {

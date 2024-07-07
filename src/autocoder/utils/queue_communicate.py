@@ -61,6 +61,15 @@ class QueueCommunicate(metaclass=Singleton):
             self._send_event_task, request_id, event
         )
         return future.result(timeout=timeout)
+    
+    def send_event_no_wait(self, request_id: str, event: Any, timeout: int = 300)-> Any:
+        if not request_id:
+            return None
+
+        future = self.send_event_executor.submit(
+            self._send_event_task, request_id, event
+        )
+        return future
 
     def _send_event_task(self, request_id: str, event: Any, timeout: int = 300) -> Any:        
         with self.lock:

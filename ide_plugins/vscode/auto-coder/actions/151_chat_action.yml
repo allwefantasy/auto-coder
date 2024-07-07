@@ -1,0 +1,32 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: "if (endpoint === '/coding') {\n                    console.log(\"awaitingUserResponse:\
+  \ \", awaitingUserResponse)             \n                    if (!awaitingUserResponse)\
+  \ {\n                        handleCoding(\n                            inputMessage,\n\
+  \                            autoCoderServerPort,\n                            (text,\
+  \ sender) => {\n                                setMessages(prevMessages => {\n\
+  \                                    const newMessages = [...prevMessages, { text,\
+  \ sender }];                                    \n                             \
+  \       return newMessages;\n                                });\n             \
+  \               },\n                            setAwaitingUserResponse,       \
+  \                     \n                            () => messages\n           \
+  \             );\n                        return;\n                    }\n     \
+  \           } 这段代码有两个问题 awaitingUserResponse 为true, 但是 handleCoding 依然被执行.() =>\
+  \ messages 传递过去后,似乎有闭包导致messages之后不会再被变更"
+query_suffix: python文件仅供参考,不允许修改
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/dark.css
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/create_yaml.tsx
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.tsx
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.css
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/ChatView.tsx
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/utils.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/types.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/coding.ts

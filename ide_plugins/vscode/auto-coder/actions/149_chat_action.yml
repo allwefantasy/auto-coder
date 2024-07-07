@@ -1,0 +1,23 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: 在 coding.ts 获取messagesRef["messages"]长度似乎不会变,是因为闭包或者其他原因导致 messageRef 的值呗复制了而不是引用么?另外发现
+  awaitingUserResponse为true,但是依然还是会执行 handleCoding
+query_suffix: python文件仅供参考,不允许修改
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/dark.css
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/create_yaml.tsx
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.tsx
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.css
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/ChatView.tsx
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/utils.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/types.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/coding.ts
