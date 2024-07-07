@@ -10,6 +10,7 @@ import json
 import uuid
 import glob
 import argparse
+from typing import List
 from autocoder.common import AutoCoderArgs
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.utils import get_last_yaml_file
@@ -76,6 +77,10 @@ class QueryRequest(BaseModel):
 class ConfigRequest(BaseModel):
     key: str
     value: str
+
+
+class FileQueryRequest(BaseModel):
+    query: str
 
 
 # API 路由
@@ -357,6 +362,13 @@ async def get_result(request_id: str):
     
     v = {"result": result.value.value, "status": result.status.value}
     return v
+
+
+@app.post("/extra/files")
+async def find_files(request: FileQueryRequest):
+    query = request.query
+    matched_files = find_files_in_project([query])
+    return {"files": matched_files}
 
 
 # 辅助函数
