@@ -304,21 +304,28 @@ async def revert():
 
 
 @app.post("/index/build")
-async def index_build():
-    yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
-    yaml_content = """
+async def index_build(background_tasks: BackgroundTasks):
+    request_id = str(uuid.uuid4())
+
+    def run():
+        yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+        yaml_content = """
 include_file:
   - ./base/base.yml  
 """
-    with open(yaml_file, "w") as f:
-        f.write(yaml_content)
-    try:
-        auto_coder_main(["index", "--file", yaml_file])
-        return {"message": "Index built successfully"}
-    except Exception as e:
-        return {"message": f"Index built failed: {str(e)}"}
-    finally:
-        os.remove(yaml_file)
+        with open(yaml_file, "w") as f:
+            f.write(yaml_content)
+        try:
+            auto_coder_main(["index", "--file", yaml_file, "--request_id", request_id])
+        finally:
+            os.remove(yaml_file)
+
+    request_queue.add_request(
+        request_id,
+        RequestValue(value=DefaultValue(value=""), status=RequestOption.RUNNING),
+    )
+    background_tasks.add_task(run)
+    return {"request_id": request_id}
 
 
 @app.post("/index/query")
