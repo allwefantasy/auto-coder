@@ -22,6 +22,11 @@ from autocoder.utils.request_queue import (
     DefaultValue,
     RequestOption,
 )
+from autocoder.utils.queue_communicate import (
+    queue_communicate,
+    CommunicateEvent,
+    CommunicateEventType,
+)
 import subprocess
 from byzerllm.utils.langutil import asyncfy_with_semaphore
 from contextlib import contextmanager
@@ -39,6 +44,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @contextmanager
 def redirect_stdout():
     original_stdout = sys.stdout
@@ -47,6 +53,7 @@ def redirect_stdout():
         yield f
     finally:
         sys.stdout = original_stdout
+
 
 # 全局变量,模拟 chat_auto_coder.py 中的 memory
 memory = {
@@ -213,14 +220,16 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
             with open(execute_file, "w") as f:
                 f.write(yaml_content)
 
-            auto_coder_main(["--file", execute_file,"--request_id",request_id])
-    
-    request_queue.add_request(
-        request_id,
-        RequestValue(value=DefaultValue(value=""), status=RequestOption.RUNNING),
+            auto_coder_main(["--file", execute_file, "--request_id", request_id])
+
+    queue_communicate.send_event(
+        request_id=request_id,
+        event=CommunicateEvent(
+            event_type=CommunicateEventType.CODE_START.value, data=request.query
+        ),
     )
-    background_tasks.add_task(process) 
-    return {"request_id": request_id}       
+    background_tasks.add_task(process)
+    return {"request_id": request_id}
 
 
 @app.post("/chat")
@@ -279,7 +288,7 @@ async def chat(request: QueryRequest, background_tasks: BackgroundTasks):
 
 
 @app.post("/ask")
-async def ask(request: QueryRequest,background_tasks: BackgroundTasks):
+async def ask(request: QueryRequest, background_tasks: BackgroundTasks):
     conf = memory.get("conf", {})
     request_id = str(uuid.uuid4())
 
@@ -303,7 +312,16 @@ async def ask(request: QueryRequest,background_tasks: BackgroundTasks):
             f.write(yaml_content)
 
         try:
-            auto_coder_main(["agent", "project_reader", "--file", execute_file,"--request_id", request_id])            
+            auto_coder_main(
+                [
+                    "agent",
+                    "project_reader",
+                    "--file",
+                    execute_file,
+                    "--request_id",
+                    request_id,
+                ]
+            )
         finally:
             os.remove(execute_file)
 
@@ -313,7 +331,7 @@ async def ask(request: QueryRequest,background_tasks: BackgroundTasks):
     )
     background_tasks.add_task(process)
 
-    return {"request_id": request_id}        
+    return {"request_id": request_id}
 
 
 @app.post("/revert")
@@ -324,7 +342,7 @@ async def revert():
         with redirect_stdout() as output:
             auto_coder_main(["revert", "--file", file_path])
         result = output.getvalue()
-        
+
         if "Successfully reverted changes" in result:
             os.remove(file_path)
             return {"message": "Reverted the last chat action successfully"}
@@ -356,8 +374,10 @@ include_file:
         RequestValue(value=DefaultValue(value=""), status=RequestOption.RUNNING),
     )
     background_tasks.add_task(run)
-    v:RequestValue = await asyncfy_with_semaphore(request_queue.get_request_block)(request_id)
-    return {"message": v.value.value}    
+    v: RequestValue = await asyncfy_with_semaphore(request_queue.get_request_block)(
+        request_id
+    )
+    return {"message": v.value.value}
 
 
 @app.post("/index/query")
@@ -377,7 +397,7 @@ async def index_query(request: QueryRequest, background_tasks: BackgroundTasks):
         try:
             auto_coder_main(
                 ["index-query", "--file", yaml_file, "--request_id", request_id]
-            )            
+            )
         finally:
             os.remove(yaml_file)
 
@@ -386,8 +406,10 @@ async def index_query(request: QueryRequest, background_tasks: BackgroundTasks):
         RequestValue(value=DefaultValue(value=""), status=RequestOption.RUNNING),
     )
     background_tasks.add_task(run)
-    v:RequestValue = await asyncfy_with_semaphore(request_queue.get_request_block)(request_id,timeout=60)
-    return {"message": v.value.value}    
+    v: RequestValue = await asyncfy_with_semaphore(request_queue.get_request_block)(
+        request_id, timeout=60
+    )
+    return {"message": v.value.value}
 
 
 @app.post("/exclude_dirs")
@@ -433,24 +455,61 @@ async def find_files(request: FileQueryRequest):
     matched_files = find_files_in_project([query])
     return {"files": matched_files}
 
-@app.route("/extra/events", methods=["GET", "POST"])
-async def get_events(request: Request):
-    request_id = request.query_params.get("request_id")
+
+@app.post("/test/event/send")
+async def test_event(request: Request, background_tasks: BackgroundTasks):
+    request_json = await request.json()
+    request_id = request_json.get("request_id")
     if not request_id:
         raise HTTPException(status_code=400, detail="request_id is required")
-    
-    result = request_queue.get_request(request_id)
-    if result is None:
-        raise HTTPException(status_code=404, detail="No events found for the given request_id")
-    
-    if isinstance(result.value, StreamValue):
-        return {"events": result.value.value}
-    elif isinstance(result.value, DefaultValue):
-        return {"events": [result.value.value]}
-    else:
-        raise HTTPException(status_code=500, detail="Unexpected result type")
 
-# 辅助函数
+    def send_event():
+        v = queue_communicate.send_event(
+            request_id,
+            CommunicateEvent(
+                event_type=CommunicateEventType.CODE_MERGE.value,
+                data="xxxxx",
+            ),
+        )
+        with open("test_event_send.log", "a") as f:
+            f.write(f"Sender {request_id} received response: {v}\n")
+
+    background_tasks.add_task(send_event)
+    return {"message": ""}
+
+
+class EventGetRequest(BaseModel):
+    request_id: str
+
+
+class EventResponseRequest(BaseModel):
+    request_id: str
+    event: Dict[str, str]
+    response: str
+
+
+@app.post("/extra/event/get")
+async def extra_event_get(request: EventGetRequest):
+    request_id = request.request_id
+    if not request_id:
+        raise HTTPException(status_code=400, detail="request_id is required")
+
+    v = queue_communicate.get_event(request_id)
+    return v
+
+
+@app.post("/extra/event/response")
+async def extra_event_response(request: EventResponseRequest):
+    request_id = request.request_id
+    if not request_id:
+        raise HTTPException(status_code=400, detail="request_id is required")
+
+    event = CommunicateEvent(**request.event.dict())
+    response = request.response
+    queue_communicate.response_event(request_id, event, response=response)
+    return {"message": "success"}
+
+
 def find_files_in_project(patterns: List[str]) -> List[str]:
     project_root = os.getcwd()
     matched_files = []

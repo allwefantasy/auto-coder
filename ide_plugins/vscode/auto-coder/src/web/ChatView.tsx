@@ -1,7 +1,9 @@
 import * as React from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { pollResult, checkBackendReady, fetchConfigOptions, fetchFileList } from './utils';
+import { handleCoding } from './coding';
 import './dark.css';
+import { send } from 'process';
 
 interface ChatViewProps {
     isDarkMode: boolean;
@@ -208,7 +210,14 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                 const data = await response.json();
                 const endpoint = request.endpoint;
 
-                if (endpoint === '/chat' || endpoint == "/ask" || endpoint === '/coding') {
+                if (endpoint === '/coding') {                                        
+                    handleCoding(inputMessage, autoCoderServerPort, (text, sender) => {
+                        setMessages(prevMessages => [...prevMessages, { text, sender }]);
+                    });
+                    return;
+                }
+
+                if (endpoint === '/chat' || endpoint == "/ask") {
                     const requestId = data.request_id;
 
                     const _pollResult = await pollResult(autoCoderServerPort || 8081, requestId, (text) => {

@@ -55,6 +55,8 @@ class RequestQueue:
             self._queue.clear()
 
     def add_request(self, request_id, rv: RequestValue):
+        if not request_id:
+            return 
         with self._lock:
             if request_id in self._queue:
                 ori_rv = self._queue[request_id]

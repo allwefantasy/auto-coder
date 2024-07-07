@@ -2,6 +2,11 @@ import os
 from byzerllm.utils.client import code_utils
 from autocoder.common import AutoCoderArgs, git_utils
 from autocoder.common.text import TextSimilarity
+from autocoder.utils.queue_communicate import (
+    queue_communicate,
+    CommunicateEvent,
+    CommunicateEventType,
+)
 from typing import List
 import pydantic
 import byzerllm
@@ -209,9 +214,8 @@ class CodeAutoMergeEditBlock:
                         unmerged_blocks.append((file_path, head, update))
 
         if unmerged_blocks:
-            logger.warning(
-                f"Found {len(unmerged_blocks)} unmerged blocks. Please review them manually then try again."
-            )
+            s = f"Found {len(unmerged_blocks)} unmerged blocks. Please review them manually then try again."
+            logger.warning(s)
             return
 
         ## lint check
@@ -255,7 +259,7 @@ class CodeAutoMergeEditBlock:
                     )
             logger.info(
                 f"Merged changes in {len(file_content_mapping.keys())} files {len(changes_to_make)}/{len(codes)} blocks."
-            )
+            )                        
 
             if unmerged_blocks:
                 logger.info(

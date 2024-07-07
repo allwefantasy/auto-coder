@@ -3,7 +3,20 @@ from queue import Queue
 from typing import Any, Callable, Dict
 import time
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from enum import Enum
 
+
+class CommunicateEventType(Enum):
+    CODE_MERGE = "code_merge"
+    CODE_GENERATE = "code_generate"
+    CODE_START = "code_start"
+    CODE_END = "code_end"
+
+@dataclass(eq=True, frozen=True)
+class CommunicateEvent:
+    event_type: str
+    data: str
 
 class Singleton(type):
     _instances = {}
@@ -41,12 +54,15 @@ class QueueCommunicate(metaclass=Singleton):
                 self.response_queues.pop(request_id)
 
     def send_event(self, request_id: str, event: Any, timeout: int = 300) -> Any:
+        if not request_id:
+            return None
+
         future = self.send_event_executor.submit(
             self._send_event_task, request_id, event
         )
         return future.result(timeout=timeout)
 
-    def _send_event_task(self, request_id: str, event: Any, timeout: int = 300) -> Any:
+    def _send_event_task(self, request_id: str, event: Any, timeout: int = 300) -> Any:        
         with self.lock:
             if request_id not in self.request_queues:
                 self.request_queues[request_id] = Queue()
@@ -59,11 +75,7 @@ class QueueCommunicate(metaclass=Singleton):
             response_queues[event] = response_queue
 
         request_queue.put(event)
-        response = response_queue.get(timeout=timeout)
-
-        with self.lock:
-            del response_queues[event]
-
+        response = response_queue.get(timeout=timeout)        
         return response
 
     def consume_events(self, request_id: str, event_handler: Callable[[Any], Any]):
@@ -73,11 +85,36 @@ class QueueCommunicate(metaclass=Singleton):
         )
         return future.result()
 
+    def get_event(self, request_id: str):
+        with self.lock:
+            if request_id not in self.request_queues:
+                return None
+            request_queue = self.request_queues[request_id]
+            response_queues = self.response_queues[request_id]
+
+        if request_queue.empty():
+            return None
+
+        event = request_queue.get()
+        return event
+
+    def response_event(self, request_id: str, event: Any, response: Any):
+        with self.lock:
+            if request_id not in self.request_queues:
+                return None
+            request_queue = self.request_queues[request_id]
+            response_queues = self.response_queues[request_id]
+
+        with self.lock:
+            response_queue = response_queues.get(event)
+            response_queue.put(response)
+            request_queue.task_done()
+
     def consume_events_no_wait(
         self, request_id: str, event_handler: Callable[[Any], Any]
     ):
         future = self.consume_event_executor.submit(
-            self._consume_events_task, request_id, event_handler
+            self._consume_events_task_no_wait, request_id, event_handler
         )
         return future.result()
 

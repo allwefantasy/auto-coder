@@ -1,0 +1,24 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: if (endpoint === '/coding') {  后面的逻辑,主要放在 coding.ts 文件里.基本逻辑向 /code 接口发起请求,得到reuquest_id,然后监听接口/extra/event/get
+  获取事件,根据事件在对话框里提出问题.比如当监听到 code_start 事件,发送一个消息给用户,询问是否真的开始.用户回复y/n 后再调用/extra/event/reponse
+  进行回复.
+query_suffix: python文件仅供参考,不允许修改
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/dark.css
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/create_yaml.tsx
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/test/extension.test.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/extension.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.tsx
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/index.css
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/package.json
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/ChatView.tsx
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/utils.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/types.ts
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/coding.ts
