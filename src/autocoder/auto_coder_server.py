@@ -433,6 +433,22 @@ async def find_files(request: FileQueryRequest):
     matched_files = find_files_in_project([query])
     return {"files": matched_files}
 
+@app.route("/extra/events", methods=["GET", "POST"])
+async def get_events(request: Request):
+    request_id = request.query_params.get("request_id")
+    if not request_id:
+        raise HTTPException(status_code=400, detail="request_id is required")
+    
+    result = request_queue.get_request(request_id)
+    if result is None:
+        raise HTTPException(status_code=404, detail="No events found for the given request_id")
+    
+    if isinstance(result.value, StreamValue):
+        return {"events": result.value.value}
+    elif isinstance(result.value, DefaultValue):
+        return {"events": [result.value.value]}
+    else:
+        raise HTTPException(status_code=500, detail="Unexpected result type")
 
 # 辅助函数
 def find_files_in_project(patterns: List[str]) -> List[str]:
