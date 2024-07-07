@@ -13,6 +13,7 @@ import argparse
 from autocoder.common import AutoCoderArgs
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.utils import get_last_yaml_file
+from pydantic import BaseModel
 from autocoder.utils.request_queue import (
     request_queue,
     RequestValue,
@@ -120,6 +121,13 @@ async def remove_files(request: FileRequest):
 async def list_files():
     return {"files": memory["current_files"]["files"]}
 
+@app.get("/extra/conf/list")
+async def list_all_config_options():
+    return {"options": list(AutoCoderArgs.model_fields.keys())}
+
+@app.get("/conf/list")
+async def list_user_config():
+    return {"config": memory["conf"]}
 
 @app.post("/conf")
 async def configure(request: ConfigRequest):
