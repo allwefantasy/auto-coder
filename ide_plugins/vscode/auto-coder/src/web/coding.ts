@@ -61,9 +61,7 @@ export async function handleCoding(query: string, port: number | null,
                 continue;
             }
 
-
-            if (eventData.event_type === 'code_end') {
-                updateMessages('Coding process completed.', 'bot');
+            if (eventData.event_type === 'code_end') {                
                 setAwaitingUserResponse(false);
                 break;
             }
@@ -72,7 +70,7 @@ export async function handleCoding(query: string, port: number | null,
             }
 
             if (eventData.event_type === 'code_merge') {
-                updateMessages(`${eventData.data}.\n Should we merge the code(y/n)？`, 'bot');
+                updateMessages(`${eventData.data}`, 'bot');
                 const userResponse = await getUserResponse(updateMessages, setAwaitingUserResponse, getMessages);
                 await sendEventResponse(port, requestId, eventData, userResponse);
                 if (userResponse.toLowerCase() !== 'y') {
@@ -94,9 +92,7 @@ async function getUserResponse(updateMessages: (text: string, sender: 'user' | '
     const messages = getMessages();
     const initialMessageCount = messages.length;
     while (true) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const currentMessages = getMessages();
-        console.log(`newMessageCount:${currentMessages.length} initialMessageCount:${initialMessageCount}`);
+        await new Promise(resolve => setTimeout(resolve, 1000));        
         if (getMessages().length > initialMessageCount) {
             const lastMessage = getMessages()[getMessages().length - 1];
             if (lastMessage.sender === 'user') {

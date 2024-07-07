@@ -241,10 +241,14 @@ class CodeAutoMergeEditBlock:
         
         if self.args.request_id:
             logger.info("Requesting user permission to merge the code.")
+            files_to_modify = len(file_content_mapping.keys())
+            blocks_to_modify = len(changes_to_make)
+            event_data = f"We will modify {files_to_modify} 个文件，total {blocks_to_modify} blocks. Do you want to continue? [y/n]"
             response = queue_communicate.send_event(
                 request_id=self.args.request_id,
                 event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_MERGE.value, data="我们将修改6文件"
+                    event_type=CommunicateEventType.CODE_MERGE.value,
+                    data=event_data
                 ),
             )
             if response != "y":
