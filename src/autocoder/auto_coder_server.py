@@ -23,6 +23,7 @@ from autocoder.utils.request_queue import (
     RequestOption,
 )
 import subprocess
+from byzerllm.utils.langutil import asyncfy_with_semaphore
 
 app = FastAPI()
 
@@ -49,6 +50,7 @@ defaut_exclude_dirs = [".git", "node_modules", "dist", "build", "__pycache__"]
 
 # 辅助函数
 def save_memory():
+    os.makedirs(base_persist_dir, exist_ok=True)
     with open(os.path.join(base_persist_dir, "memory.json"), "w") as f:
         json.dump(memory, f, indent=2, ensure_ascii=False)
 
@@ -123,16 +125,22 @@ async def remove_files(request: FileRequest):
 
 
 @app.get("/list_files")
+@app.post("/list_files")
 async def list_files():
     return {"files": memory["current_files"]["files"]}
 
+
 @app.get("/extra/conf/list")
+@app.post("/extra/conf/list")
 async def list_all_config_options():
     return {"options": list(AutoCoderArgs.model_fields.keys())}
 
+
 @app.get("/conf/list")
+@app.post("/conf/list")
 async def list_user_config():
     return {"config": memory["conf"]}
+
 
 @app.post("/conf")
 async def configure(request: ConfigRequest):
@@ -243,10 +251,12 @@ async def chat(request: QueryRequest, background_tasks: BackgroundTasks):
         finally:
             os.remove(execute_file)
 
-    background_tasks.add_task(process_chat)
-    request_queue(
-        request_id, RequestValue(value=StreamValue([""]), status=RequestOption.RUNNING)
+    request_queue.add_request(
+        request_id,
+        RequestValue(value=StreamValue(value=[""]), status=RequestOption.RUNNING),
     )
+    background_tasks.add_task(process_chat)
+
     return {"request_id": request_id}
 
 
@@ -303,28 +313,42 @@ include_file:
     with open(yaml_file, "w") as f:
         f.write(yaml_content)
     try:
-        result = auto_coder_main(["index", "--file", yaml_file])
-        return {"result": result}
+        auto_coder_main(["index", "--file", yaml_file])
+        return {"message": "Index built successfully"}
+    except Exception as e:
+        return {"message": f"Index built failed: {str(e)}"}
     finally:
         os.remove(yaml_file)
 
 
 @app.post("/index/query")
-async def index_query(request: QueryRequest):
-    yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
-    yaml_content = f"""
-include_file:
-  - ./base/base.yml  
-query: |
-  {request.query}
-"""
-    with open(yaml_file, "w") as f:
-        f.write(yaml_content)
-    try:
-        result = auto_coder_main(["index-query", "--file", yaml_file])
-        return {"result": result}
-    finally:
-        os.remove(yaml_file)
+async def index_query(request: QueryRequest, background_tasks: BackgroundTasks):
+    request_id = str(uuid.uuid4())
+
+    def run():
+        yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+        yaml_content = f"""
+    include_file:
+    - ./base/base.yml  
+    query: |
+    {request.query}
+    """
+        with open(yaml_file, "w") as f:
+            f.write(yaml_content)
+        try:
+            auto_coder_main(
+                ["index-query", "--file", yaml_file, "--request_id", request_id]
+            )            
+        finally:
+            os.remove(yaml_file)
+
+    request_queue.add_request(
+        request_id,
+        RequestValue(value=DefaultValue(value=""), status=RequestOption.RUNNING),
+    )
+    background_tasks.add_task(run)
+    v:RequestValue = await asyncfy_with_semaphore(request_queue.get_request_block)(request_id,timeout=60)
+    return {"message": v.value.value}    
 
 
 @app.post("/exclude_dirs")
@@ -359,8 +383,8 @@ async def get_result(request_id: str):
     result = request_queue.get_request(request_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Result not found or not ready yet")
-    
-    v = {"result": result.value.value, "status": result.status.value}
+
+    v = {"result": result.value, "status": result.status.value}
     return v
 
 

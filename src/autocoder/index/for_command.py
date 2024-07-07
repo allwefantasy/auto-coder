@@ -6,6 +6,13 @@ import tabulate
 import textwrap
 from loguru import logger
 import os
+from autocoder.utils.request_queue import (
+    request_queue,
+    RequestValue,
+    StreamValue,
+    DefaultValue,
+    RequestOption,
+)
 
 def wrap_text_in_table(data, max_width=60):
     """
@@ -73,5 +80,6 @@ def index_query_command(args,llm):
     headers =  TargetFile.model_fields.keys()
     table_data = wrap_text_in_table([[getattr(file_item, name) for name in headers] for file_item in all_results])
     table_output = tabulate.tabulate(table_data, headers, tablefmt="grid")    
-    print(table_output,flush=True)        
+    print(table_output,flush=True)   
+    request_queue.add_request(args.request_id, RequestValue(DefaultValue(table_output), RequestOption.COMPLETED))
     return    

@@ -7,8 +7,13 @@ import * as child_process from 'child_process';
 import * as net from 'net';
 
 let autoCoderServerPort: number | undefined;
+let autoCoderIdPath: string | undefined;
 
 async function selectPythonEnvironment(): Promise<string | undefined> {
+    if (autoCoderIdPath && fs.existsSync(autoCoderIdPath)) {
+        return autoCoderIdPath;
+    }
+
     const condaEnvironments = await getCondaEnvironments();
     const quickPickItems = condaEnvironments.map(env => ({
         label: env.name,
@@ -19,7 +24,14 @@ async function selectPythonEnvironment(): Promise<string | undefined> {
         placeHolder: 'Select a Python environment for auto-coder'
     });
 
-    return selectedItem ? selectedItem.description : undefined;
+    if (selectedItem) {
+        autoCoderIdPath = selectedItem.description;
+        // 保存选择的路径到 VSCode 配置
+        await vscode.workspace.getConfiguration().update('autoCoder.pythonEnvironmentPath', autoCoderIdPath, vscode.ConfigurationTarget.Global);
+        return autoCoderIdPath;
+    }
+
+    return undefined;
 }
 
 async function getCondaEnvironments(): Promise<{ name: string, path: string }[]> {
@@ -117,6 +129,9 @@ async function startAutoCoderServer(context: vscode.ExtensionContext) {
 export function activate(context: vscode.ExtensionContext) {
 	const outputChannel = vscode.window.createOutputChannel('auto-coder-copilot-extension');
 	outputChannel.appendLine('Congratulations, your extension "auto-coder" is now active!');
+
+    // 从 VSCode 配置中读取保存的 Python 环境路径
+    autoCoderIdPath = vscode.workspace.getConfiguration().get('autoCoder.pythonEnvironmentPath');
 
     startAutoCoderServer(context);
 

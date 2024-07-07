@@ -384,7 +384,6 @@ def main(input_args: Optional[List[str]] = None):
 
     if raw_args.command == "index-query":  # New subcommand logic
         from autocoder.index.for_command import index_query_command
-
         index_query_command(args, llm)
         return
 
@@ -398,7 +397,7 @@ def main(input_args: Optional[List[str]] = None):
             print("\n\n=============RESPONSE==================\n\n")
             request_queue.add_request(
                 args.request_id,
-                RequestValue(value=DefaultValue(v), status=RequestOption.COMPLETED),
+                RequestValue(value=DefaultValue(value=v), status=RequestOption.COMPLETED),
             )
             print(v)
             # import time
@@ -420,7 +419,7 @@ def main(input_args: Optional[List[str]] = None):
             print("\n\n=============RESPONSE==================\n\n")
             request_queue.add_request(
                 args.request_id,
-                RequestValue(value=DefaultValue(v), status=RequestOption.COMPLETED),
+                RequestValue(value=DefaultValue(value=v), status=RequestOption.COMPLETED),
             )
             print(v)
             return
@@ -474,13 +473,13 @@ def main(input_args: Optional[List[str]] = None):
                 request_queue.add_request(
                     args.request_id,
                     RequestValue(
-                        value=StreamValue([res[0]]), status=RequestOption.RUNNING
+                        value=StreamValue(value=[res[0]]), status=RequestOption.RUNNING
                     ),
                 )
 
             request_queue.add_request(
                 args.request_id,
-                RequestValue(value=StreamValue([""]), status=RequestOption.COMPLETED),
+                RequestValue(value=StreamValue(value=[""]), status=RequestOption.COMPLETED),
             )
             print()
             print()

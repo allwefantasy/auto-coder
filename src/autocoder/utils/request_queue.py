@@ -1,29 +1,37 @@
 from threading import Lock
 from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
-from typing import Dict,Any,Optional,List,Union
+from typing import Dict, Any, Optional, List, Union
 from enum import Enum
+import time
+
 
 class StreamValue(BaseModel):
-    value:List[Any] = Field(default_factory=list)
+    value: List[Any] = Field(default_factory=list)
+
     class Config:
         arbitrary_types_allowed = True
 
+
 class DefaultValue(BaseModel):
-    value:Optional[Any] = None  
+    value: Optional[Any] = None
+
     class Config:
-        arbitrary_types_allowed = True  
+        arbitrary_types_allowed = True
+
 
 class RequestOption(Enum):
-    RUNNING = 'running'
-    COMPLETED = 'completed'
-    FAILED = 'failed'
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
 
 class RequestValue(BaseModel):
-    value: Optional[Union[StreamValue,DefaultValue]] = None
+    value: Optional[Union[StreamValue, DefaultValue]] = None
     last_accessed: datetime = Field(default_factory=datetime.now)
     created_at: datetime = Field(default_factory=datetime.now)
     status: RequestOption = RequestOption.RUNNING
+
     class Config:
         arbitrary_types_allowed = True
 
@@ -46,29 +54,48 @@ class RequestQueue:
         with self._lock:
             self._queue.clear()
 
-    def add_request(self, request_id, rv:RequestValue):
+    def add_request(self, request_id, rv: RequestValue):
         with self._lock:
             if request_id in self._queue:
-                v = self._queue[request_id].value
-                if isinstance(v, StreamValue):
-                    v.value.extend(rv.value.value)
-                elif isinstance(v, DefaultValue):
-                    self._queue[request_id].value = rv.value
+                ori_rv = self._queue[request_id]
+                ori_rv.status = rv.status
+                if isinstance(ori_rv.value, StreamValue):
+                    ori_rv.value.value.extend(rv.value.value)
+                elif isinstance(ori_rv.value, DefaultValue):
+                    self._queue[request_id] = rv
                 else:
-                    raise ValueError("Invalid request value type")                        
-            self._queue[request_id] = rv
+                    raise ValueError("Invalid request value type")
+            else:
+                self._queue[request_id] = rv
         if len(self._queue) > 5000:
             self.cleanup_old_requests()
 
-    def get_request(self, request_id)->Optional[RequestValue]:
+    def get_request(self, request_id) -> Optional[RequestValue]:
         with self._lock:
             request_value = self._queue.get(request_id)
             if request_value:
                 request_value.last_accessed = datetime.now()
                 if request_value.status == RequestOption.COMPLETED:
                     self._queue.pop(request_id)
-                return request_value.value
+                return request_value
             return None
+
+    def get_request_block(self, request_id, timeout=None) -> Optional[RequestValue]:
+        start_time = time.time()
+        while True:            
+            if request_id not in self._queue:
+                return None
+            request_value = self._queue[request_id]
+            with self._lock:
+                if request_value.status in [
+                    RequestOption.COMPLETED,
+                    RequestOption.FAILED,
+                ]:
+                    self._queue.pop(request_id)                    
+                    return request_value
+            time.sleep(0.01)
+            if timeout and time.time() - start_time > timeout:
+                raise TimeoutError(f"Request {request_id} timeout")
 
     def remove_request(self, request_id):
         with self._lock:

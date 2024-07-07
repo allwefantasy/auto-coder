@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { pollResult, checkBackendReady, fetchConfigOptions, fetchFileList } from './utils';
 import './dark.css';
 
 interface ChatViewProps {
@@ -31,15 +32,52 @@ interface ApiRequest {
 }
 
 export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
+    const [autoCoderServerPort, setAutoCoderServerPort] = useState<number | null>(null);
+    const [isBackendReady, setIsBackendReady] = useState(false);
+
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [autoCoderServerPort, setAutoCoderServerPort] = useState<number | null>(null);
     const messagesEndRef = useRef<null | HTMLDivElement>(null);
     const [files, setFiles] = useState<string[]>([]);
     const [selectedCommand, setSelectedCommand] = useState('/chat');
+    const [confSubCommand, setConfSubCommand] = useState('/set');
+    const [configOptions, setConfigOptions] = useState<string[]>([]);
+
+    //输入框添加自动补全功能的状态存储
+    const [showAutoComplete, setShowAutoComplete] = useState(false);
+    const [filteredOptions, setFilteredOptions] = useState<string[]>([]);
+    const [cursorPosition, setCursorPosition] = useState({ top: 0, left: 0 });
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const theme = isDarkMode ? 'dark' : 'light';
+
+    const updateCursorPosition = useCallback(() => {
+        if (inputRef.current) {
+            const inputElement = inputRef.current;
+            const cursorPosition = inputElement.selectionStart;
+            if (cursorPosition === null) {
+                return;
+            }
+            const textBeforeCursor = inputElement.value.substring(0, cursorPosition);
+            const dummyElement = document.createElement('span');
+            dummyElement.style.font = window.getComputedStyle(inputElement).font;
+            dummyElement.style.visibility = 'hidden';
+            dummyElement.style.position = 'absolute';
+            dummyElement.textContent = textBeforeCursor;
+            document.body.appendChild(dummyElement);
+
+            const inputRect = inputElement.getBoundingClientRect();
+            const dummyRect = dummyElement.getBoundingClientRect();
+
+            document.body.removeChild(dummyElement);
+
+            setCursorPosition({
+                top: inputRect.top + inputRect.height,
+                left: inputRect.left + dummyRect.width
+            });
+        }
+    }, []);
 
     const commands = [
         '/add_files',
@@ -56,6 +94,8 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
         '/shell'
     ];
 
+    const confSubCommands = ['/set', '/drop', '/list'];
+
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
             const message = event.data;
@@ -70,33 +110,42 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
 
     useEffect(() => {
         if (autoCoderServerPort) {
-            fetchFileList();
+            checkBackendReady(autoCoderServerPort, setIsBackendReady);
         }
     }, [autoCoderServerPort]);
+
+
+    useEffect(() => {
+        if (isBackendReady) {
+            updateFileList();
+            updateConfigOptions();
+        }
+    }, [isBackendReady]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
-    const fetchFileList = async () => {
-        try {
-            const response = await fetch(`http://127.0.0.1:${autoCoderServerPort}/list_files`);
-            const data = await response.json();
-            setFiles(data.files);
-            if (data.files.length > 0) {
-                const fileListMessage = `You can ask about the following files: ${data.files.join(', ')}`;
-                setMessages([{ text: fileListMessage, sender: 'bot' }]);
-            } else {
-                setMessages([{ text: "There are no files available to ask about at the moment.", sender: 'bot' }]);
-            }
-        } catch (error) {
-            console.error('Error fetching file list:', error);
-            setMessages([{ text: "An error occurred while fetching the file list.", sender: 'bot' }]);
+
+
+    const updateFileList = async () => {
+        const fileList = await fetchFileList(autoCoderServerPort);
+        setFiles(fileList);
+        if (fileList.length > 0) {
+            const fileListMessage = `You can ask about the following files: ${fileList.join(', ')}`;
+            setMessages([{ text: fileListMessage, sender: 'bot' }]);
+        } else {
+            setMessages([{ text: "There are no files available to ask about at the moment.", sender: 'bot' }]);
         }
     };
 
+    const updateConfigOptions = async () => {
+        const options = await fetchConfigOptions(autoCoderServerPort);
+        setConfigOptions(options);
+    };
+
     const sendMessage = async () => {
-        if (inputMessage.trim() !== '' && !isLoading) {
+        if (!isLoading) {
             setIsLoading(true);
             setMessages(prevMessages => [...prevMessages, { text: inputMessage, sender: 'user' }]);
 
@@ -114,11 +163,23 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                         };
                         break;
                     case '/conf':
-                        const [key, value] = inputMessage.split(':').map(s => s.trim());
-                        request = {
-                            endpoint: '/conf',
-                            body: { key, value } as ConfRequest
-                        };
+                        if (confSubCommand === '/set') {
+                            const [key, value] = inputMessage.split(':').map(s => s.trim());
+                            request = {
+                                endpoint: '/conf',
+                                body: { key, value } as ConfRequest
+                            };
+                        } else if (confSubCommand === '/drop') {
+                            request = {
+                                endpoint: `/conf/${inputMessage.trim()}`,
+                                body: {} as QueryRequest
+                            };
+                        } else {
+                            request = {
+                                endpoint: '/conf/list',
+                                body: {} as QueryRequest
+                            };
+                        }
                         break;
                     case '/list_files':
                     case '/revert':
@@ -137,7 +198,7 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                 }
 
                 const response = await fetch(`http://127.0.0.1:${port}${request.endpoint}`, {
-                    method: 'POST',
+                    method: confSubCommand === '/drop' ? 'DELETE' : 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
@@ -149,20 +210,29 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
 
                 if (endpoint === '/chat' || endpoint === '/coding') {
                     const requestId = data.request_id;
-                    let result = { result: 'NO RESPONSE' };
-                    let count = 90;
-                    do {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                        count--;
-                        const resultResponse = await fetch(`http://127.0.0.1:${port}/result/${requestId}`);
-                        if (resultResponse.status === 200) {
-                            result = await resultResponse.json();
-                            break;
-                        }
-                    } while (count > 0);
-                    setMessages(prevMessages => [...prevMessages, { text: result.result, sender: 'bot' }]);
+
+                    const _pollResult = await pollResult(autoCoderServerPort || 8081, requestId, (text) => {
+                        setMessages(prevMessages => {
+                            const newMessages = [...prevMessages];
+                            if (newMessages[newMessages.length - 1].sender === 'bot') {
+                                newMessages[newMessages.length - 1] = { text, sender: 'bot' };
+                            } else {
+                                newMessages.push({ text, sender: 'bot' });
+                            }
+                            return newMessages;
+                        });
+                    });
+                    if (_pollResult.status === 'failed') {
+                        setMessages(prevMessages => [...prevMessages, { text: 'Failed to get response', sender: 'bot' }]);
+                    }
                 } else {
-                    setMessages(prevMessages => [...prevMessages, { text: JSON.stringify(data, null, 2), sender: 'bot' }]);
+                    if ("message" in data) {
+                        setMessages(prevMessages => [...prevMessages, { text: data.message, sender: 'bot' }]);
+                    }
+                    else {
+                        setMessages(prevMessages => [...prevMessages, { text: JSON.stringify(data, null, 2), sender: 'bot' }]);
+                    }
+
                 }
 
                 if (endpoint === '/list_files') {
@@ -180,9 +250,47 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
 
     const handleCommandSelect = (command: string) => {
         setSelectedCommand(command);
-        setInputMessage(command + ' ');
+        if (command === '/conf') {
+            setConfSubCommand('/set');
+        }
+        setShowAutoComplete(false);
     };
 
+    const handleConfSubCommandSelect = (subCommand: string) => {
+        setConfSubCommand(subCommand);
+        setShowAutoComplete(false);
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setInputMessage(value);
+
+        if (selectedCommand === '/conf' && confSubCommand === '/set') {
+            const filteredOptions = configOptions.filter(option =>
+                option.toLowerCase().startsWith(value.toLowerCase())
+            );
+            setFilteredOptions(filteredOptions);
+            setShowAutoComplete(filteredOptions.length > 0);
+        } else {
+            setShowAutoComplete(false);
+        }
+        updateCursorPosition();
+    };
+
+    const handleAutoCompleteSelect = (option: string) => {
+        setInputMessage(`${option}:`);
+        setShowAutoComplete(false);
+    };
+
+    if (!isBackendReady)
+        return (
+            <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                    <p className="text-lg font-semibold">Waiting Auto-Coder Backend Ready...</p>
+                </div>
+            </div>
+        );
     return (
         <div className={`flex flex-col h-screen ${theme}`}>
             <div className="flex-1 overflow-y-auto p-4">
@@ -196,36 +304,81 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                 <div ref={messagesEndRef} />
             </div>
             <div className="p-4 border-t">
-                <div className="flex">
-                    <select
-                        value={selectedCommand}
-                        onChange={(e) => handleCommandSelect(e.target.value)}
-                        className={`p-2 border-t border-b ${theme}`}
-                        disabled={isLoading}
-                    >
-                        {commands.map((command) => (
-                            <option key={command} value={command}>
-                                {command}
-                            </option>
-                        ))}
-                    </select>
-                    <input
-                        type="text"
-                        value={inputMessage}
-                        onChange={(e) => setInputMessage(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                        className={`flex-1 p-2 border rounded-l-lg ${theme}`}
-                        placeholder="Type a message..."
-                        disabled={isLoading}
-                    />
-
-                    <button
-                        onClick={sendMessage}
-                        className={`p-2 border rounded-r-lg bg-blue-500 text-white ${theme}`}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Sending...' : 'Send'}
-                    </button>
+                <div className="flex flex-col space-y-4 mb-4">
+                    <div className="flex space-x-2">
+                        <select
+                            value={selectedCommand}
+                            onChange={(e) => handleCommandSelect(e.target.value)}
+                            className={`p-2 border rounded-lg ${theme}`}
+                            disabled={isLoading}
+                        >
+                            {commands.map((command) => (
+                                <option key={command} value={command}>
+                                    {command}
+                                </option>
+                            ))}
+                        </select>
+                        {selectedCommand === '/conf' && (
+                            <select
+                                value={confSubCommand}
+                                onChange={(e) => handleConfSubCommandSelect(e.target.value)}
+                                className={`p-2 border rounded-lg ${theme}`}
+                                disabled={isLoading}
+                            >
+                                {confSubCommands.map((subCommand) => (
+                                    <option key={subCommand} value={subCommand}>
+                                        {subCommand}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+                    <div className="flex space-x-2">
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={inputMessage}
+                            onChange={handleInputChange}
+                            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                            className={`flex-1 p-2 border rounded-lg ${theme}`}
+                            placeholder="Type a message..."
+                            disabled={isLoading}
+                            list="config-options"
+                            onSelect={updateCursorPosition}
+                            onKeyUp={updateCursorPosition}
+                            onClick={updateCursorPosition}
+                        />
+                        <button
+                            onClick={sendMessage}
+                            className={`p-2 border rounded-lg bg-blue-500 text-white ${theme}`}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Sending...' : 'Send'}
+                        </button>
+                    </div>
+                    <div className="h-16"> {/* Added a fixed height div for autocomplete spacing */}
+                        {showAutoComplete && (
+                            <div
+                                className={`absolute z-10 bg-white border border-gray-300 rounded-md shadow-lg ${theme}`}
+                                style={{
+                                    top: `${cursorPosition.top}px`,
+                                    left: `${cursorPosition.left}px`,
+                                    maxHeight: '200px',
+                                    overflowY: 'auto'
+                                }}
+                            >
+                                {filteredOptions.map((option, index) => (
+                                    <div
+                                        key={index}
+                                        className={`p-2 cursor-pointer hover:bg-gray-100 ${theme}`}
+                                        onClick={() => handleAutoCompleteSelect(option)}
+                                    >
+                                        {option}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

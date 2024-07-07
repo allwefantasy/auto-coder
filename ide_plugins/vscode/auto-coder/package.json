@@ -25,6 +25,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable tracking of the active editor file"
+        },
+        "autoCoder.pythonEnvironmentPath": {
+          "type": "string",
+          "default": null,
+          "description": "Path to the Python environment for Auto Coder"
         }
       }
     },
@@ -47,7 +52,7 @@
       },
       {
         "command": "auto-coder.chat",
-        "title": "auto-coder: 聊天"
+        "title": "auto-coder: 交互"
       }
     ],
     "menus": {
