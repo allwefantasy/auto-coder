@@ -78,7 +78,7 @@ Auto-Coder (powered by Byzer-LLM)
 ---
 
 *Latest News* 🔥
-
+- [2024/07] Release Auto-Coder 0.1.115
 - [2024/06] Release Auto-Coder 0.1.82
 - [2024/05] Release Auto-Coder 0.1.73
 - [2024/04] Release Auto-Coder 0.1.46
@@ -115,9 +115,7 @@ This change is akin to the impact of the Industrial Revolution on social structu
 conda create --name autocoder python=3.10.11
 conda activate autocoder
 pip install -U auto-coder
-## if you want to use private/open-source models, uncomment this line.
-# pip install -U vllm
-ray start --head
+chat-auto-coder
 ```
 
 ## Tutorial

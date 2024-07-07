@@ -1,0 +1,15 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: auto coder server 新增一个接口 /extra/conf/list,可以获取所有配置选项.获取方式是获取 AutoCoderArgs.model_fields.keys()
+  .新增第二个接口 /conf/list 罗列出所有当前用户配置了的参数也就是 memory["conf"]里的key value
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder_server.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/utils/request_queue.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/rag/api_server.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py

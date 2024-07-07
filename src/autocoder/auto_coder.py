@@ -21,7 +21,13 @@ from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib
 from autocoder.command_args import parse_args
 from autocoder.rag.api_server import serve, ServerArgs
 from autocoder.utils import open_yaml_file_in_editor, get_last_yaml_file
-from autocoder.utils.request_queue import request_queue
+from autocoder.utils.request_queue import (
+    request_queue,
+    RequestValue,
+    StreamValue,
+    DefaultValue,
+    RequestOption,
+)
 from loguru import logger
 import json
 
@@ -390,7 +396,10 @@ def main(input_args: Optional[List[str]] = None):
             v = planner.run(args.query)
             print()
             print("\n\n=============RESPONSE==================\n\n")
-            request_queue.add_request(args.request_id, v)
+            request_queue.add_request(
+                args.request_id,
+                RequestValue(value=DefaultValue(v), status=RequestOption.COMPLETED),
+            )
             print(v)
             # import time
             # time.sleep(3)
@@ -409,7 +418,10 @@ def main(input_args: Optional[List[str]] = None):
             v = project_reader.run(args.query)
             print()
             print("\n\n=============RESPONSE==================\n\n")
-            request_queue.add_request(args.request_id, v)
+            request_queue.add_request(
+                args.request_id,
+                RequestValue(value=DefaultValue(v), status=RequestOption.COMPLETED),
+            )
             print(v)
             return
 
@@ -444,12 +456,12 @@ def main(input_args: Optional[List[str]] = None):
 
             loaded_conversations = (
                 pre_conversations + chat_history["ask_conversation"][-31:]
-            )            
-            if args.collection or args.collections:                
+            )
+            if args.collection or args.collections:
                 rag = SimpleRAG(llm=llm, args=args, path=args.source_dir)
                 response = rag.stream_chat_oai(conversations=loaded_conversations)[0]
                 v = ([item, None] for item in response)
-            else:                
+            else:
                 v = llm.stream_chat_oai(
                     conversations=loaded_conversations, delta_mode=True
                 )
@@ -459,7 +471,17 @@ def main(input_args: Optional[List[str]] = None):
             for res in v:
                 print(res[0], end="")
                 assistant_response += res[0]
-            request_queue.add_request(args.request_id, assistant_response)
+                request_queue.add_request(
+                    args.request_id,
+                    RequestValue(
+                        value=StreamValue([res[0]]), status=RequestOption.RUNNING
+                    ),
+                )
+
+            request_queue.add_request(
+                args.request_id,
+                RequestValue(value=StreamValue([""]), status=RequestOption.COMPLETED),
+            )
             print()
             print()
 

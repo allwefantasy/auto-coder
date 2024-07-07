@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.requests import Request
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 import os
@@ -11,10 +13,25 @@ import argparse
 from autocoder.common import AutoCoderArgs
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.utils import get_last_yaml_file
-from autocoder.utils.request_queue import request_queue
+from autocoder.utils.request_queue import (
+    request_queue,
+    RequestValue,
+    StreamValue,
+    DefaultValue,
+    RequestOption,
+)
 import subprocess
 
 app = FastAPI()
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # 全局变量,模拟 chat_auto_coder.py 中的 memory
 memory = {
@@ -27,10 +44,12 @@ memory = {
 base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
 defaut_exclude_dirs = [".git", "node_modules", "dist", "build", "__pycache__"]
 
+
 # 辅助函数
 def save_memory():
     with open(os.path.join(base_persist_dir, "memory.json"), "w") as f:
         json.dump(memory, f, indent=2, ensure_ascii=False)
+
 
 def load_memory():
     global memory
@@ -39,19 +58,24 @@ def load_memory():
         with open(memory_path, "r") as f:
             memory = json.load(f)
 
+
 # 加载内存
 load_memory()
+
 
 # 定义请求模型
 class FileRequest(BaseModel):
     files: List[str]
 
+
 class QueryRequest(BaseModel):
     query: str
+
 
 class ConfigRequest(BaseModel):
     key: str
     value: str
+
 
 # API 路由
 @app.post("/add_files")
@@ -64,9 +88,14 @@ async def add_files(request: FileRequest):
     if files_to_add:
         memory["current_files"]["files"].extend(files_to_add)
         save_memory()
-        return {"message": f"Added files: {[os.path.relpath(f, project_root) for f in files_to_add]}"}
+        return {
+            "message": f"Added files: {[os.path.relpath(f, project_root) for f in files_to_add]}"
+        }
     else:
-        return {"message": "All specified files are already in the current session or no matches found."}
+        return {
+            "message": "All specified files are already in the current session or no matches found."
+        }
+
 
 @app.post("/remove_files")
 async def remove_files(request: FileRequest):
@@ -82,17 +111,22 @@ async def remove_files(request: FileRequest):
         for file in removed_files:
             memory["current_files"]["files"].remove(file)
         save_memory()
-        return {"message": f"Removed files: {[os.path.basename(f) for f in removed_files]}"}
+        return {
+            "message": f"Removed files: {[os.path.basename(f) for f in removed_files]}"
+        }
+
 
 @app.get("/list_files")
 async def list_files():
     return {"files": memory["current_files"]["files"]}
+
 
 @app.post("/conf")
 async def configure(request: ConfigRequest):
     memory["conf"][request.key] = request.value
     save_memory()
     return {"message": f"Set {request.key} to {request.value}"}
+
 
 @app.delete("/conf/{key}")
 async def delete_config(key: str):
@@ -102,6 +136,7 @@ async def delete_config(key: str):
         return {"message": f"Deleted configuration: {key}"}
     else:
         raise HTTPException(status_code=404, detail=f"Configuration not found: {key}")
+
 
 @app.post("/coding")
 async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
@@ -124,7 +159,7 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
             "skip_build_index": conf.get("skip_build_index", "true") == "true",
             "skip_confirm": conf.get("skip_confirm", "true") == "true",
             "urls": current_files,
-            "query": request.query
+            "query": request.query,
         }
 
         for key, value in conf.items():
@@ -148,57 +183,64 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
     else:
         raise HTTPException(status_code=500, detail="Failed to create new YAML file.")
 
+
 @app.post("/chat")
 async def chat(request: QueryRequest, background_tasks: BackgroundTasks):
     conf = memory.get("conf", {})
     current_files = memory["current_files"]["files"]
 
-    file_contents = []
-    for file in current_files:
-        if os.path.exists(file):
-            with open(file, "r") as f:
-                content = f.read()
-                s = f"##File: {file}\n{content}\n\n"
-                file_contents.append(s)
-
-    all_file_content = "".join(file_contents)
-
-    yaml_config = {
-        "include_file": ["./base/base.yml"],
-        "query": request.query,
-        "context": json.dumps({"file_content": all_file_content}, ensure_ascii=False)
-    }
-
-    if "emb_model" in conf:
-        yaml_config["emb_model"] = conf["emb_model"]
-
-    yaml_content = yaml.safe_dump(
-        yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
-    ).decode("utf-8")
-
-    execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
-
-    with open(execute_file, "w") as f:
-        f.write(yaml_content)
-
     request_id = str(uuid.uuid4())
 
     def process_chat():
+        execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
         try:
-            auto_coder_main(["agent", "chat", "--file", execute_file, "--request_id", request_id])            
+            file_contents = []
+            for file in current_files:
+                if os.path.exists(file):
+                    with open(file, "r") as f:
+                        content = f.read()
+                        s = f"##File: {file}\n{content}\n\n"
+                        file_contents.append(s)
+
+            all_file_content = "".join(file_contents)
+
+            yaml_config = {
+                "include_file": ["./base/base.yml"],
+                "query": request.query,
+                "context": json.dumps(
+                    {"file_content": all_file_content}, ensure_ascii=False
+                ),
+            }
+
+            if "emb_model" in conf:
+                yaml_config["emb_model"] = conf["emb_model"]
+
+            yaml_content = yaml.safe_dump(
+                yaml_config,
+                encoding="utf-8",
+                allow_unicode=True,
+                default_flow_style=False,
+            ).decode("utf-8")
+
+            with open(execute_file, "w") as f:
+                f.write(yaml_content)
+            auto_coder_main(
+                ["agent", "chat", "--file", execute_file, "--request_id", request_id]
+            )
         finally:
             os.remove(execute_file)
 
     background_tasks.add_task(process_chat)
+    request_queue(
+        request_id, RequestValue(value=StreamValue([""]), status=RequestOption.RUNNING)
+    )
     return {"request_id": request_id}
+
 
 @app.post("/ask")
 async def ask(request: QueryRequest):
     conf = memory.get("conf", {})
-    yaml_config = {
-        "include_file": ["./base/base.yml"],
-        "query": request.query
-    }
+    yaml_config = {"include_file": ["./base/base.yml"], "query": request.query}
 
     if "project_type" in conf:
         yaml_config["project_type"] = conf["project_type"]
@@ -222,6 +264,7 @@ async def ask(request: QueryRequest):
     finally:
         os.remove(execute_file)
 
+
 @app.post("/revert")
 async def revert():
     last_yaml_file = get_last_yaml_file("actions")
@@ -235,6 +278,7 @@ async def revert():
             return {"message": result}
     else:
         return {"message": "No previous chat action found to revert."}
+
 
 @app.post("/index/build")
 async def index_build():
@@ -250,6 +294,7 @@ include_file:
         return {"result": result}
     finally:
         os.remove(yaml_file)
+
 
 @app.post("/index/query")
 async def index_query(request: QueryRequest):
@@ -268,6 +313,7 @@ query: |
     finally:
         os.remove(yaml_file)
 
+
 @app.post("/exclude_dirs")
 async def exclude_dirs(request: FileRequest):
     new_dirs = request.files
@@ -281,6 +327,7 @@ async def exclude_dirs(request: FileRequest):
     else:
         return {"message": "All specified dirs are already in the exclude list."}
 
+
 @app.post("/shell")
 async def execute_shell(request: QueryRequest):
     command = request.query
@@ -293,13 +340,16 @@ async def execute_shell(request: QueryRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/result/{request_id}")
+
+@app.get("/extra/result/{request_id}")
 async def get_result(request_id: str):
     result = request_queue.get_request(request_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Result not found or not ready yet")
-    v = {"result": result}    
+    
+    v = {"result": result.value.value, "status": result.status.value}
     return v
+
 
 # 辅助函数
 def find_files_in_project(patterns: List[str]) -> List[str]:
@@ -312,7 +362,10 @@ def find_files_in_project(patterns: List[str]) -> List[str]:
             for file_path in glob.glob(pattern, recursive=True):
                 if os.path.isfile(file_path):
                     abs_path = os.path.abspath(file_path)
-                    if not any(exclude_dir in abs_path.split(os.sep) for exclude_dir in final_exclude_dirs):
+                    if not any(
+                        exclude_dir in abs_path.split(os.sep)
+                        for exclude_dir in final_exclude_dirs
+                    ):
                         matched_files.append(abs_path)
         else:
             is_added = False
@@ -331,6 +384,7 @@ def find_files_in_project(patterns: List[str]) -> List[str]:
 
     return list(set(matched_files))
 
+
 def convert_config_value(key, value):
     field_info = AutoCoderArgs.model_fields.get(key)
     if field_info:
@@ -345,45 +399,67 @@ def convert_config_value(key, value):
     else:
         return None
 
+
 class ServerArgs(BaseModel):
     host: str = None
     port: int = 8000
     uvicorn_log_level: str = "info"
     allow_credentials: bool = False
-    allowed_origins: List[str] = ["*"]  
+    allowed_origins: List[str] = ["*"]
     allowed_methods: List[str] = ["*"]
     allowed_headers: List[str] = ["*"]
-    api_key: str = None
-    served_model_name: str = None
-    prompt_template: str = None
-    response_role: str = "assistant"
-    ssl_keyfile: str = None
-    ssl_certfile: str = None
+    api_key: Optional[str] = None
+    served_model_name: Optional[str] = None
+    prompt_template: Optional[str] = None
+    response_role: Optional[str] = "assistant"
+    ssl_keyfile: Optional[str] = None
+    ssl_certfile: Optional[str] = None
+
 
 def parse_args() -> ServerArgs:
     parser = argparse.ArgumentParser(description="Auto Coder Server")
-    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind the server to")
-    parser.add_argument("--port", type=int, default=8000, help="Port to bind the server to")
-    parser.add_argument("--uvicorn-log-level", type=str, default="info", help="Uvicorn log level")
-    parser.add_argument("--allow-credentials", action="store_true", help="Allow credentials")
-    parser.add_argument("--allowed-origins", nargs="+", default=["*"], help="Allowed origins")
-    parser.add_argument("--allowed-methods", nargs="+", default=["*"], help="Allowed methods")
-    parser.add_argument("--allowed-headers", nargs="+", default=["*"], help="Allowed headers")
+    parser.add_argument(
+        "--host", type=str, default="0.0.0.0", help="Host to bind the server to"
+    )
+    parser.add_argument(
+        "--port", type=int, default=8000, help="Port to bind the server to"
+    )
+    parser.add_argument(
+        "--uvicorn-log-level", type=str, default="info", help="Uvicorn log level"
+    )
+    parser.add_argument(
+        "--allow-credentials", action="store_true", help="Allow credentials"
+    )
+    parser.add_argument(
+        "--allowed-origins", nargs="+", default=["*"], help="Allowed origins"
+    )
+    parser.add_argument(
+        "--allowed-methods", nargs="+", default=["*"], help="Allowed methods"
+    )
+    parser.add_argument(
+        "--allowed-headers", nargs="+", default=["*"], help="Allowed headers"
+    )
     parser.add_argument("--api-key", type=str, help="API key for authentication")
-    parser.add_argument("--served-model-name", type=str, help="Name of the served model")
+    parser.add_argument(
+        "--served-model-name", type=str, help="Name of the served model"
+    )
     parser.add_argument("--prompt-template", type=str, help="Prompt template")
-    parser.add_argument("--response-role", type=str, default="assistant", help="Response role")
+    parser.add_argument(
+        "--response-role", type=str, default="assistant", help="Response role"
+    )
     parser.add_argument("--ssl-keyfile", type=str, help="SSL key file")
     parser.add_argument("--ssl-certfile", type=str, help="SSL certificate file")
-    
+
     args = parser.parse_args()
+    print(vars(args))
     return ServerArgs(**vars(args))
 
-if __name__ == "__main__":
+
+def main():
     import uvicorn
-    
+
     args = parse_args()
-    
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=args.allowed_origins,
@@ -391,17 +467,13 @@ if __name__ == "__main__":
         allow_methods=args.allowed_methods,
         allow_headers=args.allowed_headers,
     )
-    
+
     if args.api_key:
+
         @app.middleware("http")
         async def authentication(request: Request, call_next):
-            if not request.url.path.startswith("/v1"):
-                return await call_next(request)
             if request.headers.get("Authorization") != "Bearer " + args.api_key:
-                return JSONResponse(
-                    content={"error": "Unauthorized"},
-                    status_code=401
-                )
+                return JSONResponse(content={"error": "Unauthorized"}, status_code=401)
             return await call_next(request)
 
     uvicorn.run(
@@ -410,5 +482,10 @@ if __name__ == "__main__":
         port=args.port,
         log_level=args.uvicorn_log_level,
         ssl_keyfile=args.ssl_keyfile,
-        ssl_certfile=args.ssl_certfile
+        ssl_certfile=args.ssl_certfile,
+        workers=1,
     )
+
+
+if __name__ == "__main__":
+    main()

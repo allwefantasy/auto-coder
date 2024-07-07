@@ -68,6 +68,10 @@
         {
           "command": "auto-coder.createYaml",
           "group": "navigation"
+        },
+        {
+          "command": "auto-coder.chat",
+          "group": "navigation"
         }
       ]
     }

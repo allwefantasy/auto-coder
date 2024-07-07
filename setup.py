@@ -33,6 +33,8 @@ setup(
             'auto-coder = autocoder.auto_coder:main',
             'chat-auto-coder = autocoder.chat_auto_coder:main',
             'auto-coder.chat = autocoder.chat_auto_coder:main',
+            'auto-coder-serve = autocoder.auto_coder_server:main',
+            'auto-coder.serve = autocoder.auto_coder_server:main',
         ],
     },
     package_dir={"": "src"},

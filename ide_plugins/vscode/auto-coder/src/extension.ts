@@ -3,6 +3,41 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 import * as os from 'os';
+import * as child_process from 'child_process';
+import * as net from 'net';
+
+let autoCoderServerPort: number | undefined;
+
+async function selectPythonEnvironment(): Promise<string | undefined> {
+    const condaEnvironments = await getCondaEnvironments();
+    const quickPickItems = condaEnvironments.map(env => ({
+        label: env.name,
+        description: env.path
+    }));
+
+    const selectedItem = await vscode.window.showQuickPick(quickPickItems, {
+        placeHolder: 'Select a Python environment for auto-coder'
+    });
+
+    return selectedItem ? selectedItem.description : undefined;
+}
+
+async function getCondaEnvironments(): Promise<{ name: string, path: string }[]> {
+    return new Promise((resolve, reject) => {
+        child_process.exec('conda env list --json', (error, stdout) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+            const envList = JSON.parse(stdout);
+            const environments = envList.envs.map((envPath: string) => ({
+                name: path.basename(envPath),
+                path: envPath
+            }));
+            resolve(environments);
+        });
+    });
+}
 
 function getOrCreateAutoCoderTerminal(): vscode.Terminal {
 	const existingTerminal = vscode.window.terminals.find(t => t.name === 'auto-coder-vscode');
@@ -15,10 +50,75 @@ function getOrCreateAutoCoderTerminal(): vscode.Terminal {
 	}
 }
 
-export function activate(context: vscode.ExtensionContext) {
+function findAvailablePort(startPort: number): Promise<number> {
+    return new Promise((resolve, reject) => {
+        const server = net.createServer();
+        server.listen(startPort, () => {
+            const port = (server.address() as net.AddressInfo).port;
+            server.close(() => resolve(port));
+        });
+        server.on('error', () => {
+            findAvailablePort(startPort + 1).then(resolve, reject);
+        });
+    });
+}
 
+async function startAutoCoderServer(context: vscode.ExtensionContext) {
+    const selectedPythonPath = await selectPythonEnvironment();	
+
+    if (!selectedPythonPath) {
+        vscode.window.showErrorMessage('No Python environment selected. Auto-coder server cannot start.');
+        return;
+    }
+
+    const port = await findAvailablePort(8081);
+    autoCoderServerPort = port; // 保存端口到全局变量
+
+    let autoCoderId: string;
+    if (os.platform() === 'win32') {
+        autoCoderId = path.join(selectedPythonPath, 'Scripts', 'auto-coder-serve.exe');
+    } else {
+        autoCoderId = path.join(selectedPythonPath, 'bin', 'auto-coder-serve');
+    }
+
+    const serverProcess = child_process.spawn(autoCoderId, ['--host', '127.0.0.1', '--port', port.toString()], {
+        cwd: vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : undefined
+    });
+
+    serverProcess.stdout.on('data', (data) => {
+        console.log(`auto-coder server stdout: ${data}`);
+    });
+
+    serverProcess.stderr.on('data', (data) => {
+        console.error(`auto-coder server stderr: ${data}`);
+    });
+
+    serverProcess.on('error', (error) => {
+        console.error(`Failed to start auto-coder server: ${error}`);
+        vscode.window.showErrorMessage(`Failed to start auto-coder server. Please make sure auto-coder is installed and activated in your environment.`);
+        autoCoderServerPort = undefined;
+    });
+
+    serverProcess.on('close', (code) => {
+        console.log(`auto-coder server process exited with code ${code}`);
+        autoCoderServerPort = undefined; // 清除端口
+    });
+
+    context.subscriptions.push({
+        dispose: () => {
+            serverProcess.kill();
+            autoCoderServerPort = undefined; // 清除端口
+        }
+    });
+
+    vscode.window.showInformationMessage(`Auto-coder server started on port ${port}`);
+}
+
+export function activate(context: vscode.ExtensionContext) {
 	const outputChannel = vscode.window.createOutputChannel('auto-coder-copilot-extension');
 	outputChannel.appendLine('Congratulations, your extension "auto-coder" is now active!');
+
+    startAutoCoderServer(context);
 
 function updateActiveEditorFile() {
 	const activeEditor = vscode.window.activeTextEditor;
@@ -307,10 +407,10 @@ function updateActiveEditorFile() {
 		panel.webview.onDidReceiveMessage(
 			message => {
 				switch (message.type) {
-					case 'sendMessage':
-						// Here you would typically send the message to your chat backend
-						// For now, we'll just echo it back
-						panel.webview.postMessage({ type: 'receiveMessage', message: `Echo: ${message.text}` });
+					case 'getAutoCoderServerPort':
+						if (autoCoderServerPort) {
+							panel.webview.postMessage({ type: 'autoCoderServerPort', port: autoCoderServerPort });
+						}
 						return;
 				}
 			},
