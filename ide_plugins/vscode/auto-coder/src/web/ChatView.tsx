@@ -208,7 +208,7 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                 const data = await response.json();
                 const endpoint = request.endpoint;
 
-                if (endpoint === '/chat' || endpoint === '/coding') {
+                if (endpoint === '/chat' || endpoint == "/ask" || endpoint === '/coding') {
                     const requestId = data.request_id;
 
                     const _pollResult = await pollResult(autoCoderServerPort || 8081, requestId, (text) => {

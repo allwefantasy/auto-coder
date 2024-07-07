@@ -24,6 +24,9 @@ from autocoder.utils.request_queue import (
 )
 import subprocess
 from byzerllm.utils.langutil import asyncfy_with_semaphore
+from contextlib import contextmanager
+import sys
+import io
 
 app = FastAPI()
 
@@ -35,6 +38,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@contextmanager
+def redirect_stdout():
+    original_stdout = sys.stdout
+    sys.stdout = f = io.StringIO()
+    try:
+        yield f
+    finally:
+        sys.stdout = original_stdout
 
 # 全局变量,模拟 chat_auto_coder.py 中的 memory
 memory = {
@@ -164,45 +176,51 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
     memory["conversation"].append({"role": "user", "content": request.query})
     conf = memory.get("conf", {})
     current_files = memory["current_files"]["files"]
+    request_id = str(uuid.uuid4())
 
-    def prepare_chat_yaml():
-        auto_coder_main(["next", "chat_action"])
+    def process():
+        def prepare_chat_yaml():
+            auto_coder_main(["next", "chat_action"])
 
-    prepare_chat_yaml()
+        prepare_chat_yaml()
 
-    latest_yaml_file = get_last_yaml_file("actions")
+        latest_yaml_file = get_last_yaml_file("actions")
 
-    if latest_yaml_file:
-        yaml_config = {
-            "include_file": ["./base/base.yml"],
-            "auto_merge": conf.get("auto_merge", "editblock"),
-            "human_as_model": conf.get("human_as_model", "false") == "true",
-            "skip_build_index": conf.get("skip_build_index", "true") == "true",
-            "skip_confirm": conf.get("skip_confirm", "true") == "true",
-            "urls": current_files,
-            "query": request.query,
-        }
+        if latest_yaml_file:
+            yaml_config = {
+                "include_file": ["./base/base.yml"],
+                "auto_merge": conf.get("auto_merge", "editblock"),
+                "human_as_model": conf.get("human_as_model", "false") == "true",
+                "skip_build_index": conf.get("skip_build_index", "true") == "true",
+                "skip_confirm": conf.get("skip_confirm", "true") == "true",
+                "urls": current_files,
+                "query": request.query,
+            }
 
-        for key, value in conf.items():
-            converted_value = convert_config_value(key, value)
-            if converted_value is not None:
-                yaml_config[key] = converted_value
+            for key, value in conf.items():
+                converted_value = convert_config_value(key, value)
+                if converted_value is not None:
+                    yaml_config[key] = converted_value
 
-        yaml_content = yaml.safe_dump(
-            yaml_config,
-            encoding="utf-8",
-            allow_unicode=True,
-            default_flow_style=False,
-            default_style=None,
-        ).decode("utf-8")
-        execute_file = os.path.join("actions", latest_yaml_file)
-        with open(execute_file, "w") as f:
-            f.write(yaml_content)
+            yaml_content = yaml.safe_dump(
+                yaml_config,
+                encoding="utf-8",
+                allow_unicode=True,
+                default_flow_style=False,
+                default_style=None,
+            ).decode("utf-8")
+            execute_file = os.path.join("actions", latest_yaml_file)
+            with open(execute_file, "w") as f:
+                f.write(yaml_content)
 
-        background_tasks.add_task(auto_coder_main, ["--file", execute_file])
-        return {"message": "Coding task started in background"}
-    else:
-        raise HTTPException(status_code=500, detail="Failed to create new YAML file.")
+            auto_coder_main(["--file", execute_file,"--request_id",request_id])
+    
+    request_queue.add_request(
+        request_id,
+        RequestValue(value=DefaultValue(value=""), status=RequestOption.RUNNING),
+    )
+    background_tasks.add_task(process) 
+    return {"request_id": request_id}       
 
 
 @app.post("/chat")
@@ -261,31 +279,41 @@ async def chat(request: QueryRequest, background_tasks: BackgroundTasks):
 
 
 @app.post("/ask")
-async def ask(request: QueryRequest):
+async def ask(request: QueryRequest,background_tasks: BackgroundTasks):
     conf = memory.get("conf", {})
-    yaml_config = {"include_file": ["./base/base.yml"], "query": request.query}
+    request_id = str(uuid.uuid4())
 
-    if "project_type" in conf:
-        yaml_config["project_type"] = conf["project_type"]
+    def process():
+        yaml_config = {"include_file": ["./base/base.yml"], "query": request.query}
 
-    for model_type in ["model", "index_model", "vl_model", "code_model"]:
-        if model_type in conf:
-            yaml_config[model_type] = conf[model_type]
+        if "project_type" in conf:
+            yaml_config["project_type"] = conf["project_type"]
 
-    yaml_content = yaml.safe_dump(
-        yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
-    ).decode("utf-8")
+        for model_type in ["model", "index_model", "vl_model", "code_model"]:
+            if model_type in conf:
+                yaml_config[model_type] = conf[model_type]
 
-    execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+        yaml_content = yaml.safe_dump(
+            yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
+        ).decode("utf-8")
 
-    with open(execute_file, "w") as f:
-        f.write(yaml_content)
+        execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-    try:
-        result = auto_coder_main(["agent", "project_reader", "--file", execute_file])
-        return {"result": result}
-    finally:
-        os.remove(execute_file)
+        with open(execute_file, "w") as f:
+            f.write(yaml_content)
+
+        try:
+            auto_coder_main(["agent", "project_reader", "--file", execute_file,"--request_id", request_id])            
+        finally:
+            os.remove(execute_file)
+
+    request_queue.add_request(
+        request_id,
+        RequestValue(value=DefaultValue(value=""), status=RequestOption.RUNNING),
+    )
+    background_tasks.add_task(process)
+
+    return {"request_id": request_id}        
 
 
 @app.post("/revert")
@@ -293,7 +321,10 @@ async def revert():
     last_yaml_file = get_last_yaml_file("actions")
     if last_yaml_file:
         file_path = os.path.join("actions", last_yaml_file)
-        result = auto_coder_main(["revert", "--file", file_path])
+        with redirect_stdout() as output:
+            auto_coder_main(["revert", "--file", file_path])
+        result = output.getvalue()
+        
         if "Successfully reverted changes" in result:
             os.remove(file_path)
             return {"message": "Reverted the last chat action successfully"}
@@ -325,7 +356,8 @@ include_file:
         RequestValue(value=DefaultValue(value=""), status=RequestOption.RUNNING),
     )
     background_tasks.add_task(run)
-    return {"request_id": request_id}
+    v:RequestValue = await asyncfy_with_semaphore(request_queue.get_request_block)(request_id)
+    return {"message": v.value.value}    
 
 
 @app.post("/index/query")

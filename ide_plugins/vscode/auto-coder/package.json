@@ -52,7 +52,7 @@
       },
       {
         "command": "auto-coder.chat",
-        "title": "auto-coder: 交互"
+        "title": "auto-coder: Auto-Coder.Chat"
       }
     ],
     "menus": {
