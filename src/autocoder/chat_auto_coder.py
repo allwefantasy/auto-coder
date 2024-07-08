@@ -550,25 +550,35 @@ def add_files(args: List[str]):
         memory["current_files"]["groups"] = {}
     groups = memory["current_files"]["groups"]
 
-    if args and args[0] == "/group":                        
-        if args[1] == "/add":
+    if args and args[0] == "/group":
+        if len(args) == 1 or (len(args) == 2 and args[1] == "list"):
+            if not groups:
+                print("\033[93mNo groups defined.\033[0m")
+            else:
+                print("\033[1;34mDefined groups:\033[0m")
+                for group_name, files in groups.items():
+                    print(f"\033[1m{group_name}:\033[0m")
+                    for file in files:
+                        print(f"  \033[92m{os.path.relpath(file, project_root)}\033[0m")
+                    print()
+        elif len(args) >= 3 and args[1] == "/add":
             group_name = args[2]
             groups[group_name] = memory["current_files"]["files"].copy()
-            print(f"Added group '{group_name}' with current files.")
-        elif args[1] == "/drop":
+            print(f"\033[92mAdded group '{group_name}' with current files.\033[0m")
+        elif len(args) >= 3 and args[1] == "/drop":
             group_name = args[2]
             if group_name in groups:
                 del memory["current_files"]["groups"][group_name]
-                print(f"Dropped group '{group_name}'.")
+                print(f"\033[92mDropped group '{group_name}'.\033[0m")
             else:
-                print(f"Group '{group_name}' not found.")
-        else:
+                print(f"\033[93mGroup '{group_name}' not found.\033[0m")
+        elif len(args) >= 2:
             group_name = args[1]
             if group_name in groups:
                 memory["current_files"]["files"] = groups[group_name].copy()
-                print(f"Replaced current files with files from group '{group_name}'.")
+                print(f"\033[92mReplaced current files with files from group '{group_name}'.\033[0m")
             else:
-                print(f"Group '{group_name}' not found.")
+                print(f"\033[93mGroup '{group_name}' not found.\033[0m")
     else:
         existing_files = memory["current_files"]["files"]
         matched_files = find_files_in_project(args)
@@ -576,13 +586,11 @@ def add_files(args: List[str]):
         files_to_add = [f for f in matched_files if f not in existing_files]
         if files_to_add:
             memory["current_files"]["files"].extend(files_to_add)
-            print(
-                f"Added files: {[os.path.relpath(f, project_root) for f in files_to_add]}"
-            )
+            print("\033[92mAdded files:\033[0m")
+            for f in files_to_add:
+                print(f"  \033[92m{os.path.relpath(f, project_root)}\033[0m")
         else:
-            print(
-                "All specified files are already in the current session or no matches found."
-            )
+            print("\033[93mAll specified files are already in the current session or no matches found.\033[0m")
 
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
