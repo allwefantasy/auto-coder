@@ -1,0 +1,14 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: 'memory 现在的格式是: "current_files": {"files": []}, 我们可以支持命名组的概念.通过 /add_files
+  /group /new "修改参数" 就可以将当当前的files复制一份,最终变成这样的格式  "current_files": {"files": [],"修改参数":[]}.
+  /add_files /group 修改参数  则将当前的files 设置为修改参数的文件列表.'
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_editblock.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py

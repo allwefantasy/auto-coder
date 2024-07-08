@@ -154,7 +154,7 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
     const sendMessage = async () => {
         if (!isLoading) {
             setIsLoading(true);
-            setMessages(prevMessages => [...prevMessages, { text: inputMessage, sender: 'user' }]);            
+            setMessages(prevMessages => [...prevMessages, { text: inputMessage, sender: 'user' }]);
             try {
                 const port = autoCoderServerPort;
                 let request: ApiRequest;
