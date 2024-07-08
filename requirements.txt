@@ -2,9 +2,9 @@ contextlib2
 ninja
 # netifaces
 accelerate
-bitsandbytes==0.39.0
+bitsandbytes>=0.39.0
 transformers>=4.35.0
-torch>=2.1.2,<2.3
+torch>=2.1.2
 ray[default]>=2.9.1
 sentencepiece
 pyarrow==12.0.1

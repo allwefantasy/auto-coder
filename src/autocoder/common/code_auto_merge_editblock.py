@@ -238,8 +238,8 @@ class CodeAutoMergeEditBlock:
                     self.git_require_msg(source_dir=self.args.source_dir, error=str(e))
                 )
                 return
-        
-        if self.args.request_id:
+
+        if self.args.request_id and not self.args.silence:
             logger.info("Requesting user permission to merge the code.")
             files_to_modify = len(file_content_mapping.keys())
             blocks_to_modify = len(changes_to_make)
@@ -247,8 +247,7 @@ class CodeAutoMergeEditBlock:
             response = queue_communicate.send_event(
                 request_id=self.args.request_id,
                 event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_MERGE.value,
-                    data=event_data
+                    event_type=CommunicateEventType.CODE_MERGE.value, data=event_data
                 ),
             )
             if response != "y":
@@ -291,7 +290,6 @@ class CodeAutoMergeEditBlock:
                 )
         else:
             logger.warning("No changes were made to any files.")
-                    
 
     def _log_code_block(self, code: str, file_path: str):
         print("```")

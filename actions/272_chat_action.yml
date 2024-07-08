@@ -1,0 +1,11 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: add_files 中,args[0] == "/group" 且 len(args]==2 时 展示所有group, 用console 有好的展示
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py

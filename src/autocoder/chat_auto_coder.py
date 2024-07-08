@@ -78,15 +78,26 @@ def initialize_system():
 
     def init_project():
         if not os.path.exists(".auto-coder"):
-            print_status("The current directory is not initialized as an auto-coder project.", "warning")
-            init_choice = input("  Do you want to initialize the project now? (y/n): ").strip().lower()
+            print_status(
+                "The current directory is not initialized as an auto-coder project.",
+                "warning",
+            )
+            init_choice = (
+                input("  Do you want to initialize the project now? (y/n): ")
+                .strip()
+                .lower()
+            )
             if init_choice == "y":
                 try:
-                    subprocess.run(["auto-coder", "init", "--source_dir", "."], check=True)
+                    subprocess.run(
+                        ["auto-coder", "init", "--source_dir", "."], check=True
+                    )
                     print_status("Project initialized successfully.", "success")
                 except subprocess.CalledProcessError:
                     print_status("Failed to initialize the project.", "error")
-                    print_status("Please try manually: auto-coder init --source_dir .", "warning")
+                    print_status(
+                        "Please try manually: auto-coder init --source_dir .", "warning"
+                    )
                     exit(1)
             else:
                 print_status("Exiting without initialization.", "warning")
@@ -127,12 +138,16 @@ def initialize_system():
             print_status("Initialization completed successfully.", "success")
             return
     except subprocess.TimeoutExpired:
-        print_status("Command timed out. deepseek_chat model might not be available.", "error")
+        print_status(
+            "Command timed out. deepseek_chat model might not be available.", "error"
+        )
     except subprocess.CalledProcessError:
         print_status("Error occurred while checking deepseek_chat model.", "error")
 
     # If deepseek_chat is not available, prompt user to choose a provider
-    print_status("deepseek_chat model is not available. Please choose a provider:", "warning")
+    print_status(
+        "deepseek_chat model is not available. Please choose a provider:", "warning"
+    )
     choice = radiolist_dialog(
         title="Provider Selection",
         text="Select a provider for deepseek_chat model:",
@@ -188,9 +203,13 @@ def initialize_system():
             timeout=30,
             check=True,
         )
-        print_status("Validation successful. deepseek_chat model is now available.", "success")
+        print_status(
+            "Validation successful. deepseek_chat model is now available.", "success"
+        )
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-        print_status("Validation failed. The model might not be deployed correctly.", "error")
+        print_status(
+            "Validation failed. The model might not be deployed correctly.", "error"
+        )
         print_status("Please try to start the model manually using:", "warning")
         print_status("easy-byzerllm chat deepseek_chat 你好", "")
 
@@ -325,15 +344,6 @@ def show_help():
         "  \033[94m/add_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92mAdd files to the current session\033[0m"
     )
     print(
-        "  \033[94m/add_files /group /add <group_name>\033[0m - \033[92mCreate a new group with current files\033[0m"
-    )
-    print(
-        "  \033[94m/add_files /group /drop <group_name>\033[0m - \033[92mRemove a group\033[0m"
-    )
-    print(
-        "  \033[94m/add_files /group <group_name>\033[0m - \033[92mReplace current files with files from a group\033[0m"
-    )
-    print(
         "  \033[94m/remove_files\033[0m \033[93m<file1>,<file2> ...\033[0m - \033[92mRemove files from the current session\033[0m"
     )
     print(
@@ -388,26 +398,17 @@ class CommandCompleter(Completer):
 
         if len(words) > 0:
             if words[0] == "/add_files":
-                if len(words) == 1:
-                    yield Completion("/group", start_position=0)
-                elif words[1] == "/group":
-                    if len(words) == 2:
-                        yield Completion("/add", start_position=0)
-                        yield Completion("/drop", start_position=0)
-                        for group_name in memory["current_files"]["groups"].keys():
-                            yield Completion(group_name, start_position=0)
-                    elif len(words) == 3 and words[2] in ["/add", "/drop"]:
-                        for group_name in memory["current_files"]["groups"].keys():
-                            yield Completion(group_name, start_position=0)
-                else:
-                    new_words = text[len("/add_files") :].strip().split()
-                    current_word = new_words[-1] if new_words else ""
-                    for file_name in self.all_file_names:
-                        if file_name.startswith(current_word):
-                            yield Completion(file_name, start_position=-len(current_word))
-                    for file_name in self.all_files:
-                        if current_word and current_word in file_name:
-                            yield Completion(file_name, start_position=-len(current_word))
+                if len(words) >= 2:
+                    if words[1] == "/group":
+                        return
+                new_words = text[len("/add_files") :].strip().split()
+                current_word = new_words[-1] if new_words else ""
+                for file_name in self.all_file_names:
+                    if file_name.startswith(current_word):
+                        yield Completion(file_name, start_position=-len(current_word))
+                for file_name in self.all_files:
+                    if current_word and current_word in file_name:
+                        yield Completion(file_name, start_position=-len(current_word))
 
             elif words[0] == "/remove_files":
                 new_words = text[len("/remove_files") :].strip().split(",")
@@ -534,7 +535,7 @@ def revert():
             auto_coder_main(["revert", "--file", file_path])
         s = output.getvalue()
         print(s, flush=True)
-        if "Successfully reverted changes" in s:       
+        if "Successfully reverted changes" in s:
             print(
                 "Reverted the last chat action successfully. Remove the yaml file {file_path}"
             )
@@ -545,27 +546,26 @@ def revert():
 
 def add_files(args: List[str]):
     project_root = os.getcwd()
-    
-    if args and args[0] == "/group":
-        if len(args) < 3:
-            print("Invalid group command. Usage: /add_files /group [/add|/drop|group_name] [group_name]")
-            return
-        
+    if "groups" not in memory["current_files"]:
+        memory["current_files"]["groups"] = {}
+    groups = memory["current_files"]["groups"]
+
+    if args and args[0] == "/group":                        
         if args[1] == "/add":
             group_name = args[2]
-            memory["current_files"]["groups"][group_name] = memory["current_files"]["files"].copy()
+            groups[group_name] = memory["current_files"]["files"].copy()
             print(f"Added group '{group_name}' with current files.")
         elif args[1] == "/drop":
             group_name = args[2]
-            if group_name in memory["current_files"]["groups"]:
+            if group_name in groups:
                 del memory["current_files"]["groups"][group_name]
                 print(f"Dropped group '{group_name}'.")
             else:
                 print(f"Group '{group_name}' not found.")
         else:
             group_name = args[1]
-            if group_name in memory["current_files"]["groups"]:
-                memory["current_files"]["files"] = memory["current_files"]["groups"][group_name].copy()
+            if group_name in groups:
+                memory["current_files"]["files"] = groups[group_name].copy()
                 print(f"Replaced current files with files from group '{group_name}'.")
             else:
                 print(f"Group '{group_name}' not found.")
@@ -841,7 +841,7 @@ def main():
             user_input = session.prompt(FormattedText(prompt_message))
 
             if user_input.startswith("/add_files"):
-                args = user_input[len("/add_files"):].strip().split()
+                args = user_input[len("/add_files") :].strip().split()
                 add_files(args)
             elif user_input.startswith("/remove_files"):
                 file_names = user_input[len("/remove_files") :].strip().split(",")
