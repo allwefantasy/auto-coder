@@ -1,0 +1,14 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: 'The current file is a CommonJS module whose imports will produce ''require''
+  calls; however, the referenced file is an ECMAScript module and cannot be imported
+  with ''require''. Consider writing a dynamic ''import("markdown-to-jsx")'' call
+  instead. To convert this file to an ECMAScript module, add the field "type": "module"
+  to'
+query_suffix: python文件仅供参考,不允许修改
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/ChatView.tsx

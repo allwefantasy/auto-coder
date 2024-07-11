@@ -10,6 +10,7 @@ from enum import Enum
 class CommunicateEventType(Enum):
     CODE_MERGE = "code_merge"
     CODE_GENERATE = "code_generate"
+    CODE_MERGE_RESULT = "code_merge_result"
     CODE_START = "code_start"
     CODE_END = "code_end"
 

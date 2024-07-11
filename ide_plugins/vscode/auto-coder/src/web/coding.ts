@@ -62,21 +62,34 @@ export async function handleCoding(query: string, port: number | null,
             }
 
             if (eventData.event_type === 'code_end') {                
+                await sendEventResponse(port, requestId, eventData, 'proceed');
                 setAwaitingUserResponse(false);
+                updateMessages(`coding finished`, 'bot');
                 break;
             }
             if (eventData.event_type === 'code_start') {
                 await sendEventResponse(port, requestId, eventData, 'proceed');
+                updateMessages(`start coding....`, 'bot');
             }
 
-            if (eventData.event_type === 'code_merge') {
-                updateMessages(`${eventData.data}`, 'bot');
-                const userResponse = await getUserResponse(updateMessages, setAwaitingUserResponse, getMessages);
-                await sendEventResponse(port, requestId, eventData, userResponse);
-                if (userResponse.toLowerCase() !== 'y') {
-                    updateMessages("Coding merging cancelled by user.", 'bot');
+            if (eventData.event_type === 'code_merge_result') {
+                await sendEventResponse(port, requestId, eventData, 'proceed');                  
+                const blocks = JSON.parse(eventData.data);                
+                let s = "The following files have been modified:\n";
+                for (const block of blocks) {
+                    s += `File: ${block.file_path}\n`;                    
                 }
+                updateMessages(s, 'bot');                
             }
+
+            // if (eventData.event_type === 'code_merge_confirm') {
+            //     updateMessages(`${eventData.data}`, 'bot');
+            //     const userResponse = await getUserResponse(updateMessages, setAwaitingUserResponse, getMessages);
+            //     await sendEventResponse(port, requestId, eventData, userResponse);
+            //     if (userResponse.toLowerCase() !== 'y') {
+            //         updateMessages("Coding merging cancelled by user.", 'bot');
+            //     }
+            // }
         }
     } catch (error) {
         console.error('Error in coding process:', error);

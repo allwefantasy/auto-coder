@@ -1,0 +1,25 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: "参考如下代码实现一个with 包装器: log_queue = queue.Queue()\n        stop_event = threading.Event()\n\
+  \n        # Start the log writer thread\n        log_writer_thread = threading.Thread(\n\
+  \            target=self._log_writer, args=(log_queue, log_file, stop_event)\n \
+  \       )\n        self.log_file = log_file\n        log_writer_thread.start()\n\
+  \n        class QueueStream:\n            def __init__(self, queue):\n         \
+  \       self.queue = queue\n\n            def write(self, msg):\n              \
+  \  self.queue.put(msg)\n\n            def flush(self):\n                pass\n\n\
+  \        queue_stream = QueueStream(log_queue)\n\n        with redirect_stdout(queue_stream),\
+  \ redirect_stderr(queue_stream):\n            self._memorize(name, memories)\n\n\
+  \        # Signal the log writer to stop and wait for it to finish\n        stop_event.set()\n\
+  \        log_writer_thread.join()\n从而实现可以获取任意方法的认知,并且放到队列,后续可以到多列里获取"
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_editblock.py

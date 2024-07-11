@@ -17,6 +17,7 @@ import tempfile
 from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
+import json
 
 
 class PathAndCode(pydantic.BaseModel):
@@ -242,26 +243,31 @@ class CodeAutoMergeEditBlock:
                     self.git_require_msg(source_dir=self.args.source_dir, error=str(e))
                 )
                 return
-
-        if self.args.request_id and not self.args.silence:
-            logger.info("Requesting user permission to merge the code.")
-            files_to_modify = len(file_content_mapping.keys())
-            blocks_to_modify = len(changes_to_make)
-            event_data = f"We will modify {files_to_modify} 个文件，total {blocks_to_modify} blocks. Do you want to continue? [y/n]"
-            response = queue_communicate.send_event(
-                request_id=self.args.request_id,
-                event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_MERGE.value, data=event_data
-                ),
-            )
-            if response != "y":
-                logger.warning("User cancelled the code merge operation.")
-                return
         # Now, apply the changes
         for file_path, new_content in file_content_mapping.items():
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, "w") as f:
                 f.write(new_content)
+
+        if self.args.request_id:
+            # collect modified files
+            event_data = []
+            for file_path, old_block, new_block in changes_to_make:
+                event_data.append(
+                    {
+                        "file_path": file_path,
+                        "old_block": old_block,
+                        "new_block": new_block,
+                    }
+                )
+
+            _ = queue_communicate.send_event_no_wait(
+                request_id=self.args.request_id,
+                event=CommunicateEvent(
+                    event_type=CommunicateEventType.CODE_MERGE_RESULT.value,
+                    data=json.dumps(event_data, ensure_ascii=False),
+                ),
+            )
 
         if changes_made:
             if not force_skip_git:
@@ -292,4 +298,6 @@ class CodeAutoMergeEditBlock:
             console.print("\n[bold yellow]Replace Block:[/bold yellow]")
             syntax = Syntax(update, "python", theme="monokai", line_numbers=True)
             console.print(Panel(syntax, expand=False))
-        console.print(f"\n[bold red]Total unmerged blocks: {len(unmerged_blocks)}[/bold red]")
+        console.print(
+            f"\n[bold red]Total unmerged blocks: {len(unmerged_blocks)}[/bold red]"
+        )

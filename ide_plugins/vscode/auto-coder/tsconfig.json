@@ -9,6 +9,6 @@
 		"sourceMap": true,
 		"rootDir": "src",
 		"esModuleInterop": true,
-		"strict": true
+		"strict": true,
 	}	
 }

@@ -3,8 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { pollResult, checkBackendReady, fetchConfigOptions, fetchFileList } from './utils';
 import { handleCoding } from './coding';
 import './dark.css';
-import { send } from 'process';
-
+import './chatAnimation.css';
 interface ChatViewProps {
     isDarkMode: boolean;
     vscode: any;
@@ -13,6 +12,7 @@ interface ChatViewProps {
 interface Message {
     text: string;
     sender: 'user' | 'bot';
+    animationKey?: string;
 }
 
 interface FilesRequest {
@@ -57,6 +57,7 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     const theme = isDarkMode ? 'dark' : 'light';
+    
 
     const updateCursorPosition = useCallback(() => {
         if (inputRef.current) {
@@ -134,7 +135,6 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
     }, [messages]);
 
 
-
     const updateFileList = async () => {
         const fileList = await fetchFileList(autoCoderServerPort);
         setFiles(fileList);
@@ -154,7 +154,12 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
     const sendMessage = async () => {
         if (!isLoading) {
             setIsLoading(true);
-            setMessages(prevMessages => [...prevMessages, { text: inputMessage, sender: 'user' }]);
+            const newUserMessage: Message = { 
+                text: inputMessage, 
+                sender: 'user', 
+                animationKey: `msg-${Date.now()}` 
+            };
+            setMessages(prevMessages => [...prevMessages, newUserMessage]);
             try {
                 const port = autoCoderServerPort;
                 let request: ApiRequest;
@@ -238,15 +243,20 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                     const requestId = data.request_id;
 
                     const _pollResult = await pollResult(autoCoderServerPort || 8081, requestId, (text) => {
-                        setMessages(prevMessages => {
-                            const newMessages = [...prevMessages];
-                            if (newMessages[newMessages.length - 1].sender === 'bot') {
-                                newMessages[newMessages.length - 1] = { text, sender: 'bot' };
-                            } else {
-                                newMessages.push({ text, sender: 'bot' });
-                            }
-                            return newMessages;
-                        });
+                    setMessages(prevMessages => {
+                        const newMessages = [...prevMessages];
+                        const lastMessage = newMessages[newMessages.length - 1];
+                        if (lastMessage.sender === 'bot') {
+                            lastMessage.text = text;
+                        } else {
+                            newMessages.push({ 
+                                text, 
+                                sender: 'bot', 
+                                animationKey: `msg-${Date.now()}` 
+                            });
+                        }
+                        return newMessages;
+                    });
                     });
                     if (_pollResult.status === 'failed') {
                         setMessages(prevMessages => [...prevMessages, { text: 'Failed to get response', sender: 'bot' }]);
@@ -319,18 +329,30 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
             <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                    <p className="text-lg font-semibold">Waiting Auto-Coder Backend Ready...</p>
+                    <p className="text-lg font-semibold">Waiting Auto-Coder.Chat Ready...</p>
                 </div>
             </div>
-        );
+        );       
     return (
         <div className={`flex flex-col h-screen ${theme}`}>
             <div className="flex-1 overflow-y-auto p-4">
-                {messages.map((message, index) => (
-                    <div key={index} className={`mb-4 ${message.sender === 'user' ? 'text-right' : 'text-left'}`}>
-                        <span className={`inline-block p-2 rounded-lg ${message.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'}`}>
-                            {message.text}
-                        </span>
+                {messages.map((message) => (
+                    <div 
+                        key={message.animationKey} 
+                        className={`mb-4 ${message.sender === 'user' ? 'text-right' : 'text-left'} message-animation`}
+                    >
+                        <div 
+                            className={`inline-block p-2 rounded-lg ${
+                                message.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'
+                            }`}
+                        >
+                            {message.text.split('\n').map((line, i) => (
+                                <React.Fragment key={i}>
+                                    {line}
+                                    {i !== message.text.split('\n').length - 1 && <br />}
+                                </React.Fragment>
+                            ))}
+                        </div>
                     </div>
                 ))}
                 <div ref={messagesEndRef} />

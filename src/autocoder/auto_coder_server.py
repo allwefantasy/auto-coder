@@ -222,6 +222,13 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
                 f.write(yaml_content)
 
             auto_coder_main(["--file", execute_file, "--request_id", request_id])
+            
+            _ = queue_communicate.send_event_no_wait(
+                request_id=request_id,
+                event=CommunicateEvent(
+                    event_type=CommunicateEventType.CODE_END.value, data=""
+                ),
+            )
 
     _ = queue_communicate.send_event_no_wait(
         request_id=request_id,

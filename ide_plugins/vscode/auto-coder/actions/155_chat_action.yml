@@ -1,0 +1,28 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: "web.js:35661 Uncaught ReferenceError: module is not defined\n    at web.js:35661:11\n\
+  \    at web.js:35663:12\n(anonymous) @ web.js:35661\n(anonymous) @ web.js:35663\n\
+  web.js:35643 Uncaught ReferenceError: require is not defined\n    at __webpack_require__.f.require\
+  \ (web.js:35643:15)\n    at web.js:35568:40\n    at Array.reduce (<anonymous>)\n\
+  \    at __webpack_require__.e (web.js:35567:67)\n    at web.js:35077:29\n    at\
+  \ commitHookEffectListMount (web.js:26065:26)\n    at commitPassiveMountOnFiber\
+  \ (web.js:27846:11)\n    at commitPassiveMountEffects_complete (web.js:27806:9)\n\
+  \    at commitPassiveMountEffects_begin (web.js:27793:7)\n    at commitPassiveMountEffects\
+  \ (web.js:27781:3)\n__webpack_require__.f.require @ web.js:35643\n(anonymous) @\
+  \ web.js:35568\n__webpack_require__.e @ web.js:35567\n(anonymous) @ web.js:35077\n\
+  commitHookEffectListMount @ web.js:26065\ncommitPassiveMountOnFiber @ web.js:27846\n\
+  commitPassiveMountEffects_complete @ web.js:27806\ncommitPassiveMountEffects_begin\
+  \ @ web.js:27793\ncommitPassiveMountEffects @ web.js:27781\nflushPassiveEffectsImpl\
+  \ @ web.js:29954\nflushPassiveEffects @ web.js:29899\n(anonymous) @ web.js:29684\n\
+  workLoop @ web.js:33082\nflushWork @ web.js:33055\nperformWorkUntilDeadline @ web.js:33349\n\
+  web.js:21585 The above error occurred in the <ChatView> component:\n\n    at ChatView\
+  \ (https://file+.vscode-resource.vscode-cdn.net/Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/dist/web.js:35018:21)\n\
+  \nConsider adding an error boundary to your tree to customize error handling behavior.\n\
+  Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries."
+query_suffix: python文件仅供参考,不允许修改
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/ChatView.tsx

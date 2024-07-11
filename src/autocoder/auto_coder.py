@@ -573,14 +573,7 @@ def main(input_args: Optional[List[str]] = None):
             return
 
     dispacher = Dispacher(args, llm)
-    dispacher.dispach()
-    if args.request_id:
-        _ = queue_communicate.send_event_no_wait(
-            request_id=args.request_id,
-            event=CommunicateEvent(
-                event_type=CommunicateEventType.CODE_END.value, data=""
-            ),
-        )
+    dispacher.dispach()    
 
 
 if __name__ == "__main__":
