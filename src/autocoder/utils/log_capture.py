@@ -2,18 +2,22 @@ import sys
 import queue
 import threading
 from contextlib import contextmanager
+import io
 
-
-class QueueStream:
-    def __init__(self, queue):
+class TeeStream:
+    def __init__(self, stream, queue):
+        self.stream = stream
         self.queue = queue
 
     def write(self, msg):
+        self.stream.write(msg)
         self.queue.put(msg)
 
     def flush(self):
-        pass
+        self.stream.flush()
 
+    def fileno(self):
+        return self.stream.fileno()
 
 class LogCapture:
     request_logs = {}
@@ -33,9 +37,10 @@ class LogCapture:
 
     @contextmanager
     def capture(self):        
-        queue_stream = QueueStream(self.log_queue)
         old_stdout, old_stderr = sys.stdout, sys.stderr
-        sys.stdout = sys.stderr = queue_stream        
+        stdout_tee = TeeStream(old_stdout, self.log_queue)
+        stderr_tee = TeeStream(old_stderr, self.log_queue)
+        sys.stdout = sys.stderr = stdout_tee
         try:
             yield self.log_queue
         finally:
