@@ -4,6 +4,7 @@ import { pollResult, checkBackendReady, fetchConfigOptions, fetchFileList } from
 import { handleCoding } from './coding';
 import './dark.css';
 import './chatAnimation.css';
+import { handleIndexBuild } from './index_query';
 interface ChatViewProps {
     isDarkMode: boolean;
     vscode: any;
@@ -13,6 +14,11 @@ interface Message {
     text: string;
     sender: 'user' | 'bot';
     animationKey?: string;
+}
+
+interface LogMessage {
+    text: string;
+    timestamp: string;
 }
 
 interface FilesRequest {
@@ -57,7 +63,14 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     const theme = isDarkMode ? 'dark' : 'light';
-    
+
+    // 新增日志状态
+    const [logMessages, setLogMessages] = useState<LogMessage[]>([]);
+    const logMessagesEndRef = useRef<null | HTMLDivElement>(null);
+
+    // 新增日志面板最小化状态
+    const [isLogPaneMinimized, setIsLogPaneMinimized] = useState(false);
+
 
     const updateCursorPosition = useCallback(() => {
         if (inputRef.current) {
@@ -134,6 +147,9 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
         messagesRef.current = messages;
     }, [messages]);
 
+    useEffect(() => {
+        logMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [logMessages]);
 
     const updateFileList = async () => {
         const fileList = await fetchFileList(autoCoderServerPort);
@@ -154,10 +170,10 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
     const sendMessage = async () => {
         if (!isLoading) {
             setIsLoading(true);
-            const newUserMessage: Message = { 
-                text: inputMessage, 
-                sender: 'user', 
-                animationKey: `msg-${Date.now()}` 
+            const newUserMessage: Message = {
+                text: inputMessage,
+                sender: 'user',
+                animationKey: `msg-${Date.now()}`
             };
             setMessages(prevMessages => [...prevMessages, newUserMessage]);
             try {
@@ -239,24 +255,32 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
 
                 const data = await response.json();
 
+                if (endpoint === '/index/build') {
+                    const requestId = data.request_id;
+                    setMessages(prevMessages => [...prevMessages, 
+                        { text: `Indexing request is submit. Check the log pane`, sender: 'bot' }]);
+                    handleIndexBuild(autoCoderServerPort, requestId,addLogMessage);
+                    return    
+                }
+
                 if (endpoint === '/chat' || endpoint == "/ask") {
                     const requestId = data.request_id;
 
                     const _pollResult = await pollResult(autoCoderServerPort || 8081, requestId, (text) => {
-                    setMessages(prevMessages => {
-                        const newMessages = [...prevMessages];
-                        const lastMessage = newMessages[newMessages.length - 1];
-                        if (lastMessage.sender === 'bot') {
-                            lastMessage.text = text;
-                        } else {
-                            newMessages.push({ 
-                                text, 
-                                sender: 'bot', 
-                                animationKey: `msg-${Date.now()}` 
-                            });
-                        }
-                        return newMessages;
-                    });
+                        setMessages(prevMessages => {
+                            const newMessages = [...prevMessages];
+                            const lastMessage = newMessages[newMessages.length - 1];
+                            if (lastMessage.sender === 'bot') {
+                                lastMessage.text = text;
+                            } else {
+                                newMessages.push({
+                                    text,
+                                    sender: 'bot',
+                                    animationKey: `msg-${Date.now()}`
+                                });
+                            }
+                            return newMessages;
+                        });
                     });
                     if (_pollResult.status === 'failed') {
                         setMessages(prevMessages => [...prevMessages, { text: 'Failed to get response', sender: 'bot' }]);
@@ -282,6 +306,11 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                 setInputMessage('');
             }
         }
+    };
+
+    const addLogMessage = (text: string) => {
+        const timestamp = new Date().toLocaleTimeString();
+        setLogMessages(prevLogs => [...prevLogs, { text, timestamp }]);
     };
 
     const handleCommandSelect = (command: string) => {
@@ -332,30 +361,52 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                     <p className="text-lg font-semibold">Waiting Auto-Coder.Chat Ready...</p>
                 </div>
             </div>
-        );       
+        );
     return (
         <div className={`flex flex-col h-screen ${theme}`}>
-            <div className="flex-1 overflow-y-auto p-4">
-                {messages.map((message) => (
-                    <div 
-                        key={message.animationKey} 
-                        className={`mb-4 ${message.sender === 'user' ? 'text-right' : 'text-left'} message-animation`}
-                    >
-                        <div 
-                            className={`inline-block p-2 rounded-lg ${
-                                message.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'
-                            }`}
+            <div className="flex flex-1 overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-4">
+                    {messages.map((message) => (
+                        <div
+                            key={message.animationKey}
+                            className={`mb-4 ${message.sender === 'user' ? 'text-right' : 'text-left'} message-animation`}
                         >
-                            {message.text.split('\n').map((line, i) => (
-                                <React.Fragment key={i}>
-                                    {line}
-                                    {i !== message.text.split('\n').length - 1 && <br />}
-                                </React.Fragment>
-                            ))}
+                            <div
+                                className={`inline-block p-2 rounded-lg ${message.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'
+                                    }`}
+                            >
+                                {message.text.split('\n').map((line, i) => (
+                                    <React.Fragment key={i}>
+                                        {line}
+                                        {i !== message.text.split('\n').length - 1 && <br />}
+                                    </React.Fragment>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                ))}
-                <div ref={messagesEndRef} />
+                    ))}
+                    <div ref={messagesEndRef} />
+                </div>
+                <div id="log_pane" className={`${isLogPaneMinimized ? 'w-10' : 'w-1/3'} overflow-y-auto p-4 border-l relative transition-all duration-300`}>
+                    <button
+                        onClick={() => setIsLogPaneMinimized(!isLogPaneMinimized)}
+                        className="absolute top-2 right-2 text-xl cursor-pointer transition-transform duration-300 hover:scale-110"
+                        title={isLogPaneMinimized ? "Maximize" : "Minimize"}
+                    >
+                        {isLogPaneMinimized ? '⤢' : '⤡'}
+                    </button>
+                    {!isLogPaneMinimized && (
+                        <>
+                            <h3 className="text-lg font-semibold mb-2">Log Messages</h3>
+                            {logMessages.map((log, index) => (
+                                <div key={index} className="mb-2">
+                                    <span className="text-sm text-gray-500">[{log.timestamp}] </span>
+                                    <span>{log.text}</span>
+                                </div>
+                            ))}
+                            <div ref={logMessagesEndRef} />
+                        </>
+                    )}
+                </div>
             </div>
             <div className="p-4 border-t">
                 <div className="flex flex-col space-y-4 mb-4">

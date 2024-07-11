@@ -1,0 +1,11 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: 新增一个 index_query.ts, 再里面实现 /index/build 指令的处理逻辑.通过 requestId 到/extra/logs 接口获取日志,如果返回的json字段里,
+  logs字段为null,那么停止轮训,否则里面是数组,通过 addLogMessage 添加到界面上
+query_suffix: python文件仅供参考,不允许修改
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/ChatView.tsx

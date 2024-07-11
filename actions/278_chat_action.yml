@@ -1,0 +1,18 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: "connect(\n  File \"/opt/miniconda3/envs/byzerllm/lib/python3.10/site-packages/ray/_private/worker.py\"\
+  , line 2219, in connect\n    faulthandler.enable(all_threads=False)\nAttributeError:\
+  \ 'QueueStream' object has no attribute 'fileno'"
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_editblock.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/utils/log_capture.py

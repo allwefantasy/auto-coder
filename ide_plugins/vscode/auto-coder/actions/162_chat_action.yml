@@ -1,0 +1,10 @@
+auto_merge: editblock
+human_as_model: true
+include_file:
+- ./base/base.yml
+query: log_pane 需要右侧加一个最小化/最大化图标,点击可以最小化,再点击可以恢复原来大小
+query_suffix: python文件仅供参考,不允许修改
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/ide_plugins/vscode/auto-coder/src/web/ChatView.tsx

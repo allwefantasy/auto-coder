@@ -32,6 +32,7 @@ from byzerllm.utils.langutil import asyncfy_with_semaphore
 from contextlib import contextmanager
 import sys
 import io
+from autocoder.utils.log_capture import LogCapture
 
 app = FastAPI()
 
@@ -222,7 +223,7 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
                 f.write(yaml_content)
 
             auto_coder_main(["--file", execute_file, "--request_id", request_id])
-            
+
             _ = queue_communicate.send_event_no_wait(
                 request_id=request_id,
                 event=CommunicateEvent(
@@ -372,20 +373,18 @@ include_file:
 """
         with open(yaml_file, "w") as f:
             f.write(yaml_content)
-        try:
-            auto_coder_main(["index", "--file", yaml_file, "--request_id", request_id])
-        finally:
-            os.remove(yaml_file)
 
-    request_queue.add_request(
-        request_id,
-        RequestValue(value=DefaultValue(value=""), status=RequestOption.RUNNING),
-    )
+        log_capture = LogCapture(request_id=request_id)
+        with log_capture.capture() as log_queue:
+            try:
+                auto_coder_main(
+                    ["index", "--file", yaml_file, "--request_id", request_id]
+                )
+            finally:
+                os.remove(yaml_file)
+
     background_tasks.add_task(run)
-    v: RequestValue = await asyncfy_with_semaphore(request_queue.get_request_block)(
-        request_id
-    )
-    return {"message": v.value.value}
+    return {"message": request_id}
 
 
 @app.post("/index/query")
@@ -494,6 +493,13 @@ class EventResponseRequest(BaseModel):
     request_id: str
     event: Dict[str, str]
     response: str
+
+
+@app.post("/extra/logs")
+async def logs(request: EventGetRequest):
+    v = LogCapture.get_log_capture(request.request_id)
+    logs = v.get_capture_logs()
+    return {"logs": logs}
 
 
 @app.post("/extra/event/get")
