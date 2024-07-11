@@ -1,0 +1,15 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: unmerged_blocks 不为空时,需要有个格式化日志输出,使用rich 打印,将无法合并的 SEARCH/REPLACE部分打印出来
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/lang.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/__init__.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/code_auto_merge_editblock.py

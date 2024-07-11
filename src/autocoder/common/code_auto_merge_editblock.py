@@ -214,7 +214,7 @@ class CodeAutoMergeEditBlock:
                         unmerged_blocks.append((file_path, head, update))
 
         if unmerged_blocks:
-            s = f"Found {len(unmerged_blocks)} unmerged blocks. Please review them manually then try again."
+            s = f"Found {len(unmerged_blocks)} unmerged blocks, the changes will not be applied. Please review them manually then try again."
             logger.warning(s)
             return
 
