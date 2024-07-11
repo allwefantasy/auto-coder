@@ -200,6 +200,7 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
                 "human_as_model": conf.get("human_as_model", "false") == "true",
                 "skip_build_index": conf.get("skip_build_index", "true") == "true",
                 "skip_confirm": conf.get("skip_confirm", "true") == "true",
+                "silence": conf.get("silence", "true") == "true",
                 "urls": current_files,
                 "query": request.query,
             }
