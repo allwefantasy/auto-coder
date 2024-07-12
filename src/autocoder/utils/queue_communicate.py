@@ -13,6 +13,7 @@ class CommunicateEventType(Enum):
     CODE_MERGE_RESULT = "code_merge_result"
     CODE_START = "code_start"
     CODE_END = "code_end"
+    CODE_HUMAN_AS_MODEL = "code_human_as_model"
 
 @dataclass(eq=True, frozen=True)
 class CommunicateEvent:

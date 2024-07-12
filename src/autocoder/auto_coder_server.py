@@ -201,7 +201,7 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
                 "human_as_model": conf.get("human_as_model", "false") == "true",
                 "skip_build_index": conf.get("skip_build_index", "true") == "true",
                 "skip_confirm": conf.get("skip_confirm", "true") == "true",
-                "silence": conf.get("silence", "true") == "true",
+                "silence": conf.get("silence", "false") == "true",
                 "urls": current_files,
                 "query": request.query,
             }
@@ -222,14 +222,19 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
             with open(execute_file, "w") as f:
                 f.write(yaml_content)
 
-            auto_coder_main(["--file", execute_file, "--request_id", request_id])
-
-            _ = queue_communicate.send_event_no_wait(
-                request_id=request_id,
-                event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_END.value, data=""
-                ),
-            )
+            try:
+                auto_coder_main(["--file", execute_file, "--request_id", request_id])
+            finally:
+                try:
+                    os.remove(execute_file)
+                except FileNotFoundError:
+                    pass
+                _ = queue_communicate.send_event_no_wait(
+                    request_id=request_id,
+                    event=CommunicateEvent(
+                        event_type=CommunicateEventType.CODE_END.value, data=""
+                    ),
+                )
 
     _ = queue_communicate.send_event_no_wait(
         request_id=request_id,
@@ -384,7 +389,7 @@ include_file:
                 os.remove(yaml_file)
 
     background_tasks.add_task(run)
-    return {"message": request_id}
+    return {"request_id": request_id}
 
 
 @app.post("/index/query")
@@ -498,7 +503,7 @@ class EventResponseRequest(BaseModel):
 @app.post("/extra/logs")
 async def logs(request: EventGetRequest):
     v = LogCapture.get_log_capture(request.request_id)
-    logs = v.get_capture_logs()
+    logs = v.get_captured_logs() if v else []
     return {"logs": logs}
 
 

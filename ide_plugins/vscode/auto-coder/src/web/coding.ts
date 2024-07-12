@@ -61,7 +61,7 @@ export async function handleCoding(query: string, port: number | null,
                 continue;
             }
 
-            if (eventData.event_type === 'code_end') {                
+            if (eventData.event_type === 'code_end') {
                 await sendEventResponse(port, requestId, eventData, 'proceed');
                 setAwaitingUserResponse(false);
                 updateMessages(`coding finished`, 'bot');
@@ -73,23 +73,25 @@ export async function handleCoding(query: string, port: number | null,
             }
 
             if (eventData.event_type === 'code_merge_result') {
-                await sendEventResponse(port, requestId, eventData, 'proceed');                  
-                const blocks = JSON.parse(eventData.data);                
+                await sendEventResponse(port, requestId, eventData, 'proceed');
+                const blocks = JSON.parse(eventData.data);
                 let s = "The following files have been modified:\n";
                 for (const block of blocks) {
-                    s += `File: ${block.file_path}\n`;                    
+                    s += `File: ${block.file_path}\n`;
                 }
-                updateMessages(s, 'bot');                
+                updateMessages(s, 'bot');
             }
 
-            // if (eventData.event_type === 'code_merge_confirm') {
-            //     updateMessages(`${eventData.data}`, 'bot');
-            //     const userResponse = await getUserResponse(updateMessages, setAwaitingUserResponse, getMessages);
-            //     await sendEventResponse(port, requestId, eventData, userResponse);
-            //     if (userResponse.toLowerCase() !== 'y') {
-            //         updateMessages("Coding merging cancelled by user.", 'bot');
-            //     }
-            // }
+            if (eventData.event_type === 'code_human_as_model') {
+                const result = JSON.parse(eventData.data)
+                updateMessages(`${result.instruction}`, 'bot');
+                updateMessages("**Copy the the previous prompt and provide a response to the prompt**", 'bot');
+                const userResponse = await getUserResponse(updateMessages, setAwaitingUserResponse, getMessages);
+                const v = JSON.stringify({
+                    "value": userResponse
+                })
+                await sendEventResponse(port, requestId, eventData, v);
+            }
         }
     } catch (error) {
         console.error('Error in coding process:', error);
@@ -105,13 +107,12 @@ async function getUserResponse(updateMessages: (text: string, sender: 'user' | '
     const messages = getMessages();
     const initialMessageCount = messages.length;
     while (true) {
-        await new Promise(resolve => setTimeout(resolve, 1000));        
+        await new Promise(resolve => setTimeout(resolve, 1000));
         if (getMessages().length > initialMessageCount) {
             const lastMessage = getMessages()[getMessages().length - 1];
             if (lastMessage.sender === 'user') {
                 setAwaitingUserResponse(false);
                 const v = lastMessage.text;
-                console.log(`getUserResponse: ${v} ${lastMessage.sender}`);
                 return v;
             }
 

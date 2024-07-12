@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 import * as os from 'os';
 import * as child_process from 'child_process';
-import * as net from 'net';
+import portfinder from 'portfinder';
 
 let autoCoderServerPort: number | undefined;
 let autoCoderIdPath: string | undefined;
@@ -62,18 +62,15 @@ function getOrCreateAutoCoderTerminal(): vscode.Terminal {
 	}
 }
 
-function findAvailablePort(startPort: number): Promise<number> {
-	return new Promise((resolve, reject) => {
-		const server = net.createServer();
-		server.listen(startPort, () => {
-			const port = (server.address() as net.AddressInfo).port;
-			server.close(() => resolve(port));
-		});
-		server.on('error', () => {
-			findAvailablePort(startPort + 1).then(resolve, reject);
-		});
-	});
-}
+async function findFreePort(startPort: number): Promise<number> {
+	portfinder.basePort = startPort; // 设置起始端口
+	try {
+	  const port = await portfinder.getPortPromise();
+	  return port;
+	} catch (err) {
+	  throw new Error(`No free port found starting from ${startPort}`);
+	}
+  }
 
 async function startAutoCoderServer(context: vscode.ExtensionContext) {
 	const selectedPythonPath = await selectPythonEnvironment();
@@ -83,7 +80,7 @@ async function startAutoCoderServer(context: vscode.ExtensionContext) {
 		return;
 	}
 
-	const port = await findAvailablePort(8081);
+	const port = await findFreePort(8081);	
 	autoCoderServerPort = port; // 保存端口到全局变量
 
 	let autoCoderId: string;
@@ -98,7 +95,7 @@ async function startAutoCoderServer(context: vscode.ExtensionContext) {
 	});
 
 	serverProcess.stdout.on('data', (data) => {
-		console.log(`auto-coder server stdout: ${data}`);
+		// console.log(`auto-coder server stdout: ${data}`);
 	});
 
 	serverProcess.stderr.on('data', (data) => {

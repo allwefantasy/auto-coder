@@ -284,6 +284,29 @@ def main(input_args: Optional[List[str]] = None):
                     f"""\033[92mInstruction to model saved in \033[94m{args.target_file}\033[92m and copied to clipboard:\n\n\033[93m{final_ins[0:100]}...\033[0m"""
                 )
 
+                if args.request_id and not args.silence:                    
+                    event_data = {
+                        "instruction": final_ins,
+                        "model": model,
+                        "request_id": args.request_id,
+                    }
+                    response_json = queue_communicate.send_event(
+                        request_id=args.request_id,
+                        event=CommunicateEvent(
+                            event_type=CommunicateEventType.CODE_HUMAN_AS_MODEL.value,
+                            data=json.dumps(event_data, ensure_ascii=False),
+                        ),
+                    )
+                    response = json.loads(response_json)
+                    v = [
+                        {
+                            "predict": response["value"],
+                            "input": input_value[0]["instruction"],
+                            "metadata": {},
+                        }
+                    ]
+                    return False, v                                
+
                 lines = []
                 while True:
                     line = prompt(FormattedText([("#00FF00", "> ")]), multiline=False)
@@ -573,7 +596,7 @@ def main(input_args: Optional[List[str]] = None):
             return
 
     dispacher = Dispacher(args, llm)
-    dispacher.dispach()    
+    dispacher.dispach()
 
 
 if __name__ == "__main__":

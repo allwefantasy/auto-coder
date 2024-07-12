@@ -60,7 +60,7 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
     const [showAutoComplete, setShowAutoComplete] = useState(false);
     const [filteredOptions, setFilteredOptions] = useState<string[]>([]);
     const [cursorPosition, setCursorPosition] = useState({ top: 0, left: 0 });
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
     const theme = isDarkMode ? 'dark' : 'light';
 
@@ -74,27 +74,37 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
 
     const updateCursorPosition = useCallback(() => {
         if (inputRef.current) {
-            const inputElement = inputRef.current;
-            const cursorPosition = inputElement.selectionStart;
+            const textareaElement = inputRef.current;
+            const cursorPosition = textareaElement.selectionStart;
             if (cursorPosition === null) {
                 return;
             }
-            const textBeforeCursor = inputElement.value.substring(0, cursorPosition);
-            const dummyElement = document.createElement('span');
-            dummyElement.style.font = window.getComputedStyle(inputElement).font;
+            const textBeforeCursor = textareaElement.value.substring(0, cursorPosition);
+            const lines = textBeforeCursor.split('\n');
+            const currentLineIndex = lines.length - 1;
+            const currentLine = lines[currentLineIndex];
+
+            const dummyElement = document.createElement('div');
+            dummyElement.style.font = window.getComputedStyle(textareaElement).font;
             dummyElement.style.visibility = 'hidden';
             dummyElement.style.position = 'absolute';
-            dummyElement.textContent = textBeforeCursor;
+            dummyElement.style.whiteSpace = 'pre-wrap';
+            dummyElement.style.wordWrap = 'break-word';
+            dummyElement.style.width = `${textareaElement.clientWidth}px`;
+            dummyElement.textContent = currentLine;
             document.body.appendChild(dummyElement);
 
-            const inputRect = inputElement.getBoundingClientRect();
+            const textareaRect = textareaElement.getBoundingClientRect();
             const dummyRect = dummyElement.getBoundingClientRect();
 
             document.body.removeChild(dummyElement);
 
+            const lineHeight = parseFloat(window.getComputedStyle(textareaElement).lineHeight);
+            const scrollTop = textareaElement.scrollTop;
+
             setCursorPosition({
-                top: inputRect.top + inputRect.height,
-                left: inputRect.left + dummyRect.width
+                top: textareaRect.top + (currentLineIndex * lineHeight) - scrollTop + textareaRect.height,
+                left: textareaRect.left + dummyRect.width
             });
         }
     }, []);
@@ -257,10 +267,10 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
 
                 if (endpoint === '/index/build') {
                     const requestId = data.request_id;
-                    setMessages(prevMessages => [...prevMessages, 
-                        { text: `Indexing request is submit. Check the log pane`, sender: 'bot' }]);
-                    handleIndexBuild(autoCoderServerPort, requestId,addLogMessage);
-                    return    
+                    setMessages(prevMessages => [...prevMessages,
+                    { text: `Indexing request is submit. Check the log pane`, sender: 'bot' }]);
+                    handleIndexBuild(autoCoderServerPort, requestId, addLogMessage);
+                    return
                 }
 
                 if (endpoint === '/chat' || endpoint == "/ask") {
@@ -326,7 +336,7 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
         setShowAutoComplete(false);
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setInputMessage(value);
 
@@ -347,7 +357,7 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
         setShowAutoComplete(false);
     };
 
-    const handleInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleInputKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter') {
             sendMessage();
         }
@@ -375,12 +385,9 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                                 className={`inline-block p-2 rounded-lg ${message.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'
                                     }`}
                             >
-                                {message.text.split('\n').map((line, i) => (
-                                    <React.Fragment key={i}>
-                                        {line}
-                                        {i !== message.text.split('\n').length - 1 && <br />}
-                                    </React.Fragment>
-                                ))}
+                                <pre className="whitespace-pre-wrap break-words">
+                                    {message.text}
+                                </pre>
                             </div>
                         </div>
                     ))}
@@ -409,7 +416,7 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                 </div>
             </div>
             <div className="p-4 border-t">
-                <div className="flex flex-col space-y-4 mb-4">
+                <div id="command_pane1" className="flex flex-col space-y-4 mb-4">
                     <div className="flex space-x-2">
                         <select
                             value={selectedCommand}
@@ -439,18 +446,17 @@ export const ChatView = ({ isDarkMode, vscode }: ChatViewProps) => {
                         )}
                     </div>
                     <div className="flex space-x-2">
-                        <input
+                        <textarea
                             ref={inputRef}
-                            type="text"
                             value={inputMessage}
                             onChange={handleInputChange}
-                            onKeyPress={handleInputKeyPress}
-                            className={`flex-1 p-2 border rounded-lg ${theme}`}
+                            onKeyDown={handleInputKeyPress}
+                            className={`flex-1 p-2 border rounded-lg ${theme} resize-none`}
                             placeholder="Type a message..."
                             disabled={isLoading}
-                            list="config-options"
+                            rows={3}
+                            style={{ minHeight: '60px', maxHeight: '120px', overflowY: 'auto' }}
                             onSelect={updateCursorPosition}
-                            onKeyUp={updateCursorPosition}
                             onClick={updateCursorPosition}
                         />
                         <button

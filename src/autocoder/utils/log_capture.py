@@ -21,9 +21,10 @@ class TeeStream:
 
 class LogCapture:
     request_logs = {}
-    @staticmethod
-    def get_log_capture(request_id):
-        return LogCapture.request_logs.get(request_id)
+    
+    @classmethod
+    def get_log_capture(cls, request_id):
+        return cls.request_logs.get(request_id)
     
     def __init__(self, request_id:str):
         self.log_queue = queue.Queue()    
