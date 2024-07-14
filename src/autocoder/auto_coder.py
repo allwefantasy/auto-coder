@@ -459,7 +459,20 @@ def main(input_args: Optional[List[str]] = None):
             print(v)
             return
         elif raw_args.agent_command == "auto_tool":
-            pass
+            from autocoder.agent.auto_tool import AutoTool
+
+            auto_tool = AutoTool(args, llm)
+            v = auto_tool.run(args.query)
+            print()
+            print("\n\n=============RESPONSE==================\n\n")
+            request_queue.add_request(
+                args.request_id,
+                RequestValue(
+                    value=DefaultValue(value=v), status=RequestOption.COMPLETED
+                ),
+            )
+            print(v)
+            return
 
         elif raw_args.agent_command == "chat":
 
