@@ -64,6 +64,7 @@ commands = [
     "/help",
     "/shell",
     "/exit",
+    "/summon",
 ]
 
 add_files_subcommands = ["/group"]
@@ -360,6 +361,9 @@ def show_help():
     )
     print(
         "  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92mAsk the AI any questions or get insights about the current project, without modifying code\033[0m"
+    )
+    print(
+        "  \033[94m/summon\033[0m \033[93m<query>\033[0m - \033[92mSummon the AI to perform complex tasks using the auto_tool agent\033[0m"
     )
     print(
         "  \033[94m/revert\033[0m - \033[92mRevert commits from last coding chat\033[0m"
@@ -771,6 +775,47 @@ def chat(query: str):
     finally:
         os.remove(execute_file)
 
+def summon(query: str):
+    conf = memory.get("conf", {})
+    current_files = memory["current_files"]["files"]
+
+    file_contents = []
+    for file in current_files:
+        if os.path.exists(file):
+            with open(file, "r") as f:
+                content = f.read()
+                s = f"##File: {file}\n{content}\n\n"
+                file_contents.append(s)
+
+    all_file_content = "".join(file_contents)
+
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+    }
+    yaml_config["query"] = query
+    yaml_config["context"] = json.dumps(
+        {"file_content": all_file_content}, ensure_ascii=False
+    )
+
+    if "emb_model" in conf:
+        yaml_config["emb_model"] = conf["emb_model"]
+
+    yaml_content = yaml.safe_dump(
+        yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
+    ).decode("utf-8")
+
+    execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+
+    with open(os.path.join(execute_file), "w") as f:
+        f.write(yaml_content)
+
+    def execute_summon():
+        auto_coder_main(["agent", "auto_tool", "--file", execute_file])
+
+    try:
+        execute_summon()
+    finally:
+        os.remove(execute_file)
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
@@ -934,6 +979,13 @@ def main():
                     print("\033[91mPlease enter your request.\033[0m")
                 else:
                     chat(query)
+            
+            elif user_input.startswith("/summon"):
+                query = user_input[len("/summon") :].strip()
+                if not query:
+                    print("\033[91mPlease enter your request.\033[0m")
+                else:
+                    summon(query)
             
             # elif user_input.startswith("/shell"):
             else:
