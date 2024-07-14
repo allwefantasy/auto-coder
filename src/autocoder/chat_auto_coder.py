@@ -27,6 +27,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.live import Live
 from rich.text import Text
+from rich.table import Table
 
 if platform.system() == "Windows":
     from colorama import init
@@ -555,35 +556,37 @@ def add_files(args: List[str]):
         memory["current_files"]["groups"] = {}
     groups = memory["current_files"]["groups"]
 
+    console = Console()
+
     if args and args[0] == "/group":
         if len(args) == 1 or (len(args) == 2 and args[1] == "list"):
             if not groups:
-                print("\033[93mNo groups defined.\033[0m")
+                console.print(Panel("No groups defined.", title="Groups", border_style="yellow"))
             else:
-                print("\033[1;34mDefined groups:\033[0m")
+                table = Table(title="Defined Groups", show_header=True, header_style="bold magenta")
+                table.add_column("Group Name", style="cyan", no_wrap=True)
+                table.add_column("Files", style="green")
                 for group_name, files in groups.items():
-                    print(f"\033[1m{group_name}:\033[0m")
-                    for file in files:
-                        print(f"  \033[92m{os.path.relpath(file, project_root)}\033[0m")
-                    print()
+                    table.add_row(group_name, "\n".join([os.path.relpath(f, project_root) for f in files]))
+                console.print(Panel(table, border_style="blue"))
         elif len(args) >= 3 and args[1] == "/add":
             group_name = args[2]
             groups[group_name] = memory["current_files"]["files"].copy()
-            print(f"\033[92mAdded group '{group_name}' with current files.\033[0m")
+            console.print(Panel(f"Added group '{group_name}' with current files.", title="Group Added", border_style="green"))
         elif len(args) >= 3 and args[1] == "/drop":
             group_name = args[2]
             if group_name in groups:
                 del memory["current_files"]["groups"][group_name]
-                print(f"\033[92mDropped group '{group_name}'.\033[0m")
+                console.print(Panel(f"Dropped group '{group_name}'.", title="Group Dropped", border_style="green"))
             else:
-                print(f"\033[93mGroup '{group_name}' not found.\033[0m")
+                console.print(Panel(f"Group '{group_name}' not found.", title="Error", border_style="red"))
         elif len(args) >= 2:
             group_name = args[1]
             if group_name in groups:
                 memory["current_files"]["files"] = groups[group_name].copy()
-                print(f"\033[92mReplaced current files with files from group '{group_name}'.\033[0m")
+                console.print(Panel(f"Replaced current files with files from group '{group_name}'.", title="Files Replaced", border_style="green"))
             else:
-                print(f"\033[93mGroup '{group_name}' not found.\033[0m")
+                console.print(Panel(f"Group '{group_name}' not found.", title="Error", border_style="red"))
     else:
         existing_files = memory["current_files"]["files"]
         matched_files = find_files_in_project(args)
@@ -591,20 +594,25 @@ def add_files(args: List[str]):
         files_to_add = [f for f in matched_files if f not in existing_files]
         if files_to_add:
             memory["current_files"]["files"].extend(files_to_add)
-            print("\033[92mAdded files:\033[0m")
+            table = Table(title="Added Files", show_header=True, header_style="bold magenta")
+            table.add_column("File", style="green")
             for f in files_to_add:
-                print(f"  \033[92m{os.path.relpath(f, project_root)}\033[0m")
+                table.add_row(os.path.relpath(f, project_root))
+            console.print(Panel(table, border_style="green"))
         else:
-            print("\033[93mAll specified files are already in the current session or no matches found.\033[0m")
+            console.print(Panel("All specified files are already in the current session or no matches found.", title="No Files Added", border_style="yellow"))
 
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
 
 
 def remove_files(file_names: List[str]):
+    console = Console()
+    project_root = os.getcwd()
+
     if "/all" in file_names:
         memory["current_files"]["files"] = []
-        print("Removed all files.")
+        console.print(Panel("Removed all files.", title="Files Removed", border_style="green"))
     else:
         removed_files = []
         for file in memory["current_files"]["files"]:
@@ -614,7 +622,16 @@ def remove_files(file_names: List[str]):
                 removed_files.append(file)
         for file in removed_files:
             memory["current_files"]["files"].remove(file)
-        print(f"Removed files: {[os.path.basename(f) for f in removed_files]}")
+        
+        if removed_files:
+            table = Table(title="Removed Files", show_header=True, header_style="bold magenta")
+            table.add_column("File", style="green")
+            for f in removed_files:
+                table.add_row(os.path.relpath(f, project_root))
+            console.print(Panel(table, border_style="green"))
+        else:
+            console.print(Panel("No files were removed.", title="No Files Removed", border_style="yellow"))
+
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
 
@@ -806,6 +823,20 @@ query: |
         os.remove(yaml_file)
 
 
+def list_files():
+    console = Console()
+    project_root = os.getcwd()
+    current_files = memory["current_files"]["files"]
+
+    if current_files:
+        table = Table(title="Current Files", show_header=True, header_style="bold magenta")
+        table.add_column("File", style="green")
+        for file in current_files:
+            table.add_row(os.path.relpath(file, project_root))
+        console.print(Panel(table, border_style="blue"))
+    else:
+        console.print(Panel("No files in the current session.", title="Current Files", border_style="yellow"))
+
 def main():
     initialize_system()
 
@@ -869,9 +900,7 @@ def main():
                 index_build()
 
             elif user_input.startswith("/list_files"):
-                print("Current files:")
-                for file in memory["current_files"]["files"]:
-                    print(file)
+                list_files()
             elif user_input.startswith("/conf"):
                 conf = user_input[len("/conf") :].strip()
                 if not conf:
