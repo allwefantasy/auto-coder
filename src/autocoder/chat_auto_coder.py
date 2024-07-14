@@ -907,8 +907,11 @@ def main():
                 else:
                     chat(query)
             
-            elif user_input.startswith("/shell"):
-                command = user_input[len("/shell"):].strip()
+            # elif user_input.startswith("/shell"):
+            else:
+                command = user_input
+                if user_input.startswith("/shell"):
+                    command = user_input[len("/shell"):].strip()
                 if not command:
                     print("Please enter a shell command to execute.")
                 else:
@@ -950,10 +953,10 @@ def main():
                         console.print(f"[bold red]Command not found:[/bold red] [yellow]{command}[/yellow]")
                     except subprocess.SubprocessError as e:
                         console.print(f"[bold red]Error executing command:[/bold red] [yellow]{str(e)}[/yellow]")
-            else:
-                print(
-                    "\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands."
-                )
+            # else:
+            #     print(
+            #         "\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands."
+            #     )
 
         except KeyboardInterrupt:
             print("\n\033[93mExiting Chat Auto Coder...\033[0m")
