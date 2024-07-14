@@ -1,14 +1,12 @@
 from llama_index.core.agent import ReActAgent
 from llama_index.core.tools import FunctionTool
-from autocoder.index.index import IndexManager
 from autocoder.pyproject import PyProject
 from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
-from autocoder.common import AutoCoderArgs, SourceCode
+from autocoder.common import AutoCoderArgs
 from autocoder.common.interpreter import Interpreter
 from autocoder.common import ExecuteSteps, ExecuteStep, detect_env
 from autocoder.common import code_auto_execute
-from autocoder.rag.simple_rag import SimpleRAG
 from byzerllm.apps.llama_index.byzerai import ByzerAI
 from loguru import logger
 import os
@@ -21,6 +19,7 @@ from contextlib import contextmanager
 from pydantic import BaseModel
 from byzerllm.types import Bool
 
+
 @contextmanager
 def redirect_stdout():
     original_stdout = sys.stdout
@@ -29,6 +28,7 @@ def redirect_stdout():
         yield f
     finally:
         sys.stdout = original_stdout
+
 
 @byzerllm.prompt()
 def context(project_map: str) -> str:
@@ -55,42 +55,20 @@ def context(project_map: str) -> str:
 
     可用工具及使用指南:
 
-    1. get_related_files_by_symbols(query: str) -> str
-       - 根据类名、函数名或文件用途描述，返回项目中相关文件的路径列表。
-       - 返回结果为逗号分隔的文件路径。
-
-    2. read_files(paths: str) -> str
-       - 读取指定文件的内容。
-       - 输入为逗号分隔的文件路径列表（支持文件名或绝对路径）。
-       - 建议每次最多读取5-6个最相关的文件。
-
-    3. run_python_code(code: str) -> str
+    1. run_python_code(code: str) -> str
        - 运行指定的Python代码。
        - 返回代码的标准输出或错误信息。
        - 使用时需指定项目根目录。
 
-    4. run_shell_code(script: str) -> str
+    2. run_shell_code(script: str) -> str
        - 运行指定的Shell代码，用于编译、运行、测试等任务。
        - 返回代码的输出或错误信息。
        - 注意：不允许执行包含rm命令的脚本。
 
-    5. get_project_map() -> str
-       - 返回项目中已索引文件的信息，包括文件用途、导入包、定义的类、函数、变量等。
-       - 返回JSON格式文本。
-       - 仅在其他方法无法获得所需信息时使用。
-
-    6. find_files_by_name(keyword: str) -> str
-        - 根据关键字搜索项目中的文件名。
-        - 返回文件名包含关键字的文件路径列表，以逗号分隔。
-
-    7. find_files_by_content(keyword: str) -> str
-        - 根据关键字搜索项目中的文件内容。
-        - 返回内容包含关键字的文件路径列表，以逗号分隔。
-
     工作流程建议:
 
     1. 理解用户的任务需求。
-    2. 使用提供的工具获取必要的项目信息和相关文件内容。
+    2. 使用提供的工具获取必要的信息和相关文件内容。
     3. 分析获取的信息，制定执行计划。
     4. 使用run_python_code或run_shell_code执行必要的操作。
     5. 分析执行结果，如有必要，进行调整并重复执行。
@@ -99,6 +77,7 @@ def context(project_map: str) -> str:
     请根据用户的具体需求，灵活运用这些工具来完成任务。提供简洁、准确的执行过程和结果说明。
     """
     return {"env_info": detect_env()}
+
 
 @byzerllm.prompt()
 def detect_rm_command(command: str) -> Bool:
@@ -112,26 +91,61 @@ def detect_rm_command(command: str) -> Bool:
     如果该脚本中包含删除目录或者文件的命令，请返回True，否则返回False。
     """
 
+
 def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
-    # 这里的工具函数实现与ProjectReader中的相同，只是略去了auto_run_job
-    # 可以直接复制ProjectReader中的工具函数实现
+    def run_python_code(code: str) -> str:
+        """
+        你可以通过该工具运行指定的Python代码。
+        输入参数 code: Python代码
+        返回值是Python代码的sys output 或者 sys error 信息。
+
+        通常你需要在代码中指定项目的根目录（前面我们已经提到了）。
+        """
+        interpreter = Interpreter(cwd=args.source_dir)
+        s = ""
+        try:
+            s = interpreter.execute_steps(
+                ExecuteSteps(steps=[ExecuteStep(lang="python", code=code)])
+            )
+        finally:
+            interpreter.close()
+
+        return s
+
+    def run_shell_code(script: str) -> str:
+        """
+        你可以通过该工具运行指定的Shell代码。主要用于一些编译，运行，测试等任务。
+        输入参数 script: Shell代码
+        返回值是Shell代码的output 或者 error 信息。
+        """
+
+        if detect_rm_command.with_llm(llm).run(script).value:
+            return "The script contains rm command, which is not allowed."
+
+        interpreter = Interpreter(cwd=args.source_dir)
+        s = ""
+        try:
+            s = interpreter.execute_steps(
+                ExecuteSteps(steps=[ExecuteStep(lang="shell", code=script)])
+            )
+        finally:
+            interpreter.close()
+
+        return s
 
     tools = [
-        FunctionTool.from_defaults(get_related_files_by_symbols),
-        FunctionTool.from_defaults(get_project_map),
-        FunctionTool.from_defaults(read_files),
         FunctionTool.from_defaults(run_python_code),
         FunctionTool.from_defaults(run_shell_code),
-        FunctionTool.from_defaults(find_files_by_name),
-        FunctionTool.from_defaults(find_files_by_content),
     ]
     return tools
+
 
 class AutoTool:
     def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         self.llm = llm
-        if args.planner_model:
-            self.llm = self.llm.get_sub_client("planner_model")
+        print(args.code_model)
+        if args.code_model:
+            self.llm = self.llm.get_sub_client("code_model")
         self.args = args
         self.tools = get_tools(args=args, llm=llm)
         if self.args.project_type == "ts":
@@ -156,11 +170,11 @@ class AutoTool:
             ),
         )
         r = agent.chat(message=query)
-        
+
         print("\n\n=============EXECUTE==================")
         executor = code_auto_execute.CodeAutoExecute(
             self.llm, self.args, code_auto_execute.Mode.SINGLE_ROUND
         )
         executor.run(query=query, context=r.response, source_code="")
-        
+
         return r.response

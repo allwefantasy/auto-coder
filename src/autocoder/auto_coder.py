@@ -460,17 +460,17 @@ def main(input_args: Optional[List[str]] = None):
             return
         elif raw_args.agent_command == "auto_tool":
             from autocoder.agent.auto_tool import AutoTool
-
             auto_tool = AutoTool(args, llm)
             v = auto_tool.run(args.query)
             print()
             print("\n\n=============RESPONSE==================\n\n")
-            request_queue.add_request(
-                args.request_id,
-                RequestValue(
-                    value=DefaultValue(value=v), status=RequestOption.COMPLETED
-                ),
-            )
+            if args.request_id:
+                request_queue.add_request(
+                    args.request_id,
+                    RequestValue(
+                        value=DefaultValue(value=v), status=RequestOption.COMPLETED
+                    ),
+                )
             print(v)
             return
 

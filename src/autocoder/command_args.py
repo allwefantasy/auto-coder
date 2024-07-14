@@ -390,6 +390,55 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     read_project_parser.add_argument("--rag_url", default="", help="")
     read_project_parser.add_argument("--target_file", default="./output.txt", help="")
 
+    
+
+    auto_tool_parser = agent_subparsers.add_parser(
+        "auto_tool", help="Run the chat agent"
+    )
+    auto_tool_parser.add_argument(
+        "--request_id", default="", help=desc["request_id"]
+    )
+
+    auto_tool_parser.add_argument(
+        "--source_dir", default=".", help="Source directory"
+    )
+    auto_tool_parser.add_argument("--query", help="Query for the planner")
+    auto_tool_parser.add_argument("--model", default="", help=desc["model"])
+    auto_tool_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
+    auto_tool_parser.add_argument("--file", default="", help=desc["file"])
+    auto_tool_parser.add_argument(
+        "--ray_address", default="auto", help=desc["ray_address"]
+    )
+    auto_tool_parser.add_argument(
+        "--execute", action="store_true", help=desc["execute"]
+    )
+    auto_tool_parser.add_argument(
+        "--collections",
+        default="",
+        help="Comma-separated list of collections to search",
+    )
+    auto_tool_parser.add_argument(
+        "--description", default="", help="Description to route the query"
+    )
+    auto_tool_parser.add_argument(
+        "--enable_rag_search",
+        nargs="?",
+        const=True,
+        default=False,
+        help=desc["enable_rag_search"],
+    )
+    auto_tool_parser.add_argument(
+        "--enable_rag_context",
+        nargs="?",
+        const=True,
+        default=False,
+        help=desc["enable_rag_context"],
+    )
+
+    auto_tool_parser.add_argument("--rag_token", default="", help="")
+    auto_tool_parser.add_argument("--rag_url", default="", help="")
+    auto_tool_parser.add_argument("--target_file", default="./output.txt", help="")
+
     planner_parser = agent_subparsers.add_parser(
         "planner", help="Run the planner agent"
     )
