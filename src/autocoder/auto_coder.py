@@ -458,6 +458,8 @@ def main(input_args: Optional[List[str]] = None):
             )
             print(v)
             return
+        elif raw_args.agent_command == "auto_tool":
+            pass
 
         elif raw_args.agent_command == "chat":
 
