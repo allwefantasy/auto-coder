@@ -890,8 +890,7 @@ def main():
                 add_files(args)
             elif user_input.startswith("/remove_files"):
                 file_names = user_input[len("/remove_files") :].strip().split(",")
-                remove_files(file_names)
-                print(f"Removed files: {file_names}")
+                remove_files(file_names)                
             elif user_input.startswith("/index/query"):
                 query = user_input[len("/index/query") :].strip()
                 index_query(query)
