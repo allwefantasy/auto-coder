@@ -885,8 +885,23 @@ def main():
                 if not query:
                     print("Please enter your question.")
                 else:
-                    ask(query)
+                    ask(query)            
 
+            elif user_input.startswith("/exit"):
+                raise KeyboardInterrupt
+            elif user_input.startswith("/coding"):
+                query = user_input[len("/coding") :].strip()
+                if not query:
+                    print("\033[91mPlease enter your request.\033[0m")
+                    continue
+                coding(query)
+            elif user_input.startswith("/chat"):
+                query = user_input[len("/chat") :].strip()
+                if not query:
+                    print("\033[91mPlease enter your request.\033[0m")
+                else:
+                    chat(query)
+            
             elif user_input.startswith("/shell"):
                 command = user_input[len("/shell") :].strip()
                 if not command:
@@ -905,22 +920,7 @@ def main():
                     except subprocess.SubprocessError as e:
                         print(
                             f"\033[91mError executing command:\033[0m \033[93m{str(e)}\033[0m"
-                        )
-
-            elif user_input.startswith("/exit"):
-                raise KeyboardInterrupt
-            elif user_input.startswith("/coding"):
-                query = user_input[len("/coding") :].strip()
-                if not query:
-                    print("\033[91mPlease enter your request.\033[0m")
-                    continue
-                coding(query)
-            elif user_input.startswith("/chat"):
-                query = user_input[len("/chat") :].strip()
-                if not query:
-                    print("\033[91mPlease enter your request.\033[0m")
-                else:
-                    chat(query)
+                        )        
             else:
                 print(
                     "\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands."
