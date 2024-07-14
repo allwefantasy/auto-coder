@@ -22,6 +22,11 @@ from autocoder.command_args import parse_args
 from autocoder.utils import get_last_yaml_file
 import platform
 import subprocess
+import shlex
+from rich.console import Console
+from rich.panel import Panel
+from rich.live import Live
+from rich.text import Text
 
 if platform.system() == "Windows":
     from colorama import init
@@ -903,24 +908,48 @@ def main():
                     chat(query)
             
             elif user_input.startswith("/shell"):
-                command = user_input[len("/shell") :].strip()
+                command = user_input[len("/shell"):].strip()
                 if not command:
                     print("Please enter a shell command to execute.")
                 else:
+                    console = Console()
                     try:
-                        result = subprocess.run(
-                            command, shell=True, capture_output=True, text=True
+                        # Use shlex.split() to properly handle quoted arguments
+                        command_args = shlex.split(command)
+                        process = subprocess.Popen(
+                            command_args,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            text=True,
+                            bufsize=1,
+                            universal_newlines=True
                         )
-                        if result.returncode == 0:
-                            print(result.stdout)
+                        
+                        output = []
+                        with Live(console=console, refresh_per_second=4) as live:
+                            while True:
+                                output_line = process.stdout.readline()
+                                error_line = process.stderr.readline()
+                                
+                                if output_line:
+                                    output.append(output_line.strip())
+                                    live.update(Panel(Text("\n".join(output[-20:])), title="Shell Output", border_style="green"))
+                                if error_line:
+                                    output.append(f"ERROR: {error_line.strip()}")
+                                    live.update(Panel(Text("\n".join(output[-20:])), title="Shell Output", border_style="red"))
+                                
+                                if output_line == '' and error_line == '' and process.poll() is not None:
+                                    break
+                        
+                        if process.returncode != 0:
+                            console.print(f"[bold red]Command failed with return code {process.returncode}[/bold red]")
                         else:
-                            print(result.stderr)
+                            console.print("[bold green]Command completed successfully[/bold green]")
+                        
                     except FileNotFoundError:
-                        print(f"\033[91mCommand not found: \033[93m{command}\033[0m")
+                        console.print(f"[bold red]Command not found:[/bold red] [yellow]{command}[/yellow]")
                     except subprocess.SubprocessError as e:
-                        print(
-                            f"\033[91mError executing command:\033[0m \033[93m{str(e)}\033[0m"
-                        )        
+                        console.print(f"[bold red]Error executing command:[/bold red] [yellow]{str(e)}[/yellow]")
             else:
                 print(
                     "\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands."
