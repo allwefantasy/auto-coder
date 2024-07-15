@@ -35,7 +35,14 @@ def commit_changes(repo_path: str, message: str) -> bool:
     try:
         repo.git.add(all=True)
         if repo.is_dirty():
-            commit = repo.index.commit(message)
+            try:
+                commit = repo.index.commit(message)
+            except HookExecutionError as hook_error:
+                if "pre-commit" in str(hook_error) and "FileNotFoundError" in str(hook_error):
+                    logger.warning("Pre-commit hook not found. Proceeding with commit.")
+                    commit = repo.index.commit(message, skip_hooks=True)
+                else:
+                    raise
             logger.info(f"Committed changes with message: {message}")
             logger.info(f"Commit hash: {commit.hexsha}")
             # Check if there is a parent commit to compare against

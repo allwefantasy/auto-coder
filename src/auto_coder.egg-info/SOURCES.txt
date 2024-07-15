@@ -14,6 +14,7 @@ src/autocoder/command_args.py
 src/autocoder/lang.py
 src/autocoder/version.py
 src/autocoder/agent/__init__.py
+src/autocoder/agent/auto_tool.py
 src/autocoder/agent/coder.py
 src/autocoder/agent/planner.py
 src/autocoder/agent/project_reader.py

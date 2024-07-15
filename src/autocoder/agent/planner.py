@@ -135,7 +135,7 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
             for k, v in new_temp_yaml_content.items():
                 del yaml_content[k]
                          
-            new_content = yaml.safe_dump(yaml_content, encoding='utf-8',allow_unicode=True, default_flow_style=False).decode('utf-8')
+            new_content = yaml.safe_dump(yaml_content, allow_unicode=True, default_flow_style=False)
             new_file = os.path.join(actions_dir, f"{new_seq}_{yaml_file_name}.yml")
             with open(new_file, "w") as f:
                 f.write(new_content + "\n" + yaml_str)

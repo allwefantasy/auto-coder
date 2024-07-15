@@ -1,0 +1,17 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: "def convert_yaml_config_to_str(yaml_config):\n    yaml_content = yaml.safe_dump(\n\
+  \        yaml_config,\n        allow_unicode=True,\n        default_flow_style=False,\n\
+  \        default_style=None,\n    )\n    return yaml_content 这个代码可以在windows/linux\
+  \ 同时正常工作么?编码相关的问题"
+silence: true
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/agent/project_reader.py

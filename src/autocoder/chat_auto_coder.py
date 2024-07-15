@@ -224,6 +224,16 @@ def initialize_system():
     init_project()
 
 
+def convert_yaml_config_to_str(yaml_config):
+    yaml_content = yaml.safe_dump(
+        yaml_config,
+        allow_unicode=True,
+        default_flow_style=False,
+        default_style=None,
+    )
+    return yaml_content
+
+
 def get_all_file_names_in_project() -> List[str]:
     project_root = os.getcwd()
     file_names = []
@@ -565,32 +575,71 @@ def add_files(args: List[str]):
     if args and args[0] == "/group":
         if len(args) == 1 or (len(args) == 2 and args[1] == "list"):
             if not groups:
-                console.print(Panel("No groups defined.", title="Groups", border_style="yellow"))
+                console.print(
+                    Panel("No groups defined.", title="Groups", border_style="yellow")
+                )
             else:
-                table = Table(title="Defined Groups", show_header=True, header_style="bold magenta")
+                table = Table(
+                    title="Defined Groups",
+                    show_header=True,
+                    header_style="bold magenta",
+                )
                 table.add_column("Group Name", style="cyan", no_wrap=True)
                 table.add_column("Files", style="green")
                 for group_name, files in groups.items():
-                    table.add_row(group_name, "\n".join([os.path.relpath(f, project_root) for f in files]))
+                    table.add_row(
+                        group_name,
+                        "\n".join([os.path.relpath(f, project_root) for f in files]),
+                    )
                 console.print(Panel(table, border_style="blue"))
         elif len(args) >= 3 and args[1] == "/add":
             group_name = args[2]
             groups[group_name] = memory["current_files"]["files"].copy()
-            console.print(Panel(f"Added group '{group_name}' with current files.", title="Group Added", border_style="green"))
+            console.print(
+                Panel(
+                    f"Added group '{group_name}' with current files.",
+                    title="Group Added",
+                    border_style="green",
+                )
+            )
         elif len(args) >= 3 and args[1] == "/drop":
             group_name = args[2]
             if group_name in groups:
                 del memory["current_files"]["groups"][group_name]
-                console.print(Panel(f"Dropped group '{group_name}'.", title="Group Dropped", border_style="green"))
+                console.print(
+                    Panel(
+                        f"Dropped group '{group_name}'.",
+                        title="Group Dropped",
+                        border_style="green",
+                    )
+                )
             else:
-                console.print(Panel(f"Group '{group_name}' not found.", title="Error", border_style="red"))
+                console.print(
+                    Panel(
+                        f"Group '{group_name}' not found.",
+                        title="Error",
+                        border_style="red",
+                    )
+                )
         elif len(args) >= 2:
             group_name = args[1]
             if group_name in groups:
                 memory["current_files"]["files"] = groups[group_name].copy()
-                console.print(Panel(f"Replaced current files with files from group '{group_name}'.", title="Files Replaced", border_style="green"))
+                console.print(
+                    Panel(
+                        f"Replaced current files with files from group '{group_name}'.",
+                        title="Files Replaced",
+                        border_style="green",
+                    )
+                )
             else:
-                console.print(Panel(f"Group '{group_name}' not found.", title="Error", border_style="red"))
+                console.print(
+                    Panel(
+                        f"Group '{group_name}' not found.",
+                        title="Error",
+                        border_style="red",
+                    )
+                )
     else:
         existing_files = memory["current_files"]["files"]
         matched_files = find_files_in_project(args)
@@ -598,13 +647,21 @@ def add_files(args: List[str]):
         files_to_add = [f for f in matched_files if f not in existing_files]
         if files_to_add:
             memory["current_files"]["files"].extend(files_to_add)
-            table = Table(title="Added Files", show_header=True, header_style="bold magenta")
+            table = Table(
+                title="Added Files", show_header=True, header_style="bold magenta"
+            )
             table.add_column("File", style="green")
             for f in files_to_add:
                 table.add_row(os.path.relpath(f, project_root))
             console.print(Panel(table, border_style="green"))
         else:
-            console.print(Panel("All specified files are already in the current session or no matches found.", title="No Files Added", border_style="yellow"))
+            console.print(
+                Panel(
+                    "All specified files are already in the current session or no matches found.",
+                    title="No Files Added",
+                    border_style="yellow",
+                )
+            )
 
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
@@ -616,7 +673,9 @@ def remove_files(file_names: List[str]):
 
     if "/all" in file_names:
         memory["current_files"]["files"] = []
-        console.print(Panel("Removed all files.", title="Files Removed", border_style="green"))
+        console.print(
+            Panel("Removed all files.", title="Files Removed", border_style="green")
+        )
     else:
         removed_files = []
         for file in memory["current_files"]["files"]:
@@ -626,15 +685,23 @@ def remove_files(file_names: List[str]):
                 removed_files.append(file)
         for file in removed_files:
             memory["current_files"]["files"].remove(file)
-        
+
         if removed_files:
-            table = Table(title="Removed Files", show_header=True, header_style="bold magenta")
+            table = Table(
+                title="Removed Files", show_header=True, header_style="bold magenta"
+            )
             table.add_column("File", style="green")
             for f in removed_files:
                 table.add_row(os.path.relpath(f, project_root))
             console.print(Panel(table, border_style="green"))
         else:
-            console.print(Panel("No files were removed.", title="No Files Removed", border_style="yellow"))
+            console.print(
+                Panel(
+                    "No files were removed.",
+                    title="No Files Removed",
+                    border_style="yellow",
+                )
+            )
 
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
@@ -662,9 +729,7 @@ def ask(query: str):
     if "code_model" in conf:
         yaml_config["code_model"] = conf["code_model"]
 
-    yaml_content = yaml.safe_dump(
-        yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
-    ).decode("utf-8")
+    yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
@@ -711,13 +776,8 @@ def coding(query: str):
         yaml_config["urls"] = current_files
         yaml_config["query"] = query
 
-        yaml_content = yaml.safe_dump(
-            yaml_config,
-            encoding="utf-8",
-            allow_unicode=True,
-            default_flow_style=False,
-            default_style=None,
-        ).decode("utf-8")
+        yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
+
         execute_file = os.path.join("actions", latest_yaml_file)
         with open(os.path.join(execute_file), "w") as f:
             f.write(yaml_content)
@@ -758,9 +818,7 @@ def chat(query: str):
     if "emb_model" in conf:
         yaml_config["emb_model"] = conf["emb_model"]
 
-    yaml_content = yaml.safe_dump(
-        yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
-    ).decode("utf-8")
+    yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
@@ -774,6 +832,7 @@ def chat(query: str):
         execute_ask()
     finally:
         os.remove(execute_file)
+
 
 def summon(query: str):
     conf = memory.get("conf", {})
@@ -800,9 +859,7 @@ def summon(query: str):
     if "emb_model" in conf:
         yaml_config["emb_model"] = conf["emb_model"]
 
-    yaml_content = yaml.safe_dump(
-        yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
-    ).decode("utf-8")
+    yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
@@ -816,6 +873,7 @@ def summon(query: str):
         execute_summon()
     finally:
         os.remove(execute_file)
+
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
@@ -874,13 +932,22 @@ def list_files():
     current_files = memory["current_files"]["files"]
 
     if current_files:
-        table = Table(title="Current Files", show_header=True, header_style="bold magenta")
+        table = Table(
+            title="Current Files", show_header=True, header_style="bold magenta"
+        )
         table.add_column("File", style="green")
         for file in current_files:
             table.add_row(os.path.relpath(file, project_root))
         console.print(Panel(table, border_style="blue"))
     else:
-        console.print(Panel("No files in the current session.", title="Current Files", border_style="yellow"))
+        console.print(
+            Panel(
+                "No files in the current session.",
+                title="Current Files",
+                border_style="yellow",
+            )
+        )
+
 
 def main():
     initialize_system()
@@ -935,7 +1002,7 @@ def main():
                 add_files(args)
             elif user_input.startswith("/remove_files"):
                 file_names = user_input[len("/remove_files") :].strip().split(",")
-                remove_files(file_names)                
+                remove_files(file_names)
             elif user_input.startswith("/index/query"):
                 query = user_input[len("/index/query") :].strip()
                 index_query(query)
@@ -963,7 +1030,7 @@ def main():
                 if not query:
                     print("Please enter your question.")
                 else:
-                    ask(query)            
+                    ask(query)
 
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt
@@ -979,19 +1046,19 @@ def main():
                     print("\033[91mPlease enter your request.\033[0m")
                 else:
                     chat(query)
-            
+
             elif user_input.startswith("/summon"):
                 query = user_input[len("/summon") :].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
                 else:
                     summon(query)
-            
+
             # elif user_input.startswith("/shell"):
             else:
                 command = user_input
                 if user_input.startswith("/shell"):
-                    command = user_input[len("/shell"):].strip()
+                    command = user_input[len("/shell") :].strip()
                 if not command:
                     print("Please enter a shell command to execute.")
                 else:
@@ -1005,34 +1072,58 @@ def main():
                             stderr=subprocess.PIPE,
                             text=True,
                             bufsize=1,
-                            universal_newlines=True
+                            universal_newlines=True,
                         )
-                        
+
                         output = []
                         with Live(console=console, refresh_per_second=4) as live:
                             while True:
                                 output_line = process.stdout.readline()
                                 error_line = process.stderr.readline()
-                                
+
                                 if output_line:
                                     output.append(output_line.strip())
-                                    live.update(Panel(Text("\n".join(output[-20:])), title="Shell Output", border_style="green"))
+                                    live.update(
+                                        Panel(
+                                            Text("\n".join(output[-20:])),
+                                            title="Shell Output",
+                                            border_style="green",
+                                        )
+                                    )
                                 if error_line:
                                     output.append(f"ERROR: {error_line.strip()}")
-                                    live.update(Panel(Text("\n".join(output[-20:])), title="Shell Output", border_style="red"))
-                                
-                                if output_line == '' and error_line == '' and process.poll() is not None:
+                                    live.update(
+                                        Panel(
+                                            Text("\n".join(output[-20:])),
+                                            title="Shell Output",
+                                            border_style="red",
+                                        )
+                                    )
+
+                                if (
+                                    output_line == ""
+                                    and error_line == ""
+                                    and process.poll() is not None
+                                ):
                                     break
-                        
+
                         if process.returncode != 0:
-                            console.print(f"[bold red]Command failed with return code {process.returncode}[/bold red]")
+                            console.print(
+                                f"[bold red]Command failed with return code {process.returncode}[/bold red]"
+                            )
                         else:
-                            console.print("[bold green]Command completed successfully[/bold green]")
-                        
+                            console.print(
+                                "[bold green]Command completed successfully[/bold green]"
+                            )
+
                     except FileNotFoundError:
-                        console.print(f"[bold red]Command not found:[/bold red] [yellow]{command}[/yellow]")
+                        console.print(
+                            f"[bold red]Command not found:[/bold red] [yellow]{command}[/yellow]"
+                        )
                     except subprocess.SubprocessError as e:
-                        console.print(f"[bold red]Error executing command:[/bold red] [yellow]{str(e)}[/yellow]")
+                        console.print(
+                            f"[bold red]Error executing command:[/bold red] [yellow]{str(e)}[/yellow]"
+                        )
             # else:
             #     print(
             #         "\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands."

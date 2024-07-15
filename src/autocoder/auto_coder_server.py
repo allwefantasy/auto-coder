@@ -34,6 +34,15 @@ import sys
 import io
 from autocoder.utils.log_capture import LogCapture
 
+def convert_yaml_config_to_str(yaml_config):
+    yaml_content = yaml.safe_dump(
+        yaml_config,
+        allow_unicode=True,
+        default_flow_style=False,
+        default_style=None,
+    )
+    return yaml_content
+
 app = FastAPI()
 
 # Add CORS middleware
@@ -211,13 +220,7 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
                 if converted_value is not None:
                     yaml_config[key] = converted_value
 
-            yaml_content = yaml.safe_dump(
-                yaml_config,
-                encoding="utf-8",
-                allow_unicode=True,
-                default_flow_style=False,
-                default_style=None,
-            ).decode("utf-8")
+            yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
             execute_file = os.path.join("actions", latest_yaml_file)
             with open(execute_file, "w") as f:
                 f.write(yaml_content)
@@ -277,12 +280,7 @@ async def chat(request: QueryRequest, background_tasks: BackgroundTasks):
             if "emb_model" in conf:
                 yaml_config["emb_model"] = conf["emb_model"]
 
-            yaml_content = yaml.safe_dump(
-                yaml_config,
-                encoding="utf-8",
-                allow_unicode=True,
-                default_flow_style=False,
-            ).decode("utf-8")
+            yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
             with open(execute_file, "w") as f:
                 f.write(yaml_content)
@@ -316,9 +314,7 @@ async def ask(request: QueryRequest, background_tasks: BackgroundTasks):
             if model_type in conf:
                 yaml_config[model_type] = conf[model_type]
 
-        yaml_content = yaml.safe_dump(
-            yaml_config, encoding="utf-8", allow_unicode=True, default_flow_style=False
-        ).decode("utf-8")
+        yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
         execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
