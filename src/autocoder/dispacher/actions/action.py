@@ -232,7 +232,7 @@ class ActionPyProject:
         if args.execute and self.llm and not args.human_as_model:
             if len(content) > self.args.model_max_input_length:
                 logger.warning(
-                    f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
+                    f'''Content length is {len(content)}(you may collect too much files), which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...'''
                 )
                 content = content[: self.args.model_max_input_length]
 

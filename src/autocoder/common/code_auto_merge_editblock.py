@@ -215,7 +215,7 @@ class CodeAutoMergeEditBlock:
                             file_content_mapping[file_path] = new_content
                             changes_made = True
                     else:
-                        unmerged_blocks.append((file_path, head, update))
+                        unmerged_blocks.append((file_path, head, update,similarity))
 
         if unmerged_blocks:
             s = f"Found {len(unmerged_blocks)} unmerged blocks, the changes will not be applied. Please review them manually then try again."
@@ -290,9 +290,9 @@ class CodeAutoMergeEditBlock:
     def _print_unmerged_blocks(self, unmerged_blocks: List[tuple]):
         console = Console()
         console.print("\n[bold red]Unmerged Blocks:[/bold red]")
-        for file_path, head, update in unmerged_blocks:
+        for file_path, head, update,similarity in unmerged_blocks:
             console.print(f"\n[bold blue]File:[/bold blue] {file_path}")
-            console.print("\n[bold green]Search Block:[/bold green]")
+            console.print(f"\n[bold green]Search Block({similarity}):[/bold green]")
             syntax = Syntax(head, "python", theme="monokai", line_numbers=True)
             console.print(Panel(syntax, expand=False))
             console.print("\n[bold yellow]Replace Block:[/bold yellow]")

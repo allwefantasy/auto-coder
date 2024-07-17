@@ -18,6 +18,10 @@ import byzerllm
 import hashlib
 import textwrap
 import tabulate
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
 
 from loguru import logger
 
@@ -458,8 +462,7 @@ def build_index_and_filter_files(
         target_files = index_manager.get_target_files_by_query(args.query)
 
         if target_files:
-            for file in target_files.file_list:
-                logger.info(f"Target File: {file.file_path} reason: {file.reason}")
+            for file in target_files.file_list:                
                 file_path = file.file_path.strip()
                 final_files[get_file_path(file_path)] = file
 
@@ -467,12 +470,7 @@ def build_index_and_filter_files(
             related_fiels = index_manager.get_related_files(
                 [file.file_path for file in target_files.file_list]
             )
-            if related_fiels is not None:
-                for temp_file in related_fiels.file_list:
-                    logger.info(
-                        f"Related File: {temp_file.file_path} reason: {temp_file.reason}"
-                    )
-
+            if related_fiels is not None:                
                 for file in related_fiels.file_list:
                     file_path = file.file_path.strip()
                     final_files[get_file_path(file_path)] = file
@@ -513,29 +511,27 @@ def build_index_and_filter_files(
 
         return [file for file in result] if result else []
 
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.text import Text
 
-def print_selected(data):
-    console = Console()
+    def print_selected(data):
+        console = Console()
 
-    table = Table(title="Target Files You Selected", show_header=True, header_style="bold magenta")
-    table.add_column("File Path", style="cyan", no_wrap=True)
-    table.add_column("Reason", style="green")
+        table = Table(
+            title="Target Files You Selected", show_header=True, header_style="bold magenta"
+        )
+        table.add_column("File Path", style="cyan", no_wrap=True)
+        table.add_column("Reason", style="green")
 
-    for file, reason in data:
-        table.add_row(file, reason)
+        for file, reason in data:
+            table.add_row(file, reason)
 
-    panel = Panel(
-        table,
-        expand=False,
-        border_style="bold blue",
-        padding=(1, 1),
-    )
+        panel = Panel(
+            table,
+            expand=False,
+            border_style="bold blue",
+            padding=(1, 1),
+        )
 
-    console.print(panel)
+        console.print(panel)
 
     if args.skip_confirm:
         final_filenames = [file.file_path for file in final_files.values()]
