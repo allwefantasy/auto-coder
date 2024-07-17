@@ -513,33 +513,29 @@ def build_index_and_filter_files(
 
         return [file for file in result] if result else []
 
-    def print_selected(data):
-        def wrap_text_in_table(data, max_width=None):
-            if max_width is None:
-                max_width = os.get_terminal_size().columns
-            wrapped_data = []
-            for row in data:
-                wrapped_row = [
-                    textwrap.fill(str(cell), width=max_width) for cell in row
-                ]
-                wrapped_data.append(wrapped_row)
-            return wrapped_data
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
 
-        terminal_width = os.get_terminal_size().columns
-        separator = "=" * terminal_width
-        print(separator, flush=True)
-        print("Target Files You Selected".center(terminal_width), flush=True)
-        print(separator, flush=True)
+def print_selected(data):
+    console = Console()
 
-        table_data = [["File Path", "Reason"]]
-        for file, reason in data:
-            table_data.append([file, reason])
+    table = Table(title="Target Files You Selected", show_header=True, header_style="bold magenta")
+    table.add_column("File Path", style="cyan", no_wrap=True)
+    table.add_column("Reason", style="green")
 
-        wrapped_data = wrap_text_in_table(table_data)
-        table_output = tabulate.tabulate(
-            wrapped_data, headers="firstrow", tablefmt="grid"
-        )
-        print(table_output, flush=True)
+    for file, reason in data:
+        table.add_row(file, reason)
+
+    panel = Panel(
+        table,
+        expand=False,
+        border_style="bold blue",
+        padding=(1, 1),
+    )
+
+    console.print(panel)
 
     if args.skip_confirm:
         final_filenames = [file.file_path for file in final_files.values()]
