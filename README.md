@@ -53,11 +53,12 @@ This change is akin to the impact of the Industrial Revolution on social structu
 conda create --name autocoder python=3.10.11
 conda activate autocoder
 pip install -U auto-coder
-chat-auto-coder
+auto-coder.chat
 ```
 
 ## Tutorial
 
+0. [Auto-Coder.Chat: 通向智能编程之路](https://uelng8wukz.feishu.cn/wiki/QIpkwpQo2iSdkwk9nP6cNSPlnPc)
 1. [Setup auto-coder](./docs/en/000-AutoCoder_Prepare_Journey.md)
 2. [AutoCoder_准备旅程](./docs/zh/000-AutoCoder_准备旅程.md)
 
