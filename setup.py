@@ -12,13 +12,13 @@ with open(version_path) as f:
 req_path = os.path.join(folder, "requirements.txt")
 install_requires = []
 if os.path.exists(req_path):
-    with open(req_path, 'r', encoding='utf-8') as fp:
+    with open(req_path, 'r') as fp:
         install_requires = [line.strip() for line in fp]
 
 readme_path = os.path.join(folder, "README.md")
 readme_contents = ""
 if os.path.exists(readme_path):
-    with open(readme_path, 'r', encoding='utf-8') as fp:
+    with open(readme_path, 'r') as fp:
         readme_contents = fp.read().strip()
 
 setup(
