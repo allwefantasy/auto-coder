@@ -7,19 +7,11 @@ Windows 下安装有两种方式。
 
 > 推荐具备条件的，优先使用WSL安装。
 
-## 推荐
 
-目前我们提供了 windows 下的安装命令,可以在下列网址下载： https://gitee.com/allwefantasy/auto-coder/blob/master/auto_coder_installer/auto-coder-installer-windows-cmd-2014-06-19.zip  解压后，在 powershell 或者 cmd 中执行：
-
-```shell
-auto-coder-installer-windows-cmd.exe install
-```
-
-安装时长根据网速，此外,windows 版本默认不支持 byzerllm storage。
 
 ## 直接安装
 
-### 通过 Conda 
+### 通过 Conda （推荐）
 
 1.安装 Conda 并且创建环境：
 
@@ -33,7 +25,8 @@ auto-coder-installer-windows-cmd.exe install
 2.设置环境变量
     
     高级系统设置->环境变量->RAY_ENABLE_WINDOWS_OR_OSX_CLUSTER，默认值给1。
-    高级系统设置->环境变量->PYTHONUTF8，默认值给1。    
+    高级系统设置->环境变量->PYTHONUTF8，默认值给1。 
+    高级系统设置->环境变量->PYTHONENCODING，默认值给utf-8。   
 
 3.配置pip源 
     

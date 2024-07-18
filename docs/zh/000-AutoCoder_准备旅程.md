@@ -21,17 +21,8 @@ bash Miniconda3-py38_4.12.0-Linux-x86_64.sh
 ```
 
 
-如果你是 Windows 用户，
-下载如下安装器： https://gitee.com/allwefantasy/auto-coder/blob/master/auto_coder_installer/auto-coder-installer-windows-cmd-2014-06-19.zip  解压后，在 powershell 或者 cmd 中执行：
-
-```shell
-auto-coder-installer-windows-cmd.exe install
-```
-
-安装时长根据网速，此外,windows 版本默认不支持 byzerllm storage。
-
-
-如果还有问题，可以参考这个[043_AutoCoder_Windows安装特别说明](../zh/043_AutoCoder_Windows%E5%AE%89%E8%A3%85%E7%89%B9%E5%88%AB%E8%AF%B4%E6%98%8E.md)。
+如果你是Windows用户，参考这个：
+可以参考这个[043_AutoCoder_Windows安装特别说明](../zh/043_AutoCoder_Windows%E5%AE%89%E8%A3%85%E7%89%B9%E5%88%AB%E8%AF%B4%E6%98%8E.md)。
 
 ## 启动推荐的模型代理
 
