@@ -159,6 +159,10 @@ def main(input_args: Optional[List[str]] = None):
             params={"project_type": args.project_type, "source_dir": source_dir},
         )
         git_utils.init(os.path.abspath(args.source_dir))
+
+        with open(os.path.join(source_dir, ".gitignore"), "a") as f:
+            f.write(".auto-coder/\n")
+
         print(
             f"""Successfully initialized auto-coder project in {os.path.abspath(args.source_dir)}."""
         )
@@ -284,7 +288,7 @@ def main(input_args: Optional[List[str]] = None):
                     f"""\033[92mInstruction to model saved in \033[94m{args.target_file}\033[92m and copied to clipboard:\n\n\033[93m{final_ins[0:100]}...\033[0m"""
                 )
 
-                if args.request_id and not args.silence:                    
+                if args.request_id and not args.silence:
                     event_data = {
                         "instruction": final_ins,
                         "model": model,
@@ -305,7 +309,7 @@ def main(input_args: Optional[List[str]] = None):
                             "metadata": {},
                         }
                     ]
-                    return False, v                                
+                    return False, v
 
                 lines = []
                 while True:
@@ -460,6 +464,7 @@ def main(input_args: Optional[List[str]] = None):
             return
         elif raw_args.agent_command == "auto_tool":
             from autocoder.agent.auto_tool import AutoTool
+
             auto_tool = AutoTool(args, llm)
             v = auto_tool.run(args.query)
             print()

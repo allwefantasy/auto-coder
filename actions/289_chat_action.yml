@@ -1,0 +1,14 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: 在git_utils.init(os.path.abspath(args.source_dir)) 初始化后,将 .auto-coder 追加到.gitignore文件里去.
+silence: true
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/setup.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
