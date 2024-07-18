@@ -7,8 +7,6 @@ Windows 下安装有两种方式。
 
 > 推荐具备条件的，优先使用WSL安装。
 
-
-
 ## 直接安装
 
 ### 通过 Conda （推荐）
@@ -16,8 +14,10 @@ Windows 下安装有两种方式。
 1.安装 Conda 并且创建环境：
 
     下载 Windows 版本的 [Miniconda 安装包](https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe)。安装
-    完成后在 shell 中执行下面的命令：
 
+    > 安装过程中，请务必选择将 miniconda 目录 添加到 Path环境变量中选项，否则你再 打开 PowerShell/CMD 会提示找不到 conda 命令。
+    
+    完成后在 shell 中执行下面的命令：
     
     conda create --name auto-coder python==3.11.9
     conda activate auto-coder    
