@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.122
+Version: 0.1.123
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -15,7 +15,7 @@ Requires-Dist: transformers>=4.35.0
 Requires-Dist: torch>=2.1.2
 Requires-Dist: ray[default]>=2.9.1
 Requires-Dist: sentencepiece
-Requires-Dist: pyarrow==12.0.1
+Requires-Dist: pyarrow
 Requires-Dist: sentence-transformers
 Requires-Dist: datasets
 Requires-Dist: langchain
