@@ -29,6 +29,8 @@ from rich.live import Live
 from rich.text import Text
 from rich.table import Table
 
+ARGS = None
+
 if platform.system() == "Windows":
     from colorama import init
 
@@ -1136,7 +1138,17 @@ def main():
             print(
                 f"\033[91mAn error occurred:\033[0m \033[93m{type(e).__name__}\033[0m - {str(e)}"
             )
+            if ARGS and ARGS.debug:
+                import traceback
+                traceback.print_exc()
 
+def parse_arguments():
+    import argparse
+    parser = argparse.ArgumentParser(description="Chat Auto Coder")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    return parser.parse_args()
 
 if __name__ == "__main__":
+    ARGS = parse_arguments()
     main()
+
