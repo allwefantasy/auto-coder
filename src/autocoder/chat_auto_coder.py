@@ -29,6 +29,12 @@ from rich.live import Live
 from rich.text import Text
 from rich.table import Table
 
+def parse_arguments():
+    import argparse
+    parser = argparse.ArgumentParser(description="Chat Auto Coder")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    return parser.parse_args()
+
 ARGS = None
 
 if platform.system() == "Windows":
@@ -952,6 +958,8 @@ def list_files():
 
 
 def main():
+    ARGS = parse_arguments()
+    
     initialize_system()
 
     load_memory()
@@ -1142,13 +1150,6 @@ def main():
                 import traceback
                 traceback.print_exc()
 
-def parse_arguments():
-    import argparse
-    parser = argparse.ArgumentParser(description="Chat Auto Coder")
-    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    return parser.parse_args()
-
-if __name__ == "__main__":
-    ARGS = parse_arguments()
+if __name__ == "__main__":    
     main()
 
