@@ -22,6 +22,15 @@ from pydantic import BaseModel
 from byzerllm.types import Bool
 from contextlib import contextmanager
 import fnmatch
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
+from rich.prompt import Prompt
+from autocoder.utils.queue_communicate import (
+    queue_communicate,
+    CommunicateEvent,
+    CommunicateEventType,
+)
 
 
 @contextmanager
@@ -89,7 +98,7 @@ def context(project_map: str) -> str:
 
     7. find_files_by_content(keyword: str) -> str
         - 根据关键字搜索项目中的文件内容。
-        - 返回内容包含关键字的文件路径列表，以逗号分隔。
+        - 返回内容包含关键字的文件路径列表，以逗号分隔。   
 
     工作流程建议:
 
@@ -170,6 +179,64 @@ def detect_rm_command(command: str) -> Bool:
 
 
 def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
+
+    def ask_user(question:str) -> str:
+        '''
+        如果你对用户的问题有什么疑问，或者你想从用户收集一些额外信息，可以调用
+        此方法。
+        输入参数 question 是你对用户的提问。
+        返回值是 用户对你问题的回答。
+
+        注意，尽量不要询问用户，除非你感受到你无法回答用户的问题。
+        '''
+
+        if args.request_id and not args.silence:
+            event_data = {
+                "question": question                
+            }
+            response_json = queue_communicate.send_event(
+                request_id=args.request_id,
+                event=CommunicateEvent(
+                    event_type=CommunicateEventType.ASK_HUMAN.value,
+                    data=json.dumps(event_data, ensure_ascii=False),
+                ),
+            )
+            return response_json
+
+        console = Console()
+
+        # 创建一个醒目的问题面板
+        question_text = Text(question, style="bold cyan")
+        question_panel = Panel(
+            question_text,
+            title="[bold yellow]auto-coder.chat's Question[/bold yellow]",
+            border_style="blue",
+            expand=False
+        )
+
+        # 显示问题面板
+        console.print(question_panel)
+
+        # 创建一个自定义提示符
+        prompt = Prompt.ask(
+            "\n[bold green]Your Answer[/bold green]",
+            console=console
+        )
+
+        # 获取用户的回答
+        answer = prompt
+
+        # 显示用户的回答
+        answer_text = Text(answer, style="italic")
+        answer_panel = Panel(
+            answer_text,
+            title="[bold yellow]Your Response[/bold yellow]",
+            border_style="green",
+            expand=False
+        )
+        console.print(answer_panel)
+
+        return answer
 
     def run_python_code(code: str) -> str:
         """
@@ -363,6 +430,7 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         FunctionTool.from_defaults(run_shell_code),
         FunctionTool.from_defaults(find_files_by_name),
         FunctionTool.from_defaults(find_files_by_content),
+        FunctionTool.from_defaults(ask_user),
         # FunctionTool.from_defaults(auto_run_job),
     ]
     return tools

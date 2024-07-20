@@ -14,6 +14,7 @@ class CommunicateEventType(Enum):
     CODE_START = "code_start"
     CODE_END = "code_end"
     CODE_HUMAN_AS_MODEL = "code_human_as_model"
+    ASK_HUMAN = "ask_human"
 
 @dataclass(eq=True, frozen=True)
 class CommunicateEvent:
