@@ -1,0 +1,17 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: deepseek_chat
+query: /chat 新增子命令 /new ,如果有该参数,要传递给  auto_coder_main(["agent", "chat", "--file",
+  execute_file]),同时修改command_args.py 里的 chat_parser ,添加该 new 参数,默认值为false
+silence: true
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/setup.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/agent/project_reader.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py

@@ -253,7 +253,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     doc_chat_parse = doc_subparsers.add_parser("chat", help="")
     doc_chat_parse.add_argument("--request_id", default="", help=desc["request_id"])
     doc_chat_parse.add_argument("--file", default="", help=desc["file"])
-    doc_chat_parse.add_argument("--model", default="", help=desc["model"])
+    doc_chat_parse.add_argument("--model", default="", help=desc["model"])    
     doc_chat_parse.add_argument("--emb_model", default="", help=desc["emb_model"])
     doc_chat_parse.add_argument(
         "--ray_address", default="auto", help=desc["ray_address"]
