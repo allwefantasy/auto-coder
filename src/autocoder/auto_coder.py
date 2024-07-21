@@ -37,6 +37,10 @@ from autocoder.utils.request_queue import (
 )
 from loguru import logger
 import json
+from rich.console import Console
+from rich.panel import Panel
+
+console = Console()
 
 
 def resolve_include_path(base_path, include_path):
@@ -489,7 +493,14 @@ def main(input_args: Optional[List[str]] = None):
                 chat_history = {"ask_conversation": []}
                 with open(memory_file, "w") as f:
                     json.dump(chat_history, f, ensure_ascii=False)
-                print("新会话已开启。之前的对话历史已被清除。")
+                console.print(
+                    Panel(
+                        "New session started. Previous chat history has been cleared.",
+                        title="Session Status",
+                        expand=False,
+                        border_style="green",
+                    )
+                )
                 return
 
             if os.path.exists(memory_file):
@@ -518,7 +529,7 @@ def main(input_args: Optional[List[str]] = None):
             loaded_conversations = (
                 pre_conversations + chat_history["ask_conversation"][-31:]
             )
-                        
+
             if args.collection or args.collections:
                 rag = SimpleRAG(llm=llm, args=args, path=args.source_dir)
                 response = rag.stream_chat_oai(conversations=loaded_conversations)[0]
