@@ -851,11 +851,15 @@ def chat(query: str):
     if "emb_model" in conf:
         yaml_config["emb_model"] = conf["emb_model"]
 
-    # Check if /new is in the query
+    # Check if /new or /apply is in the query
     is_new = "/new" in query
+    is_apply = "/apply" in query
     if is_new:
         yaml_config["new"] = True
         query = query.replace("/new", "").strip()  # Remove /new from the query
+    if is_apply:
+        yaml_config["apply"] = True
+        query = query.replace("/apply", "").strip()  # Remove /apply from the query
     
     yaml_config["query"] = query
 
@@ -870,6 +874,8 @@ def chat(query: str):
         cmd = ["agent", "chat", "--file", execute_file]
         if is_new:
             cmd.append("--new")
+        if is_apply:
+            cmd.append("--apply")
         auto_coder_main(cmd)
 
     try:
