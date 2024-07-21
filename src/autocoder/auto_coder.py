@@ -486,7 +486,7 @@ def main(input_args: Optional[List[str]] = None):
             os.makedirs(memory_dir, exist_ok=True)
             memory_file = os.path.join(memory_dir, "chat_history.json")
 
-            if os.path.exists(memory_file):
+            if os.path.exists(memory_file) and not args.new:
                 with open(memory_file, "r") as f:
                     chat_history = json.load(f)
             else:
