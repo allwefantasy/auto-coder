@@ -630,22 +630,47 @@ def add_files(args: List[str]):
                     )
                 )
         elif len(args) >= 2:
-            group_name = args[1]
-            if group_name in groups:
-                memory["current_files"]["files"] = groups[group_name].copy()
+            # 支持多个组的合并，允许组名之间使用逗号或空格分隔
+            group_names = " ".join(args[1:]).replace(",", " ").split()
+            merged_files = set()
+            missing_groups = []
+            for group_name in group_names:
+                if group_name in groups:
+                    merged_files.update(groups[group_name])
+                else:
+                    missing_groups.append(group_name)
+            
+            if missing_groups:
                 console.print(
                     Panel(
-                        f"Replaced current files with files from group '{group_name}'.",
-                        title="Files Replaced",
+                        f"Group(s) not found: {', '.join(missing_groups)}",
+                        title="Error",
+                        border_style="red",
+                    )
+                )
+            
+            if merged_files:
+                memory["current_files"]["files"] = list(merged_files)
+                console.print(
+                    Panel(
+                        f"Merged files from groups: {', '.join(group_names)}",
+                        title="Files Merged",
                         border_style="green",
                     )
                 )
-            else:
+                table = Table(
+                    title="Current Files", show_header=True, header_style="bold magenta"
+                )
+                table.add_column("File", style="green")
+                for f in memory["current_files"]["files"]:
+                    table.add_row(os.path.relpath(f, project_root))
+                console.print(Panel(table, border_style="blue"))
+            elif not missing_groups:
                 console.print(
                     Panel(
-                        f"Group '{group_name}' not found.",
-                        title="Error",
-                        border_style="red",
+                        "No files in the specified groups.",
+                        title="No Files Added",
+                        border_style="yellow",
                     )
                 )
     else:
