@@ -851,6 +851,14 @@ def chat(query: str):
     if "emb_model" in conf:
         yaml_config["emb_model"] = conf["emb_model"]
 
+    # Check if /new is in the query
+    is_new = "/new" in query
+    if is_new:
+        yaml_config["new"] = True
+        query = query.replace("/new", "").strip()  # Remove /new from the query
+    
+    yaml_config["query"] = query
+
     yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
@@ -859,7 +867,10 @@ def chat(query: str):
         f.write(yaml_content)
 
     def execute_ask():
-        auto_coder_main(["agent", "chat", "--file", execute_file])
+        cmd = ["agent", "chat", "--file", execute_file]
+        if is_new:
+            cmd.append("--new")
+        auto_coder_main(cmd)
 
     try:
         execute_ask()
