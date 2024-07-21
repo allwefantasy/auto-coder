@@ -481,12 +481,18 @@ def main(input_args: Optional[List[str]] = None):
             return
 
         elif raw_args.agent_command == "chat":
-
             memory_dir = os.path.join(args.source_dir, ".auto-coder", "memory")
             os.makedirs(memory_dir, exist_ok=True)
             memory_file = os.path.join(memory_dir, "chat_history.json")
 
-            if os.path.exists(memory_file) and not args.new_session:
+            if args.new_session:
+                chat_history = {"ask_conversation": []}
+                with open(memory_file, "w") as f:
+                    json.dump(chat_history, f, ensure_ascii=False)
+                print("新会话已开启。之前的对话历史已被清除。")
+                return
+
+            if os.path.exists(memory_file):
                 with open(memory_file, "r") as f:
                     chat_history = json.load(f)
             else:
