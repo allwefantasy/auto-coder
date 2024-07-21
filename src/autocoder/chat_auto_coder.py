@@ -820,7 +820,15 @@ def coding(query: str):
             memory_file = os.path.join(memory_dir, "chat_history.json")
 
             if not os.path.exists(memory_file):
-                print("No chat history found to apply.")
+                console = Console()
+                console.print(
+                    Panel(
+                        "No chat history found to apply.",
+                        title="Chat History",
+                        expand=False,
+                        border_style="yellow"
+                    )
+                )
                 return
 
             with open(memory_file, "r") as f:
