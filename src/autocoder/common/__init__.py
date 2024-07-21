@@ -218,6 +218,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     base_dir: Optional[str] = None
     context: Optional[str] = None
     editblock_similarity: Optional[float] = 0.9
+    new_session: Optional[bool] = False
 
 
     class Config:

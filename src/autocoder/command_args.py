@@ -342,7 +342,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     chat_parser.add_argument("--rag_token", default="", help="")
     chat_parser.add_argument("--rag_url", default="", help="")
     chat_parser.add_argument("--target_file", default="./output.txt", help="")
-    chat_parser.add_argument("--new", action="store_true", default=False, help="Start a new chat session")
+    chat_parser.add_argument("--new_session", action="store_true", default=False, help="Start a new chat session")
     chat_parser.add_argument("--apply", action="store_true", default=False, help="Apply changes suggested by the AI")
 
     read_project_parser = agent_subparsers.add_parser(

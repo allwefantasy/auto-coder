@@ -779,6 +779,11 @@ def ask(query: str):
 
 
 def coding(query: str):
+    
+    is_apply = query.strip().startswith("/apply")
+    if is_apply:        
+        query = query.replace("/apply", "",1).strip() 
+
     memory["conversation"].append({"role": "user", "content": query})
     conf = memory.get("conf", {})
 
@@ -808,6 +813,28 @@ def coding(query: str):
 
         yaml_config["urls"] = current_files
         yaml_config["query"] = query
+                
+        if is_apply:
+            memory_dir = os.path.join(".auto-coder", "memory")
+            os.makedirs(memory_dir, exist_ok=True)
+            memory_file = os.path.join(memory_dir, "chat_history.json")
+
+            if not os.path.exists(memory_file):
+                print("No chat history found to apply.")
+                return
+
+            with open(memory_file, "r") as f:
+                chat_history = json.load(f)
+
+            conversations = chat_history["ask_conversation"]
+            
+            yaml_config["context"] = f"下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码。\n\n"
+            for conv in conversations:
+                if conv["role"] == "user":
+                    yaml_config["context"] += f"用户: {conv['content']}\n"
+                elif conv["role"] == "assistant":
+                    yaml_config["context"] += f"你: {conv['content']}\n"
+
 
         yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
@@ -815,8 +842,10 @@ def coding(query: str):
         with open(os.path.join(execute_file), "w") as f:
             f.write(yaml_content)
 
+
         def execute_chat():
-            auto_coder_main(["--file", execute_file])
+            cmd = ["--file", execute_file]            
+            auto_coder_main(cmd)
 
         execute_chat()
     else:
@@ -851,15 +880,11 @@ def chat(query: str):
     if "emb_model" in conf:
         yaml_config["emb_model"] = conf["emb_model"]
 
-    # Check if /new or /apply is in the query
-    is_new = "/new" in query
-    is_apply = "/apply" in query
-    if is_new:
-        yaml_config["new"] = True
-        query = query.replace("/new", "").strip()  # Remove /new from the query
-    if is_apply:
-        yaml_config["apply"] = True
-        query = query.replace("/apply", "").strip()  # Remove /apply from the query
+    
+    is_new = query.strip().startswith("/new")
+    if is_new:        
+        query = query.replace("/new", "",1).strip()
+
     
     yaml_config["query"] = query
 
@@ -873,9 +898,7 @@ def chat(query: str):
     def execute_ask():
         cmd = ["agent", "chat", "--file", execute_file]
         if is_new:
-            cmd.append("--new")
-        if is_apply:
-            cmd.append("--apply")
+            cmd.append("--new_session")        
         auto_coder_main(cmd)
 
     try:

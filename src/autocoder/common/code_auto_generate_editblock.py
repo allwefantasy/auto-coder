@@ -43,7 +43,7 @@ class CodeAutoGenerateEditBlock:
         """
 
     @byzerllm.prompt(llm=lambda self: self.llm)
-    def multi_round_instruction(self, instruction: str, content: str) -> str:
+    def multi_round_instruction(self, instruction: str, content: str,context:str="") -> str:
         """
         如果你需要生成代码，对于每个需要更改的文件,你需要按 *SEARCH/REPLACE block* 的格式进行生成。
 
@@ -175,6 +175,10 @@ class CodeAutoGenerateEditBlock:
 
         {{ content }}
         {%- endif %}
+
+        {%- if context %}
+        {{ context }}
+        {%- endif %}     
 
         下面是用户的需求：
 
@@ -193,7 +197,7 @@ class CodeAutoGenerateEditBlock:
         }
 
     @byzerllm.prompt(llm=lambda self: self.llm)
-    def single_round_instruction(self, instruction: str, content: str) -> str:
+    def single_round_instruction(self, instruction: str, content: str, context:str="") -> str:
         """
         如果你需要生成代码，对于每个需要更改的文件,你需要按 *SEARCH/REPLACE block* 的格式进行生成。
 
@@ -324,6 +328,10 @@ class CodeAutoGenerateEditBlock:
 
         {{ content }}
         {%- endif %}
+
+        {%- if context %}
+        {{ context }}
+        {%- endif %}     
 
         下面是用户的需求：
 
@@ -347,7 +355,7 @@ class CodeAutoGenerateEditBlock:
 
         if self.args.template == "common":
             init_prompt = self.single_round_instruction.prompt(
-                instruction=query, content=source_content
+                instruction=query, content=source_content,context=self.args.context
             )
         elif self.args.template == "auto_implement":
             init_prompt = self.auto_implement_function.prompt(
@@ -371,7 +379,7 @@ class CodeAutoGenerateEditBlock:
 
         if self.args.template == "common":
             init_prompt = self.multi_round_instruction.prompt(
-                instruction=query, content=source_content
+                instruction=query, content=source_content,context=self.args.context
             )
         elif self.args.template == "auto_implement":
             init_prompt = self.auto_implement_function.prompt(
