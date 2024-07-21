@@ -161,7 +161,8 @@ def main(input_args: Optional[List[str]] = None):
         git_utils.init(os.path.abspath(args.source_dir))
 
         with open(os.path.join(source_dir, ".gitignore"), "a") as f:
-            f.write(".auto-coder/\n")
+            f.write("\n.auto-coder/")
+            f.write("\nactions/")
 
         print(
             f"""Successfully initialized auto-coder project in {os.path.abspath(args.source_dir)}."""
