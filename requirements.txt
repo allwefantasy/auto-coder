@@ -69,11 +69,11 @@ google-generativeai
 protobuf
 azure-cognitiveservices-speech
 python-docx
-reportlab
 pdf2image
 docx2pdf
-pandoc
-pypandoc
 pyperclip
 colorama
 pylint
+# reportlab
+# pandoc
+# pypandoc
