@@ -272,9 +272,10 @@ class CodeAutoMergeEditBlock:
         if changes_made:
             if not force_skip_git:
                 try:
-                    git_utils.commit_changes(
+                    commit_result = git_utils.commit_changes(
                         self.args.source_dir, f"auto_coder_{file_name}_{md5}"
                     )
+                    git_utils.print_commit_info(commit_result=commit_result)
                 except Exception as e:
                     logger.error(
                         self.git_require_msg(

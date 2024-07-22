@@ -3,6 +3,12 @@ from git import Repo, GitCommandError
 from loguru import logger
 from typing import List, Optional
 from pydantic import BaseModel
+from rich.console import Console
+from rich.panel import Panel
+from rich.syntax import Syntax
+from rich.table import Table
+from rich.text import Text
+
 
 class CommitResult(BaseModel):
     success: bool
@@ -11,6 +17,7 @@ class CommitResult(BaseModel):
     changed_files: Optional[List[str]] = None
     diffs: Optional[dict] = None
     error_message: Optional[str] = None
+
 
 def init(repo_path: str) -> bool:
     if not os.path.exists(repo_path):
@@ -38,8 +45,10 @@ def get_repo(repo_path: str) -> Repo:
 def commit_changes(repo_path: str, message: str) -> CommitResult:
     repo = get_repo(repo_path)
     if repo is None:
-        return CommitResult(success=False, error_message="Repository is not initialized.")
-    
+        return CommitResult(
+            success=False, error_message="Repository is not initialized."
+        )
+
     try:
         repo.git.add(all=True)
         if repo.is_dirty():
@@ -49,23 +58,25 @@ def commit_changes(repo_path: str, message: str) -> CommitResult:
                 commit_message=message,
                 commit_hash=commit.hexsha,
                 changed_files=[],
-                diffs={}
+                diffs={},
             )
-            
+
             if commit.parents:
                 changed_files = repo.git.diff(
                     commit.parents[0].hexsha, commit.hexsha, name_only=True
                 ).split("\n")
                 result.changed_files = [file for file in changed_files if file.strip()]
-                
+
                 for file in result.changed_files:
                     diff = repo.git.diff(
                         commit.parents[0].hexsha, commit.hexsha, "--", file
                     )
                     result.diffs[file] = diff
             else:
-                result.error_message = "This is the initial commit, no parent to compare against."
-            
+                result.error_message = (
+                    "This is the initial commit, no parent to compare against."
+                )
+
             return result
         else:
             return CommitResult(success=False, error_message="No changes to commit.")
@@ -141,8 +152,6 @@ def revert_changes(repo_path: str, message: str) -> bool:
 
     except GitCommandError as e:
         logger.error(f"Error during revert operation: {e}")
-        if stashed:
-            repo.git.stash("pop")
         return False
 
 
@@ -158,3 +167,28 @@ def revert_change(repo_path: str, message: str) -> bool:
     else:
         logger.warning(f"No commit found with message: {message}")
         return False
+
+
+def print_commit_info(commit_result: CommitResult):
+    console = Console()
+    table = Table(
+        title="Commit Information (Use /revert to revert this commit)", show_header=True, header_style="bold magenta"
+    )
+    table.add_column("Attribute", style="cyan", no_wrap=True)
+    table.add_column("Value", style="green")
+
+    table.add_row("Commit Hash", commit_result.commit_hash)
+    table.add_row("Commit Message", commit_result.commit_message)
+    table.add_row("Changed Files", "\n".join(commit_result.changed_files))
+
+    console.print(
+        Panel(table, expand=False, border_style="green", title="Git Commit Summary")
+    )
+
+    if commit_result.diffs:
+        for file, diff in commit_result.diffs.items():
+            console.print(f"\n[bold blue]File: {file}[/bold blue]")
+            syntax = Syntax(diff, "diff", theme="monokai", line_numbers=True)
+            console.print(
+                Panel(syntax, expand=False, border_style="yellow", title="File Diff")
+            )

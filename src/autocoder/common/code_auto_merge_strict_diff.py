@@ -195,7 +195,8 @@ class CodeAutoMergeStrictDiff:
                             
         logger.info(f"Merged {total} files into the project.")
         if not force_skip_git:
-            git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}")
+            commit_result = git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}")
+            git_utils.print_commit_info(commit_result=commit_result)
 
     @byzerllm.prompt(render="jinja2")
     def git_require_msg(self, source_dir: str, error: str) -> str:
