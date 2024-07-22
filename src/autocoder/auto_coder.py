@@ -39,6 +39,7 @@ from loguru import logger
 import json
 from rich.console import Console
 from rich.panel import Panel
+from rich.markdown import Markdown
 
 console = Console()
 

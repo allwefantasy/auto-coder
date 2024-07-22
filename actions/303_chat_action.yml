@@ -1,0 +1,20 @@
+auto_merge: editblock
+collections: models
+context: '下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码。
+
+
+  '
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: gpt_4o_mini_chat
+query: ''
+silence: true
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/setup.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/agent/project_reader.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/command_args.py

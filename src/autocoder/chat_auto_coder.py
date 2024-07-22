@@ -29,11 +29,14 @@ from rich.live import Live
 from rich.text import Text
 from rich.table import Table
 
+
 def parse_arguments():
     import argparse
+
     parser = argparse.ArgumentParser(description="Chat Auto Coder")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     return parser.parse_args()
+
 
 ARGS = None
 
@@ -639,7 +642,7 @@ def add_files(args: List[str]):
                     merged_files.update(groups[group_name])
                 else:
                     missing_groups.append(group_name)
-            
+
             if missing_groups:
                 console.print(
                     Panel(
@@ -648,7 +651,7 @@ def add_files(args: List[str]):
                         border_style="red",
                     )
                 )
-            
+
             if merged_files:
                 memory["current_files"]["files"] = list(merged_files)
                 console.print(
@@ -779,10 +782,10 @@ def ask(query: str):
 
 
 def coding(query: str):
-    
+    console = Console()
     is_apply = query.strip().startswith("/apply")
-    if is_apply:        
-        query = query.replace("/apply", "",1).strip() 
+    if is_apply:
+        query = query.replace("/apply", "", 1).strip()
 
     memory["conversation"].append({"role": "user", "content": query})
     conf = memory.get("conf", {})
@@ -813,36 +816,43 @@ def coding(query: str):
 
         yaml_config["urls"] = current_files
         yaml_config["query"] = query
-                
+
         if is_apply:
             memory_dir = os.path.join(".auto-coder", "memory")
             os.makedirs(memory_dir, exist_ok=True)
             memory_file = os.path.join(memory_dir, "chat_history.json")
 
-            if not os.path.exists(memory_file):
-                console = Console()
+            def error_message():
                 console.print(
                     Panel(
                         "No chat history found to apply.",
                         title="Chat History",
                         expand=False,
-                        border_style="yellow"
+                        border_style="yellow",
                     )
                 )
+
+            if not os.path.exists(memory_file):
+                error_message()
                 return
 
             with open(memory_file, "r") as f:
                 chat_history = json.load(f)
 
+            if not chat_history["ask_conversation"]:
+                error_message()
+                return
+
             conversations = chat_history["ask_conversation"]
-            
-            yaml_config["context"] = f"下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码。\n\n"
+
+            yaml_config["context"] = (
+                f"下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码。\n\n"
+            )
             for conv in conversations:
                 if conv["role"] == "user":
                     yaml_config["context"] += f"用户: {conv['content']}\n"
                 elif conv["role"] == "assistant":
                     yaml_config["context"] += f"你: {conv['content']}\n"
-
 
         yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
@@ -850,9 +860,8 @@ def coding(query: str):
         with open(os.path.join(execute_file), "w") as f:
             f.write(yaml_content)
 
-
         def execute_chat():
-            cmd = ["--file", execute_file]            
+            cmd = ["--file", execute_file]
             auto_coder_main(cmd)
 
         execute_chat()
@@ -888,12 +897,10 @@ def chat(query: str):
     if "emb_model" in conf:
         yaml_config["emb_model"] = conf["emb_model"]
 
-    
     is_new = query.strip().startswith("/new")
-    if is_new:        
-        query = query.replace("/new", "",1).strip()
+    if is_new:
+        query = query.replace("/new", "", 1).strip()
 
-    
     yaml_config["query"] = query
 
     yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
@@ -906,7 +913,7 @@ def chat(query: str):
     def execute_ask():
         cmd = ["agent", "chat", "--file", execute_file]
         if is_new:
-            cmd.append("--new_session")        
+            cmd.append("--new_session")
         auto_coder_main(cmd)
 
     try:
@@ -1032,7 +1039,7 @@ def list_files():
 
 def main():
     ARGS = parse_arguments()
-    
+
     initialize_system()
 
     load_memory()
@@ -1221,8 +1228,9 @@ def main():
             )
             if ARGS and ARGS.debug:
                 import traceback
+
                 traceback.print_exc()
 
-if __name__ == "__main__":    
-    main()
 
+if __name__ == "__main__":
+    main()
