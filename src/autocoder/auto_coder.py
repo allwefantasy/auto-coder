@@ -40,6 +40,7 @@ import json
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
+from rich.live import Live
 
 console = Console()
 
@@ -458,23 +459,34 @@ def main(input_args: Optional[List[str]] = None):
 
             project_reader = ProjectReader(args, llm)
             v = project_reader.run(args.query)
-            print()
-            print("\n\n=============RESPONSE==================\n\n")
             request_queue.add_request(
                 args.request_id,
                 RequestValue(
                     value=DefaultValue(value=v), status=RequestOption.COMPLETED
                 ),
             )
-            print(v)
+            console = Console()
+            markdown_content = v
+
+            with Live(
+                Panel("", title="Response", border_style="green", expand=False),
+                refresh_per_second=4,
+            ) as live:
+                live.update(
+                    Panel(
+                        Markdown(markdown_content),
+                        title="Response",
+                        border_style="green",
+                        expand=False,
+                    )
+                )
+
             return
         elif raw_args.agent_command == "auto_tool":
             from autocoder.agent.auto_tool import AutoTool
 
             auto_tool = AutoTool(args, llm)
             v = auto_tool.run(args.query)
-            print()
-            print("\n\n=============RESPONSE==================\n\n")
             if args.request_id:
                 request_queue.add_request(
                     args.request_id,
@@ -482,7 +494,21 @@ def main(input_args: Optional[List[str]] = None):
                         value=DefaultValue(value=v), status=RequestOption.COMPLETED
                     ),
                 )
-            print(v)
+            console = Console()
+            markdown_content = v
+
+            with Live(
+                Panel("", title="Response", border_style="green", expand=False),
+                refresh_per_second=4,
+            ) as live:
+                live.update(
+                    Panel(
+                        Markdown(markdown_content),
+                        title="Response",
+                        border_style="green",
+                        expand=False,
+                    )
+                )
             return
 
         elif raw_args.agent_command == "chat":
@@ -541,19 +567,30 @@ def main(input_args: Optional[List[str]] = None):
                 )
 
             assistant_response = ""
-            console.print("\n\n=============RESPONSE==================\n\n")
             markdown_content = ""
-            for res in v:
-                markdown_content += res[0]
-                assistant_response += res[0]
-                request_queue.add_request(
-                    args.request_id,
-                    RequestValue(
-                        value=StreamValue(value=[res[0]]), status=RequestOption.RUNNING
-                    ),
-                )
-                # 使用Rich的Markdown Panel来动态更新输出
-                console.print(Panel(Markdown(markdown_content), expand=False, border_style="green"), end="")
+
+            with Live(
+                Panel("", title="Response", border_style="green", expand=False),
+                refresh_per_second=4,
+            ) as live:
+                for res in v:
+                    markdown_content += res[0]
+                    assistant_response += res[0]
+                    request_queue.add_request(
+                        args.request_id,
+                        RequestValue(
+                            value=StreamValue(value=[res[0]]),
+                            status=RequestOption.RUNNING,
+                        ),
+                    )
+                    live.update(
+                        Panel(
+                            Markdown(markdown_content),
+                            title="Response",
+                            border_style="green",
+                            expand=False,
+                        )
+                    )
 
             request_queue.add_request(
                 args.request_id,
