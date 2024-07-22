@@ -541,9 +541,10 @@ def main(input_args: Optional[List[str]] = None):
                 )
 
             assistant_response = ""
-            print("\n\n=============RESPONSE==================\n\n")
+            console.print("\n\n=============RESPONSE==================\n\n")
+            markdown_content = ""
             for res in v:
-                print(res[0], end="")
+                markdown_content += res[0]
                 assistant_response += res[0]
                 request_queue.add_request(
                     args.request_id,
@@ -551,6 +552,8 @@ def main(input_args: Optional[List[str]] = None):
                         value=StreamValue(value=[res[0]]), status=RequestOption.RUNNING
                     ),
                 )
+                # 使用Rich的Markdown Panel来动态更新输出
+                console.print(Panel(Markdown(markdown_content), expand=False, border_style="green"), end="")
 
             request_queue.add_request(
                 args.request_id,
@@ -558,8 +561,7 @@ def main(input_args: Optional[List[str]] = None):
                     value=StreamValue(value=[""]), status=RequestOption.COMPLETED
                 ),
             )
-            print()
-            print()
+            console.print("\n")
 
             chat_history["ask_conversation"].append(
                 {"role": "assistant", "content": assistant_response}
