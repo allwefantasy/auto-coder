@@ -70,10 +70,12 @@ class CodeAutoMergeEditBlock:
             return False, error_message
 
     def parse_whole_text(self, text: str) -> List[PathAndCode]:
+        HEAD = "<<<<<<< SEARCH"
+        DIVIDER = "======="
+        UPDATED = ">>>>>>> REPLACE"
         lines = text.split("\n")
         lines_len = len(lines)
         start_marker_count = 0
-        inline_start_marker_count = 0
         block = []
         path_and_code_list = []
 
@@ -87,34 +89,19 @@ class CodeAutoMergeEditBlock:
                 and lines[index + 1].startswith("##File:")
             )
 
-        def inline_start_marker(line, index):
-            return line.startswith(self.fence_0) and line.strip() != self.fence_0
-
         def end_marker(line, index):
-            return line.startswith(self.fence_1) and line.strip() == self.fence_1
+            return line.startswith(self.fence_1) and UPDATED in lines[index - 1]
 
         for index, line in enumerate(lines):
             if start_marker(line, index) and start_marker_count == 0:
                 start_marker_count += 1
-            elif (
-                start_marker(line, index) or inline_start_marker(line, index)
-            ) and start_marker_count > 0:
-                inline_start_marker_count += 1
-                block.append(line)
-            elif (
-                end_marker(line, index)
-                and start_marker_count == 1
-                and inline_start_marker_count == 0
-            ):
+            elif end_marker(line, index) and start_marker_count == 1:
                 start_marker_count -= 1
                 if block:
                     path = block[0].split(":", 1)[1].strip()
                     content = "\n".join(block[1:])
                     block = []
                     path_and_code_list.append(PathAndCode(path=path, content=content))
-            elif end_marker(line, index) and inline_start_marker_count > 0:
-                inline_start_marker_count -= 1
-                block.append(line)
             elif start_marker_count > 0:
                 block.append(line)
 
@@ -215,7 +202,7 @@ class CodeAutoMergeEditBlock:
                             file_content_mapping[file_path] = new_content
                             changes_made = True
                     else:
-                        unmerged_blocks.append((file_path, head, update,similarity))
+                        unmerged_blocks.append((file_path, head, update, similarity))
 
         if unmerged_blocks:
             s = f"Found {len(unmerged_blocks)} unmerged blocks, the changes will not be applied. Please review them manually then try again."
@@ -291,7 +278,7 @@ class CodeAutoMergeEditBlock:
     def _print_unmerged_blocks(self, unmerged_blocks: List[tuple]):
         console = Console()
         console.print("\n[bold red]Unmerged Blocks:[/bold red]")
-        for file_path, head, update,similarity in unmerged_blocks:
+        for file_path, head, update, similarity in unmerged_blocks:
             console.print(f"\n[bold blue]File:[/bold blue] {file_path}")
             console.print(f"\n[bold green]Search Block({similarity}):[/bold green]")
             syntax = Syntax(head, "python", theme="monokai", line_numbers=True)

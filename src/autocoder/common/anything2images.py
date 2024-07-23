@@ -97,7 +97,7 @@ class Anything2Images:
         if not self.args.single_file:      
             for i, image in enumerate(images):
                 img_path = image
-                image_path_ext = os.path.splitext(img_path)[1]
+                image_path_ext = os.path.splitext(img_path)[1][1:]
                 with open(img_path, 'rb') as image_file:
                     image = base64.b64encode(image_file.read()).decode('utf-8')
                     image = f"data:image/{image_path_ext};base64,{image}" 
@@ -139,7 +139,7 @@ class Anything2Images:
             html = t[0].output
         else:
             img_path = images[0]
-            image_path_ext = os.path.splitext(img_path)[1]
+            image_path_ext = os.path.splitext(img_path)[1][1:]
             with open(img_path, 'rb') as image_file:
                 image = base64.b64encode(image_file.read()).decode('utf-8')
                 image = f"data:image/{image_path_ext};base64,{image}" 

@@ -32,7 +32,7 @@ websocket-client
 sqlmodel
 wudao
 jieba
-byzerllm>=0.1.114
+byzerllm>=0.1.115
 patch
 diff_match_patch
 GitPython
@@ -42,11 +42,8 @@ google-generativeai
 protobuf
 azure-cognitiveservices-speech
 python-docx
-reportlab
 pdf2image
 docx2pdf
-pandoc
-pypandoc
 pyperclip
 colorama
 pylint
