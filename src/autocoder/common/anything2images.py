@@ -248,6 +248,12 @@ class Anything2Images:
         return s
 
     def to_pdf(self, origin_file_path: str, target_file_path: str) -> str:
+        from rich.console import Console
+        from rich.panel import Panel
+        from rich.syntax import Syntax
+
+        console = Console()
+
         images = self.convert(origin_file_path)
         html = self.to_html_from_images(images)
 
@@ -280,7 +286,6 @@ class Anything2Images:
                         ),
                     }
                 )
-                # t = self.vl_model.chat_oai(conversations=conversations)
                 conversations.append(
                     {
                         "role": "assistant",
@@ -331,7 +336,12 @@ class Anything2Images:
             code = t[0].output
 
         root_tag = TagExtractor(code).extract()
-        pdf_generation_code = root_tag.content[0].content        
+        pdf_generation_code = root_tag.content[0].content
+
+        # 使用Rich打印生成的代码
+        syntax = Syntax(pdf_generation_code, "python", theme="monokai", line_numbers=True)
+        console.print(Panel(syntax, title="Generated PDF Generation Code", expand=False))
+
         self.run_python_code(pdf_generation_code)
         return target_file_path
 
