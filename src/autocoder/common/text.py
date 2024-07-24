@@ -17,7 +17,7 @@ class TextSimilarity:
 
     def get_best_matching_window(self):
         best_similarity = 0
-        best_window = None
+        best_window = []
 
         for i in range(self.n - self.m + 1):  # 滑动窗口
             window_b = self.lines_b[i:i + self.m]

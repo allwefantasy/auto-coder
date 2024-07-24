@@ -59,7 +59,7 @@ jieba
 
 # camelot-py
 # llama_index
-byzerllm>=0.1.115
+byzerllm>=0.1.117
 patch
 diff_match_patch
 GitPython
@@ -74,6 +74,6 @@ docx2pdf
 pyperclip
 colorama
 pylint
-# reportlab
+reportlab
 # pandoc
 # pypandoc
