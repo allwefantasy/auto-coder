@@ -1,0 +1,17 @@
+auto_merge: editblock
+collections: models
+human_as_model: true
+include_file:
+- ./base/base.yml
+model: gpt_4o_mini_chat
+query: 在执行 pdf_generation_code 代码之前,self.output_dir 有没有 SimSun.ttf, 如果没有则从 https://github.com/StellarCN/scp_zh/raw/master/fonts/SimSun.ttf
+  下载.
+silence: true
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/setup.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/anything2images.py
+- /Users/allwefantasy/projects/byzer-llm/docs/zh/003_byzerllm_大模型编程快速指南.md

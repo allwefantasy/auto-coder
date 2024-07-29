@@ -947,6 +947,15 @@ def summon(query: str):
     if "emb_model" in conf:
         yaml_config["emb_model"] = conf["emb_model"]
 
+    if "vl_model" in conf:
+        yaml_config["vl_model"] = conf["vl_model"]
+
+    if "code_model" in conf:
+        yaml_config["code_model"] = conf["code_model"]    
+
+    if "model" in conf:
+        yaml_config["model"] = conf["model"]      
+
     yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")

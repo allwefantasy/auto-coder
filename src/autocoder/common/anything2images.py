@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Callable, Optional,Tuple
 import pdf2image
 from PIL import Image
 import byzerllm
@@ -46,7 +46,12 @@ except ImportError:
 
 class Anything2Images:
     def __init__(
-        self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs, keep_conversion: bool = False
+        self,
+        llm: byzerllm.ByzerLLM,
+        args: AutoCoderArgs,
+        keep_conversion: bool = False,
+        continue_prompt: str = "接着前面的内容继续",
+        max_steps: int = 20,
     ):
         self.llm = llm
         self.vl_model = llm.get_sub_client("vl_model")
@@ -54,6 +59,8 @@ class Anything2Images:
         self.output_dir = args.output
         os.makedirs(self.output_dir, exist_ok=True)
         self.keep_conversion = keep_conversion
+        self.continue_prompt = continue_prompt
+        self.max_steps = max_steps
 
     def convert(self, file_path: str) -> List[str]:
         file_path = os.path.abspath(file_path)
@@ -67,14 +74,14 @@ class Anything2Images:
     @byzerllm.prompt()
     def single_file_html_prompt(self) -> str:
         """
-        将图片里的内容以 HTML 格式进行输出。请只返回以<html></html>为标签的内容，
+        将图片里的内容以 HTML 格式进行输出。确保信息完整，并且请只返回以<html></html>为标签的内容，
         不要在开头或结尾包含markdown "```" 或 "```html"。
         """
 
     @byzerllm.prompt()
     def html_prompt(self) -> str:
         """
-        回顾前面所有图片，将图片里的内容以 HTML 格式进行输出。请只返回以<html></html>为标签的内容，
+        回顾前面所有图片，将图片里的内容以 HTML 格式进行输出。确保信息完整，并且请只返回以<html></html>为标签的内容，
         不要在开头或结尾包含markdown "```" 或 "```html"。
         """
 
@@ -174,7 +181,7 @@ class Anything2Images:
             t = self.vl_model.chat_oai(conversations=conversations)
             html = t[0].output
 
-        counter = 20
+        counter = self.max_steps
 
         def not_end(_html):
             _not_end = False
@@ -190,7 +197,7 @@ class Anything2Images:
                 {
                     "role": "user",
                     "content": json.dumps(
-                        [{"text": "接着前面的内容继续"}], ensure_ascii=False
+                        [{"text": self.continue_prompt}], ensure_ascii=False
                     ),
                 }
             )
@@ -217,7 +224,9 @@ class Anything2Images:
         return html
 
     @byzerllm.prompt()
-    def pdf_generation_prompt(self, html: str, target_file_path: str) -> str:
+    def pdf_generation_prompt(
+        self, html: str, target_file_path: str, code_prefix: str
+    ) -> str:
         """
         根据提供的图片和HTML内容，生成使用reportlab创建PDF的Python代码。
 
@@ -226,28 +235,85 @@ class Anything2Images:
 
         你生成的PDF路径需要为： {{ target_file_path }}
 
-        请分析图片布局和HTML内容，然后生成使用reportlab创建PDF的Python代码。
-        代码应该包含必要的导入语句，并使用reportlab的组件（如Canvas, Paragraph, Table等）来创建与原始文档布局相似的PDF。
-        请确保代码是完整的、可执行的，并包含适当的注释。
-        最后代码使用 <_CODE_></_CODE_> 标签包裹，不要在开头或结尾包含markdown "```" 或 "```python"。
+        请分析图片布局和HTML内容，然后生成使用reportlab创建PDF的Python代码：
+
+        1. 代码应该包含必要的导入语句，并使用reportlab的组件（如Canvas, Paragraph, Table等）来创建与原始文档布局相似的PDF。
+        2. 请确保代码是完整的、可执行的，并包含适当的注释。
+        3. 使用最新 reportlab 版本的 API
+        4. 生成的代码使用 ```python ``` 包裹
+        5. 生成的代码里内容确保不要遗漏任何 HTML 里的文字信息。
+
+        reportlab 使用时需要注意：
+        1. 不要使用 Link ,可以直接使用Paragraph,比如 link_text = Paragraph('<a href="http://www.example.com">Click here</a>', style)
+        2. 如果使用 styles = getSampleStyleSheet()，那么不要再使用styles.add(ParagraphStyle(name='Heading1', fontSize=18, leading=22, spaceAfter=12)) 之类的，而是修改styles，比如styles['Heading1'].fontSize = 18
+
+        下面是我们给你提供的字体，我们会将这段代码放到你生成的代码的最前面，你可以直接使用这些字体：
+
+        ```python
+        {{ code_prefix }}
+        ```
         """
 
-    def run_python_code(self, code: str) -> str:
-        from autocoder.common.interpreter import Interpreter
-        from autocoder.common import ExecuteSteps, ExecuteStep, detect_env
+    @byzerllm.prompt()
+    def error_retry_prompt(self, code: str, error: str, context: str) -> str:
+        """
 
-        interpreter = Interpreter(cwd=".")
-        s = ""
-        try:
-            s = interpreter.execute_steps(
-                ExecuteSteps(steps=[ExecuteStep(lang="python", code=code)])
+        当执行下列代码时：
+
+        ```python
+        {{ code }}
+        ```
+
+        代码执行失败，错误如下：
+
+        ```text
+        {{ error }}
+        ```
+
+        下面是原始代码原来的的需求：
+
+        ```text
+        {{ context }}
+        ```
+
+        现在根据错误修改代码，然后输出完整的修改后代码,注意，新输出的代码是需要可以直接执行而无需再次修改的。
+        输出的代码使用 ```python ``` 包裹。
+        """
+
+    def run_python_code(self, code: str, context: str, retries: int = 3):
+        from autocoder.common.JupyterClient import JupyterNotebook
+
+        def run_code(code: str) -> str:
+            jupyter_client = JupyterNotebook()
+            try:
+                return jupyter_client.add_and_run(code)
+            finally:
+                jupyter_client.close()
+
+        result, error = run_code(code)
+        print(result)
+        print(error)
+        while error and retries > 0:
+            retries -= 1
+            prompt = self.error_retry_prompt.prompt(
+                code=code, error=error, context=context
             )
-        finally:
-            interpreter.close()
+            print(prompt)
+            t = self.vl_model.chat_oai(
+                conversations=[{"role": "user", "content": prompt}]
+            )
+            code = code_utils.extract_code(t[0].output)[0][1]
+            result, error = run_code(code)
+            print(result)
+            print(error)
 
-        return s
-
-    def to_pdf(self, origin_file_path: str, target_file_path: str) -> str:
+    def anything_to_pdf(
+        self,
+        origin_file_path: str,
+        target_file_path: str,
+        prompt_function: Optional[Callable[[str], str]] = None,
+        extractor: Optional[Callable[[str], str]] = None,
+    ) -> str:
         from rich.console import Console
         from rich.panel import Panel
         from rich.syntax import Syntax
@@ -255,11 +321,59 @@ class Anything2Images:
         console = Console()
 
         images = self.convert(origin_file_path)
+
         html = self.to_html_from_images(images)
+        with open(
+            os.path.join(self.output_dir, "output.html"), "w", encoding="utf-8"
+        ) as f:
+            f.write(html)
+
+        if prompt_function:
+            logger.info("processing html with prompt function")
+            html = (
+                prompt_function.with_llm(self.vl_model)
+                .with_extractor(extractor)
+                .run(html)
+            )
+            with open(
+                os.path.join(self.output_dir, "output_prompted.html"),
+                "w",
+                encoding="utf-8",
+            ) as f:
+                f.write(html)
+
+        @byzerllm.prompt()
+        def generate_prefix_code(fonts: List[Tuple[str, str]]) -> str:
+            """
+            from reportlab.pdfbase import pdfmetrics
+            from reportlab.pdfbase.ttfonts import TTFont
+            try:
+            {{ fonts}}
+            except Exception as e:
+                print(f"fail to load font")
+            """
+            fonts_str = (
+                "\n".join(
+                    [
+                        f"    pdfmetrics.registerFont(TTFont('{font[0]}', '{font[1]}'))"
+                        for font in fonts
+                    ]
+                )
+                if fonts
+                else "    pass"
+            )
+            return {"fonts": fonts_str}
+
+        ttf_files = [f for f in os.listdir(self.output_dir) if f.endswith(".ttf")]
+        fonts = [
+            (os.path.splitext(f)[0], os.path.join(self.output_dir, f))
+            for f in ttf_files
+        ]
+        prefix = generate_prefix_code.prompt(fonts=fonts)
 
         # 使用大模型生成PDF生成代码
         generate_code_prompt = self.pdf_generation_prompt.prompt(
-            html=html, target_file_path=target_file_path
+            html=html, target_file_path=target_file_path, code_prefix=prefix
         )
 
         conversations = []
@@ -294,7 +408,7 @@ class Anything2Images:
                 )
                 logger.info(f"Collected {i}:{img_path}")
 
-            logger.info("All images are collected. Now start to generate html.")
+            logger.info("All images are collected. Now start to generate code.")
             conversations.append(
                 {
                     "role": "user",
@@ -325,7 +439,7 @@ class Anything2Images:
                             {
                                 "image": image,
                                 "detail": "high",
-                                "text": self.single_file_html_prompt.prompt(),
+                                "text": generate_code_prompt,
                             }
                         ],
                         ensure_ascii=False,
@@ -335,15 +449,50 @@ class Anything2Images:
             t = self.vl_model.chat_oai(conversations=conversations)
             code = t[0].output
 
-        root_tag = TagExtractor(code).extract()
-        pdf_generation_code = root_tag.content[0].content
+        ## 字体下载
+        self.download_font(
+            "https://github.com/StellarCN/scp_zh/raw/master/fonts/SimSun.ttf",
+            "SimSun.ttf",
+        )
+        self.download_font(
+            "https://github.com/hyoshiok/ttf-ipafont/raw/master/ipag.ttf", "ipag.ttf"
+        )
+
+        codes = code_utils.extract_code(code)
+        pdf_generation_code = codes[0][1]
+        pdf_generation_code = prefix + "\n\n" + pdf_generation_code
+        # root_tag = TagExtractor(code).extract()
+        # pdf_generation_code = root_tag.content[0].content
+
+        # if not isinstance(pdf_generation_code, str):
+        #     pdf_generation_code = pdf_generation_code[0]
 
         # 使用Rich打印生成的代码
-        syntax = Syntax(pdf_generation_code, "python", theme="monokai", line_numbers=True)
-        console.print(Panel(syntax, title="Generated PDF Generation Code", expand=False))
+        syntax = Syntax(
+            pdf_generation_code, "python", theme="monokai", line_numbers=True
+        )
+        console.print(
+            Panel(syntax, title="Generated PDF Generation Code", expand=False)
+        )
 
-        self.run_python_code(pdf_generation_code)
+        self.run_python_code(pdf_generation_code, context=generate_code_prompt)
         return target_file_path
+
+    def download_font(self, font_url: str, font_name: str):
+        font_path = os.path.join(self.output_dir, font_name)
+        if not os.path.exists(font_path):
+            import requests
+
+            print(f"Downloading {font_name} from {font_url}")
+            response = requests.get(font_url)
+            if response.status_code == 200:
+                with open(font_path, "wb") as f:
+                    f.write(response.content)
+                print(f"SimSun.ttf downloaded successfully to {font_path}")
+            else:
+                print(
+                    f"Failed to download SimSun.ttf. Status code: {response.status_code}"
+                )
 
     def to_html(self, file_path: str) -> str:
         images = self.convert(file_path)

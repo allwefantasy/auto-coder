@@ -371,7 +371,7 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
                             path = os.path.join(root, file)
                             break
 
-            with open(path, "r") as f:
+            with open(path, "r",encoding="utf-8") as f:
                 source_code = f.read()
                 sc = SourceCode(module_name=path, source_code=source_code)
                 source_code_str += f"##File: {sc.module_name}\n"

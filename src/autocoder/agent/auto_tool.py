@@ -17,7 +17,22 @@ import json
 import sys
 from contextlib import contextmanager
 from pydantic import BaseModel
-from byzerllm.types import Bool
+from byzerllm.types import Bool, ImagePath
+from byzerllm.utils.client import code_utils
+from rich.console import Console
+from rich.panel import Panel
+from rich.syntax import Syntax
+from rich.markdown import Markdown
+
+
+class ClickPosition(BaseModel):
+    left_top_x: int
+    left_top_y: int
+    right_bottom_x: int
+    right_bottom_y: int
+
+    def __str__(self):
+        return f"left_top_x: {self.left_top_x}, left_top_y: {self.left_top_y}, right_bottom_x: {self.right_bottom_x}, right_bottom_y: {self.right_bottom_y}"
 
 
 @contextmanager
@@ -31,11 +46,12 @@ def redirect_stdout():
 
 
 @byzerllm.prompt()
-def context(project_map: str) -> str:
+def context() -> str:
     """
+    你坚定的相信，一切任务都可以编写  Python 代码来解决。我么会也提供了一个相应的执行代码的工具，你可以使用这个工具来执行你的代码。
     你的目标是协助用户执行各种任务，包括但不限于代码生成、修改、测试等。请仔细阅读以下信息，以便更好地完成任务。
 
-    环境信息:
+    你当前运行的环境信息:
 
     操作系统: {{ env_info.os_name }} {{ env_info.os_version }}
     Python版本: {{ env_info.python_version }}
@@ -53,7 +69,7 @@ def context(project_map: str) -> str:
 
     {{ project_map }}
 
-    可用工具及使用指南:
+    下面是三个核心的工具，其他工具会在其他地方介绍：
 
     1. run_python_code(code: str) -> str
        - 运行指定的Python代码。
@@ -63,18 +79,22 @@ def context(project_map: str) -> str:
     2. run_shell_code(script: str) -> str
        - 运行指定的Shell代码，用于编译、运行、测试等任务。
        - 返回代码的输出或错误信息。
-       - 注意：不允许执行包含rm命令的脚本。
+       - 注意：不允许执行任何包含rm命令的脚本。
 
-    工作流程建议:
+    3. see_screen_and_do_something_by_generate_python_code(query: str) -> ClickPosition
+         - 当前要针对屏幕做的操作描述
 
-    1. 理解用户的任务需求。
-    2. 使用提供的工具获取必要的信息和相关文件内容。
-    3. 分析获取的信息，制定执行计划。
-    4. 使用run_python_code或run_shell_code执行必要的操作。
-    5. 分析执行结果，如有必要，进行调整并重复执行。
-    6. 总结执行结果，并向用户提供清晰的反馈。
 
-    请根据用户的具体需求，灵活运用这些工具来完成任务。提供简洁、准确的执行过程和结果说明。
+    你总是尝试去通过编码来解决问题，并且发挥自己的想象力，逆流而上，锲而不舍。
+
+    特别注意：
+
+    1. 不允许自己python库
+    2. 不允许有任何删除文件或目录的操作
+    3. 尽量使用 Python 代码来解决问题而不是 Shell 脚本
+    4. 所有对外部环境的操作都需要 pyautogui 的最新版本来实现。
+    5. 你写的代码尽量要保持合理的输出，方便后续你能正确的观察这个带阿米是不是已经达成了目标。
+    6. 在使用具体软件的时候，总是要先通过click来聚焦该软件，否则你可能会意外的操作到其他软件。
     """
     return {"env_info": detect_env()}
 
@@ -133,9 +153,110 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
 
         return s
 
+    def see_screen_and_do_something_by_generate_python_code(action_desc: str):
+        """
+        该工具可以帮助你查看当前屏幕截图，并且根据下一步需要做的操作来使用 pyautogui 生成操作电脑的 Python 代码。
+        输入参数 action_desc: 下一步需要做的操作描述，比如在哪个地方点击某个按钮、在哪个app输入某个文字等。
+        """
+        @byzerllm.prompt()
+        def analyze_screen_and_generate_code(
+            image: ImagePath, action_desc: str, previous_result: str, attempt: int
+        ) -> str:
+            """
+            {{ image }}
+            
+            目标操作：{{ action_desc }}
+            
+            {% if previous_result %}
+            前一次尝试的代码和结果：
+            ```
+            {{ previous_result }}
+            ```
+            {% endif %}
+            
+            当前是第 {{ attempt }} 次尝试。
+            
+            请根据以下指南生成或修改 Python 代码：
+            
+            1. 仔细分析屏幕截图，识别相关的UI元素（如按钮、输入框、菜单等）。
+            2. 根据目标操作和UI元素，使用 pyautogui 库生成相应的 Python 代码。
+            3. 代码应包含必要的错误处理和验证步骤。
+            4. 如果是修改前一次的代码，请解释修改原因。
+            5. 输出应只包含一个代码块，使用 ```python ``` 标签包裹。
+            
+            注意事项：
+            - 始终先聚焦目标软件，再进行操作。            
+            - 添加适当的延时（pyautogui.sleep()）以确保操作的稳定性。
+            - 使用 try-except 块处理可能的异常。
+            - 在关键步骤后添加验证，确认操作是否成功。
+            - 如果操作成功，清晰地指出成功信息。
+            - 如果操作失败或需要进一步尝试，提供明确的失败原因和建议。
+            - 务必不要做什么假设，而是基于屏幕截图的实际情况来编写代码,你的代码会被无任何修改直接运行。
+            
+            如果您认为已经达成目标或无法继续尝试，请不要生成代码，而是提供一个总结说明。
+            """
+        
+        import pyautogui
+        import tempfile
+        from rich.console import Console
+        from rich.panel import Panel
+        from rich.markdown import Markdown
+        
+        console = Console()
+        vl_model = llm.get_sub_client("vl_model")
+        
+        max_attempts = 5
+        for attempt in range(1, max_attempts + 1):
+            # 获取屏幕截图
+            screenshot = pyautogui.screenshot()
+            
+            # 创建临时文件
+            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
+                temp_filename = temp_file.name
+                screenshot.save(temp_filename)
+            
+            try:
+                # 使用临时文件路径创建 ImagePath 对象
+                image_path = ImagePath(value=temp_filename)
+                
+                # 生成或修改代码
+                result = analyze_screen_and_generate_code.with_llm(vl_model).run(
+                    image_path, action_desc, result if attempt > 1 else "", attempt
+                )
+                
+                console.print(Panel(Markdown(result), title=f"模型输出 (尝试 {attempt})", border_style="green"))
+                
+                # 提取并执行代码
+                codes = code_utils.extract_code(result)
+                if not codes:
+                    # 如果没有生成代码，可能是任务完成或无法继续
+                    return result
+                
+                code = codes[0][1]
+                execution_result = run_python_code(code)
+                
+                console.print(Panel(execution_result, title=f"代码执行结果 (尝试 {attempt})", border_style="yellow"))
+                
+                # 更新结果，包含代码和执行结果
+                result = execution_result
+            
+                
+                # 检查是否成功完成任务
+                if "成功" in execution_result.lower():
+                    console.print("[bold green]任务成功完成！[/bold green]")
+                    return result
+            
+            finally:
+                # 删除临时文件
+                os.unlink(temp_filename)
+        
+        console.print("[bold red]达到最大尝试次数，任务未能完成。[/bold red]")
+        return result
+
     tools = [
         FunctionTool.from_defaults(run_python_code),
         FunctionTool.from_defaults(run_shell_code),
+        FunctionTool.from_defaults(see_screen_and_do_something_by_generate_python_code),
     ]
     return tools
 
@@ -143,9 +264,12 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
 class AutoTool:
     def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         self.llm = llm
-        print(args.code_model)
-        if args.code_model:
-            self.llm = self.llm.get_sub_client("code_model")
+        self.code_model = (
+            self.llm.get_sub_client("code_model") if args.code_model else self.llm
+        )
+        self.vl_model = (
+            self.llm.get_sub_client("vl_model") if args.vl_model else self.llm
+        )
         self.args = args
         self.tools = get_tools(args=args, llm=llm)
         if self.args.project_type == "ts":
@@ -162,19 +286,17 @@ class AutoTool:
     def run(self, query: str, max_iterations: int = 20):
         agent = ReActAgent.from_tools(
             tools=self.tools,
-            llm=ByzerAI(llm=self.llm),
+            llm=ByzerAI(llm=self.code_model),
             verbose=True,
             max_iterations=max_iterations,
-            context=context.prompt(
-                project_map=self.get_tree_like_directory_structure(),
-            ),
+            context=context.prompt(),
         )
         r = agent.chat(message=query)
 
-        print("\n\n=============EXECUTE==================")
-        executor = code_auto_execute.CodeAutoExecute(
-            self.llm, self.args, code_auto_execute.Mode.SINGLE_ROUND
-        )
-        executor.run(query=query, context=r.response, source_code="")
+        # print("\n\n=============EXECUTE==================")
+        # executor = code_auto_execute.CodeAutoExecute(
+        #     self.llm, self.args, code_auto_execute.Mode.SINGLE_ROUND
+        # )
+        # executor.run(query=query, context=r.response, source_code="")
 
         return r.response

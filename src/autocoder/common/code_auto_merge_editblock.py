@@ -218,7 +218,6 @@ class CodeAutoMergeEditBlock:
                     logger.warning(
                         f"Pylint check failed for {file_path}. Changes not applied. Error: {error_message}"
                     )
-                    return
 
         if changes_made and not force_skip_git:
             try:

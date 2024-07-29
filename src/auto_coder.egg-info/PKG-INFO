@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.128
+Version: 0.1.133
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -36,12 +36,12 @@ Requires-Dist: tiktoken
 Requires-Dist: tabulate
 Requires-Dist: jupyter_client
 Requires-Dist: prompt-toolkit
-Requires-Dist: llama_index
+Requires-Dist: llama_index==0.10.52
 Requires-Dist: websocket-client
 Requires-Dist: sqlmodel
 Requires-Dist: wudao
 Requires-Dist: jieba
-Requires-Dist: byzerllm>=0.1.115
+Requires-Dist: byzerllm>=0.1.121
 Requires-Dist: patch
 Requires-Dist: diff_match_patch
 Requires-Dist: GitPython
@@ -56,6 +56,7 @@ Requires-Dist: docx2pdf
 Requires-Dist: pyperclip
 Requires-Dist: colorama
 Requires-Dist: pylint
+Requires-Dist: reportlab
 
 <p align="center">
   <picture>    

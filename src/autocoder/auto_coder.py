@@ -368,7 +368,7 @@ def main(input_args: Optional[List[str]] = None):
             args.model, {"max_length": args.model_max_length}
         )
 
-        if args.vl_model:
+        if args.vl_model:            
             vl_model = byzerllm.ByzerLLM()
             vl_model.setup_default_model_name(args.vl_model)
             vl_model.setup_template(model=args.vl_model, template="auto")
@@ -597,8 +597,7 @@ def main(input_args: Optional[List[str]] = None):
                 RequestValue(
                     value=StreamValue(value=[""]), status=RequestOption.COMPLETED
                 ),
-            )
-            console.print("\n")
+            )            
 
             chat_history["ask_conversation"].append(
                 {"role": "assistant", "content": assistant_response}

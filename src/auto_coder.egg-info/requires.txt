@@ -27,12 +27,12 @@ tiktoken
 tabulate
 jupyter_client
 prompt-toolkit
-llama_index
+llama_index==0.10.52
 websocket-client
 sqlmodel
 wudao
 jieba
-byzerllm>=0.1.115
+byzerllm>=0.1.121
 patch
 diff_match_patch
 GitPython
@@ -47,3 +47,4 @@ docx2pdf
 pyperclip
 colorama
 pylint
+reportlab
