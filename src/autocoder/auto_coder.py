@@ -169,6 +169,7 @@ def main(input_args: Optional[List[str]] = None):
         with open(os.path.join(source_dir, ".gitignore"), "a") as f:
             f.write("\n.auto-coder/")
             f.write("\nactions/")
+            f.write("\noutput.txt")
 
         print(
             f"""Successfully initialized auto-coder project in {os.path.abspath(args.source_dir)}."""

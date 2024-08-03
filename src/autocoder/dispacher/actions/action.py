@@ -254,6 +254,7 @@ class ActionPyProject:
             else:
                 generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
 
+
             if self.args.enable_multi_round_generate:
                 result, conversations = generate.multi_round_run(
                     query=args.query, source_content=content
@@ -262,6 +263,7 @@ class ActionPyProject:
                 result, conversations = generate.single_round_run(
                     query=args.query, source_content=content
                 )
+               
             content = "\n\n".join(result)
 
             store_code_model_conversation(

@@ -28,6 +28,7 @@ from rich.panel import Panel
 from rich.live import Live
 from rich.text import Text
 from rich.table import Table
+from byzerllm.utils.nontext import Image
 
 
 def parse_arguments():
@@ -127,6 +128,7 @@ def initialize_system():
 
         print_status("Project initialization completed.", "success")
 
+    init_project()
     # Check if Ray is running
     print_status("Checking Ray status...", "")
     ray_status = subprocess.run(["ray", "status"], capture_output=True, text=True)
@@ -232,7 +234,6 @@ def initialize_system():
         print_status("easy-byzerllm chat deepseek_chat 你好", "")
 
     print_status("Initialization completed.", "success")
-    init_project()
 
 
 def convert_yaml_config_to_str(yaml_config):
@@ -583,6 +584,13 @@ def add_files(args: List[str]):
 
     console = Console()
 
+    if args and args[0] == "/refresh":
+        completer.refresh_files()
+        console.print(
+            Panel("Refreshed file list.", title="Files Refreshed", border_style="green")
+        )
+        return
+
     if args and args[0] == "/group":
         if len(args) == 1 or (len(args) == 2 and args[1] == "list"):
             if not groups:
@@ -815,6 +823,12 @@ def coding(query: str):
                 yaml_config[key] = converted_value
 
         yaml_config["urls"] = current_files
+
+        ## handle image
+        v = Image.extract_image_paths(query, to_base64=True)
+        for item in v:
+            query = item + "\n" + query
+
         yaml_config["query"] = query
 
         if is_apply:
@@ -889,7 +903,7 @@ def chat(query: str):
     yaml_config = {
         "include_file": ["./base/base.yml"],
     }
-    yaml_config["query"] = query
+    
     yaml_config["context"] = json.dumps(
         {"file_content": all_file_content}, ensure_ascii=False
     )
@@ -900,6 +914,11 @@ def chat(query: str):
     is_new = query.strip().startswith("/new")
     if is_new:
         query = query.replace("/new", "", 1).strip()
+
+    
+    v = Image.extract_image_paths(query, to_base64=True)
+    for item in v:
+        query = item + "\n" + query
 
     yaml_config["query"] = query
 
@@ -951,10 +970,10 @@ def summon(query: str):
         yaml_config["vl_model"] = conf["vl_model"]
 
     if "code_model" in conf:
-        yaml_config["code_model"] = conf["code_model"]    
+        yaml_config["code_model"] = conf["code_model"]
 
     if "model" in conf:
-        yaml_config["model"] = conf["model"]      
+        yaml_config["model"] = conf["model"]
 
     yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
