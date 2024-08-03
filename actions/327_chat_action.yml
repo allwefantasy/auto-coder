@@ -1,0 +1,18 @@
+auto_merge: editblock
+human_as_model: false
+include_file:
+- ./base/base.yml
+model: gpt4o_mini_chat
+query: <_image_>/Users/allwefantasy/projects/auto-coder/docs/images/000-01.png</_image_>
+  根据这个图片写一个html,带css ，保存在项目更目录下的 000-01.html里。
+silence: true
+skip_build_index: true
+skip_confirm: true
+urls:
+- /Users/allwefantasy/projects/auto-coder/setup.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/common/anything2images.py
+- /Users/allwefantasy/projects/byzer-llm/docs/zh/003_byzerllm_大模型编程快速指南.md
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/agent/auto_tool.py
+- /Users/allwefantasy/projects/auto-coder/src/autocoder/agent/project_reader.py

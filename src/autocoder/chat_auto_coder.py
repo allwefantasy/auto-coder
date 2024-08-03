@@ -825,11 +825,8 @@ def coding(query: str):
         yaml_config["urls"] = current_files
 
         ## handle image
-        v = Image.extract_image_paths(query, to_base64=True)
-        for item in v:
-            query = item + "\n" + query
-
-        yaml_config["query"] = query
+        v = Image.convert_image_paths_from(query)        
+        yaml_config["query"] = v
 
         if is_apply:
             memory_dir = os.path.join(".auto-coder", "memory")
@@ -916,9 +913,12 @@ def chat(query: str):
         query = query.replace("/new", "", 1).strip()
 
     
-    v = Image.extract_image_paths(query, to_base64=True)
-    for item in v:
-        query = item + "\n" + query
+    for key, value in conf.items():
+        converted_value = convert_config_value(key, value)
+        if converted_value is not None:
+            yaml_config[key] = converted_value
+
+    query = Image.convert_image_paths_from(query)
 
     yaml_config["query"] = query
 
