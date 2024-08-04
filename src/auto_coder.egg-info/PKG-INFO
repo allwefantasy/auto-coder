@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.133
+Version: 0.1.134
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -41,7 +41,7 @@ Requires-Dist: websocket-client
 Requires-Dist: sqlmodel
 Requires-Dist: wudao
 Requires-Dist: jieba
-Requires-Dist: byzerllm>=0.1.121
+Requires-Dist: byzerllm>=0.1.123
 Requires-Dist: patch
 Requires-Dist: diff_match_patch
 Requires-Dist: GitPython
