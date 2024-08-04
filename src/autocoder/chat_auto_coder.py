@@ -79,7 +79,25 @@ commands = [
     "/summon",
 ]
 
-add_files_subcommands = ["/group"]
+add_files_subcommands = ["/refresh", "/group"]
+
+def add_files_command_completer(text, state):
+    """Completer for the /add_files command."""
+    options = ["/refresh"] + add_files_subcommands
+    matches = [option for option in options if option.startswith(text)]    
+    return matches[state] if state < len(matches) else None
+
+def add_files_group_command_completer(text, state):
+    """Completer for the /add_files /group command."""
+    group_names = ["group1", "group2", "group3"]  # Example group names
+    matches = [name for name in group_names if name.startswith(text)]
+    return matches[state] if state < len(matches) else None
+
+def add_files_group_add_command_completer(text, state):
+    """Completer for the /add_files /group /add <groupname> command."""
+    group_names = ["group1", "group2", "group3"]  # Example group names
+    matches = [f"/add {name}" for name in group_names if name.startswith(text)]
+    return matches[state] if state < len(matches) else None
 
 
 def initialize_system():
