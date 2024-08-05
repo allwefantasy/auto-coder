@@ -564,8 +564,12 @@ def build_index_and_filter_files(
             print(f"{file} - {final_files[file].reason}")
 
     source_code = ""
+    depulicated_sources = set()
     for file in sources:
         if file.module_name in final_filenames:
+            if file.module_name in depulicated_sources:
+                continue
+            depulicated_sources.add(file.module_name)
             source_code += f"##File: {file.module_name}\n"
             source_code += f"{file.source_code}\n\n"
     return source_code

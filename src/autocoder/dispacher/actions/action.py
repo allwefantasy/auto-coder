@@ -215,8 +215,7 @@ class ActionPyProject:
             return False
         pp = PyProject(args=self.args, llm=self.llm)
         self.pp = pp
-        pp.run(packages=args.py_packages.split(",") if args.py_packages else [])
-
+        pp.run(packages=args.py_packages.split(",") if args.py_packages else [])            
         source_code = pp.output()
         if self.llm:
             source_code = build_index_and_filter_files(

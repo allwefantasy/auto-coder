@@ -326,12 +326,12 @@ class PyProject:
             with open(self.target_file, "w") as file:
 
                 for code in self.get_rest_source_codes():
-                    self.sources.append(code)
+                    self.sources.append(code)                    
                     file.write(f"##File: {code.module_name}\n")
                     file.write(f"{code.source_code}\n\n")
 
-                for code in self.get_search_source_codes():
-                    self.sources.append(code)
+                for code in self.get_search_source_codes():                    
+                    self.sources.append(code)                    
                     file.write(f"##File: {code.module_name}\n")
                     file.write(f"{code.source_code}\n\n")
 
@@ -341,7 +341,7 @@ class PyProject:
                         file.write(f"##File: {code.module_name}\n")
                         file.write(f"{code.source_code}\n\n")
 
-                for code in self.get_source_codes():
+                for code in self.get_source_codes():                    
                     self.sources.append(code)
                     file.write(f"##File: {code.module_name}\n")
                     file.write(f"{code.source_code}\n\n")

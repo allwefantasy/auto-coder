@@ -15,6 +15,17 @@ class CommandTextParser:
         self.in_current_sub_command = ""
         self.completions = []
         self.command = command
+        self.current_hiararchy = COMMANDS[command]
+        self.sub_commands = []
+
+    def first_sub_command(self):
+        if len(self.sub_commands) == 0:
+            return None
+        return self.sub_commands[0]    
+    def last_sub_command(self):
+        if len(self.sub_commands) == 0:
+            return None
+        return self.sub_commands[-1]
 
     def peek(self) -> str:
         if self.pos + 1 < self.len:
@@ -77,7 +88,7 @@ class CommandTextParser:
 
         if self.peek() is None:
             self.is_extracted = True
-            self.current_word_end_pos = self.pos
+            self.current_word_end_pos = self.pos+1
             self.current_word_start_pos = self.current_word_end_pos - len(
                 current_sub_command
             )
@@ -85,17 +96,40 @@ class CommandTextParser:
         else:
             if current_sub_command in self.current_hiararchy:
                 self.current_hiararchy = self.current_hiararchy[current_sub_command]
+                self.sub_commands.append(current_sub_command)
 
         return current_sub_command
 
     def consume_command_value(self) -> str:
-        while self.peek() is not None:
-            self.next()
+        current_word = ""
+        while self.peek() is not None:                    
+            v = self.next()
+            if v == " ":
+                current_word = ""
+            else:
+                current_word += v
+        self.is_extracted = True
+        self.current_word_end_pos = self.pos+1
+        self.current_word_start_pos = self.current_word_end_pos - len(current_word)        
 
+    def previous(self) -> str:        
+        if self.pos > 1:            
+            return self.text[self.pos-1]
+        return None        
+     
     def current_word(self) -> str:
         return self.text[self.current_word_start_pos : self.current_word_end_pos]
+    
+    def get_current_word(self) -> str:
+        return self.current_word()        
 
-    def sub_commands(self) -> list:
+    def get_sub_commands(self) -> list[str]:
+        if self.get_current_word() and not self.get_current_word().startswith("/"):
+            return []
+        
+        if isinstance(self.current_hiararchy, str):
+            return []
+                
         return [item for item in list(self.current_hiararchy.keys()) if item]
 
     def add_files(self):

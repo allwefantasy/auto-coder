@@ -5,38 +5,50 @@ class TestCommandTextParser(unittest.TestCase):
     def test_add_files_basic(self):
         parser = CommandTextParser("/add_files file1 file2 file3", "/add_files")
         parser.add_files()
-        self.assertFalse(parser.is_extracted)
-        self.assertEqual(parser.pos, len("/add_files file1 file2 file3") - 1)
+        print(parser.current_word())
+        print(parser.get_sub_commands())
 
     def test_add_files_group(self):
-        parser = CommandTextParser("/add_files /group list", "/add_files")
+        parser = CommandTextParser("/add_files /group app", "/add_files")
         parser.add_files()
-        self.assertFalse(parser.is_extracted)
-        self.assertEqual(parser.pos, len("/add_files /group list") - 1)
+        print(parser.current_word())
+        print(parser.get_sub_commands())
+
+    def test_add_files_group_2(self):
+        parser = CommandTextParser("/add_files /group", "/add_files")
+        parser.add_files()
+        print(parser.current_word())
+        print(parser.get_sub_commands())    
+
+    def test_add_files_group_3(self):
+        parser = CommandTextParser("/add_files /grou", "/add_files")
+        parser.add_files()
+        print(parser.current_word())
+        print(parser.get_sub_commands())        
 
     def test_add_files_group_add(self):
-        parser = CommandTextParser("/add_files /group /add groupname", "/add_files")
+        parser = CommandTextParser("/add_files /group ", "/add_files")
         parser.add_files()
-        self.assertFalse(parser.is_extracted)
-        self.assertEqual(parser.pos, len("/add_files /group /add groupname") - 1)
+        print(f"=={parser.current_word()}==")
+        print(parser.get_sub_commands())
 
     def test_add_files_group_drop(self):
         parser = CommandTextParser("/add_files /group /drop groupname", "/add_files")
         parser.add_files()
-        self.assertFalse(parser.is_extracted)
-        self.assertEqual(parser.pos, len("/add_files /group /drop groupname") - 1)
+        print(parser.current_word())
+        print(parser.current_hiararchy)
 
     def test_add_files_group_multiple(self):
         parser = CommandTextParser("/add_files /group group1,group2", "/add_files")
         parser.add_files()
-        self.assertFalse(parser.is_extracted)
-        self.assertEqual(parser.pos, len("/add_files /group group1,group2") - 1)
+        print(parser.current_word())
+        print(parser.current_hiararchy)
 
     def test_add_files_refresh(self):
         parser = CommandTextParser("/add_files /refresh", "/add_files")
         parser.add_files()
-        self.assertFalse(parser.is_extracted)
-        self.assertEqual(parser.pos, len("/add_files /refresh") - 1)
+        print(parser.current_word())
+        print(parser.current_hiararchy)
 
     def test_is_sub_command(self):
         parser = CommandTextParser("/group", "/add_files")

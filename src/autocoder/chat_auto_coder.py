@@ -18,7 +18,7 @@ from autocoder.common import AutoCoderArgs
 from pydantic import Field, BaseModel
 from autocoder.version import __version__
 from autocoder.auto_coder import main as auto_coder_main
-from autocoder.command_args import parse_args
+from autocoder.common.command_completer import CommandTextParser
 from autocoder.utils import get_last_yaml_file
 import platform
 import subprocess
@@ -267,6 +267,17 @@ def get_all_file_in_project() -> List[str]:
     return file_names
 
 
+def get_all_file_in_project_with_dot() -> List[str]:
+    project_root = os.getcwd()
+    file_names = []
+    final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
+    for root, dirs, files in os.walk(project_root):
+        dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
+        for file in files:
+            file_names.append(os.path.join(root, file).replace(project_root, "."))
+    return file_names
+
+
 def get_all_dir_names_in_project() -> List[str]:
     project_root = os.getcwd()
     dir_names = []
@@ -295,6 +306,7 @@ def find_files_in_project(patterns: List[str]) -> List[str]:
                         matched_files.append(abs_path)
         else:
             is_added = False
+            ## add files belongs to project
             for root, dirs, files in os.walk(project_root):
                 dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
                 if pattern in files:
@@ -302,9 +314,11 @@ def find_files_in_project(patterns: List[str]) -> List[str]:
                     is_added = True
                 else:
                     for file in files:
-                        if pattern in os.path.join(root, file):
+                        _pattern = os.path.abspath(pattern)
+                        if _pattern in os.path.join(root, file):
                             matched_files.append(os.path.join(root, file))
                             is_added = True
+            ## add files not belongs to project                
             if not is_added:
                 matched_files.append(pattern)
 
@@ -422,30 +436,59 @@ class CommandCompleter(Completer):
         self.all_file_names = get_all_file_names_in_project()
         self.all_files = get_all_file_in_project()
         self.all_dir_names = get_all_dir_names_in_project()
+        self.all_files_with_dot = get_all_file_in_project_with_dot()
         self.current_file_names = []
 
-    def get_completions(self, document, complete_event):        
+    def get_completions(self, document, complete_event):
         text = document.text_before_cursor
         words = text.split()
 
         if len(words) > 0:
             if words[0] == "/add_files":
                 new_text = text[len("/add_files") :]
-                from autocoder.common.command_completer import CommandTextParser
-                parser = CommandTextParser(new_text)
-                parser.parse()
-                
-                if len(words) >= 2:
-                    if words[1] == "/group":
-                        return
-                new_words = text[len("/add_files") :].strip().split()
-                current_word = new_words[-1] if new_words else ""
-                for file_name in self.all_file_names:
-                    if file_name.startswith(current_word):
-                        yield Completion(file_name, start_position=-len(current_word))
-                for file_name in self.all_files:
-                    if current_word and current_word in file_name:
-                        yield Completion(file_name, start_position=-len(current_word))
+                parser = CommandTextParser(new_text, words[0])
+                parser.add_files()
+                current_word = parser.current_word()
+
+                if parser.last_sub_command() == "/refresh":
+                    return
+
+                for command in parser.get_sub_commands():
+                    if command.startswith(current_word):
+                        yield Completion(command, start_position=-len(current_word))
+
+                if parser.first_sub_command() == "/group" and (
+                    parser.last_sub_command() == "/group"
+                    or parser.last_sub_command() == "/drop"
+                ):
+                    group_names = memory["current_files"]["groups"].keys()
+                    if "," in current_word:
+                        current_word = current_word.split(",")[-1]
+
+                    for group_name in group_names:
+                        if group_name.startswith(current_word):
+                            yield Completion(
+                                group_name, start_position=-len(current_word)
+                            )
+
+                if parser.first_sub_command() != "/group":
+                    if current_word and current_word.startswith("."):
+                        for file_name in self.all_files_with_dot:
+                            if file_name.startswith(current_word):
+                                yield Completion(
+                                    file_name, start_position=-len(current_word)
+                                )
+                    else:
+                        for file_name in self.all_file_names:
+                            if file_name.startswith(current_word):
+                                yield Completion(
+                                    file_name, start_position=-len(current_word)
+                                )
+                        for file_name in self.all_files:
+                            if current_word and current_word in file_name:
+                                yield Completion(
+                                    file_name, start_position=-len(current_word)
+                                )
 
             elif words[0] == "/remove_files":
                 new_words = text[len("/remove_files") :].strip().split(",")
@@ -543,6 +586,7 @@ class CommandCompleter(Completer):
         self.all_file_names = get_all_file_names_in_project()
         self.all_files = get_all_file_in_project()
         self.all_dir_names = get_all_dir_names_in_project()
+        self.all_files_with_dot = get_all_file_in_project_with_dot()
 
 
 completer = CommandCompleter(commands)
@@ -830,7 +874,7 @@ def coding(query: str):
         yaml_config["urls"] = current_files
 
         ## handle image
-        v = Image.convert_image_paths_from(query)        
+        v = Image.convert_image_paths_from(query)
         yaml_config["query"] = v
 
         if is_apply:
@@ -905,7 +949,7 @@ def chat(query: str):
     yaml_config = {
         "include_file": ["./base/base.yml"],
     }
-    
+
     yaml_config["context"] = json.dumps(
         {"file_content": all_file_content}, ensure_ascii=False
     )
@@ -917,7 +961,6 @@ def chat(query: str):
     if is_new:
         query = query.replace("/new", "", 1).strip()
 
-    
     for key, value in conf.items():
         converted_value = convert_config_value(key, value)
         if converted_value is not None:
