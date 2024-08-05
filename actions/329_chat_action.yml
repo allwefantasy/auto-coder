@@ -3,9 +3,7 @@ human_as_model: true
 include_file:
 - ./base/base.yml
 model: deepseek_chat
-query: 参考 CommandCompleter 类中的实现,重新实现 ChatCommandCompleter 中的 add_files 部分.支持如下子命令
-  /add_files /refresh, /add_files /group , /add_files /group /add <groupname>, /add_files
-  /group <groupname>,..<groupnamen>, /add_files <filepath>
+query: 对 command_completer 写一个单元测试,使用 unitest 框架,放在根目录下的 tests 里
 silence: true
 skip_build_index: true
 skip_confirm: true

@@ -424,12 +424,17 @@ class CommandCompleter(Completer):
         self.all_dir_names = get_all_dir_names_in_project()
         self.current_file_names = []
 
-    def get_completions(self, document, complete_event):
+    def get_completions(self, document, complete_event):        
         text = document.text_before_cursor
         words = text.split()
 
         if len(words) > 0:
             if words[0] == "/add_files":
+                new_text = text[len("/add_files") :]
+                from autocoder.common.command_completer import CommandTextParser
+                parser = CommandTextParser(new_text)
+                parser.parse()
+                
                 if len(words) >= 2:
                     if words[1] == "/group":
                         return
