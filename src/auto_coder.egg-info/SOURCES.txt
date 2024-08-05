@@ -33,6 +33,7 @@ src/autocoder/common/code_auto_merge.py
 src/autocoder/common/code_auto_merge_diff.py
 src/autocoder/common/code_auto_merge_editblock.py
 src/autocoder/common/code_auto_merge_strict_diff.py
+src/autocoder/common/command_completer.py
 src/autocoder/common/command_templates.py
 src/autocoder/common/const.py
 src/autocoder/common/git_utils.py
@@ -81,6 +82,7 @@ src/autocoder/utils/tests.py
 tests/test_action_regex_project.py
 tests/test_chat_auto_coder.py
 tests/test_code_auto_merge_editblock.py
+tests/test_command_completer.py
 tests/test_planner.py
 tests/test_queue_communicate.py
 tests/test_symbols_utils.py

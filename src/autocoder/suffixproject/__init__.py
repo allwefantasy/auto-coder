@@ -34,7 +34,7 @@ class SuffixProject:
         self.target_file = args.target_file
         self.project_type = args.project_type
         self.suffixs = [
-            f".{suffix}" if not suffix.startswith(".") else suffix
+            f".{suffix.strip()}" if not suffix.startswith(".") else suffix.strip()
             for suffix in self.project_type.split(",")
             if suffix.strip() != ""
         ]
