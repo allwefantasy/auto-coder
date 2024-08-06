@@ -1,6 +1,0 @@
-source_dir: /home/winubuntu/projects/ByzerRawCopilot 
-target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
-
-query: |
-  结合原有的description 和你对的代码的理解，优化auto-coder 里的 parse_args 方法的里的desc、help，让它更加清晰易懂。
-  同时，根据系统的语言配置,自动将参数的help字段转换成对应的中文或英文,注意映射关系使用字典的方式进行配置。

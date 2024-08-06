@@ -1,7 +1,0 @@
-include_file: 
-   - ./common/remote.yml
-
-query: |   
-   模仿 suffixproject/__init__.py 中SuffixProject代码，你需要实现该类中的所有方法， 然后将通过suffix过滤文件改成通过一个正则表达式过滤文件。
-   该代码放在 regex_project/__init__.py 中。
-   正则的来源为：args.project_type 字段， 该字段形态为： regex//正则表达式

@@ -1,9 +1,0 @@
-include_file:
-- ./base/vscode.yml
-- ./common/vscode.yml
-
-query: |
-  关注当前项目结构中所有的文件。
-  extension.ts 的 webview 需要能够检测当前vscode 的主题，然后
-  web/index.tsx 要根据主题进行样式的切换，保持风格一致。
-

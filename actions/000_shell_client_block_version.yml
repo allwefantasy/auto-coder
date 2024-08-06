@@ -1,5 +1,0 @@
-source_dir: /home/winubuntu/projects/ByzerRawCopilot 
-target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
-
-query: |
-  ShellClient 改造成block版本，避免线程导致的并行

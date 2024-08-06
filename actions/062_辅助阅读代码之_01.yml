@@ -1,7 +1,0 @@
-include_file: 
-   - ./common/local.yml
-
-query: |   
-   帮我找到所有包含 import os 的文件，并且确认这些文件中所有路径的写法是不是兼容了 windows 和 linux。
-   不用生成代码，告诉我那些文件是不兼容的。
-   

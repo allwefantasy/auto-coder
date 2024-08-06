@@ -1,6 +1,0 @@
-source_dir: /home/winubuntu/projects/ByzerRawCopilot 
-target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
-
-query: |
-  优化 auto_coder里intercept_callback 方法中的input, 让他完备支持的黏贴的多行输入，最后回车结束输入。
-  你也可以使用其他更好用的库，来完成这个功能。

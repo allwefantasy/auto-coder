@@ -1,9 +1,0 @@
-auto_merge: editblock
-human_as_model: true
-include_file:
-- ./base/base.yml
-query: words[0] == "/conf"部分的代码有更好的实现方式么?
-skip_build_index: true
-skip_confirm: true
-urls:
-- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py

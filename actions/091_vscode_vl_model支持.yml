@@ -1,6 +1,0 @@
-include_file:
-- ./base/vscode.yml
-- ./common/vscode.yml
-
-query: |
-  读取模型的时候，优先读取 planner_model，如果没有则读取 model。  

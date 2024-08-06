@@ -1,9 +1,0 @@
-auto_merge: editblock
-human_as_model: true
-include_file:
-- ./base/base.yml
-query: 把 pyperclip try catch住
-skip_build_index: true
-skip_confirm: true
-urls:
-- /Users/allwefantasy/projects/auto-coder/src/autocoder/auto_coder.py

@@ -1,4 +1,0 @@
-model: deepseek_chat
-vl_model: gpt4o_chat
-urls: /Users/allwefantasy/Downloads/测试p2.docx
-output: /tmp/jack2   

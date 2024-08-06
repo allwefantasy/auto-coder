@@ -1,8 +1,0 @@
-query_prefix: |
-  关注 command_args.py, common/__init__.py, auto_coder.py,lang.py 等几个文件。
-  
-  参考如下信息：
-
-  1. lang.py 中提供参数的中英文解释，并且在 command_args.py 中使用。
-  2. command_args.py 添加命令行参数。
-  3. common/__init__.py 添加到 AutoCoderArgs 对象中。

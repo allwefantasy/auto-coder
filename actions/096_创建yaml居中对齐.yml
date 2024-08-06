@@ -1,8 +1,0 @@
-include_file:
-- ./base/vscode.yml
-- ./common/vscode.yml
-
-query: |
-  关注当前项目结构中所有的文件。
-  create_yaml.tsx 应该居中对齐，宽度应该进行限制。
-

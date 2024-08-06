@@ -1,6 +1,0 @@
-include_file: 
-   - ./local.yml
-
-auto_merge: editblock
-enable_multi_round_generate: false
-index_filter_level: 1

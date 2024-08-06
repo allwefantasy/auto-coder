@@ -1,5 +1,0 @@
-include_file: 
-   - ./common/remote.yml
-
-query: |   
-   auto_coder.py 中 include_file 顺序调整。被包含的文件要被包含的文件的内容覆盖。

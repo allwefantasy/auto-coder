@@ -1,6 +1,0 @@
-source_dir: /home/winubuntu/projects/ByzerRawCopilot 
-target_file: /home/winubuntu/projects/ByzerRawCopilot/output.txt 
-
-query: |
-  优化pyproject, 新增一个函数，可以指定一个python包名，获取当前这个包的路径，并遍历该路径下的所有python 文件，添加到
-  原来的文件列表中

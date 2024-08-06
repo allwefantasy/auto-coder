@@ -1,6 +1,0 @@
-include_file: 
-   - ./common/editblock.yml
-
-query: |   
-   那个文件是这个项目的命令行入口？ 不用生成代码。
-   

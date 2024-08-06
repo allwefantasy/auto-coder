@@ -44,6 +44,7 @@ ide_plugins/vscode/auto-coder/package-lock.json
 .auto-coder/metadata.db
 ide_plugins/vscode/auto-coder/web/package-lock.json
 .auto-coder/
+actions/
 output.txt
 auto_coder_installer/bin
 **/node_modules/

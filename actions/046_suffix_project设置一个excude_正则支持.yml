@@ -1,7 +1,0 @@
-include_file: 
-   - ./common/remote.yml
-
-query: |   
-   SuffixProject 支持 exclude_files 参数，用于排除不需要处理的目录。 exclude_files 参数
-   支持正则表达式，并且支持yaml的数组格式。
-   

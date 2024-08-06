@@ -1,9 +1,0 @@
-auto_merge: editblock
-human_as_model: true
-include_file:
-- ./base/base.yml
-query: 修改/conf的代码提示部分.当用户输入 /conf+空格时,弹出所有补全,当用户输入 /conf /drop 加空格是,只输出 AutoCoderArgs补全
-skip_build_index: true
-skip_confirm: true
-urls:
-- /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py

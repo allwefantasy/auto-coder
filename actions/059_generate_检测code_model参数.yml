@@ -1,8 +1,0 @@
-include_file: 
-   - ./common/diff.yml
-
-query: |   
-   在 code_auto_generate 开头的文件里，我们需要检测下 llm 是不是有个 code_model 值存在。
-   参考 rest.py 中检测 vl_model 的方式。
-   如果 code_model存在，那么我们需要使用 code_model 而不是模型的llm 来处理。
-   

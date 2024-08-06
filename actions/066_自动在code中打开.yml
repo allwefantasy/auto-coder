@@ -1,7 +1,0 @@
-include_file: 
-   - ./common/editblock.yml
-
-query: |   
-   关注 auto_coder.py 中的next命令，当创建完新文件后，检测是否有 vscode 的命令，如果有
-   则用 code -r 命令打开该文件。同理检测是不是有 idea 的命令，如果有则用 idea 打开该文件。
-   

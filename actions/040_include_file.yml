@@ -1,6 +1,0 @@
-include_file: 
-   - ./common/remote.yml
-
-query: |   
-   在 auto_coder.py 中解析yml文件的时候，当检测到 include_file 参数（该参数用于指定需要 include 的文件路径，支持yml 数组格式），自动加载该参数，并且
-   优先合并到 args 里去。注意，可能存在递归场景，最大递归深度为 10。

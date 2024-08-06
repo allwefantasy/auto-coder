@@ -1,7 +1,0 @@
-query_prefix: |  
-  在 vscode 目录下的 auto-coder vscode插件
-
-query_suffix: |
-  注意：同时你还要关注 package.json,webpack.config.js
-
-  

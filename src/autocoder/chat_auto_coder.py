@@ -318,7 +318,7 @@ def find_files_in_project(patterns: List[str]) -> List[str]:
                         if _pattern in os.path.join(root, file):
                             matched_files.append(os.path.join(root, file))
                             is_added = True
-            ## add files not belongs to project                
+            ## add files not belongs to project
             if not is_added:
                 matched_files.append(pattern)
 
@@ -489,6 +489,70 @@ class CommandCompleter(Completer):
                                 yield Completion(
                                     file_name, start_position=-len(current_word)
                                 )
+            elif words[0] in ["/chat", "/coding"]:
+                image_extensions = (
+                        ".png", ".jpg", ".jpeg", ".gif", ".bmp",
+                        ".tiff", ".tif", ".webp", ".svg", ".ico",
+                        ".heic", ".heif", ".raw", ".cr2", ".nef",
+                        ".arw", ".dng", ".orf", ".rw2", ".pef",
+                        ".srw", ".eps", ".ai", ".psd", ".xcf"
+                    )
+                new_text = text[len(words[0]) :]
+                parser = CommandTextParser(new_text, words[0])
+                parser.coding()
+                current_word = parser.current_word()
+                tags = [tag for tag in parser.tags if tag.start_tag == "<img>"]
+                if current_word.startswith("<"):
+                    if tags and tags[-1].start_tag == "<img>":
+                        yield Completion("</img>", start_position=-len(current_word))
+                    else:    
+                        yield Completion("<img>", start_position=-len(current_word))                                        
+                
+                if tags and tags[-1].start_tag == "<img>" and tags[-1].end_tag == "":
+                    raw_file_name = tags[0].content
+                    file_name = raw_file_name.strip()
+                    if file_name.startswith("."):
+                        for root, dirs, files in os.walk("."):
+                            for file in files:
+                                if file.lower().endswith(
+                                    image_extensions
+                                ):
+                                    if file_name in os.path.join(root, file):
+                                        yield Completion(
+                                            os.path.join(root, file),
+                                            start_position=-len(raw_file_name),
+                                        )
+                    else:
+                        parent_dir = os.path.dirname(file_name)
+                        file_basename = os.path.basename(file_name)
+                        search_dir = parent_dir if parent_dir else "."
+                        for root, dirs, files in os.walk(search_dir):
+                            # 只处理直接子目录
+                            if root != search_dir:
+                                continue
+                            
+                            # 补全子目录
+                            for dir in dirs:
+                                full_path = os.path.join(root, dir)
+                                if full_path.startswith(file_name):
+                                    relative_path = os.path.relpath(full_path, search_dir)
+                                    yield Completion(
+                                        relative_path,
+                                        start_position=-len(file_basename),
+                                    )
+                            
+                            # 补全文件
+                            for file in files:
+                                if file.lower().endswith(image_extensions) and file.startswith(file_basename):
+                                    full_path = os.path.join(root, file)
+                                    relative_path = os.path.relpath(full_path, search_dir)
+                                    yield Completion(
+                                        relative_path,
+                                        start_position=-len(file_basename),
+                                    )
+
+                            # 只处理一层子目录，然后退出循环
+                            break
 
             elif words[0] == "/remove_files":
                 new_words = text[len("/remove_files") :].strip().split(",")
@@ -517,7 +581,6 @@ class CommandCompleter(Completer):
                             yield Completion(
                                 file_name, start_position=-len(current_word)
                             )
-
             elif words[0] == "/exclude_dirs":
                 new_words = text[len("/exclude_dirs") :].strip().split(",")
                 current_word = new_words[-1]
