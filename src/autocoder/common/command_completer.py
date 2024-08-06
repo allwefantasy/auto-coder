@@ -1,6 +1,7 @@
 from prompt_toolkit.completion import Completer, Completion, CompleteEvent
 from prompt_toolkit.document import Document
 import pydantic
+import os
 
 COMMANDS = {
     "/add_files": {"/group": {"/add": "", "/drop": ""}, "/refresh": {}},
@@ -8,10 +9,12 @@ COMMANDS = {
     "/chat": {},
 }
 
+
 class Tag(pydantic.BaseModel):
     start_tag: str
     content: str
     end_tag: str
+
 
 class CommandTextParser:
     def __init__(self, text: str, command: str):
@@ -134,7 +137,7 @@ class CommandTextParser:
     def previous(self) -> str:
         if self.pos > 1:
             return self.text[self.pos - 1]
-        return None    
+        return None
 
     def is_start_tag(self) -> bool:
         backup_pos = self.pos
@@ -159,26 +162,30 @@ class CommandTextParser:
     def consume_tag(self):
         start_tag = ""
         content = ""
-        end_tag = ""        
-                        
+        end_tag = ""
+
         # consume start tag
+        self.current_word_start_pos = self.pos + 1
         while self.peek() is not None and self.peek() != ">" and not self.is_blank():
             start_tag += self.next()
         if self.peek() == ">":
             start_tag += self.next()
-        
+        self.current_word_end_pos = self.pos + 1
         tag = Tag(start_tag=start_tag, content=content, end_tag=end_tag)
         self.tags.append(tag)
-        
+
         # consume content
-        self.current_word_start_pos = self.pos + 1                    
-        while self.peek() is not None and not (self.peek() == "<" and self.peek2() == "/"):
+        self.current_word_start_pos = self.pos + 1
+        while self.peek() is not None and not (
+            self.peek() == "<" and self.peek2() == "/"
+        ):
             content += self.next()
-        
+
         tag.content = content
         self.current_word_end_pos = self.pos + 1
 
         # consume end tag
+        self.current_word_start_pos = self.pos + 1
         if self.peek() == "<" and self.peek2() == "/":
             while (
                 self.peek() is not None and self.peek() != ">" and not self.is_blank()
@@ -187,8 +194,9 @@ class CommandTextParser:
             if self.peek() == ">":
                 end_tag += self.next()
         tag.end_tag = end_tag
+        self.current_word_end_pos = self.pos + 1
 
-        # check is finished 
+        # check is finished
         if self.peek() is None:
             self.is_extracted = True
 
@@ -199,13 +207,12 @@ class CommandTextParser:
             if v == " ":
                 current_word = ""
             else:
-                current_word += v   
+                current_word += v
         if self.peek() is None:
             self.is_extracted = True
 
         self.current_word_end_pos = self.pos + 1
-        self.current_word_start_pos = self.current_word_end_pos - len(current_word)    
-                    
+        self.current_word_start_pos = self.current_word_end_pos - len(current_word)
 
     def current_word(self) -> str:
         return self.text[self.current_word_start_pos : self.current_word_end_pos]
@@ -259,3 +266,4 @@ class CommandTextParser:
                 self.consume_tag()
             else:
                 self.consume_coding_value()
+
