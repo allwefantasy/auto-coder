@@ -401,7 +401,7 @@ def main(input_args: Optional[List[str]] = None):
             llm.setup_default_emb_model_name(args.emb_model)
             emb_model = byzerllm.ByzerLLM()
             emb_model.setup_default_emb_model_name(args.emb_model)
-            emb_model.setup_template(model=args.emb_model, template="auto")
+            # emb_model.setup_template(model=args.emb_model, template="auto")
             llm.setup_sub_client("emb_model", emb_model)
 
         if args.planner_model:

@@ -521,12 +521,27 @@ class CommandCompleter(Completer):
                 parser = CommandTextParser(new_text, words[0])
                 parser.coding()
                 current_word = parser.current_word()
-                tags = [tag for tag in parser.tags if tag.start_tag == "<img>"]
+
+                all_tags = parser.tags
+
+                if current_word.startswith("@"):
+                    name = current_word[1:]
+                    for file_name in self.all_file_names:
+                        if name in file_name:
+                            yield Completion(file_name, start_position=-len(name))
+
                 if current_word.startswith("<"):
-                    if tags and tags[-1].start_tag == "<img>":
-                        yield Completion("</img>", start_position=-len(current_word))
-                    else:
-                        yield Completion("<img>", start_position=-len(current_word))
+                    name = current_word[1:]
+                    for tag in ["<img>", "</img>"]:
+                        if all_tags and all_tags[-1].start_tag == "<img>":
+                            if tag.startswith(name):
+                                yield Completion(
+                                    "</img>", start_position=-len(current_word)
+                                )
+                        elif tag.startswith(name):
+                            yield Completion(tag, start_position=-len(current_word))
+                
+                tags = [tag for tag in parser.tags]                
 
                 if tags and tags[-1].start_tag == "<img>" and tags[-1].end_tag == "":
                     raw_file_name = tags[0].content

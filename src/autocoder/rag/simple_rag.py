@@ -340,6 +340,10 @@ You can set the collection by passing the `--collections`argument in command lin
         # retrieval_client.delete_from_chunk_collection(collection)
 
         required_exts = self.args.required_exts or None
+        
+        if required_exts:
+            required_exts = required_exts.split(",")
+
         documents = AutoCoderSimpleDirectoryReader(
             self.path,
             recursive=True,
