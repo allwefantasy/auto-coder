@@ -29,6 +29,8 @@ from rich.live import Live
 from rich.text import Text
 from rich.table import Table
 from byzerllm.utils.nontext import Image
+import re
+from autocoder.utils.request_queue import request_queue, RequestValue, DefaultValue, RequestOption
 
 
 def parse_arguments():
@@ -1218,11 +1220,23 @@ def main():
     def _(event):
         event.current_buffer.complete_next()
 
-    @kb.add("c-g")
-    def _(event):
-        # llm = llm.get_s
-        # voice_input_handler(event.app.session, llm)    
-        pass
+@kb.add("c-g")
+def _(event):
+    def execute_voice2text():
+        cmd = ["auto-coder", "agent", "voice2text", "--model", "deepseek_chat", "--voice2text_model", "voice2text"]
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        
+        for line in process.stdout:
+            if "<_transcription_>" in line:
+                transcription = re.search(r'<_transcription_>(.*?)</_transcription_>', line)
+                if transcription:
+                    return transcription.group(1)
+        
+        return None
+
+    transcription = execute_voice2text()
+    if transcription:
+        event.app.current_buffer.insert_text(transcription)
 
     session = PromptSession(
         history=InMemoryHistory(),
