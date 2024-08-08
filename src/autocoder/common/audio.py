@@ -18,6 +18,7 @@ import os
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress
+from typing import Optional
 
 
 def play_wave(filename: str):
@@ -115,7 +116,7 @@ class TranscribeAudio:
     def __init__(self):
         self.console = Console()
 
-    def record_audio(self, filename):
+    def record_audio(self, filename,session:Optional[PromptSession]=None):
         import pyaudio
 
         CHUNK = 1024
