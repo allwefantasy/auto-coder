@@ -506,14 +506,7 @@ def main(input_args: Optional[List[str]] = None):
             transcribe_audio = TranscribeAudio()
             temp_wav_file = os.path.join(tempfile.gettempdir(), "voice_input.wav")
 
-            console = Console()
-            console.print(
-                Panel(
-                    "Starting audio recording... Please speak now.",
-                    title="Voice",
-                    border_style="cyan",
-                )
-            )
+            console = Console()            
 
             transcribe_audio.record_audio(temp_wav_file)
             console.print(
