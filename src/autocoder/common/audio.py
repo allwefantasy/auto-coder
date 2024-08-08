@@ -21,7 +21,6 @@ from rich.progress import Progress
 from typing import Optional
 from prompt_toolkit.shortcuts import confirm
 
-
 def play_wave(filename: str):
     try:
         import simpleaudio as sa
@@ -115,7 +114,7 @@ class PlayStreamAudioFromText:
 
 class TranscribeAudio:
     def __init__(self):
-        self.console = Console()
+        self.console = Console()        
 
     def record_audio(self, filename, session: Optional[PromptSession] = None):
         import pyaudio
@@ -212,39 +211,7 @@ class TranscribeAudio:
         transcription = json.loads(response[0].output)["text"]
         return transcription
 
-    def voice_input_handler(self,llm):
-        self.console.print(
-            Panel(
-                "Starting audio recording... Please speak now.",
-                title="Voice Input",
-                border_style="cyan",
-            )
-        )
-
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav:
-            temp_filename = temp_wav.name
-
-        try:
-            self.record_audio(temp_filename)
-            self.console.print(
-                Panel(
-                    "Recording finished. Transcribing...",
-                    title="Voice Input",
-                    border_style="green",
-                )
-            )
-            transcription = self.transcribe_audio(temp_filename, llm)
-            self.console.print(
-                Panel(
-                    f"Transcription: {transcription}",
-                    title="Result",
-                    border_style="magenta",
-                )
-            )
-            # session.default_buffer.insert_text(transcription)
-        finally:
-            # Ensure the temporary file is deleted
-            os.unlink(temp_filename)
+    
 
 
 # byzerllm.connect_cluster()

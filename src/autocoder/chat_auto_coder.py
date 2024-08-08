@@ -77,6 +77,7 @@ commands = [
     "/exclude_dirs",
     "/help",
     "/shell",
+    "/voice_input",
     "/exit",
     "/summon",
 ]
@@ -424,6 +425,9 @@ def show_help():
     )
     print(
         "  \033[94m/shell\033[0m \033[93m<command>\033[0m - \033[92mExecute a shell command\033[0m"
+    )
+    print(
+        "  \033[94m/voice_input\033[0m - \033[92mConvert voice input to text\033[0m"
     )
     print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
     print()
@@ -1129,6 +1133,35 @@ def summon(query: str):
         os.remove(execute_file)
 
 
+def voice_input():
+    conf = memory.get("conf", {})
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+    }
+    
+    if "voice2text_model" not in conf:
+        print("Please set voice2text_model in configuration. /conf voice2text_model:<model>")
+        return
+    
+    yaml_config["voice2text_model"] = conf["voice2text_model"]                    
+    yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
+
+    execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+
+    with open(os.path.join(execute_file), "w") as f:
+        f.write(yaml_content)
+
+    def execute_voice2text_command():
+        auto_coder_main(["agent", "voice2text", "--file", execute_file])
+
+    try:
+        execute_voice2text_command()                
+        with open(os.path.join(".auto-coder","exchange.txt"), "r") as f:
+            return f.read()        
+    finally:
+        os.remove(execute_file)
+
+                
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
     existing_dirs = memory.get("exclude_dirs", [])
@@ -1221,39 +1254,8 @@ def main():
         event.current_buffer.complete_next()
 
     @kb.add("c-g")
-    def _(event):
-        def execute_voice2text():
-            conf = memory.get("conf", {})
-            yaml_config = {
-                "include_file": ["./base/base.yml"],
-            }
-            
-            if "voice2text_model" not in conf:
-                print("Please set voice2text_model in configuration. /conf voice2text_model:<model>")
-                return
-            
-            yaml_config["voice2text_model"] = conf["voice2text_model"]                    
-            yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
-
-            execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
-
-            with open(os.path.join(execute_file), "w") as f:
-                f.write(yaml_content)
-
-            def execute_voice2text_command():
-                auto_coder_main(["agent", "voice2text", "--file", execute_file])
-
-            try:
-                execute_voice2text_command()
-                # transcription = re.search(r'<_transcription_>(.*?)</_transcription_>', output)
-                # if transcription:
-                #     return transcription.group(1)
-                # return None
-                return ""
-            finally:
-                os.remove(execute_file)
-
-        transcription = execute_voice2text()
+    def _(event):        
+        transcription = voice_input()
         if transcription:
             event.app.current_buffer.insert_text(transcription)
 
@@ -1324,6 +1326,9 @@ def main():
                     print("Please enter your question.")
                 else:
                     ask(query)
+
+            elif user_input.startswith("/voice_input"):
+                text = voice_input()                                
 
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt

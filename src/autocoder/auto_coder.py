@@ -538,6 +538,9 @@ def main(input_args: Optional[List[str]] = None):
                 )
             )
 
+            with open(os.path.join(".auto-coder","exchange.txt"), "w") as f:
+                f.write(transcription)
+
             request_queue.add_request(
                 args.request_id,
                 RequestValue(
