@@ -20,6 +20,13 @@ from rich.panel import Panel
 from rich.progress import Progress
 from typing import Optional
 from prompt_toolkit.shortcuts import confirm
+from prompt_toolkit.application import Application
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.layout.containers import VSplit, HSplit, Window
+from prompt_toolkit.layout.layout import Layout
+from prompt_toolkit.widgets import TextArea, Frame, Button
+from prompt_toolkit.layout.controls import FormattedTextControl
+
 
 def play_wave(filename: str):
     try:
@@ -114,13 +121,7 @@ class PlayStreamAudioFromText:
 
 class TranscribeAudio:
     def __init__(self):
-        self.console = Console()        
-from prompt_toolkit.application import Application
-from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.layout.containers import VSplit, HSplit, Window
-from prompt_toolkit.layout.layout import Layout
-from prompt_toolkit.widgets import TextArea, Frame, Button
-from prompt_toolkit.layout.controls import FormattedTextControl
+        self.console = Console()
 
     def record_audio(self, filename, session: Optional[PromptSession] = None):
         import pyaudio
@@ -143,7 +144,7 @@ from prompt_toolkit.layout.controls import FormattedTextControl
             input=True,
             frames_per_buffer=CHUNK,
         )
-        
+
         frames = []
         recording = True
 
@@ -152,28 +153,40 @@ from prompt_toolkit.layout.controls import FormattedTextControl
             recording = False
 
         def create_confirm_dialog():
-            kb = KeyBindings()
 
-            @kb.add('y')
-            def _(event):
-                stop_recording()
-                event.app.exit()
-
-            @kb.add('n', 'q', 'c-c')
-            def _(event):
-                event.app.exit()
-
-            text_area = TextArea(text="Starting audio recording... Please speak now.\nPress 'y' to stop recording, or 'n'/'q' to cancel.")
+            text_area = TextArea(
+                text="Starting audio recording... Please speak now.\nPress 'y' to stop recording, or 'n'/'q' to cancel."
+            )
             ok_button = Button("Stop Recording", handler=stop_recording)
 
-            container = HSplit([
-                Frame(text_area),
-                VSplit([ok_button]),
-            ])
+            # Animation frames
+            animation = "|/-\\"
+            idx = 0
+            with Live(refresh_per_second=10) as live:
+                while recording:
+                    animation_frame = animation[idx % len(animation)]
+                    live.update(
+                        Panel(
+                            Text(
+                                f"Recording in progress {animation_frame}",
+                                style="bold green",
+                            ),
+                            title="Voice Recording",
+                            border_style="green",
+                        )
+                    )
+                    idx += 1
+                    time.sleep(0.1)
+
+            container = HSplit(
+                [
+                    Frame(text_area),
+                    VSplit([ok_button]),
+                ]
+            )
 
             application = Application(
-                layout=Layout(container),
-                key_bindings=kb,
+                layout=Layout(container),                
                 full_screen=True,
             )
 
@@ -189,25 +202,8 @@ from prompt_toolkit.layout.controls import FormattedTextControl
                 frames.append(data)
 
         record_thread = threading.Thread(target=record)
-        record_thread.start()
-
-        # Animation frames
-        animation = "|/-\\"
-        idx = 0
-
-        # Wait for the recording to stop with animation
-        with Live(refresh_per_second=10) as live:
-            while recording:
-                animation_frame = animation[idx % len(animation)]
-                live.update(
-                    Panel(
-                        Text(f"Recording in progress {animation_frame}", style="bold green"),
-                        title="Voice Recording",
-                        border_style="green",
-                    )
-                )
-                idx += 1
-                time.sleep(0.1)
+        record_thread.start()        
+        record_thread.join()
 
         stream.stop_stream()
         stream.close()
@@ -218,13 +214,14 @@ from prompt_toolkit.layout.controls import FormattedTextControl
         wf.setframerate(RATE)
         wf.writeframes(b"".join(frames))
         wf.close()
-        
 
-    def transcribe_audio(self, filename, llm:byzerllm.ByzerLLM):        
+    def transcribe_audio(self, filename, llm: byzerllm.ByzerLLM):
         with open(filename, "rb") as audio_file:
             audio_content = audio_file.read()
-            audio = "data:audio/wav;base64,"+base64.b64encode(audio_content).decode("utf-8")
-        
+            audio = "data:audio/wav;base64," + base64.b64encode(audio_content).decode(
+                "utf-8"
+            )
+
         conversations = [
             {
                 "role": "user",
@@ -239,8 +236,6 @@ from prompt_toolkit.layout.controls import FormattedTextControl
         response = llm.chat_oai(conversations=conversations)
         transcription = json.loads(response[0].output)["text"]
         return transcription
-
-    
 
 
 # byzerllm.connect_cluster()
