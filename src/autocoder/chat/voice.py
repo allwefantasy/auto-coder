@@ -1,5 +1,6 @@
 from prompt_toolkit import PromptSession
-import pyaudio
+import simpleaudio as sa
+import numpy as np
 import wave
 import threading
 import byzerllm
@@ -7,41 +8,34 @@ import base64
 import json
 import tempfile
 import os
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress
+
+console = Console()
 
 def record_audio(filename, duration=5):
-    CHUNK = 1024
-    FORMAT = pyaudio.paInt16
-    CHANNELS = 1
-    RATE = 44100
+    SAMPLE_RATE = 44100
+    NUM_CHANNELS = 1
+    SAMPLE_WIDTH = 2  # 16-bit
 
-    p = pyaudio.PyAudio()
+    recording = np.zeros(SAMPLE_RATE * duration * NUM_CHANNELS, dtype=np.int16)
+    
+    with Progress() as progress:
+        task = progress.add_task("[cyan]Recording...", total=duration)
+        
+        for i in range(duration):
+            recording[i*SAMPLE_RATE:(i+1)*SAMPLE_RATE] = np.frombuffer(
+                sa.play_buffer(np.zeros(SAMPLE_RATE, dtype=np.int16), 1, 2, SAMPLE_RATE).raw_data,
+                dtype=np.int16
+            )
+            progress.update(task, advance=1)
 
-    stream = p.open(format=FORMAT,
-                    channels=CHANNELS,
-                    rate=RATE,
-                    input=True,
-                    frames_per_buffer=CHUNK)
-
-    print("* 录音中...")
-
-    frames = []
-
-    for i in range(0, int(RATE / CHUNK * duration)):
-        data = stream.read(CHUNK)
-        frames.append(data)
-
-    print("* 录音结束")
-
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
-
-    wf = wave.open(filename, 'wb')
-    wf.setnchannels(CHANNELS)
-    wf.setsampwidth(p.get_sample_size(FORMAT))
-    wf.setframerate(RATE)
-    wf.writeframes(b''.join(frames))
-    wf.close()
+    with wave.open(filename, 'wb') as wf:
+        wf.setnchannels(NUM_CHANNELS)
+        wf.setsampwidth(SAMPLE_WIDTH)
+        wf.setframerate(SAMPLE_RATE)
+        wf.writeframes(recording.tobytes())
 
 def transcribe_audio(filename, llm):
     with open(filename, "rb") as audio_file:
@@ -61,17 +55,17 @@ def transcribe_audio(filename, llm):
     return transcription
 
 def voice_input_handler(session: PromptSession, llm):
-    print("开始录音，请说话...")
+    console.print(Panel("Starting audio recording... Please speak now.", title="Voice Input", border_style="cyan"))
     
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav:
         temp_filename = temp_wav.name
     
     try:
         record_audio(temp_filename)
-        print("录音结束，正在识别...")
+        console.print(Panel("Recording finished. Transcribing...", title="Voice Input", border_style="green"))
         transcription = transcribe_audio(temp_filename, llm)
-        print(f"识别结果: {transcription}")
+        console.print(Panel(f"Transcription: {transcription}", title="Result", border_style="magenta"))
         session.default_buffer.insert_text(transcription)
     finally:
-        # 确保临时文件被删除
+        # Ensure the temporary file is deleted
         os.unlink(temp_filename)
