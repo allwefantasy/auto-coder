@@ -116,7 +116,7 @@ class TranscribeAudio:
     def __init__(self):
         self.console = Console()
 
-    def record_audio(self, filename,session:Optional[PromptSession]=None):
+    def record_audio(self, filename, session: Optional[PromptSession] = None):
         import pyaudio
 
         CHUNK = 1024
@@ -144,15 +144,21 @@ class TranscribeAudio:
         frames = []
         recording = True
 
-        def stop_recording(event):
+        def stop_recording():
             nonlocal recording
             recording = False
-            event.app.exit()
 
-        kb = KeyBindings()
-        kb.add('enter')(stop_recording)
-
-        app = Application(key_bindings=kb, full_screen=True)
+        if session:
+            # If a session is provided, use its key bindings
+            @session.app.key_bindings.add('enter')
+            def _(event):
+                stop_recording()
+                event.app.exit()
+        else:
+            # If no session is provided, create a new Application
+            kb = KeyBindings()
+            kb.add('enter')(lambda event: stop_recording())
+            app = Application(key_bindings=kb, full_screen=True)
 
         def record():
             nonlocal recording, frames
@@ -163,7 +169,11 @@ class TranscribeAudio:
         record_thread = threading.Thread(target=record)
         record_thread.start()
 
-        app.run()
+        if session:
+            session.app.run()
+        else:
+            app.run()
+
         record_thread.join()
 
         self.console.print(
