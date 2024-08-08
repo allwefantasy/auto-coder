@@ -1341,7 +1341,7 @@ def main():
 
             elif user_input.startswith("/voice_input"):
                 text = voice_input()
-                new_prompt = text
+                new_prompt = "/coding "+text
 
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt

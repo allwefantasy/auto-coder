@@ -205,7 +205,9 @@ class TranscribeAudio:
 
         record_thread = threading.Thread(target=record)
         record_thread.start()        
-        record_thread.join()
+        record_thread.join() 
+        
+        confirm_dialog.exit()
 
         stream.stop_stream()
         stream.close()
