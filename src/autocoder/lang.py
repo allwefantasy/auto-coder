@@ -29,8 +29,6 @@ lang_desc = {
         "vl_model": "The name of the multi-modal model to use. Default is empty",
         "sd_model": "The name of the stable diffusion model to use. Default is empty",
         "emb_model": "The name of the embedding model to use. Default is empty",
-        "text2voice_model": "The name of the text-to-voice model to use. Default is empty",
-        "voice2text_model": "The name of the voice-to-text model to use. Default is empty",
         "index_model": "The name of the model used to build index. Default is empty",
         "image_file": "The path of the image file to process. Default is empty",
         "image_mode": "The mode to process the image. Default is 'direct'. Options: direct, iterative. If you use model like GPT4o, you can set it to direct otherwise set it to iterative",
