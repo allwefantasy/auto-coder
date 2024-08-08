@@ -1218,6 +1218,11 @@ def main():
     def _(event):
         event.current_buffer.complete_next()
 
+    @kb.add("c-g")
+    def _(event):
+        # llm = llm.get_s
+        # voice_input_handler(event.app.session, llm)    
+
     session = PromptSession(
         history=InMemoryHistory(),
         auto_suggest=AutoSuggestFromHistory(),
