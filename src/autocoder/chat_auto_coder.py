@@ -1222,6 +1222,7 @@ def main():
     def _(event):
         # llm = llm.get_s
         # voice_input_handler(event.app.session, llm)    
+        pass
 
     session = PromptSession(
         history=InMemoryHistory(),
