@@ -118,6 +118,10 @@ class TranscribeAudio:
 
     def record_audio(self, filename, session: Optional[PromptSession] = None):
         import pyaudio
+        from rich.live import Live
+        from rich.panel import Panel
+        from rich.text import Text
+        import time
 
         CHUNK = 1024
         FORMAT = pyaudio.paInt16
@@ -140,10 +144,9 @@ class TranscribeAudio:
         def stop_recording():
             nonlocal recording
             recording = False
-            
 
         def input_thread():
-            if confirm("Stop recording"):
+            if confirm("Press Enter to stop recording"):
                 stop_recording()
 
         threading.Thread(target=input_thread, daemon=True).start()
@@ -157,11 +160,25 @@ class TranscribeAudio:
         record_thread = threading.Thread(target=record)
         record_thread.start()
 
-        # Wait for the recording to stop
-        while recording:
-            time.sleep(0.1)
+        # Animation frames
+        animation = "|/-\\"
+        idx = 0
 
-        record_thread.join()       
+        # Wait for the recording to stop with animation
+        with Live(refresh_per_second=10) as live:
+            while recording:
+                animation_frame = animation[idx % len(animation)]
+                live.update(
+                    Panel(
+                        Text(f"Recording in progress {animation_frame}", style="bold green"),
+                        title="Audio Recording",
+                        border_style="green",
+                    )
+                )
+                idx += 1
+                time.sleep(0.1)
+
+        record_thread.join()
 
         stream.stop_stream()
         stream.close()
@@ -173,6 +190,8 @@ class TranscribeAudio:
         wf.setframerate(RATE)
         wf.writeframes(b"".join(frames))
         wf.close()
+
+        self.console.print(Panel("Recording completed!", title="Audio Recording", border_style="green"))
 
     def transcribe_audio(self, filename, llm:byzerllm.ByzerLLM):        
         with open(filename, "rb") as audio_file:
