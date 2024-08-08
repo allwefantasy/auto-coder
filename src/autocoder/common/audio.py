@@ -153,41 +153,40 @@ class TranscribeAudio:
             recording = False
 
         def create_confirm_dialog():
-
             text_area = TextArea(
                 text="Starting audio recording... Please speak now.\nPress 'y' to stop recording, or 'n'/'q' to cancel."
             )
             ok_button = Button("Stop Recording", handler=stop_recording)
 
-            # Animation frames
             animation = "|/-\\"
             idx = 0
-            with Live(refresh_per_second=10) as live:
-                while recording:
-                    animation_frame = animation[idx % len(animation)]
-                    live.update(
-                        Panel(
-                            Text(
-                                f"Recording in progress {animation_frame}",
-                                style="bold green",
-                            ),
-                            title="Voice Recording",
-                            border_style="green",
-                        )
-                    )
-                    idx += 1
-                    time.sleep(0.1)
+
+            def get_animation_frame():
+                nonlocal idx
+                frame = animation[idx % len(animation)]
+                idx += 1
+                return frame
+
+            animation_window = Window(
+                content=FormattedTextControl(
+                    lambda: f"Recording in progress {get_animation_frame()}"
+                ),
+                style="bold green",
+                height=1,
+            )
 
             container = HSplit(
                 [
                     Frame(text_area),
+                    animation_window,
                     VSplit([ok_button]),
                 ]
             )
 
             application = Application(
-                layout=Layout(container),                
+                layout=Layout(container),
                 full_screen=True,
+                refresh_interval=0.1,
             )
 
             return application
