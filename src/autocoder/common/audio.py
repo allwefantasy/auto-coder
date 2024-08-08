@@ -153,8 +153,10 @@ class TranscribeAudio:
             recording = False
 
         def create_confirm_dialog():
-            text_area = TextArea(
-                text="Starting audio recording... Please speak now.\nPress 'y' to stop recording"
+            message = Window(
+                content=FormattedTextControl("Starting audio recording... Please speak now."),
+                height=1,
+                style="bold",
             )
             ok_button = Button("Stop Recording", handler=stop_recording)
 
@@ -177,9 +179,10 @@ class TranscribeAudio:
 
             container = HSplit(
                 [
-                    Frame(text_area),
+                    message,
                     animation_window,
-                    VSplit([ok_button]),
+                    Window(height=1),  # Add some space
+                    ok_button,
                 ]
             )
 
