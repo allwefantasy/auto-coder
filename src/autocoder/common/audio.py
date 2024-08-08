@@ -147,19 +147,13 @@ class TranscribeAudio:
         def stop_recording():
             nonlocal recording
             recording = False
+        
+        # If no session is provided, create a simple input loop
+        def input_thread():
+            input()
+            stop_recording()
 
-        if session:
-            # If a session is provided, use its key bindings
-            @session.app.key_bindings.add('enter')
-            def _(event):
-                stop_recording()
-        else:
-            # If no session is provided, create a simple input loop
-            def input_thread():
-                input()
-                stop_recording()
-
-            threading.Thread(target=input_thread, daemon=True).start()
+        threading.Thread(target=input_thread, daemon=True).start()
 
         def record():
             nonlocal recording, frames
@@ -215,7 +209,7 @@ class TranscribeAudio:
         transcription = json.loads(response[0].output)["text"]
         return transcription
 
-    def voice_input_handler(self, session: PromptSession, llm):
+    def voice_input_handler(self,llm):
         self.console.print(
             Panel(
                 "Starting audio recording... Please speak now.",
@@ -244,7 +238,7 @@ class TranscribeAudio:
                     border_style="magenta",
                 )
             )
-            session.default_buffer.insert_text(transcription)
+            # session.default_buffer.insert_text(transcription)
         finally:
             # Ensure the temporary file is deleted
             os.unlink(temp_filename)

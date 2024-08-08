@@ -1222,37 +1222,36 @@ def main():
 
     @kb.add("c-g")
     def _(event):
-def execute_voice2text():
-    conf = memory.get("conf", {})
-    yaml_config = {
-        "include_file": ["./base/base.yml"],
-    }
+        def execute_voice2text():
+            conf = memory.get("conf", {})
+            yaml_config = {
+                "include_file": ["./base/base.yml"],
+            }
+            
+            if "voice2text_model" not in conf:
+                print("Please set voice2text_model in configuration. /conf voice2text_model:<model>")
+                return
+            
+            yaml_config["voice2text_model"] = conf["voice2text_model"]                    
+            yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
-    for key, value in conf.items():
-        converted_value = convert_config_value(key, value)
-        if converted_value is not None:
-            yaml_config[key] = converted_value
+            execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-    yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
+            with open(os.path.join(execute_file), "w") as f:
+                f.write(yaml_content)
 
-    execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+            def execute_voice2text_command():
+                auto_coder_main(["agent", "voice2text", "--file", execute_file])
 
-    with open(os.path.join(execute_file), "w") as f:
-        f.write(yaml_content)
-
-    def execute_voice2text_command():
-        with redirect_stdout() as output:
-            auto_coder_main(["agent", "voice2text", "--file", execute_file])
-        return output.getvalue()
-
-    try:
-        output = execute_voice2text_command()
-        transcription = re.search(r'<_transcription_>(.*?)</_transcription_>', output)
-        if transcription:
-            return transcription.group(1)
-        return None
-    finally:
-        os.remove(execute_file)
+            try:
+                execute_voice2text_command()
+                # transcription = re.search(r'<_transcription_>(.*?)</_transcription_>', output)
+                # if transcription:
+                #     return transcription.group(1)
+                # return None
+                return ""
+            finally:
+                os.remove(execute_file)
 
         transcription = execute_voice2text()
         if transcription:
