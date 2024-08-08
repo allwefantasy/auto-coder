@@ -38,6 +38,8 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     parser.add_argument("--vl_model", default="", help=desc["vl_model"])
     parser.add_argument("--sd_model", default="", help=desc["sd_model"])
     parser.add_argument("--emb_model", default="", help=desc["emb_model"])
+    parser.add_argument("--text2voice_model", default="", help=desc["text2voice_model"])
+    parser.add_argument("--voice2text_model", default="", help=desc["voice2text_model"])
 
     parser.add_argument("--index_model", default="", help=desc["index_model"])
     parser.add_argument(

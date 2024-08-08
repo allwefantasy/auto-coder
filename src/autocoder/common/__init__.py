@@ -171,6 +171,8 @@ class AutoCoderArgs(pydantic.BaseModel):
     vl_model: Optional[str] = ""
     sd_model: Optional[str] = ""
     emb_model: Optional[str] = ""
+    text2voice_model: Optional[str] = ""
+    voice2text_model: Optional[str] = ""
     index_model: Optional[str] = ""
     index_model_max_length: Optional[int] = 0    
     index_model_max_input_length: Optional[int] = 0    
