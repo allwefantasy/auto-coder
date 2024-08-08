@@ -1328,7 +1328,10 @@ def main():
                     ask(query)
 
             elif user_input.startswith("/voice_input"):
-                text = voice_input()                                
+                text = voice_input()
+                if text:
+                    session.default_buffer.insert_text("\n" + text)
+                    print(f"\nTranscribed text: {text}")
 
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt
