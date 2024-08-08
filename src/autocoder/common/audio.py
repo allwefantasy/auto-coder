@@ -153,12 +153,13 @@ class TranscribeAudio:
             @session.app.key_bindings.add('enter')
             def _(event):
                 stop_recording()
-                event.app.exit()
         else:
-            # If no session is provided, create a new Application
-            kb = KeyBindings()
-            kb.add('enter')(lambda event: stop_recording())
-            app = Application(key_bindings=kb, full_screen=True)
+            # If no session is provided, create a simple input loop
+            def input_thread():
+                input()
+                stop_recording()
+
+            threading.Thread(target=input_thread, daemon=True).start()
 
         def record():
             nonlocal recording, frames
@@ -169,10 +170,9 @@ class TranscribeAudio:
         record_thread = threading.Thread(target=record)
         record_thread.start()
 
-        if session:
-            session.app.run()
-        else:
-            app.run()
+        # Wait for the recording to stop
+        while recording:
+            time.sleep(0.1)
 
         record_thread.join()
 
