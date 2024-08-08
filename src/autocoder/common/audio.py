@@ -115,6 +115,12 @@ class PlayStreamAudioFromText:
 class TranscribeAudio:
     def __init__(self):
         self.console = Console()        
+from prompt_toolkit.application import Application
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.layout.containers import VSplit, HSplit, Window
+from prompt_toolkit.layout.layout import Layout
+from prompt_toolkit.widgets import TextArea, Frame, Button
+from prompt_toolkit.layout.controls import FormattedTextControl
 
     def record_audio(self, filename, session: Optional[PromptSession] = None):
         import pyaudio
@@ -145,11 +151,36 @@ class TranscribeAudio:
             nonlocal recording
             recording = False
 
-        def input_thread():
-            if confirm("Starting audio recording... Please speak now or input 'y' to stop recording:"):
-                stop_recording()
+        def create_confirm_dialog():
+            kb = KeyBindings()
 
-        threading.Thread(target=input_thread, daemon=True).start()
+            @kb.add('y')
+            def _(event):
+                stop_recording()
+                event.app.exit()
+
+            @kb.add('n', 'q', 'c-c')
+            def _(event):
+                event.app.exit()
+
+            text_area = TextArea(text="Starting audio recording... Please speak now.\nPress 'y' to stop recording, or 'n'/'q' to cancel.")
+            ok_button = Button("Stop Recording", handler=stop_recording)
+
+            container = HSplit([
+                Frame(text_area),
+                VSplit([ok_button]),
+            ])
+
+            application = Application(
+                layout=Layout(container),
+                key_bindings=kb,
+                full_screen=True,
+            )
+
+            return application
+
+        confirm_dialog = create_confirm_dialog()
+        threading.Thread(target=confirm_dialog.run, daemon=True).start()
 
         def record():
             nonlocal recording, frames
@@ -171,19 +202,16 @@ class TranscribeAudio:
                 live.update(
                     Panel(
                         Text(f"Recording in progress {animation_frame}", style="bold green"),
-                        title="voice",
+                        title="Voice Recording",
                         border_style="green",
                     )
                 )
                 idx += 1
                 time.sleep(0.1)
 
-        # record_thread.join()
-
         stream.stop_stream()
         stream.close()
         p.terminate()
-
         wf = wave.open(filename, "wb")
         wf.setnchannels(CHANNELS)
         wf.setsampwidth(p.get_sample_size(FORMAT))
