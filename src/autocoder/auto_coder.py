@@ -524,15 +524,15 @@ def main(input_args: Optional[List[str]] = None):
                 )
             )
             
-            if llm and llm.get_sub_client("voice2text_model"):
-                voice2text_model = llm.get_sub_client("voice2text_model")
-            else:
-                voice2text_model = llm
-            transcription = transcribe_audio.transcribe_audio(temp_wav_file, llm)
+            if llm and llm.get_sub_client("voice2text_model"):                
+                voice2text_llm = llm.get_sub_client("voice2text_model")
+            else:                
+                voice2text_llm = llm
+            transcription = transcribe_audio.transcribe_audio(temp_wav_file, voice2text_llm)
 
             console.print(
                 Panel(
-                    f"Transcription: {transcription}",
+                    f"Transcription: <_transcription_>{transcription}</_transcription_>",
                     title="Result",
                     border_style="magenta",
                 )

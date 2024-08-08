@@ -195,18 +195,17 @@ class TranscribeAudio:
         wf.writeframes(b"".join(frames))
         wf.close()
 
-    def transcribe_audio(self, filename, llm):
+    def transcribe_audio(self, filename, llm:byzerllm.ByzerLLM):        
         with open(filename, "rb") as audio_file:
             audio_content = audio_file.read()
-
-        base64_audio = base64.b64encode(audio_content).decode("utf-8")
-
+            audio = "data:audio/wav;base64,"+base64.b64encode(audio_content).decode("utf-8")
+        
         conversations = [
             {
                 "role": "user",
                 "content": json.dumps(
                     {
-                        "audio": base64_audio,
+                        "audio": audio,
                     }
                 ),
             }
