@@ -133,26 +133,17 @@ class TranscribeAudio:
             input=True,
             frames_per_buffer=CHUNK,
         )
-
-        self.console.print(
-            Panel(
-                "Recording... Press Enter to stop.",
-                title="Voice Input",
-                border_style="cyan",
-            )
-        )
+        
         frames = []
         recording = True
 
         def stop_recording():
             nonlocal recording
             recording = False
-        
-        # If no session is provided, create a simple input loop
-        from prompt_toolkit.shortcuts import confirm
+            
 
         def input_thread():
-            if confirm("Press Enter to stop recording"):
+            if confirm("Stop recording"):
                 stop_recording()
 
         threading.Thread(target=input_thread, daemon=True).start()
@@ -170,15 +161,7 @@ class TranscribeAudio:
         while recording:
             time.sleep(0.1)
 
-        record_thread.join()
-
-        self.console.print(
-            Panel(
-                "Recording stopped.",
-                title="Voice Input",
-                border_style="green",
-            )
-        )
+        record_thread.join()       
 
         stream.stop_stream()
         stream.close()

@@ -30,7 +30,12 @@ from rich.text import Text
 from rich.table import Table
 from byzerllm.utils.nontext import Image
 import re
-from autocoder.utils.request_queue import request_queue, RequestValue, DefaultValue, RequestOption
+from autocoder.utils.request_queue import (
+    request_queue,
+    RequestValue,
+    DefaultValue,
+    RequestOption,
+)
 
 
 def parse_arguments():
@@ -426,9 +431,7 @@ def show_help():
     print(
         "  \033[94m/shell\033[0m \033[93m<command>\033[0m - \033[92mExecute a shell command\033[0m"
     )
-    print(
-        "  \033[94m/voice_input\033[0m - \033[92mConvert voice input to text\033[0m"
-    )
+    print("  \033[94m/voice_input\033[0m - \033[92mConvert voice input to text\033[0m")
     print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
     print()
 
@@ -546,8 +549,8 @@ class CommandCompleter(Completer):
                                 )
                         elif tag.startswith(name):
                             yield Completion(tag, start_position=-len(current_word))
-                
-                tags = [tag for tag in parser.tags]                
+
+                tags = [tag for tag in parser.tags]
 
                 if tags and tags[-1].start_tag == "<img>" and tags[-1].end_tag == "":
                     raw_file_name = tags[0].content
@@ -1138,12 +1141,14 @@ def voice_input():
     yaml_config = {
         "include_file": ["./base/base.yml"],
     }
-    
+
     if "voice2text_model" not in conf:
-        print("Please set voice2text_model in configuration. /conf voice2text_model:<model>")
+        print(
+            "Please set voice2text_model in configuration. /conf voice2text_model:<model>"
+        )
         return
-    
-    yaml_config["voice2text_model"] = conf["voice2text_model"]                    
+
+    yaml_config["voice2text_model"] = conf["voice2text_model"]
     yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
@@ -1155,13 +1160,13 @@ def voice_input():
         auto_coder_main(["agent", "voice2text", "--file", execute_file])
 
     try:
-        execute_voice2text_command()                
-        with open(os.path.join(".auto-coder","exchange.txt"), "r") as f:
-            return f.read()        
+        execute_voice2text_command()
+        with open(os.path.join(".auto-coder", "exchange.txt"), "r") as f:
+            return f.read()
     finally:
         os.remove(execute_file)
 
-                
+
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
     existing_dirs = memory.get("exclude_dirs", [])
@@ -1254,7 +1259,7 @@ def main():
         event.current_buffer.complete_next()
 
     @kb.add("c-g")
-    def _(event):        
+    def _(event):
         transcription = voice_input()
         if transcription:
             event.app.current_buffer.insert_text(transcription)
@@ -1280,6 +1285,8 @@ def main():
     print("\033[1;34mType /help to see available commands.\033[0m\n")
     show_help()
 
+    new_prompt = ""
+
     while True:
         try:
             prompt_message = [
@@ -1290,7 +1297,12 @@ def main():
                 ("class:path", "~"),
                 ("class:dollar", "$ "),
             ]
-            user_input = session.prompt(FormattedText(prompt_message))
+
+            if new_prompt:
+                user_input = session.prompt(FormattedText(prompt_message),default=new_prompt)
+            else:
+                user_input = session.prompt(FormattedText(prompt_message))
+            new_prompt = ""
 
             if user_input.startswith("/add_files"):
                 args = user_input[len("/add_files") :].strip().split()
@@ -1329,9 +1341,7 @@ def main():
 
             elif user_input.startswith("/voice_input"):
                 text = voice_input()
-                if text:
-                    session.default_buffer.insert_text("\n" + text)
-                    print(f"\nTranscribed text: {text}")
+                new_prompt = text
 
             elif user_input.startswith("/exit"):
                 raise KeyboardInterrupt

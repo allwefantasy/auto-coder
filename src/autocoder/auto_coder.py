@@ -510,7 +510,7 @@ def main(input_args: Optional[List[str]] = None):
             console.print(
                 Panel(
                     "Starting audio recording... Please speak now.",
-                    title="Voice Input",
+                    title="Voice",
                     border_style="cyan",
                 )
             )
@@ -519,7 +519,7 @@ def main(input_args: Optional[List[str]] = None):
             console.print(
                 Panel(
                     "Recording finished. Transcribing...",
-                    title="Voice Input",
+                    title="Voice",
                     border_style="green",
                 )
             )
