@@ -255,7 +255,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     doc_chat_parse = doc_subparsers.add_parser("chat", help="")
     doc_chat_parse.add_argument("--request_id", default="", help=desc["request_id"])
     doc_chat_parse.add_argument("--file", default="", help=desc["file"])
-    doc_chat_parse.add_argument("--model", default="", help=desc["model"])    
+    doc_chat_parse.add_argument("--model", default="", help=desc["model"])
     doc_chat_parse.add_argument("--emb_model", default="", help=desc["emb_model"])
     doc_chat_parse.add_argument(
         "--ray_address", default="auto", help=desc["ray_address"]
@@ -344,8 +344,18 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     chat_parser.add_argument("--rag_token", default="", help="")
     chat_parser.add_argument("--rag_url", default="", help="")
     chat_parser.add_argument("--target_file", default="./output.txt", help="")
-    chat_parser.add_argument("--new_session", action="store_true", default=False, help="Start a new chat session")
-    chat_parser.add_argument("--apply", action="store_true", default=False, help="Apply changes suggested by the AI")
+    chat_parser.add_argument(
+        "--new_session",
+        action="store_true",
+        default=False,
+        help="Start a new chat session",
+    )
+    chat_parser.add_argument(
+        "--apply",
+        action="store_true",
+        default=False,
+        help="Apply changes suggested by the AI",
+    )
 
     read_project_parser = agent_subparsers.add_parser(
         "project_reader", help="Run the chat agent"
@@ -394,18 +404,25 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     read_project_parser.add_argument("--rag_url", default="", help="")
     read_project_parser.add_argument("--target_file", default="./output.txt", help="")
 
-    
+    voice2text_parser = agent_subparsers.add_parser(
+        "voice2text", help="Convert voice to text"
+    )
+    voice2text_parser.add_argument("--request_id", default="", help=desc["request_id"])
+    voice2text_parser.add_argument("--model", default="", help=desc["model"])
+    voice2text_parser.add_argument("--voice2text_model", default="", help=desc["model"])
+    voice2text_parser.add_argument(
+        "--ray_address", default="auto", help=desc["ray_address"]
+    )
+    voice2text_parser.add_argument("--source_dir", default=".", help="")
+    voice2text_parser.add_argument("--file", default="", help=desc["file"])
+    voice2text_parser.add_argument("--target_file", default="./output.txt", help="")
 
     auto_tool_parser = agent_subparsers.add_parser(
         "auto_tool", help="Run the chat agent"
     )
-    auto_tool_parser.add_argument(
-        "--request_id", default="", help=desc["request_id"]
-    )
+    auto_tool_parser.add_argument("--request_id", default="", help=desc["request_id"])
 
-    auto_tool_parser.add_argument(
-        "--source_dir", default=".", help="Source directory"
-    )
+    auto_tool_parser.add_argument("--source_dir", default=".", help="Source directory")
     auto_tool_parser.add_argument("--query", help="Query for the planner")
     auto_tool_parser.add_argument("--model", default="", help=desc["model"])
     auto_tool_parser.add_argument("--emb_model", default="", help=desc["emb_model"])

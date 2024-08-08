@@ -369,7 +369,7 @@ def main(input_args: Optional[List[str]] = None):
             args.model, {"max_length": args.model_max_length}
         )
 
-        if args.vl_model:            
+        if args.vl_model:
             vl_model = byzerllm.ByzerLLM()
             vl_model.setup_default_model_name(args.vl_model)
             vl_model.setup_template(model=args.vl_model, template="auto")
@@ -384,13 +384,17 @@ def main(input_args: Optional[List[str]] = None):
         if args.text2voice_model:
             text2voice_model = byzerllm.ByzerLLM()
             text2voice_model.setup_default_model_name(args.text2voice_model)
-            text2voice_model.setup_template(model=args.text2voice_model, template="auto")
+            text2voice_model.setup_template(
+                model=args.text2voice_model, template="auto"
+            )
             llm.setup_sub_client("text2voice_model", text2voice_model)
 
         if args.voice2text_model:
             voice2text_model = byzerllm.ByzerLLM()
             voice2text_model.setup_default_model_name(args.voice2text_model)
-            voice2text_model.setup_template(model=args.voice2text_model, template="auto")
+            voice2text_model.setup_template(
+                model=args.voice2text_model, template="auto"
+            )
             llm.setup_sub_client("voice2text_model", voice2text_model)
 
         if args.index_model:
@@ -494,6 +498,55 @@ def main(input_args: Optional[List[str]] = None):
                     )
                 )
 
+            return
+        elif raw_args.agent_command == "voice2text":
+            from autocoder.common.audio import TranscribeAudio
+            import tempfile
+
+            transcribe_audio = TranscribeAudio()
+            temp_wav_file = os.path.join(tempfile.gettempdir(), "voice_input.wav")
+
+            console = Console()
+            console.print(
+                Panel(
+                    "Starting audio recording... Please speak now.",
+                    title="Voice Input",
+                    border_style="cyan",
+                )
+            )
+
+            transcribe_audio.record_audio(temp_wav_file, duration=5)
+            console.print(
+                Panel(
+                    "Recording finished. Transcribing...",
+                    title="Voice Input",
+                    border_style="green",
+                )
+            )
+            
+            if llm and llm.get_sub_client("voice2text_model"):
+                voice2text_model = llm.get_sub_client("voice2text_model")
+            else:
+                voice2text_model = llm
+            transcription = transcribe_audio.transcribe_audio(temp_wav_file, llm)
+
+            console.print(
+                Panel(
+                    f"Transcription: {transcription}",
+                    title="Result",
+                    border_style="magenta",
+                )
+            )
+
+            request_queue.add_request(
+                args.request_id,
+                RequestValue(
+                    value=DefaultValue(value=transcription),
+                    status=RequestOption.COMPLETED,
+                ),
+            )
+
+            os.remove(temp_wav_file)
             return
         elif raw_args.agent_command == "auto_tool":
             from autocoder.agent.auto_tool import AutoTool
@@ -610,7 +663,7 @@ def main(input_args: Optional[List[str]] = None):
                 RequestValue(
                     value=StreamValue(value=[""]), status=RequestOption.COMPLETED
                 ),
-            )            
+            )
 
             chat_history["ask_conversation"].append(
                 {"role": "assistant", "content": assistant_response}
