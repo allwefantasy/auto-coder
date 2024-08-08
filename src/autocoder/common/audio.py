@@ -19,6 +19,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress
 from typing import Optional
+from prompt_toolkit.shortcuts import confirm
 
 
 def play_wave(filename: str):
@@ -149,9 +150,11 @@ class TranscribeAudio:
             recording = False
         
         # If no session is provided, create a simple input loop
+        from prompt_toolkit.shortcuts import confirm
+
         def input_thread():
-            input()
-            stop_recording()
+            if confirm("Press Enter to stop recording"):
+                stop_recording()
 
         threading.Thread(target=input_thread, daemon=True).start()
 
