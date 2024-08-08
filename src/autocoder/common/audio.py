@@ -9,6 +9,8 @@ from concurrent.futures import ThreadPoolExecutor
 import shutil
 
 from prompt_toolkit import PromptSession
+from prompt_toolkit.application import Application
+from prompt_toolkit.key_binding import KeyBindings
 import numpy as np
 import wave
 import tempfile
@@ -115,7 +117,6 @@ class TranscribeAudio:
 
     def record_audio(self, filename):
         import pyaudio
-        import keyboard
 
         CHUNK = 1024
         FORMAT = pyaudio.paInt16
@@ -132,21 +133,45 @@ class TranscribeAudio:
             frames_per_buffer=CHUNK,
         )
 
-        print("Recording... Press Enter to stop.")
+        self.console.print(
+            Panel(
+                "Recording... Press Enter to stop.",
+                title="Voice Input",
+                border_style="cyan",
+            )
+        )
         frames = []
         recording = True
 
-        def stop_recording():
+        def stop_recording(event):
             nonlocal recording
             recording = False
+            event.app.exit()
 
-        keyboard.on_press_key("enter", lambda _: stop_recording())
+        kb = KeyBindings()
+        kb.add('enter')(stop_recording)
 
-        while recording:
-            data = stream.read(CHUNK)
-            frames.append(data)
+        app = Application(key_bindings=kb, full_screen=True)
 
-        print("Recording stopped.")
+        def record():
+            nonlocal recording, frames
+            while recording:
+                data = stream.read(CHUNK)
+                frames.append(data)
+
+        record_thread = threading.Thread(target=record)
+        record_thread.start()
+
+        app.run()
+        record_thread.join()
+
+        self.console.print(
+            Panel(
+                "Recording stopped.",
+                title="Voice Input",
+                border_style="green",
+            )
+        )
 
         stream.stop_stream()
         stream.close()
