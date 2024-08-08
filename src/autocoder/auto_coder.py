@@ -381,6 +381,18 @@ def main(input_args: Optional[List[str]] = None):
             sd_model.setup_template(model=args.sd_model, template="auto")
             llm.setup_sub_client("sd_model", sd_model)
 
+        if args.text2voice_model:
+            text2voice_model = byzerllm.ByzerLLM()
+            text2voice_model.setup_default_model_name(args.text2voice_model)
+            text2voice_model.setup_template(model=args.text2voice_model, template="auto")
+            llm.setup_sub_client("text2voice_model", text2voice_model)
+
+        if args.voice2text_model:
+            voice2text_model = byzerllm.ByzerLLM()
+            voice2text_model.setup_default_model_name(args.voice2text_model)
+            voice2text_model.setup_template(model=args.voice2text_model, template="auto")
+            llm.setup_sub_client("voice2text_model", voice2text_model)
+
         if args.index_model:
             index_model = byzerllm.ByzerLLM()
             index_model.setup_default_model_name(args.index_model)
