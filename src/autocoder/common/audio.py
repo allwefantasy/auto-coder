@@ -154,7 +154,7 @@ class TranscribeAudio:
 
         def create_confirm_dialog():
             text_area = TextArea(
-                text="Starting audio recording... Please speak now.\nPress 'y' to stop recording, or 'n'/'q' to cancel."
+                text="Starting audio recording... Please speak now.\nPress 'y' to stop recording"
             )
             ok_button = Button("Stop Recording", handler=stop_recording)
 
