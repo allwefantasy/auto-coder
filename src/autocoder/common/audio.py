@@ -9,7 +9,6 @@ from concurrent.futures import ThreadPoolExecutor
 import shutil
 
 from prompt_toolkit import PromptSession
-import pyaudio
 import numpy as np
 import wave
 import tempfile
@@ -114,7 +113,10 @@ class TranscribeAudio:
     def __init__(self):
         self.console = Console()
 
-    def record_audio(self, filename, duration=5):
+    def record_audio(self, filename):
+        import pyaudio
+        import keyboard
+
         CHUNK = 1024
         FORMAT = pyaudio.paInt16
         CHANNELS = 1
@@ -122,32 +124,39 @@ class TranscribeAudio:
 
         p = pyaudio.PyAudio()
 
-        stream = p.open(format=FORMAT,
-                        channels=CHANNELS,
-                        rate=RATE,
-                        input=True,
-                        frames_per_buffer=CHUNK)
+        stream = p.open(
+            format=FORMAT,
+            channels=CHANNELS,
+            rate=RATE,
+            input=True,
+            frames_per_buffer=CHUNK,
+        )
 
+        print("Recording... Press Enter to stop.")
         frames = []
+        recording = True
 
-        with Progress() as progress:
-            task = progress.add_task("[cyan]Recording...", total=duration)
+        def stop_recording():
+            nonlocal recording
+            recording = False
 
-            for i in range(0, int(RATE / CHUNK * duration)):
-                data = stream.read(CHUNK)
-                frames.append(data)
-                if i % (RATE / CHUNK) == 0:
-                    progress.update(task, advance=1)
+        keyboard.on_press_key("enter", lambda _: stop_recording())
+
+        while recording:
+            data = stream.read(CHUNK)
+            frames.append(data)
+
+        print("Recording stopped.")
 
         stream.stop_stream()
         stream.close()
         p.terminate()
 
-        wf = wave.open(filename, 'wb')
+        wf = wave.open(filename, "wb")
         wf.setnchannels(CHANNELS)
         wf.setsampwidth(p.get_sample_size(FORMAT))
         wf.setframerate(RATE)
-        wf.writeframes(b''.join(frames))
+        wf.writeframes(b"".join(frames))
         wf.close()
 
     def transcribe_audio(self, filename, llm):

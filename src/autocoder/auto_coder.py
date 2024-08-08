@@ -515,7 +515,7 @@ def main(input_args: Optional[List[str]] = None):
                 )
             )
 
-            transcribe_audio.record_audio(temp_wav_file, duration=5)
+            transcribe_audio.record_audio(temp_wav_file)
             console.print(
                 Panel(
                     "Recording finished. Transcribing...",
