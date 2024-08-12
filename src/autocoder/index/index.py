@@ -360,10 +360,8 @@ class IndexManager:
             for future in as_completed(futures):
                 future.result()
 
-        all_results = list({file.file_path: file for file in all_results}.values())
-        # Limit the number of files based on index_filter_file_num
-        limited_results = all_results[:self.args.index_filter_file_num]
-        return FileList(file_list=limited_results)
+        all_results = list({file.file_path: file for file in all_results}.values())        
+        return FileList(file_list=all_results)
 
     def _query_index_with_thread(self, query, func):
         all_results = []
@@ -539,6 +537,8 @@ def build_index_and_filter_files(
 
     if args.skip_confirm:
         final_filenames = [file.file_path for file in final_files.values()]
+        # Limit the number of files based on index_filter_file_num        
+        final_filenames = final_filenames[:args.index_filter_file_num]
     else:
         target_files_data = [
             (file.file_path, file.reason) for file in final_files.values()
@@ -550,6 +550,8 @@ def build_index_and_filter_files(
             final_filenames = []
         else:
             final_filenames = display_table_and_get_selections(target_files_data)
+        # Limit the number of files based on index_filter_file_num
+        final_filenames = final_filenames[:args.index_filter_file_num]
 
     try:
         print_selected(
@@ -569,11 +571,12 @@ def build_index_and_filter_files(
 
     source_code = ""
     depulicated_sources = set()
+    
     for file in sources:
         if file.module_name in final_filenames:
             if file.module_name in depulicated_sources:
                 continue
-            depulicated_sources.add(file.module_name)
+            depulicated_sources.add(file.module_name)            
             source_code += f"##File: {file.module_name}\n"
             source_code += f"{file.source_code}\n\n"
     return source_code

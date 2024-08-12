@@ -22,6 +22,12 @@ from autocoder.version import __version__
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.common.command_completer import CommandTextParser
 from autocoder.utils import get_last_yaml_file
+from autocoder.index.symbols_utils import (
+    extract_symbols,
+    symbols_info_to_str,
+    SymbolsInfo,
+    SymbolType,
+)
 import platform
 import subprocess
 import shlex
@@ -45,12 +51,22 @@ from byzerllm.utils.langutil import asyncfy_with_semaphore
 from prompt_toolkit.patch_stdout import patch_stdout
 
 
+class SymbolItem(BaseModel):
+    symbol_name: str
+    symbol_type: SymbolType
+    file_name: str
+
+
 def parse_arguments():
     import argparse
 
     parser = argparse.ArgumentParser(description="Chat Auto Coder")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    parser.add_argument("--quick", action="store_true", help="Enter the auto-coder.chat without initializing the system")
+    parser.add_argument(
+        "--quick",
+        action="store_true",
+        help="Enter the auto-coder.chat without initializing the system",
+    )
     return parser.parse_args()
 
 
@@ -448,6 +464,47 @@ def show_help():
 # word_completer = WordCompleter(commands)
 
 
+def get_symbol_list() -> List[SymbolItem]:
+    list_of_symbols = []
+    index_file = os.path.join(".auto-coder", "index.json")
+
+    if os.path.exists(index_file):
+        with open(index_file, "r") as file:
+            index_data = json.load(file)
+    else:
+        index_data = {}
+
+    for item in index_data.values():
+        symbols_str = item["symbols"]
+        module_name = item["module_name"]
+        info1 = extract_symbols(symbols_str)
+        for name in info1.classes:
+            list_of_symbols.append(
+                SymbolItem(
+                    symbol_name=name,
+                    symbol_type=SymbolType.CLASSES,
+                    file_name=module_name,
+                )
+            )
+        for name in info1.functions:
+            list_of_symbols.append(
+                SymbolItem(
+                    symbol_name=name,
+                    symbol_type=SymbolType.FUNCTIONS,
+                    file_name=module_name,
+                )
+            )
+        for name in info1.variables:
+            list_of_symbols.append(
+                SymbolItem(
+                    symbol_name=name,
+                    symbol_type=SymbolType.VARIABLES,
+                    file_name=module_name,
+                )
+            )
+    return list_of_symbols
+
+
 class CommandCompleter(Completer):
     def __init__(self, commands):
         self.commands = commands
@@ -455,6 +512,7 @@ class CommandCompleter(Completer):
         self.all_files = get_all_file_in_project()
         self.all_dir_names = get_all_dir_names_in_project()
         self.all_files_with_dot = get_all_file_in_project_with_dot()
+        self.symbol_list = get_symbol_list()
         self.current_file_names = []
 
     def get_completions(self, document, complete_event):
@@ -544,9 +602,25 @@ class CommandCompleter(Completer):
 
                 if current_word.startswith("@"):
                     name = current_word[1:]
+                    target_set = set()
                     for file_name in self.all_file_names:
-                        if name in file_name:
+                        if file_name.startswith(name):
+                            target_set.add(file_name)
                             yield Completion(file_name, start_position=-len(name))
+
+                    for file_name in self.all_file_names:
+                        if name in file_name and file_name not in target_set:
+                            yield Completion(file_name, start_position=-len(name))
+
+                if current_word.startswith("@@"):
+                    name = current_word[2:]
+                    for symbol in self.symbol_list:
+                        if name in symbol.symbol_name:
+                            yield Completion(
+                                symbol.symbol_name,
+                                display=f"{symbol.symbol_name} from {os.path.basename(symbol.file_name)}/{symbol.symbol_type}",
+                                start_position=-len(name),
+                            )
 
                 if current_word.startswith("<"):
                     name = current_word[1:]
@@ -693,6 +767,7 @@ class CommandCompleter(Completer):
         self.all_files = get_all_file_in_project()
         self.all_dir_names = get_all_dir_names_in_project()
         self.all_files_with_dot = get_all_file_in_project_with_dot()
+        self.symbol_list = get_symbol_list()
 
 
 completer = CommandCompleter(commands)
@@ -1342,7 +1417,7 @@ def execute_shell_command(command: str):
 
 def main():
     ARGS = parse_arguments()
-    
+
     if not ARGS.quick:
         initialize_system()
 
@@ -1414,7 +1489,7 @@ def main():
     show_help()
 
     style = Style.from_dict(
-        {                                    
+        {
             "username": "#884444",
             "at": "#00aa00",
             "colon": "#0000aa",
@@ -1443,6 +1518,9 @@ def main():
             else:
                 user_input = session.prompt(FormattedText(prompt_message, style=style))
             new_prompt = ""
+
+            if "mode" not in memory:
+                memory["mode"] = "normal"
 
             if (
                 memory["mode"] == "auto_detect"
@@ -1533,6 +1611,12 @@ def main():
         except KeyboardInterrupt:
             continue
         except EOFError:
+            try:
+                save_memory()
+            except Exception as e:
+                print(
+                    f"\033[91mAn error occurred while saving memory:\033[0m \033[93m{type(e).__name__}\033[0m - {str(e)}"
+                )
             print("\n\033[93mExiting Chat Auto Coder...\033[0m")
             break
         except Exception as e:
