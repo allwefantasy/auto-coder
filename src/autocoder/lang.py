@@ -39,6 +39,7 @@ lang_desc = {
         "index_filter_level": "Index filter level, 0: only filter the file names mentioned in query, 1. filter the file names mentioned in query and possibly implicitly used files 2. files obtained from 0,1 and then find files related to these files",
         "store_desc": "Some statistics, such as token usage, etc.",
         "index_filter_workers": "Number of workers to use for filtering files by index",
+        "index_filter_file_num": "Maximum number of files to filter out. Default is 10",
         "image_max_iter": "The maximum number of iterations for image to html. Default is 1",
         "doc_desc": "Some operation on doc,e.g. extract text from html",
         "urls_use_model":"Whether to use model to processing content in urls. Default is False",

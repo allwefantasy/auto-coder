@@ -361,7 +361,9 @@ class IndexManager:
                 future.result()
 
         all_results = list({file.file_path: file for file in all_results}.values())
-        return FileList(file_list=all_results)
+        # Limit the number of files based on index_filter_file_num
+        limited_results = all_results[:self.args.index_filter_file_num]
+        return FileList(file_list=limited_results)
 
     def _query_index_with_thread(self, query, func):
         all_results = []
@@ -414,7 +416,9 @@ class IndexManager:
             all_results.extend(temp_result)
 
         all_results = list({file.file_path: file for file in all_results}.values())
-        return FileList(file_list=all_results)
+        # Limit the number of files based on index_filter_file_num
+        limited_results = all_results[:self.args.index_filter_file_num]
+        return FileList(file_list=limited_results)
 
     @byzerllm.prompt(lambda self: self.llm, render="jinja2", check_result=True)
     def _get_target_files_by_query(self, indices: str, query: str) -> FileList:
