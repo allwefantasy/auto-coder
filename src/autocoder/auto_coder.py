@@ -544,6 +544,41 @@ def main(input_args: Optional[List[str]] = None):
 
             os.remove(temp_wav_file)
             return
+        elif raw_args.agent_command == "generate_command":
+            from autocoder.common.command_generator import generate_shell_script
+            
+            console = Console()
+            
+            console.print(
+                Panel(
+                    "Generating shell script from user input...",
+                    title="Command Generator",
+                    border_style="green",
+                )
+            )
+            
+            shell_script = generate_shell_script(args.query, llm)
+            
+            console.print(
+                Panel(
+                    f"Generated Shell Script:\n{shell_script}",
+                    title="Result",
+                    border_style="magenta",
+                )
+            )
+
+            with open(os.path.join(".auto-coder", "exchange.txt"), "w") as f:
+                f.write(shell_script)
+
+            request_queue.add_request(
+                args.request_id,
+                RequestValue(
+                    value=DefaultValue(value=shell_script),
+                    status=RequestOption.COMPLETED,
+                ),
+            )
+            
+            return
         elif raw_args.agent_command == "auto_tool":
             from autocoder.agent.auto_tool import AutoTool
 
