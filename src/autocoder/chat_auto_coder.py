@@ -27,6 +27,7 @@ import subprocess
 import shlex
 from rich.console import Console
 from rich.panel import Panel
+from rich.table import Table
 from rich.live import Live
 from rich.text import Text
 from rich.live import Live
@@ -40,6 +41,8 @@ from autocoder.utils.request_queue import (
     RequestOption,
 )
 import asyncio
+from byzerllm.utils.langutil import asyncfy_with_semaphore
+from prompt_toolkit.patch_stdout import patch_stdout
 
 
 def parse_arguments():
@@ -1197,11 +1200,12 @@ def generate_shell_command(input_text):
     finally:
         os.remove(execute_file)
 
-def shell_command_session():
-    session = PromptSession()
-    user_input = session.prompt("Enter shell command description: ")
-    shell_script = generate_shell_command(user_input)
-    return shell_script
+async def shell_command_session():        
+    with patch_stdout():
+        session = PromptSession()
+        user_input = await session.prompt_async("Enter shell command description: ")
+        shell_script = await asyncfy_with_semaphore(lambda: generate_shell_command(user_input))()
+        return shell_script
 
 
 def exclude_dirs(dir_names: List[str]):
@@ -1302,9 +1306,9 @@ def main():
             event.app.current_buffer.insert_text(transcription)
 
     @kb.add("c-i")
-def _(event):
-    event.app.exit()
-    shell_command_session()
+    async def _(event):   
+        event.app.exit()     
+        await shell_command_session()
 
     session = PromptSession(
         history=InMemoryHistory(),
