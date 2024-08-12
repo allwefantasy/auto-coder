@@ -1395,15 +1395,15 @@ def main():
                 else:                            
                     console = Console()
                     try:
-                        # Use shlex.split() to properly handle quoted arguments
-                        command_args = shlex.split(command)
+                        # Use shell=True to support shell mode
                         process = subprocess.Popen(
-                            command_args,
+                            command,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
                             text=True,
                             bufsize=1,
                             universal_newlines=True,
+                            shell=True
                         )
 
                         output = []
