@@ -561,8 +561,8 @@ def main(input_args: Optional[List[str]] = None):
             
             console.print(
                 Panel(
-                    f"Generated Shell Script:\n{shell_script}",
-                    title="Result",
+                    shell_script,
+                    title="Shell Script",
                     border_style="magenta",
                 )
             )

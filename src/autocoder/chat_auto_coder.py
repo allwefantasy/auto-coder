@@ -1201,17 +1201,6 @@ def generate_shell_command(input_text):
     finally:
         os.remove(execute_file)
 
-async def shell_command_session():
-    with patch_stdout():
-        session = PromptSession()
-        user_input = await session.prompt_async("Enter shell command description: ")
-        shell_script = await asyncfy_with_semaphore(lambda: generate_shell_command(user_input))()
-        confirmation = await session.prompt_async(f"Generated shell script:\n{shell_script}\nDo you want to execute this? (y/n): ")
-        if confirmation.lower() == 'y':
-            return shell_script
-        else:
-            return None
-
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
@@ -1287,6 +1276,69 @@ def list_files():
         )
 
 
+def execute_shell_command(command: str):
+    console = Console()
+    try:
+        # Use shell=True to support shell mode
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            universal_newlines=True,
+            shell=True,
+        )
+
+        output = []
+        with Live(console=console, refresh_per_second=4) as live:
+            while True:
+                output_line = process.stdout.readline()
+                error_line = process.stderr.readline()
+
+                if output_line:
+                    output.append(output_line.strip())
+                    live.update(
+                        Panel(
+                            Text("\n".join(output[-20:])),
+                            title="Shell Output",
+                            border_style="green",
+                        )
+                    )
+                if error_line:
+                    output.append(f"ERROR: {error_line.strip()}")
+                    live.update(
+                        Panel(
+                            Text("\n".join(output[-20:])),
+                            title="Shell Output",
+                            border_style="red",
+                        )
+                    )
+
+                if (
+                    output_line == ""
+                    and error_line == ""
+                    and process.poll() is not None
+                ):
+                    break
+
+        if process.returncode != 0:
+            console.print(
+                f"[bold red]Command failed with return code {process.returncode}[/bold red]"
+            )
+        else:
+            console.print("[bold green]Command completed successfully[/bold green]")
+
+    except FileNotFoundError:
+        console.print(
+            f"[bold red]Command not found:[/bold red] [yellow]{command}[/yellow]"
+        )
+    except subprocess.SubprocessError as e:
+        console.print(
+            f"[bold red]Error executing command:[/bold red] [yellow]{str(e)}[/yellow]"
+        )
+
+
 def main():
     ARGS = parse_arguments()
 
@@ -1310,13 +1362,28 @@ def main():
         if transcription:
             event.app.current_buffer.insert_text(transcription)
 
+    MODES = {
+        "normal": "normal",
+        "auto_detect": "nature language auto detect",
+    }
+
     @kb.add("c-i")
     def _(event):
-        memory["mode"] = "auto_detect"
+        if "mode" not in memory:
+            memory["mode"] = "auto_detect"
+            return
+        if memory["mode"] == "auto_detect":
+            memory["mode"] = "normal"
+        elif memory["mode"] == "normal":
+            memory["mode"] = "auto_detect"
+
+        if "mode" not in memory:
+            memory["mode"] = "normal"
         event.app.invalidate()
 
     def get_bottom_toolbar():
-        return f" Mode: {memory['mode']}"
+        mode = memory.get("mode", "normal")
+        return f" Mode: {MODES[mode]}"
 
     session = PromptSession(
         history=InMemoryHistory(),
@@ -1350,7 +1417,6 @@ def main():
             "colon": "#0000aa",
             "pound": "#00aa00",
             "host": "#00ffff bg:#444400",
-            "path": "ansicyan underline",
         }
     )
 
@@ -1375,16 +1441,13 @@ def main():
                 user_input = session.prompt(FormattedText(prompt_message, style=style))
             new_prompt = ""
 
-            if memory["mode"] == "auto_detect":
+            if memory["mode"] == "auto_detect" and user_input and not user_input.startswith("/"):                
                 shell_script = generate_shell_command(user_input)
-                console.print(f"Generated shell script:\n{shell_script}")
                 if confirm("Do you want to execute this script?"):
-                    user_input = f"/shell {shell_script}"
+                    execute_shell_command(shell_script)
                 else:
                     continue
-                memory["mode"] = "normal"
-
-            if user_input.startswith("/add_files"):
+            elif user_input.startswith("/add_files"):
                 args = user_input[len("/add_files") :].strip().split()
                 add_files(args)
             elif user_input.startswith("/remove_files"):
@@ -1454,72 +1517,7 @@ def main():
                 if not command:
                     print("Please enter a shell command to execute.")
                 else:
-                    console = Console()
-                    try:
-                        # Use shell=True to support shell mode
-                        process = subprocess.Popen(
-                            command,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            text=True,
-                            bufsize=1,
-                            universal_newlines=True,
-                            shell=True,
-                        )
-
-                        output = []
-                        with Live(console=console, refresh_per_second=4) as live:
-                            while True:
-                                output_line = process.stdout.readline()
-                                error_line = process.stderr.readline()
-
-                                if output_line:
-                                    output.append(output_line.strip())
-                                    live.update(
-                                        Panel(
-                                            Text("\n".join(output[-20:])),
-                                            title="Shell Output",
-                                            border_style="green",
-                                        )
-                                    )
-                                if error_line:
-                                    output.append(f"ERROR: {error_line.strip()}")
-                                    live.update(
-                                        Panel(
-                                            Text("\n".join(output[-20:])),
-                                            title="Shell Output",
-                                            border_style="red",
-                                        )
-                                    )
-
-                                if (
-                                    output_line == ""
-                                    and error_line == ""
-                                    and process.poll() is not None
-                                ):
-                                    break
-
-                        if process.returncode != 0:
-                            console.print(
-                                f"[bold red]Command failed with return code {process.returncode}[/bold red]"
-                            )
-                        else:
-                            console.print(
-                                "[bold green]Command completed successfully[/bold green]"
-                            )
-
-                    except FileNotFoundError:
-                        console.print(
-                            f"[bold red]Command not found:[/bold red] [yellow]{command}[/yellow]"
-                        )
-                    except subprocess.SubprocessError as e:
-                        console.print(
-                            f"[bold red]Error executing command:[/bold red] [yellow]{str(e)}[/yellow]"
-                        )
-            # else:
-            #     print(
-            #         "\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands."
-            #     )
+                    execute_shell_command(command)
 
         except KeyboardInterrupt:
             continue
