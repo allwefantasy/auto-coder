@@ -110,9 +110,8 @@ commands = [
     "/voice_input",
     "/exit",
     "/summon",
+    "/mode",
 ]
-
-add_files_subcommands = ["/group"]
 
 
 def initialize_system():
@@ -457,6 +456,7 @@ def show_help():
         "  \033[94m/shell\033[0m \033[93m<command>\033[0m - \033[92mExecute a shell command\033[0m"
     )
     print("  \033[94m/voice_input\033[0m - \033[92mConvert voice input to text\033[0m")
+    print("  \033[94m/mode\033[0m - \033[92mswitch input mode\033[0m")
     print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
     print()
 
@@ -520,6 +520,12 @@ class CommandCompleter(Completer):
         words = text.split()
 
         if len(words) > 0:
+            if words[0] == "/mode":
+                left_word = text[len("/mode") :]
+                for mode in ["normal", "auto_detect", "voice_input"]:
+                    if mode.startswith(left_word.strip()):
+                        yield Completion(mode, start_position=-len(left_word.strip()))
+
             if words[0] == "/add_files":
                 new_text = text[len("/add_files") :]
                 parser = CommandTextParser(new_text, words[0])
@@ -1422,34 +1428,34 @@ def main():
         initialize_system()
 
     load_memory()
-
-kb = KeyBindings()
-
-@kb.add("c-c")
-def _(event):
-    event.app.exit()
-
-@kb.add("tab", eager=True)
-def _(event):
-    b = event.current_buffer
-    if b.complete_state:
-        b.complete_next()
-    else:
-        b.start_completion(select_first=False)
-
-@kb.add("c-g")
-def _(event):
-    transcription = voice_input()
-    if transcription:
-        event.app.current_buffer.insert_text(transcription)
-
+    
     MODES = {
         "normal": "normal",
         "auto_detect": "nature language auto detect",
         "voice_input": "voice input",
     }
 
-    @kb.add("c-i")
+    kb = KeyBindings()
+
+    @kb.add("c-c")
+    def _(event):
+        event.app.exit()
+
+    @kb.add("tab")
+    def _(event):
+        b = event.current_buffer
+        if b.complete_state:
+            b.complete_next()
+        else:
+            b.start_completion(select_first=False)
+
+    @kb.add("c-g")
+    def _(event):
+        transcription = voice_input()
+        if transcription:
+            event.app.current_buffer.insert_text(transcription)    
+
+    @kb.add("c-k")
     def _(event):
         if "mode" not in memory:
             memory["mode"] = "normal"
@@ -1559,6 +1565,14 @@ def _(event):
 
             elif user_input.startswith("/list_files"):
                 list_files()
+
+            elif user_input.startswith("/mode"):
+                conf = user_input[len("/mode") :].strip()
+                if not conf:
+                    print(memory["mode"])
+                else:
+                    memory["mode"] = conf
+
             elif user_input.startswith("/conf"):
                 conf = user_input[len("/conf") :].strip()
                 if not conf:
