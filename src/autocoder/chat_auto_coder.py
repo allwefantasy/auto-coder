@@ -1171,7 +1171,7 @@ def voice_input():
         os.remove(execute_file)
 
 
-def generate_shell_command():
+def generate_shell_command(input_text):
     conf = memory.get("conf", {})
     yaml_config = {
         "include_file": ["./base/base.yml"],
@@ -1180,6 +1180,8 @@ def generate_shell_command():
     if "model" in conf:
         yaml_config["model"] = conf["model"]
 
+    yaml_config["query"] = input_text
+
     yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
@@ -1187,16 +1189,19 @@ def generate_shell_command():
     with open(os.path.join(execute_file), "w") as f:
         f.write(yaml_content)
 
-    def execute_generate_command():
-        auto_coder_main(["agent", "generate_command", "--file", execute_file])
-
     try:
-        execute_generate_command()
+        auto_coder_main(["agent", "generate_command", "--file", execute_file])
         with open(os.path.join(".auto-coder", "exchange.txt"), "r") as f:
             shell_script = f.read()
-            
+        return shell_script
     finally:
         os.remove(execute_file)
+
+def shell_command_session():
+    session = PromptSession()
+    user_input = session.prompt("Enter shell command description: ")
+    shell_script = generate_shell_command(user_input)
+    return shell_script
 
 
 def exclude_dirs(dir_names: List[str]):
@@ -1297,9 +1302,9 @@ def main():
             event.app.current_buffer.insert_text(transcription)
 
     @kb.add("c-i")
-    def _(event):
-        event.app.exit()
-        generate_and_execute_shell_command()
+def _(event):
+    event.app.exit()
+    shell_command_session()
 
     session = PromptSession(
         history=InMemoryHistory(),
