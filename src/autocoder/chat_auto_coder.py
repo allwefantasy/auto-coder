@@ -1423,21 +1423,25 @@ def main():
 
     load_memory()
 
-    kb = KeyBindings()
+kb = KeyBindings()
 
-    @kb.add("c-c")
-    def _(event):
-        event.app.exit()
+@kb.add("c-c")
+def _(event):
+    event.app.exit()
 
-    @kb.add("tab")
-    def _(event):
-        event.current_buffer.complete_next()
+@kb.add("tab", eager=True)
+def _(event):
+    b = event.current_buffer
+    if b.complete_state:
+        b.complete_next()
+    else:
+        b.start_completion(select_first=False)
 
-    @kb.add("c-g")
-    def _(event):
-        transcription = voice_input()
-        if transcription:
-            event.app.current_buffer.insert_text(transcription)
+@kb.add("c-g")
+def _(event):
+    transcription = voice_input()
+    if transcription:
+        event.app.current_buffer.insert_text(transcription)
 
     MODES = {
         "normal": "normal",
