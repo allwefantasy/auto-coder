@@ -69,6 +69,7 @@ memory = {
     "current_files": {"files": [], "groups": {}},
     "conf": {},
     "exclude_dirs": [],
+    "mode": "normal",  # 新增mode字段,默认为normal模式
 }
 
 base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
@@ -1310,10 +1311,12 @@ def main():
             event.app.current_buffer.insert_text(transcription)
 
     @kb.add("c-i")
-    async def _(event):
-        shell_script = await shell_command_session()
-        if shell_script:
-            event.app.current_buffer.insert_text(f"/shell {shell_script}")
+    def _(event):
+        memory["mode"] = "auto_detect"
+        event.app.invalidate()
+
+    def get_bottom_toolbar():
+        return f" Mode: {memory['mode']}"
 
     session = PromptSession(
         history=InMemoryHistory(),
@@ -1322,6 +1325,7 @@ def main():
         completer=completer,
         complete_while_typing=True,
         key_bindings=kb,
+        bottom_toolbar=get_bottom_toolbar,
     )
     print(
         f"""
@@ -1370,6 +1374,15 @@ def main():
             else:
                 user_input = session.prompt(FormattedText(prompt_message, style=style))
             new_prompt = ""
+
+            if memory["mode"] == "auto_detect":
+                shell_script = generate_shell_command(user_input)
+                console.print(f"Generated shell script:\n{shell_script}")
+                if confirm("Do you want to execute this script?"):
+                    user_input = f"/shell {shell_script}"
+                else:
+                    continue
+                memory["mode"] = "normal"
 
             if user_input.startswith("/add_files"):
                 args = user_input[len("/add_files") :].strip().split()
