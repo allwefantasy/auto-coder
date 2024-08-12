@@ -50,6 +50,7 @@ def parse_arguments():
 
     parser = argparse.ArgumentParser(description="Chat Auto Coder")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    parser.add_argument("--quick", action="store_true", help="Enter the auto-coder.chat without initializing the system")
     return parser.parse_args()
 
 
@@ -1341,8 +1342,9 @@ def execute_shell_command(command: str):
 
 def main():
     ARGS = parse_arguments()
-
-    initialize_system()
+    
+    if not ARGS.quick:
+        initialize_system()
 
     load_memory()
 
@@ -1365,24 +1367,28 @@ def main():
     MODES = {
         "normal": "normal",
         "auto_detect": "nature language auto detect",
+        "voice_input": "voice input",
     }
 
     @kb.add("c-i")
     def _(event):
         if "mode" not in memory:
-            memory["mode"] = "auto_detect"
-            return
-        if memory["mode"] == "auto_detect":
             memory["mode"] = "normal"
-        elif memory["mode"] == "normal":
-            memory["mode"] = "auto_detect"
 
-        if "mode" not in memory:
+        current_mode = memory["mode"]
+        if current_mode == "normal":
+            memory["mode"] = "auto_detect"
+        elif current_mode == "auto_detect":
+            memory["mode"] = "voice_input"
+        else:  # voice_input
             memory["mode"] = "normal"
+
         event.app.invalidate()
 
     def get_bottom_toolbar():
-        mode = memory.get("mode", "normal")
+        if "mode" not in memory:
+            memory["mode"] = "normal"
+        mode = memory["mode"]
         return f" Mode: {MODES[mode]}"
 
     session = PromptSession(
@@ -1408,10 +1414,7 @@ def main():
     show_help()
 
     style = Style.from_dict(
-        {
-            # User input (default text).
-            "": "#ff0066",
-            # Prompt.
+        {                                    
             "username": "#884444",
             "at": "#00aa00",
             "colon": "#0000aa",
@@ -1441,12 +1444,24 @@ def main():
                 user_input = session.prompt(FormattedText(prompt_message, style=style))
             new_prompt = ""
 
-            if memory["mode"] == "auto_detect" and user_input and not user_input.startswith("/"):                
+            if (
+                memory["mode"] == "auto_detect"
+                and user_input
+                and not user_input.startswith("/")
+            ):
                 shell_script = generate_shell_command(user_input)
                 if confirm("Do you want to execute this script?"):
                     execute_shell_command(shell_script)
                 else:
                     continue
+            elif memory["mode"] == "voice_input" and not user_input.startswith("/"):
+                text = voice_input()
+                new_prompt = "/coding " + text
+
+            elif user_input.startswith("/voice_input"):
+                text = voice_input()
+                new_prompt = "/coding " + text
+
             elif user_input.startswith("/add_files"):
                 args = user_input[len("/add_files") :].strip().split()
                 add_files(args)
@@ -1481,10 +1496,6 @@ def main():
                     print("Please enter your question.")
                 else:
                     ask(query)
-
-            elif user_input.startswith("/voice_input"):
-                text = voice_input()
-                new_prompt = "/coding " + text
 
             elif user_input.startswith("/exit"):
                 raise EOFError()
