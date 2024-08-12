@@ -1309,11 +1309,11 @@ def main():
         if transcription:
             event.app.current_buffer.insert_text(transcription)
 
-@kb.add("c-i")
-async def _(event):
-    shell_script = await shell_command_session()
-    if shell_script:
-        event.app.current_buffer.insert_text(f"/shell {shell_script}")
+    @kb.add("c-i")
+    async def _(event):
+        shell_script = await shell_command_session()
+        if shell_script:
+            event.app.current_buffer.insert_text(f"/shell {shell_script}")
 
     session = PromptSession(
         history=InMemoryHistory(),
