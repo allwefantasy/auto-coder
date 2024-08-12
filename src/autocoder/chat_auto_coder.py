@@ -29,8 +29,9 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.live import Live
 from rich.text import Text
-from rich.table import Table
+from rich.live import Live
 from byzerllm.utils.nontext import Image
+import subprocess
 import re
 from autocoder.utils.request_queue import (
     request_queue,
@@ -1169,6 +1170,41 @@ def voice_input():
     finally:
         os.remove(execute_file)
 
+def generate_and_execute_shell_command():
+    conf = memory.get("conf", {})
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+    }
+
+    if "model" in conf:
+        yaml_config["model"] = conf["model"]
+
+    yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
+
+    execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+
+    with open(os.path.join(execute_file), "w") as f:
+        f.write(yaml_content)
+
+    def execute_generate_command():
+        auto_coder_main(["agent", "generate_command", "--file", execute_file])
+
+    try:
+        execute_generate_command()
+        with open(os.path.join(".auto-coder", "exchange.txt"), "r") as f:
+            shell_script = f.read()
+        
+        console = Console()
+        console.print(Panel(shell_script, title="Generated Shell Script", border_style="green"))
+        
+        if confirm("Do you want to execute this script?"):
+            try:
+                result = subprocess.run(shell_script, shell=True, check=True, capture_output=True, text=True)
+                console.print(Panel(result.stdout, title="Script Output", border_style="blue"))
+            except subprocess.CalledProcessError as e:
+                console.print(Panel(f"Error: {e}\n{e.output}", title="Script Error", border_style="red"))
+    finally:
+        os.remove(execute_file)
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
@@ -1267,6 +1303,11 @@ def main():
         if transcription:
             event.app.current_buffer.insert_text(transcription)
 
+    @kb.add("c-i")
+    def _(event):
+        event.app.exit()
+        generate_and_execute_shell_command()
+
     session = PromptSession(
         history=InMemoryHistory(),
         auto_suggest=AutoSuggestFromHistory(),
@@ -1364,6 +1405,11 @@ def main():
 
             elif user_input.startswith("/exit"):
                 raise EOFError()
+            
+            elif user_input == "":
+                # This handles the Ctrl+I case
+                generate_and_execute_shell_command()
+                continue
             
             elif user_input.startswith("/coding"):
                 query = user_input[len("/coding") :].strip()
