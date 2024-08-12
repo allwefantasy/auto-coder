@@ -551,7 +551,7 @@ def main(input_args: Optional[List[str]] = None):
             
             console.print(
                 Panel(
-                    "Generating shell script from user input...",
+                    f"Generating shell script from user input {args.query}...",
                     title="Command Generator",
                     border_style="green",
                 )

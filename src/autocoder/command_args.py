@@ -419,11 +419,11 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
 
     generate_shell_parser = agent_subparsers.add_parser(
-        "generate_shell", help="Convert voice to text"
+        "generate_command", help="Convert text to shell command"
     )
     generate_shell_parser.add_argument("--request_id", default="", help=desc["request_id"])
-    generate_shell_parser.add_argument("--model", default="", help=desc["model"])
-    generate_shell_parser.add_argument("--model", default="", help=desc["model"])
+    generate_shell_parser.add_argument("--model", default="", help=desc["model"])    
+    generate_shell_parser.add_argument("--query", default="", help=desc["query"])    
     generate_shell_parser.add_argument(
         "--ray_address", default="auto", help=desc["ray_address"]
     )
