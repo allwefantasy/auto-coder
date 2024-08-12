@@ -48,3 +48,4 @@ pyperclip
 colorama
 pylint
 reportlab
+simpleaudio

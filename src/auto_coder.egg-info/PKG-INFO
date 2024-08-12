@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.137
+Version: 0.1.138
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -57,6 +57,7 @@ Requires-Dist: pyperclip
 Requires-Dist: colorama
 Requires-Dist: pylint
 Requires-Dist: reportlab
+Requires-Dist: simpleaudio
 
 <p align="center">
   <picture>    

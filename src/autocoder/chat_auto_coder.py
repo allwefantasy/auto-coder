@@ -11,8 +11,10 @@ from typing import List, Dict, Any
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.styles import Style
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.completion import WordCompleter, Completer, Completion
 from autocoder.common import AutoCoderArgs
 from pydantic import Field, BaseModel
@@ -36,6 +38,7 @@ from autocoder.utils.request_queue import (
     DefaultValue,
     RequestOption,
 )
+import asyncio
 
 
 def parse_arguments():
@@ -1285,6 +1288,20 @@ def main():
     print("\033[1;34mType /help to see available commands.\033[0m\n")
     show_help()
 
+    style = Style.from_dict(
+        {
+            # User input (default text).
+            "": "#ff0066",
+            # Prompt.
+            "username": "#884444",
+            "at": "#00aa00",
+            "colon": "#0000aa",
+            "pound": "#00aa00",
+            "host": "#00ffff bg:#444400",
+            "path": "ansicyan underline",
+        }
+    )
+
     new_prompt = ""
 
     while True:
@@ -1299,9 +1316,11 @@ def main():
             ]
 
             if new_prompt:
-                user_input = session.prompt(FormattedText(prompt_message),default=new_prompt)
+                user_input = session.prompt(
+                    FormattedText(prompt_message), default=new_prompt,style=style
+                )
             else:
-                user_input = session.prompt(FormattedText(prompt_message))
+                user_input = session.prompt(FormattedText(prompt_message,style=style))
             new_prompt = ""
 
             if user_input.startswith("/add_files"):
@@ -1341,10 +1360,11 @@ def main():
 
             elif user_input.startswith("/voice_input"):
                 text = voice_input()
-                new_prompt = "/coding "+text
+                new_prompt = "/coding " + text
 
             elif user_input.startswith("/exit"):
-                raise KeyboardInterrupt
+                raise EOFError()
+            
             elif user_input.startswith("/coding"):
                 query = user_input[len("/coding") :].strip()
                 if not query:
@@ -1372,7 +1392,7 @@ def main():
                     command = user_input[len("/shell") :].strip()
                 if not command:
                     print("Please enter a shell command to execute.")
-                else:
+                else:                            
                     console = Console()
                     try:
                         # Use shlex.split() to properly handle quoted arguments
@@ -1440,7 +1460,9 @@ def main():
             #         "\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands."
             #     )
 
-        except KeyboardInterrupt:
+        except KeyboardInterrupt:            
+            continue
+        except EOFError:
             print("\n\033[93mExiting Chat Auto Coder...\033[0m")
             break
         except Exception as e:
