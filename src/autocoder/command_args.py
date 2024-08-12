@@ -417,6 +417,20 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     voice2text_parser.add_argument("--file", default="", help=desc["file"])
     voice2text_parser.add_argument("--target_file", default="./output.txt", help="")
 
+
+    generate_shell_parser = agent_subparsers.add_parser(
+        "generate_shell", help="Convert voice to text"
+    )
+    generate_shell_parser.add_argument("--request_id", default="", help=desc["request_id"])
+    generate_shell_parser.add_argument("--model", default="", help=desc["model"])
+    generate_shell_parser.add_argument("--model", default="", help=desc["model"])
+    generate_shell_parser.add_argument(
+        "--ray_address", default="auto", help=desc["ray_address"]
+    )
+    generate_shell_parser.add_argument("--source_dir", default=".", help="")
+    generate_shell_parser.add_argument("--file", default="", help=desc["file"])
+    generate_shell_parser.add_argument("--target_file", default="./output.txt", help="")
+
     auto_tool_parser = agent_subparsers.add_parser(
         "auto_tool", help="Run the chat agent"
     )
