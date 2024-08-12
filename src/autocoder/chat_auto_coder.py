@@ -1200,12 +1200,16 @@ def generate_shell_command(input_text):
     finally:
         os.remove(execute_file)
 
-async def shell_command_session():        
+async def shell_command_session():
     with patch_stdout():
         session = PromptSession()
         user_input = await session.prompt_async("Enter shell command description: ")
         shell_script = await asyncfy_with_semaphore(lambda: generate_shell_command(user_input))()
-        return shell_script
+        confirmation = await session.prompt_async(f"Generated shell script:\n{shell_script}\nDo you want to execute this? (y/n): ")
+        if confirmation.lower() == 'y':
+            return shell_script
+        else:
+            return None
 
 
 def exclude_dirs(dir_names: List[str]):
@@ -1305,10 +1309,11 @@ def main():
         if transcription:
             event.app.current_buffer.insert_text(transcription)
 
-    @kb.add("c-i")
-    async def _(event):   
-        event.app.exit()     
-        await shell_command_session()
+@kb.add("c-i")
+async def _(event):
+    shell_script = await shell_command_session()
+    if shell_script:
+        event.app.current_buffer.insert_text(f"/shell {shell_script}")
 
     session = PromptSession(
         history=InMemoryHistory(),
