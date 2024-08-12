@@ -14,8 +14,8 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.styles import Style
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.completion import WordCompleter, Completer, Completion
+from prompt_toolkit.shortcuts import confirm
 from autocoder.common import AutoCoderArgs
 from pydantic import Field, BaseModel
 from autocoder.version import __version__
@@ -1170,7 +1170,8 @@ def voice_input():
     finally:
         os.remove(execute_file)
 
-def generate_and_execute_shell_command():
+
+def generate_shell_command():
     conf = memory.get("conf", {})
     yaml_config = {
         "include_file": ["./base/base.yml"],
@@ -1193,18 +1194,10 @@ def generate_and_execute_shell_command():
         execute_generate_command()
         with open(os.path.join(".auto-coder", "exchange.txt"), "r") as f:
             shell_script = f.read()
-        
-        console = Console()
-        console.print(Panel(shell_script, title="Generated Shell Script", border_style="green"))
-        
-        if confirm("Do you want to execute this script?"):
-            try:
-                result = subprocess.run(shell_script, shell=True, check=True, capture_output=True, text=True)
-                console.print(Panel(result.stdout, title="Script Output", border_style="blue"))
-            except subprocess.CalledProcessError as e:
-                console.print(Panel(f"Error: {e}\n{e.output}", title="Script Error", border_style="red"))
+            
     finally:
         os.remove(execute_file)
+
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
@@ -1358,10 +1351,10 @@ def main():
 
             if new_prompt:
                 user_input = session.prompt(
-                    FormattedText(prompt_message), default=new_prompt,style=style
+                    FormattedText(prompt_message), default=new_prompt, style=style
                 )
             else:
-                user_input = session.prompt(FormattedText(prompt_message,style=style))
+                user_input = session.prompt(FormattedText(prompt_message, style=style))
             new_prompt = ""
 
             if user_input.startswith("/add_files"):
@@ -1405,12 +1398,7 @@ def main():
 
             elif user_input.startswith("/exit"):
                 raise EOFError()
-            
-            elif user_input == "":
-                # This handles the Ctrl+I case
-                generate_and_execute_shell_command()
-                continue
-            
+
             elif user_input.startswith("/coding"):
                 query = user_input[len("/coding") :].strip()
                 if not query:
@@ -1438,7 +1426,7 @@ def main():
                     command = user_input[len("/shell") :].strip()
                 if not command:
                     print("Please enter a shell command to execute.")
-                else:                            
+                else:
                     console = Console()
                     try:
                         # Use shell=True to support shell mode
@@ -1449,7 +1437,7 @@ def main():
                             text=True,
                             bufsize=1,
                             universal_newlines=True,
-                            shell=True
+                            shell=True,
                         )
 
                         output = []
@@ -1506,7 +1494,7 @@ def main():
             #         "\033[91mInvalid command.\033[0m Please type \033[93m/help\033[0m to see the list of supported commands."
             #     )
 
-        except KeyboardInterrupt:            
+        except KeyboardInterrupt:
             continue
         except EOFError:
             print("\n\033[93mExiting Chat Auto Coder...\033[0m")
