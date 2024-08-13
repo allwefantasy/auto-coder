@@ -35,6 +35,7 @@ src/autocoder/common/code_auto_merge_diff.py
 src/autocoder/common/code_auto_merge_editblock.py
 src/autocoder/common/code_auto_merge_strict_diff.py
 src/autocoder/common/command_completer.py
+src/autocoder/common/command_generator.py
 src/autocoder/common/command_templates.py
 src/autocoder/common/const.py
 src/autocoder/common/git_utils.py
