@@ -614,10 +614,13 @@ class CommandCompleter(Completer):
                         base_file_name = os.path.basename(file_name)
                         if name in base_file_name:
                             target_set.add(base_file_name)
+                            # 获取最多三级的目录结构
+                            path_parts = file_name.split(os.sep)
+                            display_name = os.sep.join(path_parts[-3:]) if len(path_parts) > 3 else file_name
                             yield Completion(
                                 base_file_name,
                                 start_position=-len(name),
-                                display=f"{base_file_name} (in ative files)",
+                                display=f"{display_name} (in active files)",
                             )
 
                     for file_name in self.all_file_names:
