@@ -41,7 +41,7 @@ Requires-Dist: websocket-client
 Requires-Dist: sqlmodel
 Requires-Dist: wudao
 Requires-Dist: jieba
-Requires-Dist: byzerllm>=0.1.123
+Requires-Dist: byzerllm>=0.1.124
 Requires-Dist: patch
 Requires-Dist: diff_match_patch
 Requires-Dist: GitPython

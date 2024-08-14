@@ -609,8 +609,19 @@ class CommandCompleter(Completer):
                 if current_word.startswith("@"):
                     name = current_word[1:]
                     target_set = set()
+
+                    for file_name in self.current_file_names:
+                        base_file_name = os.path.basename(file_name)
+                        if name in base_file_name:
+                            target_set.add(base_file_name)
+                            yield Completion(
+                                base_file_name,
+                                start_position=-len(name),
+                                display=f"{base_file_name} (in ative files)",
+                            )
+
                     for file_name in self.all_file_names:
-                        if file_name.startswith(name):
+                        if file_name.startswith(name) and file_name not in target_set:
                             target_set.add(file_name)
                             yield Completion(file_name, start_position=-len(name))
 
@@ -1428,7 +1439,7 @@ def main():
         initialize_system()
 
     load_memory()
-    
+
     MODES = {
         "normal": "normal",
         "auto_detect": "nature language auto detect",
@@ -1453,7 +1464,7 @@ def main():
     def _(event):
         transcription = voice_input()
         if transcription:
-            event.app.current_buffer.insert_text(transcription)    
+            event.app.current_buffer.insert_text(transcription)
 
     @kb.add("c-k")
     def _(event):
