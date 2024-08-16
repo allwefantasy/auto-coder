@@ -52,7 +52,6 @@ from byzerllm.utils.langutil import asyncfy_with_semaphore
 from prompt_toolkit.patch_stdout import patch_stdout
 
 
-
 class SymbolItem(BaseModel):
     symbol_name: str
     symbol_type: SymbolType
@@ -386,7 +385,7 @@ def redirect_stdout():
         sys.stdout = original_stdout
 
 
-def configure(conf: str,skip_print=False):
+def configure(conf: str, skip_print=False):
     parts = conf.split(None, 1)
     if len(parts) == 2 and parts[0] in ["/drop", "/unset", "/remove"]:
         key = parts[1].strip()
@@ -750,7 +749,9 @@ class CommandCompleter(Completer):
                 if parser.last_sub_command() in ["/add", "/remove"]:
                     for lib_name in memory.get("libs", {}).keys():
                         if lib_name.startswith(current_word):
-                            yield Completion(lib_name, start_position=-len(current_word))
+                            yield Completion(
+                                lib_name, start_position=-len(current_word)
+                            )
 
             elif words[0] == "/conf":
                 new_words = text[len("/conf") :].strip().split()
@@ -1077,19 +1078,22 @@ def get_llm_friendly_package_docs() -> List[str]:
     libs = memory.get("libs", {}).keys()
 
     for root, dirs, files in os.walk(llm_friendly_packages_dir):
-        # 计算相对路径
-        rel_path = os.path.relpath(root, llm_friendly_packages_dir)
-        # 分割路径以获取层级
-        path_parts = rel_path.split(os.sep)
-        
-        # 检查是否为第三层级（路径部分的长度为3）
-        if len(path_parts) == 3 and path_parts[1] in libs:
-            # 只在这个层级搜索markdown文件
-            for file in files:
-                if file.endswith('.md'):
-                    docs.append(os.path.join(root, file))
-    
+        for dir in dirs:
+            rel_path = os.path.relpath(root, dir)
+            # llm_friendly_packages -> domain -> username -> lib_name。
+            rel_path_parts = rel_path.split(os.sep)
+
+            if (
+                len(rel_path_parts) > 3
+                and rel_path_parts[-3] == "llm_friendly_packages"
+                and rel_path_parts[-2] in libs
+            ):
+                for file in files:
+                    if file.endswith(".md"):
+                        docs.append(os.path.join(root, file))
+
     return docs
+
 
 def coding(query: str):
     console = Console()
@@ -1486,6 +1490,7 @@ def execute_shell_command(command: str):
             f"[bold red]Error executing command:[/bold red] [yellow]{str(e)}[/yellow]"
         )
 
+
 def lib_command(args: List[str]):
     console = Console()
     lib_dir = os.path.join(".auto-coder", "libs")
@@ -1498,14 +1503,16 @@ def lib_command(args: List[str]):
         console.print("Cloning llm_friendly_packages repository...")
         git.Repo.clone_from(
             "https://github.com/allwefantasy/llm_friendly_packages",
-            llm_friendly_packages_dir
+            llm_friendly_packages_dir,
         )
 
     if "libs" not in memory:
         memory["libs"] = {}
 
     if not args:
-        console.print("Please specify a subcommand: /add, /remove, /list, or /set-proxy")
+        console.print(
+            "Please specify a subcommand: /add, /remove, /list, or /set-proxy"
+        )
         return
 
     subcommand = args[0]
@@ -1558,6 +1565,7 @@ def lib_command(args: List[str]):
 
     else:
         console.print(f"Unknown subcommand: {subcommand}")
+
 
 def main():
     ARGS = parse_arguments()
@@ -1614,8 +1622,8 @@ def main():
             memory["conf"]["human_as_model"] = "false"
 
         current_status = memory["conf"]["human_as_model"]
-        new_status = "true" if current_status == "false" else "false"        
-        configure(f"human_as_model:{new_status}",skip_print=True)
+        new_status = "true" if current_status == "false" else "false"
+        configure(f"human_as_model:{new_status}", skip_print=True)
         event.app.invalidate()
 
     def get_bottom_toolbar():
@@ -1623,7 +1631,9 @@ def main():
             memory["mode"] = "normal"
         mode = memory["mode"]
         human_as_model = memory["conf"].get("human_as_model", "false")
-        return f" Mode: {MODES[mode]} (ctl+m) | Human as Model: {human_as_model} (ctl+n)"
+        return (
+            f" Mode: {MODES[mode]} (ctl+m) | Human as Model: {human_as_model} (ctl+n)"
+        )
 
     session = PromptSession(
         history=InMemoryHistory(),
