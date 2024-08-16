@@ -1648,7 +1648,7 @@ def main():
         mode = memory["mode"]
         human_as_model = memory["conf"].get("human_as_model", "false")
         return (
-            f" Mode: {MODES[mode]} (ctl+m) | Human as Model: {human_as_model} (ctl+n)"
+            f" Mode: {MODES[mode]} (ctl+k) | Human as Model: {human_as_model} (ctl+n)"
         )
 
     session = PromptSession(
