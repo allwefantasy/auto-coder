@@ -210,6 +210,7 @@ def chat_with_llm_step_by_step(
 
 
 class AutoCoderArgs(pydantic.BaseModel):
+class AutoCoderArgs(pydantic.BaseModel):
     request_id: Optional[str] = None
     source_dir: Optional[str] = None
     git_url: Optional[str] = None
@@ -235,13 +236,13 @@ class AutoCoderArgs(pydantic.BaseModel):
     index_filter_level: Optional[int] = 0
     index_filter_workers: Optional[int] = 1
     index_filter_file_num: Optional[int] = 10
-    code_model: Optional[str] = ""
     index_build_workers: Optional[int] = 1
     planner_model: Optional[str] = ""
     file: Optional[str] = ""
     ray_address: Optional[str] = ""
     anti_quota_limit: Optional[int] = 1
     skip_build_index: Optional[bool] = False
+    skip_filter_index: Optional[bool] = False
     print_request: Optional[bool] = False
     py_packages: Optional[str] = ""
     search: Optional[Union[str, List[str]]] = ""
