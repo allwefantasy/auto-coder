@@ -1463,7 +1463,7 @@ def lib_command(args: List[str]):
         memory["libs"] = {}
 
     if not args:
-        console.print("Please specify a subcommand: /add, /remove, or /list")
+        console.print("Please specify a subcommand: /add, /remove, /list, or /set-proxy")
         return
 
     subcommand = args[0]
@@ -1501,6 +1501,15 @@ def lib_command(args: List[str]):
             console.print(table)
         else:
             console.print("No libraries added yet")
+
+    elif subcommand == "/set-proxy":
+        if len(args) < 2:
+            console.print("Please specify a proxy URL")
+            return
+        proxy_url = args[1]
+        memory["lib-proxy"] = proxy_url
+        console.print(f"Set proxy to: {proxy_url}")
+        save_memory()
 
     else:
         console.print(f"Unknown subcommand: {subcommand}")
