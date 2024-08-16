@@ -7,7 +7,7 @@ COMMANDS = {
     "/add_files": {"/group": {"/add": "", "/drop": ""}, "/refresh": {}},
     "/coding": {},
     "/chat": {},
-    "/lib": {"/add": "", "/remove": "", "/list": "", "/set-proxy": "", "/refresh": ""},
+    "/lib": {"/add": None, "/remove": None, "/list": None, "/set-proxy": None, "/refresh": None},
 }
 
 
