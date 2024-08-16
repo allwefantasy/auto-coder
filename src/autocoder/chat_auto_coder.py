@@ -1493,7 +1493,7 @@ def execute_shell_command(command: str):
 
 def lib_command(args: List[str]):
     console = Console()
-    lib_dir = os.path.join(".auto-coder", "libs")
+    lib_dir = os.path.join(".auto-coder","libs")
     llm_friendly_packages_dir = os.path.join(lib_dir, "llm_friendly_packages")
 
     if not os.path.exists(lib_dir):
