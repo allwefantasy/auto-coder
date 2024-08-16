@@ -461,8 +461,7 @@ def show_help():
     print("  \033[94m/voice_input\033[0m - \033[92mConvert voice input to text\033[0m")
     print("  \033[94m/mode\033[0m - \033[92mswitch input mode\033[0m")
     print("  \033[94m/lib\033[0m - \033[92mManage libraries\033[0m")
-    print("    \033[94m/lib /add <library>\033[0m - \033[92mAdd a library\033[0m")
-    print("    \033[94m/lib /remove <library>\033[0m - \033[92mRemove a library\033[0m")
+
     print("    \033[94m/lib /list\033[0m - \033[92mList added libraries\033[0m")
     print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
     print()
