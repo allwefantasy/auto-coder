@@ -736,6 +736,21 @@ class CommandCompleter(Completer):
                     if current_word and current_word in file_name:
                         yield Completion(file_name, start_position=-len(current_word))
 
+            elif words[0] == "/lib":
+                new_text = text[len("/lib") :]
+                parser = CommandTextParser(new_text, words[0])
+                parser.lib()
+                current_word = parser.current_word()
+
+                for command in parser.get_sub_commands():
+                    if command.startswith(current_word):
+                        yield Completion(command, start_position=-len(current_word))
+
+                if parser.last_sub_command() in ["/add", "/remove"]:
+                    for lib_name in memory.get("libs", {}).keys():
+                        if lib_name.startswith(current_word):
+                            yield Completion(lib_name, start_position=-len(current_word))
+
             elif words[0] == "/conf":
                 new_words = text[len("/conf") :].strip().split()
                 is_at_space = text[-1] == " "

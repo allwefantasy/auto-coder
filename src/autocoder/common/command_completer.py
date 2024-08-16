@@ -255,6 +255,27 @@ class CommandTextParser:
 
         return self
 
+    def lib(self):
+        """
+        for example:
+        /lib /add library_name
+        /lib /remove library_name
+        /lib /list
+        /lib /set-proxy proxy_url
+        """
+
+        while True:
+            if self.pos == self.len - 1:
+                break
+            elif self.is_extracted:
+                break
+            elif self.is_sub_command():
+                self.consume_sub_command()
+            else:
+                self.consume_command_value()
+
+        return self
+
     def coding(self):
         while True:
             if self.pos == self.len - 1:
