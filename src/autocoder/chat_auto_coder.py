@@ -1511,7 +1511,7 @@ def lib_command(args: List[str]):
 
     if not args:
         console.print(
-            "Please specify a subcommand: /add, /remove, /list, or /set-proxy"
+            "Please specify a subcommand: /add, /remove, /list, /set-proxy, or /refresh"
         )
         return
 
@@ -1562,6 +1562,18 @@ def lib_command(args: List[str]):
             save_memory()
         else:
             console.print("Invalid number of arguments for /set-proxy")
+
+    elif subcommand == "/refresh":
+        if os.path.exists(llm_friendly_packages_dir):
+            try:
+                repo = git.Repo(llm_friendly_packages_dir)
+                origin = repo.remotes.origin
+                origin.pull()
+                console.print("Successfully updated llm_friendly_packages repository")
+            except git.exc.GitCommandError as e:
+                console.print(f"Error updating repository: {e}")
+        else:
+            console.print("llm_friendly_packages repository does not exist. Please run /lib command first to clone it.")
 
     else:
         console.print(f"Unknown subcommand: {subcommand}")
