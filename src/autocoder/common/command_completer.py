@@ -7,7 +7,7 @@ COMMANDS = {
     "/add_files": {"/group": {"/add": "", "/drop": ""}, "/refresh": {}},
     "/coding": {},
     "/chat": {},
-    "/lib": {"/add": "", "/remove": "", "/list": "", "/set-proxy": ""},
+    "/lib": {"/add": "", "/remove": "", "/list": "", "/set-proxy": "", "/refresh": ""},
 }
 
 
@@ -262,6 +262,7 @@ class CommandTextParser:
         /lib /remove library_name
         /lib /list
         /lib /set-proxy proxy_url
+        /lib /refresh
         """
 
         while True:

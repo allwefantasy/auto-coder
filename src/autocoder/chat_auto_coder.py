@@ -752,6 +752,10 @@ class CommandCompleter(Completer):
                             yield Completion(
                                 lib_name, start_position=-len(current_word)
                             )
+                
+                # Add completion for /refresh subcommand
+                if "/refresh".startswith(current_word):
+                    yield Completion("/refresh", start_position=-len(current_word))
 
             elif words[0] == "/conf":
                 new_words = text[len("/conf") :].strip().split()
