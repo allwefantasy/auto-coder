@@ -1503,13 +1503,16 @@ def lib_command(args: List[str]):
             console.print("No libraries added yet")
 
     elif subcommand == "/set-proxy":
-        if len(args) < 2:
-            console.print("Please specify a proxy URL")
-            return
-        proxy_url = args[1]
-        memory["lib-proxy"] = proxy_url
-        console.print(f"Set proxy to: {proxy_url}")
-        save_memory()
+        if len(args) == 1:
+            current_proxy = memory.get("lib-proxy", "No proxy set")
+            console.print(f"Current proxy: {current_proxy}")
+        elif len(args) == 2:
+            proxy_url = args[1]
+            memory["lib-proxy"] = proxy_url
+            console.print(f"Set proxy to: {proxy_url}")
+            save_memory()
+        else:
+            console.print("Invalid number of arguments for /set-proxy")
 
     else:
         console.print(f"Unknown subcommand: {subcommand}")
