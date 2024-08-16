@@ -22,6 +22,7 @@ from autocoder.version import __version__
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.common.command_completer import CommandTextParser
 from autocoder.utils import get_last_yaml_file
+import pathlib
 from autocoder.index.symbols_utils import (
     extract_symbols,
     symbols_info_to_str,
@@ -1064,6 +1065,23 @@ def ask(query: str):
         os.remove(execute_file)
 
 
+def get_llm_friendly_package_docs() -> List[str]:
+    lib_dir = os.path.join(".auto-coder", "libs")
+    llm_friendly_packages_dir = os.path.join(lib_dir, "llm_friendly_packages")
+    docs = []
+
+    if not os.path.exists(llm_friendly_packages_dir):
+        print("llm_friendly_packages directory not found.")
+        return docs
+
+    for lib_name in memory.get("libs", {}).keys():
+        lib_path = os.path.join(llm_friendly_packages_dir, "github.com", "allwefantasy", lib_name)
+        if os.path.exists(lib_path):
+            for markdown_file in pathlib.Path(lib_path).rglob("*.md"):
+                docs.append(str(markdown_file))
+
+    return docs
+
 def coding(query: str):
     console = Console()
     is_apply = query.strip().startswith("/apply")
@@ -1097,7 +1115,7 @@ def coding(query: str):
             if converted_value is not None:
                 yaml_config[key] = converted_value
 
-        yaml_config["urls"] = current_files
+        yaml_config["urls"] = current_files + get_llm_friendly_package_docs()
 
         ## handle image
         v = Image.convert_image_paths_from(query)
@@ -1160,7 +1178,7 @@ def coding(query: str):
 
 def chat(query: str):
     conf = memory.get("conf", {})
-    current_files = memory["current_files"]["files"]
+    current_files = memory["current_files"]["files"] + get_llm_friendly_package_docs()
 
     file_contents = []
     for file in current_files:
