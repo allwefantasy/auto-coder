@@ -210,7 +210,6 @@ def chat_with_llm_step_by_step(
 
 
 class AutoCoderArgs(pydantic.BaseModel):
-class AutoCoderArgs(pydantic.BaseModel):
     request_id: Optional[str] = None
     source_dir: Optional[str] = None
     git_url: Optional[str] = None
@@ -227,6 +226,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     vl_model: Optional[str] = ""
     sd_model: Optional[str] = ""
     emb_model: Optional[str] = ""
+    code_model: Optional[str] = ""
     text2voice_model: Optional[str] = ""
     voice2text_model: Optional[str] = ""
     index_model: Optional[str] = ""

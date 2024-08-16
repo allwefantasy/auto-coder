@@ -360,7 +360,7 @@ class IndexManager:
             for future in as_completed(futures):
                 future.result()
 
-        all_results = list({file.file_path: file for file in all_results}.values())        
+        all_results = list({file.file_path: file for file in all_results}.values())
         return FileList(file_list=all_results)
 
     def _query_index_with_thread(self, query, func):
@@ -415,7 +415,7 @@ class IndexManager:
 
         all_results = list({file.file_path: file for file in all_results}.values())
         # Limit the number of files based on index_filter_file_num
-        limited_results = all_results[:self.args.index_filter_file_num]
+        limited_results = all_results[: self.args.index_filter_file_num]
         return FileList(file_list=limited_results)
 
     @byzerllm.prompt(lambda self: self.llm, render="jinja2", check_result=True)
@@ -459,33 +459,34 @@ def build_index_and_filter_files(
         index_manager = IndexManager(llm=llm, sources=sources, args=args)
         index_manager.build_index()
 
-        logger.info(f"Finding related files in the index...")
-        start_time = time.monotonic()
-        target_files = index_manager.get_target_files_by_query(args.query)
+        if not args.skip_filter_index:
+            logger.info(f"Finding related files in the index...")
+            start_time = time.monotonic()
+            target_files = index_manager.get_target_files_by_query(args.query)
 
-        if target_files:
-            for file in target_files.file_list:                
-                file_path = file.file_path.strip()
-                final_files[get_file_path(file_path)] = file
-
-        if target_files is not None and args.index_filter_level >= 2:
-            related_fiels = index_manager.get_related_files(
-                [file.file_path for file in target_files.file_list]
-            )
-            if related_fiels is not None:                
-                for file in related_fiels.file_list:
+            if target_files:
+                for file in target_files.file_list:
                     file_path = file.file_path.strip()
                     final_files[get_file_path(file_path)] = file
 
-        if not final_files:
-            logger.warning("Warning: No related files found, use all files")
-            for source in sources:
-                final_files[get_file_path(source.module_name)] = TargetFile(
-                    file_path=source.module_name,
-                    reason="No related files found, use all files",
+            if target_files is not None and args.index_filter_level >= 2:
+                related_fiels = index_manager.get_related_files(
+                    [file.file_path for file in target_files.file_list]
                 )
+                if related_fiels is not None:
+                    for file in related_fiels.file_list:
+                        file_path = file.file_path.strip()
+                        final_files[get_file_path(file_path)] = file
 
-        logger.info(f"Find related files took {time.monotonic() - start_time:.2f}s")
+            if not final_files:
+                logger.warning("Warning: No related files found, use all files")
+                for source in sources:
+                    final_files[get_file_path(source.module_name)] = TargetFile(
+                        file_path=source.module_name,
+                        reason="No related files found, use all files",
+                    )
+
+            logger.info(f"Find related files took {time.monotonic() - start_time:.2f}s")
 
     def display_table_and_get_selections(data):
         from prompt_toolkit.shortcuts import checkboxlist_dialog
@@ -513,12 +514,13 @@ def build_index_and_filter_files(
 
         return [file for file in result] if result else []
 
-
     def print_selected(data):
         console = Console()
 
         table = Table(
-            title="Target Files You Selected", show_header=True, header_style="bold magenta"
+            title="Target Files You Selected",
+            show_header=True,
+            header_style="bold magenta",
         )
         table.add_column("File Path", style="cyan", no_wrap=True)
         table.add_column("Reason", style="green")
@@ -537,8 +539,8 @@ def build_index_and_filter_files(
 
     if args.skip_confirm:
         final_filenames = [file.file_path for file in final_files.values()]
-        # Limit the number of files based on index_filter_file_num        
-        final_filenames = final_filenames[:args.index_filter_file_num]
+        # Limit the number of files based on index_filter_file_num
+        final_filenames = final_filenames[: args.index_filter_file_num]
     else:
         target_files_data = [
             (file.file_path, file.reason) for file in final_files.values()
@@ -551,7 +553,7 @@ def build_index_and_filter_files(
         else:
             final_filenames = display_table_and_get_selections(target_files_data)
         # Limit the number of files based on index_filter_file_num
-        final_filenames = final_filenames[:args.index_filter_file_num]
+        final_filenames = final_filenames[: args.index_filter_file_num]
 
     try:
         print_selected(
@@ -571,12 +573,12 @@ def build_index_and_filter_files(
 
     source_code = ""
     depulicated_sources = set()
-    
+
     for file in sources:
         if file.module_name in final_filenames:
             if file.module_name in depulicated_sources:
                 continue
-            depulicated_sources.add(file.module_name)            
+            depulicated_sources.add(file.module_name)
             source_code += f"##File: {file.module_name}\n"
             source_code += f"{file.source_code}\n\n"
     return source_code

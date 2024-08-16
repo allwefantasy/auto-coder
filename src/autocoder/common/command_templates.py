@@ -173,6 +173,8 @@ def base_base(source_dir:str,project_type:str)->str:
     model: deepseek_chat
     model_max_input_length: 100000
     enable_multi_round_generate: false
+    index_filter_workers: 4
+    index_build_workers: 4
 
     execute: true
     auto_merge: true

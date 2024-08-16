@@ -74,16 +74,16 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     )
 
     parser.add_argument("--file", default=None, required=False, help=desc["file"])
-parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
-parser.add_argument(
-    "--anti_quota_limit", type=int, default=1, help=desc["anti_quota_limit"]
-)
-parser.add_argument(
-    "--skip_build_index", action="store_false", help=desc["skip_build_index"]
-)
-parser.add_argument(
-    "--skip_filter_index", action="store_true", help=desc["skip_filter_index"]
-)
+    parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
+    parser.add_argument(
+        "--anti_quota_limit", type=int, default=1, help=desc["anti_quota_limit"]
+    )
+    parser.add_argument(
+        "--skip_build_index", action="store_false", help=desc["skip_build_index"]
+    )
+    parser.add_argument(
+        "--skip_filter_index", action="store_true", help=desc["skip_filter_index"]
+    )
     parser.add_argument(
         "--print_request", action="store_true", help=desc["print_request"]
     )
