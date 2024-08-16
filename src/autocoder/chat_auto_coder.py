@@ -1077,20 +1077,18 @@ def get_llm_friendly_package_docs() -> List[str]:
     libs = memory.get("libs", {}).keys()
 
     for root, dirs, files in os.walk(llm_friendly_packages_dir):
-        # 获取当前目录相对于llm_friendly_packages_dir的深度
-        depth = root[len(llm_friendly_packages_dir):].count(os.sep)
+        # 计算相对路径
+        rel_path = os.path.relpath(root, llm_friendly_packages_dir)
+        # 分割路径以获取层级
+        path_parts = rel_path.split(os.sep)
         
-        # 如果是第三层目录（深度为2，因为从0开始计数）
-        if depth == 2:
-            # 获取当前目录名
-            current_dir = os.path.basename(root)
-            
-            # 如果当前目录名在libs中
-            if current_dir in libs:
-                # 搜索该目录下的所有markdown文件
-                for markdown_file in pathlib.Path(root).rglob("*.md"):
-                    docs.append(str(markdown_file))
-
+        # 检查是否为第三层级（路径部分的长度为3）
+        if len(path_parts) == 3 and path_parts[1] in libs:
+            # 只在这个层级搜索markdown文件
+            for file in files:
+                if file.endswith('.md'):
+                    docs.append(os.path.join(root, file))
+    
     return docs
 
 def coding(query: str):
