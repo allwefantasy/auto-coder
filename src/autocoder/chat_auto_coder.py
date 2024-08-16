@@ -1074,11 +1074,22 @@ def get_llm_friendly_package_docs() -> List[str]:
         print("llm_friendly_packages directory not found.")
         return docs
 
-    for lib_name in memory.get("libs", {}).keys():
-        lib_path = os.path.join(llm_friendly_packages_dir, "github.com", "allwefantasy", lib_name)
-        if os.path.exists(lib_path):
-            for markdown_file in pathlib.Path(lib_path).rglob("*.md"):
-                docs.append(str(markdown_file))
+    libs = memory.get("libs", {}).keys()
+
+    for root, dirs, files in os.walk(llm_friendly_packages_dir):
+        # 获取当前目录相对于llm_friendly_packages_dir的深度
+        depth = root[len(llm_friendly_packages_dir):].count(os.sep)
+        
+        # 如果是第三层目录（深度为2，因为从0开始计数）
+        if depth == 2:
+            # 获取当前目录名
+            current_dir = os.path.basename(root)
+            
+            # 如果当前目录名在libs中
+            if current_dir in libs:
+                # 搜索该目录下的所有markdown文件
+                for markdown_file in pathlib.Path(root).rglob("*.md"):
+                    docs.append(str(markdown_file))
 
     return docs
 
