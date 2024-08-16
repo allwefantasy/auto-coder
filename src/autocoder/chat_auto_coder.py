@@ -743,7 +743,7 @@ class CommandCompleter(Completer):
                     if command.startswith(current_word):
                         yield Completion(command, start_position=-len(current_word))
 
-                if parser.last_sub_command() in ["/add", "/remove"]:
+                if parser.last_sub_command() in ["/add", "/remove", "/get"]:
                     for lib_name in memory.get("libs", {}).keys():
                         if lib_name.startswith(current_word):
                             yield Completion(
@@ -753,6 +753,11 @@ class CommandCompleter(Completer):
                 # Add completion for /refresh subcommand
                 if "/refresh".startswith(current_word):
                     yield Completion("/refresh", start_position=-len(current_word))
+
+                # Add completion for all subcommands
+                for subcommand in ["/add", "/remove", "/list", "/set-proxy", "/refresh", "/get"]:
+                    if subcommand.startswith(current_word):
+                        yield Completion(subcommand, start_position=-len(current_word))
 
             elif words[0] == "/conf":
                 new_words = text[len("/conf") :].strip().split()
