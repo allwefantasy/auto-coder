@@ -7,7 +7,14 @@ COMMANDS = {
     "/add_files": {"/group": {"/add": "", "/drop": ""}, "/refresh": {}},
     "/coding": {},
     "/chat": {},
-    "/lib": {"/add": "", "/remove": "", "/list": "", "/set-proxy": "", "/refresh": ""},
+    "/lib": {
+        "/add": "",
+        "/remove": "",
+        "/list": "",
+        "/set-proxy": "",
+        "/refresh": "",
+        "/get": "",
+    },
 }
 
 
@@ -289,4 +296,3 @@ class CommandTextParser:
                 self.consume_tag()
             else:
                 self.consume_coding_value()
-

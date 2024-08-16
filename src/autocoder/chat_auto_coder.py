@@ -7,7 +7,7 @@ import uuid
 import glob
 import time
 from contextlib import contextmanager
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
@@ -460,7 +460,7 @@ def show_help():
     )
     print("  \033[94m/voice_input\033[0m - \033[92mConvert voice input to text\033[0m")
     print("  \033[94m/mode\033[0m - \033[92mswitch input mode\033[0m")
-    print("  \033[94m/lib\033[0m - \033[92mManage libraries\033[0m")    
+    print("  \033[94m/lib\033[0m - \033[92mManage libraries\033[0m")
     print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
     print()
 
@@ -749,7 +749,7 @@ class CommandCompleter(Completer):
                             yield Completion(
                                 lib_name, start_position=-len(current_word)
                             )
-                
+
                 # Add completion for /refresh subcommand
                 if "/refresh".startswith(current_word):
                     yield Completion("/refresh", start_position=-len(current_word))
@@ -1068,7 +1068,7 @@ def ask(query: str):
 
 
 def get_llm_friendly_package_docs(package_name: Optional[str] = None) -> List[str]:
-    lib_dir = os.path.join(".auto-coder", "libs")
+    lib_dir = os.path.join("..", ".auto-coder", "libs")
     llm_friendly_packages_dir = os.path.join(lib_dir, "llm_friendly_packages")
     docs = []
 
@@ -1076,23 +1076,29 @@ def get_llm_friendly_package_docs(package_name: Optional[str] = None) -> List[st
         print("llm_friendly_packages directory not found.")
         return docs
 
-    libs = memory.get("libs", {}).keys()
+    libs = list(memory.get("libs", {}).keys())
 
-    for root, dirs, files in os.walk(llm_friendly_packages_dir):
+    for root, dirs, _ in os.walk(llm_friendly_packages_dir):
         for dir in dirs:
-            rel_path = os.path.relpath(root, dir)
+            rel_path = os.path.join(root, dir)
             # llm_friendly_packages -> domain -> username -> lib_name。
             rel_path_parts = rel_path.split(os.sep)
+            if rel_path_parts[-1] in libs:
+                print(rel_path_parts[-4] == "llm_friendly_packages")
 
             if (
-                len(rel_path_parts) > 3
-                and rel_path_parts[-3] == "llm_friendly_packages"
+                len(rel_path_parts) >= 3
+                and rel_path_parts[-4] == "llm_friendly_packages"
                 and (package_name is None or rel_path_parts[-1] == package_name)
                 and rel_path_parts[-1] in libs
             ):
-                for file in files:
-                    if file.endswith(".md"):
-                        docs.append(os.path.join(root, file))
+                package_docs = []
+                for root, dirs, files in os.walk(rel_path):
+                    for file in files:
+                        if file.endswith(".md"):
+                            with open(os.path.join(root, file), "r") as f:
+                                package_docs.append(f.read())
+                docs.extend(package_docs)
 
     return docs
 
@@ -1495,7 +1501,7 @@ def execute_shell_command(command: str):
 
 def lib_command(args: List[str]):
     console = Console()
-    lib_dir = os.path.join(".auto-coder","libs")
+    lib_dir = os.path.join(".auto-coder", "libs")
     llm_friendly_packages_dir = os.path.join(lib_dir, "llm_friendly_packages")
 
     if not os.path.exists(lib_dir):
@@ -1575,13 +1581,15 @@ def lib_command(args: List[str]):
             except git.exc.GitCommandError as e:
                 console.print(f"Error updating repository: {e}")
         else:
-            console.print("llm_friendly_packages repository does not exist. Please run /lib command first to clone it.")
+            console.print(
+                "llm_friendly_packages repository does not exist. Please run /lib command first to clone it."
+            )
 
     elif subcommand == "/get":
         if len(args) < 2:
             console.print("Please specify a package name to get")
             return
-        package_name = args[1]
+        package_name = args[1].strip()
         docs = get_llm_friendly_package_docs(package_name)
         if docs:
             table = Table(title=f"Markdown Files for {package_name}")
