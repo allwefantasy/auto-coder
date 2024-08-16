@@ -383,7 +383,7 @@ def redirect_stdout():
         sys.stdout = original_stdout
 
 
-def configure(conf: str):
+def configure(conf: str,skip_print=False):
     parts = conf.split(None, 1)
     if len(parts) == 2 and parts[0] in ["/drop", "/unset", "/remove"]:
         key = parts[1].strip()
@@ -408,7 +408,8 @@ def configure(conf: str):
             return
         memory["conf"][key] = value
         save_memory()
-        print(f"\033[92mSet {key} to {value}\033[0m")
+        if not skip_print:
+            print(f"\033[92mSet {key} to {value}\033[0m")
 
 
 def show_help():
@@ -614,9 +615,12 @@ class CommandCompleter(Completer):
                         base_file_name = os.path.basename(file_name)
                         if name in base_file_name:
                             target_set.add(base_file_name)
-                            # 获取最多三级的目录结构
                             path_parts = file_name.split(os.sep)
-                            display_name = os.sep.join(path_parts[-3:]) if len(path_parts) > 3 else file_name
+                            display_name = (
+                                os.sep.join(path_parts[-3:])
+                                if len(path_parts) > 3
+                                else file_name
+                            )
                             yield Completion(
                                 base_file_name,
                                 start_position=-len(name),
@@ -628,7 +632,7 @@ class CommandCompleter(Completer):
                             target_set.add(file_name)
                             yield Completion(file_name, start_position=-len(name))
 
-                    for file_name in self.all_file_names:
+                    for file_name in self.all_files:
                         if name in file_name and file_name not in target_set:
                             yield Completion(file_name, start_position=-len(name))
 
@@ -1484,11 +1488,22 @@ def main():
 
         event.app.invalidate()
 
+    @kb.add("c-n")
+    def _(event):
+        if "human_as_model" not in memory["conf"]:
+            memory["conf"]["human_as_model"] = "false"
+
+        current_status = memory["conf"]["human_as_model"]
+        new_status = "true" if current_status == "false" else "false"        
+        configure(f"human_as_model:{new_status}",skip_print=True)
+        event.app.invalidate()
+
     def get_bottom_toolbar():
         if "mode" not in memory:
             memory["mode"] = "normal"
         mode = memory["mode"]
-        return f" Mode: {MODES[mode]}"
+        human_as_model = memory["conf"].get("human_as_model", "false")
+        return f" Mode: {MODES[mode]} (ctl+m) | Human as Model: {human_as_model} (ctl+n)"
 
     session = PromptSession(
         history=InMemoryHistory(),

@@ -171,7 +171,7 @@ def base_base(source_dir:str,project_type:str)->str:
     target_file: {{ target_file }}
 
     model: deepseek_chat
-    model_max_input_length: 30000
+    model_max_input_length: 100000
     enable_multi_round_generate: false
 
     execute: true
