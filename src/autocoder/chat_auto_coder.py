@@ -38,8 +38,8 @@ from rich.live import Live
 from rich.text import Text
 from rich.live import Live
 from byzerllm.utils.nontext import Image
-import subprocess
 import re
+import git
 from autocoder.utils.request_queue import (
     request_queue,
     RequestValue,
@@ -49,6 +49,7 @@ from autocoder.utils.request_queue import (
 import asyncio
 from byzerllm.utils.langutil import asyncfy_with_semaphore
 from prompt_toolkit.patch_stdout import patch_stdout
+
 
 
 class SymbolItem(BaseModel):
@@ -1442,11 +1443,6 @@ def execute_shell_command(command: str):
         console.print(
             f"[bold red]Error executing command:[/bold red] [yellow]{str(e)}[/yellow]"
         )
-
-
-import os
-import subprocess
-import git
 
 def lib_command(args: List[str]):
     console = Console()
