@@ -460,9 +460,7 @@ def show_help():
     )
     print("  \033[94m/voice_input\033[0m - \033[92mConvert voice input to text\033[0m")
     print("  \033[94m/mode\033[0m - \033[92mswitch input mode\033[0m")
-    print("  \033[94m/lib\033[0m - \033[92mManage libraries\033[0m")
-
-    print("    \033[94m/lib /list\033[0m - \033[92mList added libraries\033[0m")
+    print("  \033[94m/lib\033[0m - \033[92mManage libraries\033[0m")    
     print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
     print()
 
@@ -1089,7 +1087,7 @@ def get_llm_friendly_package_docs() -> List[str]:
             if (
                 len(rel_path_parts) > 3
                 and rel_path_parts[-3] == "llm_friendly_packages"
-                and rel_path_parts[-2] in libs
+                and rel_path_parts[-1] in libs
             ):
                 for file in files:
                     if file.endswith(".md"):
