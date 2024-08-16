@@ -1067,7 +1067,7 @@ def ask(query: str):
         os.remove(execute_file)
 
 
-def get_llm_friendly_package_docs() -> List[str]:
+def get_llm_friendly_package_docs(package_name: Optional[str] = None) -> List[str]:
     lib_dir = os.path.join(".auto-coder", "libs")
     llm_friendly_packages_dir = os.path.join(lib_dir, "llm_friendly_packages")
     docs = []
@@ -1087,6 +1087,7 @@ def get_llm_friendly_package_docs() -> List[str]:
             if (
                 len(rel_path_parts) > 3
                 and rel_path_parts[-3] == "llm_friendly_packages"
+                and (package_name is None or rel_path_parts[-1] == package_name)
                 and rel_path_parts[-1] in libs
             ):
                 for file in files:
@@ -1512,7 +1513,7 @@ def lib_command(args: List[str]):
 
     if not args:
         console.print(
-            "Please specify a subcommand: /add, /remove, /list, /set-proxy, or /refresh"
+            "Please specify a subcommand: /add, /remove, /list, /set-proxy, /refresh, or /get"
         )
         return
 
@@ -1575,6 +1576,21 @@ def lib_command(args: List[str]):
                 console.print(f"Error updating repository: {e}")
         else:
             console.print("llm_friendly_packages repository does not exist. Please run /lib command first to clone it.")
+
+    elif subcommand == "/get":
+        if len(args) < 2:
+            console.print("Please specify a package name to get")
+            return
+        package_name = args[1]
+        docs = get_llm_friendly_package_docs(package_name)
+        if docs:
+            table = Table(title=f"Markdown Files for {package_name}")
+            table.add_column("File Path", style="cyan")
+            for doc in docs:
+                table.add_row(doc)
+            console.print(table)
+        else:
+            console.print(f"No markdown files found for package: {package_name}")
 
     else:
         console.print(f"Unknown subcommand: {subcommand}")
