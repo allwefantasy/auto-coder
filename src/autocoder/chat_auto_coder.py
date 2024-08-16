@@ -111,6 +111,7 @@ commands = [
     "/exit",
     "/summon",
     "/mode",
+    "/lib",
 ]
 
 
@@ -458,6 +459,10 @@ def show_help():
     )
     print("  \033[94m/voice_input\033[0m - \033[92mConvert voice input to text\033[0m")
     print("  \033[94m/mode\033[0m - \033[92mswitch input mode\033[0m")
+    print("  \033[94m/lib\033[0m - \033[92mManage libraries\033[0m")
+    print("    \033[94m/lib /add <library>\033[0m - \033[92mAdd a library\033[0m")
+    print("    \033[94m/lib /remove <library>\033[0m - \033[92mRemove a library\033[0m")
+    print("    \033[94m/lib /list\033[0m - \033[92mList added libraries\033[0m")
     print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
     print()
 
@@ -1439,6 +1444,71 @@ def execute_shell_command(command: str):
         )
 
 
+import os
+import subprocess
+import git
+
+def lib_command(args: List[str]):
+    console = Console()
+    lib_dir = os.path.join(".auto-coder", "libs")
+    llm_friendly_packages_dir = os.path.join(lib_dir, "llm_friendly_packages")
+
+    if not os.path.exists(lib_dir):
+        os.makedirs(lib_dir)
+
+    if not os.path.exists(llm_friendly_packages_dir):
+        console.print("Cloning llm_friendly_packages repository...")
+        git.Repo.clone_from(
+            "https://github.com/allwefantasy/llm_friendly_packages",
+            llm_friendly_packages_dir
+        )
+
+    if "libs" not in memory:
+        memory["libs"] = {}
+
+    if not args:
+        console.print("Please specify a subcommand: /add, /remove, or /list")
+        return
+
+    subcommand = args[0]
+
+    if subcommand == "/add":
+        if len(args) < 2:
+            console.print("Please specify a library name to add")
+            return
+        lib_name = args[1]
+        if lib_name in memory["libs"]:
+            console.print(f"Library {lib_name} is already added")
+        else:
+            memory["libs"][lib_name] = {}
+            console.print(f"Added library: {lib_name}")
+            save_memory()
+
+    elif subcommand == "/remove":
+        if len(args) < 2:
+            console.print("Please specify a library name to remove")
+            return
+        lib_name = args[1]
+        if lib_name in memory["libs"]:
+            del memory["libs"][lib_name]
+            console.print(f"Removed library: {lib_name}")
+            save_memory()
+        else:
+            console.print(f"Library {lib_name} is not in the list")
+
+    elif subcommand == "/list":
+        if memory["libs"]:
+            table = Table(title="Added Libraries")
+            table.add_column("Library Name", style="cyan")
+            for lib_name in memory["libs"]:
+                table.add_row(lib_name)
+            console.print(table)
+        else:
+            console.print("No libraries added yet")
+
+    else:
+        console.print(f"Unknown subcommand: {subcommand}")
+
 def main():
     ARGS = parse_arguments()
 
@@ -1644,6 +1714,10 @@ def main():
                     print("\033[91mPlease enter your request.\033[0m")
                 else:
                     summon(query)
+
+            elif user_input.startswith("/lib"):
+                args = user_input[len("/lib") :].strip().split()
+                lib_command(args)
 
             # elif user_input.startswith("/shell"):
             else:
