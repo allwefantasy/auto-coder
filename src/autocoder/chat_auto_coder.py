@@ -1539,9 +1539,9 @@ def lib_command(args: List[str]):
         if not os.path.exists(llm_friendly_packages_dir):
             console.print("Cloning llm_friendly_packages repository...")
             try:
-                proxy_url = memory.get("lib-proxy")
+                proxy_url = memory.get("lib-proxy","https://github.com/allwefantasy/llm_friendly_packages")
                 git.Repo.clone_from(
-                    "https://github.com/allwefantasy/llm_friendly_packages",
+                    proxy_url,
                     llm_friendly_packages_dir,
                 )
                 console.print("Successfully cloned llm_friendly_packages repository")
@@ -1597,23 +1597,15 @@ def lib_command(args: List[str]):
                 origin = repo.remotes.origin
                 proxy_url = memory.get("lib-proxy")
                 
-                # 获取当前的 remote URL
-                current_url = origin.url
+                current_url = origin.url                                
 
-                # 如果设置了代理且与当前 URL 不一致，则更新 remote URL
                 if proxy_url and proxy_url != current_url:
                     new_url = proxy_url
                     origin.set_url(new_url)
                     console.print(f"Updated remote URL to: {new_url}")
-
-                # 执行 pull 操作
+                
                 origin.pull()
                 console.print("Successfully updated llm_friendly_packages repository")
-
-                # 如果之前更改了 URL，现在改回原来的
-                if proxy_url and proxy_url != current_url:
-                    origin.set_url(current_url)
-                    console.print(f"Restored original remote URL: {current_url}")
 
             except git.exc.GitCommandError as e:
                 console.print(f"Error updating repository: {e}")
