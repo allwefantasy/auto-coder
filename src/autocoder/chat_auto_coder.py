@@ -1518,13 +1518,6 @@ def lib_command(args: List[str]):
     if not os.path.exists(lib_dir):
         os.makedirs(lib_dir)
 
-    if not os.path.exists(llm_friendly_packages_dir):
-        console.print("Cloning llm_friendly_packages repository...")
-        git.Repo.clone_from(
-            "https://github.com/allwefantasy/llm_friendly_packages",
-            llm_friendly_packages_dir,
-        )
-
     if "libs" not in memory:
         memory["libs"] = {}
 
@@ -1546,6 +1539,27 @@ def lib_command(args: List[str]):
         else:
             memory["libs"][lib_name] = {}
             console.print(f"Added library: {lib_name}")
+            
+            # Clone the repository if it doesn't exist
+            if not os.path.exists(llm_friendly_packages_dir):
+                console.print("Cloning llm_friendly_packages repository...")
+                try:
+                    proxy_url = memory.get("lib-proxy")
+                    if proxy_url:
+                        os.environ['HTTPS_PROXY'] = proxy_url
+                        os.environ['HTTP_PROXY'] = proxy_url
+                    git.Repo.clone_from(
+                        "https://github.com/allwefantasy/llm_friendly_packages",
+                        llm_friendly_packages_dir,
+                    )
+                    console.print("Successfully cloned llm_friendly_packages repository")
+                except git.exc.GitCommandError as e:
+                    console.print(f"Error cloning repository: {e}")
+                finally:
+                    if proxy_url:
+                        del os.environ['HTTPS_PROXY']
+                        del os.environ['HTTP_PROXY']
+            
             save_memory()
 
     elif subcommand == "/remove":
@@ -1587,13 +1601,18 @@ def lib_command(args: List[str]):
             try:
                 repo = git.Repo(llm_friendly_packages_dir)
                 origin = repo.remotes.origin
-                origin.pull()
+                proxy_url = memory.get("lib-proxy")
+                if proxy_url:
+                    with repo.git.custom_environment(HTTPS_PROXY=proxy_url, HTTP_PROXY=proxy_url):
+                        origin.pull()
+                else:
+                    origin.pull()
                 console.print("Successfully updated llm_friendly_packages repository")
             except git.exc.GitCommandError as e:
                 console.print(f"Error updating repository: {e}")
         else:
             console.print(
-                "llm_friendly_packages repository does not exist. Please run /lib command first to clone it."
+                "llm_friendly_packages repository does not exist. Please run /lib /add <library_name> command first to clone it."
             )
 
     elif subcommand == "/get":
