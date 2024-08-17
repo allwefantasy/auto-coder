@@ -643,10 +643,16 @@ class CommandCompleter(Completer):
                     name = current_word[2:]
                     for symbol in self.symbol_list:
                         if name in symbol.symbol_name:
+                            path_parts = symbol.symbol_name.split(os.sep)
+                            display_name = (
+                                os.sep.join(path_parts[-3:])
+                                if len(path_parts) > 3
+                                else symbol.symbol_name
+                            )
                             yield Completion(
                                 symbol.symbol_name,
-                                display=f"{symbol.symbol_name} from {os.path.basename(symbol.file_name)}/{symbol.symbol_type}",
                                 start_position=-len(name),
+                                display=f"{symbol.symbol_name} ({display_name}/{symbol.symbol_type})",
                             )
 
                 if current_word.startswith("<"):
@@ -749,15 +755,6 @@ class CommandCompleter(Completer):
                             yield Completion(
                                 lib_name, start_position=-len(current_word)
                             )
-
-                # Add completion for /refresh subcommand
-                if "/refresh".startswith(current_word):
-                    yield Completion("/refresh", start_position=-len(current_word))
-
-                # Add completion for all subcommands
-                for subcommand in ["/add", "/remove", "/list", "/set-proxy", "/refresh", "/get"]:
-                    if subcommand.startswith(current_word):
-                        yield Completion(subcommand, start_position=-len(current_word))
 
             elif words[0] == "/conf":
                 new_words = text[len("/conf") :].strip().split()
@@ -1072,8 +1069,10 @@ def ask(query: str):
         os.remove(execute_file)
 
 
-def get_llm_friendly_package_docs(package_name: Optional[str] = None) -> List[str]:
-    lib_dir = os.path.join("..", ".auto-coder", "libs")
+def get_llm_friendly_package_docs(
+    package_name: Optional[str] = None, return_paths: bool = False
+) -> List[str]:
+    lib_dir = os.path.join(".auto-coder", "libs")
     llm_friendly_packages_dir = os.path.join(lib_dir, "llm_friendly_packages")
     docs = []
 
@@ -1101,8 +1100,11 @@ def get_llm_friendly_package_docs(package_name: Optional[str] = None) -> List[st
                 for root, dirs, files in os.walk(rel_path):
                     for file in files:
                         if file.endswith(".md"):
-                            with open(os.path.join(root, file), "r") as f:
-                                package_docs.append(f.read())
+                            if return_paths:
+                                package_docs.append(os.path.join(root, file))
+                            else:
+                                with open(os.path.join(root, file), "r") as f:
+                                    package_docs.append(f.read())
                 docs.extend(package_docs)
 
     return docs
@@ -1141,7 +1143,9 @@ def coding(query: str):
             if converted_value is not None:
                 yaml_config[key] = converted_value
 
-        yaml_config["urls"] = current_files + get_llm_friendly_package_docs()
+        yaml_config["urls"] = current_files + get_llm_friendly_package_docs(
+            return_paths=True
+        )
 
         ## handle image
         v = Image.convert_image_paths_from(query)
@@ -1204,7 +1208,9 @@ def coding(query: str):
 
 def chat(query: str):
     conf = memory.get("conf", {})
-    current_files = memory["current_files"]["files"] + get_llm_friendly_package_docs()
+    current_files = memory["current_files"]["files"] + get_llm_friendly_package_docs(
+        return_paths=True
+    )
 
     file_contents = []
     for file in current_files:
@@ -1595,7 +1601,7 @@ def lib_command(args: List[str]):
             console.print("Please specify a package name to get")
             return
         package_name = args[1].strip()
-        docs = get_llm_friendly_package_docs(package_name)
+        docs = get_llm_friendly_package_docs(package_name, return_paths=True)
         if docs:
             table = Table(title=f"Markdown Files for {package_name}")
             table.add_column("File Path", style="cyan")
