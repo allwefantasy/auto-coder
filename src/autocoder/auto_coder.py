@@ -288,12 +288,10 @@ def main(input_args: Optional[List[str]] = None):
                     import pyperclip
 
                     pyperclip.copy(final_ins)
-                except ImportError:
+                except Exception:
                     logger.warning(
-                        "pyperclip not installed, instruction will not be copied to clipboard."
-                    )
-                except pyperclip.PyperclipException as e:
-                    logger.warning(f"Instruction will not be copied to clipboard:{e}")
+                        "pyperclip not installed or clipboard is not suppored, instruction will not be copied to clipboard."
+                    )                
 
                 if args.request_id and not args.silence:
                     event_data = {
