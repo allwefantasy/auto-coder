@@ -292,9 +292,8 @@ def main(input_args: Optional[List[str]] = None):
                     logger.warning(
                         "pyperclip not installed, instruction will not be copied to clipboard."
                     )
-                print(
-                    f"""\033[92mInstruction to model saved in \033[94m{args.target_file}\033[92m and copied to clipboard:\n\n\033[93m{final_ins[0:100]}...\033[0m"""
-                )
+                except pyperclip.PyperclipException as e:
+                    logger.warning(f"Instruction will not be copied to clipboard:{e}")
 
                 if args.request_id and not args.silence:
                     event_data = {
@@ -506,7 +505,7 @@ def main(input_args: Optional[List[str]] = None):
             transcribe_audio = TranscribeAudio()
             temp_wav_file = os.path.join(tempfile.gettempdir(), "voice_input.wav")
 
-            console = Console()            
+            console = Console()
 
             transcribe_audio.record_audio(temp_wav_file)
             console.print(
@@ -516,12 +515,14 @@ def main(input_args: Optional[List[str]] = None):
                     border_style="green",
                 )
             )
-            
-            if llm and llm.get_sub_client("voice2text_model"):                
+
+            if llm and llm.get_sub_client("voice2text_model"):
                 voice2text_llm = llm.get_sub_client("voice2text_model")
-            else:                
+            else:
                 voice2text_llm = llm
-            transcription = transcribe_audio.transcribe_audio(temp_wav_file, voice2text_llm)
+            transcription = transcribe_audio.transcribe_audio(
+                temp_wav_file, voice2text_llm
+            )
 
             console.print(
                 Panel(
@@ -531,7 +532,7 @@ def main(input_args: Optional[List[str]] = None):
                 )
             )
 
-            with open(os.path.join(".auto-coder","exchange.txt"), "w") as f:
+            with open(os.path.join(".auto-coder", "exchange.txt"), "w") as f:
                 f.write(transcription)
 
             request_queue.add_request(
@@ -546,9 +547,9 @@ def main(input_args: Optional[List[str]] = None):
             return
         elif raw_args.agent_command == "generate_command":
             from autocoder.common.command_generator import generate_shell_script
-            
+
             console = Console()
-            
+
             console.print(
                 Panel(
                     f"Generating shell script from user input {args.query}...",
@@ -556,9 +557,9 @@ def main(input_args: Optional[List[str]] = None):
                     border_style="green",
                 )
             )
-            
+
             shell_script = generate_shell_script(args.query, llm)
-            
+
             console.print(
                 Panel(
                     shell_script,
@@ -577,7 +578,7 @@ def main(input_args: Optional[List[str]] = None):
                     status=RequestOption.COMPLETED,
                 ),
             )
-            
+
             return
         elif raw_args.agent_command == "auto_tool":
             from autocoder.agent.auto_tool import AutoTool

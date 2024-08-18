@@ -75,6 +75,6 @@ pyperclip
 colorama
 pylint
 reportlab
-simpleaudio
+# simpleaudio
 # pandoc
 # pypandoc
