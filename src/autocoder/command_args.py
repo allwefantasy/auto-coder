@@ -156,6 +156,11 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         action="store_true",
         help="是否静默执行,不打印任何信息。默认为False",
     )
+    parser.add_argument(
+        "--is_stream_gen_code",
+        action="store_true",
+        help="是否流式生成代码。默认为False",
+    )
 
     revert_parser = subparsers.add_parser("revert", help=desc["revert_desc"])
     revert_parser.add_argument("--file", help=desc["revert_desc"])
