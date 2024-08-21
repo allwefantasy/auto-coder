@@ -35,7 +35,9 @@ class LongContextRAG:
         使用以下文档来回答问题。如果文档中没有相关信息，请说"我没有足够的信息来回答这个问题"。
 
         文档：
-        {{ "\n\n".join(relevant_docs) }}
+        {% for doc in relevant_docs %}
+        {{ doc }}
+        {% endfor %}
 
         问题：{{ query }}
 
