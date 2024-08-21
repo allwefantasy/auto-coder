@@ -1394,15 +1394,10 @@ def index_build():
         "include_file": ["./base/base.yml"],
     }
 
-    # Read parameters from conf
-    if "project_type" in conf:
-        yaml_config["project_type"] = conf["project_type"]
-    if "index_model" in conf:
-        yaml_config["index_model"] = conf["index_model"]
-    if "index_model_max_input_length" in conf:
-        yaml_config["index_model_max_input_length"] = conf["index_model_max_input_length"]
-    if "index_build_workers" in conf:
-        yaml_config["index_build_workers"] = conf["index_build_workers"]
+    for key, value in conf.items():
+        converted_value = convert_config_value(key, value)
+        if converted_value is not None:
+            yaml_config[key] = converted_value
 
     yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
     yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
