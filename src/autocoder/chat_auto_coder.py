@@ -1389,18 +1389,30 @@ def exclude_dirs(dir_names: List[str]):
 
 
 def index_build():
+    conf = memory.get("conf", {})
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+    }
+
+    # Read parameters from conf
+    if "project_type" in conf:
+        yaml_config["project_type"] = conf["project_type"]
+    if "index_model" in conf:
+        yaml_config["index_model"] = conf["index_model"]
+    if "index_model_max_input_length" in conf:
+        yaml_config["index_model_max_input_length"] = conf["index_model_max_input_length"]
+    if "index_build_workers" in conf:
+        yaml_config["index_build_workers"] = conf["index_build_workers"]
+
+    yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
     yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
-    yaml_content = f"""
-include_file:
-  - ./base/base.yml  
-"""
+
     with open(yaml_file, "w") as f:
         f.write(yaml_content)
     try:
         with redirect_stdout() as output:
             auto_coder_main(["index", "--file", yaml_file])
         print(output.getvalue(), flush=True)
-
     finally:
         os.remove(yaml_file)
 
