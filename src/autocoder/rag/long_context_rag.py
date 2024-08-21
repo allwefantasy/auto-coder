@@ -8,6 +8,7 @@ import os
 
 import byzerllm
 
+
 class LongContextRAG:
     def __init__(self, llm: ByzerLLM, args: AutoCoderArgs, path: str) -> None:
         self.llm = llm
@@ -65,7 +66,9 @@ class LongContextRAG:
         query = conversations[-1]["content"]
         documents = self._retrieve_documents()
 
-        with ThreadPoolExecutor(max_workers=self.args.max_workers or 5) as executor:
+        with ThreadPoolExecutor(
+            max_workers=self.args.index_filter_workers or 5
+        ) as executor:
             future_to_doc = {
                 executor.submit(
                     self._check_relevance.with_llm(self.llm).run, query, doc
@@ -74,16 +77,15 @@ class LongContextRAG:
             }
             relevant_docs = []
             for future in as_completed(future_to_doc):
-                doc = future_to_doc[future]
                 try:
+                    doc = future_to_doc[future]
                     if "是" in future.result().strip().lower():
                         relevant_docs.append(doc)
                 except Exception as exc:
                     logger.error(f"Document processing generated an exception: {exc}")
 
         if not relevant_docs:
-            yield "没有找到相关的文档来回答这个问题。", []
-            return
-
-        for chunk in self._answer_question.with_llm(self.llm).run(query, relevant_docs):
-            yield chunk, []
+            return ["没有找到相关的文档来回答这个问题。"], []
+        else:
+            chunks = self._answer_question.with_llm(self.llm).run(query, relevant_docs)
+            return chunks, []

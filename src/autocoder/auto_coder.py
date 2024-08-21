@@ -756,13 +756,19 @@ def main(input_args: Optional[List[str]] = None):
             return
 
         elif raw_args.doc_command == "serve":
-            from autocoder.rag.simple_rag import SimpleRAG
+                   
             from autocoder.rag.llm_wrapper import LLWrapper
             server_args = ServerArgs(
                 **{arg: getattr(raw_args, arg) for arg in vars(ServerArgs())}
             )
             server_args.served_model_name = server_args.served_model_name or args.model
-            rag = SimpleRAG(llm=llm, args=args, path="")
+            if server_args.doc_dir:
+                from autocoder.rag.long_context_rag import LongContextRAG
+                rag = LongContextRAG(llm=llm, args=args, path=server_args.doc_dir)
+            else:
+                from autocoder.rag.simple_rag import SimpleRAG          
+                rag = SimpleRAG(llm=llm, args=args, path="")
+                
             llm_wrapper = LLWrapper(llm=llm, rag=rag)
             serve(llm=llm_wrapper, args=server_args)
             return

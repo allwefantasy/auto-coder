@@ -165,7 +165,8 @@ class ServerArgs(BaseModel):
     prompt_template: str = None
     response_role: str = "assistant"
     ssl_keyfile: str = None
-    ssl_certfile: str = None    
+    ssl_certfile: str = None 
+    doc_dir: str = ""   
 
 def serve(llm:ByzerLLM, args: ServerArgs):
     
