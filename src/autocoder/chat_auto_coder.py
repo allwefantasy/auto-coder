@@ -1413,20 +1413,27 @@ def index_build():
 
 
 def index_query(query: str):
+    conf = memory.get("conf", {})
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+    }
+
+    for key, value in conf.items():
+        converted_value = convert_config_value(key, value)
+        if converted_value is not None:
+            yaml_config[key] = converted_value
+
+    yaml_config["query"] = query
+
+    yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
     yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
-    yaml_content = f"""
-include_file:
-  - ./base/base.yml  
-query: |
-  {query}
-"""
+
     with open(yaml_file, "w") as f:
         f.write(yaml_content)
     try:
         with redirect_stdout() as output:
             auto_coder_main(["index-query", "--file", yaml_file])
         print(output.getvalue(), flush=True)
-
     finally:
         os.remove(yaml_file)
 
