@@ -29,52 +29,53 @@ class LongContextRAG:
         回答：
         """
 
-    @byzerllm.prompt()
-    def _answer_question(self, query: str, relevant_docs: List[str]) -> str:
-        """
-        使用以下文档来回答问题。如果文档中没有相关信息，请说"我没有足够的信息来回答这个问题"。
+@byzerllm.prompt()
+def _answer_question(self, query: str, relevant_docs: List[str]) -> Generator[str, None, None]:
+    """
+    使用以下文档来回答问题。如果文档中没有相关信息，请说"我没有足够的信息来回答这个问题"。
 
-        文档：
-        {% for doc in relevant_docs %}
-        {{ doc }}
-        {% endfor %}
+    文档：
+    {% for doc in relevant_docs %}
+    {{ doc }}
+    {% endfor %}
 
-        问题：{{ query }}
+    问题：{{ query }}
 
-        回答：
-        """
+    回答：
+    """
 
-    def stream_chat_oai(
-        self,
-        conversations,
-        model: Optional[str] = None,
-        role_mapping=None,
-        llm_config: Dict[str, Any] = {},
-    ):
-        query = conversations[-1]["content"]
-        documents = self._retrieve_documents()
+def stream_chat_oai(
+    self,
+    conversations,
+    model: Optional[str] = None,
+    role_mapping=None,
+    llm_config: Dict[str, Any] = {},
+) -> Generator[Tuple[str, List[Dict[str, Any]]], None, None]:
+    query = conversations[-1]["content"]
+    documents = self._retrieve_documents()
 
-        with ThreadPoolExecutor(max_workers=self.args.max_workers or 5) as executor:
-            future_to_doc = {
-                executor.submit(
-                    self._check_relevance.with_llm(self.llm).run, query, doc
-                ): doc
-                for doc in documents
-            }
-            relevant_docs = []
-            for future in as_completed(future_to_doc):
-                doc = future_to_doc[future]
-                try:
-                    if "是" in future.result().strip().lower():
-                        relevant_docs.append(doc)
-                except Exception as exc:
-                    logger.error(f"Document processing generated an exception: {exc}")
+    with ThreadPoolExecutor(max_workers=self.args.max_workers or 5) as executor:
+        future_to_doc = {
+            executor.submit(
+                self._check_relevance.with_llm(self.llm).run, query, doc
+            ): doc
+            for doc in documents
+        }
+        relevant_docs = []
+        for future in as_completed(future_to_doc):
+            doc = future_to_doc[future]
+            try:
+                if "是" in future.result().strip().lower():
+                    relevant_docs.append(doc)
+            except Exception as exc:
+                logger.error(f"Document processing generated an exception: {exc}")
 
-        if not relevant_docs:
-            return (yield "没有找到相关的文档来回答这个问题。"), []
+    if not relevant_docs:
+        yield "没有找到相关的文档来回答这个问题。", []
+        return
 
-        response = self._answer_question.with_llm(self.llm).run(query, relevant_docs)
-        return (yield from response), []
+    for chunk in self._answer_question.with_llm(self.llm).run(query, relevant_docs):
+        yield chunk, []
 
     def _retrieve_documents(self) -> List[str]:
         documents = []
