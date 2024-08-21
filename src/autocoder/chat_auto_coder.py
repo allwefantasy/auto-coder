@@ -1845,6 +1845,14 @@ def main():
                 args = user_input[len("/lib") :].strip().split()
                 lib_command(args)
 
+            elif user_input.startswith("/debug"):
+                code = user_input[len("/debug"):].strip()
+                try:
+                    result = eval(code)
+                    print(f"Debug result: {result}")
+                except Exception as e:
+                    print(f"Debug error: {str(e)}")
+
             # elif user_input.startswith("/shell"):
             else:
                 command = user_input
