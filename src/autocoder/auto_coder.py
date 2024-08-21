@@ -3,8 +3,6 @@ from typing import List, Dict, Any, Optional
 from autocoder.common import AutoCoderArgs
 from autocoder.dispacher import Dispacher
 from autocoder.common import git_utils, code_auto_execute
-from autocoder.rag.simple_rag import SimpleRAG
-from autocoder.rag.llm_wrapper import LLWrapper
 from autocoder.utils.llm_client_interceptors import token_counter_interceptor
 from autocoder.db.store import Store
 
@@ -608,6 +606,7 @@ def main(input_args: Optional[List[str]] = None):
             return
 
         elif raw_args.agent_command == "chat":
+            from autocoder.rag.simple_rag import SimpleRAG            
             memory_dir = os.path.join(args.source_dir, ".auto-coder", "memory")
             os.makedirs(memory_dir, exist_ok=True)
             memory_file = os.path.join(memory_dir, "chat_history.json")
@@ -721,12 +720,15 @@ def main(input_args: Optional[List[str]] = None):
         return
 
     if raw_args.command == "doc":
+            
         if raw_args.doc_command == "build":
+            from autocoder.rag.simple_rag import SimpleRAG
             rag = SimpleRAG(llm=llm, args=args, path=args.source_dir)
             rag.build()
             print("Successfully built the document index")
             return
         elif raw_args.doc_command == "query":
+            from autocoder.rag.simple_rag import SimpleRAG
             rag = SimpleRAG(llm=llm, args=args, path="")
             response, contexts = rag.stream_search(args.query)
 
@@ -748,11 +750,14 @@ def main(input_args: Optional[List[str]] = None):
                 executor.run(query=args.query, context=s, source_code="")
             return
         elif raw_args.doc_command == "chat":
+            from autocoder.rag.simple_rag import SimpleRAG
             rag = SimpleRAG(llm=llm, args=args, path="")
             rag.stream_chat_repl(args.query)
             return
 
         elif raw_args.doc_command == "serve":
+            from autocoder.rag.simple_rag import SimpleRAG
+            from autocoder.rag.llm_wrapper import LLWrapper
             server_args = ServerArgs(
                 **{arg: getattr(raw_args, arg) for arg in vars(ServerArgs())}
             )

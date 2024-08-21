@@ -643,7 +643,7 @@ class CommandCompleter(Completer):
                     name = current_word[2:]
                     for symbol in self.symbol_list:
                         if name in symbol.symbol_name:
-                            path_parts = symbol.symbol_name.split(os.sep)
+                            path_parts = symbol.file_name.split(os.sep)
                             display_name = (
                                 os.sep.join(path_parts[-3:])
                                 if len(path_parts) > 3

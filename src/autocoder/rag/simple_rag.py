@@ -262,19 +262,20 @@ You can set the collection by passing the `--collections`argument in command lin
     def search(self, query: str) -> List[SourceCode]:
         if not is_ray_in_client_mode():
             return self.inner_search(query)
-                
-        target_query = query        
-        
+
+        target_query = query
+
         if isinstance(self.args.enable_rag_search, str):
             target_query = self.args.enable_rag_search
-        
+
         response = self.client.chat.completions.create(
             messages=[{"role": "user", "content": target_query}],
             model="xxxx",
         )
         return [
             SourceCode(
-                module_name=f"RAG:{target_query}", source_code=response.choices[0].message.content
+                module_name=f"RAG:{target_query}",
+                source_code=response.choices[0].message.content,
             )
         ]
 
@@ -340,7 +341,7 @@ You can set the collection by passing the `--collections`argument in command lin
         # retrieval_client.delete_from_chunk_collection(collection)
 
         required_exts = self.args.required_exts or None
-        
+
         if required_exts:
             required_exts = required_exts.split(",")
 
