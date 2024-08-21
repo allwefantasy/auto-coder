@@ -8,6 +8,7 @@ import os
 
 import byzerllm
 
+
 class LongContextRAG:
     def __init__(self, llm: ByzerLLM, args: AutoCoderArgs, path: str) -> None:
         self.llm = llm
@@ -17,7 +18,7 @@ class LongContextRAG:
     @byzerllm.prompt()
     def _check_relevance(self, query: str, document: str) -> str:
         """
-        请判断以下文档是否与给定的问题相关。
+        请判断以下文档是否能够回答给出的问题。
         只需回答"是"或"否"。
 
         问题：{{ query }}
@@ -47,17 +48,22 @@ class LongContextRAG:
         model: Optional[str] = None,
         role_mapping=None,
         llm_config: Dict[str, Any] = {},
-    ) -> Tuple[Generator[str, None, None], List[Dict[str, Any]]]:
+    ):
         query = conversations[-1]["content"]
         documents = self._retrieve_documents()
 
         with ThreadPoolExecutor(max_workers=self.args.max_workers or 5) as executor:
-            future_to_doc = {executor.submit(self._check_relevance.with_llm(self.llm).run, query, doc): doc for doc in documents}
+            future_to_doc = {
+                executor.submit(
+                    self._check_relevance.with_llm(self.llm).run, query, doc
+                ): doc
+                for doc in documents
+            }
             relevant_docs = []
             for future in as_completed(future_to_doc):
                 doc = future_to_doc[future]
                 try:
-                    if future.result().strip().lower() == "是":
+                    if "是" in future.result().strip().lower():
                         relevant_docs.append(doc)
                 except Exception as exc:
                     logger.error(f"Document processing generated an exception: {exc}")
@@ -72,8 +78,8 @@ class LongContextRAG:
         documents = []
         for root, dirs, files in os.walk(self.path):
             for file in files:
-                if file.endswith('.md'):
+                if file.endswith(".md"):
                     file_path = os.path.join(root, file)
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         documents.append(f.read())
         return documents
