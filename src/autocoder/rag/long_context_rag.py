@@ -5,7 +5,9 @@ from byzerllm import ByzerLLM
 from loguru import logger
 import json
 import os
-
+from io import BytesIO
+from pypdf import PdfReader
+import docx2txt
 import byzerllm
 
 
@@ -14,7 +16,24 @@ class LongContextRAG:
         self.llm = llm
         self.args = args
         self.path = path
-        self.required_exts = [ext.strip() for ext in self.args.required_exts.split(",")] if self.args.required_exts else []
+        self.required_exts = (
+            [ext.strip() for ext in self.args.required_exts.split(",")]
+            if self.args.required_exts
+            else []
+        )
+
+    def extract_text_from_pdf(self, pdf_content):
+        pdf_file = BytesIO(pdf_content)
+        pdf_reader = PdfReader(pdf_file)
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+        return text
+
+    def extract_text_from_docx(self, docx_content):
+        docx_file = BytesIO(docx_content)
+        text = docx2txt.process(docx_file)
+        return text
 
     @byzerllm.prompt()
     def _check_relevance(self, query: str, document: str) -> str:
