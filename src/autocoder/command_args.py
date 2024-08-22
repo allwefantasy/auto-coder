@@ -288,6 +288,12 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     doc_serve_parse.add_argument(
         "--ray_address", default="auto", help=desc["ray_address"]
     )
+    doc_serve_parse.add_argument(
+        "--index_filter_workers", type=int, default=10, help=desc["index_filter_workers"]
+    )
+    doc_serve_parse.add_argument(
+        "--index_filter_file_num", type=int, default=3, help=desc["index_filter_file_num"]
+    )
     doc_serve_parse.add_argument("--source_dir", default=".", help="")
     doc_serve_parse.add_argument("--host", default="", help="")
     doc_serve_parse.add_argument("--port", type=int, default=8000, help="")

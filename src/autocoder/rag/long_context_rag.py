@@ -92,5 +92,6 @@ class LongContextRAG:
         if not relevant_docs:
             return ["没有找到相关的文档来回答这个问题。"], []
         else:
+            relevant_docs = relevant_docs[:self.args.index_filter_file_num]
             chunks = self._answer_question.with_llm(self.llm).run(query, relevant_docs)
             return chunks, []
