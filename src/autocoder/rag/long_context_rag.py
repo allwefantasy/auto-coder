@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple, Generator
-from autocoder.common import AutoCoderArgs
+from autocoder.common import AutoCoderArgs,SourceCode
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from byzerllm import ByzerLLM
 from loguru import logger
@@ -26,7 +26,7 @@ class LongContextRAG:
 
         问题：{{ query }}
 
-        只需回答"yes"或"no"。        
+        如果该文档提供的知识能够回答问题，那么请回复"yes" 否则回复"no"。        
         """
 
     @byzerllm.prompt()
@@ -79,8 +79,7 @@ class LongContextRAG:
             for future in as_completed(future_to_doc):
                 try:
                     doc = future_to_doc[future]
-                    v = future.result()
-                    print(v)
+                    v = future.result()                    
                     if "yes" in v.strip().lower():
                         relevant_docs.append(doc)
                 except Exception as exc:
