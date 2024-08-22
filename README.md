@@ -16,6 +16,7 @@ Auto-Coder (powered by Byzer-LLM)
 ---
 
 *Latest News* 🔥
+- [2024/08] Release Auto-Coder 0.1.143
 - [2024/07] Release Auto-Coder 0.1.115
 - [2024/06] Release Auto-Coder 0.1.82
 - [2024/05] Release Auto-Coder 0.1.73
@@ -60,10 +61,5 @@ auto-coder.chat
 
 0. [Auto-Coder.Chat: 通向智能编程之路](https://uelng8wukz.feishu.cn/wiki/QIpkwpQo2iSdkwk9nP6cNSPlnPc)
 1. [Setup auto-coder](./docs/en/000-AutoCoder_Prepare_Journey.md)
-2. [AutoCoder_准备旅程](./docs/zh/000-AutoCoder_准备旅程.md)
 
-
-## Example Project
-
-https://github.com/allwefantasy/auto-coder.example
 
