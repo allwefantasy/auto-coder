@@ -1082,30 +1082,24 @@ def get_llm_friendly_package_docs(
 
     libs = list(memory.get("libs", {}).keys())
 
-    for root, dirs, _ in os.walk(llm_friendly_packages_dir):
-        for dir in dirs:
-            rel_path = os.path.join(root, dir)
-            # llm_friendly_packages -> domain -> username -> lib_name。
-            rel_path_parts = rel_path.split(os.sep)
-            if rel_path_parts[-1] in libs:
-                print(rel_path_parts[-4] == "llm_friendly_packages")
-
-            if (
-                len(rel_path_parts) >= 3
-                and rel_path_parts[-4] == "llm_friendly_packages"
-                and (package_name is None or rel_path_parts[-1] == package_name)
-                and rel_path_parts[-1] in libs
-            ):
-                package_docs = []
-                for root, dirs, files in os.walk(rel_path):
-                    for file in files:
-                        if file.endswith(".md"):
-                            if return_paths:
-                                package_docs.append(os.path.join(root, file))
-                            else:
-                                with open(os.path.join(root, file), "r") as f:
-                                    package_docs.append(f.read())
-                docs.extend(package_docs)
+    for domain in os.listdir(llm_friendly_packages_dir):
+        domain_path = os.path.join(llm_friendly_packages_dir, domain)
+        if os.path.isdir(domain_path):
+            for username in os.listdir(domain_path):
+                username_path = os.path.join(domain_path, username)
+                if os.path.isdir(username_path):
+                    for lib_name in os.listdir(username_path):
+                        lib_path = os.path.join(username_path, lib_name)
+                        if os.path.isdir(lib_path) and (package_name is None or lib_name == package_name) and lib_name in libs:
+                            for root, _, files in os.walk(lib_path):
+                                for file in files:
+                                    if file.endswith(".md"):
+                                        file_path = os.path.join(root, file)
+                                        if return_paths:
+                                            docs.append(file_path)
+                                        else:
+                                            with open(file_path, "r") as f:
+                                                docs.append(f.read())
 
     return docs
 
