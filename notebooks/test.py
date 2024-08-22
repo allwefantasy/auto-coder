@@ -1,20 +1,29 @@
-from prompt_toolkit import prompt
-from prompt_toolkit.application import run_in_terminal
-from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit import PromptSession
+from prompt_toolkit.formatted_text import FormattedText
+from prompt_toolkit.styles import Style
 
-bindings = KeyBindings()
+# 设置样式
+style = Style.from_dict({
+    'username': '#884444',
+    'at': '#00aa00',
+    'colon': '#0000aa',
+    'pound': '#00aa00',
+    'host': '#00ffff bg:#444400',
+})
 
-@bindings.add('c-t')
-def _(event):
-    " Say 'hello' when `c-t` is pressed. "
-    def print_hello():
-        print('ls /')
-    run_in_terminal(print_hello)
+# 设置提示信息
+prompt_message = [
+    ('class:username', 'user'),
+    ('class:at', '@'),
+    ('class:host', 'localhost'),
+    ('class:colon', ':'),
+    ('class:pound', '$ '),
+]
 
-@bindings.add('c-x')
-def _(event):
-    " Exit when `c-x` is pressed. "
-    event.app.exit()
+# 创建会话
+session = PromptSession()
 
-text = prompt('> ', key_bindings=bindings)
-print('You said: %s' % text)
+# 获取用户输入
+user_input = session.prompt(FormattedText(prompt_message), style=style)
+
+print(f"You entered: {user_input}")

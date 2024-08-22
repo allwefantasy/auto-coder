@@ -1765,7 +1765,7 @@ def main():
                     FormattedText(prompt_message), default=new_prompt, style=style
                 )
             else:
-                user_input = session.prompt(FormattedText(prompt_message, style=style))
+                user_input = session.prompt(FormattedText(prompt_message),style=style)
             new_prompt = ""
 
             if "mode" not in memory:
