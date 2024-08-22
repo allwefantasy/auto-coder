@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple, Generator
-from autocoder.common import AutoCoderArgs, SourceCode,SourceCode
+from autocoder.common import AutoCoderArgs, SourceCode
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from byzerllm import ByzerLLM
 from loguru import logger
@@ -19,14 +19,13 @@ class LongContextRAG:
     def _check_relevance(self, query: str, document: str) -> str:
         """
         请判断以下文档是否能够回答给出的问题。
-        
 
-        文档：        
+        文档：
         {{ document }}
 
         问题：{{ query }}
 
-        如果该文档提供的知识能够回答问题，那么请回复"yes" 否则回复"no"。        
+        如果该文档提供的知识能够回答问题，那么请回复"yes" 否则回复"no"。
         """
 
     @byzerllm.prompt()
@@ -55,7 +54,9 @@ class LongContextRAG:
                     with open(file_path, "r", encoding="utf-8") as f:
                         content = f.read()
                         relative_path = os.path.relpath(file_path, self.path)
-                        documents.append(SourceCode(module_name=relative_path, source_code=content))
+                        documents.append(
+                            SourceCode(module_name=relative_path, source_code=content)
+                        )
         return documents
 
     def stream_chat_oai(
@@ -70,10 +71,10 @@ class LongContextRAG:
 
         with ThreadPoolExecutor(
             max_workers=self.args.index_filter_workers or 5
-        ) as executor:
+        ) as executor:            
             future_to_doc = {
                 executor.submit(
-                    self._check_relevance.with_llm(self.llm).run, query, doc
+                    self._check_relevance.with_llm(self.llm).run, query, f"##File: {doc.module_name}\n{doc.source_code}"
                 ): doc
                 for doc in documents
             }
@@ -81,9 +82,10 @@ class LongContextRAG:
             for future in as_completed(future_to_doc):
                 try:
                     doc = future_to_doc[future]
-                    v = future.result()                    
+                    v = future.result()
+                    logger.info(f"Query: {query} Document: {doc.module_name}, Relevance: {v}")
                     if "yes" in v.strip().lower():
-                        relevant_docs.append(doc)
+                        relevant_docs.append(doc.source_code)
                 except Exception as exc:
                     logger.error(f"Document processing generated an exception: {exc}")
 
