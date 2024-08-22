@@ -19,14 +19,14 @@ class LongContextRAG:
     def _check_relevance(self, query: str, document: str) -> str:
         """
         请判断以下文档是否能够回答给出的问题。
-        只需回答"是"或"否"。
+        
+
+        文档：        
+        {{ document }}
 
         问题：{{ query }}
 
-        文档：
-        {{ document }}
-
-        回答：
+        只需回答"yes"或"no"。        
         """
 
     @byzerllm.prompt()
@@ -79,7 +79,9 @@ class LongContextRAG:
             for future in as_completed(future_to_doc):
                 try:
                     doc = future_to_doc[future]
-                    if "是" in future.result().strip().lower():
+                    v = future.result()
+                    print(v)
+                    if "yes" in v.strip().lower():
                         relevant_docs.append(doc)
                 except Exception as exc:
                     logger.error(f"Document processing generated an exception: {exc}")
