@@ -1408,6 +1408,7 @@ def index_build():
         with redirect_stdout() as output:
             auto_coder_main(["index", "--file", yaml_file])
         print(output.getvalue(), flush=True)
+        completer.refresh_files()
     finally:
         os.remove(yaml_file)
 
