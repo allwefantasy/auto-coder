@@ -73,15 +73,28 @@ class LongContextRAG:
                     if not any(file.endswith(ext) for ext in self.required_exts):
                         continue
                 else:
-                    if not file.endswith(".md"):
+                    if not file.endswith((".md", ".pdf", ".docx")):
                         continue
                 file_path = os.path.join(root, file)
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    relative_path = os.path.relpath(file_path, self.path)
+                relative_path = os.path.relpath(file_path, self.path)
+                
+                try:
+                    if file.endswith(".pdf"):
+                        with open(file_path, "rb") as f:
+                            content = self.extract_text_from_pdf(f.read())
+                    elif file.endswith(".docx"):
+                        with open(file_path, "rb") as f:
+                            content = self.extract_text_from_docx(f.read())
+                    else:
+                        with open(file_path, "r", encoding="utf-8") as f:
+                            content = f.read()
+                    
                     documents.append(
                         SourceCode(module_name=relative_path, source_code=content)
                     )
+                except Exception as e:
+                    logger.error(f"Error processing file {file_path}: {str(e)}")
+        
         return documents
 
     def stream_chat_oai(
