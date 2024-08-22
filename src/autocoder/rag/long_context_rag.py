@@ -93,5 +93,17 @@ class LongContextRAG:
             return ["没有找到相关的文档来回答这个问题。"], []
         else:
             relevant_docs = relevant_docs[:self.args.index_filter_file_num]
-            chunks = self._answer_question.with_llm(self.llm).run(query, relevant_docs)
+            context = "\n".join(relevant_docs)
+            
+            # 构建新的对话历史，包含除最后一条外的所有对话
+            new_conversations = conversations[:-1] + [
+                {"role": "user", "content": f"根据以下文档回答问题：\n\n{context}\n\n问题：{query}"}
+            ]
+            
+            chunks = self.llm.stream_chat_oai(
+                conversations=new_conversations,
+                model=model,
+                role_mapping=role_mapping,
+                llm_config=llm_config
+            )
             return chunks, []
