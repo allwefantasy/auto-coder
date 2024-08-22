@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple, Generator
-from autocoder.common import AutoCoderArgs,SourceCode
+from autocoder.common import AutoCoderArgs, SourceCode,SourceCode
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from byzerllm import ByzerLLM
 from loguru import logger
@@ -46,14 +46,16 @@ class LongContextRAG:
         回答：
         """
 
-    def _retrieve_documents(self) -> List[str]:
+    def _retrieve_documents(self) -> List[SourceCode]:
         documents = []
         for root, dirs, files in os.walk(self.path):
             for file in files:
                 if file.endswith(".md"):
                     file_path = os.path.join(root, file)
                     with open(file_path, "r", encoding="utf-8") as f:
-                        documents.append(f.read())
+                        content = f.read()
+                        relative_path = os.path.relpath(file_path, self.path)
+                        documents.append(SourceCode(module_name=relative_path, source_code=content))
         return documents
 
     def stream_chat_oai(
