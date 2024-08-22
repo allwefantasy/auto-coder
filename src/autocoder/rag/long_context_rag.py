@@ -71,10 +71,12 @@ class LongContextRAG:
 
         with ThreadPoolExecutor(
             max_workers=self.args.index_filter_workers or 5
-        ) as executor:            
+        ) as executor:
             future_to_doc = {
                 executor.submit(
-                    self._check_relevance.with_llm(self.llm).run, query, f"##File: {doc.module_name}\n{doc.source_code}"
+                    self._check_relevance.with_llm(self.llm).run,
+                    query,
+                    f"##File: {doc.module_name}\n{doc.source_code}",
                 ): doc
                 for doc in documents
             }
@@ -83,7 +85,9 @@ class LongContextRAG:
                 try:
                     doc = future_to_doc[future]
                     v = future.result()
-                    logger.info(f"Query: {query} Document: {doc.module_name}, Relevance: {v}")
+                    logger.info(
+                        f"Query: {query} Document: {doc.module_name}, Relevance: {v}"
+                    )
                     if "yes" in v.strip().lower():
                         relevant_docs.append(doc.source_code)
                 except Exception as exc:
@@ -92,18 +96,24 @@ class LongContextRAG:
         if not relevant_docs:
             return ["没有找到相关的文档来回答这个问题。"], []
         else:
-            relevant_docs = relevant_docs[:self.args.index_filter_file_num]
+            relevant_docs = relevant_docs[: self.args.index_filter_file_num]
             context = "\n".join(relevant_docs)
-            
+
             # 构建新的对话历史，包含除最后一条外的所有对话
             new_conversations = conversations[:-1] + [
-                {"role": "user", "content": f"根据以下文档回答问题：\n\n{context}\n\n问题：{query}"}
+                {
+                    "role": "user",
+                    "content": self._answer_question.prompt(
+                        query=query, relevant_docs=relevant_docs
+                    ),
+                }
             ]
-            
+
             chunks = self.llm.stream_chat_oai(
                 conversations=new_conversations,
                 model=model,
                 role_mapping=role_mapping,
-                llm_config=llm_config
+                llm_config=llm_config,
+                delta_mode=True,
             )
-            return chunks, []
+            return (chunk[0] for chunk in chunks), []
