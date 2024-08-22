@@ -1090,7 +1090,15 @@ def get_llm_friendly_package_docs(
                 if os.path.isdir(username_path):
                     for lib_name in os.listdir(username_path):
                         lib_path = os.path.join(username_path, lib_name)
-                        if os.path.isdir(lib_path) and (package_name is None or lib_name == package_name) and lib_name in libs:
+                        if (
+                            os.path.isdir(lib_path)
+                            and (
+                                package_name is None
+                                or lib_name == package_name
+                                or package_name == os.path.join(username, lib_name)
+                            )
+                            and lib_name in libs
+                        ):
                             for root, _, files in os.walk(lib_path):
                                 for file in files:
                                     if file.endswith(".md"):
@@ -1548,7 +1556,9 @@ def lib_command(args: List[str]):
         if not os.path.exists(llm_friendly_packages_dir):
             console.print("Cloning llm_friendly_packages repository...")
             try:
-                proxy_url = memory.get("lib-proxy","https://github.com/allwefantasy/llm_friendly_packages")
+                proxy_url = memory.get(
+                    "lib-proxy", "https://github.com/allwefantasy/llm_friendly_packages"
+                )
                 git.Repo.clone_from(
                     proxy_url,
                     llm_friendly_packages_dir,
@@ -1605,14 +1615,14 @@ def lib_command(args: List[str]):
                 repo = git.Repo(llm_friendly_packages_dir)
                 origin = repo.remotes.origin
                 proxy_url = memory.get("lib-proxy")
-                
-                current_url = origin.url                                
+
+                current_url = origin.url
 
                 if proxy_url and proxy_url != current_url:
                     new_url = proxy_url
                     origin.set_url(new_url)
                     console.print(f"Updated remote URL to: {new_url}")
-                
+
                 origin.pull()
                 console.print("Successfully updated llm_friendly_packages repository")
 
@@ -1760,7 +1770,7 @@ def main():
                     FormattedText(prompt_message), default=new_prompt, style=style
                 )
             else:
-                user_input = session.prompt(FormattedText(prompt_message),style=style)
+                user_input = session.prompt(FormattedText(prompt_message), style=style)
             new_prompt = ""
 
             if "mode" not in memory:
@@ -1855,7 +1865,7 @@ def main():
                 lib_command(args)
 
             elif user_input.startswith("/debug"):
-                code = user_input[len("/debug"):].strip()
+                code = user_input[len("/debug") :].strip()
                 try:
                     result = eval(code)
                     print(f"Debug result: {result}")
