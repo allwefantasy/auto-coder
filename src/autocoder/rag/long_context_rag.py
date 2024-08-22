@@ -14,6 +14,7 @@ class LongContextRAG:
         self.llm = llm
         self.args = args
         self.path = path
+        self.required_exts = [ext.strip() for ext in self.args.required_exts.split(",")] if self.args.required_exts else []
 
     @byzerllm.prompt()
     def _check_relevance(self, query: str, document: str) -> str:
@@ -49,14 +50,19 @@ class LongContextRAG:
         documents = []
         for root, dirs, files in os.walk(self.path):
             for file in files:
-                if file.endswith(".md"):
-                    file_path = os.path.join(root, file)
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                        relative_path = os.path.relpath(file_path, self.path)
-                        documents.append(
-                            SourceCode(module_name=relative_path, source_code=content)
-                        )
+                if self.required_exts:
+                    if not any(file.endswith(ext) for ext in self.required_exts):
+                        continue
+                else:
+                    if not file.endswith(".md"):
+                        continue
+                file_path = os.path.join(root, file)
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    relative_path = os.path.relpath(file_path, self.path)
+                    documents.append(
+                        SourceCode(module_name=relative_path, source_code=content)
+                    )
         return documents
 
     def stream_chat_oai(
