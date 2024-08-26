@@ -40,7 +40,7 @@ class LongContextRAG:
             if not self.path:
                 raise ValueError("Please provide the path to the documents in the local file system.")
 
-        self.gitignore_spec = self._load_gitignore()    
+        self.ignore_spec = self._load_ignore_file()    
 
     def extract_text_from_pdf(self, pdf_content):
         pdf_file = BytesIO(pdf_content)
@@ -85,11 +85,16 @@ class LongContextRAG:
         回答：
         """
 
-    def _load_gitignore(self):
+    def _load_ignore_file(self):
+        serveignore_path = os.path.join(self.path, '.serveignore')
         gitignore_path = os.path.join(self.path, '.gitignore')
-        if os.path.exists(gitignore_path):
-            with open(gitignore_path, 'r') as gitignore_file:
-                return pathspec.PathSpec.from_lines('gitwildmatch', gitignore_file)
+        
+        if os.path.exists(serveignore_path):
+            with open(serveignore_path, 'r') as ignore_file:
+                return pathspec.PathSpec.from_lines('gitwildmatch', ignore_file)
+        elif os.path.exists(gitignore_path):
+            with open(gitignore_path, 'r') as ignore_file:
+                return pathspec.PathSpec.from_lines('gitwildmatch', ignore_file)
         return None
     
     def _retrieve_documents(self) -> List[SourceCode]:
@@ -98,10 +103,10 @@ class LongContextRAG:
             # 过滤掉隐藏目录
             dirs[:] = [d for d in dirs if not d.startswith('.')]
 
-            # 应用 .gitignore 规则
-            if self.gitignore_spec:
-                dirs[:] = [d for d in dirs if not self.gitignore_spec.match_file(os.path.join(root, d))]
-                files = [f for f in files if not self.gitignore_spec.match_file(os.path.join(root, f))]
+            # 应用 .serveignore 或 .gitignore 规则
+            if self.ignore_spec:
+                dirs[:] = [d for d in dirs if not self.ignore_spec.match_file(os.path.join(root, d))]
+                files = [f for f in files if not self.ignore_spec.match_file(os.path.join(root, f))]
             
             for file in files:
                 if self.required_exts:
