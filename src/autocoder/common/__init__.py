@@ -254,7 +254,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     enable_rag_context: Optional[Union[bool, str]] = False
     rag_url: Optional[str] = ""
     rag_token: Optional[str] = ""
-    rag_type: Optional[str] = "storage"
+    rag_type: Optional[str] = "storage"    
 
     auto_merge: Optional[Union[bool, str]] = False
     image_file: Optional[str] = ""

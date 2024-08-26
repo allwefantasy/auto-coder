@@ -22,7 +22,6 @@ paramiko
 tqdm
 loguru
 pyjava>=0.6.21
-tiktoken
 fastapi
 uvicorn
 retrying
@@ -32,6 +31,7 @@ tiktoken
 tabulate
 jupyter_client
 prompt-toolkit
+tokenizers
 
 # dependencies only for stable_diffusion
 # safetensors

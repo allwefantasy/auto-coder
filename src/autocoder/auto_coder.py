@@ -348,7 +348,7 @@ def main(input_args: Optional[List[str]] = None):
                 code_model.add_event_callback(
                     EventName.BEFORE_CALL_MODEL, intercept_callback
                 )
-        llm.add_event_callback(EventName.AFTER_CALL_MODEL, token_counter_interceptor)
+        # llm.add_event_callback(EventName.AFTER_CALL_MODEL, token_counter_interceptor)
 
         code_model = llm.get_sub_client("code_model")
         if code_model:

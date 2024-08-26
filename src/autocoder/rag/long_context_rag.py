@@ -40,7 +40,7 @@ class LongContextRAG:
             if not self.path:
                 raise ValueError("Please provide the path to the documents in the local file system.")
 
-        self.ignore_spec = self._load_ignore_file()    
+        self.ignore_spec = self._load_ignore_file()                   
 
     def extract_text_from_pdf(self, pdf_content):
         pdf_file = BytesIO(pdf_content)
@@ -54,6 +54,9 @@ class LongContextRAG:
         docx_file = BytesIO(docx_content)
         text = docx2txt.process(docx_file)
         return text
+
+    def count_tokens(self, text):
+            
 
     @byzerllm.prompt()
     def _check_relevance(self, query: str, document: str) -> str:
@@ -112,9 +115,7 @@ class LongContextRAG:
                 if self.required_exts:
                     if not any(file.endswith(ext) for ext in self.required_exts):
                         continue
-                else:
-                    if not file.endswith((".md", ".pdf", ".docx")):
-                        continue
+                                                        
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, self.path)
 
@@ -202,7 +203,8 @@ class LongContextRAG:
                 if "yes" in v.strip().lower():
                     relevant_docs.append(doc)
             except Exception as exc:
-                logger.error(f"Document processing generated an exception: {exc}")
+                logger.error(f"Document processing generated an exception: {exc}")        
+
         return relevant_docs
 
     def stream_chat_oai(
@@ -239,8 +241,11 @@ class LongContextRAG:
                 pass
                         
             relevant_docs: List[SourceCode] = self._filter_docs(query)
+            
             logger.info(f"Query: {query} Relevant docs: {len(relevant_docs)} only_contexts: {only_contexts}")
-
+            for doc in relevant_docs:                
+                logger.info(f"Relevant doc: {doc.module_name}") 
+        
             if only_contexts:
                 return (doc.model_dump_json() + "\n" for doc in relevant_docs), []
 
