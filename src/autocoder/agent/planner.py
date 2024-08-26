@@ -5,8 +5,6 @@ from autocoder.pyproject import PyProject
 from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
 from autocoder.common import AutoCoderArgs,SourceCode
-from autocoder.rag.simple_rag import SimpleRAG
-from byzerllm.apps.llama_index.byzerai import ByzerAI
 from loguru import logger
 import os
 import byzerllm
@@ -174,7 +172,8 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
             args.collections="auto-coder"  
 
         logger.info(f"collections: {args.collections}")
-        rag = SimpleRAG(llm=llm, args=args, path="")
+        from autocoder.rag.rag_entry import RAGFactory
+        rag = RAGFactory.get_rag(llm=llm, args=args, path="")
         source_codes = rag.search(query)
 
         args.enable_rag_search = old_enable_rag_search
@@ -200,6 +199,7 @@ class Planner:
         self.tools = get_tools(args=args, llm=llm)    
 
     def run(self, query: str, max_iterations: int = 10):
+        from byzerllm.apps.llama_index.byzerai import ByzerAI
         agent = ReActAgent.from_tools(
             tools=self.tools,
             llm=ByzerAI(llm=self.llm),

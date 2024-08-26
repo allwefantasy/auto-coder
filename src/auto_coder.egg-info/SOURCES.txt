@@ -65,6 +65,7 @@ src/autocoder/rag/__init__.py
 src/autocoder/rag/api_server.py
 src/autocoder/rag/llm_wrapper.py
 src/autocoder/rag/long_context_rag.py
+src/autocoder/rag/rag_entry.py
 src/autocoder/rag/simple_directory_reader.py
 src/autocoder/rag/simple_rag.py
 src/autocoder/rag/types.py

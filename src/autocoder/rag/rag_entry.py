@@ -3,8 +3,9 @@ from autocoder.common import AutoCoderArgs, SourceCode
 from byzerllm import ByzerLLM
 from .simple_rag import SimpleRAG
 from .long_context_rag import LongContextRAG
-
 class RAGFactory:
+    
+    
     @staticmethod
     def get_rag(llm: ByzerLLM, args: AutoCoderArgs, path: str) -> SimpleRAG | LongContextRAG:
         """

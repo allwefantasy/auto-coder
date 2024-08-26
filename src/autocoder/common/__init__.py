@@ -245,13 +245,17 @@ class AutoCoderArgs(pydantic.BaseModel):
     skip_filter_index: Optional[bool] = False
     print_request: Optional[bool] = False
     py_packages: Optional[str] = ""
+    
     search: Optional[Union[str, List[str]]] = ""
     search_engine: Optional[str] = ""
     search_engine_token: Optional[str] = ""
+    
     enable_rag_search: Optional[Union[bool, str]] = False
     enable_rag_context: Optional[Union[bool, str]] = False
     rag_url: Optional[str] = ""
     rag_token: Optional[str] = ""
+    rag_type: Optional[str] = "storage"
+
     auto_merge: Optional[Union[bool, str]] = False
     image_file: Optional[str] = ""
     image_mode: Optional[str] = "direct"
@@ -277,8 +281,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     base_dir: Optional[str] = None
     context: Optional[str] = None
     editblock_similarity: Optional[float] = 0.9
-    new_session: Optional[bool] = False
-    rag_type: Optional[str] = "simple"
+    new_session: Optional[bool] = False    
 
     class Config:
         protected_namespaces = ()

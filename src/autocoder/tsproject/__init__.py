@@ -1,7 +1,6 @@
 from autocoder.common import SourceCode, AutoCoderArgs
 from autocoder import common as FileUtils
 from autocoder.utils.rest import HttpDoc
-from autocoder.rag.simple_rag import SimpleRAG
 import os
 from typing import Optional, Generator, List, Dict, Any
 
@@ -186,7 +185,8 @@ class TSProject:
     def get_rag_source_codes(self):
         if not self.args.enable_rag_search and not self.args.enable_rag_context:
             return []
-        rag = SimpleRAG(self.llm, self.args, self.args.source_dir)
+        from autocoder.rag.rag_entry import RAGFactory
+        rag = RAGFactory.get_rag(self.llm, self.args, "")
         docs = rag.search(self.args.query)
         for doc in docs:
             doc.tag = "RAG"

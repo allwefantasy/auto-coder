@@ -101,6 +101,10 @@ You can set the collection by passing the `--collections`argument in command lin
                 raise ValueError(
                     "You are in client mode, please provide the RAG URL. e.g. rag_url: http://localhost:8000/v1"
                 )
+            
+            if not args.rag_url.startswith("http://"):
+                raise ValueError("The RAG URL should start with http://")
+            
             self.client = OpenAI(api_key=args.rag_token, base_url=args.rag_url)
 
     def _get_indices(self) -> List[Tuple[CollectionItem, VectorStoreIndex]]:

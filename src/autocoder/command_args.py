@@ -124,13 +124,13 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         help=desc["enable_rag_context"],
     )
 
-parser.add_argument("--rag_token", default="", help="")
-parser.add_argument("--rag_url", default="", help="")
-parser.add_argument("--rag_type", default="simple", help="RAG type, default is simple")
+    parser.add_argument("--rag_token", default="", help="")
+    parser.add_argument("--rag_url", default="", help="")
+    parser.add_argument("--rag_type", default="storage", help="RAG type, default is storage")
 
-parser.add_argument(
-        "--auto_merge", nargs="?", const=True, default=False, help=desc["auto_merge"]
-    )
+    parser.add_argument(
+            "--auto_merge", nargs="?", const=True, default=False, help=desc["auto_merge"]
+        )
     parser.add_argument(
         "--editblock_similarity",
         type=float,
@@ -360,7 +360,7 @@ parser.add_argument(
 
     chat_parser.add_argument("--rag_token", default="", help="")
     chat_parser.add_argument("--rag_url", default="", help="")
-    chat_parser.add_argument("--rag_type", default="simple", help="RAG type, default is simple")
+    chat_parser.add_argument("--rag_type", default="storage", help="RAG type (simple/storage), default is storage")
     chat_parser.add_argument("--target_file", default="./output.txt", help="")
     chat_parser.add_argument(
         "--new_session",
@@ -420,7 +420,7 @@ parser.add_argument(
 
     read_project_parser.add_argument("--rag_token", default="", help="")
     read_project_parser.add_argument("--rag_url", default="", help="")
-    read_project_parser.add_argument("--rag_type", default="simple", help="RAG type, default is simple")
+    read_project_parser.add_argument("--rag_type", default="storage", help="RAG type, default is storage")
     read_project_parser.add_argument("--target_file", default="./output.txt", help="")
 
     voice2text_parser = agent_subparsers.add_parser(
@@ -491,7 +491,7 @@ parser.add_argument(
 
     auto_tool_parser.add_argument("--rag_token", default="", help="")
     auto_tool_parser.add_argument("--rag_url", default="", help="")
-    auto_tool_parser.add_argument("--rag_type", default="simple", help="RAG type, default is simple")
+    auto_tool_parser.add_argument("--rag_type", default="storage", help="RAG type, default is storage")
     auto_tool_parser.add_argument("--target_file", default="./output.txt", help="")
 
     planner_parser = agent_subparsers.add_parser(
@@ -532,7 +532,7 @@ parser.add_argument(
 
     planner_parser.add_argument("--rag_token", default="", help="")
     planner_parser.add_argument("--rag_url", default="", help="")
-    planner_parser.add_argument("--rag_type", default="simple", help="RAG type, default is simple")
+    planner_parser.add_argument("--rag_type", default="storage", help="RAG type, default is storage")
     planner_parser.add_argument("--target_file", default="./output.txt", help="")
 
     init_parser = subparsers.add_parser("init", help=desc["init_desc"])

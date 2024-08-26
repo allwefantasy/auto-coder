@@ -8,8 +8,6 @@ from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.common.interpreter import Interpreter
 from autocoder.common import ExecuteSteps, ExecuteStep, detect_env
 from autocoder.common import code_auto_execute
-from autocoder.rag.simple_rag import SimpleRAG
-from byzerllm.apps.llama_index.byzerai import ByzerAI
 from loguru import logger
 import os
 import io
@@ -21,7 +19,6 @@ import contextlib2
 from pydantic import BaseModel
 from byzerllm.types import Bool
 from contextlib import contextmanager
-import fnmatch
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
@@ -455,6 +452,7 @@ class ProjectReader:
         return self.pp.get_tree_like_directory_structure.prompt()
 
     def run(self, query: str, max_iterations: int = 20):
+        from byzerllm.apps.llama_index.byzerai import ByzerAI
         agent = ReActAgent.from_tools(
             tools=self.tools,
             llm=ByzerAI(llm=self.llm),

@@ -289,7 +289,7 @@ def main(input_args: Optional[List[str]] = None):
                 except Exception:
                     logger.warning(
                         "pyperclip not installed or clipboard is not suppored, instruction will not be copied to clipboard."
-                    )                
+                    )
 
                 if args.request_id and not args.silence:
                     event_data = {
@@ -606,7 +606,8 @@ def main(input_args: Optional[List[str]] = None):
             return
 
         elif raw_args.agent_command == "chat":
-            from autocoder.rag.simple_rag import SimpleRAG            
+            from autocoder.rag.rag_entry import RAGFactory
+
             memory_dir = os.path.join(args.source_dir, ".auto-coder", "memory")
             os.makedirs(memory_dir, exist_ok=True)
             memory_file = os.path.join(memory_dir, "chat_history.json")
@@ -653,7 +654,7 @@ def main(input_args: Optional[List[str]] = None):
             )
 
             if args.collection or args.collections:
-                rag = SimpleRAG(llm=llm, args=args, path=args.source_dir)
+                rag = RAGFactory.get_rag(llm=llm, args=args, path="")
                 response = rag.stream_chat_oai(conversations=loaded_conversations)[0]
                 v = ([item, None] for item in response)
             else:
@@ -720,16 +721,18 @@ def main(input_args: Optional[List[str]] = None):
         return
 
     if raw_args.command == "doc":
-            
+
         if raw_args.doc_command == "build":
-            from autocoder.rag.simple_rag import SimpleRAG
-            rag = SimpleRAG(llm=llm, args=args, path=args.source_dir)
+            from autocoder.rag.rag_entry import RAGFactory
+
+            rag = RAGFactory.get_rag(llm=llm, args=args, path=args.source_dir)
             rag.build()
             print("Successfully built the document index")
             return
         elif raw_args.doc_command == "query":
-            from autocoder.rag.simple_rag import SimpleRAG
-            rag = SimpleRAG(llm=llm, args=args, path="")
+            from autocoder.rag.rag_entry import RAGFactory
+
+            rag = RAGFactory.get_rag(llm=llm, args=args, path="")
             response, contexts = rag.stream_search(args.query)
 
             s = ""
@@ -750,25 +753,28 @@ def main(input_args: Optional[List[str]] = None):
                 executor.run(query=args.query, context=s, source_code="")
             return
         elif raw_args.doc_command == "chat":
-            from autocoder.rag.simple_rag import SimpleRAG
-            rag = SimpleRAG(llm=llm, args=args, path="")
+            from autocoder.rag.rag_entry import RAGFactory
+
+            rag = RAGFactory.get_rag(llm=llm, args=args, path="")
             rag.stream_chat_repl(args.query)
             return
 
         elif raw_args.doc_command == "serve":
-                   
+
             from autocoder.rag.llm_wrapper import LLWrapper
+
             server_args = ServerArgs(
                 **{arg: getattr(raw_args, arg) for arg in vars(ServerArgs())}
             )
             server_args.served_model_name = server_args.served_model_name or args.model
+            from autocoder.rag.rag_entry import RAGFactory
+
             if server_args.doc_dir:
-                from autocoder.rag.long_context_rag import LongContextRAG
-                rag = LongContextRAG(llm=llm, args=args, path=server_args.doc_dir)
+                args.rag_type = "simple"
+                rag = RAGFactory.get_rag(llm=llm, args=args, path=server_args.doc_dir)
             else:
-                from autocoder.rag.simple_rag import SimpleRAG          
-                rag = SimpleRAG(llm=llm, args=args, path="")
-                
+                rag = RAGFactory.get_rag(llm=llm, args=args, path="")
+
             llm_wrapper = LLWrapper(llm=llm, rag=rag)
             serve(llm=llm_wrapper, args=server_args)
             return

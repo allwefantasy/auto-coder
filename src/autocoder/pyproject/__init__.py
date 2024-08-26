@@ -10,7 +10,6 @@ import byzerllm
 import importlib
 import pkgutil
 from autocoder.common.search import Search, SearchEngine
-from autocoder.rag.simple_rag import SimpleRAG
 
 from loguru import logger
 import re
@@ -226,7 +225,8 @@ class PyProject:
     def get_rag_source_codes(self):
         if not self.args.enable_rag_search and not self.args.enable_rag_context:
             return []
-        rag = SimpleRAG(self.llm, self.args, self.args.source_dir)
+        from autocoder.rag.rag_entry import RAGFactory
+        rag = RAGFactory.get_rag(self.llm, self.args, "")
         docs = rag.search(self.args.query)
         for doc in docs:
             doc.tag = "RAG"
