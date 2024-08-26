@@ -125,7 +125,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     )
 
     parser.add_argument("--rag_token", default="", help="")
-    parser.add_argument("--rag_url", default="", help="")
+    parser.add_argument("--rag_url", default="", help="")    
 
     parser.add_argument(
         "--auto_merge", nargs="?", const=True, default=False, help=desc["auto_merge"]
