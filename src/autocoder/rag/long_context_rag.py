@@ -53,10 +53,7 @@ class LongContextRAG:
     def extract_text_from_docx(self, docx_content):
         docx_file = BytesIO(docx_content)
         text = docx2txt.process(docx_file)
-        return text
-
-    def count_tokens(self, text):
-            
+        return text              
 
     @byzerllm.prompt()
     def _check_relevance(self, query: str, document: str) -> str:
