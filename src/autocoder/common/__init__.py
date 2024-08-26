@@ -278,6 +278,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     context: Optional[str] = None
     editblock_similarity: Optional[float] = 0.9
     new_session: Optional[bool] = False
+    rag_type: Optional[str] = "simple"
 
     class Config:
         protected_namespaces = ()
