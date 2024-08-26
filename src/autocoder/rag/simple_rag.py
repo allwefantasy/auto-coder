@@ -5,7 +5,6 @@ from autocoder.rag.simple_directory_reader import AutoCoderSimpleDirectoryReader
 import fsspec
 
 from byzerllm.apps.llama_index.simple_retrieval import SimpleRetrieval
-from byzerllm.apps.llama_index import get_service_context, get_storage_context
 from byzerllm.apps.llama_index.collection_manager import (
     CollectionManager,
     CollectionItem,
@@ -55,6 +54,8 @@ def file_metadata_func(
 
 class SimpleRAG:
     def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs, path: str) -> None:
+        from byzerllm.apps.llama_index import get_service_context, get_storage_context
+
         self.llm = llm
         self.args = args
         self.path = path

@@ -18,7 +18,7 @@ class RAGFactory:
         Returns:
             SimpleRAG or LongContextRAG: The appropriate RAG implementation.
         """
-        if args.rag_type == "long_context":
+        if args.rag_type == "simple":
             return LongContextRAG(llm, args, path)
         else:
             return SimpleRAG(llm, args, path)
@@ -68,23 +68,3 @@ class RAGManager:
         Build the RAG index using the appropriate implementation.
         """
         self.rag.build()
-
-def rag_search(llm: ByzerLLM, args: AutoCoderArgs, path: str, query: str) -> List[SourceCode]:
-    rag_manager = RAGManager(llm, args, path)
-    return rag_manager.search(query)
-
-def rag_stream_chat_oai(
-    llm: ByzerLLM,
-    args: AutoCoderArgs,
-    path: str,
-    conversations: List[Dict[str, Any]],
-    model: Optional[str] = None,
-    role_mapping: Optional[Dict[str, str]] = None,
-    llm_config: Dict[str, Any] = {},
-):
-    rag_manager = RAGManager(llm, args, path)
-    return rag_manager.stream_chat_oai(conversations, model, role_mapping, llm_config)
-
-def rag_build(llm: ByzerLLM, args: AutoCoderArgs, path: str):
-    rag_manager = RAGManager(llm, args, path)
-    rag_manager.build()
