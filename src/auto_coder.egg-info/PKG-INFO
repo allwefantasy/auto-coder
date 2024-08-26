@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.147
+Version: 0.1.150
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -15,7 +15,6 @@ Requires-Dist: paramiko
 Requires-Dist: tqdm
 Requires-Dist: loguru
 Requires-Dist: pyjava>=0.6.21
-Requires-Dist: tiktoken
 Requires-Dist: fastapi
 Requires-Dist: uvicorn
 Requires-Dist: retrying
@@ -25,7 +24,8 @@ Requires-Dist: tiktoken
 Requires-Dist: tabulate
 Requires-Dist: jupyter_client
 Requires-Dist: prompt-toolkit
-Requires-Dist: byzerllm[saas]>=0.1.128
+Requires-Dist: tokenizers
+Requires-Dist: byzerllm[saas]>=0.1.129
 Requires-Dist: patch
 Requires-Dist: diff_match_patch
 Requires-Dist: GitPython
@@ -42,6 +42,7 @@ Requires-Dist: pyperclip
 Requires-Dist: colorama
 Requires-Dist: pylint
 Requires-Dist: reportlab
+Requires-Dist: pathspec
 
 <p align="center">
   <picture>    

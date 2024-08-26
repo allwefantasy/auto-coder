@@ -6,7 +6,6 @@ paramiko
 tqdm
 loguru
 pyjava>=0.6.21
-tiktoken
 fastapi
 uvicorn
 retrying
@@ -16,7 +15,8 @@ tiktoken
 tabulate
 jupyter_client
 prompt-toolkit
-byzerllm[saas]>=0.1.128
+tokenizers
+byzerllm[saas]>=0.1.129
 patch
 diff_match_patch
 GitPython
@@ -33,3 +33,4 @@ pyperclip
 colorama
 pylint
 reportlab
+pathspec
