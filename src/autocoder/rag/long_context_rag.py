@@ -9,6 +9,7 @@ from io import BytesIO
 from pypdf import PdfReader
 import docx2txt
 import byzerllm
+from openai import OpenAI
 
 
 class LongContextRAG:
@@ -21,6 +22,15 @@ class LongContextRAG:
             if self.args.required_exts
             else []
         )
+
+        if args.rag_url:
+            if not args.rag_token:
+                raise ValueError(
+                    "You are in client mode, please provide the RAG token. e.g. rag_token: your_token_here"
+                )
+            self.client = OpenAI(api_key=args.rag_token, base_url=args.rag_url)
+        else:
+            self.client = None
 
     def extract_text_from_pdf(self, pdf_content):
         pdf_file = BytesIO(pdf_content)
@@ -106,55 +116,84 @@ class LongContextRAG:
         model: Optional[str] = None,
         role_mapping=None,
         llm_config: Dict[str, Any] = {},
-    ):
-        query = conversations[-1]["content"]
-        documents = self._retrieve_documents()
+    def search(self, query: str) -> List[SourceCode]:
+        if self.client:
+            target_query = query
+            if isinstance(self.args.enable_rag_search, str):
+                target_query = self.args.enable_rag_search
 
-        with ThreadPoolExecutor(
-            max_workers=self.args.index_filter_workers or 5
-        ) as executor:
-            future_to_doc = {
-                executor.submit(
-                    self._check_relevance.with_llm(self.llm).run,
-                    query,
-                    f"##File: {doc.module_name}\n{doc.source_code}",
-                ): doc
-                for doc in documents
-            }
-            relevant_docs = []
-            for future in as_completed(future_to_doc):
-                try:
-                    doc = future_to_doc[future]
-                    v = future.result()
-                    logger.info(
-                        f"Query: {query} Document: {doc.module_name}, Relevance: {v}"
-                    )
-                    if "yes" in v.strip().lower():
-                        relevant_docs.append(doc.source_code)
-                except Exception as exc:
-                    logger.error(f"Document processing generated an exception: {exc}")
-
-        if not relevant_docs:
-            return ["没有找到相关的文档来回答这个问题。"], []
-        else:
-            relevant_docs = relevant_docs[: self.args.index_filter_file_num]
-            context = "\n".join(relevant_docs)
-
-            # 构建新的对话历史，包含除最后一条外的所有对话
-            new_conversations = conversations[:-1] + [
-                {
-                    "role": "user",
-                    "content": self._answer_question.prompt(
-                        query=query, relevant_docs=relevant_docs
-                    ),
-                }
-            ]
-
-            chunks = self.llm.stream_chat_oai(
-                conversations=new_conversations,
-                model=model,
-                role_mapping=role_mapping,
-                llm_config=llm_config,
-                delta_mode=True,
+            response = self.client.chat.completions.create(
+                messages=[{"role": "user", "content": target_query}],
+                model="xxxx",  # Replace with appropriate model name
             )
-            return (chunk[0] for chunk in chunks), []
+    def stream_chat_oai(
+        self,
+        conversations,
+        model: Optional[str] = None,
+        role_mapping=None,
+        llm_config: Dict[str, Any] = {},
+    ):
+        if self.client:
+            query = conversations[-1]["content"]
+            response = self.client.chat.completions.create(
+                model="xxxx",  # Replace with appropriate model name
+                messages=conversations,
+                stream=True
+            )
+            def response_generator():
+                for chunk in response:
+                    if chunk.choices[0].delta.content is not None:
+                        yield chunk.choices[0].delta.content
+            return response_generator(), []
+        else:
+            query = conversations[-1]["content"]
+            documents = self._retrieve_documents()
+
+            with ThreadPoolExecutor(
+                max_workers=self.args.index_filter_workers or 5
+            ) as executor:
+                future_to_doc = {
+                    executor.submit(
+                        self._check_relevance.with_llm(self.llm).run,
+                        query,
+                        f"##File: {doc.module_name}\n{doc.source_code}",
+                    ): doc
+                    for doc in documents
+                }
+                relevant_docs = []
+                for future in as_completed(future_to_doc):
+                    try:
+                        doc = future_to_doc[future]
+                        v = future.result()
+                        logger.info(
+                            f"Query: {query} Document: {doc.module_name}, Relevance: {v}"
+                        )
+                        if "yes" in v.strip().lower():
+                            relevant_docs.append(doc.source_code)
+                    except Exception as exc:
+                        logger.error(f"Document processing generated an exception: {exc}")
+
+            if not relevant_docs:
+                return ["没有找到相关的文档来回答这个问题。"], []
+            else:
+                relevant_docs = relevant_docs[: self.args.index_filter_file_num]
+                context = "\n".join(relevant_docs)
+
+                # 构建新的对话历史，包含除最后一条外的所有对话
+                new_conversations = conversations[:-1] + [
+                    {
+                        "role": "user",
+                        "content": self._answer_question.prompt(
+                            query=query, relevant_docs=relevant_docs
+                        ),
+                    }
+                ]
+
+                chunks = self.llm.stream_chat_oai(
+                    conversations=new_conversations,
+                    model=model,
+                    role_mapping=role_mapping,
+                    llm_config=llm_config,
+                    delta_mode=True,
+                )
+                return (chunk[0] for chunk in chunks), []
