@@ -32,6 +32,54 @@ class LongContextRAG:
         else:
             self.client = None
 
+    def search(self, query: str) -> List[SourceCode]:
+        if self.client:
+            return self._search_with_client(query)
+        else:
+            return self._search_locally(query)
+
+    def _search_with_client(self, query: str) -> List[SourceCode]:
+        target_query = query
+        if isinstance(self.args.enable_rag_search, str):
+            target_query = self.args.enable_rag_search
+
+        response = self.client.chat.completions.create(
+            model="xxxx",  # Replace with appropriate model name
+            messages=[{"role": "user", "content": target_query}],
+        )
+        return [
+            SourceCode(
+                module_name=f"RAG:{target_query}",
+                source_code=response.choices[0].message.content,
+            )
+        ]
+
+    def _search_locally(self, query: str) -> List[SourceCode]:
+        if self.args.enable_rag_search:
+            target_query = query
+            if isinstance(self.args.enable_rag_search, str):
+                target_query = self.args.enable_rag_search
+            texts, contexts = self.stream_search(target_query)
+            s = "".join([text for text in texts])
+            urls = ",".join(set([context["doc_url"] for context in contexts]))
+            return [SourceCode(module_name=f"RAG:{urls}", source_code=s)]
+        elif self.args.enable_rag_context:
+            target_query = query
+            if isinstance(self.args.enable_rag_context, str):
+                target_query = self.args.enable_rag_context
+            contexts = self.retrieve(target_query)
+            results = []
+            for context in contexts:
+                try:
+                    with open(context["doc_url"], "r") as f:
+                        raw_content = f.read()
+                except Exception as e:
+                    logger.warning(f"Error reading file {context['doc_url']}: {e}")
+                    raw_content = context["raw_chunk"]
+                results.append(SourceCode(module_name=context["doc_url"], source_code=raw_content))
+            return results
+        return []
+
     def extract_text_from_pdf(self, pdf_content):
         pdf_file = BytesIO(pdf_content)
         pdf_reader = PdfReader(pdf_file)
