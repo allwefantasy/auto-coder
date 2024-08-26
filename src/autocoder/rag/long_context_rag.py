@@ -96,6 +96,9 @@ class LongContextRAG:
                     logger.error(f"Error processing file {file_path}: {str(e)}")
         
         return documents
+    
+    def build(self):
+        pass
 
     def stream_chat_oai(
         self,
