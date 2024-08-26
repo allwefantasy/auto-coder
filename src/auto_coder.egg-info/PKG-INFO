@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.146
+Version: 0.1.147
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -25,7 +25,7 @@ Requires-Dist: tiktoken
 Requires-Dist: tabulate
 Requires-Dist: jupyter_client
 Requires-Dist: prompt-toolkit
-Requires-Dist: byzerllm[saas]>=0.1.127
+Requires-Dist: byzerllm[saas]>=0.1.128
 Requires-Dist: patch
 Requires-Dist: diff_match_patch
 Requires-Dist: GitPython
