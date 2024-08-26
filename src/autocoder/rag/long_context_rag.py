@@ -109,23 +109,7 @@ class LongContextRAG:
     
     def build(self):
         pass
-
-    def stream_chat_oai(
-        self,
-        conversations,
-        model: Optional[str] = None,
-        role_mapping=None,
-        llm_config: Dict[str, Any] = {},
-    def search(self, query: str) -> List[SourceCode]:
-        if self.client:
-            target_query = query
-            if isinstance(self.args.enable_rag_search, str):
-                target_query = self.args.enable_rag_search
-
-            response = self.client.chat.completions.create(
-                messages=[{"role": "user", "content": target_query}],
-                model="xxxx",  # Replace with appropriate model name
-            )
+       
     def stream_chat_oai(
         self,
         conversations,
