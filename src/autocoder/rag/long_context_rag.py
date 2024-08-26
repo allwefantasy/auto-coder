@@ -85,6 +85,9 @@ class LongContextRAG:
     def _retrieve_documents(self) -> List[SourceCode]:
         documents = []
         for root, dirs, files in os.walk(self.path):
+            # 过滤掉隐藏目录
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
+            
             for file in files:
                 if self.required_exts:
                     if not any(file.endswith(ext) for ext in self.required_exts):
