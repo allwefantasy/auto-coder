@@ -101,9 +101,6 @@ class LongContextRAG:
         return text
 
     def extract_text_from_excel(self, excel_path) -> List[Tuple[str, str]]:
-        # 从路径中获得文件名
-        file_name = os.path.basename(excel_path)
-
         sheet_list = []
         wb = load_workbook(excel_path)
         tmpl = Template(
@@ -119,7 +116,7 @@ class LongContextRAG:
             rows = [row for row in rows if any(row)]
             # 所有的None都转换成空字符串
             rows = [[cell if cell is not None else "" for cell in row] for row in rows]
-            content = tmpl.render(filename=file_name, sheet=ws.title, rows=rows)
+            content = tmpl.render(sheet=ws.title, rows=rows)
             sheet_list.append([excel_path + f"#{ws.title}", content])
         return sheet_list
 
