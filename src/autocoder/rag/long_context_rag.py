@@ -1,16 +1,22 @@
-from typing import Any, Dict, List, Optional, Tuple, Generator
-from autocoder.common import AutoCoderArgs, SourceCode
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from byzerllm import ByzerLLM
-from loguru import logger
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
-from pypdf import PdfReader
-import docx2txt
+from typing import Any, Dict, Generator, List, Optional, Tuple
+
 import byzerllm
-from openai import OpenAI
+import docx2txt
+import pandas as pd
 import pathspec
+from byzerllm import ByzerLLM
+from docx import Document
+from jinja2 import Template
+from loguru import logger
+from openai import OpenAI
+from openpyxl import load_workbook
+from pypdf import PdfReader
+
+from autocoder.common import AutoCoderArgs, SourceCode
 
 
 class LongContextRAG:
@@ -94,6 +100,26 @@ class LongContextRAG:
         text = docx2txt.process(docx_file)
         return text
 
+    def extract_text_from_excel(self, excel_path) -> List[Tuple[str, str]]:
+        sheet_list = []
+        wb = load_workbook(excel_path)
+        tmpl = Template(
+            """{% for row in rows %}
+{% for cell in row %}"{{ cell }}"{% if not loop.last %},{% endif %}{% endfor %}{% if not loop.last %}{{ newline }}{% endif %}{% endfor %}
+        """
+        )
+        for ws in wb:
+            rows = list(ws.iter_rows(values_only=True))
+            if not rows:
+                continue
+            # 过滤掉rows中全是null的行
+            rows = [row for row in rows if any(row)]
+            # 所有的None都转换成空字符串
+            rows = [[cell if cell is not None else "" for cell in row] for row in rows]
+            content = tmpl.render(rows=rows)
+            sheet_list.append([excel_path + f"#{ws.title}", content])
+        return sheet_list
+
     @byzerllm.prompt()
     def _check_relevance(self, query: str, document: str) -> str:
         """
@@ -146,11 +172,13 @@ class LongContextRAG:
             if self.ignore_spec:
                 relative_root = os.path.relpath(root, self.path)
                 dirs[:] = [
-                    d for d in dirs
+                    d
+                    for d in dirs
                     if not self.ignore_spec.match_file(os.path.join(relative_root, d))
                 ]
                 files = [
-                    f for f in files
+                    f
+                    for f in files
                     if not self.ignore_spec.match_file(os.path.join(relative_root, f))
                 ]
 
@@ -158,7 +186,9 @@ class LongContextRAG:
                 if self.required_exts:
                     if not any(file.endswith(ext) for ext in self.required_exts):
                         continue
-
+                else:
+                    if not file.endswith((".md", ".pdf", ".docx", ".xlsx", ".xls")):
+                        continue
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, self.path)
 
@@ -166,16 +196,24 @@ class LongContextRAG:
                     if file.endswith(".pdf"):
                         with open(file_path, "rb") as f:
                             content = self.extract_text_from_pdf(f.read())
+                        documents.append(
+                            SourceCode(module_name=relative_path, source_code=content)
+                        )
                     elif file.endswith(".docx"):
                         with open(file_path, "rb") as f:
                             content = self.extract_text_from_docx(f.read())
+                        documents.append(
+                            SourceCode(module_name=relative_path, source_code=content)
+                        )
+                    elif file.endswith(".xlsx") or file.endswith(".xls"):
+                        sheets = self.extract_text_from_excel(file_path)
+                        for sheet in sheets:
+                            documents.append(
+                                SourceCode(module_name=sheet[0], source_code=sheet[1])
+                            )
                     else:
                         with open(file_path, "r", encoding="utf-8") as f:
                             content = f.read()
-
-                    documents.append(
-                        SourceCode(module_name=relative_path, source_code=content)
-                    )
                 except Exception as e:
                     logger.error(f"Error processing file {file_path}: {str(e)}")
 
@@ -230,8 +268,13 @@ class LongContextRAG:
         ) as executor:
             future_to_doc = {}
             for doc in documents:
-                if self.tokenizer and self.count_tokens(doc.source_code) > self.token_limit:
-                    logger.warning(f"{doc.module_name} 文件超过 120k tokens，将无法使用 RAG 模型进行搜索。")
+                if (
+                    self.tokenizer
+                    and self.count_tokens(doc.source_code) > self.token_limit
+                ):
+                    logger.warning(
+                        f"{doc.module_name} 文件超过 120k tokens，将无法使用 RAG 模型进行搜索。"
+                    )
                     continue
 
                 m = executor.submit(
@@ -276,12 +319,18 @@ class LongContextRAG:
         else:
             query = conversations[-1]["content"]
 
-            if "使用四到五个字直接返回这句话的简要主题，不要解释、不要标点、不要语气词、不要多余文本，不要加粗，如果没有主题" in query:
+            if (
+                "使用四到五个字直接返回这句话的简要主题，不要解释、不要标点、不要语气词、不要多余文本，不要加粗，如果没有主题"
+                in query
+            ):
                 return ["闲聊"], []
-            
-            if "简要总结一下对话内容，用作后续的上下文提示 prompt，控制在 200 字以内" in query:
+
+            if (
+                "简要总结一下对话内容，用作后续的上下文提示 prompt，控制在 200 字以内"
+                in query
+            ):
                 return ["正常对话"], []
-            
+
             only_contexts = False
             try:
                 v = json.loads(query)
@@ -310,16 +359,20 @@ class LongContextRAG:
                 context = [doc.module_name for doc in relevant_docs]
 
                 # 粗略统计下 tokens 数量，从而获取最多的 relevant_docs
-                if self.tokenizer is not None:                    
+                if self.tokenizer is not None:
                     final_relevant_docs = []
                     for doc in relevant_docs:
                         final_relevant_docs.append(doc)
-                        token_num = self.count_tokens("".join([doc.source_code for doc in final_relevant_docs]))
+                        token_num = self.count_tokens(
+                            "".join([doc.source_code for doc in final_relevant_docs])
+                        )
                         if token_num > self.token_limit:
                             break
                     relevant_docs = final_relevant_docs
-                    
-                logger.info(f"Final relevant docs send to model ({query}): {len(relevant_docs)}")
+
+                logger.info(
+                    f"Final relevant docs send to model ({query}): {len(relevant_docs)}"
+                )
                 for doc in relevant_docs:
                     logger.info(f"Final relevant doc: {doc.module_name}")
 

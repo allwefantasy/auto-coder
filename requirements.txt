@@ -67,3 +67,4 @@ pathspec
 # simpleaudio
 # pandoc
 # pypandoc
+openpyxl

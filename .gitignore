@@ -49,3 +49,4 @@ output.txt
 auto_coder_installer/bin
 **/node_modules/
 **/*.vsix
+**/*/.ipynb_checkpoints
