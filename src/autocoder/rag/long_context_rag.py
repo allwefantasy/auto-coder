@@ -150,6 +150,28 @@ class LongContextRAG:
         回答：
         """
 
+    @byzerllm.prompt()
+    def _answer_question_with_conversation(
+        self, conversations: List[Dict[str, str]], relevant_docs: List[str]
+    ) -> Generator[str, None, None]:
+        """
+        使用以下文档和对话历史来回答问题。如果文档中没有相关信息，请说"我没有足够的信息来回答这个问题"。
+
+        文档：
+        {% for doc in relevant_docs %}
+        {{ doc }}
+        {% endfor %}
+
+        对话历史：
+        {% for msg in conversations %}
+        {{ msg.role }}: {{ msg.content }}
+        {% endfor %}
+
+        请根据上述信息回答最后一个用户的问题。
+
+        回答：
+        """
+
     def _load_ignore_file(self):
         serveignore_path = os.path.join(self.path, ".serveignore")
         gitignore_path = os.path.join(self.path, ".gitignore")
