@@ -321,15 +321,17 @@ class LongContextRAG:
 
             if (
                 "使用四到五个字直接返回这句话的简要主题，不要解释、不要标点、不要语气词、不要多余文本，不要加粗，如果没有主题"
+                in query or "简要总结一下对话内容，用作后续的上下文提示 prompt，控制在 200 字以内"
                 in query
             ):
-                return ["闲聊"], []
-
-            if (
-                "简要总结一下对话内容，用作后续的上下文提示 prompt，控制在 200 字以内"
-                in query
-            ):
-                return ["正常对话"], []
+                chunks = self.llm.stream_chat_oai(
+                    conversations=conversations,
+                    model=model,
+                    role_mapping=role_mapping,
+                    llm_config=llm_config,
+                    delta_mode=True,
+                )
+                return (chunk[0] for chunk in chunks), context           
 
             only_contexts = False
             try:
