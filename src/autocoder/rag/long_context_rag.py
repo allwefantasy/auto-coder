@@ -117,6 +117,8 @@ class LongContextRAG:
                 continue
             # 过滤掉rows中全是null的行
             rows = [row for row in rows if any(row)]
+            # 所有的None都转换成空字符串
+            rows = [[cell if cell is not None else "" for cell in row] for row in rows]
             content = tmpl.render(filename=file_name, sheet=ws.title, rows=rows)
             sheet_list.append([excel_path + f"#{ws.title}", content])
         return sheet_list
