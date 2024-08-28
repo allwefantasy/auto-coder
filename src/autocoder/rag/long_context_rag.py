@@ -203,6 +203,26 @@ class LongContextRAG:
         """
 
     @byzerllm.prompt()
+    def extract_relevance_info_from_doc_with_conversation(
+        self, conversations: List[Dict[str, str]], document: str
+    ) -> str:
+        """
+        使用以下文档和对话历史来提取相关信息。
+
+        文档：
+        {{ document }}
+
+        对话历史：
+        {% for msg in conversations %}
+        <{{ msg.role }}>: {{ msg.content }}
+        {% endfor %}
+
+        请根据提供的文档内容、用户对话历史以及最后一个问题，提取并总结文档中与问题相关的重要信息。
+        如果文档中没有相关信息，请回复"该文档中没有与问题相关的信息"。
+        请确保提取的信息简洁明了，直接相关，并且对回答问题有帮助。
+        """
+
+    @byzerllm.prompt()
     def _answer_question(
         self, query: str, relevant_docs: List[str]
     ) -> Generator[str, None, None]:
