@@ -203,14 +203,16 @@ class LongContextRAG:
         """
 
     @byzerllm.prompt()
-    def extract_relevance_info_from_doc_with_conversation(
-        self, conversations: List[Dict[str, str]], document: str
+    def extract_relevance_info_from_docs_with_conversation(
+        self, conversations: List[Dict[str, str]], , documents: List[str]
     ) -> str:
         """
         使用以下文档和对话历史来提取相关信息。
 
         文档：
-        {{ document }}
+        {% for doc in documents %}
+        {{ doc }}
+        {% endfor %}
 
         对话历史：
         {% for msg in conversations %}
