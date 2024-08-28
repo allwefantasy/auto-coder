@@ -428,11 +428,13 @@ class LongContextRAG:
                 if "only_contexts" in v:
                     query = v["query"]
                     only_contexts = v["only_contexts"]
-
             except json.JSONDecodeError:
                 pass
 
+            import time
+            start_time = time.time()
             relevant_docs: List[SourceCode] = self._filter_docs(conversations)
+            filter_time = time.time() - start_time
 
             if only_contexts:
                 return (doc.model_dump_json() + "\n" for doc in relevant_docs), []
@@ -463,30 +465,22 @@ class LongContextRAG:
                 query_table.add_row("Query", query)
                 query_table.add_row("Relevant docs", str(len(relevant_docs)))
                 query_table.add_row("Only contexts", str(only_contexts))
+                query_table.add_row("Filter time", f"{filter_time:.2f} seconds")
+                query_table.add_row("Final relevant docs", str(len(relevant_docs)))
+                
+                # Add relevant docs information
+                relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
+                query_table.add_row("Relevant docs list", relevant_docs_info)
 
-                # Create a table for relevant documents
-                docs_table = Table(title="Relevant Documents", show_header=True)
-                docs_table.add_column("Module Name", style="cyan")
-
-                for doc in relevant_docs:
-                    docs_table.add_row(doc.module_name)
-
-                # Create a panel to contain both tables
+                # Create a panel to contain the table
                 panel = Panel(
-                    Text.assemble(query_table, "\n\n", docs_table),
+                    query_table,
                     title="RAG Search Results",
                     expand=False,
                 )
 
                 # Log the panel using rich
                 console.print(panel)
-
-                logger.info(
-                    f"Final relevant docs send to model ({query}): {len(relevant_docs)}"
-                )
-                
-                for doc in relevant_docs:
-                    logger.info(f"Final relevant doc: {doc.module_name}")
 
                 new_conversations = conversations[:-1] + [
                     {
