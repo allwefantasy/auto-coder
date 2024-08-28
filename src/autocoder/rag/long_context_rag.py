@@ -20,6 +20,7 @@ from rich.text import Text
 from openai import OpenAI
 from openpyxl import load_workbook
 from pypdf import PdfReader
+import time
 
 from autocoder.common import AutoCoderArgs, SourceCode
 
@@ -430,8 +431,8 @@ class LongContextRAG:
                     only_contexts = v["only_contexts"]
             except json.JSONDecodeError:
                 pass
-
-            import time
+            
+            logger.info(f"Query: {query} only_contexts: {only_contexts}")
             start_time = time.time()
             relevant_docs: List[SourceCode] = self._filter_docs(conversations)
             filter_time = time.time() - start_time
@@ -443,6 +444,17 @@ class LongContextRAG:
                 return ["没有找到相关的文档来回答这个问题。"], []
             else:
                 context = [doc.module_name for doc in relevant_docs]
+                
+                console = Console()
+
+                # Create a table for the query information
+                query_table = Table(title="Query Information", show_header=False)
+                query_table.add_row("Query", query)
+                query_table.add_row("Relevant docs", str(len(relevant_docs)))
+
+                # Add relevant docs information
+                relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
+                query_table.add_row("Relevant docs list", relevant_docs_info)
 
                 # 粗略统计下 tokens 数量，从而获取最多的 relevant_docs
                 if self.tokenizer is not None:
@@ -458,19 +470,14 @@ class LongContextRAG:
                 else:
                     relevant_docs = relevant_docs[: self.args.index_filter_file_num]
 
-                console = Console()
-
-                # Create a table for the query information
-                query_table = Table(title="Query Information", show_header=False)
-                query_table.add_row("Query", query)
-                query_table.add_row("Relevant docs", str(len(relevant_docs)))
+                
                 query_table.add_row("Only contexts", str(only_contexts))
                 query_table.add_row("Filter time", f"{filter_time:.2f} seconds")
                 query_table.add_row("Final relevant docs", str(len(relevant_docs)))
                 
                 # Add relevant docs information
-                relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
-                query_table.add_row("Relevant docs list", relevant_docs_info)
+                final_relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
+                query_table.add_row("Final Relevant docs list", final_relevant_docs_info)
 
                 # Create a panel to contain the table
                 panel = Panel(
