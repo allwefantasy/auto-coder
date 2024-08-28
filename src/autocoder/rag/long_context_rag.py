@@ -393,36 +393,44 @@ class LongContextRAG:
 
             return response_generator(), []
         else:
-            query = conversations[-1]["content"]
-            context = []
+    def query_table(self, conversations: List[Dict[str, str]]):
+        query = conversations[-1]["content"]
+        context = []
 
-            if (
-                "使用四到五个字直接返回这句话的简要主题，不要解释、不要标点、不要语气词、不要多余文本，不要加粗，如果没有主题"
-                in query
-                or "简要总结一下对话内容，用作后续的上下文提示 prompt，控制在 200 字以内"
-                in query
-            ):
-                chunks = self.llm.stream_chat_oai(
-                    conversations=conversations,
-                    model=model,
-                    role_mapping=role_mapping,
-                    llm_config=llm_config,
-                    delta_mode=True,
-                )
-                return (chunk[0] for chunk in chunks), context
+        if (
+            "使用四到五个字直接返回这句话的简要主题，不要解释、不要标点、不要语气词、不要多余文本，不要加粗，如果没有主题"
+            in query
+            or "简要总结一下对话内容，用作后续的上下文提示 prompt，控制在 200 字以内"
+            in query
+        ):
+            chunks = self.llm.stream_chat_oai(
+                conversations=conversations,
+                model=self.args.model,
+                role_mapping=None,
+                llm_config={},
+                delta_mode=True,
+            )
+            return (chunk[0] for chunk in chunks), context
 
-            only_contexts = False
-            try:
-                v = json.loads(query)
-                if "only_contexts" in v:
-                    query = v["query"]
-                    only_contexts = v["only_contexts"]
+        only_contexts = False
+        try:
+            v = json.loads(query)
+            if "only_contexts" in v:
+                query = v["query"]
+                only_contexts = v["only_contexts"]
 
-            except json.JSONDecodeError:
-                pass
+        except json.JSONDecodeError:
+            pass
 
-            relevant_docs: List[SourceCode] = self._filter_docs(conversations)            
+        import time
+        start_time = time.time()
+        relevant_docs: List[SourceCode] = self._filter_docs(conversations)
+        filter_time = time.time() - start_time
+        logger.info(f"Time taken to filter docs: {filter_time:.2f} seconds")
 
+        logger.info(f"Final relevant docs send to model ({query}): {len(relevant_docs)}")
+        for doc in relevant_docs:
+            logger.info(f"Final relevant doc: {doc.module_name}")
             if only_contexts:
                 return (doc.model_dump_json() + "\n" for doc in relevant_docs), []
 
