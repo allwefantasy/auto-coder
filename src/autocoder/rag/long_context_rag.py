@@ -21,6 +21,7 @@ from openai import OpenAI
 from openpyxl import load_workbook
 from pypdf import PdfReader
 import time
+from byzerllm.utils.client.code_utils import extract_code
 
 from autocoder.common import AutoCoderArgs, SourceCode
 
@@ -223,6 +224,49 @@ class LongContextRAG:
         如果文档中没有相关信息，请回复"该文档中没有与问题相关的信息"。
         提取的信息尽量保持和原文中的一样，并且只输出这些信息。
         """
+    
+    @byzerllm.prompt()
+    def extract_relevance_range_from_docs_with_conversation(
+        self, conversations: List[Dict[str, str]], documents: List[str]
+    ) -> str:
+        """
+        使用以下文档和对话历史来提取相关信息。
+
+        文档：
+        {% for doc in documents %}
+        {{ doc }}
+        {% endfor %}
+
+        对话历史：
+        {% for msg in conversations %}
+        <{{ msg.role }}>: {{ msg.content }}
+        {% endfor %}
+
+        请根据提供的文档内容、用户对话历史以及最后一个问题，从文档中提取与问题相关的一个或者多个重要信息。
+        每一块重要信息由 start_str,start_str 和 end_str中间的内容，以及 end_str 组成。
+        返回一个 JSON 数组，每个元素包含 "start_str" 和 "end_str"，分别表示重要信息的起始和结束字符串。
+        确保 start_str 和 end_str 在原文中都是唯一的，不会出现多次，并且不会重叠。
+        
+
+        如果文档中没有相关重要信息，请返回空数组 []。
+
+        示例1：
+        文档：这是一个示例文档。大象是陆地上最大的动物之一。它们生活在非洲和亚洲。猫是常见的宠物，它们喜欢捕鼠。    
+        问题：大象生活在哪里？
+        返回：[{"start_str": "大象是陆地", "end_str": "在非洲和亚洲。"}]
+
+        示例2：
+        文档：太阳系有八大行星。地球是太阳系中第三颗行星，有海洋，有沙漠，温度适宜，昼夜温差小，是目前已知唯一有生命的星球。月球是地球唯一的天然卫星。
+        问题：地球的特点是什么？
+        返回：[{"start_str": "地球是", "end_str": "生命的星球。"}]
+
+        示例3：
+        文档：苹果是一种常见的水果。它富含维生素和膳食纤维。香蕉也是一种受欢迎的水果，含有大量钾元素。
+        问题：橙子的特点是什么？
+        返回：[]
+
+        请返回的 JSON 格式。
+        """    
 
     @byzerllm.prompt()
     def _answer_question(
@@ -545,6 +589,27 @@ class LongContextRAG:
                             ).run(
                                 conversations, [doc.source_code]
                             )                            
+                            
+                            return SourceCode(
+                                module_name=doc.module_name, source_code=extracted_info
+                            )
+                        
+                        def process_range_doc(doc):
+                            extracted_info = self.extract_relevance_range_from_docs_with_conversation.with_llm(
+                                self.llm
+                            ).run(
+                                conversations, [doc.source_code]
+                            )
+
+                            json_str = extract_code(extract_code)[0][1]
+                            content = ""
+                            try:
+                                json_objs = json.loads(json_str)
+                                for json_obj in json_objs:
+                                    start_str = json_obj["start_str"]
+                                    end_str = json_obj["end_str"]                                    
+                            except:
+                                pass                                
                             
                             return SourceCode(
                                 module_name=doc.module_name, source_code=extracted_info
