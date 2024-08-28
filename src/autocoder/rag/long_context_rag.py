@@ -204,7 +204,7 @@ class LongContextRAG:
 
     @byzerllm.prompt()
     def extract_relevance_info_from_docs_with_conversation(
-        self, conversations: List[Dict[str, str]], , documents: List[str]
+        self, conversations: List[Dict[str, str]], documents: List[str]
     ) -> str:
         """
         使用以下文档和对话历史来提取相关信息。
@@ -478,7 +478,8 @@ class LongContextRAG:
                 relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
                 query_table.add_row("Relevant docs list", relevant_docs_info)
 
-                # 粗略统计下 tokens 数量，从而获取最多的 relevant_docs
+        first_round_full_docs = []
+        second_round_extracted_docs = []
         if self.tokenizer is not None:
             final_relevant_docs = []
             token_count = 0
@@ -489,56 +490,76 @@ class LongContextRAG:
                     token_count += doc_tokens
                 else:
                     break
-
-            if len(final_relevant_docs) < len(relevant_docs):
-                remaining_token_limit = self.token_limit * 0.6 - token_count
-                for doc in relevant_docs[len(final_relevant_docs):]:
+            
+            ## 如果relevant_docs 拼接后超过了 token_limit 限制，那么我们会重新获取文档。
+            ## 首先遍历文档，不断添加到 final_relevant_docs 直到达到了 token_limit * 0.6 的限制
+            ## 剩下的文档，我们会继续做遍历，但是会对每个文档做信息抽取，然后继续添加到 final_relevant_docs 中
+            ## 直到 token 数量达到 token_limit * 0.4 的限制
+            
+            if len(final_relevant_docs) < len(relevant_docs):                
+                ## 过滤出前面60% token的文档                                
+                token_count = 0
+                new_token_limit = self.token_limit * 0.6
+                for doc in relevant_docs:
+                    doc_tokens = self.count_tokens(doc.source_code)
+                    if token_count + doc_tokens <= new_token_limit:                        
+                        first_round_full_docs.append(first_round_full_docs)
+                        token_count += doc_tokens
+                    else:
+                        break
+                
+                ## 获取剩下的token数量 和 文档
+                ramaining_tokens = self.token_limit - new_token_limit
+                remaining_docs = relevant_docs[len(first_round_full_docs):]
+                for doc in remaining_docs:
                     extracted_info = self.extract_relevance_info_from_docs_with_conversation.with_llm(self.llm).run(conversations, [doc.source_code])
                     extracted_tokens = self.count_tokens(extracted_info)
-                    if remaining_token_limit - extracted_tokens >= 0:
-                        final_relevant_docs.append(SourceCode(module_name=doc.module_name, source_code=extracted_info))
-                        remaining_token_limit -= extracted_tokens
+                    if ramaining_tokens - extracted_tokens >= 0:
+                        second_round_extracted_docs.append(SourceCode(module_name=doc.module_name, source_code=extracted_info))
+                        extracted_tokens -= extracted_tokens
                     else:
                         break
 
-            relevant_docs = final_relevant_docs
+            relevant_docs = first_round_full_docs + second_round_extracted_docs
         else:
             relevant_docs = relevant_docs[: self.args.index_filter_file_num]
 
                 
-                query_table.add_row("Only contexts", str(only_contexts))
-                query_table.add_row("Filter time", f"{filter_time:.2f} seconds")
-                query_table.add_row("Final relevant docs", str(len(relevant_docs)))
-                
-                # Add relevant docs information
-                final_relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
-                query_table.add_row("Final Relevant docs list", final_relevant_docs_info)
+        query_table.add_row("Only contexts", str(only_contexts))
+        query_table.add_row("Filter time", f"{filter_time:.2f} seconds")
+        query_table.add_row("Final relevant docs", str(len(relevant_docs)))
+        query_table.add_row("first_round_full_docs", len(first_round_full_docs))
+        query_table.add_row("second_round_extracted_docs", len(second_round_extracted_docs))        
+        
+        # Add relevant docs information
+        final_relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
+        query_table.add_row("Final Relevant docs list", final_relevant_docs_info)                
 
-                # Create a panel to contain the table
-                panel = Panel(
-                    query_table,
-                    title="RAG Search Results",
-                    expand=False,
-                )
+        # Create a panel to contain the table
+        panel = Panel(
+            query_table,
+            title="RAG Search Results",
+            expand=False,
+        )
 
-                # Log the panel using rich
-                console.print(panel)
+        # Log the panel using rich
+        console.print(panel)
 
-                new_conversations = conversations[:-1] + [
-                    {
-                        "role": "user",
-                        "content": self._answer_question.prompt(
-                            query=query,
-                            relevant_docs=[doc.source_code for doc in relevant_docs],
-                        ),
-                    }
-                ]
+        new_conversations = conversations[:-1] + [
+            {
+                "role": "user",
+                "content": self._answer_question.prompt(
+                    query=query,
+                    relevant_docs=[doc.source_code for doc in relevant_docs],
+                ),
+            }
+        ]
 
-                chunks = self.llm.stream_chat_oai(
-                    conversations=new_conversations,
-                    model=model,
-                    role_mapping=role_mapping,
-                    llm_config=llm_config,
-                    delta_mode=True,
-                )
-                return (chunk[0] for chunk in chunks), context
+        chunks = self.llm.stream_chat_oai(
+            conversations=new_conversations,
+            model=model,
+            role_mapping=role_mapping,
+            llm_config=llm_config,
+            delta_mode=True,
+        )
+        return (chunk[0] for chunk in chunks), context
