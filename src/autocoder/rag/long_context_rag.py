@@ -490,39 +490,15 @@ class LongContextRAG:
                             break
                     relevant_docs = final_relevant_docs
                 else:
-                    # 重新检测 token 限制
-                final_relevant_docs = []
-                remaining_docs = []
-                total_tokens = 0
-                token_limit_60_percent = int(self.token_limit * 0.6)
+                    relevant_docs = relevant_docs[: self.args.index_filter_file_num]
 
-                for doc in relevant_docs:
-                    doc_tokens = self.count_tokens(doc.source_code)
-                    if total_tokens + doc_tokens <= token_limit_60_percent:
-                        final_relevant_docs.append(doc)
-                        total_tokens += doc_tokens
-                    else:
-                        remaining_docs.append(doc)
-
-                # 对剩余的文档进行内容提取
-                for doc in remaining_docs:
-                    extracted_content = self.extract_relevance_info_from_docs_with_conversation.with_llm(self.llm).run(
-                        conversations=conversations,
-                        documents=[doc.source_code]
-                    )
-                    if extracted_content != "该文档中没有与问题相关的信息":
-                        extracted_doc = SourceCode(
-                            module_name=f"{doc.module_name} (extracted)",
-                            source_code=extracted_content
-                        )
-                        final_relevant_docs.append(extracted_doc)
-
+                
                 query_table.add_row("Only contexts", str(only_contexts))
                 query_table.add_row("Filter time", f"{filter_time:.2f} seconds")
-                query_table.add_row("Final relevant docs", str(len(final_relevant_docs)))
+                query_table.add_row("Final relevant docs", str(len(relevant_docs)))
                 
                 # Add relevant docs information
-                final_relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in final_relevant_docs])
+                final_relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
                 query_table.add_row("Final Relevant docs list", final_relevant_docs_info)
 
                 # Create a panel to contain the table
@@ -540,7 +516,7 @@ class LongContextRAG:
                         "role": "user",
                         "content": self._answer_question.prompt(
                             query=query,
-                            relevant_docs=[doc.source_code for doc in final_relevant_docs],
+                            relevant_docs=[doc.source_code for doc in relevant_docs],
                         ),
                     }
                 ]
