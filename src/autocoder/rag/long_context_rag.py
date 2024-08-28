@@ -421,36 +421,7 @@ class LongContextRAG:
             except json.JSONDecodeError:
                 pass
 
-            relevant_docs: List[SourceCode] = self._filter_docs(conversations)
-
-            console = Console()
-            
-            # Create a table for the query information
-            query_table = Table(title="Query Information", show_header=False)
-            query_table.add_row("Query", query)
-            query_table.add_row("Relevant docs", str(len(relevant_docs)))
-            query_table.add_row("Only contexts", str(only_contexts))
-            
-            # Create a table for relevant documents
-            docs_table = Table(title="Relevant Documents", show_header=True)
-            docs_table.add_column("Module Name", style="cyan")
-            
-            for doc in relevant_docs:
-                docs_table.add_row(doc.module_name)
-            
-            # Create a panel to contain both tables
-            panel = Panel(
-                Text.assemble(
-                    query_table,
-                    "\n\n",
-                    docs_table
-                ),
-                title="RAG Search Results",
-                expand=False
-            )
-            
-            # Log the panel using rich
-            console.print(panel)
+            relevant_docs: List[SourceCode] = self._filter_docs(conversations)            
 
             if only_contexts:
                 return (doc.model_dump_json() + "\n" for doc in relevant_docs), []
@@ -472,7 +443,36 @@ class LongContextRAG:
                             break
                     relevant_docs = final_relevant_docs
                 else:
-                    relevant_docs = relevant_docs[: self.args.index_filter_file_num]    
+                    relevant_docs = relevant_docs[: self.args.index_filter_file_num]   
+
+                console = Console()
+                
+                # Create a table for the query information
+                query_table = Table(title="Query Information", show_header=False)
+                query_table.add_row("Query", query)
+                query_table.add_row("Relevant docs", str(len(relevant_docs)))
+                query_table.add_row("Only contexts", str(only_contexts))
+                
+                # Create a table for relevant documents
+                docs_table = Table(title="Relevant Documents", show_header=True)
+                docs_table.add_column("Module Name", style="cyan")
+                
+                for doc in relevant_docs:
+                    docs_table.add_row(doc.module_name)
+                
+                # Create a panel to contain both tables
+                panel = Panel(
+                    Text.assemble(
+                        query_table,
+                        "\n\n",
+                        docs_table
+                    ),
+                    title="RAG Search Results",
+                    expand=False
+                )
+                
+                # Log the panel using rich
+                console.print(panel)     
 
                 logger.info(
                     f"Final relevant docs send to model ({query}): {len(relevant_docs)}"
