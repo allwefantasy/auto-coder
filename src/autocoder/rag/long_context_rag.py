@@ -544,8 +544,8 @@ class LongContextRAG:
                                 self.llm
                             ).run(
                                 conversations, [doc.source_code]
-                            )
-                            extracted_tokens = self.count_tokens(extracted_info)
+                            )                            
+                            
                             return SourceCode(
                                 module_name=doc.module_name, source_code=extracted_info
                             )
@@ -559,13 +559,11 @@ class LongContextRAG:
                             doc = future_to_doc[future]
                             try:
                                 result = future.result()
-                                if result:
+                                if result and remaining_tokens > 0:
                                     second_round_extracted_docs.append(result)
                                     remaining_tokens -= self.count_tokens(
                                         result.source_code
-                                    )
-                                if remaining_tokens <= 0:
-                                    break
+                                    )                                
                             except Exception as exc:
                                 logger.info(
                                     f"Processing doc {doc.module_name} generated an exception: {exc}"
@@ -613,10 +611,9 @@ class LongContextRAG:
                 }
             ]
 
-            # 将 new_conversations 转化为 JSON 并写入文件
-            import json
-            with open('/tmp/rag.json', 'w', encoding='utf-8') as f:
-                json.dump(new_conversations, f, ensure_ascii=False, indent=2)
+            # # 将 new_conversations 转化为 JSON 并写入文件
+            # with open('/tmp/rag.json', 'w', encoding='utf-8') as f:
+            #     json.dump(new_conversations, f, ensure_ascii=False, indent=2)
 
             chunks = self.llm.stream_chat_oai(
                 conversations=new_conversations,
