@@ -342,7 +342,8 @@ class LongContextRAG:
             return response_generator(), []
         else:
             query = conversations[-1]["content"]
-
+            context = []
+            
             if (
                 "使用四到五个字直接返回这句话的简要主题，不要解释、不要标点、不要语气词、不要多余文本，不要加粗，如果没有主题"
                 in query
