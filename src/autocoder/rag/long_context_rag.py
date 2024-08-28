@@ -160,7 +160,9 @@ class LongContextRAG:
                         table_data.append(row_data)
                     shape_list.append(table_template.render(rows=table_data))
             if len(shape_list) > 0:
-                slide_list.append([ppt_path + f"#{slide.slide_id}", "\n".join(shape_list)])
+                slide_list.append(
+                    [ppt_path + f"#{slide.slide_id}", "\n".join(shape_list)]
+                )
         return slide_list
 
     @byzerllm.prompt()
@@ -200,7 +202,9 @@ class LongContextRAG:
         """
 
     @byzerllm.prompt()
-    def _answer_question(self, query: str, relevant_docs: List[str]) -> Generator[str, None, None]:
+    def _answer_question(
+        self, query: str, relevant_docs: List[str]
+    ) -> Generator[str, None, None]:
         """
         使用以下文档来回答问题。如果文档中没有相关信息，请说"我没有足够的信息来回答这个问题"。
 
@@ -265,7 +269,9 @@ class LongContextRAG:
                         with open(file_path, "rb") as f:
                             content = self.extract_text_from_docx(f.read())
                         documents.append(
-                            SourceCode(module_name=f"##File: {file_path}", source_code=content)
+                            SourceCode(
+                                module_name=f"##File: {file_path}", source_code=content
+                            )
                         )
                     elif file.endswith(".xlsx") or file.endswith(".xls"):
                         sheets = self.extract_text_from_excel(file_path)
@@ -282,13 +288,18 @@ class LongContextRAG:
                         for slide in slides:
                             content += f"#{slide[0]}\n{slide[1]}\n\n"
                         documents.append(
-                                SourceCode(module_name=f"##File: {file_path}", source_code=content)
-                            )    
+                            SourceCode(
+                                module_name=f"##File: {file_path}", source_code=content
+                            )
+                        )
                     else:
                         with open(file_path, "r", encoding="utf-8") as f:
                             content = f.read()
                             documents.append(
-                                SourceCode(module_name=f"##File: {file_path}", source_code=content)
+                                SourceCode(
+                                    module_name=f"##File: {file_path}",
+                                    source_code=content,
+                                )
                             )
                 except Exception as e:
                     logger.error(f"Error processing file {file_path}: {str(e)}")
@@ -324,7 +335,7 @@ class LongContextRAG:
             v = response.choices[0].message.content
             if not only_contexts:
                 return [SourceCode(module_name=f"RAG:{target_query}", source_code=v)]
-                       
+
             json_lines = [json.loads(line) for line in v.split("\n") if line.strip()]
             return [SourceCode.model_validate(json_line) for json_line in json_lines]
         else:
@@ -421,14 +432,14 @@ class LongContextRAG:
             except json.JSONDecodeError:
                 pass
 
-            relevant_docs: List[SourceCode] = self._filter_docs(conversations)            
+            relevant_docs: List[SourceCode] = self._filter_docs(conversations)
 
             if only_contexts:
                 return (doc.model_dump_json() + "\n" for doc in relevant_docs), []
 
             if not relevant_docs:
                 return ["没有找到相关的文档来回答这个问题。"], []
-            else:                
+            else:
                 context = [doc.module_name for doc in relevant_docs]
 
                 # 粗略统计下 tokens 数量，从而获取最多的 relevant_docs
@@ -443,40 +454,37 @@ class LongContextRAG:
                             break
                     relevant_docs = final_relevant_docs
                 else:
-                    relevant_docs = relevant_docs[: self.args.index_filter_file_num]   
+                    relevant_docs = relevant_docs[: self.args.index_filter_file_num]
 
                 console = Console()
-                
+
                 # Create a table for the query information
                 query_table = Table(title="Query Information", show_header=False)
                 query_table.add_row("Query", query)
                 query_table.add_row("Relevant docs", str(len(relevant_docs)))
                 query_table.add_row("Only contexts", str(only_contexts))
-                
+
                 # Create a table for relevant documents
                 docs_table = Table(title="Relevant Documents", show_header=True)
                 docs_table.add_column("Module Name", style="cyan")
-                
+
                 for doc in relevant_docs:
                     docs_table.add_row(doc.module_name)
-                
+
                 # Create a panel to contain both tables
                 panel = Panel(
-                    Text.assemble(
-                        query_table,
-                        "\n\n",
-                        docs_table
-                    ),
+                    Text.assemble(query_table, "\n\n", docs_table),
                     title="RAG Search Results",
-                    expand=False
+                    expand=False,
                 )
-                
+
                 # Log the panel using rich
-                console.print(panel)     
+                console.print(panel)
 
                 logger.info(
                     f"Final relevant docs send to model ({query}): {len(relevant_docs)}"
                 )
+                
                 for doc in relevant_docs:
                     logger.info(f"Final relevant doc: {doc.module_name}")
 
