@@ -243,9 +243,10 @@ class LongContextRAG:
         {% endfor %}
 
         请根据提供的文档内容、用户对话历史以及最后一个问题，从文档中提取与问题相关的一个或者多个重要信息。
-        每一块重要信息由 start_str,start_str 和 end_str中间的内容，以及 end_str 组成。
+        每一块重要信息由 start_str 和 end_str 组成。
         返回一个 JSON 数组，每个元素包含 "start_str" 和 "end_str"，分别表示重要信息的起始和结束字符串。
         确保 start_str 和 end_str 在原文中都是唯一的，不会出现多次，并且不会重叠。
+        start_str 和 end_str 应该尽可能短，但要确保它们在原文中是唯一的。
         
 
         如果文档中没有相关重要信息，请返回空数组 []。
@@ -258,14 +259,14 @@ class LongContextRAG:
         示例2：
         文档：太阳系有八大行星。地球是太阳系中第三颗行星，有海洋，有沙漠，温度适宜，昼夜温差小，是目前已知唯一有生命的星球。月球是地球唯一的天然卫星。
         问题：地球的特点是什么？
-        返回：[{"start_str": "地球是", "end_str": "生命的星球。"}]
+        返回：[{"start_str": "地球是太阳系", "end_str": "生命的星球。"}]
 
         示例3：
         文档：苹果是一种常见的水果。它富含维生素和膳食纤维。香蕉也是一种受欢迎的水果，含有大量钾元素。
         问题：橙子的特点是什么？
         返回：[]
 
-        请返回的 JSON 格式。
+        请返回严格的 JSON 格式。不要有任何多余的文字或解释。
         """    
 
     @byzerllm.prompt()
@@ -594,45 +595,57 @@ class LongContextRAG:
                                 module_name=doc.module_name, source_code=extracted_info
                             )
                         
-                        def process_range_doc(doc):
-                            extracted_info = self.extract_relevance_range_from_docs_with_conversation.with_llm(
-                                self.llm
-                            ).run(
-                                conversations, [doc.source_code]
-                            )
+    def process_range_doc(self, doc, max_retries=3):
+        for attempt in range(max_retries):
+            try:
+                extracted_info = self.extract_relevance_range_from_docs_with_conversation.with_llm(
+                    self.llm
+                ).run(
+                    self.conversations, [doc.source_code]
+                )
 
-                            json_str = extract_code(extract_code)[0][1]
-                            content = ""
-                            try:
-                                json_objs = json.loads(json_str)
-                                for json_obj in json_objs:
-                                    start_str = json_obj["start_str"]
-                                    end_str = json_obj["end_str"]                                    
-                            except:
-                                pass                                
-                            
-                            return SourceCode(
-                                module_name=doc.module_name, source_code=extracted_info
-                            )
+                json_str = extract_code(extracted_info, language="json")[0][1]
+                json_objs = json.loads(json_str)
+                
+                content = ""
+                for json_obj in json_objs:
+                    start_str = json_obj["start_str"]
+                    end_str = json_obj["end_str"]
+                    start_index = doc.source_code.index(start_str)
+                    end_index = doc.source_code.index(end_str) + len(end_str)
+                    content += doc.source_code[start_index:end_index] + "\n"
+                
+                return SourceCode(
+                    module_name=doc.module_name, source_code=content.strip()
+                )
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    logger.warning(f"Error processing doc {doc.module_name}, retrying... (Attempt {attempt + 1})")
+                    time.sleep(1)  # Wait for 1 second before retrying
+                else:
+                    logger.error(f"Failed to process doc {doc.module_name} after {max_retries} attempts: {str(e)}")
+                    return None
 
                         future_to_doc = {}
                         for doc in remaining_docs:
-                            future = executor.submit(process_doc, doc)
-                            future_to_doc[future] = doc
+                        future = executor.submit(self.process_range_doc, doc)
+                        future_to_doc[future] = doc
 
-                        for future in as_completed(future_to_doc):
-                            doc = future_to_doc[future]
-                            try:
-                                result = future.result()
-                                if result and remaining_tokens > 0:
-                                    second_round_extracted_docs.append(result)
-                                    remaining_tokens -= self.count_tokens(
-                                        result.source_code
-                                    )                                
-                            except Exception as exc:
-                                logger.info(
-                                    f"Processing doc {doc.module_name} generated an exception: {exc}"
-                                )
+                    for future in as_completed(future_to_doc):
+                        doc = future_to_doc[future]
+                        try:
+                            result = future.result()
+                            if result and remaining_tokens > 0:
+                                second_round_extracted_docs.append(result)
+                                tokens = self.count_tokens(result.source_code)
+                                if tokens > 0:
+                                    remaining_tokens -= tokens
+                                else:
+                                    logger.warning(f"Token count for doc {doc.module_name} is 0 or negative")
+                        except Exception as exc:
+                            logger.error(
+                                f"Processing doc {doc.module_name} generated an exception: {exc}"
+                            )
                     final_relevant_docs = (
                         first_round_full_docs + second_round_extracted_docs
                     )
