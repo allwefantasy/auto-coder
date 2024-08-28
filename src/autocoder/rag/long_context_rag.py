@@ -479,18 +479,31 @@ class LongContextRAG:
                 query_table.add_row("Relevant docs list", relevant_docs_info)
 
                 # 粗略统计下 tokens 数量，从而获取最多的 relevant_docs
-                if self.tokenizer is not None:
-                    final_relevant_docs = []
-                    for doc in relevant_docs:
-                        final_relevant_docs.append(doc)
-                        token_num = self.count_tokens(
-                            "".join([doc.source_code for doc in final_relevant_docs])
-                        )
-                        if token_num > self.token_limit:
-                            break
-                    relevant_docs = final_relevant_docs
+        if self.tokenizer is not None:
+            final_relevant_docs = []
+            token_count = 0
+            for doc in relevant_docs:
+                doc_tokens = self.count_tokens(doc.source_code)
+                if token_count + doc_tokens <= self.token_limit:
+                    final_relevant_docs.append(doc)
+                    token_count += doc_tokens
                 else:
-                    relevant_docs = relevant_docs[: self.args.index_filter_file_num]
+                    break
+
+            if len(final_relevant_docs) < len(relevant_docs):
+                remaining_token_limit = self.token_limit * 0.6 - token_count
+                for doc in relevant_docs[len(final_relevant_docs):]:
+                    extracted_info = self.extract_relevance_info_from_docs_with_conversation.with_llm(self.llm).run(conversations, [doc.source_code])
+                    extracted_tokens = self.count_tokens(extracted_info)
+                    if remaining_token_limit - extracted_tokens >= 0:
+                        final_relevant_docs.append(SourceCode(module_name=doc.module_name, source_code=extracted_info))
+                        remaining_token_limit -= extracted_tokens
+                    else:
+                        break
+
+            relevant_docs = final_relevant_docs
+        else:
+            relevant_docs = relevant_docs[: self.args.index_filter_file_num]
 
                 
                 query_table.add_row("Only contexts", str(only_contexts))
