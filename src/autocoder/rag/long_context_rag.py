@@ -381,8 +381,7 @@ class LongContextRAG:
 
             if not relevant_docs:
                 return ["没有找到相关的文档来回答这个问题。"], []
-            else:
-                relevant_docs = relevant_docs[: self.args.index_filter_file_num]
+            else:                
                 context = [doc.module_name for doc in relevant_docs]
 
                 # 粗略统计下 tokens 数量，从而获取最多的 relevant_docs
@@ -396,6 +395,8 @@ class LongContextRAG:
                         if token_num > self.token_limit:
                             break
                     relevant_docs = final_relevant_docs
+                else:
+                    relevant_docs = relevant_docs[: self.args.index_filter_file_num]    
 
                 logger.info(
                     f"Final relevant docs send to model ({query}): {len(relevant_docs)}"
