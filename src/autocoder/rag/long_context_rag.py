@@ -611,7 +611,12 @@ class LongContextRAG:
                         relevant_docs=[doc.source_code for doc in relevant_docs],
                     ),
                 }
-            ]            
+            ]
+
+            # 将 new_conversations 转化为 JSON 并写入文件
+            import json
+            with open('/tmp/rag.json', 'w', encoding='utf-8') as f:
+                json.dump(new_conversations, f, ensure_ascii=False, indent=2)
 
             chunks = self.llm.stream_chat_oai(
                 conversations=new_conversations,
