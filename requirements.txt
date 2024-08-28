@@ -68,3 +68,4 @@ pathspec
 # pandoc
 # pypandoc
 openpyxl
+python-pptx
