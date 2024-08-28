@@ -13,6 +13,10 @@ from byzerllm import ByzerLLM
 from docx import Document
 from jinja2 import Template
 from loguru import logger
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
 from openai import OpenAI
 from openpyxl import load_workbook
 from pypdf import PdfReader
@@ -419,11 +423,34 @@ class LongContextRAG:
 
             relevant_docs: List[SourceCode] = self._filter_docs(conversations)
 
-            logger.info(
-                f"Query: {query} Relevant docs: {len(relevant_docs)} only_contexts: {only_contexts}"
-            )
+            console = Console()
+            
+            # Create a table for the query information
+            query_table = Table(title="Query Information", show_header=False)
+            query_table.add_row("Query", query)
+            query_table.add_row("Relevant docs", str(len(relevant_docs)))
+            query_table.add_row("Only contexts", str(only_contexts))
+            
+            # Create a table for relevant documents
+            docs_table = Table(title="Relevant Documents", show_header=True)
+            docs_table.add_column("Module Name", style="cyan")
+            
             for doc in relevant_docs:
-                logger.info(f"Relevant doc: {doc.module_name}")
+                docs_table.add_row(doc.module_name)
+            
+            # Create a panel to contain both tables
+            panel = Panel(
+                Text.assemble(
+                    query_table,
+                    "\n\n",
+                    docs_table
+                ),
+                title="RAG Search Results",
+                expand=False
+            )
+            
+            # Log the panel using rich
+            console.print(panel)
 
             if only_contexts:
                 return (doc.model_dump_json() + "\n" for doc in relevant_docs), []
