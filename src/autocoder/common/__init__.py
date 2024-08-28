@@ -220,6 +220,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     execute: Optional[bool] = None
     package_name: Optional[str] = ""
     script_path: Optional[str] = ""
+    
     model: Optional[str] = ""
     model_max_length: Optional[int] = 2000
     model_max_input_length: Optional[int] = 6000
@@ -229,46 +230,53 @@ class AutoCoderArgs(pydantic.BaseModel):
     code_model: Optional[str] = ""
     text2voice_model: Optional[str] = ""
     voice2text_model: Optional[str] = ""
+    
+    skip_build_index: Optional[bool] = False
+    skip_filter_index: Optional[bool] = False
+
     index_model: Optional[str] = ""
     index_model_max_length: Optional[int] = 0
     index_model_max_input_length: Optional[int] = 0
     index_model_anti_quota_limit: Optional[int] = 0
+
     index_filter_level: Optional[int] = 0
     index_filter_workers: Optional[int] = 1
     index_filter_file_num: Optional[int] = 10
     index_build_workers: Optional[int] = 1
+    
     planner_model: Optional[str] = ""
     file: Optional[str] = ""
     ray_address: Optional[str] = ""
-    anti_quota_limit: Optional[int] = 1
-    skip_build_index: Optional[bool] = False
-    skip_filter_index: Optional[bool] = False
+    anti_quota_limit: Optional[int] = 1    
     print_request: Optional[bool] = False
     py_packages: Optional[str] = ""
     
     search: Optional[Union[str, List[str]]] = ""
     search_engine: Optional[str] = ""
     search_engine_token: Optional[str] = ""
-    
-    enable_rag_search: Optional[Union[bool, str]] = False
-    enable_rag_context: Optional[Union[bool, str]] = False
+        
     rag_url: Optional[str] = ""
     rag_token: Optional[str] = ""
     rag_type: Optional[str] = "storage"    
+    enable_rag_search: Optional[Union[bool, str]] = False
+    enable_rag_context: Optional[Union[bool, str]] = False
+    collection: Optional[str] = None
+    collections: Optional[str] = None
 
     auto_merge: Optional[Union[bool, str]] = False
+    human_as_model: Optional[bool] = False
+
     image_file: Optional[str] = ""
     image_mode: Optional[str] = "direct"
     image_max_iter: Optional[int] = 1
-    human_as_model: Optional[bool] = False
+    
     urls: Optional[Union[str, List[str]]] = ""
     urls_use_model: Optional[bool] = False
     enable_multi_round_generate: Optional[bool] = False
     command: Optional[str] = None
     doc_command: Optional[str] = None
     required_exts: Optional[str] = None
-    collection: Optional[str] = None
-    collections: Optional[str] = None
+    
     description: Optional[str] = ""
     skip_confirm: Optional[bool] = False
     silence: Optional[bool] = False
