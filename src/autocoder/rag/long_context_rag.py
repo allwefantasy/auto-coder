@@ -318,7 +318,7 @@ class LongContextRAG:
             v = response.choices[0].message.content
             if not only_contexts:
                 return [SourceCode(module_name=f"RAG:{target_query}", source_code=v)]
-
+                       
             json_lines = [json.loads(line) for line in v.split("\n") if line.strip()]
             return [SourceCode.model_validate(json_line) for json_line in json_lines]
         else:
@@ -373,6 +373,7 @@ class LongContextRAG:
         llm_config: Dict[str, Any] = {},
     ):
         if self.client:
+            model = model or self.args.model
             response = self.client.chat.completions.create(
                 model=model,
                 messages=conversations,
@@ -388,7 +389,7 @@ class LongContextRAG:
         else:
             query = conversations[-1]["content"]
             context = []
-            
+
             if (
                 "使用四到五个字直接返回这句话的简要主题，不要解释、不要标点、不要语气词、不要多余文本，不要加粗，如果没有主题"
                 in query

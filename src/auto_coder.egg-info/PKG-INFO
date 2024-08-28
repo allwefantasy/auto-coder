@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.150
+Version: 0.1.151
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -44,6 +44,7 @@ Requires-Dist: pylint
 Requires-Dist: reportlab
 Requires-Dist: pathspec
 Requires-Dist: openpyxl
+Requires-Dist: python-pptx
 
 <p align="center">
   <picture>    

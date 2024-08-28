@@ -611,7 +611,7 @@ def main(input_args: Optional[List[str]] = None):
             memory_dir = os.path.join(args.source_dir, ".auto-coder", "memory")
             os.makedirs(memory_dir, exist_ok=True)
             memory_file = os.path.join(memory_dir, "chat_history.json")
-
+            console = Console() 
             if args.new_session:
                 chat_history = {"ask_conversation": []}
                 with open(memory_file, "w") as f:
@@ -653,7 +653,7 @@ def main(input_args: Optional[List[str]] = None):
                 pre_conversations + chat_history["ask_conversation"][-31:]
             )
 
-            if args.collection or args.collections:
+            if args.enable_rag_search or args.enable_rag_context:
                 rag = RAGFactory.get_rag(llm=llm, args=args, path="")
                 response = rag.stream_chat_oai(conversations=loaded_conversations)[0]
                 v = ([item, None] for item in response)

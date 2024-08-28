@@ -35,3 +35,4 @@ pylint
 reportlab
 pathspec
 openpyxl
+python-pptx
