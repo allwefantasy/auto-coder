@@ -8,6 +8,7 @@ import byzerllm
 import docx2txt
 import pandas as pd
 import pathspec
+import pptx
 from byzerllm import ByzerLLM
 from docx import Document
 from jinja2 import Template
@@ -105,7 +106,7 @@ class LongContextRAG:
         wb = load_workbook(excel_path)
         tmpl = Template(
             """{% for row in rows %}
-{% for cell in row %}"{{ cell }}"{% if not loop.last %},{% endif %}{% endfor %}{% if not loop.last %}{{ newline }}{% endif %}{% endfor %}
+{% for cell in row %}"{{ cell }}"{% if not loop.last %},{% endif %}{% endfor %}{% if not loop.last %}{% endif %}{% endfor %}
         """
         )
         for ws in wb:
@@ -119,6 +120,44 @@ class LongContextRAG:
             content = tmpl.render(rows=rows)
             sheet_list.append([excel_path + f"#{ws.title}", content])
         return sheet_list
+
+    def extract_text_from_ppt(self, ppt_path) -> List[Tuple[str, str]]:
+        presentation = pptx.Presentation(ppt_path)
+        text_template = Template("""文本:{{ paragraphs }}""")
+        table_template = Template(
+            """表单:{% for row in rows %}
+{% for cell in row %}"{{ cell }}"{% if not loop.last %},{% endif %}{% endfor %}{% if not loop.last %}{% endif %}{% endfor %}"""
+        )
+
+        slide_list = []
+        for slide in presentation.slides:
+            shape_list = []
+            for shape in slide.shapes:
+                contents = []
+                # TODO: support charts, images
+                # support text
+                if shape.has_text_frame:
+                    paragraphs = []
+                    for paragraph in shape.text_frame.paragraphs:
+                        paragraphs.append(paragraph.text)
+                    if len("".join(paragraphs).strip()) > 0:
+                        contents.append("".join(paragraphs))
+                if len(contents) > 0:
+                    shape_list.append(
+                        text_template.render(paragraphs="\n".join(contents))
+                    )
+                # support table
+                if shape.has_table:
+                    table_data = []
+                    for row in shape.table.rows:
+                        row_data = [
+                            (cell.text_frame.text).strip() for cell in row.cells
+                        ]
+                        table_data.append(row_data)
+                    shape_list.append(table_template.render(rows=table_data))
+            if len(shape_list) > 0:
+                slide_list.append([ppt_path + f"#{slide.slide_id}", "\n".join(shape_list)])
+        return slide_list
 
     @byzerllm.prompt()
     def _check_relevance(self, query: str, documents: List[str]) -> str:
@@ -232,6 +271,12 @@ class LongContextRAG:
                                     module_name=f"{file_path}#{sheet[0]}",
                                     source_code=sheet[1],
                                 )
+                            )
+                    elif file.endswith(".pptx"):
+                        slides = self.extract_text_from_ppt(file_path)
+                        for slide in slides:
+                            documents.append(
+                                SourceCode(module_name=slide[0], source_code=slide[1])
                             )
                     else:
                         with open(file_path, "r", encoding="utf-8") as f:
