@@ -404,8 +404,24 @@ class LongContextRAG:
                 logger.error(f"Document processing generated an exception: {exc}")
 
         return relevant_docs
-
+    
     def stream_chat_oai(
+        self,
+        conversations,
+        model: Optional[str] = None,
+        role_mapping=None,
+        llm_config: Dict[str, Any] = {},
+    ):
+        try:
+            return self._stream_chat_oai(
+                conversations, model=model, role_mapping=role_mapping, llm_config=llm_config
+            )
+        except Exception as e:
+            logger.error(f"Error in stream_chat_oai: {str(e)}")
+            e.print_exc()
+            return ["出现错误，请稍后再试。"], []
+
+    def _stream_chat_oai(
         self,
         conversations,
         model: Optional[str] = None,
@@ -426,7 +442,7 @@ class LongContextRAG:
                         yield chunk.choices[0].delta.content
 
             return response_generator(), []
-        else:            
+        else:
             query = conversations[-1]["content"]
             context = []
 
@@ -453,127 +469,155 @@ class LongContextRAG:
                     only_contexts = v["only_contexts"]
             except json.JSONDecodeError:
                 pass
-            
+
             logger.info(f"Query: {query} only_contexts: {only_contexts}")
             start_time = time.time()
             relevant_docs: List[SourceCode] = self._filter_docs(conversations)
             filter_time = time.time() - start_time
+
+            logger.info(
+                f"Filter time: {filter_time:.2f} seconds with {len(relevant_docs)} docs"
+            )
 
             if only_contexts:
                 return (doc.model_dump_json() + "\n" for doc in relevant_docs), []
 
             if not relevant_docs:
                 return ["没有找到相关的文档来回答这个问题。"], []
-            else:
-                context = [doc.module_name for doc in relevant_docs]
-                
-                console = Console()
 
-                # Create a table for the query information
-                query_table = Table(title="Query Information", show_header=False)
-                query_table.add_row("Query", query)
-                query_table.add_row("Relevant docs", str(len(relevant_docs)))
+            context = [doc.module_name for doc in relevant_docs]
 
-                # Add relevant docs information
-                relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
-                query_table.add_row("Relevant docs list", relevant_docs_info)
+            console = Console()
 
-        first_round_full_docs = []
-        second_round_extracted_docs = []
-        if self.tokenizer is not None:
-            final_relevant_docs = []
-            token_count = 0
-            for doc in relevant_docs:
-                doc_tokens = self.count_tokens(doc.source_code)
-                if token_count + doc_tokens <= self.token_limit:
-                    final_relevant_docs.append(doc)
-                    token_count += doc_tokens
-                else:
-                    break
-            
-            ## 如果relevant_docs 拼接后超过了 token_limit 限制，那么我们会重新获取文档。
-            ## 首先遍历文档，不断添加到 final_relevant_docs 直到达到了 token_limit * 0.6 的限制
-            ## 剩下的文档，我们会继续做遍历，但是会对每个文档做信息抽取，然后继续添加到 final_relevant_docs 中
-            ## 直到 token 数量达到 token_limit * 0.4 的限制
-            
-            if len(final_relevant_docs) < len(relevant_docs):                
-                ## 过滤出前面60% token的文档                                
+            # Create a table for the query information
+            query_table = Table(title="Query Information", show_header=False)
+            query_table.add_row("Query", query)
+            query_table.add_row("Relevant docs", str(len(relevant_docs)))
+
+            # Add relevant docs information
+            relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
+            query_table.add_row("Relevant docs list", relevant_docs_info)
+
+            first_round_full_docs = []
+            second_round_extracted_docs = []
+            sencond_round_time = 0
+
+            if self.tokenizer is not None:
+                final_relevant_docs = []
                 token_count = 0
-                new_token_limit = self.token_limit * 0.6
                 for doc in relevant_docs:
                     doc_tokens = self.count_tokens(doc.source_code)
-                    if token_count + doc_tokens <= new_token_limit:                        
-                        first_round_full_docs.append(first_round_full_docs)
+                    if token_count + doc_tokens <= self.token_limit:
+                        final_relevant_docs.append(doc)
                         token_count += doc_tokens
                     else:
                         break
-                
-                ## 获取剩下的token数量 和 文档
-                remaining_tokens = self.token_limit - new_token_limit
-                remaining_docs = relevant_docs[len(first_round_full_docs):]
-                
-                with ThreadPoolExecutor(max_workers=len(remaining_docs)) as executor:
-                    future_to_doc = {executor.submit(self.process_doc, doc, conversations, remaining_tokens): doc for doc in remaining_docs}
-                    
-                    for future in as_completed(future_to_doc):
-                        doc = future_to_doc[future]
-                        try:
-                            result = future.result()
-                            if result:
-                                second_round_extracted_docs.append(result)
-                                remaining_tokens -= self.count_tokens(result.source_code)
-                            if remaining_tokens <= 0:
-                                break
-                        except Exception as exc:
-                            print(f'Processing doc {doc.module_name} generated an exception: {exc}')
 
-    def process_doc(self, doc, conversations, remaining_tokens):
-        extracted_info = self.extract_relevance_info_from_docs_with_conversation.with_llm(self.llm).run(conversations, [doc.source_code])
-        extracted_tokens = self.count_tokens(extracted_info)
-        if remaining_tokens - extracted_tokens >= 0:
-            return SourceCode(module_name=doc.module_name, source_code=extracted_info)
-        return None
+                ## 如果relevant_docs 拼接后超过了 token_limit 限制，那么我们会重新获取文档。
+                ## 首先遍历文档，不断添加到 final_relevant_docs 直到达到了 token_limit * 0.6 的限制
+                ## 剩下的文档，我们会继续做遍历，但是会对每个文档做信息抽取，然后继续添加到 final_relevant_docs 中
+                ## 直到 token 数量达到 token_limit * 0.4 的限制
 
-            relevant_docs = first_round_full_docs + second_round_extracted_docs
-        else:
-            relevant_docs = relevant_docs[: self.args.index_filter_file_num]
+                if len(final_relevant_docs) < len(relevant_docs):
+                    ## 过滤出前面60% token的文档
+                    token_count = 0
+                    new_token_limit = self.token_limit * 0.8
+                    for doc in relevant_docs:
+                        doc_tokens = self.count_tokens(doc.source_code)
+                        if token_count + doc_tokens <= new_token_limit:
+                            first_round_full_docs.append(doc)
+                            token_count += doc_tokens
+                        else:
+                            break
 
-                
-        query_table.add_row("Only contexts", str(only_contexts))
-        query_table.add_row("Filter time", f"{filter_time:.2f} seconds")
-        query_table.add_row("Final relevant docs", str(len(relevant_docs)))
-        query_table.add_row("first_round_full_docs", len(first_round_full_docs))
-        query_table.add_row("second_round_extracted_docs", len(second_round_extracted_docs))        
-        
-        # Add relevant docs information
-        final_relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
-        query_table.add_row("Final Relevant docs list", final_relevant_docs_info)                
+                    ## 获取剩下的token数量 和 文档
+                    sencond_round_start_time = time.time()
+                    remaining_tokens = self.token_limit - new_token_limit
+                    remaining_docs = relevant_docs[len(first_round_full_docs) :]                    
 
-        # Create a panel to contain the table
-        panel = Panel(
-            query_table,
-            title="RAG Search Results",
-            expand=False,
-        )
+                    with ThreadPoolExecutor(
+                        max_workers=self.args.index_filter_workers or 5
+                    ) as executor:
 
-        # Log the panel using rich
-        console.print(panel)
+                        def process_doc(doc):                            
+                            extracted_info = self.extract_relevance_info_from_docs_with_conversation.with_llm(
+                                self.llm
+                            ).run(
+                                conversations, [doc.source_code]
+                            )
+                            extracted_tokens = self.count_tokens(extracted_info)
+                            return SourceCode(
+                                module_name=doc.module_name, source_code=extracted_info
+                            )
 
-        new_conversations = conversations[:-1] + [
-            {
-                "role": "user",
-                "content": self._answer_question.prompt(
-                    query=query,
-                    relevant_docs=[doc.source_code for doc in relevant_docs],
-                ),
-            }
-        ]
+                        future_to_doc = {}
+                        for doc in remaining_docs:
+                            future = executor.submit(process_doc, doc)
+                            future_to_doc[future] = doc
 
-        chunks = self.llm.stream_chat_oai(
-            conversations=new_conversations,
-            model=model,
-            role_mapping=role_mapping,
-            llm_config=llm_config,
-            delta_mode=True,
-        )
-        return (chunk[0] for chunk in chunks), context
+                        for future in as_completed(future_to_doc):
+                            doc = future_to_doc[future]
+                            try:
+                                result = future.result()
+                                if result:
+                                    second_round_extracted_docs.append(result)
+                                    remaining_tokens -= self.count_tokens(
+                                        result.source_code
+                                    )
+                                if remaining_tokens <= 0:
+                                    break
+                            except Exception as exc:
+                                logger.info(
+                                    f"Processing doc {doc.module_name} generated an exception: {exc}"
+                                )
+                    final_relevant_docs = (
+                        first_round_full_docs + second_round_extracted_docs
+                    )
+                    sencond_round_time = time.time() - sencond_round_start_time
+                relevant_docs = final_relevant_docs
+            else:
+                relevant_docs = relevant_docs[: self.args.index_filter_file_num]
+
+            logger.info(f"Finally send to model: {len(relevant_docs)}")
+
+            query_table.add_row("Only contexts", str(only_contexts))
+            query_table.add_row("Filter time", f"{filter_time:.2f} seconds")
+            query_table.add_row("Final relevant docs", str(len(relevant_docs)))
+            query_table.add_row("first_round_full_docs", str(len(first_round_full_docs)))
+            query_table.add_row("second_round_extracted_docs", str(len(second_round_extracted_docs)))
+            query_table.add_row("Second round time", f"{sencond_round_time:.2f} seconds")
+
+            # Add relevant docs information
+            final_relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
+            query_table.add_row("Final Relevant docs list", final_relevant_docs_info)
+
+            # Create a panel to contain the table
+            panel = Panel(
+                query_table,
+                title="RAG Search Results",
+                expand=False,
+            )
+
+            # Log the panel using rich
+            console.print(panel)
+
+            logger.info(f"Start to send to model {model}")
+
+            new_conversations = conversations[:-1] + [
+                {
+                    "role": "user",
+                    "content": self._answer_question.prompt(
+                        query=query,
+                        relevant_docs=[doc.source_code for doc in relevant_docs],
+                    ),
+                }
+            ]            
+
+            chunks = self.llm.stream_chat_oai(
+                conversations=new_conversations,
+                model=model,
+                role_mapping=role_mapping,
+                llm_config=llm_config,
+                delta_mode=True,
+            )
+            return (chunk[0] for chunk in chunks), context
