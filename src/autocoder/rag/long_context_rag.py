@@ -509,16 +509,30 @@ class LongContextRAG:
                         break
                 
                 ## 获取剩下的token数量 和 文档
-                ramaining_tokens = self.token_limit - new_token_limit
+                remaining_tokens = self.token_limit - new_token_limit
                 remaining_docs = relevant_docs[len(first_round_full_docs):]
-                for doc in remaining_docs:
-                    extracted_info = self.extract_relevance_info_from_docs_with_conversation.with_llm(self.llm).run(conversations, [doc.source_code])
-                    extracted_tokens = self.count_tokens(extracted_info)
-                    if ramaining_tokens - extracted_tokens >= 0:
-                        second_round_extracted_docs.append(SourceCode(module_name=doc.module_name, source_code=extracted_info))
-                        extracted_tokens -= extracted_tokens
-                    else:
-                        break
+                
+                with ThreadPoolExecutor(max_workers=len(remaining_docs)) as executor:
+                    future_to_doc = {executor.submit(self.process_doc, doc, conversations, remaining_tokens): doc for doc in remaining_docs}
+                    
+                    for future in as_completed(future_to_doc):
+                        doc = future_to_doc[future]
+                        try:
+                            result = future.result()
+                            if result:
+                                second_round_extracted_docs.append(result)
+                                remaining_tokens -= self.count_tokens(result.source_code)
+                            if remaining_tokens <= 0:
+                                break
+                        except Exception as exc:
+                            print(f'Processing doc {doc.module_name} generated an exception: {exc}')
+
+    def process_doc(self, doc, conversations, remaining_tokens):
+        extracted_info = self.extract_relevance_info_from_docs_with_conversation.with_llm(self.llm).run(conversations, [doc.source_code])
+        extracted_tokens = self.count_tokens(extracted_info)
+        if remaining_tokens - extracted_tokens >= 0:
+            return SourceCode(module_name=doc.module_name, source_code=extracted_info)
+        return None
 
             relevant_docs = first_round_full_docs + second_round_extracted_docs
         else:
