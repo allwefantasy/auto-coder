@@ -261,28 +261,30 @@ class LongContextRAG:
                         with open(file_path, "rb") as f:
                             content = self.extract_text_from_docx(f.read())
                         documents.append(
-                            SourceCode(module_name=file_path, source_code=content)
+                            SourceCode(module_name=f"##File: {file_path}", source_code=content)
                         )
                     elif file.endswith(".xlsx") or file.endswith(".xls"):
                         sheets = self.extract_text_from_excel(file_path)
                         for sheet in sheets:
                             documents.append(
                                 SourceCode(
-                                    module_name=f"{file_path}#{sheet[0]}",
+                                    module_name=f"##File: {file_path}#{sheet[0]}",
                                     source_code=sheet[1],
                                 )
                             )
                     elif file.endswith(".pptx"):
                         slides = self.extract_text_from_ppt(file_path)
+                        content = ""
                         for slide in slides:
-                            documents.append(
-                                SourceCode(module_name=slide[0], source_code=slide[1])
-                            )
+                            content += f"#{slide[0]}\n{slide[1]}\n\n"
+                        documents.append(
+                                SourceCode(module_name=f"##File: {file_path}", source_code=content)
+                            )    
                     else:
                         with open(file_path, "r", encoding="utf-8") as f:
                             content = f.read()
                             documents.append(
-                                SourceCode(module_name=file_path, source_code=content)
+                                SourceCode(module_name=f"##File: {file_path}", source_code=content)
                             )
                 except Exception as e:
                     logger.error(f"Error processing file {file_path}: {str(e)}")
