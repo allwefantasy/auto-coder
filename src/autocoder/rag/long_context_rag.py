@@ -121,12 +121,14 @@ class LongContextRAG:
         return sheet_list
 
     @byzerllm.prompt()
-    def _check_relevance(self, query: str, document: str) -> str:
+    def _check_relevance(self, query: str, documents: List[str]) -> str:
         """
         请判断以下文档是否能够回答给出的问题。
 
         文档：
-        {{ document }}
+        {% for doc in documents %}
+        {{ doc }}
+        {% endfor %}
 
         问题：{{ query }}
 
@@ -134,9 +136,28 @@ class LongContextRAG:
         """
 
     @byzerllm.prompt()
-    def _answer_question(
-        self, query: str, relevant_docs: List[str]
-    ) -> Generator[str, None, None]:
+    def _check_relevance_with_conversation(
+        self, conversations: List[Dict[str, str]], documents: List[str]
+    ) -> str:
+        """
+        使用以下文档和对话历史来回答问题。如果文档中没有相关信息，请说"我没有足够的信息来回答这个问题"。
+
+        文档：
+        {% for doc in documents %}
+        {{ doc }}
+        {% endfor %}
+
+        对话历史：
+        {% for msg in conversations %}
+        <{{ msg.role }}>: {{ msg.content }}
+        {% endfor %}
+
+        请结合提供的文档以及用户对话历史，判断提供的文档是不是能回答用户的最后一个问题。
+        如果该文档提供的知识能够回答问题，那么请回复"yes" 否则回复"no"。
+        """
+
+    @byzerllm.prompt()
+    def _answer_question(self, query: str, relevant_docs: List[str]) -> Generator[str, None, None]:
         """
         使用以下文档来回答问题。如果文档中没有相关信息，请说"我没有足够的信息来回答这个问题"。
 
@@ -146,28 +167,6 @@ class LongContextRAG:
         {% endfor %}
 
         问题：{{ query }}
-
-        回答：
-        """
-
-    @byzerllm.prompt()
-    def _answer_question_with_conversation(
-        self, conversations: List[Dict[str, str]], relevant_docs: List[str]
-    ) -> Generator[str, None, None]:
-        """
-        使用以下文档和对话历史来回答问题。如果文档中没有相关信息，请说"我没有足够的信息来回答这个问题"。
-
-        文档：
-        {% for doc in relevant_docs %}
-        {{ doc }}
-        {% endfor %}
-
-        对话历史：
-        {% for msg in conversations %}
-        {{ msg.role }}: {{ msg.content }}
-        {% endfor %}
-
-        请根据上述信息回答最后一个用户的问题。
 
         回答：
         """
@@ -208,9 +207,7 @@ class LongContextRAG:
                 if self.required_exts:
                     if not any(file.endswith(ext) for ext in self.required_exts):
                         continue
-                else:
-                    if not file.endswith((".md", ".pdf", ".docx", ".xlsx", ".xls")):
-                        continue
+
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, self.path)
 
@@ -219,23 +216,29 @@ class LongContextRAG:
                         with open(file_path, "rb") as f:
                             content = self.extract_text_from_pdf(f.read())
                         documents.append(
-                            SourceCode(module_name=relative_path, source_code=content)
+                            SourceCode(module_name=file_path, source_code=content)
                         )
                     elif file.endswith(".docx"):
                         with open(file_path, "rb") as f:
                             content = self.extract_text_from_docx(f.read())
                         documents.append(
-                            SourceCode(module_name=relative_path, source_code=content)
+                            SourceCode(module_name=file_path, source_code=content)
                         )
                     elif file.endswith(".xlsx") or file.endswith(".xls"):
                         sheets = self.extract_text_from_excel(file_path)
                         for sheet in sheets:
                             documents.append(
-                                SourceCode(module_name=sheet[0], source_code=sheet[1])
+                                SourceCode(
+                                    module_name=f"{file_path}#{sheet[0]}",
+                                    source_code=sheet[1],
+                                )
                             )
                     else:
                         with open(file_path, "r", encoding="utf-8") as f:
                             content = f.read()
+                            documents.append(
+                                SourceCode(module_name=file_path, source_code=content)
+                            )
                 except Exception as e:
                     logger.error(f"Error processing file {file_path}: {str(e)}")
 
@@ -283,26 +286,26 @@ class LongContextRAG:
                 url = ",".join(contexts)
                 return [SourceCode(module_name=f"RAG:{url}", source_code="".join(v))]
 
-    def _filter_docs(self, query: str) -> List[SourceCode]:
+    def _filter_docs(self, conversations: List[Dict[str, str]]) -> List[SourceCode]:
         documents = self._retrieve_documents()
         with ThreadPoolExecutor(
             max_workers=self.args.index_filter_workers or 5
         ) as executor:
             future_to_doc = {}
             for doc in documents:
-                if (
-                    self.tokenizer
-                    and self.count_tokens(doc.source_code) > self.token_limit
-                ):
+                content = self._check_relevance_with_conversation.prompt(
+                    conversations, [doc.source_code]
+                )
+                if self.tokenizer and self.count_tokens(content) > self.token_limit:
                     logger.warning(
-                        f"{doc.module_name} 文件超过 120k tokens，将无法使用 RAG 模型进行搜索。"
+                        f"{doc.module_name} 以及对话上线文 文件超过 120k tokens，将无法使用 RAG 模型进行搜索。"
                     )
                     continue
 
                 m = executor.submit(
-                    self._check_relevance.with_llm(self.llm).run,
-                    query,
-                    f"##File: {doc.module_name}\n{doc.source_code}",
+                    self._check_relevance_with_conversation.with_llm(self.llm).run,
+                    conversations,
+                    [f"##File: {doc.module_name}\n{doc.source_code}"],
                 )
                 future_to_doc[m] = doc
         relevant_docs = []
@@ -325,7 +328,6 @@ class LongContextRAG:
         llm_config: Dict[str, Any] = {},
     ):
         if self.client:
-            query = conversations[-1]["content"]
             response = self.client.chat.completions.create(
                 model=model,
                 messages=conversations,
@@ -343,7 +345,8 @@ class LongContextRAG:
 
             if (
                 "使用四到五个字直接返回这句话的简要主题，不要解释、不要标点、不要语气词、不要多余文本，不要加粗，如果没有主题"
-                in query or "简要总结一下对话内容，用作后续的上下文提示 prompt，控制在 200 字以内"
+                in query
+                or "简要总结一下对话内容，用作后续的上下文提示 prompt，控制在 200 字以内"
                 in query
             ):
                 chunks = self.llm.stream_chat_oai(
@@ -353,7 +356,7 @@ class LongContextRAG:
                     llm_config=llm_config,
                     delta_mode=True,
                 )
-                return (chunk[0] for chunk in chunks), context           
+                return (chunk[0] for chunk in chunks), context
 
             only_contexts = False
             try:
@@ -365,7 +368,7 @@ class LongContextRAG:
             except json.JSONDecodeError:
                 pass
 
-            relevant_docs: List[SourceCode] = self._filter_docs(query)
+            relevant_docs: List[SourceCode] = self._filter_docs(conversations)
 
             logger.info(
                 f"Query: {query} Relevant docs: {len(relevant_docs)} only_contexts: {only_contexts}"

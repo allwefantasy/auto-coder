@@ -34,3 +34,4 @@ colorama
 pylint
 reportlab
 pathspec
+openpyxl

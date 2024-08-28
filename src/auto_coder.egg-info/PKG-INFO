@@ -43,6 +43,7 @@ Requires-Dist: colorama
 Requires-Dist: pylint
 Requires-Dist: reportlab
 Requires-Dist: pathspec
+Requires-Dist: openpyxl
 
 <p align="center">
   <picture>    
