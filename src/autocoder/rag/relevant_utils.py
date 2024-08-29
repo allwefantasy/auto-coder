@@ -1,4 +1,10 @@
 from autocoder.common import AutoCoderArgs, SourceCode
+from pydantic import BaseModel
+
+class FilterDoc(BaseModel):
+    source_code: SourceCode
+    relevance: DocRelevance
+
 from .relevant_utils import DocRelevance, parse_relevance
 
 class LongContextRAG:
