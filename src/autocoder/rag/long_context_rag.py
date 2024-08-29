@@ -31,6 +31,7 @@ class LongContextRAG:
         self.llm = llm
         self.args = args
         self.path = path
+        self.relevant_score = 5
 
         self.tokenizer = None
         if llm.is_model_exist("deepseek_tokenizer"):
@@ -457,8 +458,8 @@ class LongContextRAG:
                 doc = future_to_doc[future]
                 v = future.result()
                 relevance = parse_relevance(v)
-                if relevance and relevance.is_relevant:
-                    relevant_docs.append(FilterDoc(source_code=doc, relevance=relevance))
+                if relevance and relevance.is_relevant and relevance.relevant_score >= self.relevant_score:
+                    relevant_docs.append(FilterDoc(source_code=doc, relevance=relevance))                
             except Exception as exc:
                 logger.error(f"Document processing generated an exception: {exc}")
 
@@ -535,6 +536,8 @@ class LongContextRAG:
             start_time = time.time()
             relevant_docs: List[FilterDoc] = self._filter_docs(conversations)
             filter_time = time.time() - start_time
+            
+            #MARK
 
             logger.info(
                 f"Filter time: {filter_time:.2f} seconds with {len(relevant_docs)} docs"

@@ -1,5 +1,7 @@
 from autocoder.common import AutoCoderArgs, SourceCode
 from pydantic import BaseModel
+import re
+from typing import Optional
 
 class DocRelevance(BaseModel):
     is_relevant: bool
@@ -8,9 +10,6 @@ class DocRelevance(BaseModel):
 class FilterDoc(BaseModel):
     source_code: SourceCode
     relevance: DocRelevance
-
-import re
-from typing import Optional
 
 def parse_relevance(text: str) -> Optional[DocRelevance]:
     pattern = r"(yes|no)/(\d+)"
