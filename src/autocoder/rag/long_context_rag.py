@@ -537,7 +537,20 @@ class LongContextRAG:
             relevant_docs: List[FilterDoc] = self._filter_docs(conversations)
             filter_time = time.time() - start_time
             
-            #MARK
+            # Filter relevant_docs to only include those with is_relevant=True
+            highly_relevant_docs = [doc for doc in relevant_docs if doc.relevance.is_relevant]
+
+            if highly_relevant_docs:
+                relevant_docs = highly_relevant_docs
+                logger.info(f"Found {len(relevant_docs)} highly relevant documents")
+            else:
+                prefix_chunk = SourceCode(
+                    module_name="prefix_chunk",
+                    source_code="没有找到特别相关的内容，以下是一些可能相关的文档，我们将尝试从中回答你的问题。"
+                )
+                relevant_docs.insert(0, prefix_chunk)
+                logger.info("No highly relevant documents found. Added a prefix chunk to indicate this.")
+
 
             logger.info(
                 f"Filter time: {filter_time:.2f} seconds with {len(relevant_docs)} docs"
