@@ -1,14 +1,15 @@
 from autocoder.common import AutoCoderArgs, SourceCode
 from pydantic import BaseModel
 
+class DocRelevance(BaseModel):
+    is_relevant: bool
+    relevant_score: int
+
 class FilterDoc(BaseModel):
     source_code: SourceCode
     relevance: DocRelevance
 
-from .relevant_utils import DocRelevance, parse_relevance
+def parse_relevance():
+    pass
 
-class LongContextRAG:
-    def __init__(self, llm: ByzerLLM, args: AutoCoderArgs, path: str) -> None:
-        self.llm = llm
-        self.args = args
-        self.path = path
+

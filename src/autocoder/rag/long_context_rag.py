@@ -421,7 +421,7 @@ class LongContextRAG:
             return [SourceCode.model_validate(json_line) for json_line in json_lines]
         else:
             if only_contexts:
-                return self._filter_docs([{"role": "user", "content": target_query}])
+                return [doc.source_code for doc in self._filter_docs([{"role": "user", "content": target_query}])]
             else:
                 v, contexts = self.stream_chat_oai(
                     conversations=[{"role": "user", "content": target_query}]
@@ -541,12 +541,15 @@ class LongContextRAG:
             )
 
             if only_contexts:
-                return (doc.model_dump_json() + "\n" for doc in relevant_docs), []
+                return (doc.source_code.model_dump_json() + "\n" for doc in relevant_docs), []
 
             if not relevant_docs:
                 return ["没有找到相关的文档来回答这个问题。"], []
 
             context = [doc.source_code.module_name for doc in relevant_docs]
+
+            # 将 FilterDoc 转化为 SourceCode 方便后续的逻辑继续做处理
+            relevant_docs = [doc.source_code for doc in relevant_docs]
 
             console = Console()
 
