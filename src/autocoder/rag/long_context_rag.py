@@ -246,39 +246,29 @@ class LongContextRAG:
         任务:
         1. 分析最后一个用户问题及其上下文。
         2. 在文档中找出与问题相关的一个或多个重要信息段。
-        3. 对每个相关信息段，确定其起始行号(start_line)和结束行号(end_line)。
-        4. 信息段数量不超过4个。
+        3. 对每个相关信息段，确定其唯一的起始(start_str)和结束(end_str)字符串。
 
         输出要求:
-        1. 返回一个JSON数组，每个元素包含"start_line"和"end_line"。
-        2. start_line和end_line必须是整数，表示文档中的行号。
-        3. 行号从1开始计数。
+        1. 返回一个JSON数组，每个元素包含"start_str"和"end_str"。
+        2. start_str和end_str必须在原文中出现，但只能出现一次，并且两者之间不能重叠。
+        3. 尽量选择简短但唯一的start_str和end_str。
         4. 如果没有相关信息，返回空数组[]。
 
         输出格式:
         严格的JSON数组，不包含其他文字或解释。
 
         示例:
-        1.  文档：
-            1 这是这篇动物科普文。
-            2 大象是陆地上最大的动物之一。
-            3 它们生活在非洲和亚洲。
-            问题：大象生活在哪里？
-            返回：[{"start_line": 2, "end_line": 3}]
+        1. 文档：大象是陆地上最大的动物之一。它们生活在非洲和亚洲。
+           问题：大象生活在哪里？
+           返回：[{"start_str": "它们生活", "end_str": "在非洲和亚洲。"}]
 
-        2.  文档：
-            1 地球是太阳系第三行星，
-            2 有海洋、沙漠，温度适宜，
-            3 是已知唯一有生命的星球。
-            4 太阳则是太阳系的唯一恒心。
-            问题：地球的特点是什么？
-            返回：[{"start_line": 1, "end_line": 3}]
+        2. 文档：地球是太阳系第三行星，有海洋、沙漠，温度适宜，是已知唯一有生命的星球。
+           问题：地球的特点是什么？
+           返回：[{"start_str": "地球是太阳系", "end_str": "有生命的星球。"}]
 
-        3.  文档：
-            1 苹果富含维生素。
-            2 香蕉含有大量钾元素。
-            问题：橙子的特点是什么？
-            返回：[]        
+        3. 文档：苹果富含维生素。香蕉含有大量钾元素。
+           问题：橙子的特点是什么？
+           返回：[]
         """
 
     @byzerllm.prompt()
@@ -606,41 +596,40 @@ class LongContextRAG:
                                 module_name=doc.module_name, source_code=extracted_info
                             )
                         
-    def process_range_doc(self, doc, max_retries=3):
-        for attempt in range(max_retries):
-            content = ""
-            try:
-                source_code_with_line_number = ""          
-                source_code_lines = doc.source_code.split("\n")  
-                for idx, line in enumerate(source_code_lines):
-                    source_code_with_line_number += f"{idx+1} {line}\n"                
-
-                extracted_info = self.extract_relevance_range_from_docs_with_conversation.with_llm(
-                    self.llm
-                ).run(
-                    conversations, [source_code_with_line_number]
-                )
+                        def process_range_doc(doc, max_retries=3):
+                            for attempt in range(max_retries):
+                                content = ""
+                                try:
+                                    extracted_info = self.extract_relevance_range_from_docs_with_conversation.with_llm(
+                                        self.llm
+                                    ).run(
+                                        conversations, [doc.source_code]
+                                    )
+                                    
+                                    with open('/tmp/rag.json', 'a', encoding='utf-8') as f:                                        
+                                        f.write(json.dumps({"conversation":conversations, "doc":[doc.source_code]},ensure_ascii=False)+"\n")
                                                                         
-                json_str = extract_code(extracted_info)[0][1]
-                json_objs = json.loads(json_str)                                    
-                                                
-                for json_obj in json_objs:
-                    start_line = json_obj["start_line"] - 1
-                    end_line = json_obj["end_line"]
-                    chunk = "\n".join(source_code_lines[start_line:end_line])
-                    content += chunk + "\n"
-                
-                return SourceCode(
-                    module_name=doc.module_name, source_code=content.strip()
-                )
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    logger.warning(f"Error processing doc {doc.module_name}, retrying... (Attempt {attempt + 1}) Error: {str(e)}")                                        
-                else:
-                    logger.error(f"Failed to process doc {doc.module_name} after {max_retries} attempts: {str(e)}")
-                    return SourceCode(
-                        module_name=doc.module_name, source_code=content.strip()
-                    )
+                                    json_str = extract_code(extracted_info)[0][1]
+                                    json_objs = json.loads(json_str)                                    
+                                                                        
+                                    for json_obj in json_objs:
+                                        start_str = json_obj["start_str"]
+                                        end_str = json_obj["end_str"]
+                                        start_index = doc.source_code.index(start_str)
+                                        end_index = doc.source_code.index(end_str) + len(end_str)
+                                        content += doc.source_code[start_index:end_index] + "\n"                                        
+                                    
+                                    return SourceCode(
+                                        module_name=doc.module_name, source_code=content.strip()
+                                    )
+                                except Exception as e:
+                                    if attempt < max_retries - 1:
+                                        logger.warning(f"Error processing doc {doc.module_name}, retrying... (Attempt {attempt + 1})")                                        
+                                    else:
+                                        logger.error(f"Failed to process doc {doc.module_name} after {max_retries} attempts: {str(e)}")
+                                        return SourceCode(
+                                        module_name=doc.module_name, source_code=content.strip()
+                                    )
 
                         future_to_doc = {}
                         for doc in remaining_docs:
