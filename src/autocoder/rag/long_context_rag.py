@@ -250,7 +250,7 @@ class LongContextRAG:
 
         输出要求:
         1. 返回一个JSON数组，每个元素包含"start_str"和"end_str"。
-        2. start_str和end_str必须在原文中唯一且不重叠。
+        2. start_str和end_str必须在原文中出现，但只能出现一次，并且两者之间不能重叠。
         3. 尽量选择简短但唯一的start_str和end_str。
         4. 如果没有相关信息，返回空数组[]。
 
