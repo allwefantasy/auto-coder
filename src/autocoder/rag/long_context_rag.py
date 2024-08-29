@@ -429,7 +429,7 @@ class LongContextRAG:
                 url = ",".join(contexts)
                 return [SourceCode(module_name=f"RAG:{url}", source_code="".join(v))]
 
-    def _filter_docs(self, conversations: List[Dict[str, str]]) -> List[SourceCode]:
+    def _filter_docs(self, conversations: List[Dict[str, str]]) -> List[Tuple[SourceCode, DocRelevance]]:
         documents = self._retrieve_documents()
         with ThreadPoolExecutor(
             max_workers=self.args.index_filter_workers or 5
@@ -456,11 +456,14 @@ class LongContextRAG:
             try:
                 doc = future_to_doc[future]
                 v = future.result()
-                if "yes" in v.strip().lower():
-                    relevant_docs.append(doc)
+                relevance = parse_relevance(v)
+                if relevance.is_relevant:
+                    relevant_docs.append((doc, relevance))
             except Exception as exc:
                 logger.error(f"Document processing generated an exception: {exc}")
 
+        # Sort relevant_docs by relevance score in descending order
+        relevant_docs.sort(key=lambda x: x[1].relevant_score, reverse=True)
         return relevant_docs
     
     def stream_chat_oai(
