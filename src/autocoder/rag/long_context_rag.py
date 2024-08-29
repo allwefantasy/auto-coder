@@ -22,7 +22,7 @@ from openpyxl import load_workbook
 from pypdf import PdfReader
 import time
 from byzerllm.utils.client.code_utils import extract_code
-
+from autocoder.rag.relevant_utils import parse_relevance
 from autocoder.common import AutoCoderArgs, SourceCode
 
 
@@ -457,7 +457,7 @@ class LongContextRAG:
                 doc = future_to_doc[future]
                 v = future.result()
                 relevance = parse_relevance(v)
-                if relevance.is_relevant:
+                if relevance and relevance.is_relevant:
                     relevant_docs.append((doc, relevance))
             except Exception as exc:
                 logger.error(f"Document processing generated an exception: {exc}")
