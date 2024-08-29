@@ -22,7 +22,7 @@ from openpyxl import load_workbook
 from pypdf import PdfReader
 import time
 from byzerllm.utils.client.code_utils import extract_code
-from autocoder.rag.relevant_utils import parse_relevance
+from autocoder.rag.relevant_utils import parse_relevance, FilterDoc
 from autocoder.common import AutoCoderArgs, SourceCode
 
 
