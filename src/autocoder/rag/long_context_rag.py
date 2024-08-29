@@ -564,7 +564,7 @@ class LongContextRAG:
                 ## 直到 token 数量达到 token_limit * 0.4 的限制
 
                 if len(final_relevant_docs) < len(relevant_docs):
-                    ## 过滤出前面60% token的文档
+                    ## 过滤出前面80% token的文档
                     token_count = 0
                     new_token_limit = self.token_limit * 0.8
                     for doc in relevant_docs:
@@ -582,8 +582,7 @@ class LongContextRAG:
 
                     with ThreadPoolExecutor(
                         max_workers=self.args.index_filter_workers or 5
-                    ) as executor:
-
+                    ) as executor:                        
                         def process_doc(doc):                            
                             extracted_info = self.extract_relevance_info_from_docs_with_conversation.with_llm(
                                 self.llm
@@ -595,57 +594,61 @@ class LongContextRAG:
                                 module_name=doc.module_name, source_code=extracted_info
                             )
                         
-    def process_range_doc(self, doc, max_retries=3):
-        for attempt in range(max_retries):
-            try:
-                extracted_info = self.extract_relevance_range_from_docs_with_conversation.with_llm(
-                    self.llm
-                ).run(
-                    self.conversations, [doc.source_code]
-                )
-
-                json_str = extract_code(extracted_info, language="json")[0][1]
-                json_objs = json.loads(json_str)
-                
-                content = ""
-                for json_obj in json_objs:
-                    start_str = json_obj["start_str"]
-                    end_str = json_obj["end_str"]
-                    start_index = doc.source_code.index(start_str)
-                    end_index = doc.source_code.index(end_str) + len(end_str)
-                    content += doc.source_code[start_index:end_index] + "\n"
-                
-                return SourceCode(
-                    module_name=doc.module_name, source_code=content.strip()
-                )
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    logger.warning(f"Error processing doc {doc.module_name}, retrying... (Attempt {attempt + 1})")
-                    time.sleep(1)  # Wait for 1 second before retrying
-                else:
-                    logger.error(f"Failed to process doc {doc.module_name} after {max_retries} attempts: {str(e)}")
-                    return None
+                        def process_range_doc(doc, max_retries=3):
+                            for attempt in range(max_retries):
+                                content = ""
+                                try:
+                                    extracted_info = self.extract_relevance_range_from_docs_with_conversation.with_llm(
+                                        self.llm
+                                    ).run(
+                                        conversations, [doc.source_code]
+                                    )
+                                    
+                                    with open('/tmp/rag.json', 'a', encoding='utf-8') as f:                                        
+                                        f.write(json.dumps({"conversation":conversations, "doc":[doc.source_code]},ensure_ascii=False)+"\n")
+                                                                        
+                                    json_str = extract_code(extracted_info)[0][1]
+                                    json_objs = json.loads(json_str)                                    
+                                                                        
+                                    for json_obj in json_objs:
+                                        start_str = json_obj["start_str"]
+                                        end_str = json_obj["end_str"]
+                                        start_index = doc.source_code.index(start_str)
+                                        end_index = doc.source_code.index(end_str) + len(end_str)
+                                        content += doc.source_code[start_index:end_index] + "\n"                                        
+                                    
+                                    return SourceCode(
+                                        module_name=doc.module_name, source_code=content.strip()
+                                    )
+                                except Exception as e:
+                                    if attempt < max_retries - 1:
+                                        logger.warning(f"Error processing doc {doc.module_name}, retrying... (Attempt {attempt + 1})")                                        
+                                    else:
+                                        logger.error(f"Failed to process doc {doc.module_name} after {max_retries} attempts: {str(e)}")
+                                        return SourceCode(
+                                        module_name=doc.module_name, source_code=content.strip()
+                                    )
 
                         future_to_doc = {}
                         for doc in remaining_docs:
-                        future = executor.submit(self.process_range_doc, doc)
-                        future_to_doc[future] = doc
+                            future = executor.submit(process_range_doc, doc)
+                            future_to_doc[future] = doc
 
-                    for future in as_completed(future_to_doc):
-                        doc = future_to_doc[future]
-                        try:
-                            result = future.result()
-                            if result and remaining_tokens > 0:
-                                second_round_extracted_docs.append(result)
-                                tokens = self.count_tokens(result.source_code)
-                                if tokens > 0:
-                                    remaining_tokens -= tokens
-                                else:
-                                    logger.warning(f"Token count for doc {doc.module_name} is 0 or negative")
-                        except Exception as exc:
-                            logger.error(
-                                f"Processing doc {doc.module_name} generated an exception: {exc}"
-                            )
+                        for future in as_completed(future_to_doc):
+                            doc = future_to_doc[future]
+                            try:
+                                result = future.result()
+                                if result and remaining_tokens > 0:
+                                    second_round_extracted_docs.append(result)
+                                    tokens = self.count_tokens(result.source_code)
+                                    if tokens > 0:
+                                        remaining_tokens -= tokens
+                                    else:
+                                        logger.warning(f"Token count for doc {doc.module_name} is 0 or negative")
+                            except Exception as exc:
+                                logger.error(
+                                    f"Processing doc {doc.module_name} generated an exception: {exc}"
+                                )
                     final_relevant_docs = (
                         first_round_full_docs + second_round_extracted_docs
                     )
