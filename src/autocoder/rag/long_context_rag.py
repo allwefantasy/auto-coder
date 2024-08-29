@@ -421,10 +421,10 @@ class LongContextRAG:
             return [SourceCode.model_validate(json_line) for json_line in json_lines]
         else:
             if only_contexts:
-                return self._filter_docs(target_query)
+                return self._filter_docs([{"role": "user", "content": target_query}])
             else:
                 v, contexts = self.stream_chat_oai(
-                    conversations=[{"role": "user", "content": new_query}]
+                    conversations=[{"role": "user", "content": target_query}]
                 )
                 url = ",".join(contexts)
                 return [SourceCode(module_name=f"RAG:{url}", source_code="".join(v))]
@@ -533,7 +533,7 @@ class LongContextRAG:
 
             logger.info(f"Query: {query} only_contexts: {only_contexts}")
             start_time = time.time()
-            relevant_docs: List[SourceCode] = self._filter_docs(conversations)
+            relevant_docs: List[FilterDoc] = self._filter_docs(conversations)
             filter_time = time.time() - start_time
 
             logger.info(
@@ -546,7 +546,7 @@ class LongContextRAG:
             if not relevant_docs:
                 return ["没有找到相关的文档来回答这个问题。"], []
 
-            context = [doc.module_name for doc in relevant_docs]
+            context = [doc.source_code.module_name for doc in relevant_docs]
 
             console = Console()
 
