@@ -22,7 +22,7 @@ from openpyxl import load_workbook
 from pypdf import PdfReader
 import time
 from byzerllm.utils.client.code_utils import extract_code
-from autocoder.rag.relevant_utils import parse_relevance, FilterDoc
+from autocoder.rag.relevant_utils import parse_relevance, FilterDoc, DocRelevance
 from autocoder.common import AutoCoderArgs, SourceCode
 
 
@@ -226,7 +226,7 @@ class LongContextRAG:
         如果文档中没有相关信息，请回复"该文档中没有与问题相关的信息"。
         提取的信息尽量保持和原文中的一样，并且只输出这些信息。
         """
-    
+
     @byzerllm.prompt()
     def extract_relevance_range_from_docs_with_conversation(
         self, conversations: List[Dict[str, str]], documents: List[str]
@@ -280,7 +280,7 @@ class LongContextRAG:
             1 苹果富含维生素。
             2 香蕉含有大量钾元素。
             问题：橙子的特点是什么？
-            返回：[]        
+            返回：[]
         """
 
     @byzerllm.prompt()
@@ -422,7 +422,12 @@ class LongContextRAG:
             return [SourceCode.model_validate(json_line) for json_line in json_lines]
         else:
             if only_contexts:
-                return [doc.source_code for doc in self._filter_docs([{"role": "user", "content": target_query}])]
+                return [
+                    doc.source_code
+                    for doc in self._filter_docs(
+                        [{"role": "user", "content": target_query}]
+                    )
+                ]
             else:
                 v, contexts = self.stream_chat_oai(
                     conversations=[{"role": "user", "content": target_query}]
@@ -458,15 +463,21 @@ class LongContextRAG:
                 doc = future_to_doc[future]
                 v = future.result()
                 relevance = parse_relevance(v)
-                if relevance and relevance.is_relevant and relevance.relevant_score >= self.relevant_score:
-                    relevant_docs.append(FilterDoc(source_code=doc, relevance=relevance))                
+                if (
+                    relevance
+                    and relevance.is_relevant
+                    and relevance.relevant_score >= self.relevant_score
+                ):
+                    relevant_docs.append(
+                        FilterDoc(source_code=doc, relevance=relevance)
+                    )
             except Exception as exc:
                 logger.error(f"Document processing generated an exception: {exc}")
 
         # Sort relevant_docs by relevance score in descending order
         relevant_docs.sort(key=lambda x: x.relevance.relevant_score, reverse=True)
         return relevant_docs
-    
+
     def stream_chat_oai(
         self,
         conversations,
@@ -476,7 +487,10 @@ class LongContextRAG:
     ):
         try:
             return self._stream_chat_oai(
-                conversations, model=model, role_mapping=role_mapping, llm_config=llm_config
+                conversations,
+                model=model,
+                role_mapping=role_mapping,
+                llm_config=llm_config,
             )
         except Exception as e:
             logger.error(f"Error in stream_chat_oai: {str(e)}")
@@ -536,28 +550,37 @@ class LongContextRAG:
             start_time = time.time()
             relevant_docs: List[FilterDoc] = self._filter_docs(conversations)
             filter_time = time.time() - start_time
-            
+
             # Filter relevant_docs to only include those with is_relevant=True
-            highly_relevant_docs = [doc for doc in relevant_docs if doc.relevance.is_relevant]
+            highly_relevant_docs = [
+                doc for doc in relevant_docs if doc.relevance.is_relevant
+            ]
 
             if highly_relevant_docs:
                 relevant_docs = highly_relevant_docs
                 logger.info(f"Found {len(relevant_docs)} highly relevant documents")
             else:
-                prefix_chunk = SourceCode(
-                    module_name="prefix_chunk",
-                    source_code="没有找到特别相关的内容，以下是一些可能相关的文档，我们将尝试从中回答你的问题。"
-                )
-                relevant_docs.insert(0, prefix_chunk)
-                logger.info("No highly relevant documents found. Added a prefix chunk to indicate this.")
-
+                if relevant_docs:
+                    prefix_chunk = FilterDoc(
+                        source_code=SourceCode(
+                            module_name="特殊说明",
+                            source_code="没有找到特别相关的内容，下面的内容是一些不是很相关的文档。在回答问题前，你需要和用户先提前说一下。",
+                        ),
+                        relevance=DocRelevance(False, 0),
+                    )
+                    relevant_docs.insert(0, prefix_chunk)
+                    logger.info(
+                        "No highly relevant documents found. Added a prefix chunk to indicate this."
+                    )
 
             logger.info(
                 f"Filter time: {filter_time:.2f} seconds with {len(relevant_docs)} docs"
             )
 
             if only_contexts:
-                return (doc.source_code.model_dump_json() + "\n" for doc in relevant_docs), []
+                return (
+                    doc.source_code.model_dump_json() + "\n" for doc in relevant_docs
+                ), []
 
             if not relevant_docs:
                 return ["没有找到相关的文档来回答这个问题。"], []
@@ -575,7 +598,9 @@ class LongContextRAG:
             query_table.add_row("Relevant docs", str(len(relevant_docs)))
 
             # Add relevant docs information
-            relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
+            relevant_docs_info = "\n".join(
+                [f"- {doc.module_name}" for doc in relevant_docs]
+            )
             query_table.add_row("Relevant docs list", relevant_docs_info)
 
             first_round_full_docs = []
@@ -617,56 +642,67 @@ class LongContextRAG:
                     ## 获取剩下的token数量 和 文档
                     sencond_round_start_time = time.time()
                     remaining_tokens = self.token_limit - new_token_limit
-                    remaining_docs = relevant_docs[len(first_round_full_docs) :]                    
+                    remaining_docs = relevant_docs[len(first_round_full_docs) :]
 
                     with ThreadPoolExecutor(
                         max_workers=self.args.index_filter_workers or 5
-                    ) as executor:                        
-                        def process_doc(doc):                            
+                    ) as executor:
+
+                        def process_doc(doc):
                             extracted_info = self.extract_relevance_info_from_docs_with_conversation.with_llm(
                                 self.llm
                             ).run(
                                 conversations, [doc.source_code]
-                            )                            
-                            
+                            )
+
                             return SourceCode(
                                 module_name=doc.module_name, source_code=extracted_info
                             )
-                        
+
                         def process_range_doc(doc, max_retries=3):
                             for attempt in range(max_retries):
                                 content = ""
                                 try:
-                                    source_code_with_line_number = ""          
-                                    source_code_lines = doc.source_code.split("\n")  
+                                    source_code_with_line_number = ""
+                                    source_code_lines = doc.source_code.split("\n")
                                     for idx, line in enumerate(source_code_lines):
-                                        source_code_with_line_number += f"{idx+1} {line}\n"                
+                                        source_code_with_line_number += (
+                                            f"{idx+1} {line}\n"
+                                        )
 
                                     extracted_info = self.extract_relevance_range_from_docs_with_conversation.with_llm(
                                         self.llm
                                     ).run(
                                         conversations, [source_code_with_line_number]
                                     )
-                                                                                            
+
                                     json_str = extract_code(extracted_info)[0][1]
-                                    json_objs = json.loads(json_str)                                    
-                                                                    
+                                    json_objs = json.loads(json_str)
+
                                     for json_obj in json_objs:
                                         start_line = json_obj["start_line"] - 1
                                         end_line = json_obj["end_line"]
-                                        chunk = "\n".join(source_code_lines[start_line:end_line])
+                                        chunk = "\n".join(
+                                            source_code_lines[start_line:end_line]
+                                        )
                                         content += chunk + "\n"
-                                    
+
                                     return SourceCode(
-                                        module_name=doc.module_name, source_code=content.strip()
+                                        module_name=doc.module_name,
+                                        source_code=content.strip(),
                                     )
                                 except Exception as e:
                                     if attempt < max_retries - 1:
-                                        logger.warning(f"Error processing doc {doc.module_name}, retrying... (Attempt {attempt + 1}) Error: {str(e)}")                                        
+                                        logger.warning(
+                                            f"Error processing doc {doc.module_name}, retrying... (Attempt {attempt + 1}) Error: {str(e)}"
+                                        )
                                     else:
-                                        logger.error(f"Failed to process doc {doc.module_name} after {max_retries} attempts: {str(e)}")
+                                        logger.error(
+                                            f"Failed to process doc {doc.module_name} after {max_retries} attempts: {str(e)}"
+                                        )
                                         return SourceCode(
-                                            module_name=doc.module_name, source_code=content.strip()
+                                            module_name=doc.module_name,
+                                            source_code=content.strip(),
                                         )
 
                         future_to_doc = {}
@@ -684,7 +720,9 @@ class LongContextRAG:
                                     if tokens > 0:
                                         remaining_tokens -= tokens
                                     else:
-                                        logger.warning(f"Token count for doc {doc.module_name} is 0 or negative")
+                                        logger.warning(
+                                            f"Token count for doc {doc.module_name} is 0 or negative"
+                                        )
                             except Exception as exc:
                                 logger.error(
                                     f"Processing doc {doc.module_name} generated an exception: {exc}"
@@ -702,12 +740,20 @@ class LongContextRAG:
             query_table.add_row("Only contexts", str(only_contexts))
             query_table.add_row("Filter time", f"{filter_time:.2f} seconds")
             query_table.add_row("Final relevant docs", str(len(relevant_docs)))
-            query_table.add_row("first_round_full_docs", str(len(first_round_full_docs)))
-            query_table.add_row("second_round_extracted_docs", str(len(second_round_extracted_docs)))
-            query_table.add_row("Second round time", f"{sencond_round_time:.2f} seconds")
+            query_table.add_row(
+                "first_round_full_docs", str(len(first_round_full_docs))
+            )
+            query_table.add_row(
+                "second_round_extracted_docs", str(len(second_round_extracted_docs))
+            )
+            query_table.add_row(
+                "Second round time", f"{sencond_round_time:.2f} seconds"
+            )
 
             # Add relevant docs information
-            final_relevant_docs_info = "\n".join([f"- {doc.module_name}" for doc in relevant_docs])
+            final_relevant_docs_info = "\n".join(
+                [f"- {doc.module_name}" for doc in relevant_docs]
+            )
             query_table.add_row("Final Relevant docs list", final_relevant_docs_info)
 
             # Create a panel to contain the table
