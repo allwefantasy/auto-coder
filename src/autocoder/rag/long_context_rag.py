@@ -73,7 +73,7 @@ class LongContextRAG:
         self.token_exceed_files = []
         if self.tokenizer is not None:
             self.token_exceed_files = check_token_limit(
-                tokenizer=self.count_tokens,
+                count_tokens=self.count_tokens,
                 token_limit=self.token_limit,
                 retrieve_documents=self._retrieve_documents,
                 max_workers=self.args.index_filter_workers or 5

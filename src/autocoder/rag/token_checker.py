@@ -4,13 +4,13 @@ from loguru import logger
 from autocoder.common import SourceCode
 
 def check_token_limit(
-    tokenizer: Callable[[str], int],
+    count_tokens: Callable[[str], int],
     token_limit: int,
     retrieve_documents: Callable[[], Generator[SourceCode, None, None]],
     max_workers: int
 ) -> List[str]:
     def process_doc(doc: SourceCode) -> str | None:
-        token_num = tokenizer(doc.source_code)
+        token_num = count_tokens(doc.source_code)
         if token_num > token_limit:
             return doc.module_name
         return None
