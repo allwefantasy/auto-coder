@@ -1,7 +1,7 @@
 import json
 import os
 from typing import Any, Dict, Generator, List, Optional, Tuple
-
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import byzerllm
 import pandas as pd
 import pathspec
@@ -15,10 +15,16 @@ from rich.text import Text
 from openai import OpenAI
 import time
 from byzerllm.utils.client.code_utils import extract_code
-from autocoder.rag.loaders import extract_text_from_pdf, extract_text_from_docx, extract_text_from_excel, extract_text_from_ppt
+from autocoder.rag.loaders import (
+    extract_text_from_pdf,
+    extract_text_from_docx,
+    extract_text_from_excel,
+    extract_text_from_ppt,
+)
 from autocoder.rag.relevant_utils import parse_relevance, FilterDoc, DocRelevance
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.rag.token_checker import check_token_limit
+from autocoder.rag.token_limiter import TokenLimiter
 
 
 class LongContextRAG:
@@ -71,7 +77,7 @@ class LongContextRAG:
                 count_tokens=self.count_tokens,
                 token_limit=self.token_limit,
                 retrieve_documents=self._retrieve_documents,
-                max_workers=self.args.index_filter_workers or 5
+                max_workers=self.args.index_filter_workers or 5,
             )
 
     def count_tokens(self, text: str) -> int:
@@ -85,8 +91,6 @@ class LongContextRAG:
         except Exception as e:
             logger.error(f"Error counting tokens: {str(e)}")
             return -1
-
-
 
     @byzerllm.prompt()
     def _check_relevance(self, query: str, documents: List[str]) -> str:
@@ -262,23 +266,23 @@ class LongContextRAG:
                 try:
                     if file.endswith(".pdf"):
                         with open(file_path, "rb") as f:
-                            content = self.extract_text_from_pdf(f.read())
+                            content = extract_text_from_pdf(f.read())
                         yield SourceCode(module_name=file_path, source_code=content)
                     elif file.endswith(".docx"):
                         with open(file_path, "rb") as f:
-                            content = self.extract_text_from_docx(f.read())
+                            content = extract_text_from_docx(f.read())
                         yield SourceCode(
                             module_name=f"##File: {file_path}", source_code=content
                         )
                     elif file.endswith(".xlsx") or file.endswith(".xls"):
-                        sheets = self.extract_text_from_excel(file_path)
+                        sheets = extract_text_from_excel(file_path)
                         for sheet in sheets:
                             yield SourceCode(
                                 module_name=f"##File: {file_path}#{sheet[0]}",
                                 source_code=sheet[1],
                             )
                     elif file.endswith(".pptx"):
-                        slides = self.extract_text_from_ppt(file_path)
+                        slides = extract_text_from_ppt(file_path)
                         content = ""
                         for slide in slides:
                             content += f"#{slide[0]}\n{slide[1]}\n\n"
@@ -515,129 +519,22 @@ class LongContextRAG:
             sencond_round_time = 0
 
             if self.tokenizer is not None:
-                final_relevant_docs = []
-                token_count = 0
-                doc_num_count = 0
-                for doc in relevant_docs:
-                    doc_tokens = self.count_tokens(doc.source_code)
-                    doc_num_count += 1
-                    if token_count + doc_tokens <= self.token_limit:
-                        final_relevant_docs.append(doc)
-                        token_count += doc_tokens
-                    else:
-                        break
-
-                ## 如果relevant_docs 拼接后超过了 token_limit 限制，那么我们会重新获取文档。
-                ## 首先遍历文档，不断添加到 final_relevant_docs 直到达到了 token_limit * 0.6 的限制
-                ## 剩下的文档，我们会继续做遍历，但是会对每个文档做信息抽取，然后继续添加到 final_relevant_docs 中
-                ## 直到 token 数量达到 token_limit * 0.4 的限制
-
-                if len(final_relevant_docs) < len(relevant_docs):
-                    ## 过滤出前面80% token的文档
-                    token_count = 0
-                    new_token_limit = self.token_limit * 0.8
-                    doc_num_count = 0
-                    for doc in relevant_docs:
-                        doc_tokens = self.count_tokens(doc.source_code)
-                        doc_num_count += 1
-                        if token_count + doc_tokens <= new_token_limit:
-                            first_round_full_docs.append(doc)
-                            token_count += doc_tokens
-                        else:
-                            break
-
-                    ## 获取剩下的token数量 和 文档
-                    sencond_round_start_time = time.time()
-                    remaining_tokens = self.token_limit - new_token_limit
-                    remaining_docs = relevant_docs[len(first_round_full_docs) :]
-
-                    with ThreadPoolExecutor(
-                        max_workers=self.args.index_filter_workers or 5
-                    ) as executor:
-
-                        def process_doc(doc):
-                            extracted_info = self.extract_relevance_info_from_docs_with_conversation.with_llm(
-                                self.llm
-                            ).run(
-                                conversations, [doc.source_code]
-                            )
-
-                            return SourceCode(
-                                module_name=doc.module_name, source_code=extracted_info
-                            )
-
-                        def process_range_doc(doc, max_retries=3):
-                            for attempt in range(max_retries):
-                                content = ""
-                                try:
-                                    source_code_with_line_number = ""
-                                    source_code_lines = doc.source_code.split("\n")
-                                    for idx, line in enumerate(source_code_lines):
-                                        source_code_with_line_number += (
-                                            f"{idx+1} {line}\n"
-                                        )
-
-                                    extracted_info = self.extract_relevance_range_from_docs_with_conversation.with_llm(
-                                        self.llm
-                                    ).run(
-                                        conversations, [source_code_with_line_number]
-                                    )
-
-                                    json_str = extract_code(extracted_info)[0][1]
-                                    json_objs = json.loads(json_str)
-
-                                    for json_obj in json_objs:
-                                        start_line = json_obj["start_line"] - 1
-                                        end_line = json_obj["end_line"]
-                                        chunk = "\n".join(
-                                            source_code_lines[start_line:end_line]
-                                        )
-                                        content += chunk + "\n"
-
-                                    return SourceCode(
-                                        module_name=doc.module_name,
-                                        source_code=content.strip(),
-                                    )
-                                except Exception as e:
-                                    if attempt < max_retries - 1:
-                                        logger.warning(
-                                            f"Error processing doc {doc.module_name}, retrying... (Attempt {attempt + 1}) Error: {str(e)}"
-                                        )
-                                    else:
-                                        logger.error(
-                                            f"Failed to process doc {doc.module_name} after {max_retries} attempts: {str(e)}"
-                                        )
-                                        return SourceCode(
-                                            module_name=doc.module_name,
-                                            source_code=content.strip(),
-                                        )
-
-                        future_to_doc = {}
-                        for doc in remaining_docs:
-                            future = executor.submit(process_range_doc, doc)
-                            future_to_doc[future] = doc
-
-                        for future in as_completed(future_to_doc):
-                            doc = future_to_doc[future]
-                            try:
-                                result = future.result()
-                                if result and remaining_tokens > 0:
-                                    second_round_extracted_docs.append(result)
-                                    tokens = self.count_tokens(result.source_code)
-                                    if tokens > 0:
-                                        remaining_tokens -= tokens
-                                    else:
-                                        logger.warning(
-                                            f"Token count for doc {doc.module_name} is 0 or negative"
-                                        )
-                            except Exception as exc:
-                                logger.error(
-                                    f"Processing doc {doc.module_name} generated an exception: {exc}"
-                                )
-                    final_relevant_docs = (
-                        first_round_full_docs + second_round_extracted_docs
-                    )
-                    sencond_round_time = time.time() - sencond_round_start_time
+                
+                token_limiter = TokenLimiter(
+                    count_tokens=self.count_tokens,
+                    token_limit=self.token_limit,
+                    llm=self.llm,
+                    extract_relevance_range_from_docs_with_conversation=self.extract_relevance_range_from_docs_with_conversation,
+                )
+                final_relevant_docs = token_limiter.limit_tokens(
+                    relevant_docs=relevant_docs,
+                    conversations=conversations,
+                    index_filter_workers=self.args.index_filter_workers or 5,
+                )
+                first_round_full_docs = token_limiter.first_round_full_docs
+                second_round_extracted_docs = token_limiter.second_round_extracted_docs
+                sencond_round_time = token_limiter.sencond_round_time
+                
                 relevant_docs = final_relevant_docs
             else:
                 relevant_docs = relevant_docs[: self.args.index_filter_file_num]

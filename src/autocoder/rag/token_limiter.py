@@ -23,6 +23,7 @@ class TokenLimiter:
         )
         self.first_round_full_docs = []
         self.second_round_extracted_docs = []
+        self.sencond_round_time = 0
 
     def limit_tokens(
         self,
@@ -42,7 +43,7 @@ class TokenLimiter:
             else:
                 break
 
-        if len(final_relevant_docs) < len(relevant_docs):            
+        if len(final_relevant_docs) < len(relevant_docs):
 
             token_count = 0
             new_token_limit = self.token_limit * 0.8
@@ -58,7 +59,10 @@ class TokenLimiter:
 
             sencond_round_start_time = time.time()
             remaining_tokens = self.token_limit - new_token_limit
-            remaining_docs = relevant_docs[len(first_round_full_docs) :]
+            remaining_docs = relevant_docs[len(self.first_round_full_docs) :]
+            logger.info(
+                f"first round docs: {len(self.first_round_full_docs)} remaining docs: {len(remaining_docs)} index_filter_workers: {index_filter_workers}"
+            )
 
             with ThreadPoolExecutor(max_workers=index_filter_workers or 5) as executor:
                 future_to_doc = {
@@ -84,10 +88,12 @@ class TokenLimiter:
                             f"Processing doc {doc.module_name} generated an exception: {exc}"
                         )
 
-            final_relevant_docs = self.first_round_full_docs + self.second_round_extracted_docs
-            sencond_round_time = time.time() - sencond_round_start_time
+            final_relevant_docs = (
+                self.first_round_full_docs + self.second_round_extracted_docs
+            )
+            self.sencond_round_time = time.time() - sencond_round_start_time
             logger.info(
-                f"Second round processing time: {sencond_round_time:.2f} seconds"
+                f"Second round processing time: {self.sencond_round_time:.2f} seconds"
             )
 
         return final_relevant_docs
@@ -107,8 +113,7 @@ class TokenLimiter:
                     self.extract_relevance_range_from_docs_with_conversation.with_llm(
                         self.llm
                     ).run(conversations, [source_code_with_line_number])
-                )
-
+                )                
                 json_str = extract_code(extracted_info)[0][1]
                 json_objs = json.loads(json_str)
 
