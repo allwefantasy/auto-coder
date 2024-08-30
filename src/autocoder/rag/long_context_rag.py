@@ -72,11 +72,26 @@ class LongContextRAG:
         ## 检查当前目录下所有文件是否超过 120k tokens ，并且打印出来
         self.token_exceed_files = []
         if self.tokenizer is not None:
-            docs = self._retrieve_documents()
-            for doc in docs:
+            def process_doc(doc):
                 token_num = self.count_tokens(doc.source_code)
                 if token_num > self.token_limit:
-                    self.token_exceed_files.append(doc.module_name)
+                    return doc.module_name
+                return None
+
+            def token_check_generator():
+                docs = self._retrieve_documents()
+                with ThreadPoolExecutor(max_workers=self.args.index_filter_workers or 5) as executor:
+                    futures = []
+                    for doc in docs:
+                        future = executor.submit(process_doc, doc)
+                        futures.append(future)
+                    
+                    for future in as_completed(futures):
+                        result = future.result()
+                        if result:
+                            yield result
+
+            self.token_exceed_files = list(token_check_generator())
 
         if self.token_exceed_files:
             logger.warning(
