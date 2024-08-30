@@ -4,9 +4,9 @@ from tokenizers import Tokenizer
 from multiprocessing import Pool, cpu_count
 from functools import partial
 
-def initialize_tokenizer():
+def initialize_tokenizer(tokenizer_path: str):
     global model
-    model = Tokenizer.from_file("")
+    model = Tokenizer.from_file(tokenizer_path)
 
 def count_tokens(text: str) -> int:
     try:
@@ -20,8 +20,8 @@ def count_tokens(text: str) -> int:
         logger.error(f"Error counting tokens: {str(e)}")
         return -1
 
-def parallel_count_tokens(texts: list[str]) -> list[int]:
+def parallel_count_tokens(texts: list[str], tokenizer_path: str) -> list[int]:
     num_processes = min(cpu_count(), 8)  # 使用最多8个进程
-    with Pool(processes=num_processes, initializer=initialize_tokenizer) as pool:
+    with Pool(processes=num_processes, initializer=initialize_tokenizer, initargs=(tokenizer_path,)) as pool:
         results = pool.map(count_tokens, texts)
     return results
