@@ -7,6 +7,8 @@ class TokenCounter:
     def __init__(self, tokenizer_path: str):
         self.tokenizer_path = tokenizer_path
         self.model = None
+        self.num_processes = cpu_count() - 1 if cpu_count() > 1 else 1
+        self.pool = None
 
     def initialize_tokenizer(self):
         if not self.model:
@@ -24,8 +26,20 @@ class TokenCounter:
             logger.error(f"Error counting tokens: {str(e)}")
             return -1
 
+    def create_pool(self):
+        if self.pool is None:
+            self.pool = Pool(processes=self.num_processes, initializer=self.initialize_tokenizer)
+
+    def close_pool(self):
+        if self.pool is not None:
+            self.pool.close()
+            self.pool.join()
+            self.pool = None
+
     def parallel_count_tokens(self, text: str) -> int:
-        num_processes = cpu_count()-1 if cpu_count() > 1 else 1
-        with Pool(processes=num_processes, initializer=self.initialize_tokenizer) as pool:
-            result = pool.apply(self.count_tokens, (text,))
+        self.create_pool()
+        result = self.pool.apply(self.count_tokens, (text,))
         return result
+
+    def __del__(self):
+        self.close_pool()
