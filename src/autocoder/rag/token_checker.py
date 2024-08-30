@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Callable, Generator
+from typing import List, Callable, Generator, Tuple
 from loguru import logger
 from autocoder.common import SourceCode
 
@@ -8,14 +8,14 @@ def check_token_limit(
     token_limit: int,
     retrieve_documents: Callable[[], Generator[SourceCode, None, None]],
     max_workers: int
-) -> List[str]:
-    def process_doc(doc: SourceCode) -> str | None:
+) -> Tuple[List[str], int]:
+    def process_doc(doc: SourceCode) -> Tuple[str | None, int]:
         token_num = count_tokens(doc.source_code)
         if token_num > token_limit:
-            return doc.module_name
-        return None
+            return doc.module_name, token_num
+        return None, token_num
 
-    def token_check_generator() -> Generator[str, None, None]:
+    def token_check_generator() -> Generator[Tuple[str | None, int], None, None]:
         docs = retrieve_documents()
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
@@ -24,15 +24,20 @@ def check_token_limit(
                 futures.append(future)
             
             for future in as_completed(futures):
-                result = future.result()
-                if result:
-                    yield result
+                yield future.result()
 
-    token_exceed_files = list(token_check_generator())
+    token_exceed_files = []
+    total_tokens = 0
+    for result, tokens in token_check_generator():
+        if result:
+            token_exceed_files.append(result)
+        total_tokens += tokens
 
     if token_exceed_files:
         logger.warning(
             f"以下文件超过了 {token_limit} tokens: {token_exceed_files},将无法使用 RAG 模型进行搜索。"
         )
 
-    return token_exceed_files
+    logger.info(f"累计 tokens: {total_tokens}")
+
+    return token_exceed_files, total_tokens
