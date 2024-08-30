@@ -56,12 +56,7 @@ def retrieve_documents(path: str, ignore_spec, required_exts: list) -> Generator
             except queue.Empty:
                 continue
 
-    num_threads = min(32, os.cpu_count() * 2)
-    threads = [threading.Thread(target=worker) for _ in range(num_threads)]
-    for thread in threads:
-        thread.start()
-
-    try:
+    def directory_walker():
         for root, dirs, files in os.walk(path):
             # 过滤掉隐藏目录
             dirs[:] = [d for d in dirs if not d.startswith(".")]
@@ -88,11 +83,24 @@ def retrieve_documents(path: str, ignore_spec, required_exts: list) -> Generator
                 relative_path = os.path.relpath(file_path, path)
                 file_queue.put((file_path, relative_path))
 
-        file_queue.join()
-    finally:
+        # 所有文件都已添加到队列中，设置结束标志
         stop_event.set()
-        for thread in threads:
-            thread.join()
+
+    num_threads = min(32, os.cpu_count() * 2)
+    threads = [threading.Thread(target=worker) for _ in range(num_threads)]
+    for thread in threads:
+        thread.start()
+
+    # 启动目录遍历线程
+    directory_thread = threading.Thread(target=directory_walker)
+    directory_thread.start()
+
+    # 等待目录遍历完成
+    directory_thread.join()
+
+    # 等待所有工作线程完成
+    for thread in threads:
+        thread.join()
 
     while not result_queue.empty():
         yield result_queue.get()
