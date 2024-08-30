@@ -20,6 +20,7 @@ from autocoder.rag.relevant_utils import parse_relevance, FilterDoc, DocRelevanc
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.rag.token_checker import check_token_limit
 from autocoder.rag.token_limiter import TokenLimiter
+from autocoder.rag.token_counter import parallel_count_tokens
 
 
 class LongContextRAG:
@@ -78,17 +79,18 @@ class LongContextRAG:
     def count_tokens(self, text: str) -> int:
         if self.tokenizer is None:
             return -1
-        try:  
-            start_time = time.time_ns()          
-            v = self.tokenizer.chat_oai(
-                conversations=[{"role": "user", "content": text}]
-            )
-            elapsed_time = time.time_ns() - start_time
-            logger.info(f"Token counting took {elapsed_time/1000000} ms")
-            return int(v[0].output)
-        except Exception as e:
-            logger.error(f"Error counting tokens: {str(e)}")
-            return -1
+        return parallel_count_tokens(text)
+        # try:  
+        #     start_time = time.time_ns()          
+        #     v = self.tokenizer.chat_oai(
+        #         conversations=[{"role": "user", "content": text}]
+        #     )
+        #     elapsed_time = time.time_ns() - start_time
+        #     logger.info(f"Token counting took {elapsed_time/1000000} ms")
+        #     return int(v[0].output)
+        # except Exception as e:
+        #     logger.error(f"Error counting tokens: {str(e)}")
+        #     return -1
 
     @byzerllm.prompt()
     def _check_relevance(self, query: str, documents: List[str]) -> str:
