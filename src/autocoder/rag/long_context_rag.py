@@ -1,15 +1,11 @@
 import json
 import os
-from io import BytesIO
 from typing import Any, Dict, Generator, List, Optional, Tuple
 
 import byzerllm
-import docx2txt
 import pandas as pd
 import pathspec
-import pptx
 from byzerllm import ByzerLLM
-from docx import Document
 from jinja2 import Template
 from loguru import logger
 from rich.console import Console
@@ -17,10 +13,9 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
 from openai import OpenAI
-from openpyxl import load_workbook
-from pypdf import PdfReader
 import time
 from byzerllm.utils.client.code_utils import extract_code
+from autocoder.rag.loaders import extract_text_from_pdf, extract_text_from_docx, extract_text_from_excel, extract_text_from_ppt
 from autocoder.rag.relevant_utils import parse_relevance, FilterDoc, DocRelevance
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.rag.token_checker import check_token_limit
@@ -91,78 +86,7 @@ class LongContextRAG:
             logger.error(f"Error counting tokens: {str(e)}")
             return -1
 
-    def extract_text_from_pdf(self, pdf_content):
-        pdf_file = BytesIO(pdf_content)
-        pdf_reader = PdfReader(pdf_file)
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text()
-        return text
 
-    def extract_text_from_docx(self, docx_content):
-        docx_file = BytesIO(docx_content)
-        text = docx2txt.process(docx_file)
-        return text
-
-    def extract_text_from_excel(self, excel_path) -> List[Tuple[str, str]]:
-        sheet_list = []
-        wb = load_workbook(excel_path)
-        tmpl = Template(
-            """{% for row in rows %}
-{% for cell in row %}"{{ cell }}"{% if not loop.last %},{% endif %}{% endfor %}{% if not loop.last %}{% endif %}{% endfor %}
-        """
-        )
-        for ws in wb:
-            rows = list(ws.iter_rows(values_only=True))
-            if not rows:
-                continue
-            # 过滤掉rows中全是null的行
-            rows = [row for row in rows if any(row)]
-            # 所有的None都转换成空字符串
-            rows = [[cell if cell is not None else "" for cell in row] for row in rows]
-            content = tmpl.render(rows=rows)
-            sheet_list.append([excel_path + f"#{ws.title}", content])
-        return sheet_list
-
-    def extract_text_from_ppt(self, ppt_path) -> List[Tuple[str, str]]:
-        presentation = pptx.Presentation(ppt_path)
-        text_template = Template("""文本:{{ paragraphs }}""")
-        table_template = Template(
-            """表单:{% for row in rows %}
-{% for cell in row %}"{{ cell }}"{% if not loop.last %},{% endif %}{% endfor %}{% if not loop.last %}{% endif %}{% endfor %}"""
-        )
-
-        slide_list = []
-        for slide in presentation.slides:
-            shape_list = []
-            for shape in slide.shapes:
-                contents = []
-                # TODO: support charts, images
-                # support text
-                if shape.has_text_frame:
-                    paragraphs = []
-                    for paragraph in shape.text_frame.paragraphs:
-                        paragraphs.append(paragraph.text)
-                    if len("".join(paragraphs).strip()) > 0:
-                        contents.append("".join(paragraphs))
-                if len(contents) > 0:
-                    shape_list.append(
-                        text_template.render(paragraphs="\n".join(contents))
-                    )
-                # support table
-                if shape.has_table:
-                    table_data = []
-                    for row in shape.table.rows:
-                        row_data = [
-                            (cell.text_frame.text).strip() for cell in row.cells
-                        ]
-                        table_data.append(row_data)
-                    shape_list.append(table_template.render(rows=table_data))
-            if len(shape_list) > 0:
-                slide_list.append(
-                    [ppt_path + f"#{slide.slide_id}", "\n".join(shape_list)]
-                )
-        return slide_list
 
     @byzerllm.prompt()
     def _check_relevance(self, query: str, documents: List[str]) -> str:
