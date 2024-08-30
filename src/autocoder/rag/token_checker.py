@@ -17,8 +17,7 @@ def check_token_limit(
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        BarColumn(),        
         TimeElapsedColumn(),
     ) as progress:
         task = progress.add_task("Processing files", total=None)
