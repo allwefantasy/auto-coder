@@ -1,6 +1,5 @@
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
 from typing import Any, Dict, Generator, List, Optional, Tuple
 
@@ -24,6 +23,7 @@ import time
 from byzerllm.utils.client.code_utils import extract_code
 from autocoder.rag.relevant_utils import parse_relevance, FilterDoc, DocRelevance
 from autocoder.common import AutoCoderArgs, SourceCode
+from autocoder.rag.token_checker import check_token_limit
 
 
 class LongContextRAG:
@@ -69,33 +69,14 @@ class LongContextRAG:
 
         self.token_limit = 120000
 
-        ## 检查当前目录下所有文件是否超过 120k tokens ，并且打印出来
+        # 检查当前目录下所有文件是否超过 120k tokens ，并且打印出来
         self.token_exceed_files = []
         if self.tokenizer is not None:
-            def process_doc(doc):
-                token_num = self.count_tokens(doc.source_code)
-                if token_num > self.token_limit:
-                    return doc.module_name
-                return None
-
-            def token_check_generator():
-                docs = self._retrieve_documents()
-                with ThreadPoolExecutor(max_workers=self.args.index_filter_workers or 5) as executor:
-                    futures = []
-                    for doc in docs:
-                        future = executor.submit(process_doc, doc)
-                        futures.append(future)
-                    
-                    for future in as_completed(futures):
-                        result = future.result()
-                        if result:
-                            yield result
-
-            self.token_exceed_files = list(token_check_generator())
-
-        if self.token_exceed_files:
-            logger.warning(
-                f"以下文件超过了 120k tokens: {self.token_exceed_files},将无法使用 RAG 模型进行搜索。"
+            self.token_exceed_files = check_token_limit(
+                tokenizer=self.count_tokens,
+                token_limit=self.token_limit,
+                retrieve_documents=self._retrieve_documents,
+                max_workers=self.args.index_filter_workers or 5
             )
 
     def count_tokens(self, text: str) -> int:
