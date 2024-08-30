@@ -21,7 +21,7 @@ def count_tokens(text: str) -> int:
         return -1
 
 def parallel_count_tokens(texts: list[str], tokenizer_path: str) -> list[int]:
-    num_processes = min(cpu_count(), 8)  # 使用最多8个进程
+    num_processes = cpu_count()-1 if cpu_count() > 1 else 1
     with Pool(processes=num_processes, initializer=initialize_tokenizer, initargs=(tokenizer_path,)) as pool:
         results = pool.map(count_tokens, texts)
     return results
