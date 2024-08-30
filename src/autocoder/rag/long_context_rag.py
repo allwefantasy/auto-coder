@@ -78,10 +78,13 @@ class LongContextRAG:
     def count_tokens(self, text: str) -> int:
         if self.tokenizer is None:
             return -1
-        try:
+        try:  
+            start_time = time.time_ns()          
             v = self.tokenizer.chat_oai(
                 conversations=[{"role": "user", "content": text}]
             )
+            elapsed_time = time.time_ns() - start_time
+            logger.info(f"Token counting took {elapsed_time/1000000} ms")
             return int(v[0].output)
         except Exception as e:
             logger.error(f"Error counting tokens: {str(e)}")
