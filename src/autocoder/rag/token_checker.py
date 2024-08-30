@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Callable, Generator, Tuple
 from loguru import logger
 from autocoder.common import SourceCode
+import threading
 
 def check_token_limit(
     count_tokens: Callable[[str], int],
@@ -9,8 +10,15 @@ def check_token_limit(
     retrieve_documents: Callable[[], Generator[SourceCode, None, None]],
     max_workers: int
 ) -> Tuple[List[str], int]:
+    lock = threading.Lock()
+    file_count = 0
     def process_doc(doc: SourceCode) -> Tuple[str | None, int]:
         token_num = count_tokens(doc.source_code)
+        with lock:
+            nonlocal file_count
+            file_count += 1
+            if file_count % 100 == 0:
+                logger.info(f"已处理 {file_count} 个文件")
         if token_num > token_limit:
             return doc.module_name, token_num
         return None, token_num
