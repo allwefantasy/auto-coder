@@ -312,8 +312,7 @@ class LongContextRAG:
                 return pathspec.PathSpec.from_lines("gitwildmatch", ignore_file)
         return None
 
-    def _retrieve_documents(self) -> List[SourceCode]:
-        documents = []
+    def _retrieve_documents(self) -> Generator[SourceCode, None, None]:
         for root, dirs, files in os.walk(self.path):
             # 过滤掉隐藏目录
             dirs[:] = [d for d in dirs if not d.startswith(".")]
@@ -344,49 +343,37 @@ class LongContextRAG:
                     if file.endswith(".pdf"):
                         with open(file_path, "rb") as f:
                             content = self.extract_text_from_pdf(f.read())
-                        documents.append(
-                            SourceCode(module_name=file_path, source_code=content)
-                        )
+                        yield SourceCode(module_name=file_path, source_code=content)
                     elif file.endswith(".docx"):
                         with open(file_path, "rb") as f:
                             content = self.extract_text_from_docx(f.read())
-                        documents.append(
-                            SourceCode(
-                                module_name=f"##File: {file_path}", source_code=content
-                            )
+                        yield SourceCode(
+                            module_name=f"##File: {file_path}", source_code=content
                         )
                     elif file.endswith(".xlsx") or file.endswith(".xls"):
                         sheets = self.extract_text_from_excel(file_path)
                         for sheet in sheets:
-                            documents.append(
-                                SourceCode(
-                                    module_name=f"##File: {file_path}#{sheet[0]}",
-                                    source_code=sheet[1],
-                                )
+                            yield SourceCode(
+                                module_name=f"##File: {file_path}#{sheet[0]}",
+                                source_code=sheet[1],
                             )
                     elif file.endswith(".pptx"):
                         slides = self.extract_text_from_ppt(file_path)
                         content = ""
                         for slide in slides:
                             content += f"#{slide[0]}\n{slide[1]}\n\n"
-                        documents.append(
-                            SourceCode(
-                                module_name=f"##File: {file_path}", source_code=content
-                            )
+                        yield SourceCode(
+                            module_name=f"##File: {file_path}", source_code=content
                         )
                     else:
                         with open(file_path, "r", encoding="utf-8") as f:
                             content = f.read()
-                            documents.append(
-                                SourceCode(
-                                    module_name=f"##File: {file_path}",
-                                    source_code=content,
-                                )
+                            yield SourceCode(
+                                module_name=f"##File: {file_path}",
+                                source_code=content,
                             )
                 except Exception as e:
                     logger.error(f"Error processing file {file_path}: {str(e)}")
-
-        return documents
 
     def build(self):
         pass
