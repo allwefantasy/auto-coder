@@ -7,7 +7,7 @@ class RAGFactory:
     
     
     @staticmethod
-    def get_rag(llm: ByzerLLM, args: AutoCoderArgs, path: str) -> SimpleRAG | LongContextRAG:
+    def get_rag(llm: ByzerLLM, args: AutoCoderArgs, path: str,**kargs) -> SimpleRAG | LongContextRAG:
         """
         Factory method to get the appropriate RAG implementation based on arguments.
         
@@ -20,7 +20,7 @@ class RAGFactory:
             SimpleRAG or LongContextRAG: The appropriate RAG implementation.
         """
         if args.rag_type == "simple":
-            return LongContextRAG(llm, args, path)
+            return LongContextRAG(llm, args, path,**kargs)
         else:
             return SimpleRAG(llm, args, path)
 

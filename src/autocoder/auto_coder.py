@@ -611,7 +611,7 @@ def main(input_args: Optional[List[str]] = None):
             memory_dir = os.path.join(args.source_dir, ".auto-coder", "memory")
             os.makedirs(memory_dir, exist_ok=True)
             memory_file = os.path.join(memory_dir, "chat_history.json")
-            console = Console() 
+            console = Console()
             if args.new_session:
                 chat_history = {"ask_conversation": []}
                 with open(memory_file, "w") as f:
@@ -771,7 +771,12 @@ def main(input_args: Optional[List[str]] = None):
 
             if server_args.doc_dir:
                 args.rag_type = "simple"
-                rag = RAGFactory.get_rag(llm=llm, args=args, path=server_args.doc_dir)
+                rag = RAGFactory.get_rag(
+                    llm=llm,
+                    args=args,
+                    path=server_args.doc_dir,
+                    tokenizer_path=server_args.tokenizer_path,
+                )
             else:
                 rag = RAGFactory.get_rag(llm=llm, args=args, path="")
 

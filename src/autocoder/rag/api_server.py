@@ -25,7 +25,7 @@ from byzerllm.utils.client.entrypoints.openai.protocol import (
     EmbeddingsUsage,
 )
 from pydantic import BaseModel
-from typing import List
+from typing import List,Optional
 
 logger = init_logger(__name__)
 
@@ -166,7 +166,8 @@ class ServerArgs(BaseModel):
     response_role: str = "assistant"
     ssl_keyfile: str = None
     ssl_certfile: str = None 
-    doc_dir: str = ""   
+    doc_dir: str = "" 
+    tokenizer_path: Optional[str] = None  
 
 def serve(llm:ByzerLLM, args: ServerArgs):
     

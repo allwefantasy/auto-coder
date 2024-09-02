@@ -313,6 +313,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     doc_serve_parse.add_argument("--ssl_certfile", default="", help="")
     doc_serve_parse.add_argument("--response_role", default="assistant", help="")
     doc_serve_parse.add_argument("--doc_dir", default="", help="")
+    doc_serve_parse.add_argument("--tokenizer_path", default="", help="")
     doc_serve_parse.add_argument(
         "--collections", default="", help="Collection name for indexing"
     )

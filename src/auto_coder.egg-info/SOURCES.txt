@@ -63,6 +63,7 @@ src/autocoder/index/symbols_utils.py
 src/autocoder/pyproject/__init__.py
 src/autocoder/rag/__init__.py
 src/autocoder/rag/api_server.py
+src/autocoder/rag/document_retriever.py
 src/autocoder/rag/llm_wrapper.py
 src/autocoder/rag/long_context_rag.py
 src/autocoder/rag/rag_entry.py
@@ -70,7 +71,15 @@ src/autocoder/rag/raw_rag.py
 src/autocoder/rag/relevant_utils.py
 src/autocoder/rag/simple_directory_reader.py
 src/autocoder/rag/simple_rag.py
+src/autocoder/rag/token_checker.py
+src/autocoder/rag/token_counter.py
+src/autocoder/rag/token_limiter.py
 src/autocoder/rag/types.py
+src/autocoder/rag/loaders/__init__.py
+src/autocoder/rag/loaders/docx_loader.py
+src/autocoder/rag/loaders/excel_loader.py
+src/autocoder/rag/loaders/pdf_loader.py
+src/autocoder/rag/loaders/ppt_loader.py
 src/autocoder/regexproject/__init__.py
 src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py

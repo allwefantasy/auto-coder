@@ -291,5 +291,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     editblock_similarity: Optional[float] = 0.9
     new_session: Optional[bool] = False    
 
+    tokenizer_path: Optional[str] = None
+
     class Config:
         protected_namespaces = ()

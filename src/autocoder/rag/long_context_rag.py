@@ -20,20 +20,32 @@ from autocoder.rag.relevant_utils import parse_relevance, FilterDoc, DocRelevanc
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.rag.token_checker import check_token_limit
 from autocoder.rag.token_limiter import TokenLimiter
-from autocoder.rag.token_counter import parallel_count_tokens
+from autocoder.rag.token_counter import RemoteTokenCounter, TokenCounter
 
 
 class LongContextRAG:
-    def __init__(self, llm: ByzerLLM, args: AutoCoderArgs, path: str) -> None:
+    def __init__(
+        self,
+        llm: ByzerLLM,
+        args: AutoCoderArgs,
+        path: str,
+        tokenizer_path: Optional[str] = None,
+    ) -> None:
         self.llm = llm
         self.args = args
         self.path = path
         self.relevant_score = 5
 
         self.tokenizer = None
-        if llm.is_model_exist("deepseek_tokenizer"):
-            self.tokenizer = ByzerLLM()
-            self.tokenizer.setup_default_model_name("deepseek_tokenizer")
+        self.tokenizer_path = tokenizer_path
+
+        if self.tokenizer_path:
+            self.tokenizer = TokenCounter(self.tokenizer_path)            
+        else:
+            if llm.is_model_exist("deepseek_tokenizer"):
+                tokenizer_llm = ByzerLLM()
+                tokenizer_llm.setup_default_model_name("deepseek_tokenizer")
+                self.tokenizer = RemoteTokenCounter(tokenizer_llm)
 
         self.required_exts = (
             [ext.strip() for ext in self.args.required_exts.split(",")]
@@ -79,18 +91,7 @@ class LongContextRAG:
     def count_tokens(self, text: str) -> int:
         if self.tokenizer is None:
             return -1
-        return parallel_count_tokens(text)
-        # try:  
-        #     start_time = time.time_ns()          
-        #     v = self.tokenizer.chat_oai(
-        #         conversations=[{"role": "user", "content": text}]
-        #     )
-        #     elapsed_time = time.time_ns() - start_time
-        #     logger.info(f"Token counting took {elapsed_time/1000000} ms")
-        #     return int(v[0].output)
-        # except Exception as e:
-        #     logger.error(f"Error counting tokens: {str(e)}")
-        #     return -1
+        return self.tokenizer.count_tokens(text)
 
     @byzerllm.prompt()
     def _check_relevance(self, query: str, documents: List[str]) -> str:
@@ -237,7 +238,11 @@ class LongContextRAG:
         return None
 
     def _retrieve_documents(self) -> Generator[SourceCode, None, None]:
-        return retrieve_documents(path=self.path, ignore_spec=self.ignore_spec, required_exts=self.required_exts)
+        return retrieve_documents(
+            path=self.path,
+            ignore_spec=self.ignore_spec,
+            required_exts=self.required_exts,
+        )
 
     def build(self):
         pass
@@ -252,6 +257,8 @@ class LongContextRAG:
         ):
             target_query = self.args.enable_rag_context
             only_contexts = True
+        elif self.args.enable_rag_context:
+            only_contexts = True     
 
         logger.info("Search from RAG.....")
         logger.info(f"Query: {target_query} only_contexts: {only_contexts}")
@@ -459,7 +466,7 @@ class LongContextRAG:
             sencond_round_time = 0
 
             if self.tokenizer is not None:
-                
+
                 token_limiter = TokenLimiter(
                     count_tokens=self.count_tokens,
                     token_limit=self.token_limit,
@@ -474,7 +481,7 @@ class LongContextRAG:
                 first_round_full_docs = token_limiter.first_round_full_docs
                 second_round_extracted_docs = token_limiter.second_round_extracted_docs
                 sencond_round_time = token_limiter.sencond_round_time
-                
+
                 relevant_docs = final_relevant_docs
             else:
                 relevant_docs = relevant_docs[: self.args.index_filter_file_num]
