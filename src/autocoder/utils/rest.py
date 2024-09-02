@@ -126,7 +126,7 @@ class HttpDoc:
                             file_path = os.path.join(root, file)                            
                             documents.extend(process_single_file(file_path))
                     
-                 else:
+                 else:                    
                     documents.extend(process_single_file(url,skip_binary_file_test=True))
                     
                  for document in documents:

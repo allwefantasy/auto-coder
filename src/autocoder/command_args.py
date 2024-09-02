@@ -67,7 +67,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         "--index_filter_workers", type=int, default=1, help=desc["index_filter_workers"]
     )
     parser.add_argument(
-        "--index_filter_file_num", type=int, default=10, help=desc["index_filter_file_num"]
+        "--index_filter_file_num", type=int, default= -1, help=desc["index_filter_file_num"]
     )
     parser.add_argument(
         "--index_build_workers", type=int, default=1, help=desc["index_build_workers"]
