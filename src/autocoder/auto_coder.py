@@ -278,18 +278,31 @@ def main(input_args: Optional[List[str]] = None):
                 if not input_value[0].pop("human_as_model", None):
                     return True, None
 
-                print(f"Intercepted request to model: {model}")
+                console.print(Panel(f"Intercepted request to model: [bold]{model}[/bold]", border_style="yellow"))
                 instruction = input_value[0]["instruction"]
                 final_ins = instruction
 
                 try:
                     import pyperclip
-
                     pyperclip.copy(final_ins)
+                    console.print(Panel(
+                        "You are now in human-as-model mode. The content has been copied to your clipboard.\n"
+                        "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
+                        "Use '/break' to exit this mode. If you have issues with copy-paste, use '/clear' to clean and paste again.",
+                        title="Instructions",
+                        border_style="blue",
+                        expand=False
+                    ))
                 except Exception:
-                    logger.warning(
-                        "pyperclip not installed or clipboard is not suppored, instruction will not be copied to clipboard."
-                    )
+                    logger.warning("pyperclip not installed or clipboard is not supported, instruction will not be copied to clipboard.")
+                    console.print(Panel(
+                        "You are now in human-as-model mode. [bold red]The content could not be copied to your clipboard.[/bold red]\n"
+                        "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
+                        "Use '/break' to exit this mode. If you have issues with copy-paste, use '/clear' to clean and paste again.",
+                        title="Instructions",
+                        border_style="blue",
+                        expand=False
+                    ))
 
                 if args.request_id and not args.silence:
                     event_data = {
