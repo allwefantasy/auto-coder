@@ -12,6 +12,7 @@ from autocoder.rag.loaders import (
     extract_text_from_ppt,
 )
 from loguru import logger
+import threading
 
 
 def retrieve_documents(
@@ -108,16 +109,19 @@ def retrieve_documents(
                 json.dump(data, f)
                 f.write("\n")
 
+    cache_lock = threading.Lock()
+
     def update_cache(
         cache: Dict[str, Dict], file_info: Tuple[str, str, float], content: str
     ):
         file_path, relative_path, modify_time = file_info
-        cache[file_path] = {
-            "file_path": file_path,
-            "relative_path": relative_path,
-            "content": content,
-            "modify_time": modify_time,
-        }
+        with cache_lock:
+            cache[file_path] = {
+                "file_path": file_path,
+                "relative_path": relative_path,
+                "content": content,
+                "modify_time": modify_time,
+            }
 
     all_files = get_all_files()
     cache = read_cache()
@@ -142,16 +146,21 @@ def retrieve_documents(
                 results = future.result()
                 for result in results:
                     with open(lock_file, "w") as lock:
-                        fcntl.flock(lock, fcntl.LOCK_EX)
                         try:
                             update_cache(cache, file_info, result.source_code)
-                            write_cache(cache)
                         finally:
-                            fcntl.flock(lock, fcntl.LOCK_UN)
+                            pass
                     yield result
             except Exception as e:
                 logger.error(f"Error processing file {file_info[0]}: {str(e)}")
     #MARK
+    with open(lock_file, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            write_cache(cache)
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+    
     for file_path, data in cache.items():
         if file_path not in [f[0] for f in files_to_process]:
             yield SourceCode(
