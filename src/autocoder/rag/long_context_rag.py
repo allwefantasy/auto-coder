@@ -16,7 +16,12 @@ from openai import OpenAI
 import time
 from byzerllm.utils.client.code_utils import extract_code
 from autocoder.rag.document_retriever import retrieve_documents
-from autocoder.rag.relevant_utils import parse_relevance, FilterDoc, DocRelevance
+from autocoder.rag.relevant_utils import (
+    parse_relevance,
+    FilterDoc,
+    DocRelevance,
+    TaskTiming,
+)
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.rag.token_checker import check_token_limit
 from autocoder.rag.token_limiter import TokenLimiter
@@ -37,10 +42,10 @@ class LongContextRAG:
         self.relevant_score = self.args.rag_doc_filter_relevance or 5
 
         self.tokenizer = None
-        self.tokenizer_path = tokenizer_path        
+        self.tokenizer_path = tokenizer_path
 
         if self.tokenizer_path:
-            self.tokenizer = TokenCounter(self.tokenizer_path)            
+            self.tokenizer = TokenCounter(self.tokenizer_path)
         else:
             if llm.is_model_exist("deepseek_tokenizer"):
                 tokenizer_llm = ByzerLLM()
@@ -88,7 +93,9 @@ class LongContextRAG:
                 max_workers=self.args.index_filter_workers or 5,
             )
 
-        logger.info(f"Tokenizer path: {self.tokenizer_path} relevant_score: {self.relevant_score} token_limit: {self.token_limit}")    
+        logger.info(
+            f"Tokenizer path: {self.tokenizer_path} relevant_score: {self.relevant_score} token_limit: {self.token_limit}"
+        )
 
     def count_tokens(self, text: str) -> int:
         if self.tokenizer is None:
@@ -260,7 +267,7 @@ class LongContextRAG:
             target_query = self.args.enable_rag_context
             only_contexts = True
         elif self.args.enable_rag_context:
-            only_contexts = True     
+            only_contexts = True
 
         logger.info("Search from RAG.....")
         logger.info(f"Query: {target_query} only_contexts: {only_contexts}")
@@ -311,25 +318,79 @@ class LongContextRAG:
                     )
                     continue
 
+                submit_time = time.time()
+
+                def _run(conversations, docs):
+                    submit_time_1 = time.time()
+                    try:
+                        v = self._check_relevance_with_conversation.with_llm(
+                            self.llm
+                        ).run(conversations=conversations, documents=docs)
+                    except Exception as e:
+                        logger.error(
+                            f"Error in _check_relevance_with_conversation: {str(e)}"
+                        )
+                        return (None, submit_time_1, time.time())
+
+                    end_time_2 = time.time()
+                    return (v, submit_time_1, end_time_2)
+
                 m = executor.submit(
-                    self._check_relevance_with_conversation.with_llm(self.llm).run,
+                    _run,
                     conversations,
                     [f"##File: {doc.module_name}\n{doc.source_code}"],
                 )
-                future_to_doc[m] = doc
+                future_to_doc[m] = (doc, submit_time)
         relevant_docs = []
         for future in as_completed(future_to_doc):
             try:
-                doc = future_to_doc[future]
-                v = future.result()
+                doc, submit_time = future_to_doc[future]
+                end_time = time.time()
+                v, submit_time_1, end_time_2 = future.result()
+                if doc:
+                    task_timing = TaskTiming(
+                        submit_time=submit_time,
+                        end_time=end_time,
+                        duration=end_time - submit_time,
+                        real_start_time=submit_time_1,
+                        real_end_time=end_time_2,
+                        real_duration=end_time_2 - submit_time_1,
+                    )
+                    if doc.task_timing:
+                        logger.info(f"Document: {doc.source_code.module_name}")
+                        logger.info(
+                            f"  Relevance score: {doc.relevance.relevant_score}"
+                        )
+                        logger.info(
+                            f"  Submit time: {doc.task_timing.submit_time}/{doc.task_timing.real_start_time}/{doc.task_timing.real_start_time - doc.task_timing.submit_time }"
+                        )
+                        logger.info(
+                            f"  End time: {doc.task_timing.end_time}/{doc.task_timing.real_end_time}/{doc.task_timing.real_end_time - doc.task_timing.end_time }"
+                        )
+                        logger.info(
+                            f"  Duration: {doc.task_timing.duration:.2f} seconds/{doc.task_timing.real_duration:.2f}/{doc.task_timing.real_duration-doc.task_timing.duration} seconds"
+                        )
+
                 relevance = parse_relevance(v)
                 if (
                     relevance
                     and relevance.is_relevant
                     and relevance.relevant_score >= self.relevant_score
                 ):
+                    task_timing = TaskTiming(
+                        submit_time=submit_time,
+                        end_time=end_time,
+                        duration=end_time - submit_time,
+                        real_start_time=submit_time_1,
+                        real_end_time=end_time_2,
+                        real_duration=end_time_2 - submit_time_1,
+                    )
                     relevant_docs.append(
-                        FilterDoc(source_code=doc, relevance=relevance)
+                        FilterDoc(
+                            source_code=doc,
+                            relevance=relevance,
+                            task_timing=task_timing,
+                        )
                     )
             except Exception as exc:
                 logger.error(f"Document processing generated an exception: {exc}")
