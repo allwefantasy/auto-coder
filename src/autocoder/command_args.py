@@ -120,6 +120,15 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         default=False,
         help=desc["enable_rag_search"],
     )
+
+    parser.add_argument(
+            "--rag_context_window_limit",
+            nargs="?",
+            const=True,
+            default=False,
+            help="",
+        )
+
     parser.add_argument(
         "--enable_rag_context",
         nargs="?",
@@ -307,6 +316,14 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         default=3,
         help=desc["index_filter_file_num"],
     )
+    
+    doc_serve_parse.add_argument(
+        "--rag_context_window_limit",
+        type=int,
+        default=120000,
+        help="",
+    )
+
     doc_serve_parse.add_argument(
         "--required_exts", default="", help=desc["doc_build_parse_required_exts"]
     )

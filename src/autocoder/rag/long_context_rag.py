@@ -76,7 +76,7 @@ class LongContextRAG:
 
         self.ignore_spec = self._load_ignore_file()
 
-        self.token_limit = 120000
+        self.token_limit = self.args.rag_context_window_limit or 120000
 
         # 检查当前目录下所有文件是否超过 120k tokens ，并且打印出来
         self.token_exceed_files = []
@@ -88,7 +88,7 @@ class LongContextRAG:
                 max_workers=self.args.index_filter_workers or 5,
             )
 
-        logger.info(f"Tokenizer path: {self.tokenizer_path} relevant_score: {self.relevant_score}")    
+        logger.info(f"Tokenizer path: {self.tokenizer_path} relevant_score: {self.relevant_score} token_limit: {self.token_limit}")    
 
     def count_tokens(self, text: str) -> int:
         if self.tokenizer is None:

@@ -259,6 +259,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     rag_token: Optional[str] = ""
     rag_type: Optional[str] = "storage"    
     rag_doc_filter_relevance: Optional[int] = 5
+    rag_context_window_limit: Optional[int] = 120000
     enable_rag_search: Optional[Union[bool, str]] = False
     enable_rag_context: Optional[Union[bool, str]] = False
     collection: Optional[str] = None
