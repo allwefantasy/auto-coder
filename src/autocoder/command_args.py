@@ -67,11 +67,15 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         "--index_filter_workers", type=int, default=1, help=desc["index_filter_workers"]
     )
     parser.add_argument(
-        "--index_filter_file_num", type=int, default= -1, help=desc["index_filter_file_num"]
+        "--index_filter_file_num",
+        type=int,
+        default=-1,
+        help=desc["index_filter_file_num"],
     )
     parser.add_argument(
         "--index_build_workers", type=int, default=1, help=desc["index_build_workers"]
     )
+    parser.add_argument("--rag_doc_filter_relevance", type=int, default=5, help="")
 
     parser.add_argument("--file", default=None, required=False, help=desc["file"])
     parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
@@ -126,11 +130,13 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     parser.add_argument("--rag_token", default="", help="")
     parser.add_argument("--rag_url", default="", help="")
-    parser.add_argument("--rag_type", default="storage", help="RAG type, default is storage")
+    parser.add_argument(
+        "--rag_type", default="storage", help="RAG type, default is storage"
+    )
 
     parser.add_argument(
-            "--auto_merge", nargs="?", const=True, default=False, help=desc["auto_merge"]
-        )
+        "--auto_merge", nargs="?", const=True, default=False, help=desc["auto_merge"]
+    )
     parser.add_argument(
         "--editblock_similarity",
         type=float,
@@ -290,14 +296,21 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         "--ray_address", default="auto", help=desc["ray_address"]
     )
     doc_serve_parse.add_argument(
-        "--index_filter_workers", type=int, default=10, help=desc["index_filter_workers"]
+        "--index_filter_workers",
+        type=int,
+        default=10,
+        help=desc["index_filter_workers"],
     )
     doc_serve_parse.add_argument(
-        "--index_filter_file_num", type=int, default=3, help=desc["index_filter_file_num"]
+        "--index_filter_file_num",
+        type=int,
+        default=3,
+        help=desc["index_filter_file_num"],
     )
     doc_serve_parse.add_argument(
         "--required_exts", default="", help=desc["doc_build_parse_required_exts"]
     )
+    doc_serve_parse.add_argument("--rag_doc_filter_relevance", type=int, default=5, help="")
     doc_serve_parse.add_argument("--source_dir", default=".", help="")
     doc_serve_parse.add_argument("--host", default="", help="")
     doc_serve_parse.add_argument("--port", type=int, default=8000, help="")
@@ -361,7 +374,11 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     chat_parser.add_argument("--rag_token", default="", help="")
     chat_parser.add_argument("--rag_url", default="", help="")
-    chat_parser.add_argument("--rag_type", default="storage", help="RAG type (simple/storage), default is storage")
+    chat_parser.add_argument(
+        "--rag_type",
+        default="storage",
+        help="RAG type (simple/storage), default is storage",
+    )
     chat_parser.add_argument("--target_file", default="./output.txt", help="")
     chat_parser.add_argument(
         "--new_session",
@@ -421,7 +438,9 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     read_project_parser.add_argument("--rag_token", default="", help="")
     read_project_parser.add_argument("--rag_url", default="", help="")
-    read_project_parser.add_argument("--rag_type", default="storage", help="RAG type, default is storage")
+    read_project_parser.add_argument(
+        "--rag_type", default="storage", help="RAG type, default is storage"
+    )
     read_project_parser.add_argument("--target_file", default="./output.txt", help="")
 
     voice2text_parser = agent_subparsers.add_parser(
@@ -437,13 +456,14 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     voice2text_parser.add_argument("--file", default="", help=desc["file"])
     voice2text_parser.add_argument("--target_file", default="./output.txt", help="")
 
-
     generate_shell_parser = agent_subparsers.add_parser(
         "generate_command", help="Convert text to shell command"
     )
-    generate_shell_parser.add_argument("--request_id", default="", help=desc["request_id"])
-    generate_shell_parser.add_argument("--model", default="", help=desc["model"])    
-    generate_shell_parser.add_argument("--query", default="", help=desc["query"])    
+    generate_shell_parser.add_argument(
+        "--request_id", default="", help=desc["request_id"]
+    )
+    generate_shell_parser.add_argument("--model", default="", help=desc["model"])
+    generate_shell_parser.add_argument("--query", default="", help=desc["query"])
     generate_shell_parser.add_argument(
         "--ray_address", default="auto", help=desc["ray_address"]
     )
@@ -492,7 +512,9 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     auto_tool_parser.add_argument("--rag_token", default="", help="")
     auto_tool_parser.add_argument("--rag_url", default="", help="")
-    auto_tool_parser.add_argument("--rag_type", default="storage", help="RAG type, default is storage")
+    auto_tool_parser.add_argument(
+        "--rag_type", default="storage", help="RAG type, default is storage"
+    )
     auto_tool_parser.add_argument("--target_file", default="./output.txt", help="")
 
     planner_parser = agent_subparsers.add_parser(
@@ -533,7 +555,9 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     planner_parser.add_argument("--rag_token", default="", help="")
     planner_parser.add_argument("--rag_url", default="", help="")
-    planner_parser.add_argument("--rag_type", default="storage", help="RAG type, default is storage")
+    planner_parser.add_argument(
+        "--rag_type", default="storage", help="RAG type, default is storage"
+    )
     planner_parser.add_argument("--target_file", default="./output.txt", help="")
 
     init_parser = subparsers.add_parser("init", help=desc["init_desc"])

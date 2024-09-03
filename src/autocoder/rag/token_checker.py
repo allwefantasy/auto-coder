@@ -51,6 +51,7 @@ def check_token_limit(
         total_tokens = 0
         for result, tokens in token_check_generator():
             if result:
+                logger.info(f"文件 {result}({tokens}) 超过了 {token_limit} tokens")
                 token_exceed_files.append(result)
             total_tokens += tokens
 

@@ -34,10 +34,10 @@ class LongContextRAG:
         self.llm = llm
         self.args = args
         self.path = path
-        self.relevant_score = 5
+        self.relevant_score = self.args.rag_doc_filter_relevance or 5
 
         self.tokenizer = None
-        self.tokenizer_path = tokenizer_path
+        self.tokenizer_path = tokenizer_path        
 
         if self.tokenizer_path:
             self.tokenizer = TokenCounter(self.tokenizer_path)            
@@ -87,6 +87,8 @@ class LongContextRAG:
                 retrieve_documents=self._retrieve_documents,
                 max_workers=self.args.index_filter_workers or 5,
             )
+
+        logger.info(f"Tokenizer path: {self.tokenizer_path} relevant_score: {self.relevant_score}")    
 
     def count_tokens(self, text: str) -> int:
         if self.tokenizer is None:

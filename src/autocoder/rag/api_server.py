@@ -167,7 +167,7 @@ class ServerArgs(BaseModel):
     ssl_keyfile: str = None
     ssl_certfile: str = None 
     doc_dir: str = "" 
-    tokenizer_path: Optional[str] = None  
+    tokenizer_path: Optional[str] = None     
 
 def serve(llm:ByzerLLM, args: ServerArgs):
     
