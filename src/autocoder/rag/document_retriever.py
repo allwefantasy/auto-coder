@@ -1,6 +1,9 @@
 import os
+import json
+import time
+import fcntl
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Generator, List, Tuple
+from typing import Generator, List, Tuple, Dict
 from autocoder.common import SourceCode
 from autocoder.rag.loaders import (
     extract_text_from_pdf,
@@ -11,13 +14,18 @@ from autocoder.rag.loaders import (
 from loguru import logger
 
 def retrieve_documents(path: str, ignore_spec, required_exts: list) -> Generator[SourceCode, None, None]:
-    def get_all_files() -> List[Tuple[str, str]]:
+    cache_dir = os.path.join(path, '.cache')
+    cache_file = os.path.join(cache_dir, 'cache.jsonl')
+    lock_file = os.path.join(cache_dir, 'cache.jsonl.lock')
+
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+
+    def get_all_files() -> List[Tuple[str, str, float]]:
         all_files = []
         for root, dirs, files in os.walk(path):
-            # 过滤掉隐藏目录
             dirs[:] = [d for d in dirs if not d.startswith(".")]
 
-            # 应用 .serveignore 或 .gitignore 规则
             if ignore_spec:
                 relative_root = os.path.relpath(root, path)
                 dirs[:] = [
@@ -37,12 +45,13 @@ def retrieve_documents(path: str, ignore_spec, required_exts: list) -> Generator
 
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, path)
-                all_files.append((file_path, relative_path))
+                modify_time = os.path.getmtime(file_path)
+                all_files.append((file_path, relative_path, modify_time))
 
         return all_files
 
-    def process_file(file_info: Tuple[str, str]) -> List[SourceCode]:
-        file_path, relative_path = file_info
+    def process_file(file_info: Tuple[str, str, float]) -> List[SourceCode]:
+        file_path, relative_path, _ = file_info
         try:
             if file_path.endswith(".pdf"):
                 with open(file_path, "rb") as f:
@@ -67,16 +76,60 @@ def retrieve_documents(path: str, ignore_spec, required_exts: list) -> Generator
             logger.error(f"Error processing file {file_path}: {str(e)}")
             return []
 
+    def read_cache() -> Dict[str, Dict]:
+        cache = {}
+        if os.path.exists(cache_file):
+            with open(cache_file, 'r') as f:
+                for line in f:
+                    data = json.loads(line)
+                    cache[data['file_path']] = data
+        return cache
+
+    def write_cache(cache: Dict[str, Dict]):
+        with open(cache_file, 'w') as f:
+            for data in cache.values():
+                json.dump(data, f)
+                f.write('\n')
+
+    def update_cache(cache: Dict[str, Dict], file_info: Tuple[str, str, float], content: str):
+        file_path, relative_path, modify_time = file_info
+        cache[file_path] = {
+            'file_path': file_path,
+            'relative_path': relative_path,
+            'content': content,
+            'modify_time': modify_time
+        }
+
     all_files = get_all_files()
+    cache = read_cache()
+
+    files_to_process = []
+    for file_info in all_files:
+        file_path, _, modify_time = file_info
+        if file_path not in cache or cache[file_path]['modify_time'] < modify_time:
+            files_to_process.append(file_info)
+
     num_threads = min(32, os.cpu_count() * 2)
 
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
-        future_to_file = {executor.submit(process_file, file_info): file_info for file_info in all_files}
+        future_to_file = {executor.submit(process_file, file_info): file_info for file_info in files_to_process}
+        
         for future in as_completed(future_to_file):
             file_info = future_to_file[future]
             try:
                 results = future.result()
                 for result in results:
+                    with open(lock_file, 'w') as lock:
+                        fcntl.flock(lock, fcntl.LOCK_EX)
+                        try:
+                            update_cache(cache, file_info, result.source_code)
+                            write_cache(cache)
+                        finally:
+                            fcntl.flock(lock, fcntl.LOCK_UN)
                     yield result
             except Exception as e:
                 logger.error(f"Error processing file {file_info[0]}: {str(e)}")
+
+    for file_path, data in cache.items():
+        if file_path not in [f[0] for f in files_to_process]:
+            yield SourceCode(module_name=f"##File: {file_path}", source_code=data['content'])
