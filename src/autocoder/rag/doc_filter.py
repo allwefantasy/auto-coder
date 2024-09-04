@@ -5,6 +5,8 @@ import ray
 from loguru import logger
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
+from rich.console import Console
 
 from autocoder.rag.relevant_utils import (
     parse_relevance,
@@ -86,68 +88,82 @@ class DocFilter:
     def filter_docs_with_threads(
         self, conversations: List[Dict[str, str]], documents: List[SourceCode]
     ) -> List[FilterDoc]:
-        with ThreadPoolExecutor(
-            max_workers=self.args.index_filter_workers or 5
-        ) as executor:
-            future_to_doc = {}
-            for doc in documents:
-                submit_time = time.time()
+        console = Console()
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            TimeRemainingColumn(),
+            console=console,
+        ) as progress:
+            task = progress.add_task("[cyan]Filtering documents...", total=len(documents))
+            
+            with ThreadPoolExecutor(
+                max_workers=self.args.index_filter_workers or 5
+            ) as executor:
+                future_to_doc = {}
+                for doc in documents:
+                    submit_time = time.time()
 
-                def _run(conversations, docs):
-                    submit_time_1 = time.time()
-                    try:
-                        llm = ByzerLLM()
-                        llm.setup_default_model_name(self.llm.default_model_name)
-                        v = _check_relevance_with_conversation.with_llm(llm).run(
-                            conversations=conversations, documents=docs
-                        )
-                    except Exception as e:
-                        logger.error(
-                            f"Error in _check_relevance_with_conversation: {str(e)}"
-                        )
-                        return (None, submit_time_1, time.time())
+                    def _run(conversations, docs):
+                        submit_time_1 = time.time()
+                        try:
+                            llm = ByzerLLM()
+                            llm.setup_default_model_name(self.llm.default_model_name)
+                            v = _check_relevance_with_conversation.with_llm(llm).run(
+                                conversations=conversations, documents=docs
+                            )
+                        except Exception as e:
+                            logger.error(
+                                f"Error in _check_relevance_with_conversation: {str(e)}"
+                            )
+                            return (None, submit_time_1, time.time())
 
-                    end_time_2 = time.time()                    
-                    return (v, submit_time_1, end_time_2)
+                        end_time_2 = time.time()                    
+                        return (v, submit_time_1, end_time_2)
 
-                m = executor.submit(
-                    _run,
-                    conversations,
-                    [f"##File: {doc.module_name}\n{doc.source_code}"],
-                )
-                future_to_doc[m] = (doc, submit_time)
-        relevant_docs = []
-        for future in as_completed(future_to_doc):
-            try:
-                doc, submit_time = future_to_doc[future]
-                end_time = time.time()
-                v, submit_time_1, end_time_2 = future.result()
-                task_timing = TaskTiming(
-                    submit_time=submit_time,
-                    end_time=end_time,
-                    duration=end_time - submit_time,
-                    real_start_time=submit_time_1,
-                    real_end_time=end_time_2,
-                    real_duration=end_time_2 - submit_time_1,
-                )
-                logger.info(
-                    f"Document: {doc.module_name} Duration: {task_timing.duration:.2f} seconds/{task_timing.real_duration:.2f}/{task_timing.real_duration-task_timing.duration} seconds"
-                )
-                relevance = parse_relevance(v)
-                if (
-                    relevance
-                    and relevance.is_relevant
-                    and relevance.relevant_score >= self.relevant_score
-                ):
-                    relevant_docs.append(
-                        FilterDoc(
-                            source_code=doc,
-                            relevance=relevance,
-                            task_timing=task_timing,
-                        )
+                    m = executor.submit(
+                        _run,
+                        conversations,
+                        [f"##File: {doc.module_name}\n{doc.source_code}"],
                     )
-            except Exception as exc:
-                logger.error(f"Document processing generated an exception: {exc}")
+                    future_to_doc[m] = (doc, submit_time)
+
+            relevant_docs = []
+            for future in as_completed(future_to_doc):
+                try:
+                    doc, submit_time = future_to_doc[future]
+                    end_time = time.time()
+                    v, submit_time_1, end_time_2 = future.result()
+                    task_timing = TaskTiming(
+                        submit_time=submit_time,
+                        end_time=end_time,
+                        duration=end_time - submit_time,
+                        real_start_time=submit_time_1,
+                        real_end_time=end_time_2,
+                        real_duration=end_time_2 - submit_time_1,
+                    )
+                    logger.info(
+                        f"Document: {doc.module_name} Duration: {task_timing.duration:.2f} seconds/{task_timing.real_duration:.2f}/{task_timing.real_duration-task_timing.duration} seconds"
+                    )
+                    relevance = parse_relevance(v)
+                    if (
+                        relevance
+                        and relevance.is_relevant
+                        and relevance.relevant_score >= self.relevant_score
+                    ):
+                        relevant_docs.append(
+                            FilterDoc(
+                                source_code=doc,
+                                relevance=relevance,
+                                task_timing=task_timing,
+                            )
+                        )
+                except Exception as exc:
+                    logger.error(f"Document processing generated an exception: {exc}")
+                finally:
+                    progress.update(task, advance=1)
 
         # Sort relevant_docs by relevance score in descending order
         relevant_docs.sort(key=lambda x: x.relevance.relevant_score, reverse=True)
