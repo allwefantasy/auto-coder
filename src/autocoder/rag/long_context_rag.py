@@ -44,6 +44,7 @@ class LongContextRAG:
 
         self.tokenizer = None
         self.tokenizer_path = tokenizer_path
+        self.on_ray = False
 
         if self.tokenizer_path:
             self.tokenizer = TokenCounter(self.tokenizer_path)
@@ -87,7 +88,7 @@ class LongContextRAG:
         get_or_create_actor(
             self.path, self.ignore_spec, self.required_exts, self.cacher
         )
-        self.doc_filter = DocFilter(self.llm, self.args, on_ray=False)
+        self.doc_filter = DocFilter(self.llm, self.args, on_ray=self.on_ray)
 
         # 检查当前目录下所有文件是否超过 120k tokens ，并且打印出来
         self.token_exceed_files = []
@@ -164,6 +165,7 @@ class LongContextRAG:
             path=self.path,
             ignore_spec=self.ignore_spec,
             required_exts=self.required_exts,
+            on_ray=self.on_ray,
         )
 
     def build(self):

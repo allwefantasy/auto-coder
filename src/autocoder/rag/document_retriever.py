@@ -63,28 +63,34 @@ class AutoCoderRAGAsyncUpdateQueue:
         self.required_exts = required_exts
         self.queue = []
         self.cache = self.read_cache()
+        self.lock = threading.Lock()
+        threading.Thread(target=self.process_queue).start()
 
     def load_first(self):
-        files_to_process = []
-        for file_info in self.get_all_files():
-            file_path, _, modify_time = file_info
-            if (
-                file_path not in self.cache
-                or self.cache[file_path]["modify_time"] < modify_time
-            ):
-                files_to_process.append(file_info)
+        with self.lock:
+            if self.cache:
+                return
+            files_to_process = []
+            for file_info in self.get_all_files():
+                file_path, _, modify_time = file_info
+                if (
+                    file_path not in self.cache
+                    or self.cache[file_path]["modify_time"] < modify_time
+                ):
+                    files_to_process.append(file_info)
+            if not files_to_process:
+                return
+            # remote_process_file = ray.remote(process_file)
+            # results = ray.get(
+            #     [process_file.remote(file_info) for file_info in files_to_process]
+            # )
+            with Pool(processes=os.cpu_count()) as pool:
+                results = pool.map(self.process_file, files_to_process)
 
-        # remote_process_file = ray.remote(process_file)
-        # results = ray.get(
-        #     [process_file.remote(file_info) for file_info in files_to_process]
-        # )
-        with Pool(processes=os.cpu_count()) as pool:
-            results = pool.map(self.process_file, files_to_process)
-
-        for file_info, result in zip(files_to_process, results):
-            for item in result:
-                self.update_cache(file_info, item.source_code)
-        self.write_cache()
+            for file_info, result in zip(files_to_process, results):
+                for item in result:
+                    self.update_cache(file_info, item.source_code)
+            self.write_cache()
 
     def add_update_request(self, file_infos: List[Tuple[str, str, float]]):
         for file_info in file_infos:
@@ -191,6 +197,7 @@ class AutoCoderRAGAsyncUpdateQueue:
         }
 
     def get_cache(self):
+        self.load_first()
         self.trigger_update()
         return self.cache
 
@@ -248,12 +255,14 @@ def get_or_create_actor(path: str, ignore_spec, required_exts: list, cacher={}):
 
 
 def retrieve_documents(
-    path: str, ignore_spec, required_exts: list
+    path: str, ignore_spec, required_exts: list, on_ray: bool = False
 ) -> Generator[SourceCode, None, None]:
-
-    cacher = get_or_create_actor(path, ignore_spec, required_exts)
-
-    cache = ray.get(cacher.get_cache.remote())
+    if on_ray:
+        cacher = get_or_create_actor(path, ignore_spec, required_exts)
+        cache = ray.get(cacher.get_cache.remote())
+    else:
+        cacher = AutoCoderRAGAsyncUpdateQueue(path, ignore_spec, required_exts)
+        cache = cacher.get_cache()
 
     for file_path, data in cache.items():
         yield SourceCode(

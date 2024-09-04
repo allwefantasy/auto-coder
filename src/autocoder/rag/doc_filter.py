@@ -79,9 +79,9 @@ class DocFilter:
         self, conversations: List[Dict[str, str]], documents: List[SourceCode]
     ) -> List[FilterDoc]:
         if self.on_ray:
-            return self.filter_docs_with_ray(conversations, self._retrieve_documents())
+            return self.filter_docs_with_ray(conversations, documents)
         else:
-            return self.filter_docs_with_threads(conversations)
+            return self.filter_docs_with_threads(conversations, documents)
 
     def filter_docs_with_threads(
         self, conversations: List[Dict[str, str]], documents: List[SourceCode]
@@ -96,7 +96,9 @@ class DocFilter:
                 def _run(conversations, docs):
                     submit_time_1 = time.time()
                     try:
-                        v = _check_relevance_with_conversation.with_llm(self.llm).run(
+                        llm = ByzerLLM()
+                        llm.setup_default_model_name(self.llm.default_model_name)
+                        v = _check_relevance_with_conversation.with_llm(llm).run(
                             conversations=conversations, documents=docs
                         )
                     except Exception as e:
