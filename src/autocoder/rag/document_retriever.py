@@ -90,6 +90,17 @@ class AutoCoderRAGAsyncUpdateQueue:
         for file_info in file_infos:
             self.queue.append(file_info)
 
+    def trigger_update(self):
+        files_to_process = []
+        for file_info in self.get_all_files():
+            file_path, _, modify_time = file_info
+            if (
+                file_path not in self.cache
+                or self.cache[file_path]["modify_time"] < modify_time
+            ):
+                files_to_process.append(file_info)
+        self.add_update_request(files_to_process)
+
     def process_queue(self):
         while self.queue:
             file_info = self.queue.pop(0)
@@ -180,8 +191,7 @@ class AutoCoderRAGAsyncUpdateQueue:
         }
 
     def get_cache(self):
-        if not self.cache:
-            self.load_first()
+        self.trigger_update()
         return self.cache
 
     def get_all_files(self) -> List[Tuple[str, str, float]]:
@@ -229,9 +239,10 @@ def get_or_create_actor(path: str, ignore_spec, required_exts: list, cacher={}):
         if actor is None:
             actor = (
                 ray.remote(AutoCoderRAGAsyncUpdateQueue)
-                .options(name=actor_name)
+                .options(name=actor_name, num_cpu=0)
                 .remote(path, ignore_spec, required_exts)
             )
+            ray.get(actor.load_first.remote())
         cacher[actor_name] = actor
         return actor
 

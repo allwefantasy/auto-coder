@@ -87,6 +87,7 @@ class LongContextRAG:
         get_or_create_actor(
             self.path, self.ignore_spec, self.required_exts, self.cacher
         )
+        self.doc_filter = DocFilter(self.llm, self.args, on_ray=False)
 
         # 检查当前目录下所有文件是否超过 120k tokens ，并且打印出来
         self.token_exceed_files = []
@@ -216,8 +217,9 @@ class LongContextRAG:
 
     def _filter_docs(self, conversations: List[Dict[str, str]]) -> List[FilterDoc]:
         documents = self._retrieve_documents()
-        doc_filter = DocFilter(self.llm, self.args)
-        return doc_filter.filter_docs(conversations=conversations, documents=documents)
+        return self.doc_filter.filter_docs(
+            conversations=conversations, documents=documents
+        )
 
     def stream_chat_oai(
         self,
