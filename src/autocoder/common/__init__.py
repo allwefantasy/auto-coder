@@ -295,5 +295,7 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     tokenizer_path: Optional[str] = None
 
+    prompt_review: Optional[str] = None
+
     class Config:
         protected_namespaces = ()

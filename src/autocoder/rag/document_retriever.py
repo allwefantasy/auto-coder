@@ -77,7 +77,7 @@ class AutoCoderRAGAsyncUpdateQueue:
 
         for file_info, result in zip(files_to_process, results):
             for item in result:
-                self.update_cache(self.cache, file_info, item.source_code)
+                self.update_cache(file_info, item.source_code)
         self.write_cache()
 
     def add_update_request(self, file_infos: List[Tuple[str, str, float]]):
@@ -232,7 +232,7 @@ def retrieve_documents(
 
     cacher = get_or_create_actor(path, ignore_spec, required_exts)
 
-    cache = cacher.get_cache.remote()
+    cache = ray.get(cacher.get_cache.remote())
 
     for file_path, data in cache.items():
         yield SourceCode(
