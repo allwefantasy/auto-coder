@@ -357,18 +357,8 @@ class LongContextRAG:
                         real_duration=end_time_2 - submit_time_1,
                     )
                     if doc.task_timing:
-                        logger.info(f"Document: {doc.source_code.module_name}")
                         logger.info(
-                            f"  Relevance score: {doc.relevance.relevant_score}"
-                        )
-                        logger.info(
-                            f"  Submit time: {doc.task_timing.submit_time}/{doc.task_timing.real_start_time}/{doc.task_timing.real_start_time - doc.task_timing.submit_time }"
-                        )
-                        logger.info(
-                            f"  End time: {doc.task_timing.end_time}/{doc.task_timing.real_end_time}/{doc.task_timing.real_end_time - doc.task_timing.end_time }"
-                        )
-                        logger.info(
-                            f"  Duration: {doc.task_timing.duration:.2f} seconds/{doc.task_timing.real_duration:.2f}/{doc.task_timing.real_duration-doc.task_timing.duration} seconds"
+                            f"Document: {doc.source_code.module_name} Duration: {doc.task_timing.duration:.2f} seconds/{doc.task_timing.real_duration:.2f}/{doc.task_timing.real_duration-doc.task_timing.duration} seconds Relevance score: {doc.relevance.relevant_score} Submit time: {doc.task_timing.submit_time}/{doc.task_timing.real_start_time}/{doc.task_timing.real_start_time - doc.task_timing.submit_time } End time: {doc.task_timing.end_time}/{doc.task_timing.real_end_time}/{doc.task_timing.real_end_time - doc.task_timing.end_time }"
                         )
 
                 relevance = parse_relevance(v)
@@ -377,14 +367,6 @@ class LongContextRAG:
                     and relevance.is_relevant
                     and relevance.relevant_score >= self.relevant_score
                 ):
-                    task_timing = TaskTiming(
-                        submit_time=submit_time,
-                        end_time=end_time,
-                        duration=end_time - submit_time,
-                        real_start_time=submit_time_1,
-                        real_end_time=end_time_2,
-                        real_duration=end_time_2 - submit_time_1,
-                    )
                     relevant_docs.append(
                         FilterDoc(
                             source_code=doc,

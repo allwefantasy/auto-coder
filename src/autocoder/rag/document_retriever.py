@@ -46,7 +46,7 @@ def process_file(file_info: Tuple[str, str, float]) -> List[SourceCode]:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
             v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
-        logger.info(f"Load file {file_path} in {time.time() - start_time}")
+        # logger.info(f"Load file {file_path} in {time.time() - start_time}")
         return v
     except Exception as e:
         logger.error(f"Error processing file {file_path}: {str(e)}")
