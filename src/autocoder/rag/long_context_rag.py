@@ -356,7 +356,7 @@ class LongContextRAG:
                     real_duration=end_time_2 - submit_time_1,
                 )
                 logger.info(
-                    f"Document: {doc.module_name} Duration: {task_timing.duration:.2f} seconds/{task_timing.real_duration:.2f}/{task_timing.real_duration-task_timing.duration} seconds Relevance score: {relevance.relevant_score} Submit time: {task_timing.submit_time}/{task_timing.real_start_time}/{task_timing.real_start_time - task_timing.submit_time } End time: {task_timing.end_time}/{task_timing.real_end_time}/{task_timing.real_end_time - task_timing.end_time }"
+                    f"Document: {doc.module_name} Duration: {task_timing.duration:.2f} seconds/{task_timing.real_duration:.2f}/{task_timing.real_duration-task_timing.duration} seconds"
                 )
                 relevance = parse_relevance(v)
                 if (
