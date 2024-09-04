@@ -107,7 +107,7 @@ class DocFilter:
                         )
                         return (None, submit_time_1, time.time())
 
-                    end_time_2 = time.time()
+                    end_time_2 = time.time()                    
                     return (v, submit_time_1, end_time_2)
 
                 m = executor.submit(

@@ -254,17 +254,28 @@ def get_or_create_actor(path: str, ignore_spec, required_exts: list, cacher={}):
         return actor
 
 
-def retrieve_documents(
-    path: str, ignore_spec, required_exts: list, on_ray: bool = False
-) -> Generator[SourceCode, None, None]:
-    if on_ray:
-        cacher = get_or_create_actor(path, ignore_spec, required_exts)
-        cache = ray.get(cacher.get_cache.remote())
-    else:
-        cacher = AutoCoderRAGAsyncUpdateQueue(path, ignore_spec, required_exts)
-        cache = cacher.get_cache()
+class DocumentRetriever:
+    def __init__(
+        self, path: str, ignore_spec, required_exts: list, on_ray: bool = False
+    ) -> None:
+        self.path = path
+        self.ignore_spec = ignore_spec
+        self.required_exts = required_exts
 
-    for file_path, data in cache.items():
-        yield SourceCode(
-            module_name=f"##File: {file_path}", source_code=data["content"]
-        )
+        self.on_ray = on_ray
+        if self.on_ray:
+            self.cacher = get_or_create_actor(path, ignore_spec, required_exts)
+        else:
+            self.cacher = AutoCoderRAGAsyncUpdateQueue(path, ignore_spec, required_exts)
+
+    def get_cache(self):
+        if self.on_ray:
+            return ray.get(self.cacher.get_cache.remote())
+        else:
+            return self.cacher.get_cache()
+
+    def retrieve_documents(self) -> Generator[SourceCode, None, None]:
+        for file_path, data in self.get_cache().items():
+            yield SourceCode(
+                module_name=f"##File: {file_path}", source_code=data["content"]
+            )

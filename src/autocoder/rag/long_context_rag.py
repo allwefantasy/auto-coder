@@ -1,7 +1,6 @@
 import json
 import os
 from typing import Any, Dict, Generator, List, Optional, Tuple
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import byzerllm
 import pandas as pd
 import pathspec
@@ -14,8 +13,8 @@ from rich.panel import Panel
 from rich.text import Text
 from openai import OpenAI
 import time
-from byzerllm.utils.client.code_utils import extract_code
-from autocoder.rag.document_retriever import retrieve_documents, get_or_create_actor
+
+from autocoder.rag.document_retriever import DocumentRetriever
 from autocoder.rag.relevant_utils import (
     parse_relevance,
     FilterDoc,
@@ -84,10 +83,10 @@ class LongContextRAG:
         self.ignore_spec = self._load_ignore_file()
 
         self.token_limit = self.args.rag_context_window_limit or 120000
-        self.cacher = {}
-        get_or_create_actor(
-            self.path, self.ignore_spec, self.required_exts, self.cacher
+        self.document_retriever = DocumentRetriever(
+            self.path, self.ignore_spec, self.required_exts, self.on_ray
         )
+
         self.doc_filter = DocFilter(self.llm, self.args, on_ray=self.on_ray)
 
         # 检查当前目录下所有文件是否超过 120k tokens ，并且打印出来
@@ -161,12 +160,7 @@ class LongContextRAG:
         return None
 
     def _retrieve_documents(self) -> Generator[SourceCode, None, None]:
-        return retrieve_documents(
-            path=self.path,
-            ignore_spec=self.ignore_spec,
-            required_exts=self.required_exts,
-            on_ray=self.on_ray,
-        )
+        return self.document_retriever.retrieve_documents()
 
     def build(self):
         pass
