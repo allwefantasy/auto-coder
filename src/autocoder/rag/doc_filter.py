@@ -71,7 +71,7 @@ class DocFilter:
         if self.on_ray:
             cpu_count = os.cpu_count() or 1
             self.workers = [
-                DocFilterWorker.options(max_concurrency=1000, num_cpu=0).remote(llm)
+                DocFilterWorker.options(max_concurrency=1000, num_cpus=0).remote(llm)
                 for _ in range(cpu_count)
             ]
 

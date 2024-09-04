@@ -239,7 +239,7 @@ def get_or_create_actor(path: str, ignore_spec, required_exts: list, cacher={}):
         if actor is None:
             actor = (
                 ray.remote(AutoCoderRAGAsyncUpdateQueue)
-                .options(name=actor_name, num_cpu=0)
+                .options(name=actor_name, num_cpus=0)
                 .remote(path, ignore_spec, required_exts)
             )
             ray.get(actor.load_first.remote())
