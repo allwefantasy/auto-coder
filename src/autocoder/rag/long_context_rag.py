@@ -15,7 +15,7 @@ from rich.text import Text
 from openai import OpenAI
 import time
 from byzerllm.utils.client.code_utils import extract_code
-from autocoder.rag.document_retriever import retrieve_documents
+from autocoder.rag.document_retriever import retrieve_documents,get_or_create_actor
 from autocoder.rag.relevant_utils import (
     parse_relevance,
     FilterDoc,
@@ -42,7 +42,7 @@ class LongContextRAG:
         self.relevant_score = self.args.rag_doc_filter_relevance or 5
 
         self.tokenizer = None
-        self.tokenizer_path = tokenizer_path
+        self.tokenizer_path = tokenizer_path        
 
         if self.tokenizer_path:
             self.tokenizer = TokenCounter(self.tokenizer_path)
@@ -82,6 +82,8 @@ class LongContextRAG:
         self.ignore_spec = self._load_ignore_file()
 
         self.token_limit = self.args.rag_context_window_limit or 120000
+        self.cacher = {}
+        get_or_create_actor(self.path, self.ignore_spec, self.required_exts,self.cacher)
 
         # 检查当前目录下所有文件是否超过 120k tokens ，并且打印出来
         self.token_exceed_files = []
@@ -96,6 +98,7 @@ class LongContextRAG:
         logger.info(
             f"Tokenizer path: {self.tokenizer_path} relevant_score: {self.relevant_score} token_limit: {self.token_limit}"
         )
+      
 
     def count_tokens(self, text: str) -> int:
         if self.tokenizer is None:

@@ -20,4 +20,5 @@ def extract_text_from_excel(excel_path) -> List[Tuple[str, str]]:
         rows = [[cell if cell is not None else "" for cell in row] for row in rows]
         content = tmpl.render(rows=rows)
         sheet_list.append([excel_path + f"#{ws.title}", content])
+    wb.close()    
     return sheet_list

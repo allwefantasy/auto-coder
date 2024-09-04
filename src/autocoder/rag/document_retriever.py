@@ -19,6 +19,7 @@ import ray
 cache_lock = threading.Lock()
 
 
+@ray.remote
 def process_file(file_info: Tuple[str, str, float]) -> List[SourceCode]:
     start_time = time.time()
     file_path, relative_path, _ = file_info
@@ -48,7 +49,7 @@ def process_file(file_info: Tuple[str, str, float]) -> List[SourceCode]:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
             v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
-        # logger.info(f"Load file {file_path} in {time.time() - start_time}")
+        logger.info(f"Load file {file_path} in {time.time() - start_time}")
         return v
     except Exception as e:
         logger.error(f"Error processing file {file_path}: {str(e)}")
@@ -63,6 +64,7 @@ class AutoCoderRAGAsyncUpdateQueue:
         self.queue = []
         self.cache = self.read_cache()
 
+    def load_first(self):
         files_to_process = []
         for file_info in self.get_all_files():
             file_path, _, modify_time = file_info
@@ -72,8 +74,12 @@ class AutoCoderRAGAsyncUpdateQueue:
             ):
                 files_to_process.append(file_info)
 
+        # remote_process_file = ray.remote(process_file)
+        # results = ray.get(
+        #     [process_file.remote(file_info) for file_info in files_to_process]
+        # )
         with Pool(processes=os.cpu_count()) as pool:
-            results = pool.map(process_file, files_to_process)
+            results = pool.map(self.process_file, files_to_process)
 
         for file_info, result in zip(files_to_process, results):
             for item in result:
@@ -126,9 +132,6 @@ class AutoCoderRAGAsyncUpdateQueue:
                     SourceCode(module_name=f"##File: {file_path}", source_code=content)
                 ]
 
-            for item in v:
-                self.update_cache(file_info, item.source_code)
-
             logger.info(
                 f"Processed and updated cache for file {file_path} in {time.time() - start_time}"
             )
@@ -177,6 +180,8 @@ class AutoCoderRAGAsyncUpdateQueue:
         }
 
     def get_cache(self):
+        if not self.cache:
+            self.load_first()
         return self.cache
 
     def get_all_files(self) -> List[Tuple[str, str, float]]:
@@ -211,10 +216,12 @@ class AutoCoderRAGAsyncUpdateQueue:
         return all_files
 
 
-def get_or_create_actor(path: str, ignore_spec, required_exts: list):
+def get_or_create_actor(path: str, ignore_spec, required_exts: list, cacher={}):
     with cache_lock:
         # 处理路径名
-        actor_name = "AutoCoderRAGAsyncUpdateQueue_" + path.replace(os.sep, "_").replace(" ", "")
+        actor_name = "AutoCoderRAGAsyncUpdateQueue_" + path.replace(
+            os.sep, "_"
+        ).replace(" ", "")
         try:
             actor = ray.get_actor(actor_name)
         except ValueError:
@@ -222,9 +229,10 @@ def get_or_create_actor(path: str, ignore_spec, required_exts: list):
         if actor is None:
             actor = (
                 ray.remote(AutoCoderRAGAsyncUpdateQueue)
-                .options(lifetime="detached", name=actor_name)
+                .options(name=actor_name)
                 .remote(path, ignore_spec, required_exts)
             )
+        cacher[actor_name] = actor
         return actor
 
 
