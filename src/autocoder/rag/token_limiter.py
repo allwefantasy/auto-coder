@@ -165,6 +165,7 @@ class TokenLimiter:
 
                 llm = ByzerLLM()
                 llm.setup_default_model_name(self.llm.default_model_name)
+                llm.skip_nontext_check = True
 
                 extracted_info = (
                     self.extract_relevance_range_from_docs_with_conversation.with_llm(

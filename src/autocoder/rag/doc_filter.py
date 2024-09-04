@@ -5,7 +5,14 @@ import ray
 from loguru import logger
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    BarColumn,
+    TaskProgressColumn,
+    TimeElapsedColumn,
+)
 from rich.console import Console
 
 from autocoder.rag.relevant_utils import (
@@ -89,16 +96,18 @@ class DocFilter:
         self, conversations: List[Dict[str, str]], documents: List[SourceCode]
     ) -> List[FilterDoc]:
         console = Console()
+        documents = list(documents)
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            TimeRemainingColumn(),
+            BarColumn(),            
+            TimeElapsedColumn(),
             console=console,
         ) as progress:
-            task = progress.add_task("[cyan]Filtering documents...", total=len(documents))
-            
+            task = progress.add_task(
+                "[cyan]Filtering documents...", total=len(documents)
+            )
+
             with ThreadPoolExecutor(
                 max_workers=self.args.index_filter_workers or 5
             ) as executor:
@@ -107,10 +116,11 @@ class DocFilter:
                     submit_time = time.time()
 
                     def _run(conversations, docs):
-                        submit_time_1 = time.time()
+                        submit_time_1 = time.time()                        
                         try:
                             llm = ByzerLLM()
                             llm.setup_default_model_name(self.llm.default_model_name)
+                            llm.skip_nontext_check = True
                             v = _check_relevance_with_conversation.with_llm(llm).run(
                                 conversations=conversations, documents=docs
                             )
@@ -119,8 +129,8 @@ class DocFilter:
                                 f"Error in _check_relevance_with_conversation: {str(e)}"
                             )
                             return (None, submit_time_1, time.time())
-
-                        end_time_2 = time.time()                    
+ 
+                        end_time_2 = time.time()
                         return (v, submit_time_1, end_time_2)
 
                     m = executor.submit(
@@ -131,7 +141,7 @@ class DocFilter:
                     future_to_doc[m] = (doc, submit_time)
 
             relevant_docs = []
-            for future in as_completed(future_to_doc):
+            for future in as_completed(list(future_to_doc.keys())):
                 try:
                     doc, submit_time = future_to_doc[future]
                     end_time = time.time()
@@ -144,9 +154,8 @@ class DocFilter:
                         real_end_time=end_time_2,
                         real_duration=end_time_2 - submit_time_1,
                     )
-                    logger.info(
-                        f"Document: {doc.module_name} Duration: {task_timing.duration:.2f} seconds/{task_timing.real_duration:.2f}/{task_timing.real_duration-task_timing.duration} seconds"
-                    )
+                    progress.update(task, advance=1)
+                 
                     relevance = parse_relevance(v)
                     if (
                         relevance
@@ -162,8 +171,6 @@ class DocFilter:
                         )
                 except Exception as exc:
                     logger.error(f"Document processing generated an exception: {exc}")
-                finally:
-                    progress.update(task, advance=1)
 
         # Sort relevant_docs by relevance score in descending order
         relevant_docs.sort(key=lambda x: x.relevance.relevant_score, reverse=True)
