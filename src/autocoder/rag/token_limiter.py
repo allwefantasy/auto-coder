@@ -6,6 +6,7 @@ from loguru import logger
 from autocoder.common import SourceCode
 from byzerllm.utils.client.code_utils import extract_code
 import byzerllm
+from byzerllm import ByzerLLM
 
 
 class TokenLimiter:
@@ -162,9 +163,12 @@ class TokenLimiter:
                 for idx, line in enumerate(source_code_lines):
                     source_code_with_line_number += f"{idx+1} {line}\n"
 
+                llm = ByzerLLM()
+                llm.setup_default_model_name(self.llm.default_model_name)
+
                 extracted_info = (
                     self.extract_relevance_range_from_docs_with_conversation.with_llm(
-                        self.llm
+                        llm
                     ).run(conversations, [source_code_with_line_number])
                 )
                 json_str = extract_code(extracted_info)[0][1]
