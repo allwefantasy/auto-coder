@@ -213,14 +213,16 @@ class AutoCoderRAGAsyncUpdateQueue:
 
 def get_or_create_actor(path: str, ignore_spec, required_exts: list):
     with cache_lock:
+        # 处理路径名
+        actor_name = "AutoCoderRAGAsyncUpdateQueue_" + path.replace(os.sep, "_").replace(" ", "")
         try:
-            actor = ray.get_actor("AutoCoderRAGAsyncUpdateQueue")
+            actor = ray.get_actor(actor_name)
         except ValueError:
             actor = None
         if actor is None:
             actor = (
                 ray.remote(AutoCoderRAGAsyncUpdateQueue)
-                .options(lifetime="detached", name="AutoCoderRAGAsyncUpdateQueue")
+                .options(lifetime="detached", name=actor_name)
                 .remote(path, ignore_spec, required_exts)
             )
         return actor
