@@ -247,8 +247,14 @@ def main(input_args: Optional[List[str]] = None):
                 code_search_path = [retrieval_libs_dir]
 
         try:
+            init_options = {}
+            if raw_args.doc_command == "serve":
+                init_options["log_to_driver"] = True
+
             byzerllm.connect_cluster(
-                address=args.ray_address, code_search_path=code_search_path
+                address=args.ray_address,
+                code_search_path=code_search_path,
+                init_options=init_options,
             )
         except Exception as e:
             logger.warning(
@@ -277,34 +283,46 @@ def main(input_args: Optional[List[str]] = None):
                     return True, None
                 if not input_value[0].pop("human_as_model", None):
                     return True, None
-                
+
                 console = Console()
-                console.print(Panel(f"Intercepted request to model: [bold]{model}[/bold]", border_style="yellow"))
+                console.print(
+                    Panel(
+                        f"Intercepted request to model: [bold]{model}[/bold]",
+                        border_style="yellow",
+                    )
+                )
                 instruction = input_value[0]["instruction"]
                 final_ins = instruction
 
                 try:
                     import pyperclip
+
                     pyperclip.copy(final_ins)
-                    console.print(Panel(
-                        "You are now in Human as Model mode. The content has been copied to your clipboard.\n"
-                        "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
-                        "Use '/break' to exit this mode. If you have issues with copy-paste, use '/clear' to clean and paste again.",
-                        title="Instructions",
-                        border_style="blue",
-                        expand=False
-                    ))
+                    console.print(
+                        Panel(
+                            "You are now in Human as Model mode. The content has been copied to your clipboard.\n"
+                            "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
+                            "Use '/break' to exit this mode. If you have issues with copy-paste, use '/clear' to clean and paste again.",
+                            title="Instructions",
+                            border_style="blue",
+                            expand=False,
+                        )
+                    )
                 except Exception:
-                    logger.warning("pyperclip not installed or clipboard is not supported, instruction will not be copied to clipboard.")
-                    console.print(Panel(
-                        "You are now in Human as Model mode. [bold red]The content could not be copied to your clipboard.[/bold red]\n"
-                        "but you can copy prompt from output.txt file.\n"
-                        "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
-                        "Use '/break' to exit this mode. If you have issues with copy-paste, use '/clear' to clean and paste again.",
-                        title="Instructions",
-                        border_style="blue",
-                        expand=False
-                    ))
+                    logger.warning(
+                        "pyperclip not installed or clipboard is not supported, instruction will not be copied to clipboard."
+                    )
+                    console.print(
+                        Panel(
+                            "You are now in Human as Model mode. [bold red]The content could not be copied to your clipboard.[/bold red]\n"
+                            "but you can copy prompt from output.txt file.\n"
+                            "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
+                            "Use '/break' to exit this mode. If you have issues with copy-paste, use '/clear' to clean and paste again.",
+                            title="Instructions",
+                            border_style="blue",
+                            expand=False,
+                        )
+                    )
 
                 if args.request_id and not args.silence:
                     event_data = {
