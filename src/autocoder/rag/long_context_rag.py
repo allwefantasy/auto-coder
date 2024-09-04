@@ -15,13 +15,14 @@ from rich.text import Text
 from openai import OpenAI
 import time
 from byzerllm.utils.client.code_utils import extract_code
-from autocoder.rag.document_retriever import retrieve_documents,get_or_create_actor
+from autocoder.rag.document_retriever import retrieve_documents, get_or_create_actor
 from autocoder.rag.relevant_utils import (
     parse_relevance,
     FilterDoc,
     DocRelevance,
     TaskTiming,
 )
+from autocoder.rag.doc_filter import DocFilter
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.rag.token_checker import check_token_limit
 from autocoder.rag.token_limiter import TokenLimiter
@@ -42,7 +43,7 @@ class LongContextRAG:
         self.relevant_score = self.args.rag_doc_filter_relevance or 5
 
         self.tokenizer = None
-        self.tokenizer_path = tokenizer_path        
+        self.tokenizer_path = tokenizer_path
 
         if self.tokenizer_path:
             self.tokenizer = TokenCounter(self.tokenizer_path)
@@ -83,7 +84,9 @@ class LongContextRAG:
 
         self.token_limit = self.args.rag_context_window_limit or 120000
         self.cacher = {}
-        get_or_create_actor(self.path, self.ignore_spec, self.required_exts,self.cacher)
+        get_or_create_actor(
+            self.path, self.ignore_spec, self.required_exts, self.cacher
+        )
 
         # 检查当前目录下所有文件是否超过 120k tokens ，并且打印出来
         self.token_exceed_files = []
@@ -98,49 +101,11 @@ class LongContextRAG:
         logger.info(
             f"Tokenizer path: {self.tokenizer_path} relevant_score: {self.relevant_score} token_limit: {self.token_limit}"
         )
-      
 
     def count_tokens(self, text: str) -> int:
         if self.tokenizer is None:
             return -1
         return self.tokenizer.count_tokens(text)
-
-    @byzerllm.prompt()
-    def _check_relevance(self, query: str, documents: List[str]) -> str:
-        """
-        请判断以下文档是否能够回答给出的问题。
-
-        文档：
-        {% for doc in documents %}
-        {{ doc }}
-        {% endfor %}
-
-        问题：{{ query }}
-
-        如果该文档提供的知识能够回答问题，那么请回复"yes" 否则回复"no"。
-        """
-
-    @byzerllm.prompt()
-    def _check_relevance_with_conversation(
-        self, conversations: List[Dict[str, str]], documents: List[str]
-    ) -> str:
-        """
-        使用以下文档和对话历史来回答问题。如果文档中没有相关信息，请说"我没有足够的信息来回答这个问题"。
-
-        文档：
-        {% for doc in documents %}
-        {{ doc }}
-        {% endfor %}
-
-        对话历史：
-        {% for msg in conversations %}
-        <{{ msg.role }}>: {{ msg.content }}
-        {% endfor %}
-
-        请结合提供的文档以及用户对话历史，判断提供的文档是不是能回答用户的最后一个问题。
-        如果该文档提供的知识能够回答问题，那么请回复"yes/<relevant>" 否则回复"no/<relevant>"。
-        其中， <relevant> 是你认为文档中和问题的相关度，0-10之间的数字，数字越大表示相关度越高。
-        """
 
     @byzerllm.prompt()
     def extract_relevance_info_from_docs_with_conversation(
@@ -162,62 +127,6 @@ class LongContextRAG:
         请根据提供的文档内容、用户对话历史以及最后一个问题，提取并总结文档中与问题相关的重要信息。
         如果文档中没有相关信息，请回复"该文档中没有与问题相关的信息"。
         提取的信息尽量保持和原文中的一样，并且只输出这些信息。
-        """
-
-    @byzerllm.prompt()
-    def extract_relevance_range_from_docs_with_conversation(
-        self, conversations: List[Dict[str, str]], documents: List[str]
-    ) -> str:
-        """
-        根据提供的文档和对话历史提取相关信息范围。
-
-        输入:
-        1. 文档内容:
-        {% for doc in documents %}
-        {{ doc }}
-        {% endfor %}
-
-        2. 对话历史:
-        {% for msg in conversations %}
-        <{{ msg.role }}>: {{ msg.content }}
-        {% endfor %}
-
-        任务:
-        1. 分析最后一个用户问题及其上下文。
-        2. 在文档中找出与问题相关的一个或多个重要信息段。
-        3. 对每个相关信息段，确定其起始行号(start_line)和结束行号(end_line)。
-        4. 信息段数量不超过4个。
-
-        输出要求:
-        1. 返回一个JSON数组，每个元素包含"start_line"和"end_line"。
-        2. start_line和end_line必须是整数，表示文档中的行号。
-        3. 行号从1开始计数。
-        4. 如果没有相关信息，返回空数组[]。
-
-        输出格式:
-        严格的JSON数组，不包含其他文字或解释。
-
-        示例:
-        1.  文档：
-            1 这是这篇动物科普文。
-            2 大象是陆地上最大的动物之一。
-            3 它们生活在非洲和亚洲。
-            问题：大象生活在哪里？
-            返回：[{"start_line": 2, "end_line": 3}]
-
-        2.  文档：
-            1 地球是太阳系第三行星，
-            2 有海洋、沙漠，温度适宜，
-            3 是已知唯一有生命的星球。
-            4 太阳则是太阳系的唯一恒心。
-            问题：地球的特点是什么？
-            返回：[{"start_line": 1, "end_line": 3}]
-
-        3.  文档：
-            1 苹果富含维生素。
-            2 香蕉含有大量钾元素。
-            问题：橙子的特点是什么？
-            返回：[]
         """
 
     @byzerllm.prompt()
@@ -307,79 +216,8 @@ class LongContextRAG:
 
     def _filter_docs(self, conversations: List[Dict[str, str]]) -> List[FilterDoc]:
         documents = self._retrieve_documents()
-        with ThreadPoolExecutor(
-            max_workers=self.args.index_filter_workers or 5
-        ) as executor:
-            future_to_doc = {}
-            for doc in documents:
-                content = self._check_relevance_with_conversation.prompt(
-                    conversations, [doc.source_code]
-                )
-                if self.tokenizer and self.count_tokens(content) > self.token_limit:
-                    logger.warning(
-                        f"{doc.module_name} 以及对话上线文 文件超过 120k tokens，将无法使用 RAG 模型进行搜索。"
-                    )
-                    continue
-
-                submit_time = time.time()
-
-                def _run(conversations, docs):
-                    submit_time_1 = time.time()
-                    try:
-                        v = self._check_relevance_with_conversation.with_llm(
-                            self.llm
-                        ).run(conversations=conversations, documents=docs)
-                    except Exception as e:
-                        logger.error(
-                            f"Error in _check_relevance_with_conversation: {str(e)}"
-                        )
-                        return (None, submit_time_1, time.time())
-
-                    end_time_2 = time.time()
-                    return (v, submit_time_1, end_time_2)
-
-                m = executor.submit(
-                    _run,
-                    conversations,
-                    [f"##File: {doc.module_name}\n{doc.source_code}"],
-                )
-                future_to_doc[m] = (doc, submit_time)
-        relevant_docs = []
-        for future in as_completed(future_to_doc):
-            try:
-                doc, submit_time = future_to_doc[future]
-                end_time = time.time()
-                v, submit_time_1, end_time_2 = future.result()
-                task_timing = TaskTiming(
-                    submit_time=submit_time,
-                    end_time=end_time,
-                    duration=end_time - submit_time,
-                    real_start_time=submit_time_1,
-                    real_end_time=end_time_2,
-                    real_duration=end_time_2 - submit_time_1,
-                )
-                logger.info(
-                    f"Document: {doc.module_name} Duration: {task_timing.duration:.2f} seconds/{task_timing.real_duration:.2f}/{task_timing.real_duration-task_timing.duration} seconds"
-                )
-                relevance = parse_relevance(v)
-                if (
-                    relevance
-                    and relevance.is_relevant
-                    and relevance.relevant_score >= self.relevant_score
-                ):
-                    relevant_docs.append(
-                        FilterDoc(
-                            source_code=doc,
-                            relevance=relevance,
-                            task_timing=task_timing,
-                        )
-                    )
-            except Exception as exc:
-                logger.error(f"Document processing generated an exception: {exc}")
-
-        # Sort relevant_docs by relevance score in descending order
-        relevant_docs.sort(key=lambda x: x.relevance.relevant_score, reverse=True)
-        return relevant_docs
+        doc_filter = DocFilter(self.llm, self.args)
+        return doc_filter.filter_docs(conversations=conversations, documents=documents)
 
     def stream_chat_oai(
         self,
@@ -516,7 +354,6 @@ class LongContextRAG:
                     count_tokens=self.count_tokens,
                     token_limit=self.token_limit,
                     llm=self.llm,
-                    extract_relevance_range_from_docs_with_conversation=self.extract_relevance_range_from_docs_with_conversation,
                 )
                 final_relevant_docs = token_limiter.limit_tokens(
                     relevant_docs=relevant_docs,
