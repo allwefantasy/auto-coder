@@ -183,7 +183,7 @@ class LongContextRAG:
             only_contexts = True
 
         logger.info("Search from RAG.....")
-        logger.info(f"Query: {target_query} only_contexts: {only_contexts}")
+        logger.info(f"Query: {target_query[0:100]}... only_contexts: {only_contexts}")
 
         if self.client:
             new_query = json.dumps(
