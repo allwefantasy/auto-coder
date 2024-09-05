@@ -161,8 +161,7 @@ class AutoCoderRAGAsyncUpdateQueue:
         current_files = set()
         for file_info in self.get_all_files():
             file_path, _, modify_time = file_info
-            current_files.add(file_path)
-            logger.info(f'{self.cache[file_path]["modify_time"] < modify_time} {self.cache[file_path]["modify_time"]} {modify_time}')
+            current_files.add(file_path)            
             if (
                 file_path not in self.cache
                 or self.cache[file_path]["modify_time"] < modify_time
