@@ -107,9 +107,9 @@ class AutoCoderRAGAsyncUpdateQueue:
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
         self.queue = []
-        self.cache = self.read_cache()
-        self.lock = threading.Lock()
         self.stop_event = threading.Event()
+        self.cache = self.read_cache()
+        self.lock = threading.Lock()        
         self.thread = threading.Thread(target=self._process_queue)
         self.thread.daemon = True
         self.thread.start()
@@ -150,8 +150,8 @@ class AutoCoderRAGAsyncUpdateQueue:
             with Pool(processes=os.cpu_count()) as pool:
                 results = pool.map(process_file2, files_to_process)
 
-            for file_info, result in zip(files_to_process, results):
-                for item in result:
+            for file_info, result in zip(files_to_process, results):                
+                for item in result:                    
                     self.update_cache(file_info, item.source_code)
             self.write_cache()
 
@@ -174,7 +174,7 @@ class AutoCoderRAGAsyncUpdateQueue:
         logger.info(f"deleted_files: {deleted_files}")
         if deleted_files:
             with self.lock:
-                self.queue.append(DeleteEvent(file_infos=deleted_files))
+                self.queue.append(DeleteEvent(file_paths=deleted_files))
         if files_to_process:
             with self.lock:
                 self.queue.append(AddOrUpdateEvent(file_infos=files_to_process))
@@ -185,58 +185,14 @@ class AutoCoderRAGAsyncUpdateQueue:
             if isinstance(file_info, DeleteEvent):
                 for item in file_info.file_paths:
                     logger.info(f"{item[0]} is detected to be removed")
-                    del self.cache[item]
+                    del self.cache[file_info[0]]
             elif isinstance(file_info, AddOrUpdateEvent):
                 for item in file_info.file_infos:
                     logger.info(f"{item[0]} is detected to be updated")
                     result = process_file2(item)
                     for item in result:
-                        self.update_cache(item, item.source_code)
-            self.write_cache()
-
-    def process_file(self, file_info: Tuple[str, str, float]) -> List[SourceCode]:
-        start_time = time.time()
-        file_path, relative_path, _ = file_info
-        try:
-            if file_path.endswith(".pdf"):
-                with open(file_path, "rb") as f:
-                    content = extract_text_from_pdf(f.read())
-                v = [SourceCode(module_name=file_path, source_code=content)]
-            elif file_path.endswith(".docx"):
-                with open(file_path, "rb") as f:
-                    content = extract_text_from_docx(f.read())
-                v = [
-                    SourceCode(module_name=f"##File: {file_path}", source_code=content)
-                ]
-            elif file_path.endswith(".xlsx") or file_path.endswith(".xls"):
-                sheets = extract_text_from_excel(file_path)
-                v = [
-                    SourceCode(
-                        module_name=f"##File: {file_path}#{sheet[0]}",
-                        source_code=sheet[1],
-                    )
-                    for sheet in sheets
-                ]
-            elif file_path.endswith(".pptx"):
-                slides = extract_text_from_ppt(file_path)
-                content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
-                v = [
-                    SourceCode(module_name=f"##File: {file_path}", source_code=content)
-                ]
-            else:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                v = [
-                    SourceCode(module_name=f"##File: {file_path}", source_code=content)
-                ]
-
-            logger.info(
-                f"Processed and updated cache for file {file_path} in {time.time() - start_time}"
-            )
-            return v
-        except Exception as e:
-            logger.error(f"Error processing file {file_path}: {str(e)}")
-            return []
+                        self.update_cache(file_info, item.source_code)
+            self.write_cache()    
 
     def read_cache(self) -> Dict[str, Dict]:
         cache_dir = os.path.join(self.path, ".cache")
