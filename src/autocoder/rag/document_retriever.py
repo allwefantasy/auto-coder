@@ -133,14 +133,24 @@ class AutoCoderRAGAsyncUpdateQueue:
 
     def trigger_update(self):
         files_to_process = []
+        current_files = set()
         for file_info in self.get_all_files():
             file_path, _, modify_time = file_info
+            current_files.add(file_path)
             if (
                 file_path not in self.cache
                 or self.cache[file_path]["modify_time"] < modify_time
             ):
                 files_to_process.append(file_info)
+
+        # Check for deleted files
+        deleted_files = set(self.cache.keys()) - current_files
+        for deleted_file in deleted_files:
+            del self.cache[deleted_file]
+            logger.info(f"Removed deleted file from cache: {deleted_file}")
+
         self.add_update_request(files_to_process)
+        self.write_cache()  # Write updated cache to disk
 
     def process_queue(self):
         while self.queue:
