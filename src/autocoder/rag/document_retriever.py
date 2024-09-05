@@ -109,7 +109,25 @@ class AutoCoderRAGAsyncUpdateQueue:
         self.queue = []
         self.cache = self.read_cache()
         self.lock = threading.Lock()
-        threading.Thread(target=self.process_queue).start()
+        self.stop_event = threading.Event()
+        self.thread = threading.Thread(target=self._process_queue)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def _process_queue(self):
+        while not self.stop_event.is_set():
+            try:
+                self.process_queue()
+            except Exception as e:
+                logger.error(f"Error in process_queue: {e}")
+            time.sleep(1)  # 避免过于频繁的检查
+
+    def stop(self):
+        self.stop_event.set()
+        self.thread.join()
+
+    def __del__(self):
+        self.stop()
 
     def load_first(self):
         with self.lock:
