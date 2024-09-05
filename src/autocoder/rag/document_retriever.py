@@ -15,8 +15,17 @@ from loguru import logger
 import threading
 from multiprocessing import Pool
 import ray
+from pydantic import BaseModel
 
 cache_lock = threading.Lock()
+
+
+class DeleteEvent(BaseModel):
+    file_paths: List[str]
+
+
+class AddOrUpdateEvent(BaseModel):
+    file_infos: List[Tuple[str, str, float]]
 
 
 @ray.remote
@@ -55,6 +64,7 @@ def process_file(file_info: Tuple[str, str, float]) -> List[SourceCode]:
         logger.error(f"Error processing file {file_path}: {str(e)}")
         return []
 
+
 def process_file2(file_info: Tuple[str, str, float]) -> List[SourceCode]:
     start_time = time.time()
     file_path, relative_path, _ = file_info
@@ -88,7 +98,7 @@ def process_file2(file_info: Tuple[str, str, float]) -> List[SourceCode]:
         return v
     except Exception as e:
         logger.error(f"Error processing file {file_path}: {str(e)}")
-        return []    
+        return []
 
 
 class AutoCoderRAGAsyncUpdateQueue:
@@ -127,10 +137,6 @@ class AutoCoderRAGAsyncUpdateQueue:
                     self.update_cache(file_info, item.source_code)
             self.write_cache()
 
-    def add_update_request(self, file_infos: List[Tuple[str, str, float]]):
-        for file_info in file_infos:
-            self.queue.append(file_info)
-
     def trigger_update(self):
         files_to_process = []
         current_files = set()
@@ -145,17 +151,23 @@ class AutoCoderRAGAsyncUpdateQueue:
 
         # Check for deleted files
         deleted_files = set(self.cache.keys()) - current_files
-        for deleted_file in deleted_files:
-            del self.cache[deleted_file]
-            logger.info(f"Removed deleted file from cache: {deleted_file}")
 
-        self.add_update_request(files_to_process)
-        self.write_cache()  # Write updated cache to disk
+        if deleted_files:
+            self.queue.append(DeleteEvent(file_infos=deleted_files))
+
+        self.queue.append(AddOrUpdateEvent(file_infos=files_to_process))
 
     def process_queue(self):
         while self.queue:
             file_info = self.queue.pop(0)
-            self.process_file(file_info)
+            if isinstance(file_info, DeleteEvent):
+                for item in file_info.file_paths:
+                    del self.cache[item]
+            elif isinstance(file_info, AddOrUpdateEvent):
+                for item in file_info.file_infos:
+                    result = process_file2(item)
+                    for item in result:
+                        self.update_cache(item, item.source_code)
             self.write_cache()
 
     def process_file(self, file_info: Tuple[str, str, float]) -> List[SourceCode]:
