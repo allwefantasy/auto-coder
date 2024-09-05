@@ -51,6 +51,7 @@ import asyncio
 from byzerllm.utils.langutil import asyncfy_with_semaphore
 from prompt_toolkit.patch_stdout import patch_stdout
 import byzerllm
+from byzerllm.utils import format_str_jinja2
 
 
 class SymbolItem(BaseModel):
@@ -1208,6 +1209,7 @@ def coding(query: str):
     save_memory()
     completer.refresh_files()
 
+
 @byzerllm.prompt()
 def code_review(query: str) -> str:
     """
@@ -1220,6 +1222,7 @@ def code_review(query: str) -> str:
 
     如果用户的需求包含了@一个文件名 或者 @@符号， 那么重点关注这些文件或者符号（函数，类）进行上述的review
     """
+
 
 def chat(query: str):
     conf = memory.get("conf", {})
@@ -1254,9 +1257,12 @@ def chat(query: str):
 
     is_review = query.strip().startswith("/review")
     if is_review:
-        query = query.replace("/review", "", 1).strip()        
-        query = code_review.prompt(query)
-    
+        query = query.replace("/review", "", 1).strip()
+        if "prompt_review" in conf:
+            query = format_str_jinja2(conf["prompt_review"], query=query)
+        else:
+            query = code_review.prompt(query)
+
     for key, value in conf.items():
         converted_value = convert_config_value(key, value)
         if converted_value is not None:

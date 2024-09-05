@@ -16,7 +16,7 @@ tabulate
 jupyter_client
 prompt-toolkit
 tokenizers
-byzerllm[saas]>=0.1.129
+byzerllm[saas]>=0.1.130
 patch
 diff_match_patch
 GitPython
