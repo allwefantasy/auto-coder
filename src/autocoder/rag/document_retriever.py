@@ -162,9 +162,11 @@ class AutoCoderRAGAsyncUpdateQueue:
             file_info = self.queue.pop(0)
             if isinstance(file_info, DeleteEvent):
                 for item in file_info.file_paths:
+                    logger.info(f"{item[0]} is detected to be removed")
                     del self.cache[item]
             elif isinstance(file_info, AddOrUpdateEvent):
                 for item in file_info.file_infos:
+                    logger.info(f"{item[0]} is detected to be updated")
                     result = process_file2(item)
                     for item in result:
                         self.update_cache(item, item.source_code)
