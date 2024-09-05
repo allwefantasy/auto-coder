@@ -36,11 +36,13 @@ class LongContextRAG:
         path: str,
         tokenizer_path: Optional[str] = None,
     ) -> None:
-        self.llm = llm        
+        self.llm = llm
         self.args = args
-        
+
         self.index_model = byzerllm.ByzerLLM()
-        self.index_model.setup_default_model_name(args.index_model or self.llm.default_model_name)
+        self.index_model.setup_default_model_name(
+            args.index_model or self.llm.default_model_name
+        )
 
         self.path = path
         self.relevant_score = self.args.rag_doc_filter_relevance or 5
@@ -91,7 +93,9 @@ class LongContextRAG:
             self.path, self.ignore_spec, self.required_exts, self.on_ray
         )
 
-        self.doc_filter = DocFilter(self.index_model, self.args, on_ray=self.on_ray)
+        self.doc_filter = DocFilter(
+            self.index_model, self.args, on_ray=self.on_ray, path=self.path
+        )
 
         # 检查当前目录下所有文件是否超过 120k tokens ，并且打印出来
         self.token_exceed_files = []

@@ -23,13 +23,16 @@ from autocoder.rag.relevant_utils import (
 )
 
 from autocoder.common import SourceCode, AutoCoderArgs
+from autocoder.rag.rag_config import RagConfigManager
 from byzerllm import ByzerLLM
 import byzerllm
 
 
 @byzerllm.prompt()
 def _check_relevance_with_conversation(
-    conversations: List[Dict[str, str]], documents: List[str]
+    conversations: List[Dict[str, str]],
+    documents: List[str],
+    filter_config: Optional[str] = None,
 ) -> str:
     """
     使用以下文档和对话历史来回答问题。如果文档中没有相关信息，请说"我没有足够的信息来回答这个问题"。
@@ -43,6 +46,11 @@ def _check_relevance_with_conversation(
     {% for msg in conversations %}
     <{{ msg.role }}>: {{ msg.content }}
     {% endfor %}
+
+    {% if filter_config %}
+    一些提示：
+    {{ filter_config }}
+    {% endif %}
 
     请结合提供的文档以及用户对话历史，判断提供的文档是不是能回答用户的最后一个问题。
     如果该文档提供的知识能够回答问题，那么请回复"yes/<relevant>" 否则回复"no/<relevant>"。
@@ -72,11 +80,18 @@ class DocFilterWorker:
 
 
 class DocFilter:
-    def __init__(self, llm: ByzerLLM, args: AutoCoderArgs, on_ray: bool = False):
+    def __init__(
+        self,
+        llm: ByzerLLM,
+        args: AutoCoderArgs,
+        on_ray: bool = False,
+        path: Optional[str] = None,
+    ):
         self.llm = llm
         self.args = args
         self.relevant_score = self.args.rag_doc_filter_relevance or 5
         self.on_ray = on_ray
+        self.path = path
         if self.on_ray:
             cpu_count = os.cpu_count() or 1
             self.workers = [
@@ -95,12 +110,15 @@ class DocFilter:
     def filter_docs_with_threads(
         self, conversations: List[Dict[str, str]], documents: List[SourceCode]
     ) -> List[FilterDoc]:
+
         console = Console()
+        rag_manager = RagConfigManager(path=self.path)
+        rag_config = rag_manager.load_config()
         documents = list(documents)
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
-            BarColumn(),            
+            BarColumn(),
             TimeElapsedColumn(),
             console=console,
         ) as progress:
@@ -116,20 +134,22 @@ class DocFilter:
                     submit_time = time.time()
 
                     def _run(conversations, docs):
-                        submit_time_1 = time.time()                        
+                        submit_time_1 = time.time()
                         try:
                             llm = ByzerLLM()
                             llm.setup_default_model_name(self.llm.default_model_name)
                             llm.skip_nontext_check = True
                             v = _check_relevance_with_conversation.with_llm(llm).run(
-                                conversations=conversations, documents=docs
+                                conversations=conversations,
+                                documents=docs,
+                                filter_config=rag_config.filter_config,
                             )
                         except Exception as e:
                             logger.error(
                                 f"Error in _check_relevance_with_conversation: {str(e)}"
                             )
                             return (None, submit_time_1, time.time())
- 
+
                         end_time_2 = time.time()
                         return (v, submit_time_1, end_time_2)
 
@@ -155,7 +175,7 @@ class DocFilter:
                         real_duration=end_time_2 - submit_time_1,
                     )
                     progress.update(task, advance=1)
-                 
+
                     relevance = parse_relevance(v)
                     if (
                         relevance

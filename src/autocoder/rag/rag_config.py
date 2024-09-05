@@ -7,8 +7,8 @@ class RagConfig(BaseModel):
     answer_config: Optional[str] = None
 
 class RagConfigManager:
-    def __init__(self, config_dir: str = ".rag_config"):
-        self.config_dir = config_dir
+    def __init__(self, path: str):
+        self.config_dir = os.path.join(path, ".rag_config")
 
     def load_config(self) -> RagConfig:
         filter_config = self._load_file("filter_config")
