@@ -1,7 +1,9 @@
 import os
 import json
 import time
-import fcntl
+import platform
+if platform.system() != 'Windows':
+    import fcntl
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Generator, List, Tuple, Dict
 from autocoder.common import SourceCode
@@ -211,22 +213,30 @@ class AutoCoderRAGAsyncUpdateQueue:
     def write_cache(self):
         cache_dir = os.path.join(self.path, ".cache")
         cache_file = os.path.join(cache_dir, "cache.jsonl")
-        lock_file = cache_file + ".lock"
         
-        with open(lock_file, "w") as lockf:
-            try:
-                # 获取文件锁
-                fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if platform.system() == 'Windows':
+            # Windows系统下直接写入文件，不使用文件锁
+            with open(cache_file, "w") as f:
+                for data in self.cache.values():
+                    json.dump(data, f, ensure_ascii=False)
+                    f.write("\n")
+        else:
+            # 非Windows系统使用文件锁
+            lock_file = cache_file + ".lock"
+            with open(lock_file, "w") as lockf:
+                try:
+                    # 获取文件锁
+                    fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    
+                    # 写入缓存文件
+                    with open(cache_file, "w") as f:
+                        for data in self.cache.values():
+                            json.dump(data, f, ensure_ascii=False)
+                            f.write("\n")
                 
-                # 写入缓存文件
-                with open(cache_file, "w") as f:
-                    for data in self.cache.values():
-                        json.dump(data, f, ensure_ascii=False)
-                        f.write("\n")
-            
-            finally:
-                # 释放文件锁
-                fcntl.flock(lockf, fcntl.LOCK_UN)
+                finally:
+                    # 释放文件锁
+                    fcntl.flock(lockf, fcntl.LOCK_UN)
 
     def update_cache(self, file_info: Tuple[str, str, float], content: str):
         file_path, relative_path, modify_time = file_info
