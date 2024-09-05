@@ -2,9 +2,11 @@ import os
 import json
 import time
 import platform
-if platform.system() != 'Windows':
+
+if platform.system() != "Windows":
     import fcntl
-from concurrent.futures import ThreadPoolExecutor, as_completed
+else:
+    fcntl = None
 from typing import Generator, List, Tuple, Dict
 from autocoder.common import SourceCode
 from autocoder.rag.loaders import (
@@ -109,12 +111,14 @@ class AutoCoderRAGAsyncUpdateQueue:
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
         self.queue = []
+        self.cache = {}
+        self.lock = threading.Lock()
         self.stop_event = threading.Event()
-        self.cache = self.read_cache()
-        self.lock = threading.Lock()        
         self.thread = threading.Thread(target=self._process_queue)
         self.thread.daemon = True
         self.thread.start()
+        self.cache = self.read_cache()
+                
 
     def _process_queue(self):
         while not self.stop_event.is_set():
@@ -152,9 +156,9 @@ class AutoCoderRAGAsyncUpdateQueue:
             with Pool(processes=os.cpu_count()) as pool:
                 results = pool.map(process_file2, files_to_process)
 
-            for file_info, result in zip(files_to_process, results):                
-                for item in result:                    
-                    self.update_cache(file_info, item.source_code)
+            for file_info, result in zip(files_to_process, results):
+                self.update_cache(file_info, result)                    
+            
             self.write_cache()
 
     def trigger_update(self):
@@ -163,14 +167,14 @@ class AutoCoderRAGAsyncUpdateQueue:
         current_files = set()
         for file_info in self.get_all_files():
             file_path, _, modify_time = file_info
-            current_files.add(file_path)            
+            current_files.add(file_path)
             if (
                 file_path not in self.cache
                 or self.cache[file_path]["modify_time"] < modify_time
             ):
                 files_to_process.append(file_info)
-        
-        deleted_files = set(self.cache.keys()) - current_files        
+
+        deleted_files = set(self.cache.keys()) - current_files
         logger.info(f"files_to_process: {files_to_process}")
         logger.info(f"deleted_files: {deleted_files}")
         if deleted_files:
@@ -182,18 +186,18 @@ class AutoCoderRAGAsyncUpdateQueue:
 
     def process_queue(self):
         while self.queue:
-            file_info = self.queue.pop(0)
-            if isinstance(file_info, DeleteEvent):
-                for item in file_info.file_paths:
-                    logger.info(f"{item[0]} is detected to be removed")
-                    del self.cache[file_info[0]]
-            elif isinstance(file_info, AddOrUpdateEvent):
-                for item in file_info.file_infos:
-                    logger.info(f"{item[0]} is detected to be updated")
-                    result = process_file2(item)
-                    for item in result:
-                        self.update_cache(file_info, item.source_code)
-            self.write_cache()    
+            file_list = self.queue.pop(0)
+            if isinstance(file_list, DeleteEvent):
+                for item in file_list.file_paths:
+                    logger.info(f"{item} is detected to be removed")
+                    del self.cache[item]
+            elif isinstance(file_list, AddOrUpdateEvent):
+                for file_info in file_list.file_infos:
+                    logger.info(f"{file_info[0]} is detected to be updated")
+                    result = process_file2(file_info)
+                    self.update_cache(file_info, result)
+                        
+            self.write_cache()
 
     def read_cache(self) -> Dict[str, Dict]:
         cache_dir = os.path.join(self.path, ".cache")
@@ -213,37 +217,34 @@ class AutoCoderRAGAsyncUpdateQueue:
     def write_cache(self):
         cache_dir = os.path.join(self.path, ".cache")
         cache_file = os.path.join(cache_dir, "cache.jsonl")
-        
-        if platform.system() == 'Windows':
-            # Windows系统下直接写入文件，不使用文件锁
+
+        if not fcntl:
             with open(cache_file, "w") as f:
                 for data in self.cache.values():
                     json.dump(data, f, ensure_ascii=False)
                     f.write("\n")
         else:
-            # 非Windows系统使用文件锁
             lock_file = cache_file + ".lock"
             with open(lock_file, "w") as lockf:
                 try:
                     # 获取文件锁
                     fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    
                     # 写入缓存文件
                     with open(cache_file, "w") as f:
                         for data in self.cache.values():
                             json.dump(data, f, ensure_ascii=False)
                             f.write("\n")
-                
+
                 finally:
                     # 释放文件锁
                     fcntl.flock(lockf, fcntl.LOCK_UN)
 
-    def update_cache(self, file_info: Tuple[str, str, float], content: str):
+    def update_cache(self, file_info: Tuple[str, str, float], content: List[SourceCode]):
         file_path, relative_path, modify_time = file_info
         self.cache[file_path] = {
             "file_path": file_path,
             "relative_path": relative_path,
-            "content": content,
+            "content": [c.model_dump() for c in content],
             "modify_time": modify_time,
         }
 
@@ -326,7 +327,6 @@ class DocumentRetriever:
             return self.cacher.get_cache()
 
     def retrieve_documents(self) -> Generator[SourceCode, None, None]:
-        for file_path, data in self.get_cache().items():
-            yield SourceCode(
-                module_name=f"##File: {file_path}", source_code=data["content"]
-            )
+        for _, data in self.get_cache().items():
+            for source_code in data["content"]:
+                yield SourceCode.model_validate(source_code)
