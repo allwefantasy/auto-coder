@@ -138,24 +138,28 @@ class AutoCoderRAGAsyncUpdateQueue:
             self.write_cache()
 
     def trigger_update(self):
+        logger.info("检查文件是否有更新.....")
         files_to_process = []
         current_files = set()
         for file_info in self.get_all_files():
             file_path, _, modify_time = file_info
             current_files.add(file_path)
+            logger.info(f'{self.cache[file_path]["modify_time"] < modify_time} {self.cache[file_path]["modify_time"]} {modify_time}')
             if (
                 file_path not in self.cache
                 or self.cache[file_path]["modify_time"] < modify_time
             ):
                 files_to_process.append(file_info)
-
-        # Check for deleted files
-        deleted_files = set(self.cache.keys()) - current_files
-
+        
+        deleted_files = set(self.cache.keys()) - current_files        
+        logger.info(f"files_to_process: {files_to_process}")
+        logger.info(f"deleted_files: {deleted_files}")
         if deleted_files:
-            self.queue.append(DeleteEvent(file_infos=deleted_files))
-
-        self.queue.append(AddOrUpdateEvent(file_infos=files_to_process))
+            with self.lock:
+                self.queue.append(DeleteEvent(file_infos=deleted_files))
+        if files_to_process:
+            with self.lock:
+                self.queue.append(AddOrUpdateEvent(file_infos=files_to_process))
 
     def process_queue(self):
         while self.queue:
@@ -233,18 +237,11 @@ class AutoCoderRAGAsyncUpdateQueue:
 
     def write_cache(self):
         cache_dir = os.path.join(self.path, ".cache")
-        cache_file = os.path.join(cache_dir, "cache.jsonl")
-        lock_file = os.path.join(cache_dir, "cache.jsonl.lock")
-
-        with open(lock_file, "w") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
-            try:
-                with open(cache_file, "w") as f:
-                    for data in self.cache.values():
-                        json.dump(data, f, ensure_ascii=False)
-                        f.write("\n")
-            finally:
-                fcntl.flock(lock, fcntl.LOCK_UN)
+        cache_file = os.path.join(cache_dir, "cache.jsonl")        
+        with open(cache_file, "w") as f:
+            for data in self.cache.values():
+                json.dump(data, f, ensure_ascii=False)
+                f.write("\n")
 
     def update_cache(self, file_info: Tuple[str, str, float], content: str):
         file_path, relative_path, modify_time = file_info
