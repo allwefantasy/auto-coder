@@ -210,11 +210,23 @@ class AutoCoderRAGAsyncUpdateQueue:
 
     def write_cache(self):
         cache_dir = os.path.join(self.path, ".cache")
-        cache_file = os.path.join(cache_dir, "cache.jsonl")        
-        with open(cache_file, "w") as f:
-            for data in self.cache.values():
-                json.dump(data, f, ensure_ascii=False)
-                f.write("\n")
+        cache_file = os.path.join(cache_dir, "cache.jsonl")
+        lock_file = cache_file + ".lock"
+        
+        with open(lock_file, "w") as lockf:
+            try:
+                # 获取文件锁
+                fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                
+                # 写入缓存文件
+                with open(cache_file, "w") as f:
+                    for data in self.cache.values():
+                        json.dump(data, f, ensure_ascii=False)
+                        f.write("\n")
+            
+            finally:
+                # 释放文件锁
+                fcntl.flock(lockf, fcntl.LOCK_UN)
 
     def update_cache(self, file_info: Tuple[str, str, float], content: str):
         file_path, relative_path, modify_time = file_info
