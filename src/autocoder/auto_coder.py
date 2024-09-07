@@ -403,6 +403,11 @@ def main(input_args: Optional[List[str]] = None):
             chat_model.setup_default_model_name(args.chat_model)
             llm.setup_sub_client("chat_model", chat_model)            
 
+        if args.ask_model:
+            ask_model = byzerllm.ByzerLLM()
+            ask_model.setup_default_model_name(args.ask_model)
+            llm.setup_sub_client("ask_model", ask_model)
+
         if args.vl_model:
             vl_model = byzerllm.ByzerLLM()
             vl_model.setup_default_model_name(args.vl_model)
