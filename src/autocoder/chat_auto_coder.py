@@ -960,14 +960,37 @@ def add_files(args: List[str]):
                         border_style="red",
                     )
                 )
-        elif len(args) >= 4 and args[1] == "/set":
+        elif len(args) == 3 and args[1] == "/set":
             group_name = args[2]
-            query_prefix = " ".join(args[3:])
+            def multiline_edit():
+                from prompt_toolkit.lexers import PygmentsLexer
+                from pygments.lexers.markup import MarkdownLexer
+                from prompt_toolkit.formatted_text import HTML
+                from prompt_toolkit.shortcuts import print_formatted_text
+                style = Style.from_dict({
+                    'dialog': 'bg:#88ff88',
+                    'dialog frame.label': 'bg:#ffffff #000000',
+                    'dialog.body': 'bg:#000000 #00ff00',
+                    'dialog shadow': 'bg:#00aa00',
+                })
+                
+                print_formatted_text(HTML('<b>Type Atom Group Desc (Prese [Esc] + [Enter]  to finish.)</b><br>'))                
+                text = prompt(
+                    HTML('<ansicyan>║</ansicyan> '),                    
+                    multiline=True,
+                    lexer=PygmentsLexer(MarkdownLexer),
+                    style=style,
+                    wrap_lines=True,
+                    prompt_continuation=HTML('<ansicyan>║</ansicyan> '),
+                    rprompt=HTML('<ansicyan>║</ansicyan>'),
+                )                                
+                return text
+            query_prefix = multiline_edit()
             if group_name in groups:
                 groups_info[group_name] = {"query_prefix": query_prefix}
                 console.print(
                     Panel(
-                        f"Set query prefix for group '{group_name}'.",
+                        f"Set Atom Group Desc for group '{group_name}'.",
                         title="Group Info Updated",
                         border_style="green",
                     )
