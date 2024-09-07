@@ -867,18 +867,29 @@ def add_files(args: List[str]):
     project_root = os.getcwd()
     if "groups" not in memory["current_files"]:
         memory["current_files"]["groups"] = {}
+    if "groups_info" not in memory["current_files"]:
+        memory["current_files"]["groups_info"] = {}
+    if "current_groups" not in memory["current_files"]:
+        memory["current_files"]["current_groups"] = []
     groups = memory["current_files"]["groups"]
+    groups_info = memory["current_files"]["groups_info"]
 
     console = Console()
 
-    if args and args[0] == "/refresh":
+    if not args:
+        console.print(
+            Panel("Please provide arguments for the /add_files command.", title="Error", border_style="red")
+        )
+        return
+
+    if args[0] == "/refresh":
         completer.refresh_files()
         console.print(
             Panel("Refreshed file list.", title="Files Refreshed", border_style="green")
         )
         return
 
-    if args and args[0] == "/group":
+    if args[0] == "/group":
         if len(args) == 1 or (len(args) == 2 and args[1] == "list"):
             if not groups:
                 console.print(
@@ -889,13 +900,22 @@ def add_files(args: List[str]):
                     title="Defined Groups",
                     show_header=True,
                     header_style="bold magenta",
+                    show_lines=True
                 )
                 table.add_column("Group Name", style="cyan", no_wrap=True)
                 table.add_column("Files", style="green")
-                for group_name, files in groups.items():
+                table.add_column("Query Prefix", style="yellow")
+                table.add_column("Active", style="magenta")
+                
+                for i, (group_name, files) in enumerate(groups.items()):
+                    query_prefix = groups_info.get(group_name, {}).get("query_prefix", "")
+                    is_active = "✓" if group_name in memory["current_files"]["current_groups"] else ""
                     table.add_row(
                         group_name,
                         "\n".join([os.path.relpath(f, project_root) for f in files]),
+                        query_prefix,
+                        is_active,
+                        end_section=(i == len(groups) - 1)
                     )
                 console.print(Panel(table, border_style="blue"))
         elif len(args) >= 3 and args[1] == "/add":
@@ -912,10 +932,34 @@ def add_files(args: List[str]):
             group_name = args[2]
             if group_name in groups:
                 del memory["current_files"]["groups"][group_name]
+                if group_name in groups_info:
+                    del memory["current_files"]["groups_info"][group_name]
+                if group_name in memory["current_files"]["current_groups"]:
+                    memory["current_files"]["current_groups"].remove(group_name)
                 console.print(
                     Panel(
                         f"Dropped group '{group_name}'.",
                         title="Group Dropped",
+                        border_style="green",
+                    )
+                )
+            else:
+                console.print(
+                    Panel(
+                        f"Group '{group_name}' not found.",
+                        title="Error",
+                        border_style="red",
+                    )
+                )
+        elif len(args) >= 4 and args[1] == "/set":
+            group_name = args[2]
+            query_prefix = " ".join(args[3:])
+            if group_name in groups:
+                groups_info[group_name] = {"query_prefix": query_prefix}
+                console.print(
+                    Panel(
+                        f"Set query prefix for group '{group_name}'.",
+                        title="Group Info Updated",
                         border_style="green",
                     )
                 )
@@ -949,6 +993,7 @@ def add_files(args: List[str]):
 
             if merged_files:
                 memory["current_files"]["files"] = list(merged_files)
+                memory["current_files"]["current_groups"] = [name for name in group_names if name in groups]
                 console.print(
                     Panel(
                         f"Merged files from groups: {', '.join(group_names)}",
@@ -957,12 +1002,25 @@ def add_files(args: List[str]):
                     )
                 )
                 table = Table(
-                    title="Current Files", show_header=True, header_style="bold magenta"
+                    title="Current Files",
+                    show_header=True,
+                    header_style="bold magenta",
+                    show_lines=True  # 这会在每行之间添加分割线
                 )
                 table.add_column("File", style="green")
-                for f in memory["current_files"]["files"]:
-                    table.add_row(os.path.relpath(f, project_root))
+                for i, f in enumerate(memory["current_files"]["files"]):
+                    table.add_row(
+                        os.path.relpath(f, project_root),
+                        end_section=(i == len(memory["current_files"]["files"]) - 1)  # 在最后一行之后不添加分割线
+                    )
                 console.print(Panel(table, border_style="blue"))
+                console.print(
+                    Panel(
+                        f"Active groups: {', '.join(memory['current_files']['current_groups'])}",
+                        title="Active Groups",
+                        border_style="green",
+                    )
+                )
             elif not missing_groups:
                 console.print(
                     Panel(
@@ -979,11 +1037,17 @@ def add_files(args: List[str]):
         if files_to_add:
             memory["current_files"]["files"].extend(files_to_add)
             table = Table(
-                title="Added Files", show_header=True, header_style="bold magenta"
+                title="Added Files",
+                show_header=True,
+                header_style="bold magenta",
+                show_lines=True  # 这会在每行之间添加分割线
             )
             table.add_column("File", style="green")
-            for f in files_to_add:
-                table.add_row(os.path.relpath(f, project_root))
+            for i, f in enumerate(files_to_add):
+                table.add_row(
+                    os.path.relpath(f, project_root),
+                    end_section=(i == len(files_to_add) - 1)  # 在最后一行之后不添加分割线
+                )
             console.print(Panel(table, border_style="green"))
         else:
             console.print(
@@ -1129,6 +1193,8 @@ def coding(query: str):
     conf = memory.get("conf", {})
 
     current_files = memory["current_files"]["files"]
+    current_groups = memory["current_files"].get("current_groups", [])
+    groups_info = memory["current_files"].get("groups_info", {})
 
     def prepare_chat_yaml():
         auto_coder_main(["next", "chat_action"])
@@ -1160,6 +1226,14 @@ def coding(query: str):
         v = Image.convert_image_paths_from(query)
         yaml_config["query"] = v
 
+        # Add context for active groups and their query prefixes
+        active_groups_context = "下面是对上面文件的一些额外描述，当用户的需求正好匹配描述的时候，参考描述来做修改：\n"
+        for group in current_groups:
+            query_prefix = groups_info.get(group, {}).get("query_prefix", "")
+            active_groups_context += f"{query_prefix}\n"
+
+        yaml_config["context"] = active_groups_context + "\n"
+
         if is_apply:
             memory_dir = os.path.join(".auto-coder", "memory")
             os.makedirs(memory_dir, exist_ok=True)
@@ -1188,14 +1262,14 @@ def coding(query: str):
 
             conversations = chat_history["ask_conversation"]
 
-            yaml_config["context"] = (
+            yaml_config["context"] += (
                 f"下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码。\n\n"
             )
             for conv in conversations:
                 if conv["role"] == "user":
                     yaml_config["context"] += f"用户: {conv['content']}\n"
                 elif conv["role"] == "assistant":
-                    yaml_config["context"] += f"你: {conv['content']}\n"
+                    yaml_config["context"] += f"你: {conv['content']}\n"                
 
         yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
