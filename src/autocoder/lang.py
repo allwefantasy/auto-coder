@@ -13,6 +13,7 @@ lang_desc = {
         "script_path": "Only works for py-script project type. The path to the Python script. Default is empty.",
         "model": "The name of the model to use. Default is empty",
         "chat_model": "The name of the chat model to use. Default is empty",
+        "ask_model": "The name of the ask model to use. Default is empty",
         "model_max_length": "The maximum length of the generated code by the model. Default is 1024. This only works when model is specified.",
         "file": "Path to the YAML configuration file",
         "anti_quota_limit": "Time to wait in seconds after each API request. Default is 1s",
