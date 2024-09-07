@@ -223,7 +223,6 @@ class AutoCoderArgs(pydantic.BaseModel):
     
     model: Optional[str] = ""
     chat_model: Optional[str] = ""
-    ask_model: Optional[str] = ""
     model_max_length: Optional[int] = 2000
     model_max_input_length: Optional[int] = 6000
     vl_model: Optional[str] = ""
