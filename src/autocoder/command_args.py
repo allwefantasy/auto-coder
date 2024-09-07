@@ -300,6 +300,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     doc_serve_parse = doc_subparsers.add_parser("serve", help="")
     doc_serve_parse.add_argument("--file", default="", help=desc["file"])
     doc_serve_parse.add_argument("--model", default="", help=desc["model"])
+    doc_serve_parse.add_argument("--index_model", default="", help=desc["index_model"])
     doc_serve_parse.add_argument("--emb_model", default="", help=desc["emb_model"])
     doc_serve_parse.add_argument(
         "--ray_address", default="auto", help=desc["ray_address"]

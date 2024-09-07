@@ -699,7 +699,7 @@ def main(input_args: Optional[List[str]] = None):
             markdown_content = ""
 
             with Live(
-                Panel("", title="Response", border_style="green", expand=False),
+                Panel("", title="Response"),
                 refresh_per_second=4,
             ) as live:
                 for res in v:
