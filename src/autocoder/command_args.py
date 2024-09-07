@@ -26,6 +26,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     parser.add_argument("--model", default="", help=desc["model"])
     parser.add_argument("--chat_model", default="", help=desc["chat_model"])
+parser.add_argument("--ask_model", default="", help=desc["ask_model"])
     parser.add_argument(
         "--model_max_length", type=int, default=2000, help=desc["model_max_length"]
     )
