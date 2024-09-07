@@ -391,6 +391,11 @@ def main(input_args: Optional[List[str]] = None):
 
         llm.setup_template(model=args.model, template="auto")
         llm.setup_default_model_name(args.model)
+        
+        if args.chat_model:
+            chat_model = byzerllm.ByzerLLM()
+            chat_model.setup_default_model_name(args.chat_model)
+            llm.setup_sub_client("chat_model", chat_model)
         llm.setup_max_output_length(args.model, args.model_max_length)
         llm.setup_max_input_length(args.model, args.model_max_input_length)
         llm.setup_extra_generation_params(
