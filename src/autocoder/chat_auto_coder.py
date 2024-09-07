@@ -918,6 +918,15 @@ def add_files(args: List[str]):
                         end_section=(i == len(groups) - 1)
                     )
                 console.print(Panel(table, border_style="blue"))
+        elif len(args) >= 2 and args[1] == "/reset":
+            memory["current_files"]["current_groups"] = []            
+            console.print(
+                Panel(
+                    "Active group names have been reset. If you want to clear the active files, you should use the command /remove_files /all.",
+                    title="Groups Reset",
+                    border_style="green",
+                )
+            )
         elif len(args) >= 3 and args[1] == "/add":
             group_name = args[2]
             groups[group_name] = memory["current_files"]["files"].copy()
@@ -1068,6 +1077,7 @@ def remove_files(file_names: List[str]):
 
     if "/all" in file_names:
         memory["current_files"]["files"] = []
+        memory["current_files"]["current_groups"] = []
         console.print(
             Panel("Removed all files.", title="Files Removed", border_style="green")
         )
@@ -1194,6 +1204,7 @@ def coding(query: str):
 
     current_files = memory["current_files"]["files"]
     current_groups = memory["current_files"].get("current_groups", [])
+    groups = memory["current_files"].get("groups", {})
     groups_info = memory["current_files"].get("groups_info", {})
 
     def prepare_chat_yaml():
@@ -1227,10 +1238,15 @@ def coding(query: str):
         yaml_config["query"] = v
 
         # Add context for active groups and their query prefixes
-        active_groups_context = "下面是对上面文件的一些额外描述，当用户的需求正好匹配描述的时候，参考描述来做修改：\n"
+        active_groups_context = "下面是对上面文件按分组给到的一些描述，当用户的需求正好匹配描述的时候，参考描述来做修改：\n"
         for group in current_groups:
+            group_files = groups.get(group, [])
             query_prefix = groups_info.get(group, {}).get("query_prefix", "")
-            active_groups_context += f"{query_prefix}\n"
+            active_groups_context += f"组名: {group}\n"
+            active_groups_context += f"文件列表:\n"
+            for file in group_files:
+                active_groups_context += f"- {file}\n"
+            active_groups_context += f"组描述: {query_prefix}\n\n"
 
         yaml_config["context"] = active_groups_context + "\n"
 

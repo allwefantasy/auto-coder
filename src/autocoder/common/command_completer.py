@@ -4,7 +4,10 @@ import pydantic
 import os
 
 COMMANDS = {
-    "/add_files": {"/group": {"/add": "", "/drop": ""}, "/refresh": {}},
+    "/add_files": {
+        "/group": {"/add": "", "/drop": "", "/reset": "", "set": ""},
+        "/refresh": {},
+    },
     "/coding": {},
     "/chat": {"/new": {}, "/review": {}, "/no_context": {}},
     "/lib": {
