@@ -391,16 +391,17 @@ def main(input_args: Optional[List[str]] = None):
 
         llm.setup_template(model=args.model, template="auto")
         llm.setup_default_model_name(args.model)
-        
-        if args.chat_model:
-            chat_model = byzerllm.ByzerLLM()
-            chat_model.setup_default_model_name(args.chat_model)
-            llm.setup_sub_client("chat_model", chat_model)
+                
         llm.setup_max_output_length(args.model, args.model_max_length)
         llm.setup_max_input_length(args.model, args.model_max_input_length)
         llm.setup_extra_generation_params(
             args.model, {"max_length": args.model_max_length}
         )
+
+        if args.chat_model:
+            chat_model = byzerllm.ByzerLLM()
+            chat_model.setup_default_model_name(args.chat_model)
+            llm.setup_sub_client("chat_model", chat_model)            
 
         if args.vl_model:
             vl_model = byzerllm.ByzerLLM()
@@ -691,12 +692,17 @@ def main(input_args: Optional[List[str]] = None):
                 pre_conversations + chat_history["ask_conversation"][-31:]
             )
 
+            if llm.get_sub_client("chat_model"):
+                chat_llm = llm.get_sub_client("chat_model")
+            else:
+                chat_llm = llm
+
             if args.enable_rag_search or args.enable_rag_context:
-                rag = RAGFactory.get_rag(llm=llm, args=args, path="")
+                rag = RAGFactory.get_rag(llm=chat_llm, args=args, path="")
                 response = rag.stream_chat_oai(conversations=loaded_conversations)[0]
                 v = ([item, None] for item in response)
-            else:
-                v = llm.stream_chat_oai(
+            else:                
+                v = chat_llm.stream_chat_oai(
                     conversations=loaded_conversations, delta_mode=True
                 )
 

@@ -6,7 +6,7 @@ import os
 COMMANDS = {
     "/add_files": {"/group": {"/add": "", "/drop": ""}, "/refresh": {}},
     "/coding": {},
-    "/chat": {},
+    "/chat": {"/new": {}, "/review": {}, "/no_context": {}},
     "/lib": {
         "/add": "",
         "/remove": "",

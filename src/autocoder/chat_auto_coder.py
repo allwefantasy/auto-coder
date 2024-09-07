@@ -607,8 +607,13 @@ class CommandCompleter(Completer):
                 )
                 new_text = text[len(words[0]) :]
                 parser = CommandTextParser(new_text, words[0])
+
                 parser.coding()
                 current_word = parser.current_word()
+
+                for command in parser.get_sub_commands():
+                    if command.startswith(current_word):
+                        yield Completion(command, start_position=-len(current_word))
 
                 all_tags = parser.tags
 
@@ -1262,6 +1267,10 @@ def chat(query: str):
             query = format_str_jinja2(conf["prompt_review"], query=query)
         else:
             query = code_review.prompt(query)
+
+    is_no_context = query.strip().startswith("/no_context")
+    if is_no_context:
+        query = query.replace("/no_context", "", 1).strip()
 
     for key, value in conf.items():
         converted_value = convert_config_value(key, value)
