@@ -168,8 +168,10 @@ def configure_project_type():
 
     return project_type
 
+from .chat_auto_coder_lang import get_message
+
 def initialize_system():
-    print("\n\033[1;34m🚀 Initializing system...\033[0m")
+    print(f"\n\033[1;34m{get_message('initializing')}\033[0m")
 
     def print_status(message, status):
         if status == "success":
@@ -185,58 +187,46 @@ def initialize_system():
         first_time = False
         if not os.path.exists(".auto-coder"):
             first_time = True
-            print_status(
-                "The current directory is not initialized as an auto-coder project.",
-                "warning",
-            )
-            init_choice = (
-                input("  Do you want to initialize the project now? (y/n): ")
-                .strip()
-                .lower()
-            )
+            print_status(get_message("not_initialized"), "warning")
+            init_choice = input(f"  {get_message('init_prompt')}").strip().lower()
             if init_choice == "y":
                 try:
-                    subprocess.run(
-                        ["auto-coder", "init", "--source_dir", "."], check=True
-                    )
-                    print_status("Project initialized successfully.", "success")                    
-
+                    subprocess.run(["auto-coder", "init", "--source_dir", "."], check=True)
+                    print_status(get_message("init_success"), "success")
                 except subprocess.CalledProcessError:
-                    print_status("Failed to initialize the project.", "error")
-                    print_status(
-                        "Please try manually: auto-coder init --source_dir .", "warning"
-                    )
+                    print_status(get_message("init_fail"), "error")
+                    print_status(get_message("init_manual"), "warning")
                     exit(1)
             else:
-                print_status("Exiting without initialization.", "warning")
+                print_status(get_message("exit_no_init"), "warning")
                 exit(1)
 
         if not os.path.exists(base_persist_dir):
             os.makedirs(base_persist_dir, exist_ok=True)
-            print_status(f"Created directory: {base_persist_dir}", "success")
+            print_status(get_message("created_dir").format(base_persist_dir), "success")
         
         if first_time:
             configure_project_type()
 
-        print_status("Project initialization completed.", "success")
+        print_status(get_message("init_complete"), "success")
 
     init_project()
     # Check if Ray is running
-    print_status("Checking Ray status...", "")
+    print_status(get_message("checking_ray"), "")
     ray_status = subprocess.run(["ray", "status"], capture_output=True, text=True)
     if ray_status.returncode != 0:
-        print_status("Ray is not running. Starting Ray...", "warning")
+        print_status(get_message("ray_not_running"), "warning")
         try:
             subprocess.run(["ray", "start", "--head"], check=True)
-            print_status("Ray started successfully.", "success")
+            print_status(get_message("ray_start_success"), "success")
         except subprocess.CalledProcessError:
-            print_status("Failed to start Ray. Please start it manually.", "error")
+            print_status(get_message("ray_start_fail"), "error")
             return
     else:
-        print_status("Ray is already running.", "success")
+        print_status(get_message("ray_running"), "success")
 
     # Check if deepseek_chat model is available
-    print_status("Checking deepseek_chat model availability...", "")
+    print_status(get_message("checking_model"), "")
     try:
         result = subprocess.run(
             ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
@@ -245,24 +235,20 @@ def initialize_system():
             timeout=30,
         )
         if result.returncode == 0:
-            print_status("deepseek_chat model is available.", "success")
+            print_status(get_message("model_available"), "success")
             init_project()
-            print_status("Initialization completed successfully.", "success")
+            print_status(get_message("init_complete_final"), "success")
             return
     except subprocess.TimeoutExpired:
-        print_status(
-            "Command timed out. deepseek_chat model might not be available.", "error"
-        )
+        print_status(get_message("model_timeout"), "error")
     except subprocess.CalledProcessError:
-        print_status("Error occurred while checking deepseek_chat model.", "error")
+        print_status(get_message("model_error"), "error")
 
     # If deepseek_chat is not available, prompt user to choose a provider
-    print_status(
-        "deepseek_chat model is not available. Please choose a provider:", "warning"
-    )
+    print_status(get_message("model_not_available"), "warning")
     choice = radiolist_dialog(
-        title="Provider Selection",
-        text="Select a provider for deepseek_chat model:",
+        title=get_message("provider_selection"),
+        text=get_message("provider_selection"),
         values=[
             ("1", "硅基流动(https://siliconflow.cn)"),
             ("2", "Deepseek官方(https://www.deepseek.com/)"),
@@ -270,13 +256,13 @@ def initialize_system():
     ).run()
 
     if choice is None:
-        print_status("No provider selected. Exiting initialization.", "error")
+        print_status(get_message("no_provider"), "error")
         return
 
-    api_key = prompt(HTML("<b>Please enter your API key: </b>"))
+    api_key = prompt(HTML(f"<b>{get_message('enter_api_key')} </b>"))
 
     if choice == "1":
-        print_status("Deploying deepseek_chat model using 硅基流动...", "")
+        print_status(get_message("deploying_model").format("硅基流动"), "")
         deploy_cmd = [
             "easy-byzerllm",
             "deploy",
@@ -287,7 +273,7 @@ def initialize_system():
             "deepseek_chat",
         ]
     else:
-        print_status("Deploying deepseek_chat model using Deepseek官方...", "")
+        print_status(get_message("deploying_model").format("Deepseek官方"), "")
         deploy_cmd = [
             "easy-byzerllm",
             "deploy",
@@ -300,13 +286,13 @@ def initialize_system():
 
     try:
         subprocess.run(deploy_cmd, check=True)
-        print_status("Deployment completed.", "success")
+        print_status(get_message("deploy_complete"), "success")
     except subprocess.CalledProcessError:
-        print_status("Deployment failed. Please try again or deploy manually.", "error")
+        print_status(get_message("deploy_fail"), "error")
         return
 
     # Validate the deployment
-    print_status("Validating the deployment...", "")
+    print_status(get_message("validating_deploy"), "")
     try:
         validation_result = subprocess.run(
             ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
@@ -315,17 +301,13 @@ def initialize_system():
             timeout=30,
             check=True,
         )
-        print_status(
-            "Validation successful. deepseek_chat model is now available.", "success"
-        )
+        print_status(get_message("validation_success"), "success")
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-        print_status(
-            "Validation failed. The model might not be deployed correctly.", "error"
-        )
-        print_status("Please try to start the model manually using:", "warning")
+        print_status(get_message("validation_fail"), "error")
+        print_status(get_message("manual_start"), "warning")
         print_status("easy-byzerllm chat deepseek_chat 你好", "")    
 
-    print_status("Initialization completed.", "success")
+    print_status(get_message("init_complete_final"), "success")
 
 
 def convert_yaml_config_to_str(yaml_config):
