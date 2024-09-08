@@ -456,53 +456,53 @@ def configure(conf: str, skip_print=False):
 
 
 def show_help():
-    print("\033[1mSupported commands:\033[0m")
+    print(f"\033[1m{get_message('supported_commands')}\033[0m")
     print()
-    print("  \033[94mCommands\033[0m - \033[93mDescription\033[0m")
+    print(f"  \033[94m{get_message('commands')}\033[0m - \033[93m{get_message('description')}\033[0m")
     print(
-        "  \033[94m/add_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92mAdd files to the current session\033[0m"
+        f"  \033[94m/add_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92m{get_message('add_files_desc')}\033[0m"
     )
     print(
-        "  \033[94m/remove_files\033[0m \033[93m<file1>,<file2> ...\033[0m - \033[92mRemove files from the current session\033[0m"
+        f"  \033[94m/remove_files\033[0m \033[93m<file1>,<file2> ...\033[0m - \033[92m{get_message('remove_files_desc')}\033[0m"
     )
     print(
-        "  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92mChat with the AI about the current active files to get insights\033[0m"
+        f"  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92m{get_message('chat_desc')}\033[0m"
     )
     print(
-        "  \033[94m/coding\033[0m \033[93m<query>\033[0m - \033[92mRequest the AI to modify code based on requirements\033[0m"
+        f"  \033[94m/coding\033[0m \033[93m<query>\033[0m - \033[92m{get_message('coding_desc')}\033[0m"
     )
     print(
-        "  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92mAsk the AI any questions or get insights about the current project, without modifying code\033[0m"
+        f"  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92m{get_message('ask_desc')}\033[0m"
     )
     print(
-        "  \033[94m/summon\033[0m \033[93m<query>\033[0m - \033[92mSummon the AI to perform complex tasks using the auto_tool agent\033[0m"
+        f"  \033[94m/summon\033[0m \033[93m<query>\033[0m - \033[92m{get_message('summon_desc')}\033[0m"
     )
     print(
-        "  \033[94m/revert\033[0m - \033[92mRevert commits from last coding chat\033[0m"
+        f"  \033[94m/revert\033[0m - \033[92m{get_message('revert_desc')}\033[0m"
     )
     print(
-        "  \033[94m/conf\033[0m \033[93m<key>:<value>\033[0m  - \033[92mSet configuration. Use /conf project_type:<type> to set project type for indexing\033[0m"
+        f"  \033[94m/conf\033[0m \033[93m<key>:<value>\033[0m  - \033[92m{get_message('conf_desc')}\033[0m"
     )
     print(
-        "  \033[94m/index/query\033[0m \033[93m<args>\033[0m - \033[92mQuery the project index\033[0m"
+        f"  \033[94m/index/query\033[0m \033[93m<args>\033[0m - \033[92m{get_message('index_query_desc')}\033[0m"
     )
     print(
-        "  \033[94m/index/build\033[0m - \033[92mTrigger building the project index\033[0m"
+        f"  \033[94m/index/build\033[0m - \033[92m{get_message('index_build_desc')}\033[0m"
     )
     print(
-        "  \033[94m/list_files\033[0m - \033[92mList all active files in the current session\033[0m"
+        f"  \033[94m/list_files\033[0m - \033[92m{get_message('list_files_desc')}\033[0m"
     )
-    print("  \033[94m/help\033[0m - \033[92mShow this help message\033[0m")
+    print(f"  \033[94m/help\033[0m - \033[92m{get_message('help_desc')}\033[0m")
     print(
-        "  \033[94m/exclude_dirs\033[0m \033[93m<dir1>,<dir2> ...\033[0m - \033[92mAdd directories to exclude from project\033[0m"
+        f"  \033[94m/exclude_dirs\033[0m \033[93m<dir1>,<dir2> ...\033[0m - \033[92m{get_message('exclude_dirs_desc')}\033[0m"
     )
     print(
-        "  \033[94m/shell\033[0m \033[93m<command>\033[0m - \033[92mExecute a shell command\033[0m"
+        f"  \033[94m/shell\033[0m \033[93m<command>\033[0m - \033[92m{get_message('shell_desc')}\033[0m"
     )
-    print("  \033[94m/voice_input\033[0m - \033[92mConvert voice input to text\033[0m")
-    print("  \033[94m/mode\033[0m - \033[92mswitch input mode\033[0m")
-    print("  \033[94m/lib\033[0m - \033[92mManage libraries\033[0m")
-    print("  \033[94m/exit\033[0m - \033[92mExit the program\033[0m")
+    print(f"  \033[94m/voice_input\033[0m - \033[92m{get_message('voice_input_desc')}\033[0m")
+    print(f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
+    print(f"  \033[94m/lib\033[0m - \033[92m{get_message('lib_desc')}\033[0m")
+    print(f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
     print()
 
 
