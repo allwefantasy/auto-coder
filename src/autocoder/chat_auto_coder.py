@@ -117,6 +117,56 @@ commands = [
     "/lib",
 ]
 
+def configure_project_type():
+    from prompt_toolkit.lexers import PygmentsLexer
+    from pygments.lexers.markup import MarkdownLexer
+    from prompt_toolkit.formatted_text import HTML
+    from prompt_toolkit.shortcuts import print_formatted_text
+    from prompt_toolkit.styles import Style
+    from html import escape
+
+    style = Style.from_dict({
+        'info': '#ansicyan',
+        'warning': '#ansiyellow',
+        'input-area': '#ansigreen',
+        'header': '#ansibrightyellow bold',
+    })
+
+    def print_info(text):
+        print_formatted_text(HTML(f'<info>{escape(text)}</info>'), style=style)
+
+    def print_warning(text):
+        print_formatted_text(HTML(f'<warning>{escape(text)}</warning>'), style=style)
+
+    def print_header(text):
+        print_formatted_text(HTML(f'<header>{escape(text)}</header>'), style=style)
+
+    print_header("\n=== Project Type Configuration ===\n")
+    print_info("The project_type supports:")
+    print_info("  - Language suffixes (e.g., .py, .java, .ts)")
+    print_info("  - Predefined types: py (Python), ts (TypeScript/JavaScript)")
+    print_info("For mixed language projects, use comma-separated values.")
+    print_info("Examples: '.java,.scala' or '.py,.ts'\n")
+
+    print_warning("Default is 'py' if left empty.\n")
+
+    project_type = prompt(
+        "Enter the project type: ",
+        default="py",
+        style=style
+    ).strip()
+
+    if project_type:
+        configure(f"project_type:{project_type}", skip_print=True)
+        configure("skip_build_index:false", skip_print=True)
+        print_info(f"\nProject type set to: {project_type}")
+    else:
+        print_info("\nUsing default project type: py")
+
+    print_warning("\nYou can change this setting later using:")
+    print_warning("/conf project_type:<new_type>\n")
+
+    return project_type
 
 def initialize_system():
     print("\n\033[1;34m🚀 Initializing system...\033[0m")
@@ -132,7 +182,9 @@ def initialize_system():
             print(f"  {message}")
 
     def init_project():
+        first_time = False
         if not os.path.exists(".auto-coder"):
+            first_time = True
             print_status(
                 "The current directory is not initialized as an auto-coder project.",
                 "warning",
@@ -147,7 +199,8 @@ def initialize_system():
                     subprocess.run(
                         ["auto-coder", "init", "--source_dir", "."], check=True
                     )
-                    print_status("Project initialized successfully.", "success")
+                    print_status("Project initialized successfully.", "success")                    
+
                 except subprocess.CalledProcessError:
                     print_status("Failed to initialize the project.", "error")
                     print_status(
@@ -161,6 +214,9 @@ def initialize_system():
         if not os.path.exists(base_persist_dir):
             os.makedirs(base_persist_dir, exist_ok=True)
             print_status(f"Created directory: {base_persist_dir}", "success")
+        
+        if first_time:
+            configure_project_type()
 
         print_status("Project initialization completed.", "success")
 
@@ -267,7 +323,7 @@ def initialize_system():
             "Validation failed. The model might not be deployed correctly.", "error"
         )
         print_status("Please try to start the model manually using:", "warning")
-        print_status("easy-byzerllm chat deepseek_chat 你好", "")
+        print_status("easy-byzerllm chat deepseek_chat 你好", "")    
 
     print_status("Initialization completed.", "success")
 
@@ -1261,7 +1317,7 @@ def coding(query: str):
         yaml_config["query"] = v
 
         # Add context for active groups and their query prefixes
-        active_groups_context = "下面是对上面文件按分组给到的一些描述，当用户的需求正好匹配描述的时候，参考描述来做修改：\n"
+        active_groups_context = "下面是对上面文件按分组给到的一些描述，当用户的需求正好匹配描述���时候，参考描述来做修改：\n"
         for group in current_groups:
             group_files = groups.get(group, [])
             query_prefix = groups_info.get(group, {}).get("query_prefix", "")
