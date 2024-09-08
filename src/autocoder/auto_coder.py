@@ -39,6 +39,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.live import Live
+from autocoder.auto_coder_lang import get_message
 
 console = Console()
 
@@ -300,24 +301,17 @@ def main(input_args: Optional[List[str]] = None):
                     pyperclip.copy(final_ins)
                     console.print(
                         Panel(
-                            "You are now in Human as Model mode. The content has been copied to your clipboard.\n"
-                            "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
-                            "Use '/break' to exit this mode. If you have issues with copy-paste, use '/clear' to clean and paste again.",
+                            get_message("human_as_model_instructions"),
                             title="Instructions",
                             border_style="blue",
                             expand=False,
                         )
                     )
                 except Exception:
-                    logger.warning(
-                        "pyperclip not installed or clipboard is not supported, instruction will not be copied to clipboard."
-                    )
+                    logger.warning(get_message("clipboard_not_supported"))
                     console.print(
                         Panel(
-                            "You are now in Human as Model mode. [bold red]The content could not be copied to your clipboard.[/bold red]\n"
-                            "but you can copy prompt from output.txt file.\n"
-                            "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
-                            "Use '/break' to exit this mode. If you have issues with copy-paste, use '/clear' to clean and paste again.",
+                            get_message("human_as_model_instructions_no_clipboard"),
                             title="Instructions",
                             border_style="blue",
                             expand=False,
