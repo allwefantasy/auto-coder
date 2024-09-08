@@ -141,17 +141,17 @@ def configure_project_type():
     def print_header(text):
         print_formatted_text(HTML(f'<header>{escape(text)}</header>'), style=style)
 
-    print_header("\n=== Project Type Configuration ===\n")
-    print_info("The project_type supports:")
-    print_info("  - Language suffixes (e.g., .py, .java, .ts)")
-    print_info("  - Predefined types: py (Python), ts (TypeScript/JavaScript)")
-    print_info("For mixed language projects, use comma-separated values.")
-    print_info("Examples: '.java,.scala' or '.py,.ts'\n")
+    print_header(f"\n=== {get_message('project_type_config')} ===\n")
+    print_info(get_message('project_type_supports'))
+    print_info(get_message('language_suffixes'))
+    print_info(get_message('predefined_types'))
+    print_info(get_message('mixed_projects'))
+    print_info(get_message('examples'))
 
-    print_warning("Default is 'py' if left empty.\n")
+    print_warning(f"{get_message('default_type')}\n")
 
     project_type = prompt(
-        "Enter the project type: ",
+        get_message('enter_project_type'),
         default="py",
         style=style
     ).strip()
@@ -159,11 +159,11 @@ def configure_project_type():
     if project_type:
         configure(f"project_type:{project_type}", skip_print=True)
         configure("skip_build_index:false", skip_print=True)
-        print_info(f"\nProject type set to: {project_type}")
+        print_info(f"\n{get_message('project_type_set')} {project_type}")
     else:
-        print_info("\nUsing default project type: py")
+        print_info(f"\n{get_message('using_default_type')}")
 
-    print_warning("\nYou can change this setting later using:")
+    print_warning(f"\n{get_message('change_setting_later')}:")
     print_warning("/conf project_type:<new_type>\n")
 
     return project_type
