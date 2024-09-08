@@ -52,6 +52,7 @@ from byzerllm.utils.langutil import asyncfy_with_semaphore
 from prompt_toolkit.patch_stdout import patch_stdout
 import byzerllm
 from byzerllm.utils import format_str_jinja2
+from autocoder.chat_auto_coder_lang import get_message
 
 
 class SymbolItem(BaseModel):
@@ -168,7 +169,7 @@ def configure_project_type():
 
     return project_type
 
-from .chat_auto_coder_lang import get_message
+
 
 def initialize_system():
     print(f"\n\033[1;34m{get_message('initializing')}\033[0m")
