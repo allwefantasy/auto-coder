@@ -93,6 +93,8 @@ memory = {
     "mode": "normal",  # 新增mode字段,默认为normal模式
 }
 
+project_root = os.getcwd()
+
 base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
 
 defaut_exclude_dirs = [".git", "node_modules", "dist", "build", "__pycache__"]
@@ -118,6 +120,7 @@ commands = [
     "/lib",
 ]
 
+
 def configure_project_type():
     from prompt_toolkit.lexers import PygmentsLexer
     from pygments.lexers.markup import MarkdownLexer
@@ -126,35 +129,35 @@ def configure_project_type():
     from prompt_toolkit.styles import Style
     from html import escape
 
-    style = Style.from_dict({
-        'info': '#ansicyan',
-        'warning': '#ansiyellow',
-        'input-area': '#ansigreen',
-        'header': '#ansibrightyellow bold',
-    })
+    style = Style.from_dict(
+        {
+            "info": "#ansicyan",
+            "warning": "#ansiyellow",
+            "input-area": "#ansigreen",
+            "header": "#ansibrightyellow bold",
+        }
+    )
 
     def print_info(text):
-        print_formatted_text(HTML(f'<info>{escape(text)}</info>'), style=style)
+        print_formatted_text(HTML(f"<info>{escape(text)}</info>"), style=style)
 
     def print_warning(text):
-        print_formatted_text(HTML(f'<warning>{escape(text)}</warning>'), style=style)
+        print_formatted_text(HTML(f"<warning>{escape(text)}</warning>"), style=style)
 
     def print_header(text):
-        print_formatted_text(HTML(f'<header>{escape(text)}</header>'), style=style)
+        print_formatted_text(HTML(f"<header>{escape(text)}</header>"), style=style)
 
     print_header(f"\n=== {get_message('project_type_config')} ===\n")
-    print_info(get_message('project_type_supports'))
-    print_info(get_message('language_suffixes'))
-    print_info(get_message('predefined_types'))
-    print_info(get_message('mixed_projects'))
-    print_info(get_message('examples'))
+    print_info(get_message("project_type_supports"))
+    print_info(get_message("language_suffixes"))
+    print_info(get_message("predefined_types"))
+    print_info(get_message("mixed_projects"))
+    print_info(get_message("examples"))
 
     print_warning(f"{get_message('default_type')}\n")
 
     project_type = prompt(
-        get_message('enter_project_type'),
-        default="py",
-        style=style
+        get_message("enter_project_type"), default="py", style=style
     ).strip()
 
     if project_type:
@@ -168,7 +171,6 @@ def configure_project_type():
     print_warning("/conf project_type:<new_type>\n")
 
     return project_type
-
 
 
 def initialize_system():
@@ -192,7 +194,9 @@ def initialize_system():
             init_choice = input(f"  {get_message('init_prompt')}").strip().lower()
             if init_choice == "y":
                 try:
-                    subprocess.run(["auto-coder", "init", "--source_dir", "."], check=True)
+                    subprocess.run(
+                        ["auto-coder", "init", "--source_dir", "."], check=True
+                    )
                     print_status(get_message("init_success"), "success")
                 except subprocess.CalledProcessError:
                     print_status(get_message("init_fail"), "error")
@@ -205,7 +209,7 @@ def initialize_system():
         if not os.path.exists(base_persist_dir):
             os.makedirs(base_persist_dir, exist_ok=True)
             print_status(get_message("created_dir").format(base_persist_dir), "success")
-        
+
         if first_time:
             configure_project_type()
 
@@ -306,7 +310,7 @@ def initialize_system():
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
         print_status(get_message("validation_fail"), "error")
         print_status(get_message("manual_start"), "warning")
-        print_status("easy-byzerllm chat deepseek_chat 你好", "")    
+        print_status("easy-byzerllm chat deepseek_chat 你好", "")
 
     print_status(get_message("init_complete_final"), "success")
 
@@ -322,7 +326,7 @@ def convert_yaml_config_to_str(yaml_config):
 
 
 def get_all_file_names_in_project() -> List[str]:
-    project_root = os.getcwd()
+
     file_names = []
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
     for root, dirs, files in os.walk(project_root):
@@ -332,7 +336,7 @@ def get_all_file_names_in_project() -> List[str]:
 
 
 def get_all_file_in_project() -> List[str]:
-    project_root = os.getcwd()
+
     file_names = []
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
     for root, dirs, files in os.walk(project_root):
@@ -343,7 +347,6 @@ def get_all_file_in_project() -> List[str]:
 
 
 def get_all_file_in_project_with_dot() -> List[str]:
-    project_root = os.getcwd()
     file_names = []
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
     for root, dirs, files in os.walk(project_root):
@@ -354,7 +357,6 @@ def get_all_file_in_project_with_dot() -> List[str]:
 
 
 def get_all_dir_names_in_project() -> List[str]:
-    project_root = os.getcwd()
     dir_names = []
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
     for root, dirs, files in os.walk(project_root):
@@ -365,7 +367,6 @@ def get_all_dir_names_in_project() -> List[str]:
 
 
 def find_files_in_project(patterns: List[str]) -> List[str]:
-    project_root = os.getcwd()
     matched_files = []
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
 
@@ -458,7 +459,9 @@ def configure(conf: str, skip_print=False):
 def show_help():
     print(f"\033[1m{get_message('supported_commands')}\033[0m")
     print()
-    print(f"  \033[94m{get_message('commands')}\033[0m - \033[93m{get_message('description')}\033[0m")
+    print(
+        f"  \033[94m{get_message('commands')}\033[0m - \033[93m{get_message('description')}\033[0m"
+    )
     print(
         f"  \033[94m/add_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92m{get_message('add_files_desc')}\033[0m"
     )
@@ -477,9 +480,7 @@ def show_help():
     print(
         f"  \033[94m/summon\033[0m \033[93m<query>\033[0m - \033[92m{get_message('summon_desc')}\033[0m"
     )
-    print(
-        f"  \033[94m/revert\033[0m - \033[92m{get_message('revert_desc')}\033[0m"
-    )
+    print(f"  \033[94m/revert\033[0m - \033[92m{get_message('revert_desc')}\033[0m")
     print(
         f"  \033[94m/conf\033[0m \033[93m<key>:<value>\033[0m  - \033[92m{get_message('conf_desc')}\033[0m"
     )
@@ -499,7 +500,9 @@ def show_help():
     print(
         f"  \033[94m/shell\033[0m \033[93m<command>\033[0m - \033[92m{get_message('shell_desc')}\033[0m"
     )
-    print(f"  \033[94m/voice_input\033[0m - \033[92m{get_message('voice_input_desc')}\033[0m")
+    print(
+        f"  \033[94m/voice_input\033[0m - \033[92m{get_message('voice_input_desc')}\033[0m"
+    )
     print(f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
     print(f"  \033[94m/lib\033[0m - \033[92m{get_message('lib_desc')}\033[0m")
     print(f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
@@ -670,8 +673,9 @@ class CommandCompleter(Completer):
                                 if len(path_parts) > 3
                                 else file_name
                             )
+                            relative_path = os.path.relpath(file_name, project_root)
                             yield Completion(
-                                base_file_name,
+                                relative_path,
                                 start_position=-len(name),
                                 display=f"{display_name} (in active files)",
                             )
@@ -679,11 +683,35 @@ class CommandCompleter(Completer):
                     for file_name in self.all_file_names:
                         if file_name.startswith(name) and file_name not in target_set:
                             target_set.add(file_name)
-                            yield Completion(file_name, start_position=-len(name))
+
+                            path_parts = file_name.split(os.sep)
+                            display_name = (
+                                os.sep.join(path_parts[-3:])
+                                if len(path_parts) > 3
+                                else file_name
+                            )
+                            relative_path = os.path.relpath(file_name, project_root)
+
+                            yield Completion(
+                                relative_path,
+                                start_position=-len(name),
+                                display=f"{display_name} (in active files)",
+                            )
 
                     for file_name in self.all_files:
                         if name in file_name and file_name not in target_set:
-                            yield Completion(file_name, start_position=-len(name))
+                            path_parts = file_name.split(os.sep)
+                            display_name = (
+                                os.sep.join(path_parts[-3:])
+                                if len(path_parts) > 3
+                                else file_name
+                            )
+                            relative_path = os.path.relpath(file_name, project_root)
+                            yield Completion(
+                                relative_path,
+                                start_position=-len(name),
+                                display=f"{display_name} (in active files)",
+                            )
 
                 if current_word.startswith("@@"):
                     name = current_word[2:]
@@ -695,8 +723,9 @@ class CommandCompleter(Completer):
                                 if len(path_parts) > 3
                                 else symbol.symbol_name
                             )
+                            relative_path = os.path.relpath(file_name, project_root)
                             yield Completion(
-                                symbol.symbol_name,
+                                f"{symbol.symbol_name}(location: {relative_path})",
                                 start_position=-len(name),
                                 display=f"{symbol.symbol_name} ({display_name}/{symbol.symbol_type})",
                             )
@@ -903,7 +932,7 @@ def revert():
 
 
 def add_files(args: List[str]):
-    project_root = os.getcwd()
+
     if "groups" not in memory["current_files"]:
         memory["current_files"]["groups"] = {}
     if "groups_info" not in memory["current_files"]:
@@ -917,7 +946,11 @@ def add_files(args: List[str]):
 
     if not args:
         console.print(
-            Panel("Please provide arguments for the /add_files command.", title="Error", border_style="red")
+            Panel(
+                "Please provide arguments for the /add_files command.",
+                title="Error",
+                border_style="red",
+            )
         )
         return
 
@@ -939,26 +972,32 @@ def add_files(args: List[str]):
                     title="Defined Groups",
                     show_header=True,
                     header_style="bold magenta",
-                    show_lines=True
+                    show_lines=True,
                 )
                 table.add_column("Group Name", style="cyan", no_wrap=True)
                 table.add_column("Files", style="green")
                 table.add_column("Query Prefix", style="yellow")
                 table.add_column("Active", style="magenta")
-                
+
                 for i, (group_name, files) in enumerate(groups.items()):
-                    query_prefix = groups_info.get(group_name, {}).get("query_prefix", "")
-                    is_active = "✓" if group_name in memory["current_files"]["current_groups"] else ""
+                    query_prefix = groups_info.get(group_name, {}).get(
+                        "query_prefix", ""
+                    )
+                    is_active = (
+                        "✓"
+                        if group_name in memory["current_files"]["current_groups"]
+                        else ""
+                    )
                     table.add_row(
                         group_name,
                         "\n".join([os.path.relpath(f, project_root) for f in files]),
                         query_prefix,
                         is_active,
-                        end_section=(i == len(groups) - 1)
+                        end_section=(i == len(groups) - 1),
                     )
                 console.print(Panel(table, border_style="blue"))
         elif len(args) >= 2 and args[1] == "/reset":
-            memory["current_files"]["current_groups"] = []            
+            memory["current_files"]["current_groups"] = []
             console.print(
                 Panel(
                     "Active group names have been reset. If you want to clear the active files, you should use the command /remove_files /all.",
@@ -1001,29 +1040,38 @@ def add_files(args: List[str]):
                 )
         elif len(args) == 3 and args[1] == "/set":
             group_name = args[2]
+
             def multiline_edit():
                 from prompt_toolkit.lexers import PygmentsLexer
                 from pygments.lexers.markup import MarkdownLexer
                 from prompt_toolkit.formatted_text import HTML
                 from prompt_toolkit.shortcuts import print_formatted_text
-                style = Style.from_dict({
-                    'dialog': 'bg:#88ff88',
-                    'dialog frame.label': 'bg:#ffffff #000000',
-                    'dialog.body': 'bg:#000000 #00ff00',
-                    'dialog shadow': 'bg:#00aa00',
-                })
-                
-                print_formatted_text(HTML('<b>Type Atom Group Desc (Prese [Esc] + [Enter]  to finish.)</b><br>'))                
+
+                style = Style.from_dict(
+                    {
+                        "dialog": "bg:#88ff88",
+                        "dialog frame.label": "bg:#ffffff #000000",
+                        "dialog.body": "bg:#000000 #00ff00",
+                        "dialog shadow": "bg:#00aa00",
+                    }
+                )
+
+                print_formatted_text(
+                    HTML(
+                        "<b>Type Atom Group Desc (Prese [Esc] + [Enter]  to finish.)</b><br>"
+                    )
+                )
                 text = prompt(
-                    HTML('<ansicyan>║</ansicyan> '),                    
+                    HTML("<ansicyan>║</ansicyan> "),
                     multiline=True,
                     lexer=PygmentsLexer(MarkdownLexer),
                     style=style,
                     wrap_lines=True,
-                    prompt_continuation=HTML('<ansicyan>║</ansicyan> '),
-                    rprompt=HTML('<ansicyan>║</ansicyan>'),
-                )                                
+                    prompt_continuation=HTML("<ansicyan>║</ansicyan> "),
+                    rprompt=HTML("<ansicyan>║</ansicyan>"),
+                )
                 return text
+
             query_prefix = multiline_edit()
             if group_name in groups:
                 groups_info[group_name] = {"query_prefix": query_prefix}
@@ -1064,7 +1112,9 @@ def add_files(args: List[str]):
 
             if merged_files:
                 memory["current_files"]["files"] = list(merged_files)
-                memory["current_files"]["current_groups"] = [name for name in group_names if name in groups]
+                memory["current_files"]["current_groups"] = [
+                    name for name in group_names if name in groups
+                ]
                 console.print(
                     Panel(
                         f"Merged files from groups: {', '.join(group_names)}",
@@ -1076,13 +1126,15 @@ def add_files(args: List[str]):
                     title="Current Files",
                     show_header=True,
                     header_style="bold magenta",
-                    show_lines=True  # 这会在每行之间添加分割线
+                    show_lines=True,  # 这会在每行之间添加分割线
                 )
                 table.add_column("File", style="green")
                 for i, f in enumerate(memory["current_files"]["files"]):
                     table.add_row(
                         os.path.relpath(f, project_root),
-                        end_section=(i == len(memory["current_files"]["files"]) - 1)  # 在最后一行之后不添加分割线
+                        end_section=(
+                            i == len(memory["current_files"]["files"]) - 1
+                        ),  # 在最后一行之后不添加分割线
                     )
                 console.print(Panel(table, border_style="blue"))
                 console.print(
@@ -1111,13 +1163,15 @@ def add_files(args: List[str]):
                 title="Added Files",
                 show_header=True,
                 header_style="bold magenta",
-                show_lines=True  # 这会在每行之间添加分割线
+                show_lines=True,  # 这会在每行之间添加分割线
             )
             table.add_column("File", style="green")
             for i, f in enumerate(files_to_add):
                 table.add_row(
                     os.path.relpath(f, project_root),
-                    end_section=(i == len(files_to_add) - 1)  # 在最后一行之后不添加分割线
+                    end_section=(
+                        i == len(files_to_add) - 1
+                    ),  # 在最后一行之后不添加分割线
                 )
             console.print(Panel(table, border_style="green"))
         else:
@@ -1340,14 +1394,14 @@ def coding(query: str):
 
             conversations = chat_history["ask_conversation"]
 
-            yaml_config["context"] += (
-                f"下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码。\n\n"
-            )
+            yaml_config[
+                "context"
+            ] += f"下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码。\n\n"
             for conv in conversations:
                 if conv["role"] == "user":
                     yaml_config["context"] += f"用户: {conv['content']}\n"
                 elif conv["role"] == "assistant":
-                    yaml_config["context"] += f"你: {conv['content']}\n"                
+                    yaml_config["context"] += f"你: {conv['content']}\n"
 
         yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 

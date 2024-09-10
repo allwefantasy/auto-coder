@@ -174,8 +174,8 @@ def base_base(source_dir:str,project_type:str)->str:
     model_max_input_length: 100000
     model_max_input_length: 120000
     enable_multi_round_generate: false
-    index_filter_workers: 4
-    index_build_workers: 4
+    index_filter_workers: 10
+    index_build_workers: 5
 
     execute: true
     auto_merge: true

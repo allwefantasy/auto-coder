@@ -418,7 +418,7 @@ class IndexManager:
         limited_results = all_results[: self.args.index_filter_file_num]
         return FileList(file_list=limited_results)
 
-    @byzerllm.prompt(lambda self: self.llm, render="jinja2", check_result=True)
+    @byzerllm.prompt(lambda self: self.llm, check_result=True)
     def _get_target_files_by_query(self, indices: str, query: str) -> FileList:
         """
         下面是已知文件以及对应的符号信息：
