@@ -366,12 +366,16 @@ class IndexManager:
     def _query_index_with_thread(self, query, func):
         all_results = []
         lock = threading.Lock()
+        completed_threads = 0
+        total_threads = 0
 
-        def process_chunk(chunk):            
+        def process_chunk(chunk):
+            nonlocal completed_threads
             result = self._get_target_files_by_query(chunk, query)
             if result is not None:
                 with lock:
                     all_results.extend(result.file_list)
+                    completed_threads += 1
             else:
                 logger.warning(
                     f"Fail to find target files for chunk. This is caused by the model response not being in JSON format or the JSON being empty."
@@ -383,10 +387,13 @@ class IndexManager:
             for chunk in func():
                 future = executor.submit(process_chunk, chunk)
                 futures.append(future)
+                total_threads += 1
 
             for future in as_completed(futures):
                 future.result()
-        return all_results
+
+        logger.info(f"Completed {completed_threads}/{total_threads} threads")
+        return all_results, total_threads, completed_threads
 
     def get_target_files_by_query(self, query: str) -> FileList:
         all_results: List[TargetFile] = []
@@ -399,7 +406,8 @@ class IndexManager:
             )
 
         logger.info("Find the related files by query according to the files...")
-        temp_result = self._query_index_with_thread(query, w)
+        temp_result, total_threads, completed_threads = self._query_index_with_thread(query, w)
+        logger.info(f"Used {self.args.index_filter_workers} workers in parallel. Completed {completed_threads}/{total_threads} threads.")
         all_results.extend(temp_result)
 
         if self.args.index_filter_level >= 1:
@@ -410,7 +418,8 @@ class IndexManager:
                     skip_symbols=False, max_chunk_size=self.max_input_length - 1000
                 )
 
-            temp_result = self._query_index_with_thread(query, w)
+            temp_result, total_threads, completed_threads = self._query_index_with_thread(query, w)
+            logger.info(f"Used {self.args.index_filter_workers} workers in parallel. Completed {completed_threads}/{total_threads} threads.")
             all_results.extend(temp_result)
 
         all_results = list({file.file_path: file for file in all_results}.values())
