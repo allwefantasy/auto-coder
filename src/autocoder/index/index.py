@@ -537,6 +537,9 @@ def build_index_and_filter_files(
 
         console.print(panel)
 
+    if args.index_filter_file_num > 0:
+        logger.info(f"args.index_filter_file_num: {args.index_filter_file_num} is not 0, so we need to limit the number of files (total: {len(final_filenames)})")    
+
     if args.skip_confirm:
         final_filenames = [file.file_path for file in final_files.values()]
         # Limit the number of files based on index_filter_file_num
@@ -553,7 +556,7 @@ def build_index_and_filter_files(
             final_filenames = []
         else:
             final_filenames = display_table_and_get_selections(target_files_data)
-        # Limit the number of files based on index_filter_file_num
+                
         if args.index_filter_file_num > 0:
             final_filenames = final_filenames[: args.index_filter_file_num]
 

@@ -176,6 +176,7 @@ def base_base(source_dir:str,project_type:str)->str:
     enable_multi_round_generate: false
     index_filter_workers: 10
     index_build_workers: 5
+    index_filter_level: 1
 
     execute: true
     auto_merge: true
