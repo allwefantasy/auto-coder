@@ -367,7 +367,7 @@ class IndexManager:
         all_results = []
         lock = threading.Lock()
 
-        def process_chunk(chunk):
+        def process_chunk(chunk):            
             result = self._get_target_files_by_query(chunk, query)
             if result is not None:
                 with lock:
@@ -431,8 +431,10 @@ class IndexManager:
 
         现在，请根据用户的问题以及的前面的文件以及符号信息，寻找相关文件路径。如果没有找到，返回空即可。
         提示：
-        1. 你可以通过 “导入语句” 语句信息得到每个文件依赖了哪些其他文件。
-        2. 你可以通过用途，函数、类、变量等信息得到每个文件的功能和目的。
+        1. 通过 “导入语句” 语句信息得到每个文件依赖了哪些其他文件。
+        2. 通过用途，函数、类、变量等信息得到每个文件的功能和目的。
+        3. 用户问题中 @ 符号后面的路径一般表示用户关注的路径(通常为路径的后半部分)，你可以根据这个路径来找到相关文件。
+        4. 用户问题中 @@ 符号咋表示用户关注的符号（比如类，函数名，变量名等），你可以根据这个符号来找到相关文件。
         """
 
 
