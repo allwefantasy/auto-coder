@@ -69,3 +69,4 @@ pathspec
 # pypandoc
 openpyxl
 python-pptx
+watchfiles

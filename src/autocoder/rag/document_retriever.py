@@ -1,25 +1,27 @@
-import os
 import json
-import time
+import os
 import platform
+import time
+
+from watchfiles import Change, DefaultFilter, awatch, watch
 
 if platform.system() != "Windows":
     import fcntl
 else:
     fcntl = None
-from typing import Generator, List, Tuple, Dict
-from autocoder.common import SourceCode
-from autocoder.rag.loaders import (
-    extract_text_from_pdf,
-    extract_text_from_docx,
-    extract_text_from_excel,
-    extract_text_from_ppt,
-)
-from loguru import logger
 import threading
 from multiprocessing import Pool
+from typing import Dict, Generator, List, Tuple
+
 import ray
+from loguru import logger
 from pydantic import BaseModel
+
+from autocoder.common import SourceCode
+from autocoder.rag.loaders import (extract_text_from_docx,
+                                   extract_text_from_excel,
+                                   extract_text_from_pdf,
+                                   extract_text_from_ppt)
 
 cache_lock = threading.Lock()
 
@@ -105,6 +107,174 @@ def process_file2(file_info: Tuple[str, str, float]) -> List[SourceCode]:
         return []
 
 
+def process_file3(file_path: str) -> List[SourceCode]:
+    start_time = time.time()
+    try:
+        if file_path.endswith(".pdf"):
+            with open(file_path, "rb") as f:
+                content = extract_text_from_pdf(f.read())
+            v = [SourceCode(module_name=file_path, source_code=content)]
+        elif file_path.endswith(".docx"):
+            with open(file_path, "rb") as f:
+                content = extract_text_from_docx(f.read())
+            v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
+        elif file_path.endswith(".xlsx") or file_path.endswith(".xls"):
+            sheets = extract_text_from_excel(file_path)
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}#{sheet[0]}",
+                    source_code=sheet[1],
+                )
+                for sheet in sheets
+            ]
+        elif file_path.endswith(".pptx"):
+            slides = extract_text_from_ppt(file_path)
+            content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
+            v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
+        else:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
+        logger.info(f"Load file {file_path} in {time.time() - start_time}")
+        return v
+    except Exception as e:
+        logger.error(f"Error processing file {file_path}: {str(e)}")
+        return []
+
+
+class AutoCoderRAGDocListener:
+    cache: Dict[str, Dict] = {}
+    ignore_dirs = [
+        "__pycache__",
+        ".git",
+        ".hg",
+        ".svn",
+        ".tox",
+        ".venv",
+        ".idea",
+        "node_modules",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".hypothesis",
+    ]
+    ignore_entity_patterns = [
+        r"\.py[cod]$",
+        r"\.___jb_...___$",
+        r"\.sw.$",
+        "~$",
+        r"^\.\#",
+        r"^\.DS_Store$",
+        r"^flycheck_",
+        r"^test.*$",
+    ]
+
+    def __init__(self, path: str, ignore_spec, required_exts: List) -> None:
+        self.path = path
+        self.ignore_spec = ignore_spec
+        self.required_exts = required_exts
+        self.stop_event = threading.Event()
+
+        # connect list
+        self.ignore_entity_patterns.extend(self._load_ignore_file())
+        self.file_filter = DefaultFilter(
+            ignore_dirs=self.ignore_dirs,
+            ignore_paths=[],
+            ignore_entity_patterns=self.ignore_entity_patterns,
+        )
+        self.load_first()
+        # 创建一个新线程来执行open_watch
+        self.watch_thread = threading.Thread(target=self.open_watch)
+        # 将线程设置为守护线程,这样主程序退出时,这个线程也会自动退出
+        self.watch_thread.daemon = True
+        # 启动线程
+        self.watch_thread.start()
+
+    def stop(self):
+        self.stop_event.set()
+        self.watch_thread.join()
+
+    def __del__(self):
+        self.stop()
+
+    def load_first(self):
+        files_to_process = self.get_all_files()
+        if not files_to_process:
+            return
+        for item in files_to_process:
+            self.update_cache(item)
+
+    def update_cache(self, file_path):
+        source_code = process_file3(file_path)
+        self.cache[file_path] = {
+            "file_path": file_path,
+            "content": [c.model_dump() for c in source_code],
+        }
+        logger.info(f"update cache: {file_path}")
+        logger.info(f"current cache: {self.cache.keys()}")
+
+    def remove_cache(self, file_path):
+        del self.cache[file_path]
+        logger.info(f"remove cache: {file_path}")
+        logger.info(f"current cache: {self.cache.keys()}")
+
+    def open_watch(self):
+        logger.info(f"start monitor: {self.path}...")
+        for changes in watch(self.path, watch_filter=self.file_filter, stop_event=self.stop_event):
+            for change in changes:
+                (action, path) = change
+                if action == Change.added or action == Change.modified:
+                    self.update_cache(path)
+                elif action == Change.deleted:
+                    self.remove_cache(path)
+
+    def get_cache(self):
+        return self.cache
+
+    def _load_ignore_file(self):
+        serveignore_path = os.path.join(self.path, ".serveignore")
+        gitignore_path = os.path.join(self.path, ".gitignore")
+
+        if os.path.exists(serveignore_path):
+            with open(serveignore_path, "r") as ignore_file:
+                patterns = ignore_file.readlines()
+                return [pattern.strip() for pattern in patterns]
+        elif os.path.exists(gitignore_path):
+            with open(gitignore_path, "r") as ignore_file:
+                patterns = ignore_file.readlines()
+                return [pattern.strip() for pattern in patterns]
+        return []
+
+    def get_all_files(self) -> List[str]:
+        all_files = []
+        for root, dirs, files in os.walk(self.path):
+            dirs[:] = [d for d in dirs if not d.startswith(".")]
+
+            if self.ignore_spec:
+                relative_root = os.path.relpath(root, self.path)
+                dirs[:] = [
+                    d
+                    for d in dirs
+                    if not self.ignore_spec.match_file(os.path.join(relative_root, d))
+                ]
+                files = [
+                    f
+                    for f in files
+                    if not self.ignore_spec.match_file(os.path.join(relative_root, f))
+                ]
+
+            for file in files:
+                if self.required_exts and not any(
+                    file.endswith(ext) for ext in self.required_exts
+                ):
+                    continue
+
+                file_path = os.path.join(root, file)
+                absolute_path = os.path.abspath(file_path)
+                all_files.append(absolute_path)
+
+        return all_files
+
+
 class AutoCoderRAGAsyncUpdateQueue:
     def __init__(self, path: str, ignore_spec, required_exts: list):
         self.path = path
@@ -118,7 +288,7 @@ class AutoCoderRAGAsyncUpdateQueue:
         self.thread.daemon = True
         self.thread.start()
         self.cache = self.read_cache()
-                
+
 
     def _process_queue(self):
         while not self.stop_event.is_set():
@@ -157,8 +327,8 @@ class AutoCoderRAGAsyncUpdateQueue:
                 results = pool.map(process_file2, files_to_process)
 
             for file_info, result in zip(files_to_process, results):
-                self.update_cache(file_info, result)                    
-            
+                self.update_cache(file_info, result)
+
             self.write_cache()
 
     def trigger_update(self):
@@ -196,7 +366,7 @@ class AutoCoderRAGAsyncUpdateQueue:
                     logger.info(f"{file_info[0]} is detected to be updated")
                     result = process_file2(file_info)
                     self.update_cache(file_info, result)
-                        
+
             self.write_cache()
 
     def read_cache(self) -> Dict[str, Dict]:
@@ -308,17 +478,28 @@ def get_or_create_actor(path: str, ignore_spec, required_exts: list, cacher={}):
 
 class DocumentRetriever:
     def __init__(
-        self, path: str, ignore_spec, required_exts: list, on_ray: bool = False
+        self,
+        path: str,
+        ignore_spec,
+        required_exts: list,
+        on_ray: bool = False,
+        monitor_mode: bool = False,
     ) -> None:
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
+        self.monitor_mode = monitor_mode
 
         self.on_ray = on_ray
         if self.on_ray:
             self.cacher = get_or_create_actor(path, ignore_spec, required_exts)
         else:
-            self.cacher = AutoCoderRAGAsyncUpdateQueue(path, ignore_spec, required_exts)
+            if self.monitor_mode:
+                self.cacher = AutoCoderRAGDocListener(path, ignore_spec, required_exts)
+            else:
+                self.cacher = AutoCoderRAGAsyncUpdateQueue(
+                    path, ignore_spec, required_exts
+                )
 
     def get_cache(self):
         if self.on_ray:
