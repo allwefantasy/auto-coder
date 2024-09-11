@@ -37,7 +37,9 @@ def main(input_args: Optional[List[str]] = None):
     server_args = ServerArgs(
                 **{arg: getattr(args, arg) for arg in vars(ServerArgs())}
             )
-    auto_coder_args = AutoCoderArgs(**vars(args))
+    auto_coder_args = AutoCoderArgs(
+                **{arg: getattr(args, arg) for arg in vars(AutoCoderArgs())}
+            )
     
     byzerllm.connect_cluster(address=args.ray_address)
     llm = byzerllm.ByzerLLM()
