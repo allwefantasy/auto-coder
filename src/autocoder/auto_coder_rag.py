@@ -22,6 +22,9 @@ from rich.text import Text
 from rich.live import Live
 import os 
 
+from autocoder.rag.document_retriever import process_file3
+from autocoder.rag.token_counter import TokenCounter
+
 if platform.system() == "Windows":
     from colorama import init
 
@@ -131,100 +134,138 @@ def main(input_args: Optional[List[str]] = None):
     system_lang, _ = locale.getdefaultlocale()
     lang = "zh" if system_lang and system_lang.startswith("zh") else "en"
     desc = lang_desc[lang]
-    doc_serve_parse = argparse.ArgumentParser(description="Auto Coder RAG Server")
-    doc_serve_parse.add_argument("--file", default="", help=desc["file"])
-    doc_serve_parse.add_argument("--model", default="deepseek_chat", help=desc["model"])
-    doc_serve_parse.add_argument("--index_model", default="", help=desc["index_model"])
-    doc_serve_parse.add_argument("--emb_model", default="", help=desc["emb_model"])
-    doc_serve_parse.add_argument(
+    parser = argparse.ArgumentParser(description="Auto Coder RAG Server")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # Serve command
+    serve_parser = subparsers.add_parser("serve", help="Start the RAG server")
+    serve_parser.add_argument("--file", default="", help=desc["file"])
+    serve_parser.add_argument("--model", default="deepseek_chat", help=desc["model"])
+    serve_parser.add_argument("--index_model", default="", help=desc["index_model"])
+    serve_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
+    serve_parser.add_argument(
         "--ray_address", default="auto", help=desc["ray_address"]
     )
-    doc_serve_parse.add_argument(
+    serve_parser.add_argument(
         "--index_filter_workers",
         type=int,
         default=100,
         help=desc["index_filter_workers"],
     )
-    doc_serve_parse.add_argument(
+    serve_parser.add_argument(
         "--index_filter_file_num",
         type=int,
         default=3,
         help=desc["index_filter_file_num"],
     )
-
-    doc_serve_parse.add_argument(
+    serve_parser.add_argument(
         "--rag_context_window_limit",
         type=int,
         default=110000,
         help="",
     )
-
-    doc_serve_parse.add_argument(
+    serve_parser.add_argument(
         "--required_exts", default="", help=desc["doc_build_parse_required_exts"]
     )
-    doc_serve_parse.add_argument(
+    serve_parser.add_argument(
         "--rag_doc_filter_relevance", type=int, default=5, help=""
     )
-    doc_serve_parse.add_argument("--source_dir", default=".", help="")
-    doc_serve_parse.add_argument("--host", default="", help="")
-    doc_serve_parse.add_argument("--port", type=int, default=8000, help="")
-    doc_serve_parse.add_argument("--uvicorn_log_level", default="info", help="")
-    doc_serve_parse.add_argument("--allow_credentials", action="store_true", help="")
-    doc_serve_parse.add_argument("--allowed_origins", default=["*"], help="")
-    doc_serve_parse.add_argument("--allowed_methods", default=["*"], help="")
-    doc_serve_parse.add_argument("--allowed_headers", default=["*"], help="")
-    doc_serve_parse.add_argument("--api_key", default="", help="")
-    doc_serve_parse.add_argument("--served_model_name", default="", help="")
-    doc_serve_parse.add_argument("--prompt_template", default="", help="")
-    doc_serve_parse.add_argument("--ssl_keyfile", default="", help="")
-    doc_serve_parse.add_argument("--ssl_certfile", default="", help="")
-    doc_serve_parse.add_argument("--response_role", default="assistant", help="")
-    doc_serve_parse.add_argument("--doc_dir", default="", help="")
-    doc_serve_parse.add_argument("--tokenizer_path", default="", help="")
-    doc_serve_parse.add_argument(
+    serve_parser.add_argument("--source_dir", default=".", help="")
+    serve_parser.add_argument("--host", default="", help="")
+    serve_parser.add_argument("--port", type=int, default=8000, help="")
+    serve_parser.add_argument("--uvicorn_log_level", default="info", help="")
+    serve_parser.add_argument("--allow_credentials", action="store_true", help="")
+    serve_parser.add_argument("--allowed_origins", default=["*"], help="")
+    serve_parser.add_argument("--allowed_methods", default=["*"], help="")
+    serve_parser.add_argument("--allowed_headers", default=["*"], help="")
+    serve_parser.add_argument("--api_key", default="", help="")
+    serve_parser.add_argument("--served_model_name", default="", help="")
+    serve_parser.add_argument("--prompt_template", default="", help="")
+    serve_parser.add_argument("--ssl_keyfile", default="", help="")
+    serve_parser.add_argument("--ssl_certfile", default="", help="")
+    serve_parser.add_argument("--response_role", default="assistant", help="")
+    serve_parser.add_argument("--doc_dir", default="", help="")
+    serve_parser.add_argument("--tokenizer_path", default="", help="")
+    serve_parser.add_argument(
         "--collections", default="", help="Collection name for indexing"
     )
-    doc_serve_parse.add_argument(
+    serve_parser.add_argument(
         "--base_dir",
         default="",
         help="Path where the processed text embeddings were stored",
     )
-    doc_serve_parse.add_argument(
+    serve_parser.add_argument(
         "--monitor_mode",
         action="store_true",
         help="Monitor mode for the doc update",
     )
 
-    args = doc_serve_parse.parse_args(input_args)
+    # Tools command
+    tools_parser = subparsers.add_parser("tools", help="Various tools")
+    tools_subparsers = tools_parser.add_subparsers(dest="tool", help="Available tools")
 
-    server_args = ServerArgs(
-        **{arg: getattr(args, arg) for arg in vars(ServerArgs()) if hasattr(args, arg)}
-    )
-    auto_coder_args = AutoCoderArgs(
-        **{
-            arg: getattr(args, arg)
-            for arg in vars(AutoCoderArgs())
-            if hasattr(args, arg)
-        }
-    )
+    # Count tool
+    count_parser = tools_subparsers.add_parser("count", help="Count tokens in a file")
+    count_parser.add_argument("--tokenizer_path", required=True, help="Path to the tokenizer")
+    count_parser.add_argument("--file", required=True, help="Path to the file to count tokens")
 
-    byzerllm.connect_cluster(address=args.ray_address)
-    llm = byzerllm.ByzerLLM()
-    llm.setup_default_model_name(args.model)
+    args = parser.parse_args(input_args)
 
-    if server_args.doc_dir:
-        auto_coder_args.rag_type = "simple"
-        rag = RAGFactory.get_rag(
-            llm=llm,
-            args=auto_coder_args,
-            path=server_args.doc_dir,
-            tokenizer_path=server_args.tokenizer_path,
+    if args.command == "serve":
+        server_args = ServerArgs(
+            **{arg: getattr(args, arg) for arg in vars(ServerArgs()) if hasattr(args, arg)}
         )
-    else:
-        rag = RAGFactory.get_rag(llm=llm, args=auto_coder_args, path="")
+        auto_coder_args = AutoCoderArgs(
+            **{
+                arg: getattr(args, arg)
+                for arg in vars(AutoCoderArgs())
+                if hasattr(args, arg)
+            }
+        )
 
-    llm_wrapper = LLWrapper(llm=llm, rag=rag)
-    serve(llm=llm_wrapper, args=server_args)
+        byzerllm.connect_cluster(address=args.ray_address)
+        llm = byzerllm.ByzerLLM()
+        llm.setup_default_model_name(args.model)
+
+        if server_args.doc_dir:
+            auto_coder_args.rag_type = "simple"
+            rag = RAGFactory.get_rag(
+                llm=llm,
+                args=auto_coder_args,
+                path=server_args.doc_dir,
+                tokenizer_path=server_args.tokenizer_path,
+            )
+        else:
+            rag = RAGFactory.get_rag(llm=llm, args=auto_coder_args, path="")
+
+        llm_wrapper = LLWrapper(llm=llm, rag=rag)
+        serve(llm=llm_wrapper, args=server_args)
+    elif args.command == "tools" and args.tool == "count":
+        count_tokens(args.tokenizer_path, args.file)
+
+def count_tokens(tokenizer_path: str, file_path: str):
+    token_counter = TokenCounter(tokenizer_path)
+    source_codes = process_file3(file_path)
+    
+    total_chars = 0
+    total_tokens = 0
+    
+    for source_code in source_codes:
+        content = source_code.source_code
+        chars = len(content)
+        tokens = token_counter.count_tokens(content)
+        
+        total_chars += chars
+        total_tokens += tokens
+        
+        print(f"File: {source_code.module_name}")
+        print(f"Characters: {chars}")
+        print(f"Tokens: {tokens}")
+        print("---")
+    
+    print("Total:")
+    print(f"Characters: {total_chars}")
+    print(f"Tokens: {total_tokens}")
 
 
 if __name__ == "__main__":
