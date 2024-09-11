@@ -26,35 +26,35 @@ def main(input_args: Optional[List[str]] = None):
     parser.add_argument("--model", type=str, required=True, help="Model name")
     parser.add_argument("--ray-address", type=str, default="auto", help="Ray address")
     parser.add_argument("--rag-type", type=str, default="simple", help="RAG type")
-    parser.add_argument("--file", default="", help=desc["file"])
-    parser.add_argument("--model", default="", help=desc["model"])
-    parser.add_argument("--index_model", default="", help=desc["index_model"])
-    parser.add_argument("--emb_model", default="", help=desc["emb_model"])
+    parser.add_argument("--file", default="", help="Path to the file")
+    parser.add_argument("--model", default="", help="Model name")
+    parser.add_argument("--index_model", default="", help="Index model name")
+    parser.add_argument("--emb_model", default="", help="Embedding model name")
     parser.add_argument(
-        "--ray_address", default="auto", help=desc["ray_address"]
+        "--ray_address", default="auto", help="Ray cluster address"
     )
     parser.add_argument(
         "--index_filter_workers",
         type=int,
         default=10,
-        help=desc["index_filter_workers"],
+        help="Number of workers for index filtering",
     )
     parser.add_argument(
         "--index_filter_file_num",
         type=int,
         default=3,
-        help=desc["index_filter_file_num"],
+        help="Number of files for index filtering",
     )
     
     parser.add_argument(
         "--rag_context_window_limit",
         type=int,
         default=120000,
-        help="",
+        help="RAG context window limit",
     )
 
     parser.add_argument(
-        "--required_exts", default="", help=desc["doc_build_parse_required_exts"]
+        "--required_exts", default="", help="Required file extensions for document parsing"
     )
     parser.add_argument("--rag_doc_filter_relevance", type=int, default=5, help="")
     parser.add_argument("--source_dir", default=".", help="")
