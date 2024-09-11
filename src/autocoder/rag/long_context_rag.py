@@ -1,31 +1,28 @@
 import json
 import os
+import time
 from typing import Any, Dict, Generator, List, Optional, Tuple
+
 import byzerllm
 import pandas as pd
 import pathspec
 from byzerllm import ByzerLLM
 from jinja2 import Template
 from loguru import logger
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.text import Text
 from openai import OpenAI
-import time
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.text import Text
 
-from autocoder.rag.document_retriever import DocumentRetriever
-from autocoder.rag.relevant_utils import (
-    parse_relevance,
-    FilterDoc,
-    DocRelevance,
-    TaskTiming,
-)
-from autocoder.rag.doc_filter import DocFilter
 from autocoder.common import AutoCoderArgs, SourceCode
+from autocoder.rag.doc_filter import DocFilter
+from autocoder.rag.document_retriever import DocumentRetriever
+from autocoder.rag.relevant_utils import (DocRelevance, FilterDoc, TaskTiming,
+                                          parse_relevance)
 from autocoder.rag.token_checker import check_token_limit
-from autocoder.rag.token_limiter import TokenLimiter
 from autocoder.rag.token_counter import RemoteTokenCounter, TokenCounter
+from autocoder.rag.token_limiter import TokenLimiter
 
 
 class LongContextRAG:
@@ -65,6 +62,10 @@ class LongContextRAG:
             else []
         )
 
+        # if open monitor mode
+        self.monitor_mode = self.args.monitor_mode or False
+        logger.info(f"Monitor mode: {self.monitor_mode}")
+
         if args.rag_url and args.rag_url.startswith("http://"):
             if not args.rag_token:
                 raise ValueError(
@@ -90,7 +91,11 @@ class LongContextRAG:
 
         self.token_limit = self.args.rag_context_window_limit or 120000
         self.document_retriever = DocumentRetriever(
-            self.path, self.ignore_spec, self.required_exts, self.on_ray
+            self.path,
+            self.ignore_spec,
+            self.required_exts,
+            self.on_ray,
+            self.monitor_mode,
         )
 
         self.doc_filter = DocFilter(

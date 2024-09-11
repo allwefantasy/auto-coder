@@ -354,6 +354,11 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         default="",
         help="Path where the processed text embeddings were stored",
     )
+    doc_serve_parse.add_argument(
+        "--monitor_mode",
+        action="store_true",
+        help="Monitor mode for the doc update",
+    )
 
     agent_parser = subparsers.add_parser("agent", help="Run an agent")
     agent_subparsers = agent_parser.add_subparsers(dest="agent_command")
