@@ -36,6 +36,7 @@ setup(
             'auto-coder.chat = autocoder.chat_auto_coder:main',
             'auto-coder-serve = autocoder.auto_coder_server:main',
             'auto-coder.serve = autocoder.auto_coder_server:main',
+            'auto-coder.rag = autocoder.auto_coder_rag:main',
         ],
     },
     package_dir={"": "src"},
