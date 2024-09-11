@@ -10,6 +10,7 @@ src/auto_coder.egg-info/top_level.txt
 src/autocoder/__init__.py
 src/autocoder/auto_coder.py
 src/autocoder/auto_coder_lang.py
+src/autocoder/auto_coder_rag.py
 src/autocoder/auto_coder_server.py
 src/autocoder/chat_auto_coder.py
 src/autocoder/chat_auto_coder_lang.py
