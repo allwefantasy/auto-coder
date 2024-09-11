@@ -168,9 +168,11 @@ class TokenLimiter:
                 llm.skip_nontext_check = True
 
                 extracted_info = (
-                    self.extract_relevance_range_from_docs_with_conversation.with_llm(
-                        llm
-                    ).run(conversations, [source_code_with_line_number])
+                    self.extract_relevance_range_from_docs_with_conversation.options(
+                        {"llm_config": {"max_length": 100}}
+                    )
+                    .with_llm(llm)
+                    .run(conversations, [source_code_with_line_number])
                 )
                 json_str = extract_code(extracted_info)[0][1]
                 json_objs = json.loads(json_str)

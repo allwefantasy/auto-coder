@@ -139,10 +139,14 @@ class DocFilter:
                             llm = ByzerLLM()
                             llm.setup_default_model_name(self.llm.default_model_name)
                             llm.skip_nontext_check = True
-                            v = _check_relevance_with_conversation.with_llm(llm).run(
-                                conversations=conversations,
-                                documents=docs,
-                                filter_config=rag_config.filter_config,
+                            v = (
+                                _check_relevance_with_conversation.with_llm(llm)
+                                .options({"llm_config": {"max_length": 10}})
+                                .run(
+                                    conversations=conversations,
+                                    documents=docs,
+                                    filter_config=rag_config.filter_config,
+                                )
                             )
                         except Exception as e:
                             logger.error(

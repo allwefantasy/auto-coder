@@ -1,3 +1,4 @@
+LICENSE
 README.md
 setup.py
 src/auto_coder.egg-info/PKG-INFO

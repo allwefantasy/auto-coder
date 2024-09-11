@@ -16,7 +16,7 @@ tabulate
 jupyter_client
 prompt-toolkit
 tokenizers
-byzerllm[saas]>=0.1.130
+byzerllm[saas]>=0.1.132
 patch
 diff_match_patch
 GitPython
@@ -36,3 +36,4 @@ reportlab
 pathspec
 openpyxl
 python-pptx
+watchfiles

@@ -1,12 +1,13 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.165
+Version: 0.1.166
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
 Classifier: Programming Language :: Python :: 3.9
 Classifier: Programming Language :: Python :: 3.10
 Description-Content-Type: text/markdown
+License-File: LICENSE
 Requires-Dist: contextlib2
 Requires-Dist: ninja
 Requires-Dist: jinja2
@@ -25,7 +26,7 @@ Requires-Dist: tabulate
 Requires-Dist: jupyter_client
 Requires-Dist: prompt-toolkit
 Requires-Dist: tokenizers
-Requires-Dist: byzerllm[saas]>=0.1.130
+Requires-Dist: byzerllm[saas]>=0.1.132
 Requires-Dist: patch
 Requires-Dist: diff_match_patch
 Requires-Dist: GitPython
@@ -45,6 +46,7 @@ Requires-Dist: reportlab
 Requires-Dist: pathspec
 Requires-Dist: openpyxl
 Requires-Dist: python-pptx
+Requires-Dist: watchfiles
 
 <p align="center">
   <picture>    
