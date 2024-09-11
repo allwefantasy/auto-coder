@@ -15,11 +15,7 @@ import platform
 import subprocess
 import shlex
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
-from rich.live import Live
-from rich.text import Text
-from rich.live import Live
 import os 
 
 from autocoder.rag.document_retriever import process_file3
@@ -247,6 +243,12 @@ def count_tokens(tokenizer_path: str, file_path: str):
     token_counter = TokenCounter(tokenizer_path)
     source_codes = process_file3(file_path)
     
+    console = Console()
+    table = Table(title="Token Count Results")
+    table.add_column("File", style="cyan")
+    table.add_column("Characters", justify="right", style="magenta")
+    table.add_column("Tokens", justify="right", style="green")
+    
     total_chars = 0
     total_tokens = 0
     
@@ -258,14 +260,11 @@ def count_tokens(tokenizer_path: str, file_path: str):
         total_chars += chars
         total_tokens += tokens
         
-        print(f"File: {source_code.module_name}")
-        print(f"Characters: {chars}")
-        print(f"Tokens: {tokens}")
-        print("---")
+        table.add_row(source_code.module_name, str(chars), str(tokens))
     
-    print("Total:")
-    print(f"Characters: {total_chars}")
-    print(f"Tokens: {total_tokens}")
+    table.add_row("Total", str(total_chars), str(total_tokens), style="bold")
+    
+    console.print(table)
 
 
 if __name__ == "__main__":
