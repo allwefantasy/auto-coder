@@ -28,10 +28,11 @@ setup(
     author="allwefantasy",
     long_description=readme_contents,
     long_description_content_type="text/markdown",
-    entry_points={
         'console_scripts': [
-            'auto-coder = autocoder.auto_coder:main',
-            'auto-coder.core = autocoder.auto_coder:main',
+            'auto-coder=autocoder.auto_coder:main',
+            'auto-coder.chat=autocoder.chat_auto_coder:main',
+            'auto-coder.rag=autocoder.auto_coder_rag:main',
+        ],
             'chat-auto-coder = autocoder.chat_auto_coder:main',
             'auto-coder.chat = autocoder.chat_auto_coder:main',
             'auto-coder-serve = autocoder.auto_coder_server:main',
