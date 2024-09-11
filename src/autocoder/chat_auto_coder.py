@@ -1355,7 +1355,7 @@ def coding(query: str):
         yaml_config["query"] = v
 
         # Add context for active groups and their query prefixes
-        active_groups_context = "下面是对上面文件按分组给到的一些描述，当用户的需求正好匹配描述���时候，参考描述来做修改：\n"
+        active_groups_context = "下面是对上面文件按分组给到的一些描述，当用户的需求正好匹配描述的时候，参考描述来做修改：\n"
         for group in current_groups:
             group_files = groups.get(group, [])
             query_prefix = groups_info.get(group, {}).get("query_prefix", "")
