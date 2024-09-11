@@ -151,6 +151,7 @@ class AutoCoderRAGDocListener:
         ".svn",
         ".tox",
         ".venv",
+        ".cache",
         ".idea",
         "node_modules",
         ".mypy_cache",
