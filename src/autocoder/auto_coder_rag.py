@@ -16,7 +16,7 @@ import subprocess
 import shlex
 from rich.console import Console
 from rich.table import Table
-import os 
+import os
 
 from autocoder.rag.document_retriever import process_file3
 from autocoder.rag.token_counter import TokenCounter
@@ -25,6 +25,7 @@ if platform.system() == "Windows":
     from colorama import init
 
     init()
+
 
 def initialize_system():
     print(f"\n\033[1;34m{get_message('initializing')}\033[0m")
@@ -38,7 +39,7 @@ def initialize_system():
             print(f"\033[31m✗ {message}\033[0m")
         else:
             print(f"  {message}")
-                    
+
     # Check if Ray is running
     print_status(get_message("checking_ray"), "")
     ray_status = subprocess.run(["ray", "status"], capture_output=True, text=True)
@@ -63,7 +64,7 @@ def initialize_system():
             timeout=30,
         )
         if result.returncode == 0:
-            print_status(get_message("model_available"), "success")            
+            print_status(get_message("model_available"), "success")
             print_status(get_message("init_complete_final"), "success")
             return
     except subprocess.TimeoutExpired:
@@ -76,7 +77,7 @@ def initialize_system():
     choice = radiolist_dialog(
         title=get_message("provider_selection"),
         text=get_message("provider_selection"),
-        values=[            
+        values=[
             ("1", "Deepseek官方(https://www.deepseek.com/)"),
         ],
     ).run()
@@ -87,8 +88,9 @@ def initialize_system():
 
     api_key = prompt(HTML(f"<b>{get_message('enter_api_key')} </b>"))
 
-    if choice == "1":        
+    if choice == "1":
         print_status(get_message("deploying_model").format("Deepseek官方"), "")
+        #MARK
         deploy_cmd = [
             "easy-byzerllm",
             "deploy",
@@ -126,7 +128,7 @@ def initialize_system():
 
 
 def main(input_args: Optional[List[str]] = None):
-    initialize_system()
+
     system_lang, _ = locale.getdefaultlocale()
     lang = "zh" if system_lang and system_lang.startswith("zh") else "en"
     desc = lang_desc[lang]
@@ -139,9 +141,7 @@ def main(input_args: Optional[List[str]] = None):
     serve_parser.add_argument("--model", default="deepseek_chat", help=desc["model"])
     serve_parser.add_argument("--index_model", default="", help=desc["index_model"])
     serve_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
-    serve_parser.add_argument(
-        "--ray_address", default="auto", help=desc["ray_address"]
-    )
+    serve_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
     serve_parser.add_argument(
         "--index_filter_workers",
         type=int,
@@ -202,14 +202,23 @@ def main(input_args: Optional[List[str]] = None):
 
     # Count tool
     count_parser = tools_subparsers.add_parser("count", help="Count tokens in a file")
-    count_parser.add_argument("--tokenizer_path", required=True, help="Path to the tokenizer")
-    count_parser.add_argument("--file", required=True, help="Path to the file to count tokens")
+    count_parser.add_argument(
+        "--tokenizer_path", required=True, help="Path to the tokenizer"
+    )
+    count_parser.add_argument(
+        "--file", required=True, help="Path to the file to count tokens"
+    )
 
     args = parser.parse_args(input_args)
 
     if args.command == "serve":
+        initialize_system()
         server_args = ServerArgs(
-            **{arg: getattr(args, arg) for arg in vars(ServerArgs()) if hasattr(args, arg)}
+            **{
+                arg: getattr(args, arg)
+                for arg in vars(ServerArgs())
+                if hasattr(args, arg)
+            }
         )
         auto_coder_args = AutoCoderArgs(
             **{
@@ -237,33 +246,35 @@ def main(input_args: Optional[List[str]] = None):
         llm_wrapper = LLWrapper(llm=llm, rag=rag)
         serve(llm=llm_wrapper, args=server_args)
     elif args.command == "tools" and args.tool == "count":
+        # auto-coder.rag tools count --tokenizer_path /Users/allwefantasy/Downloads/tokenizer.json --file /Users/allwefantasy/data/yum/schema/schema.xlsx
         count_tokens(args.tokenizer_path, args.file)
+
 
 def count_tokens(tokenizer_path: str, file_path: str):
     token_counter = TokenCounter(tokenizer_path)
     source_codes = process_file3(file_path)
-    
+
     console = Console()
     table = Table(title="Token Count Results")
     table.add_column("File", style="cyan")
     table.add_column("Characters", justify="right", style="magenta")
     table.add_column("Tokens", justify="right", style="green")
-    
+
     total_chars = 0
     total_tokens = 0
-    
+
     for source_code in source_codes:
         content = source_code.source_code
         chars = len(content)
         tokens = token_counter.count_tokens(content)
-        
+
         total_chars += chars
         total_tokens += tokens
-        
+
         table.add_row(source_code.module_name, str(chars), str(tokens))
-    
+
     table.add_row("Total", str(total_chars), str(total_tokens), style="bold")
-    
+
     console.print(table)
 
 
