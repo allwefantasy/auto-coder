@@ -280,13 +280,14 @@ def initialize_system():
     else:
         print_status(get_message("deploying_model").format("Deepseek官方"), "")
         deploy_cmd = [
-            "easy-byzerllm",
-            "deploy",
-            "deepseek-chat",
-            "--token",
-            api_key,
-            "--alias",
-            "deepseek_chat",
+            "byzerllm", "deploy",
+            "--pretrained_model_type", "saas/openai",
+            "--cpus_per_worker", "0.001",
+            "--gpus_per_worker", "0",
+            "--worker_concurrency", "1000",
+            "--num_workers", "1",
+            "--infer_params", f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
+            "--model", "deepseek_chat"
         ]
 
     try:
