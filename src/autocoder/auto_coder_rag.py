@@ -90,7 +90,7 @@ def initialize_system():
 
     if choice == "1":
         print_status(get_message("deploying_model").format("Deepseek官方"), "")
-        #MARK
+        
         deploy_cmd = [
             "byzerllm", "deploy",
             "--pretrained_model_type", "saas/openai",
