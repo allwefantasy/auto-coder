@@ -138,6 +138,7 @@ def main(input_args: Optional[List[str]] = None):
 
     # Serve command
     serve_parser = subparsers.add_parser("serve", help="Start the RAG server")
+    serve_parser.add_argument("--quick", action="store_true", help="Skip system initialization")
     serve_parser.add_argument("--file", default="", help=desc["file"])
     serve_parser.add_argument("--model", default="deepseek_chat", help=desc["model"])
     serve_parser.add_argument("--index_model", default="", help=desc["index_model"])
@@ -213,7 +214,8 @@ def main(input_args: Optional[List[str]] = None):
     args = parser.parse_args(input_args)
 
     if args.command == "serve":
-        initialize_system()
+        if not args.quick:
+            initialize_system()
         server_args = ServerArgs(
             **{
                 arg: getattr(args, arg)
