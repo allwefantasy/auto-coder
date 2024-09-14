@@ -696,7 +696,7 @@ class CommandCompleter(Completer):
                             yield Completion(
                                 relative_path,
                                 start_position=-len(name),
-                                display=f"{display_name} (in active files)",
+                                display=f"{display_name}",
                             )
 
                     for file_name in self.all_files:
@@ -711,7 +711,7 @@ class CommandCompleter(Completer):
                             yield Completion(
                                 relative_path,
                                 start_position=-len(name),
-                                display=f"{display_name} (in active files)",
+                                display=f"{display_name}",
                             )
 
                 if current_word.startswith("@@"):
