@@ -186,6 +186,14 @@ class CodeAutoGenerateEditBlock:
 
         每次生成一个文件的*SEARCH/REPLACE* blocks，然后询问我是否继续，当我回复继续，继续生成下一个文件的*SEARCH/REPLACE* blocks。当没有后续任务时，请回复 "__完成__" 或者 "__EOF__"。
         """
+
+        if not self.args.include_project_structure:
+            return {
+                "structure": "",
+                "fence_0": self.fence_0,
+                "fence_1": self.fence_1,
+            }
+
         return {
             "structure": (
                 self.action.pp.get_tree_like_directory_structure()
@@ -338,6 +346,13 @@ class CodeAutoGenerateEditBlock:
         {{ instruction }}
 
         """
+        if not self.args.include_project_structure:
+            return {
+                "structure": "",
+                "fence_0": self.fence_0,
+                "fence_1": self.fence_1,
+            }
+        
         return {
             "structure": (
                 self.action.pp.get_tree_like_directory_structure()

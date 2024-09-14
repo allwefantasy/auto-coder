@@ -74,6 +74,12 @@ class CodeAutoGenerate:
         每次生成一个文件的代码，然后询问我是否继续，当我回复继续，继续生成下一个文件的代码。当没有后续任务时，请回复 "__完成__" 或者 "__EOF__"。
         请确保每份代码的完整性，而不要只生成修改部分。
         """
+        
+        if not self.args.include_project_structure:
+            return {
+                "structure": "",                
+            }
+
         return {
             "structure": (
                 self.action.pp.get_tree_like_directory_structure()
@@ -121,6 +127,12 @@ class CodeAutoGenerate:
 
         请确保每份代码的完整性，而不要只生成修改部分。
         """
+        
+        if not self.args.include_project_structure:
+            return {
+                "structure": "",                
+            }
+        
         return {
             "structure": (
                 self.action.pp.get_tree_like_directory_structure()
