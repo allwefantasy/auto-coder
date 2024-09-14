@@ -294,6 +294,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     base_dir: Optional[str] = None
     context: Optional[str] = None
     editblock_similarity: Optional[float] = 0.9
+    include_project_structure: Optional[bool] = False
     new_session: Optional[bool] = False    
 
     tokenizer_path: Optional[str] = None

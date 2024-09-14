@@ -153,6 +153,11 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         default=0.9,
         help=desc["editblock_similarity"],
     )
+    parser.add_argument(
+        "--include_project_structure",
+        action="store_true",
+        help=desc["include_project_structure"],
+    )
 
     parser.add_argument("--image_file", default="", help=desc["image_file"])
     parser.add_argument("--image_mode", default="direct", help=desc["image_mode"])

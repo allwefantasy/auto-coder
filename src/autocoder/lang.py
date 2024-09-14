@@ -67,7 +67,8 @@ lang_desc = {
         "next_from_yaml": "The YAML file to copy content from when creating a new action file. It supports prefix matching, e.g., specifying '001' will match '001_abc.yml'.",
         "next_desc": "create a new action file based one the last action file",
         "base_dir": "Alternative path for /~/.auto-coder to store or retrieve text embeddings. Using /~/.auto-coder/ if not specified",
-        "editblock_similarity": "The similarity threshold of TextSimilarity when merging edit blocks. Default is 0.9"
+        "editblock_similarity": "The similarity threshold of TextSimilarity when merging edit blocks. Default is 0.9",
+        "include_project_structure": "Whether to include the project directory structure in the code generation prompt. Default is False"
     },
     "zh": {
         "request_id": "Request ID",
@@ -137,6 +138,7 @@ lang_desc = {
         "query_suffix": "查询后缀",
         "next_from_yaml": "创建新的action文件时要从中复制内容的YAML文件。支持前缀匹配，例如，指定'001'将匹配'001_abc.yml'。",
         "base_dir": "用于替代byzerllm中/~/.auto-coder的路径存放或读取向量化后的文本。不指定则使用默认路径",
-        "editblock_similarity": "合并编辑块时TextSimilarity的相似度阈值。默认为0.9"
+        "editblock_similarity": "合并编辑块时TextSimilarity的相似度阈值。默认为0.9",
+        "include_project_structure": "在生成代码的提示中是否包含项目目录结构。默认为False"
     }
 }
