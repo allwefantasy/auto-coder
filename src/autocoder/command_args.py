@@ -546,6 +546,16 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     )
     auto_tool_parser.add_argument("--target_file", default="./output.txt", help="")
 
+    designer_parser = agent_subparsers.add_parser(
+        "designer", help="Run the designer agent"
+    )
+    designer_parser.add_argument("--request_id", default="", help=desc["request_id"])
+    designer_parser.add_argument("--source_dir", default=".", help="Source directory")
+    designer_parser.add_argument("--query", help="Query for the designer")
+    designer_parser.add_argument("--model", default="", help=desc["model"])
+    designer_parser.add_argument("--file", default="", help=desc["file"])
+    designer_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
+
     planner_parser = agent_subparsers.add_parser(
         "planner", help="Run the planner agent"
     )
