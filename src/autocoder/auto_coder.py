@@ -637,6 +637,21 @@ def main(input_args: Optional[List[str]] = None):
                     )
                 )
             return
+        
+        elif raw_args.agent_command == "designer":
+            from autocoder.agent.designer import SVGDesigner
+
+            designer = SVGDesigner(args, llm)
+            designer.run(args.query)            
+            print("Successfully generated SVG image in output.png")
+            if args.request_id:
+                request_queue.add_request(
+                    args.request_id,
+                    RequestValue(
+                        value=DefaultValue(value=response), status=RequestOption.COMPLETED
+                    ),
+                )
+            return
 
         elif raw_args.agent_command == "chat":
             from autocoder.rag.rag_entry import RAGFactory
@@ -796,21 +811,7 @@ def main(input_args: Optional[List[str]] = None):
             rag = RAGFactory.get_rag(llm=llm, args=args, path="")
             rag.stream_chat_repl(args.query)
             return
-
-        elif raw_args.agent_command == "designer":
-            from autocoder.agent.designer import SVGDesigner
-
-            designer = SVGDesigner(args, llm)
-            response = designer.run(args.query)
-            print(response)
-            if args.request_id:
-                request_queue.add_request(
-                    args.request_id,
-                    RequestValue(
-                        value=DefaultValue(value=response), status=RequestOption.COMPLETED
-                    ),
-                )
-            return
+        
 
         elif raw_args.doc_command == "serve":
 

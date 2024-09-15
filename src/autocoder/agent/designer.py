@@ -1,14 +1,7 @@
 import byzerllm
 from autocoder.common import AutoCoderArgs
 from pydantic import BaseModel
-
-
-class SVGCode(BaseModel):
-    code: str
-
-
-class LispCode(BaseModel):
-    code: str
+from byzerllm.utils.client import code_utils
 
 
 class SVGDesigner:
@@ -16,12 +9,25 @@ class SVGDesigner:
         self.llm = llm
         self.args = args
 
-    def to_png(self, svg_code: SVGCode):
+    def run(self, query: str):
+        lisp_code = (
+            self._design2lisp.with_llm(self.llm)
+            .with_extractor(lambda x: code_utils.extract_code(x)[0][1])
+            .run(query)
+        )
+        svg_code = (
+            self._lisp2svg.with_llm(self.llm)
+            .with_extractor(lambda x: code_utils.extract_code(x)[0][1])
+            .run(lisp_code)
+        )
+        self._to_png(svg_code)
+
+    def _to_png(self, svg_code: str):
         import cairosvg
-        cairosvg.svg2png(bytestring=svg_code.code, write_to="output.png")
+        cairosvg.svg2png(bytestring=svg_code, write_to="output.png")
 
     @byzerllm.prompt()
-    def _lisp2svg(self, lisp_code: str):
+    def _lisp2svg(self, lisp_code: str) -> str:
         """
         {{ lisp_code }}
 
@@ -29,7 +35,7 @@ class SVGDesigner:
         """
 
     @byzerllm.prompt()
-    def _design2lisp(self, query: str):
+    def _design2lisp(self, query: str) -> str:
         """
         你是一个优秀的设计师，你非常擅长把一个想法用程序的表达方式来进行表达。
         充分理解用户的需求，然后得到出符合主流思维的设计的程序表达。
