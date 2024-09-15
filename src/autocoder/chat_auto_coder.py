@@ -1587,16 +1587,7 @@ def design(query: str):
         auto_coder_main(["agent", "designer", "--file", execute_file])
 
     try:
-        execute_design()
-        print("Successfully generated SVG image in output.png")
-        if args.request_id:
-            request_queue.add_request(
-                args.request_id,
-                RequestValue(
-                    value=DefaultValue(value="Successfully generated SVG image in output.png"),
-                    status=RequestOption.COMPLETED
-                ),
-            )
+        execute_design()        
     finally:
         os.remove(execute_file)
 
