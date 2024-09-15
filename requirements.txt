@@ -70,3 +70,4 @@ pathspec
 openpyxl
 python-pptx
 watchfiles
+cairosvg
