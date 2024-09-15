@@ -246,6 +246,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     index_build_workers: Optional[int] = 1
     
     planner_model: Optional[str] = ""
+    designer_model: Optional[str] = ""
     file: Optional[str] = ""
     ray_address: Optional[str] = ""
     anti_quota_limit: Optional[int] = 1    

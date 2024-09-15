@@ -104,7 +104,8 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     parser.add_argument(
         "--urls_use_model", action="store_true", help=desc["urls_use_model"]
     )
-    parser.add_argument("--exclude_files", default="", help="")
+    parser.add_argument("--planner_model", default="", help=desc["planner_model"])
+    parser.add_argument("--designer_model", default="", help=desc["designer_model"])
     parser.add_argument("--query_prefix", default=None, help=desc["query_prefix"])
     parser.add_argument("--query_suffix", default=None, help=desc["query_suffix"])
 

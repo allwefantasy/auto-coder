@@ -453,6 +453,11 @@ def main(input_args: Optional[List[str]] = None):
             planner_model.setup_default_model_name(args.planner_model)
             llm.setup_sub_client("planner_model", planner_model)
 
+        if args.designer_model:
+            designer_model = byzerllm.ByzerLLM()
+            designer_model.setup_default_model_name(args.designer_model)
+            llm.setup_sub_client("designer_model", designer_model)
+
     else:
         llm = None
 
