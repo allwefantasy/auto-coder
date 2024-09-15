@@ -7,32 +7,26 @@ from byzerllm.utils.client import code_utils
 class SVGDesigner:
     def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         self.llm = llm
+        if args.designer_model:
+            self.llm = self.llm.get_sub_client("designer_model")
         self.args = args
 
     def run(self, query: str):
-        print("开始设计过程...")
         
-        print("步骤1: 将查询转换为Lisp代码")
         lisp_code = (
             self._design2lisp.with_llm(self.llm)
             .with_extractor(lambda x: code_utils.extract_code(x)[0][1])
             .run(query)
         )
-        print("Lisp代码生成完成")
         
-        print("步骤2: 将Lisp代码转换为SVG代码")
+        # print(lisp_code)
         svg_code = (
             self._lisp2svg.with_llm(self.llm)
             .with_extractor(lambda x: code_utils.extract_code(x)[0][1])
             .run(lisp_code)
         )
-        print("SVG代码生成完成")
-        
-        print("步骤3: 将SVG转换为PNG图片")
-        self._to_png(svg_code)
-        print("PNG图片生成完成")
-        
-        print("设计过程结束")
+        # print(svg_code)        
+        self._to_png(svg_code)                    
 
     def _to_png(self, svg_code: str):
         import cairosvg
