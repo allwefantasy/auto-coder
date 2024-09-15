@@ -16,6 +16,7 @@ MESSAGES = {
             "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
             "Use '/break' to exit this mode. If you have issues with copy-paste, use '/clear' to clean and paste again."
         ),
+        "design_desc": "Generate SVG image based on the provided description",
     },
     "zh": {
         "human_as_model_instructions": (
@@ -32,6 +33,7 @@ MESSAGES = {
             "系统正在等待您的输入。完成后，在新行输入'EOF'提交。\n"
             "使用'/break'退出此模式。如果复制粘贴有问题，使用'/clear'清理并重新粘贴。"
         ),
+        "design_desc": "根据提供的描述生成SVG图像",
     }
 }
 

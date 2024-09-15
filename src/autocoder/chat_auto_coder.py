@@ -121,6 +121,59 @@ commands = [
     "/design",
 ]
 
+def show_help():
+    print(f"\033[1m{get_message('supported_commands')}\033[0m")
+    print()
+    print(
+        f"  \033[94m{get_message('commands')}\033[0m - \033[93m{get_message('description')}\033[0m"
+    )
+    print(
+        f"  \033[94m/add_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92m{get_message('add_files_desc')}\033[0m"
+    )
+    print(
+        f"  \033[94m/remove_files\033[0m \033[93m<file1>,<file2> ...\033[0m - \033[92m{get_message('remove_files_desc')}\033[0m"
+    )
+    print(
+        f"  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92m{get_message('chat_desc')}\033[0m"
+    )
+    print(
+        f"  \033[94m/coding\033[0m \033[93m<query>\033[0m - \033[92m{get_message('coding_desc')}\033[0m"
+    )
+    print(
+        f"  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92m{get_message('ask_desc')}\033[0m"
+    )
+    print(
+        f"  \033[94m/summon\033[0m \033[93m<query>\033[0m - \033[92m{get_message('summon_desc')}\033[0m"
+    )
+    print(f"  \033[94m/revert\033[0m - \033[92m{get_message('revert_desc')}\033[0m")
+    print(
+        f"  \033[94m/conf\033[0m \033[93m<key>:<value>\033[0m  - \033[92m{get_message('conf_desc')}\033[0m"
+    )
+    print(
+        f"  \033[94m/index/query\033[0m \033[93m<args>\033[0m - \033[92m{get_message('index_query_desc')}\033[0m"
+    )
+    print(
+        f"  \033[94m/index/build\033[0m - \033[92m{get_message('index_build_desc')}\033[0m"
+    )
+    print(
+        f"  \033[94m/list_files\033[0m - \033[92m{get_message('list_files_desc')}\033[0m"
+    )
+    print(f"  \033[94m/help\033[0m - \033[92m{get_message('help_desc')}\033[0m")
+    print(
+        f"  \033[94m/exclude_dirs\033[0m \033[93m<dir1>,<dir2> ...\033[0m - \033[92m{get_message('exclude_dirs_desc')}\033[0m"
+    )
+    print(
+        f"  \033[94m/shell\033[0m \033[93m<command>\033[0m - \033[92m{get_message('shell_desc')}\033[0m"
+    )
+    print(
+        f"  \033[94m/voice_input\033[0m - \033[92m{get_message('voice_input_desc')}\033[0m"
+    )
+    print(f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
+    print(f"  \033[94m/lib\033[0m - \033[92m{get_message('lib_desc')}\033[0m")
+    print(f"  \033[94m/design\033[0m \033[93m<query>\033[0m - \033[92m{get_message('design_desc')}\033[0m")
+    print(f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
+    print()
+
 
 def configure_project_type():
     from prompt_toolkit.lexers import PygmentsLexer
