@@ -47,6 +47,7 @@ Requires-Dist: pathspec
 Requires-Dist: openpyxl
 Requires-Dist: python-pptx
 Requires-Dist: watchfiles
+Requires-Dist: cairosvg
 
 <p align="center">
   <picture>    

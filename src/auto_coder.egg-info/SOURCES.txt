@@ -20,6 +20,7 @@ src/autocoder/version.py
 src/autocoder/agent/__init__.py
 src/autocoder/agent/auto_tool.py
 src/autocoder/agent/coder.py
+src/autocoder/agent/designer.py
 src/autocoder/agent/planner.py
 src/autocoder/agent/project_reader.py
 src/autocoder/chat/__init__.py

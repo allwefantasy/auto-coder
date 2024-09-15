@@ -121,6 +121,7 @@ commands = [
     "/design",
 ]
 
+
 def show_help():
     print(f"\033[1m{get_message('supported_commands')}\033[0m")
     print()
@@ -138,6 +139,9 @@ def show_help():
     )
     print(
         f"  \033[94m/coding\033[0m \033[93m<query>\033[0m - \033[92m{get_message('coding_desc')}\033[0m"
+    )
+    print(
+        f"  \033[94m/design\033[0m \033[93m<query>\033[0m - \033[92m{get_message('design_desc')}\033[0m"
     )
     print(
         f"  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92m{get_message('ask_desc')}\033[0m"
@@ -170,7 +174,6 @@ def show_help():
     )
     print(f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
     print(f"  \033[94m/lib\033[0m - \033[92m{get_message('lib_desc')}\033[0m")
-    print(f"  \033[94m/design\033[0m \033[93m<query>\033[0m - \033[92m{get_message('design_desc')}\033[0m")
     print(f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
     print()
 
@@ -334,14 +337,22 @@ def initialize_system():
     else:
         print_status(get_message("deploying_model").format("Deepseek官方"), "")
         deploy_cmd = [
-            "byzerllm", "deploy",
-            "--pretrained_model_type", "saas/openai",
-            "--cpus_per_worker", "0.001",
-            "--gpus_per_worker", "0",
-            "--worker_concurrency", "1000",
-            "--num_workers", "1",
-            "--infer_params", f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
-            "--model", "deepseek_chat"
+            "byzerllm",
+            "deploy",
+            "--pretrained_model_type",
+            "saas/openai",
+            "--cpus_per_worker",
+            "0.001",
+            "--gpus_per_worker",
+            "0",
+            "--worker_concurrency",
+            "1000",
+            "--num_workers",
+            "1",
+            "--infer_params",
+            f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
+            "--model",
+            "deepseek_chat",
         ]
 
     try:
@@ -770,7 +781,7 @@ class CommandCompleter(Completer):
 
                 if current_word.startswith("@@"):
                     name = current_word[2:]
-                    for symbol in self.symbol_list:                        
+                    for symbol in self.symbol_list:
                         if name in symbol.symbol_name:
                             file_name = symbol.file_name
                             path_parts = file_name.split(os.sep)
@@ -1394,7 +1405,8 @@ def coding(query: str):
             "skip_build_index": conf.get("skip_build_index", "true") == "true",
             "skip_confirm": conf.get("skip_confirm", "true") == "true",
             "silence": conf.get("silence", "true") == "true",
-            "include_project_structure": conf.get("include_project_structure", "true") == "true",
+            "include_project_structure": conf.get("include_project_structure", "true")
+            == "true",
         }
 
         for key, value in conf.items():
@@ -1510,9 +1522,10 @@ def chat(query: str):
 
     yaml_config = {
         "include_file": ["./base/base.yml"],
-        "include_project_structure": conf.get("include_project_structure", "true") == "true",
+        "include_project_structure": conf.get("include_project_structure", "true")
+        == "true",
     }
-    
+
     yaml_config["context"] = json.dumps(
         {"file_content": all_file_content}, ensure_ascii=False
     )
@@ -1613,6 +1626,7 @@ def summon(query: str):
     finally:
         os.remove(execute_file)
 
+
 def design(query: str):
     conf = memory.get("conf", {})
     yaml_config = {
@@ -1640,7 +1654,7 @@ def design(query: str):
         auto_coder_main(["agent", "designer", "--file", execute_file])
 
     try:
-        execute_design()        
+        execute_design()
     finally:
         os.remove(execute_file)
 

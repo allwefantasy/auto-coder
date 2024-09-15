@@ -64,6 +64,7 @@ MESSAGES = {
         "mode_desc": "Switch input mode",
         "lib_desc": "Manage libraries",
         "exit_desc": "Exit the program",
+        "design_desc": "Generate SVG image based on the provided description",        
     },
     "zh": {
         "initializing": "🚀 正在初始化系统...",
@@ -128,6 +129,8 @@ MESSAGES = {
         "mode_desc": "切换输入模式",
         "lib_desc": "管理库",
         "exit_desc": "退出程序",
+        "design_desc": "根据需求设计SVG图片",
+        
     }
 }
 
