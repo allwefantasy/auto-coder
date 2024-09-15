@@ -118,6 +118,7 @@ commands = [
     "/summon",
     "/mode",
     "/lib",
+    "/design",
 ]
 
 
@@ -1559,6 +1560,46 @@ def summon(query: str):
     finally:
         os.remove(execute_file)
 
+def design(query: str):
+    conf = memory.get("conf", {})
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+    }
+    yaml_config["query"] = query
+
+    if "model" in conf:
+        yaml_config["model"] = conf["model"]
+
+    if "designer_model" in conf:
+        yaml_config["designer_model"] = conf["designer_model"]
+
+    if "sd_model" in conf:
+        yaml_config["sd_model"] = conf["sd_model"]
+
+    yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
+
+    execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
+
+    with open(os.path.join(execute_file), "w") as f:
+        f.write(yaml_content)
+
+    def execute_design():
+        auto_coder_main(["agent", "designer", "--file", execute_file])
+
+    try:
+        execute_design()
+        print("Successfully generated SVG image in output.png")
+        if args.request_id:
+            request_queue.add_request(
+                args.request_id,
+                RequestValue(
+                    value=DefaultValue(value="Successfully generated SVG image in output.png"),
+                    status=RequestOption.COMPLETED
+                ),
+            )
+    finally:
+        os.remove(execute_file)
+
 
 def voice_input():
     conf = memory.get("conf", {})
@@ -2095,6 +2136,13 @@ def main():
                     print("\033[91mPlease enter your request.\033[0m")
                 else:
                     chat(query)
+
+            elif user_input.startswith("/design"):
+                query = user_input[len("/design") :].strip()
+                if not query:
+                    print("\033[91mPlease enter your design request.\033[0m")
+                else:
+                    design(query)
 
             elif user_input.startswith("/summon"):
                 query = user_input[len("/summon") :].strip()
