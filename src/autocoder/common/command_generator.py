@@ -22,16 +22,15 @@ def _generate_shell_script(user_input: str) -> str:
     不支持Bash
     {%- endif %}
 
-    根据用户的输入生成一个 shell 脚本。
+    根据用户的输入以及当前的操作系统生成合适的 shell 脚本。
 
     用户输入: {{ user_input }}
 
-    请生成一个适当的 shell 脚本来执行用户的请求。确保脚本是安全的，并且可以在 bash shell 中运行。
-    脚本应该以 #!/bin/bash 开头，并包含必要的注释来解释每个步骤。
+    请生成一个适当的 shell 脚本来执行用户的请求。确保脚本是安全的，并且可以在操作系统支持的 shell 中运行。
+    脚本应该包含必要的注释来解释每个步骤。
     脚本内容请用如下方式返回：
 
-    ```shell
-    #!/bin/bash
+    ```shell    
     # 你的 shell 脚本内容
     ```
     """
