@@ -8,7 +8,9 @@ import base64
 
 class SDDesigner:
     def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
-        self.llm = llm        
+        self.llm = llm  
+        if not args.sd_model:
+            raise ValueError("sd_model is not set")
         self.sd_model_llm = self.llm.get_sub_client("sd_model")
         self.args = args
 
