@@ -1125,7 +1125,7 @@ def add_files(args: List[str]):
 
                 print_formatted_text(
                     HTML(
-                        "<b>Type Atom Group Desc (Prese [Esc] + [Enter]  to finish.)</b><br>"
+                        "<b>Type Atom Group Desc (Prese [Esc] + [Enter]  to finish.)</b><br/>"
                     )
                 )
                 text = prompt(
@@ -1628,10 +1628,21 @@ def summon(query: str):
 
 
 def design(query: str):
+    
     conf = memory.get("conf", {})
     yaml_config = {
         "include_file": ["./base/base.yml"],
     }
+    
+    if query.strip().startswith("/svg"):
+        query = query.replace("/svg", "", 1).strip()
+        yaml_config["agent_designer_mode"] = "svg"
+    elif query.strip().startswith("/sd"):
+        query = query.replace("/svg", "", 1).strip()
+        yaml_config["agent_designer_mode"] = "sd"
+    else:
+        yaml_config["agent_designer_mode"] = "svg"
+
     yaml_config["query"] = query
 
     if "model" in conf:

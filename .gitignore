@@ -50,3 +50,7 @@ auto_coder_installer/bin
 **/node_modules/
 **/*.vsix
 **/*/.ipynb_checkpoints
+
+output.png
+output.jpg
+notebooks/generated_image.png

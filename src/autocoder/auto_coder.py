@@ -644,11 +644,14 @@ def main(input_args: Optional[List[str]] = None):
             return
         
         elif raw_args.agent_command == "designer":
-            from autocoder.agent.designer import SVGDesigner
-
-            designer = SVGDesigner(args, llm)
-            designer.run(args.query)            
-            print("Successfully generated SVG image in output.png")
+            from autocoder.agent.designer import SVGDesigner, SDDesigner    
+            if args.agent_designer_mode == "svg":
+                designer = SVGDesigner(args, llm)
+                designer.run(args.query)            
+            elif args.agent_designer_mode == "sd":
+                designer = SDDesigner(args, llm)
+                designer.run(args.query)                
+            print("Successfully generated image in output.png")
             if args.request_id:
                 request_queue.add_request(
                     args.request_id,

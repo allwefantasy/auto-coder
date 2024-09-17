@@ -8,6 +8,10 @@ COMMANDS = {
         "/group": {"/add": "", "/drop": "", "/reset": "", "set": ""},
         "/refresh": {},
     },
+    "/designer": {
+        "/svg": {},
+        "/sd": {},
+    },
     "/coding": {},
     "/chat": {"/new": {}, "/review": {}, "/no_context": {}},
     "/lib": {

@@ -302,5 +302,7 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     prompt_review: Optional[str] = None
 
+    agent_designer_mode: Optional[str] = "svg"
+
     class Config:
         protected_namespaces = ()

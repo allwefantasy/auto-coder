@@ -2,6 +2,112 @@ import byzerllm
 from autocoder.common import AutoCoderArgs
 from pydantic import BaseModel
 from byzerllm.utils.client import code_utils
+import json
+import base64
+
+
+class SDDesigner:
+    def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
+        self.llm = llm        
+        self.sd_model_llm = self.llm.get_sub_client("sd_model")
+        self.args = args
+
+    @byzerllm.prompt()
+    def enhance_query(self,query:str) -> str:
+        '''
+        你非常擅长使用文生图模型，特别能把用户简单的需求具象化。你的目标是转化用户的需求，使得转化后的
+        文本更加适合问生图模型生成符合用户需求的图片。
+
+        特别注意：
+        1. 无论用户使用的是什么语言，你的改进后的表达都需要是英文。
+        
+        用户需求：
+        我想设计一个偏卡通类的游戏，AGI PoLang 的游戏应用界面。
+        
+        改进后的表达：
+
+        ```text
+        Design a vibrant game app interface titled 'AGI PoLang' with a soothing blue background featuring a lush landscape of towering trees and dense bushes framing the sides. 
+        At the heart of the screen, elegantly display the game's name in a golden, 
+        playful font that captivates attention. 
+        Beneath this, strategically place two interactive buttons labeled 'Play Game' and 'Quit Game', 
+        ensuring they are both visually appealing and user-friendly. 
+        Center stage, introduce an engaging scene where an orange wolf stands majestically on a verdant field, 
+        set against a serene blue sky dotted with fluffy white clouds. 
+        The entire design should radiate a fun and playful atmosphere, 
+        encapsulating the spirit of adventure and joy that 'AGI PoLang' promises to deliver.
+        ```
+
+        用户需求：
+        帮我设计一个财务报告网页页面，要时尚美观。
+
+        改进后的表达：
+        ```text
+        Create a web UI page. Design a sleek and intuitive financial reports web page, 
+        featuring a clean menu layout, seamless navigation, 
+        and a comprehensive display of reports. 
+        The website should embody a clear and organized typography, enhancing readability and user experience. 
+        Incorporate dynamic lighting effects to highlight key financial data, simulating the precision and clarity of a well-managed budget. 
+        The overall design should reflect the stability and growth of financial health, 
+        serving as a visual metaphor for the solid foundation and strategic planning required in personal and corporate finance.
+        ```
+
+        用户需求：
+
+        生成一个在自然环境中展示的防晒产品的逼真模型。产品应置于画面中心，标签清晰可见。
+        将产品置于一种原始风景的背景之前，该风景包括山脉、湖泊和生动的绿色植被。
+        包括花朵、石头，可能还有一两只鹿在背景中，以增强户外、新鲜的感觉。
+        使用明亮的自然光照强调产品，并确保构图平衡，色彩搭配和谐，与品牌设计相得益彰。
+        
+        改进后的表达：
+        ```text
+        Generate a photorealistic mockup of a sunscreen product displayed in a serene natural setting. 
+        The product should be centered in the frame, with its label clearly visible. 
+        Position the product against a backdrop of a pristine landscape featuring a mountain, a lake, and vibrant greenery. 
+        Include natural elements like flowers, rocks, and possibly a deer or two in the background to enhance the outdoor, fresh feel. 
+        Use bright, natural lighting to highlight the product, and ensure the composition is balanced with a harmonious color palette 
+        that complements the brand's design.
+        ```
+
+        用户需求:
+        一个扎着双马尾、手持棒球棒的女人，走在走廊上。灯光转变为危险的红色，营造出紧张的黑色电影风格氛围。        
+
+        改进后的表达：
+        ```text
+        A slow dolly-in camera follows a woman with pigtails holding a baseball bat as she walks down a dimly lit hallway. 
+        The lighting shifts to a menacing red, creating a tense, noir-style atmosphere with echoing footsteps adding suspense.
+        ```
+
+        现在让我们开始一个新的任务。
+        
+        用户需求：
+        {{ query }}
+
+        改进后的表达（改进后的表达请用 ```text ```进行包裹）：
+        '''
+
+    def run(self, query: str):
+        enhanced_query_str = (
+            self.enhance_query.with_llm(self.llm)
+            .with_extractor(lambda x: code_utils.extract_code(x)[0][1])
+            .run(query)
+        )
+        print(enhanced_query_str)
+        response = self.sd_model_llm.chat_oai(
+            conversations=[
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {"input": enhanced_query_str, "size": "1024x1024"},
+                        ensure_ascii=False,
+                    ),
+                }
+            ]
+        )
+    
+        image_data = base64.b64decode(response[0].output)
+        with open("output.jpg", "wb") as f:
+            f.write(image_data)
 
 
 class SVGDesigner:
@@ -12,24 +118,25 @@ class SVGDesigner:
         self.args = args
 
     def run(self, query: str):
-        
+
         lisp_code = (
             self._design2lisp.with_llm(self.llm)
             .with_extractor(lambda x: code_utils.extract_code(x)[0][1])
             .run(query)
         )
-        
+
         # print(lisp_code)
         svg_code = (
             self._lisp2svg.with_llm(self.llm)
             .with_extractor(lambda x: code_utils.extract_code(x)[0][1])
             .run(lisp_code)
         )
-        # print(svg_code)        
-        self._to_png(svg_code)                    
+        # print(svg_code)
+        self._to_png(svg_code)
 
     def _to_png(self, svg_code: str):
         import cairosvg
+
         cairosvg.svg2png(bytestring=svg_code, write_to="output.png")
 
     @byzerllm.prompt()
@@ -43,7 +150,7 @@ class SVGDesigner:
     @byzerllm.prompt()
     def _design2lisp(self, query: str) -> str:
         """
-        你是一个优秀的设计师，你非常擅长把一个想法用程序的表达方式来进行表达。
+        你是一个优秀的设计师，你非常擅长把一个简单的想法用程序的表达方式来进行具象化表达，尽量丰富细节。
         充分理解用户的需求，然后得到出符合主流思维的设计的程序表达。
 
         用户需求：
