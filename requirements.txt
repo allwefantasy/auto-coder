@@ -71,3 +71,4 @@ openpyxl
 python-pptx
 watchfiles
 cairosvg
+matplotlib

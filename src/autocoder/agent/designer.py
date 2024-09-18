@@ -1,9 +1,11 @@
 import byzerllm
 from autocoder.common import AutoCoderArgs
-from pydantic import BaseModel
+from typing import Dict
 from byzerllm.utils.client import code_utils
 import json
 import base64
+import platform
+import matplotlib.font_manager as fm
 
 
 class SDDesigner:
@@ -111,10 +113,6 @@ class SDDesigner:
         with open("output.jpg", "wb") as f:
             f.write(image_data)
 
-
-import platform
-import matplotlib.font_manager as fm
-
 class SVGDesigner:
     def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         self.llm = llm
@@ -128,7 +126,7 @@ class SVGDesigner:
         fonts = [f.name for f in fm.fontManager.ttflist]
         return {
             "os": os_name,
-            "fonts": fonts[:10]  # 限制为前10个字体,以避免列表过长
+            "fonts": ",".join(fonts),
         }
 
     def run(self, query: str):
@@ -139,13 +137,14 @@ class SVGDesigner:
             .run(query)
         )
 
-        # print(lisp_code)
+        print(lisp_code)
         svg_code = (
             self._lisp2svg.with_llm(self.llm)
             .with_extractor(lambda x: code_utils.extract_code(x)[0][1])
             .run(lisp_code)
         )
-        # print(svg_code)
+        print(self._lisp2svg.prompt(lisp_code))
+        print(svg_code)
         self._to_png(svg_code)
 
     def _to_png(self, svg_code: str):
@@ -157,19 +156,20 @@ class SVGDesigner:
     def _lisp2svg(self, lisp_code: str) -> str:
         """
         系统信息:
-        操作系统: {{ self.system_info['os'] }}
-        可用字体: {{ ', '.join(self.system_info['fonts']) }}
+        操作系统: {{ system_info['os'] }}
+        可用字体: {{ system_info['fonts'] }}
 
         {{ lisp_code }}
 
         将上面的 lisp 代码转换为 svg 代码。使用 ```svg ```包裹输出。
         注意:
-        1. 根据操作系统选择合适的字体,优先使用系统中可用的字体。
-        2. 如果是 Windows 系统,优先考虑使用 Arial 或 Segoe UI 字体。
-        3. 如果是 macOS 系统,优先考虑使用 Helvetica 或 San Francisco 字体。
-        4. 如果是 Linux 系统,优先考虑使用 DejaVu Sans 或 Liberation Sans 字体。
-        5. 如果指定的字体不可用,请使用系统默认的无衬线字体。
+        1. 根据操作系统选择合适的可用字体,优先使用系统中可用的字体。        
+        2. 如果指定的字体不可用,请使用系统默认的字体。
+        3. 对于中英文混合的文本，请使用不同的字体。
         """
+        return {
+            "system_info":self.system_info,
+        }
 
     @byzerllm.prompt()
     def _design2lisp(self, query: str) -> str:
