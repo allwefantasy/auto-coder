@@ -112,12 +112,24 @@ class SDDesigner:
             f.write(image_data)
 
 
+import platform
+import matplotlib.font_manager as fm
+
 class SVGDesigner:
     def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         self.llm = llm
         if args.designer_model:
             self.llm = self.llm.get_sub_client("designer_model")
         self.args = args
+        self.system_info = self.get_system_info()
+
+    def get_system_info(self):
+        os_name = platform.system()
+        fonts = [f.name for f in fm.fontManager.ttflist]
+        return {
+            "os": os_name,
+            "fonts": fonts[:10]  # 限制为前10个字体,以避免列表过长
+        }
 
     def run(self, query: str):
 
@@ -144,9 +156,19 @@ class SVGDesigner:
     @byzerllm.prompt()
     def _lisp2svg(self, lisp_code: str) -> str:
         """
+        系统信息:
+        操作系统: {{ self.system_info['os'] }}
+        可用字体: {{ ', '.join(self.system_info['fonts']) }}
+
         {{ lisp_code }}
 
         将上面的 lisp 代码转换为 svg 代码。使用 ```svg ```包裹输出。
+        注意:
+        1. 根据操作系统选择合适的字体,优先使用系统中可用的字体。
+        2. 如果是 Windows 系统,优先考虑使用 Arial 或 Segoe UI 字体。
+        3. 如果是 macOS 系统,优先考虑使用 Helvetica 或 San Francisco 字体。
+        4. 如果是 Linux 系统,优先考虑使用 DejaVu Sans 或 Liberation Sans 字体。
+        5. 如果指定的字体不可用,请使用系统默认的无衬线字体。
         """
 
     @byzerllm.prompt()
