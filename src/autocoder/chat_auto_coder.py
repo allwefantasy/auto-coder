@@ -1513,10 +1513,13 @@ def chat(query: str):
     file_contents = []
     for file in current_files:
         if os.path.exists(file):
-            with open(file, "r") as f:
-                content = f.read()
-                s = f"##File: {file}\n{content}\n\n"
-                file_contents.append(s)
+            try:
+                with open(file, "r") as f:
+                    content = f.read()
+                    s = f"##File: {file}\n{content}\n\n"
+                    file_contents.append(s)
+            except Exception as e:
+                print(f"Failed to read file: {file}. Error: {str(e)}")
 
     all_file_content = "".join(file_contents)
 
@@ -1584,10 +1587,13 @@ def summon(query: str):
     file_contents = []
     for file in current_files:
         if os.path.exists(file):
-            with open(file, "r") as f:
-                content = f.read()
-                s = f"##File: {file}\n{content}\n\n"
-                file_contents.append(s)
+            try:
+                with open(file, "r") as f:
+                    content = f.read()
+                    s = f"##File: {file}\n{content}\n\n"
+                    file_contents.append(s)
+            except Exception as e:
+                print(f"Failed to read file: {file}. Error: {str(e)}")
 
     all_file_content = "".join(file_contents)
 
@@ -1628,12 +1634,12 @@ def summon(query: str):
 
 
 def design(query: str):
-    
+
     conf = memory.get("conf", {})
     yaml_config = {
         "include_file": ["./base/base.yml"],
     }
-    
+
     if query.strip().startswith("/svg"):
         query = query.replace("/svg", "", 1).strip()
         yaml_config["agent_designer_mode"] = "svg"
