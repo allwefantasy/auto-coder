@@ -259,18 +259,15 @@ async def chat(request: QueryRequest, background_tasks: BackgroundTasks):
     def process_chat():
         execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
         try:
-    file_contents = []
-    for file in current_files:
-        if os.path.exists(file):
-            try:
-                with open(file, "r") as f:
-                    content = f.read()
-                    s = f"##File: {file}\n{content}\n\n"
-                    file_contents.append(s)
-            except Exception as e:
-                print(f"Failed to read file: {file}. Error: {str(e)}")
+            file_contents = []
+            for file in current_files:
+                if os.path.exists(file):
+                    with open(file, "r") as f:
+                        content = f.read()
+                        s = f"##File: {file}\n{content}\n\n"
+                        file_contents.append(s)
 
-    all_file_content = "".join(file_contents)
+            all_file_content = "".join(file_contents)
 
             yaml_config = {
                 "include_file": ["./base/base.yml"],
