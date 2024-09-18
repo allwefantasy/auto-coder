@@ -648,10 +648,11 @@ def main(input_args: Optional[List[str]] = None):
             if args.agent_designer_mode == "svg":
                 designer = SVGDesigner(args, llm)
                 designer.run(args.query)            
+                print("Successfully generated image in output.png")
             elif args.agent_designer_mode == "sd":
                 designer = SDDesigner(args, llm)
                 designer.run(args.query)                
-            print("Successfully generated image in output.png")
+                print("Successfully generated image in output.jpg")
             if args.request_id:
                 request_queue.add_request(
                     args.request_id,

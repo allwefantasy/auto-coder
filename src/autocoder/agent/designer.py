@@ -138,7 +138,7 @@ class SVGDesigner:
 
     def _to_png(self, svg_code: str):
         import cairosvg
-
+        cairosvg.svg2svg(bytestring=svg_code, write_to="output.svg")
         cairosvg.svg2png(bytestring=svg_code, write_to="output.png")
 
     @byzerllm.prompt()
