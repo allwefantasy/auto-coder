@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.172
+Version: 0.1.173
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -48,6 +48,7 @@ Requires-Dist: openpyxl
 Requires-Dist: python-pptx
 Requires-Dist: watchfiles
 Requires-Dist: cairosvg
+Requires-Dist: matplotlib
 
 <p align="center">
   <picture>    
