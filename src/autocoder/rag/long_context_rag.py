@@ -18,8 +18,12 @@ from rich.text import Text
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.rag.doc_filter import DocFilter
 from autocoder.rag.document_retriever import DocumentRetriever
-from autocoder.rag.relevant_utils import (DocRelevance, FilterDoc, TaskTiming,
-                                          parse_relevance)
+from autocoder.rag.relevant_utils import (
+    DocRelevance,
+    FilterDoc,
+    TaskTiming,
+    parse_relevance,
+)
 from autocoder.rag.token_checker import check_token_limit
 from autocoder.rag.token_counter import RemoteTokenCounter, TokenCounter
 from autocoder.rag.token_limiter import TokenLimiter
@@ -161,16 +165,32 @@ class LongContextRAG:
         """
 
     def _load_ignore_file(self):
+        ignore_dirs = [
+            ".DS_Store",
+            "__pycache__",
+            ".git",
+            ".hg",
+            ".svn",
+            ".tox",
+            ".venv",
+            ".idea",
+            "node_modules",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".hypothesis",
+        ]
         serveignore_path = os.path.join(self.path, ".serveignore")
         gitignore_path = os.path.join(self.path, ".gitignore")
 
         if os.path.exists(serveignore_path):
             with open(serveignore_path, "r") as ignore_file:
-                return pathspec.PathSpec.from_lines("gitwildmatch", ignore_file)
+                ignore_dirs.extend(ignore_file.readlines())
+                return pathspec.PathSpec.from_lines("gitwildmatch", ignore_dirs)
         elif os.path.exists(gitignore_path):
             with open(gitignore_path, "r") as ignore_file:
-                return pathspec.PathSpec.from_lines("gitwildmatch", ignore_file)
-        return None
+                ignore_dirs.extend(ignore_file.readlines())
+                return pathspec.PathSpec.from_lines("gitwildmatch", ignore_dirs)
+        return pathspec.PathSpec.from_lines("gitwildmatch", ignore_dirs)
 
     def _retrieve_documents(self) -> Generator[SourceCode, None, None]:
         return self.document_retriever.retrieve_documents()
