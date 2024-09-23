@@ -187,7 +187,11 @@ class PyProject:
 
     def convert_to_source_code(self, file_path):
         module_name = file_path
-        source_code = self.read_file_content(file_path)
+        try:
+            source_code = self.read_file_content(file_path)
+        except Exception as e:
+            logger.warning(f"Failed to read file: {file_path}. Error: {str(e)}")
+            return None
         return SourceCode(module_name=module_name, source_code=source_code)
 
     def get_package_source_codes(

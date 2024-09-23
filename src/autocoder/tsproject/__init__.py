@@ -152,7 +152,11 @@ class TSProject:
             return None
 
         module_name = file_path
-        source_code = self.read_file_content(file_path)
+        try:
+            source_code = self.read_file_content(file_path)
+        except Exception as e:
+            logger.warning(f"Failed to read file: {file_path}. Error: {str(e)}")
+            return None
 
         if not FileUtils.has_sufficient_content(source_code, min_line_count=1):
             return None
