@@ -543,29 +543,38 @@ class DocumentRetriever:
         for _, data in self.get_cache().items():
             for source_code in data["content"]:
                 doc = SourceCode.model_validate(source_code)
-                if doc.tokens > 0:
-                    if doc.tokens < token_limit / 5:
-                        waiting_list.append(doc)
-                        waiting_tokens += doc.tokens
-                        if waiting_tokens >= token_limit / 2:
-                            yield self._merge_documents(waiting_list)
-                            waiting_list = []
-                            waiting_tokens = 0
-                    else:
-                        if waiting_list:
-                            yield self._merge_documents(waiting_list)
-                            waiting_list = []
-                            waiting_tokens = 0
-                        yield doc
-                else:
-                    if doc.tokens <= token_limit:
-                        yield doc
-                    else:
-                        for chunk in self._split_document(doc, token_limit):
-                            yield chunk
+                yield from self._process_document(doc, token_limit, waiting_list, waiting_tokens)
         
         if waiting_list:
             yield self._merge_documents(waiting_list)
+
+    def _process_document(self, doc: SourceCode, token_limit: int, waiting_list: List[SourceCode], waiting_tokens: int) -> Generator[SourceCode, None, None]:
+        if doc.tokens <= 0:
+            yield from self._handle_zero_or_negative_tokens(doc, token_limit)
+        elif doc.tokens < token_limit / 5:
+            yield from self._handle_small_document(doc, token_limit, waiting_list, waiting_tokens)
+        else:
+            yield from self._handle_large_document(doc, waiting_list)
+
+    def _handle_zero_or_negative_tokens(self, doc: SourceCode, token_limit: int) -> Generator[SourceCode, None, None]:
+        if doc.tokens <= token_limit:
+            yield doc
+        else:
+            yield from self._split_document(doc, token_limit)
+
+    def _handle_small_document(self, doc: SourceCode, token_limit: int, waiting_list: List[SourceCode], waiting_tokens: int) -> Generator[SourceCode, None, None]:
+        waiting_list.append(doc)
+        waiting_tokens += doc.tokens
+        if waiting_tokens >= token_limit / 2:
+            yield self._merge_documents(waiting_list)
+            waiting_list.clear()
+            waiting_tokens = 0
+
+    def _handle_large_document(self, doc: SourceCode, waiting_list: List[SourceCode]) -> Generator[SourceCode, None, None]:
+        if waiting_list:
+            yield self._merge_documents(waiting_list)
+            waiting_list.clear()
+        yield doc
 
     def _merge_documents(self, docs: List[SourceCode]) -> SourceCode:
         merged_content = "\n".join([doc.source_code for doc in docs])
