@@ -108,12 +108,15 @@ class LongContextRAG:
         # 检查当前目录下所有文件是否超过 120k tokens ，并且打印出来
         self.token_exceed_files = []
         if self.tokenizer is not None:
-            self.token_exceed_files = check_token_limit(
-                count_tokens=self.count_tokens,
-                token_limit=self.token_limit,
-                retrieve_documents=self._retrieve_documents,
-                max_workers=self.args.index_filter_workers or 5,
-            )
+            docs = list(self.document_retriever.retrieve_documents())
+            for doc in docs:
+                if doc.tokens > self.token_limit:
+                    self.token_exceed_files.append(doc.module_name)
+                    logger.warning(f"File {doc.module_name} exceeds token limit: {doc.tokens}")
+
+        logger.info(f"Token exceed files: {self.token_exceed_files}")
+        logger.info(f"Total docs: {len(docs)}")
+        logger.info(f"Total tokens: {sum([doc.tokens for doc in docs])}")
 
         logger.info(
             f"Tokenizer path: {self.tokenizer_path} relevant_score: {self.relevant_score} token_limit: {self.token_limit}"
