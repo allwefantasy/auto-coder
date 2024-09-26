@@ -18,7 +18,7 @@ from rich.console import Console
 from rich.table import Table
 import os
 
-from autocoder.rag.document_retriever import process_file3
+from autocoder.rag.document_retriever import process_file_local
 from autocoder.rag.token_counter import TokenCounter
 
 if platform.system() == "Windows":
@@ -255,7 +255,7 @@ def main(input_args: Optional[List[str]] = None):
 
 def count_tokens(tokenizer_path: str, file_path: str):
     token_counter = TokenCounter(tokenizer_path)
-    source_codes = process_file3(file_path)
+    source_codes = process_file_local(file_path)
 
     console = Console()
     table = Table(title="Token Count Results")

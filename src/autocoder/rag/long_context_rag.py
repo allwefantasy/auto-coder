@@ -13,7 +13,7 @@ from openai import OpenAI
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
+
 
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.rag.doc_filter import DocFilter
@@ -23,7 +23,8 @@ from autocoder.rag.relevant_utils import (DocRelevance, FilterDoc, TaskTiming,
 from autocoder.rag.token_checker import check_token_limit
 from autocoder.rag.token_counter import RemoteTokenCounter, TokenCounter
 from autocoder.rag.token_limiter import TokenLimiter
-
+from tokenizers import Tokenizer
+from autocoder.rag import variable_holder
 
 class LongContextRAG:
     def __init__(
@@ -49,6 +50,8 @@ class LongContextRAG:
         self.on_ray = False
 
         if self.tokenizer_path:
+            variable_holder.TOKENIZER_PATH = self.tokenizer_path
+            variable_holder.TOKENIZER_MODEL = Tokenizer.from_file(self.tokenizer_path)
             self.tokenizer = TokenCounter(self.tokenizer_path)
         else:
             if llm.is_model_exist("deepseek_tokenizer"):
@@ -95,7 +98,7 @@ class LongContextRAG:
             self.ignore_spec,
             self.required_exts,
             self.on_ray,
-            self.monitor_mode,
+            self.monitor_mode,            
         )
 
         self.doc_filter = DocFilter(

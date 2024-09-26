@@ -18,10 +18,14 @@ from loguru import logger
 from pydantic import BaseModel
 
 from autocoder.common import SourceCode
-from autocoder.rag.loaders import (extract_text_from_docx,
-                                   extract_text_from_excel,
-                                   extract_text_from_pdf,
-                                   extract_text_from_ppt)
+from autocoder.rag.loaders import (
+    extract_text_from_docx,
+    extract_text_from_excel,
+    extract_text_from_pdf,
+    extract_text_from_ppt,
+)
+from autocoder.rag import variable_holder
+from autocoder.rag.token_counter import count_tokens_worker, count_tokens
 
 cache_lock = threading.Lock()
 
@@ -33,37 +37,60 @@ class DeleteEvent(BaseModel):
 class AddOrUpdateEvent(BaseModel):
     file_infos: List[Tuple[str, str, float]]
 
-
-@ray.remote
-def process_file(file_info: Tuple[str, str, float]) -> List[SourceCode]:
+def process_file_in_multi_process(file_info: Tuple[str, str, float]) -> List[SourceCode]:
     start_time = time.time()
     file_path, relative_path, _ = file_info
     try:
         if file_path.endswith(".pdf"):
             with open(file_path, "rb") as f:
                 content = extract_text_from_pdf(f.read())
-            v = [SourceCode(module_name=file_path, source_code=content)]
+            v = [
+                SourceCode(
+                    module_name=file_path,
+                    source_code=content,
+                    tokens=count_tokens_worker(content),
+                )
+            ]
         elif file_path.endswith(".docx"):
             with open(file_path, "rb") as f:
                 content = extract_text_from_docx(f.read())
-            v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens_worker(content),
+                )
+            ]
         elif file_path.endswith(".xlsx") or file_path.endswith(".xls"):
             sheets = extract_text_from_excel(file_path)
             v = [
                 SourceCode(
                     module_name=f"##File: {file_path}#{sheet[0]}",
                     source_code=sheet[1],
+                    tokens=count_tokens_worker(sheet[1]),
                 )
                 for sheet in sheets
             ]
         elif file_path.endswith(".pptx"):
             slides = extract_text_from_ppt(file_path)
             content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
-            v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens_worker(content),
+                )
+            ]
         else:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens_worker(content),
+                )
+            ]
         logger.info(f"Load file {file_path} in {time.time() - start_time}")
         return v
     except Exception as e:
@@ -71,70 +98,59 @@ def process_file(file_info: Tuple[str, str, float]) -> List[SourceCode]:
         return []
 
 
-def process_file2(file_info: Tuple[str, str, float]) -> List[SourceCode]:
+def process_file_local(file_path: str) -> List[SourceCode]:
     start_time = time.time()
-    file_path, relative_path, _ = file_info
     try:
         if file_path.endswith(".pdf"):
             with open(file_path, "rb") as f:
                 content = extract_text_from_pdf(f.read())
-            v = [SourceCode(module_name=file_path, source_code=content)]
+            v = [
+                SourceCode(
+                    module_name=file_path,
+                    source_code=content,
+                    tokens=count_tokens(content),
+                )
+            ]
         elif file_path.endswith(".docx"):
             with open(file_path, "rb") as f:
                 content = extract_text_from_docx(f.read())
-            v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens(content),
+                )
+            ]
         elif file_path.endswith(".xlsx") or file_path.endswith(".xls"):
             sheets = extract_text_from_excel(file_path)
             v = [
                 SourceCode(
                     module_name=f"##File: {file_path}#{sheet[0]}",
                     source_code=sheet[1],
+                    tokens=count_tokens(sheet[1]),
                 )
                 for sheet in sheets
             ]
         elif file_path.endswith(".pptx"):
             slides = extract_text_from_ppt(file_path)
             content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
-            v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
-        else:
-            with open(file_path, "r", encoding="utf-8") as f:
-                content = f.read()
-            v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
-        logger.info(f"Load file {file_path} in {time.time() - start_time}")
-        return v
-    except Exception as e:
-        logger.error(f"Error processing file {file_path}: {str(e)}")
-        return []
-
-
-def process_file3(file_path: str) -> List[SourceCode]:
-    start_time = time.time()
-    try:
-        if file_path.endswith(".pdf"):
-            with open(file_path, "rb") as f:
-                content = extract_text_from_pdf(f.read())
-            v = [SourceCode(module_name=file_path, source_code=content)]
-        elif file_path.endswith(".docx"):
-            with open(file_path, "rb") as f:
-                content = extract_text_from_docx(f.read())
-            v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
-        elif file_path.endswith(".xlsx") or file_path.endswith(".xls"):
-            sheets = extract_text_from_excel(file_path)
             v = [
                 SourceCode(
-                    module_name=f"##File: {file_path}#{sheet[0]}",
-                    source_code=sheet[1],
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens(content),
                 )
-                for sheet in sheets
             ]
-        elif file_path.endswith(".pptx"):
-            slides = extract_text_from_ppt(file_path)
-            content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
-            v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
         else:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
-            v = [SourceCode(module_name=f"##File: {file_path}", source_code=content)]
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens(content),
+                )
+            ]
         logger.info(f"Load file {file_path} in {time.time() - start_time}")
         return v
     except Exception as e:
@@ -205,7 +221,7 @@ class AutoCoderRAGDocListener:
             self.update_cache(item)
 
     def update_cache(self, file_path):
-        source_code = process_file3(file_path)
+        source_code = process_file_local(file_path)
         self.cache[file_path] = {
             "file_path": file_path,
             "content": [c.model_dump() for c in source_code],
@@ -220,7 +236,9 @@ class AutoCoderRAGDocListener:
 
     def open_watch(self):
         logger.info(f"start monitor: {self.path}...")
-        for changes in watch(self.path, watch_filter=self.file_filter, stop_event=self.stop_event):
+        for changes in watch(
+            self.path, watch_filter=self.file_filter, stop_event=self.stop_event
+        ):
             for change in changes:
                 (action, path) = change
                 if action == Change.added or action == Change.modified:
@@ -290,7 +308,6 @@ class AutoCoderRAGAsyncUpdateQueue:
         self.thread.start()
         self.cache = self.read_cache()
 
-
     def _process_queue(self):
         while not self.stop_event.is_set():
             try:
@@ -324,8 +341,14 @@ class AutoCoderRAGAsyncUpdateQueue:
             # results = ray.get(
             #     [process_file.remote(file_info) for file_info in files_to_process]
             # )
-            with Pool(processes=os.cpu_count()) as pool:
-                results = pool.map(process_file2, files_to_process)
+            from autocoder.rag.token_counter import initialize_tokenizer
+
+            with Pool(
+                processes=os.cpu_count(),
+                initializer=initialize_tokenizer,
+                initargs=(variable_holder.TOKENIZER_PATH,),
+            ) as pool:
+                results = pool.map(process_file_in_multi_process, files_to_process)
 
             for file_info, result in zip(files_to_process, results):
                 self.update_cache(file_info, result)
@@ -365,7 +388,7 @@ class AutoCoderRAGAsyncUpdateQueue:
             elif isinstance(file_list, AddOrUpdateEvent):
                 for file_info in file_list.file_infos:
                     logger.info(f"{file_info[0]} is detected to be updated")
-                    result = process_file2(file_info)
+                    result = process_file_local(file_info)
                     self.update_cache(file_info, result)
 
             self.write_cache()
@@ -410,7 +433,9 @@ class AutoCoderRAGAsyncUpdateQueue:
                     # 释放文件锁
                     fcntl.flock(lockf, fcntl.LOCK_UN)
 
-    def update_cache(self, file_info: Tuple[str, str, float], content: List[SourceCode]):
+    def update_cache(
+        self, file_info: Tuple[str, str, float], content: List[SourceCode]
+    ):
         file_path, relative_path, modify_time = file_info
         self.cache[file_path] = {
             "file_path": file_path,

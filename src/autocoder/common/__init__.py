@@ -11,6 +11,7 @@ class SourceCode(pydantic.BaseModel):
     module_name: str
     source_code: str
     tag: str = ""
+    tokens: int = -1
 
 
 class TranslateReadme(pydantic.BaseModel):
