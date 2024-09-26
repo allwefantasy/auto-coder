@@ -37,7 +37,10 @@ class DeleteEvent(BaseModel):
 class AddOrUpdateEvent(BaseModel):
     file_infos: List[Tuple[str, str, float]]
 
-def process_file_in_multi_process(file_info: Tuple[str, str, float]) -> List[SourceCode]:
+
+def process_file_in_multi_process(
+    file_info: Tuple[str, str, float]
+) -> List[SourceCode]:
     start_time = time.time()
     file_path, relative_path, _ = file_info
     try:
@@ -537,12 +540,18 @@ class DocumentRetriever:
         for _, data in self.get_cache().items():
             for source_code in data["content"]:
                 doc = SourceCode.model_validate(source_code)
-                if doc.tokens <= token_limit:
+                if doc.tokens > 0:
                     yield doc
                 else:
-                    yield from self._split_document(doc, token_limit)
+                    if doc.tokens <= token_limit:
+                        yield doc
+                    else:
+                        for chunk in self._split_document(doc, token_limit):
+                            yield chunk
 
-    def _split_document(self, doc: SourceCode, token_limit: int) -> Generator[SourceCode, None, None]:
+    def _split_document(
+        self, doc: SourceCode, token_limit: int
+    ) -> Generator[SourceCode, None, None]:
         remaining_tokens = doc.tokens
         chunk_number = 1
         start_index = 0
@@ -554,9 +563,7 @@ class DocumentRetriever:
 
             chunk_name = f"{doc.module_name}#{chunk_number:06d}"
             yield SourceCode(
-                module_name=chunk_name,
-                source_code=chunk_content,
-                tokens=chunk_tokens
+                module_name=chunk_name, source_code=chunk_content, tokens=chunk_tokens
             )
 
             start_index = end_index
