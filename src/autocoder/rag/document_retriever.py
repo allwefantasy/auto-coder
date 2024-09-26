@@ -537,17 +537,41 @@ class DocumentRetriever:
             return self.cacher.get_cache()
 
     def retrieve_documents(self, token_limit: int) -> Generator[SourceCode, None, None]:
+        waiting_list = []
+        waiting_tokens = 0
+        
         for _, data in self.get_cache().items():
             for source_code in data["content"]:
                 doc = SourceCode.model_validate(source_code)
                 if doc.tokens > 0:
-                    yield doc
+                    if doc.tokens < token_limit / 5:
+                        waiting_list.append(doc)
+                        waiting_tokens += doc.tokens
+                        if waiting_tokens >= token_limit / 2:
+                            yield self._merge_documents(waiting_list)
+                            waiting_list = []
+                            waiting_tokens = 0
+                    else:
+                        if waiting_list:
+                            yield self._merge_documents(waiting_list)
+                            waiting_list = []
+                            waiting_tokens = 0
+                        yield doc
                 else:
                     if doc.tokens <= token_limit:
                         yield doc
                     else:
                         for chunk in self._split_document(doc, token_limit):
                             yield chunk
+        
+        if waiting_list:
+            yield self._merge_documents(waiting_list)
+
+    def _merge_documents(self, docs: List[SourceCode]) -> SourceCode:
+        merged_content = "\n".join([doc.source_code for doc in docs])
+        merged_tokens = sum([doc.tokens for doc in docs])
+        merged_name = f"Merged_{len(docs)}_docs"
+        return SourceCode(module_name=merged_name, source_code=merged_content, tokens=merged_tokens)
 
     def _split_document(
         self, doc: SourceCode, token_limit: int
