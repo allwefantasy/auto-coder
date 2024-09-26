@@ -533,7 +533,32 @@ class DocumentRetriever:
         else:
             return self.cacher.get_cache()
 
-    def retrieve_documents(self) -> Generator[SourceCode, None, None]:
+    def retrieve_documents(self, token_limit: int) -> Generator[SourceCode, None, None]:
         for _, data in self.get_cache().items():
             for source_code in data["content"]:
-                yield SourceCode.model_validate(source_code)
+                doc = SourceCode.model_validate(source_code)
+                if doc.tokens <= token_limit:
+                    yield doc
+                else:
+                    yield from self._split_document(doc, token_limit)
+
+    def _split_document(self, doc: SourceCode, token_limit: int) -> Generator[SourceCode, None, None]:
+        remaining_tokens = doc.tokens
+        chunk_number = 1
+        start_index = 0
+
+        while remaining_tokens > 0:
+            end_index = start_index + token_limit
+            chunk_content = doc.source_code[start_index:end_index]
+            chunk_tokens = min(token_limit, remaining_tokens)
+
+            chunk_name = f"{doc.module_name}#{chunk_number:06d}"
+            yield SourceCode(
+                module_name=chunk_name,
+                source_code=chunk_content,
+                tokens=chunk_tokens
+            )
+
+            start_index = end_index
+            remaining_tokens -= chunk_tokens
+            chunk_number += 1
