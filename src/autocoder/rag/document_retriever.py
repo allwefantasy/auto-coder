@@ -577,7 +577,7 @@ class DocumentRetriever:
                         yield from self._split_large_document(doc)
                     else:
                         yield doc
-        if waiting_list and not self.args.disable_auto_window:            
+        if waiting_list and not self.disable_auto_window:            
             yield from self._process_waiting_list(waiting_list)
 
         logger.info("Document retrieval process completed")
