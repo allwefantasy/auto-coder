@@ -389,7 +389,7 @@ class LongContextRAG:
             # Add relevant docs information
             relevant_docs_info = []
             for doc in relevant_docs:
-                info = f"- {doc.module_name}"
+                info = f"- {doc.module_name.replace(self.path,'',1)}"
                 if 'original_docs' in doc.metadata:
                     original_docs = ", ".join([doc.replace(self.path,"",1) for doc in doc.metadata['original_docs']])                                                                    
                     info += f" (Original docs: {original_docs})"
@@ -442,7 +442,7 @@ class LongContextRAG:
             # Add relevant docs information
             final_relevant_docs_info = []
             for doc in relevant_docs:                
-                info = f"- {doc.module_name}"
+                info = f"- {doc.module_name.replace(self.path,'',1)}"
                 if 'original_docs' in doc.metadata:                    
                     original_docs = ", ".join([doc.replace(self.path,"",1) for doc in doc.metadata['original_docs']])                                                
                     info += f" (Original docs: {original_docs})"
