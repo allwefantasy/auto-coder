@@ -515,12 +515,14 @@ class DocumentRetriever:
         on_ray: bool = False,
         monitor_mode: bool = False,
         single_file_token_limit: int = 60000,
+        disable_auto_window: bool = False,
     ) -> None:
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
         self.monitor_mode = monitor_mode
         self.single_file_token_limit = single_file_token_limit
+        self.disable_auto_window = disable_auto_window
 
         # 多小的文件会被合并
         self.small_file_token_limit = self.single_file_token_limit / 4
@@ -540,6 +542,7 @@ class DocumentRetriever:
 
         logger.info(f"DocumentRetriever initialized with:")
         logger.info(f"  Path: {self.path}")
+        logger.info(f"  Diable auto window: {self.disable_auto_window} ")
         logger.info(f"  Single file token limit: {self.single_file_token_limit}")
         logger.info(f"  Small file token limit: {self.small_file_token_limit}")
         logger.info(f"  Small file merge limit: {self.small_file_merge_limit}")

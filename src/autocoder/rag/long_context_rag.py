@@ -119,6 +119,7 @@ class LongContextRAG:
             self.monitor_mode,
             ## 确保全文区至少能放下一个文件
             single_file_token_limit=self.full_text_limit - 100,
+            disable_auto_window=self.args.disable_auto_window
         )
 
         self.doc_filter = DocFilter(
