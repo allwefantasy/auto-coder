@@ -44,6 +44,17 @@ class LongContextRAG:
 
         self.path = path
         self.relevant_score = self.args.rag_doc_filter_relevance or 5
+        
+        self.full_text_ratio = args.full_text_ratio
+        self.segment_ratio = args.segment_ratio
+        self.buff_ratio = 1 - self.full_text_ratio - self.segment_ratio
+        
+        if self.buff_ratio < 0:
+            raise ValueError("The sum of full_text_ratio and segment_ratio must be less than or equal to 1.0")
+        
+        self.full_text_limit = int(args.rag_context_window_limit * self.full_text_ratio)
+        self.segment_limit = int(args.rag_context_window_limit * self.segment_ratio)
+        self.buff_limit = int(args.rag_context_window_limit * self.buff_ratio)
 
         self.tokenizer = None
         self.tokenizer_path = tokenizer_path

@@ -160,7 +160,19 @@ def main(input_args: Optional[List[str]] = None):
         "--rag_context_window_limit",
         type=int,
         default=110000,
-        help="",
+        help="The input context window limit for RAG",
+    )
+    serve_parser.add_argument(
+        "--full_text_ratio",
+        type=float,
+        default=0.4,
+        help="The ratio of full text area in the input context window (0.0 to 1.0)",
+    )
+    serve_parser.add_argument(
+        "--segment_ratio",
+        type=float,
+        default=0.4,
+        help="The ratio of segment area in the input context window (0.0 to 1.0)",
     )
     serve_parser.add_argument(
         "--required_exts", default="", help=desc["doc_build_parse_required_exts"]
