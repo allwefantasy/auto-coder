@@ -90,16 +90,24 @@ def initialize_system():
 
     if choice == "1":
         print_status(get_message("deploying_model").format("Deepseek官方"), "")
-        
+
         deploy_cmd = [
-            "byzerllm", "deploy",
-            "--pretrained_model_type", "saas/openai",
-            "--cpus_per_worker", "0.001",
-            "--gpus_per_worker", "0",
-            "--worker_concurrency", "1000",
-            "--num_workers", "1",
-            "--infer_params", f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
-            "--model", "deepseek_chat"
+            "byzerllm",
+            "deploy",
+            "--pretrained_model_type",
+            "saas/openai",
+            "--cpus_per_worker",
+            "0.001",
+            "--gpus_per_worker",
+            "0",
+            "--worker_concurrency",
+            "1000",
+            "--num_workers",
+            "1",
+            "--infer_params",
+            f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
+            "--model",
+            "deepseek_chat",
         ]
 
     try:
@@ -138,7 +146,9 @@ def main(input_args: Optional[List[str]] = None):
 
     # Serve command
     serve_parser = subparsers.add_parser("serve", help="Start the RAG server")
-    serve_parser.add_argument("--quick", action="store_true", help="Skip system initialization")
+    serve_parser.add_argument(
+        "--quick", action="store_true", help="Skip system initialization"
+    )
     serve_parser.add_argument("--file", default="", help=desc["file"])
     serve_parser.add_argument("--model", default="deepseek_chat", help=desc["model"])
     serve_parser.add_argument("--index_model", default="", help=desc["index_model"])
@@ -208,6 +218,12 @@ def main(input_args: Optional[List[str]] = None):
         "--monitor_mode",
         action="store_true",
         help="Monitor mode for the doc update",
+    )
+
+    serve_parser.add_argument(
+        "--disable_auto_window",
+        action="store_true",
+        help="Disable automatic window adaptation for documents",
     )
 
     # Tools command
