@@ -560,7 +560,7 @@ class DocumentRetriever:
         for _, data in self.get_cache().items():
             for source_code in data["content"]:
                 doc = SourceCode.model_validate(source_code)
-                if self.args.disable_auto_window:
+                if self.disable_auto_window:
                     yield doc
                 else:
                     if doc.tokens <= 0:
