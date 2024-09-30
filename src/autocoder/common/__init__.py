@@ -283,8 +283,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     doc_command: Optional[str] = None
     required_exts: Optional[str] = None
 
-    monitor_mode: bool = False
-    auto_window_adapt: bool = True
+    monitor_mode: Optional[bool] = False
     
     description: Optional[str] = ""
     skip_confirm: Optional[bool] = False

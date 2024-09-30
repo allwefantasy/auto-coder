@@ -557,24 +557,21 @@ class DocumentRetriever:
         for _, data in self.get_cache().items():
             for source_code in data["content"]:
                 doc = SourceCode.model_validate(source_code)
-                if not self.args.auto_window_adapt:
+                if doc.tokens <= 0:
                     yield doc
+                elif doc.tokens < self.small_file_token_limit:
+                    waiting_list, waiting_tokens = self._add_to_waiting_list(
+                        doc, waiting_list, waiting_tokens
+                    )
+                    if waiting_tokens >= self.small_file_merge_limit:
+                        yield from self._process_waiting_list(waiting_list)
+                        waiting_list = []
+                        waiting_tokens = 0
+                elif doc.tokens > self.single_file_token_limit:
+                    yield from self._split_large_document(doc)
                 else:
-                    if doc.tokens <= 0:
-                        yield doc
-                    elif doc.tokens < self.small_file_token_limit:
-                        waiting_list, waiting_tokens = self._add_to_waiting_list(
-                            doc, waiting_list, waiting_tokens
-                        )
-                        if waiting_tokens >= self.small_file_merge_limit:
-                            yield from self._process_waiting_list(waiting_list)
-                            waiting_list = []
-                            waiting_tokens = 0
-                    elif doc.tokens > self.single_file_token_limit:
-                        yield from self._split_large_document(doc)
-                    else:
-                        yield doc
-        if waiting_list and self.args.auto_window_adapt:            
+                    yield doc
+        if waiting_list:            
             yield from self._process_waiting_list(waiting_list)
 
         logger.info("Document retrieval process completed")
