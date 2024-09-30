@@ -513,12 +513,13 @@ class DocumentRetriever:
         required_exts: list,
         on_ray: bool = False,
         monitor_mode: bool = False,
+        token_limit: int = 60000,
     ) -> None:
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
         self.monitor_mode = monitor_mode
-
+        self.token_limit = token_limit
         self.on_ray = on_ray
         if self.on_ray:
             self.cacher = get_or_create_actor(path, ignore_spec, required_exts)
@@ -536,9 +537,10 @@ class DocumentRetriever:
         else:
             return self.cacher.get_cache()
 
-    def retrieve_documents(self, token_limit: int) -> Generator[SourceCode, None, None]:
+    def retrieve_documents(self) -> Generator[SourceCode, None, None]:
         waiting_list = []
         waiting_tokens = 0
+        token_limit = self.token_limit
         
         for _, data in self.get_cache().items():
             for source_code in data["content"]:

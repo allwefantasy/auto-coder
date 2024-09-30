@@ -111,8 +111,13 @@ class TokenLimiter:
                 else:
                     break
 
-            sencond_round_start_time = time.time()
-            remaining_tokens = self.token_limit - new_token_limit
+            if len(self.first_round_full_docs) > 0:                
+                remaining_tokens = self.token_limit - token_count
+            else:
+                logger.warning("Full text area is empty, this is may caused by the single doc is too long")
+                remaining_tokens = self.token_limit
+            
+            sencond_round_start_time = time.time()                        
             remaining_docs = relevant_docs[len(self.first_round_full_docs) :]
             logger.info(
                 f"first round docs: {len(self.first_round_full_docs)} remaining docs: {len(remaining_docs)} index_filter_workers: {index_filter_workers}"
