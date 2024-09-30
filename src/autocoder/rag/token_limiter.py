@@ -147,7 +147,7 @@ class TokenLimiter:
                         result = future.result()
                         if result and remaining_tokens > 0:
                             self.second_round_extracted_docs.append(result)
-                            tokens = self.count_tokens(result.source_code)
+                            tokens = result.tokens
                             if tokens > 0:
                                 remaining_tokens -= tokens
                             else:
@@ -203,6 +203,7 @@ class TokenLimiter:
                 return SourceCode(
                     module_name=doc.module_name,
                     source_code=content.strip(),
+                    tokens=self.count_tokens(content),
                     metadata={
                         "original_doc": doc.module_name,
                         "chunk_ranges": json_objs,
@@ -219,5 +220,6 @@ class TokenLimiter:
                     )
                     return SourceCode(
                         module_name=doc.module_name,
-                        source_code="",                        
+                        source_code="",   
+                        tokens= 0                     
                     )
