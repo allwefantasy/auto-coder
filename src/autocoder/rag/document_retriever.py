@@ -26,6 +26,7 @@ from autocoder.rag.loaders import (
 )
 from autocoder.rag import variable_holder
 from autocoder.rag.token_counter import count_tokens_worker, count_tokens
+from uuid import uuid4
 
 cache_lock = threading.Lock()
 
@@ -513,13 +514,19 @@ class DocumentRetriever:
         required_exts: list,
         on_ray: bool = False,
         monitor_mode: bool = False,
-        token_limit: int = 60000,
+        single_file_token_limit: int = 60000,
     ) -> None:
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
         self.monitor_mode = monitor_mode
-        self.token_limit = token_limit
+        self.single_file_token_limit = single_file_token_limit
+
+        # 多小的文件会被合并
+        self.small_file_token_limit = self.single_file_token_limit / 4
+        # 合并后的最大文件大小
+        self.small_file_merge_limit = self.single_file_token_limit / 2
+
         self.on_ray = on_ray
         if self.on_ray:
             self.cacher = get_or_create_actor(path, ignore_spec, required_exts)
@@ -531,6 +538,12 @@ class DocumentRetriever:
                     path, ignore_spec, required_exts
                 )
 
+        logger.info(f"DocumentRetriever initialized with:")
+        logger.info(f"  Path: {self.path}")
+        logger.info(f"  Single file token limit: {self.single_file_token_limit}")
+        logger.info(f"  Small file token limit: {self.small_file_token_limit}")
+        logger.info(f"  Small file merge limit: {self.small_file_merge_limit}")
+
     def get_cache(self):
         if self.on_ray:
             return ray.get(self.cacher.get_cache.remote())
@@ -538,51 +551,81 @@ class DocumentRetriever:
             return self.cacher.get_cache()
 
     def retrieve_documents(self) -> Generator[SourceCode, None, None]:
+        logger.info("Starting document retrieval process")
         waiting_list = []
         waiting_tokens = 0
-        token_limit = self.token_limit
-        
         for _, data in self.get_cache().items():
             for source_code in data["content"]:
                 doc = SourceCode.model_validate(source_code)
-                yield from self._process_document(doc, token_limit, waiting_list, waiting_tokens)
-        
-        if waiting_list:
-            yield self._merge_documents(waiting_list)
+                if doc.tokens <= 0:
+                    yield doc
+                elif doc.tokens < self.small_file_token_limit:
+                    waiting_list, waiting_tokens = self._add_to_waiting_list(
+                        doc, waiting_list, waiting_tokens
+                    )
+                    if waiting_tokens >= self.small_file_merge_limit:
+                        yield from self._process_waiting_list(waiting_list)
+                        waiting_list = []
+                        waiting_tokens = 0
+                elif doc.tokens > self.single_file_token_limit:
+                    yield from self._split_large_document(doc)
+                else:
+                    yield doc
+        if waiting_list:            
+            yield from self._process_waiting_list(waiting_list)
 
-    def _process_document(self, doc: SourceCode, token_limit: int, waiting_list: List[SourceCode], waiting_tokens: int) -> Generator[SourceCode, None, None]:
-        if doc.tokens <= 0:
-            yield from self._handle_zero_or_negative_tokens(doc, token_limit)
-        elif doc.tokens < token_limit / 5:
-            yield from self._handle_small_document(doc, token_limit, waiting_list, waiting_tokens)
-        else:
-            yield from self._handle_large_document(doc, waiting_list)
+        logger.info("Document retrieval process completed")
 
-    def _handle_zero_or_negative_tokens(self, doc: SourceCode, token_limit: int) -> Generator[SourceCode, None, None]:
-        if doc.tokens <= token_limit:
-            yield doc
-        else:
-            yield from self._split_document(doc, token_limit)
-
-    def _handle_small_document(self, doc: SourceCode, token_limit: int, waiting_list: List[SourceCode], waiting_tokens: int) -> Generator[SourceCode, None, None]:
+    def _add_to_waiting_list(
+        self, doc: SourceCode, waiting_list: List[SourceCode], waiting_tokens: int
+    ) -> Tuple[List[SourceCode], int]:
         waiting_list.append(doc)
-        waiting_tokens += doc.tokens
-        if waiting_tokens >= token_limit / 2:
-            yield self._merge_documents(waiting_list)
-            waiting_list.clear()
-            waiting_tokens = 0
+        return waiting_list, waiting_tokens + doc.tokens
 
-    def _handle_large_document(self, doc: SourceCode, waiting_list: List[SourceCode]) -> Generator[SourceCode, None, None]:
-        if waiting_list:
+    def _process_waiting_list(
+        self, waiting_list: List[SourceCode]
+    ) -> Generator[SourceCode, None, None]:
+        if len(waiting_list) == 1:
+            yield waiting_list[0]            
+        elif len(waiting_list) > 1:
             yield self._merge_documents(waiting_list)
-            waiting_list.clear()
-        yield doc
 
     def _merge_documents(self, docs: List[SourceCode]) -> SourceCode:
-        merged_content = "\n".join([doc.source_code for doc in docs])
+        merged_content = "\n".join(
+            [f"#File: {doc.module_name}\n{doc.source_code}" for doc in docs]
+        )
         merged_tokens = sum([doc.tokens for doc in docs])
-        merged_name = f"Merged_{len(docs)}_docs"
-        return SourceCode(module_name=merged_name, source_code=merged_content, tokens=merged_tokens)
+        merged_name = f"Merged_{len(docs)}_docs_{str(uuid4())}"        
+        logger.info(
+            f"Merged {len(docs)} documents into {merged_name} (tokens: {merged_tokens})."
+        )
+        return SourceCode(
+            module_name=merged_name,
+            source_code=merged_content,
+            tokens=merged_tokens,
+            metadata={"original_docs": [doc.module_name for doc in docs]},
+        )
+
+    def _split_large_document(
+        self, doc: SourceCode
+    ) -> Generator[SourceCode, None, None]:
+        chunk_size = self.single_file_token_limit
+        total_chunks = (doc.tokens + chunk_size - 1) // chunk_size
+        logger.info(f"Splitting document {doc.module_name} into {total_chunks} chunks")
+        for i in range(0, doc.tokens, chunk_size):
+            chunk_content = doc.source_code[i : i + chunk_size]
+            chunk_tokens = min(chunk_size, doc.tokens - i)
+            chunk_name = f"{doc.module_name}#chunk{i//chunk_size+1}"
+            # logger.debug(f"  Created chunk: {chunk_name} (tokens: {chunk_tokens})")
+            yield SourceCode(
+                module_name=chunk_name,
+                source_code=chunk_content,
+                tokens=chunk_tokens,
+                metadata={
+                    "original_doc": doc.module_name,
+                    "chunk_index": i // chunk_size + 1,
+                },
+            )
 
     def _split_document(
         self, doc: SourceCode, token_limit: int

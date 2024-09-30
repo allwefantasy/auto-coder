@@ -12,6 +12,7 @@ class SourceCode(pydantic.BaseModel):
     source_code: str
     tag: str = ""
     tokens: int = -1
+    metadata: Dict[str, Any] = {}
 
 
 class TranslateReadme(pydantic.BaseModel):
@@ -304,6 +305,10 @@ class AutoCoderArgs(pydantic.BaseModel):
     prompt_review: Optional[str] = None
 
     agent_designer_mode: Optional[str] = "svg"
+
+    full_text_ratio: Optional[float] = 0.7
+    segment_ratio: Optional[float] = 0.2
+    buff_ratio: Optional[float] = 0.1
 
     class Config:
         protected_namespaces = ()

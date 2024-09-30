@@ -813,15 +813,7 @@ def main(input_args: Optional[List[str]] = None):
                     llm, args, code_auto_execute.Mode.SINGLE_ROUND
                 )
                 executor.run(query=args.query, context=s, source_code="")
-            return
-        elif raw_args.agent_command == "chat":
-            from autocoder.rag.rag_entry import RAGFactory
-
-            rag = RAGFactory.get_rag(llm=llm, args=args, path="")
-            rag.stream_chat_repl(args.query)
-            return
-        
-
+            return        
         elif raw_args.doc_command == "serve":
 
             from autocoder.rag.llm_wrapper import LLWrapper
@@ -845,6 +837,13 @@ def main(input_args: Optional[List[str]] = None):
 
             llm_wrapper = LLWrapper(llm=llm, rag=rag)
             serve(llm=llm_wrapper, args=server_args)
+            return
+        
+        elif raw_args.doc_command == "chat":
+            from autocoder.rag.rag_entry import RAGFactory
+
+            rag = RAGFactory.get_rag(llm=llm, args=args, path="")
+            rag.stream_chat_repl(args.query)
             return
 
         else:

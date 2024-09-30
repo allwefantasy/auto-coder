@@ -165,13 +165,13 @@ def main(input_args: Optional[List[str]] = None):
     serve_parser.add_argument(
         "--full_text_ratio",
         type=float,
-        default=0.4,
+        default=0.7,
         help="The ratio of full text area in the input context window (0.0 to 1.0)",
     )
     serve_parser.add_argument(
         "--segment_ratio",
         type=float,
-        default=0.4,
+        default=0.2,
         help="The ratio of segment area in the input context window (0.0 to 1.0)",
     )
     serve_parser.add_argument(

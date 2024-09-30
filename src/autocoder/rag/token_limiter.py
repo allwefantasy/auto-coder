@@ -13,11 +13,15 @@ class TokenLimiter:
     def __init__(
         self,
         count_tokens: Callable[[str], int],
-        token_limit: int,
+        full_text_limit: int,
+        segment_limit: int,
+        buff_limit: int,
         llm,
     ):
         self.count_tokens = count_tokens
-        self.token_limit = token_limit
+        self.full_text_limit = full_text_limit
+        self.segment_limit = segment_limit
+        self.buff_limit = buff_limit
         self.llm = llm
         self.first_round_full_docs = []
         self.second_round_extracted_docs = []
@@ -88,19 +92,22 @@ class TokenLimiter:
         final_relevant_docs = []
         token_count = 0
         doc_num_count = 0
+
+        ## 非窗口分区实现
         for doc in relevant_docs:
             doc_tokens = self.count_tokens(doc.source_code)
             doc_num_count += 1
-            if token_count + doc_tokens <= self.token_limit:
+            if token_count + doc_tokens <= self.full_text_limit + self.segment_limit:
                 final_relevant_docs.append(doc)
                 token_count += doc_tokens
             else:
                 break
 
+        ## 如果窗口无法放下所有的相关文档，则需要分区
         if len(final_relevant_docs) < len(relevant_docs):
-
+            ## 先填充full_text分区
             token_count = 0
-            new_token_limit = self.token_limit * 0.8
+            new_token_limit = self.full_text_limit
             doc_num_count = 0
             for doc in relevant_docs:
                 doc_tokens = self.count_tokens(doc.source_code)
@@ -111,13 +118,18 @@ class TokenLimiter:
                 else:
                     break
 
-            if len(self.first_round_full_docs) > 0:                
-                remaining_tokens = self.token_limit - token_count
+            if len(self.first_round_full_docs) > 0:
+                remaining_tokens = (
+                    self.full_text_limit + self.segment_limit - token_count
+                )
             else:
-                logger.warning("Full text area is empty, this is may caused by the single doc is too long")
-                remaining_tokens = self.token_limit
-            
-            sencond_round_start_time = time.time()                        
+                logger.warning(
+                    "Full text area is empty, this is may caused by the single doc is too long"
+                )
+                remaining_tokens = self.full_text_limit + self.segment_limit
+
+            ## 继续填充segment分区
+            sencond_round_start_time = time.time()
             remaining_docs = relevant_docs[len(self.first_round_full_docs) :]
             logger.info(
                 f"first round docs: {len(self.first_round_full_docs)} remaining docs: {len(remaining_docs)} index_filter_workers: {index_filter_workers}"
@@ -189,7 +201,12 @@ class TokenLimiter:
                     content += chunk + "\n"
 
                 return SourceCode(
-                    module_name=doc.module_name, source_code=content.strip()
+                    module_name=doc.module_name,
+                    source_code=content.strip(),
+                    metadata={
+                        "original_doc": doc.module_name,
+                        "chunk_ranges": json_objs,
+                    },
                 )
             except Exception as e:
                 if attempt < max_retries - 1:
@@ -201,5 +218,6 @@ class TokenLimiter:
                         f"Failed to process doc {doc.module_name} after {max_retries} attempts: {str(e)}"
                     )
                     return SourceCode(
-                        module_name=doc.module_name, source_code=content.strip()
+                        module_name=doc.module_name,
+                        source_code="",                        
                     )

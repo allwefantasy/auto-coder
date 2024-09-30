@@ -13,18 +13,23 @@ from openai import OpenAI
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-
+import statistics
 
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.rag.doc_filter import DocFilter
 from autocoder.rag.document_retriever import DocumentRetriever
-from autocoder.rag.relevant_utils import (DocRelevance, FilterDoc, TaskTiming,
-                                          parse_relevance)
+from autocoder.rag.relevant_utils import (
+    DocRelevance,
+    FilterDoc,
+    TaskTiming,
+    parse_relevance,
+)
 from autocoder.rag.token_checker import check_token_limit
 from autocoder.rag.token_counter import RemoteTokenCounter, TokenCounter
 from autocoder.rag.token_limiter import TokenLimiter
 from tokenizers import Tokenizer
 from autocoder.rag import variable_holder
+
 
 class LongContextRAG:
     def __init__(
@@ -44,14 +49,16 @@ class LongContextRAG:
 
         self.path = path
         self.relevant_score = self.args.rag_doc_filter_relevance or 5
-        
+
         self.full_text_ratio = args.full_text_ratio
         self.segment_ratio = args.segment_ratio
         self.buff_ratio = 1 - self.full_text_ratio - self.segment_ratio
-        
+
         if self.buff_ratio < 0:
-            raise ValueError("The sum of full_text_ratio and segment_ratio must be less than or equal to 1.0")
-        
+            raise ValueError(
+                "The sum of full_text_ratio and segment_ratio must be less than or equal to 1.0"
+            )
+
         self.full_text_limit = int(args.rag_context_window_limit * self.full_text_ratio)
         self.segment_limit = int(args.rag_context_window_limit * self.segment_ratio)
         self.buff_limit = int(args.rag_context_window_limit * self.buff_ratio)
@@ -109,28 +116,41 @@ class LongContextRAG:
             self.ignore_spec,
             self.required_exts,
             self.on_ray,
-            self.monitor_mode,            
+            self.monitor_mode,
+            ## 确保全文区至少能放下一个文件
+            single_file_token_limit=self.full_text_limit - 100,
         )
 
         self.doc_filter = DocFilter(
             self.index_model, self.args, on_ray=self.on_ray, path=self.path
         )
+        
+        doc_num = 0
+        token_num = 0
+        token_counts = []
+        for doc in self._retrieve_documents():
+            doc_num += 1
+            doc_tokens = doc.tokens
+            token_num += doc_tokens
+            token_counts.append(doc_tokens)
 
-        # 检查当前目录下所有文件是否超过 120k tokens ，并且打印出来
-        self.token_exceed_files = []
-        if self.tokenizer is not None:
-            docs = list(self.document_retriever.retrieve_documents())
-            for doc in docs:
-                if doc.tokens > self.token_limit:
-                    self.token_exceed_files.append(doc.module_name)
-                    logger.warning(f"File {doc.module_name} exceeds token limit: {doc.tokens}")
-
-        logger.info(f"Token exceed files: {self.token_exceed_files}")
-        logger.info(f"Total docs: {len(docs)}")
-        logger.info(f"Total tokens: {sum([doc.tokens for doc in docs])}")
+        avg_tokens = statistics.mean(token_counts) if token_counts else 0
+        median_tokens = statistics.median(token_counts) if token_counts else 0
 
         logger.info(
-            f"Tokenizer path: {self.tokenizer_path} relevant_score: {self.relevant_score} token_limit: {self.token_limit}"
+            "RAG Configuration:\n"
+            f"  Total docs:        {doc_num}\n"
+            f"  Total tokens:      {token_num}\n"
+            f"  Tokenizer path:    {self.tokenizer_path}\n"
+            f"  Relevant score:    {self.relevant_score}\n"
+            f"  Token limit:       {self.token_limit}\n"
+            f"  Full text limit:   {self.full_text_limit}\n"
+            f"  Segment limit:     {self.segment_limit}\n"
+            f"  Buff limit:        {self.buff_limit}\n"
+            f"  Max doc tokens:    {max(token_counts) if token_counts else 0}\n"
+            f"  Min doc tokens:    {min(token_counts) if token_counts else 0}\n"
+            f"  Avg doc tokens:    {avg_tokens:.2f}\n"
+            f"  Median doc tokens: {median_tokens:.2f}\n"                        
         )
 
     def count_tokens(self, text: str) -> int:
@@ -367,9 +387,15 @@ class LongContextRAG:
             query_table.add_row("Relevant docs", str(len(relevant_docs)))
 
             # Add relevant docs information
-            relevant_docs_info = "\n".join(
-                [f"- {doc.module_name}" for doc in relevant_docs]
-            )
+            relevant_docs_info = []
+            for doc in relevant_docs:
+                info = f"- {doc.module_name}"
+                if 'original_docs' in doc.metadata:
+                    original_docs = ", ".join([doc.replace(self.path,"",1) for doc in doc.metadata['original_docs']])                                                                    
+                    info += f" (Original docs: {original_docs})"
+                relevant_docs_info.append(info)
+
+            relevant_docs_info = "\n".join(relevant_docs_info)
             query_table.add_row("Relevant docs list", relevant_docs_info)
 
             first_round_full_docs = []
@@ -380,7 +406,9 @@ class LongContextRAG:
 
                 token_limiter = TokenLimiter(
                     count_tokens=self.count_tokens,
-                    token_limit=self.token_limit,
+                    full_text_limit=self.full_text_limit,
+                    segment_limit=self.segment_limit,
+                    buff_limit=self.buff_limit,
                     llm=self.llm,
                 )
                 final_relevant_docs = token_limiter.limit_tokens(
@@ -412,9 +440,18 @@ class LongContextRAG:
             )
 
             # Add relevant docs information
-            final_relevant_docs_info = "\n".join(
-                [f"- {doc.module_name}" for doc in relevant_docs]
-            )
+            final_relevant_docs_info = []
+            for doc in relevant_docs:                
+                info = f"- {doc.module_name}"
+                if 'original_docs' in doc.metadata:                    
+                    original_docs = ", ".join([doc.replace(self.path,"",1) for doc in doc.metadata['original_docs']])                                                
+                    info += f" (Original docs: {original_docs})"
+                if "chunk_ranges" in doc.metadata:
+                    chunk_ranges = json.dumps(doc.metadata['chunk_ranges'],ensure_ascii=False)
+                    info += f" (Chunk ranges: {chunk_ranges})"
+                final_relevant_docs_info.append(info)
+
+            final_relevant_docs_info = "\n".join(final_relevant_docs_info)
             query_table.add_row("Final Relevant docs list", final_relevant_docs_info)
 
             # Create a panel to contain the table
