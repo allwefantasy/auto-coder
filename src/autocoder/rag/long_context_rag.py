@@ -463,8 +463,10 @@ class LongContextRAG:
 
             # Log the panel using rich
             console.print(panel)
-
-            logger.info(f"Start to send to model {model}")
+            
+            request_tokens = sum([doc.tokens for doc in relevant_docs])
+            target_model = model or self.llm.default_model_name 
+            logger.info(f"Start to send to model {target_model} with {request_tokens} tokens")
 
             new_conversations = conversations[:-1] + [
                 {
