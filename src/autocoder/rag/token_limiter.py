@@ -104,7 +104,8 @@ class TokenLimiter:
         ##    a) 方案一（保留位置）：统一文档的不同segments 根据chunk_index 来置换位置
         ##    b) 方案二（当前实现）：遍历文档，发现某文档的segment A，立即查找该文档的所有其他segments，
         ##       对它们进行排序，并将排序后多个segments插入到当前的segment A 位置中。
-        ## TODO: 未来根据参数决定是否开启重排以及重排的策略
+        ## TODO: 
+        ##     1. 未来根据参数决定是否开启重排以及重排的策略        
         for doc in relevant_docs:
             if doc.metadata.get('original_doc') and doc.metadata.get('chunk_index'):
                 if doc.metadata['original_doc'] not in added_docs:
