@@ -95,7 +95,16 @@ class TokenLimiter:
 
         reorder_relevant_docs = []
         added_docs = set()
-
+        
+        ## 文档分段（单个文档过大）和重排序逻辑
+        ## 1. 背景：在检索过程中，许多文档被切割成多个段落（segments）
+        ## 2. 问题：这些segments在召回时因为是按相关分做了排序可能是乱序的，不符合原文顺序，会强化大模型的幻觉。
+        ## 3. 目标：重新排序这些segments，确保来自同一文档的segments保持连续且按正确顺序排列。
+        ## 4. 实现方案：
+        ##    a) 方案一（保留位置）：统一文档的不同segments 根据chunk_index 来置换位置
+        ##    b) 方案二（当前实现）：遍历文档，发现某文档的segment A，立即查找该文档的所有其他segments，
+        ##       对它们进行排序，并将排序后多个segments插入到当前的segment A 位置中。
+        ## TODO: 未来根据参数决定是否开启重排以及重排的策略
         for doc in relevant_docs:
             if doc.metadata.get('original_doc') and doc.metadata.get('chunk_index'):
                 if doc.metadata['original_doc'] not in added_docs:
