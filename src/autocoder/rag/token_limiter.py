@@ -93,8 +93,23 @@ class TokenLimiter:
         token_count = 0
         doc_num_count = 0
 
-        ## 非窗口分区实现
+        reorder_relevant_docs = []
+        added_docs = set()
+
         for doc in relevant_docs:
+            if doc.metadata.get('original_doc') and doc.metadata.get('chunk_index'):
+                if doc.metadata['original_doc'] not in added_docs:
+                    original_doc = doc.metadata['original_doc']
+                    chunks = [d for d in relevant_docs if d.metadata.get('original_doc') == original_doc]
+                    chunks.sort(key=lambda x: x.metadata['chunk_index'])
+                    reorder_relevant_docs.extend(chunks)
+                    added_docs.add(original_doc)
+            elif doc not in added_docs:
+                reorder_relevant_docs.append(doc)
+                added_docs.add(doc.module_name)
+
+        ## 非窗口分区实现
+        for doc in reorder_relevant_docs:
             doc_tokens = self.count_tokens(doc.source_code)
             doc_num_count += 1
             if token_count + doc_tokens <= self.full_text_limit + self.segment_limit:
@@ -104,12 +119,12 @@ class TokenLimiter:
                 break
 
         ## 如果窗口无法放下所有的相关文档，则需要分区
-        if len(final_relevant_docs) < len(relevant_docs):
+        if len(final_relevant_docs) < len(reorder_relevant_docs):
             ## 先填充full_text分区
             token_count = 0
             new_token_limit = self.full_text_limit
             doc_num_count = 0
-            for doc in relevant_docs:
+            for doc in reorder_relevant_docs:
                 doc_tokens = self.count_tokens(doc.source_code)
                 doc_num_count += 1
                 if token_count + doc_tokens <= new_token_limit:
@@ -130,7 +145,7 @@ class TokenLimiter:
 
             ## 继续填充segment分区
             sencond_round_start_time = time.time()
-            remaining_docs = relevant_docs[len(self.first_round_full_docs) :]
+            remaining_docs = reorder_relevant_docs[len(self.first_round_full_docs) :]
             logger.info(
                 f"first round docs: {len(self.first_round_full_docs)} remaining docs: {len(remaining_docs)} index_filter_workers: {index_filter_workers}"
             )
