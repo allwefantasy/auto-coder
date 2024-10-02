@@ -285,8 +285,9 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     monitor_mode: bool = False
     disable_auto_window: bool = False
-    
-    description: Optional[str] = ""
+    disable_segment_reorder: bool = False
+    rag_doc_filter_relevance: int = 5
+    tokenizer_path: Optional[str] = None
     skip_confirm: Optional[bool] = False
     silence: Optional[bool] = False
     exclude_files: Optional[Union[str, List[str]]] = ""

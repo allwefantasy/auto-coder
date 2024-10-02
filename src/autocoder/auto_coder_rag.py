@@ -225,6 +225,11 @@ def main(input_args: Optional[List[str]] = None):
         action="store_true",
         help="Disable automatic window adaptation for documents",
     )
+    serve_parser.add_argument(
+        "--disable_segment_reorder",
+        action="store_true",
+        help="Disable reordering of document segments after retrieval",
+    )
 
     # Tools command
     tools_parser = subparsers.add_parser("tools", help="Various tools")
