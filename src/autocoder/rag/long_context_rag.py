@@ -7,7 +7,6 @@ import byzerllm
 import pandas as pd
 import pathspec
 from byzerllm import ByzerLLM
-from jinja2 import Template
 from loguru import logger
 from openai import OpenAI
 from rich.console import Console
@@ -29,6 +28,11 @@ from autocoder.rag.token_counter import RemoteTokenCounter, TokenCounter
 from autocoder.rag.token_limiter import TokenLimiter
 from tokenizers import Tokenizer
 from autocoder.rag import variable_holder
+
+try:
+    from autocoder_pro.rag.llm_compute import LLMComputeEngine
+except ImportError:
+    LLMComputeEngine = None
 
 
 class LongContextRAG:
@@ -119,13 +123,13 @@ class LongContextRAG:
             self.monitor_mode,
             ## 确保全文区至少能放下一个文件
             single_file_token_limit=self.full_text_limit - 100,
-            disable_auto_window=self.args.disable_auto_window
+            disable_auto_window=self.args.disable_auto_window,
         )
 
         self.doc_filter = DocFilter(
             self.index_model, self.args, on_ray=self.on_ray, path=self.path
         )
-        
+
         doc_num = 0
         token_num = 0
         token_counts = []
@@ -151,7 +155,7 @@ class LongContextRAG:
             f"  Max doc tokens:    {max(token_counts) if token_counts else 0}\n"
             f"  Min doc tokens:    {min(token_counts) if token_counts else 0}\n"
             f"  Avg doc tokens:    {avg_tokens:.2f}\n"
-            f"  Median doc tokens: {median_tokens:.2f}\n"                        
+            f"  Median doc tokens: {median_tokens:.2f}\n"
         )
 
     def count_tokens(self, text: str) -> int:
@@ -391,8 +395,13 @@ class LongContextRAG:
             relevant_docs_info = []
             for doc in relevant_docs:
                 info = f"- {doc.module_name.replace(self.path,'',1)}"
-                if 'original_docs' in doc.metadata:
-                    original_docs = ", ".join([doc.replace(self.path,"",1) for doc in doc.metadata['original_docs']])                                                                    
+                if "original_docs" in doc.metadata:
+                    original_docs = ", ".join(
+                        [
+                            doc.replace(self.path, "", 1)
+                            for doc in doc.metadata["original_docs"]
+                        ]
+                    )
                     info += f" (Original docs: {original_docs})"
                 relevant_docs_info.append(info)
 
@@ -411,7 +420,7 @@ class LongContextRAG:
                     segment_limit=self.segment_limit,
                     buff_limit=self.buff_limit,
                     llm=self.llm,
-                    disable_segment_reorder = self.args.disable_segment_reorder
+                    disable_segment_reorder=self.args.disable_segment_reorder,
                 )
                 final_relevant_docs = token_limiter.limit_tokens(
                     relevant_docs=relevant_docs,
@@ -443,13 +452,20 @@ class LongContextRAG:
 
             # Add relevant docs information
             final_relevant_docs_info = []
-            for doc in relevant_docs:                
+            for doc in relevant_docs:
                 info = f"- {doc.module_name.replace(self.path,'',1)}"
-                if 'original_docs' in doc.metadata:                    
-                    original_docs = ", ".join([doc.replace(self.path,"",1) for doc in doc.metadata['original_docs']])                                                
+                if "original_docs" in doc.metadata:
+                    original_docs = ", ".join(
+                        [
+                            doc.replace(self.path, "", 1)
+                            for doc in doc.metadata["original_docs"]
+                        ]
+                    )
                     info += f" (Original docs: {original_docs})"
                 if "chunk_ranges" in doc.metadata:
-                    chunk_ranges = json.dumps(doc.metadata['chunk_ranges'],ensure_ascii=False)
+                    chunk_ranges = json.dumps(
+                        doc.metadata["chunk_ranges"], ensure_ascii=False
+                    )
                     info += f" (Chunk ranges: {chunk_ranges})"
                 final_relevant_docs_info.append(info)
 
@@ -465,10 +481,12 @@ class LongContextRAG:
 
             # Log the panel using rich
             console.print(panel)
-            
+
             request_tokens = sum([doc.tokens for doc in relevant_docs])
-            target_model = model or self.llm.default_model_name 
-            logger.info(f"Start to send to model {target_model} with {request_tokens} tokens")
+            target_model = model or self.llm.default_model_name
+            logger.info(
+                f"Start to send to model {target_model} with {request_tokens} tokens"
+            )
 
             new_conversations = conversations[:-1] + [
                 {
@@ -480,9 +498,24 @@ class LongContextRAG:
                 }
             ]
 
-            # # 将 new_conversations 转化为 JSON 并写入文件
-            # with open('/tmp/rag.json', 'w', encoding='utf-8') as f:
-            #     json.dump(new_conversations, f, ensure_ascii=False, indent=2)
+            if LLMComputeEngine is not None:
+                llm_compute_engine = LLMComputeEngine(
+                    model=target_model,
+                    conversations=new_conversations,
+                    role_mapping=role_mapping,
+                    llm_config=llm_config,
+                    delta_mode=True,
+                )
+                return (
+                    llm_compute_engine.stream_chat_oai(
+                        conversations=new_conversations,
+                        model=model,
+                        role_mapping=role_mapping,
+                        llm_config=llm_config,
+                        delta_mode=True,
+                    ),
+                    context,
+                )
 
             chunks = self.llm.stream_chat_oai(
                 conversations=new_conversations,
@@ -491,4 +524,5 @@ class LongContextRAG:
                 llm_config=llm_config,
                 delta_mode=True,
             )
+
             return (chunk[0] for chunk in chunks), context
