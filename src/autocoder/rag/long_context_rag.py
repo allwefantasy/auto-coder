@@ -411,6 +411,7 @@ class LongContextRAG:
                     segment_limit=self.segment_limit,
                     buff_limit=self.buff_limit,
                     llm=self.llm,
+                    disable_segment_reorder = self.args.disable_segment_reorder
                 )
                 final_relevant_docs = token_limiter.limit_tokens(
                     relevant_docs=relevant_docs,

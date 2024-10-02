@@ -17,6 +17,7 @@ class TokenLimiter:
         segment_limit: int,
         buff_limit: int,
         llm,
+        disable_segment_reorder:bool
     ):
         self.count_tokens = count_tokens
         self.full_text_limit = full_text_limit
@@ -26,6 +27,7 @@ class TokenLimiter:
         self.first_round_full_docs = []
         self.second_round_extracted_docs = []
         self.sencond_round_time = 0
+        self.disable_segment_reorder = disable_segment_reorder
 
     @byzerllm.prompt()
     def extract_relevance_range_from_docs_with_conversation(
@@ -105,18 +107,19 @@ class TokenLimiter:
         ##    b) 方案二（当前实现）：遍历文档，发现某文档的segment A，立即查找该文档的所有其他segments，
         ##       对它们进行排序，并将排序后多个segments插入到当前的segment A 位置中。
         ## TODO: 
-        ##     1. 未来根据参数决定是否开启重排以及重排的策略        
-        for doc in relevant_docs:
-            if doc.metadata.get('original_doc') and doc.metadata.get('chunk_index'):
-                if doc.metadata['original_doc'] not in added_docs:
-                    original_doc = doc.metadata['original_doc']
-                    chunks = [d for d in relevant_docs if d.metadata.get('original_doc') == original_doc]
-                    chunks.sort(key=lambda x: x.metadata['chunk_index'])
-                    reorder_relevant_docs.extend(chunks)
-                    added_docs.add(original_doc)
-            elif doc not in added_docs:
-                reorder_relevant_docs.append(doc)
-                added_docs.add(doc.module_name)
+        ##     1. 未来根据参数决定是否开启重排以及重排的策略   
+        if not self.disable_segment_reorder:    
+            for doc in relevant_docs:
+                if doc.metadata.get('original_doc') and doc.metadata.get('chunk_index'):
+                    if doc.metadata['original_doc'] not in added_docs:
+                        original_doc = doc.metadata['original_doc']
+                        chunks = [d for d in relevant_docs if d.metadata.get('original_doc') == original_doc]
+                        chunks.sort(key=lambda x: x.metadata['chunk_index'])
+                        reorder_relevant_docs.extend(chunks)
+                        added_docs.add(original_doc)
+                elif doc not in added_docs:
+                    reorder_relevant_docs.append(doc)
+                    added_docs.add(doc.module_name)
 
         ## 非窗口分区实现
         for doc in reorder_relevant_docs:
