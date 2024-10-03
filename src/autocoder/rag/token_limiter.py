@@ -17,7 +17,7 @@ class TokenLimiter:
         segment_limit: int,
         buff_limit: int,
         llm,
-        disable_segment_reorder:bool
+        disable_segment_reorder: bool,
     ):
         self.count_tokens = count_tokens
         self.full_text_limit = full_text_limit
@@ -96,8 +96,7 @@ class TokenLimiter:
         doc_num_count = 0
 
         reorder_relevant_docs = []
-        added_docs = set()
-        
+
         ## 文档分段（单个文档过大）和重排序逻辑
         ## 1. 背景：在检索过程中，许多文档被切割成多个段落（segments）
         ## 2. 问题：这些segments在召回时因为是按相关分做了排序可能是乱序的，不符合原文顺序，会强化大模型的幻觉。
@@ -106,20 +105,33 @@ class TokenLimiter:
         ##    a) 方案一（保留位置）：统一文档的不同segments 根据chunk_index 来置换位置
         ##    b) 方案二（当前实现）：遍历文档，发现某文档的segment A，立即查找该文档的所有其他segments，
         ##       对它们进行排序，并将排序后多个segments插入到当前的segment A 位置中。
-        ## TODO: 
-        ##     1. 未来根据参数决定是否开启重排以及重排的策略   
-        if not self.disable_segment_reorder:    
+        ## TODO:
+        ##     1. 未来根据参数决定是否开启重排以及重排的策略
+        if not self.disable_segment_reorder:
+            num_count = 0
             for doc in relevant_docs:
-                if doc.metadata.get('original_doc') and doc.metadata.get('chunk_index'):
-                    if doc.metadata['original_doc'] not in added_docs:
-                        original_doc = doc.metadata['original_doc']
-                        chunks = [d for d in relevant_docs if d.metadata.get('original_doc') == original_doc]
-                        chunks.sort(key=lambda x: x.metadata['chunk_index'])
-                        reorder_relevant_docs.extend(chunks)
-                        added_docs.add(original_doc)
-                elif doc not in added_docs:
-                    reorder_relevant_docs.append(doc)
-                    added_docs.add(doc.module_name)
+                num_count += 1
+                reorder_relevant_docs.append(doc)
+                if "original_doc" in doc.metadata and "chunk_index" in doc.metadata:
+                    original_doc_name = doc.metadata["original_doc"].module_name
+
+                    temp_docs = []
+                    for temp_doc in relevant_docs[num_count:]:
+                        if (
+                            "original_doc" in temp_doc.metadata
+                            and "chunk_index" in temp_doc.metadata
+                        ):
+                            if (
+                                temp_doc.metadata["original_doc"].module_name
+                                == original_doc_name
+                            ):
+                                if temp_doc not in reorder_relevant_docs:
+                                    temp_docs.append(temp_doc)
+
+                    temp_docs.sort(key=lambda x: x.metadata["chunk_index"])
+                    reorder_relevant_docs.extend(temp_docs)
+        else:
+            reorder_relevant_docs = relevant_docs
 
         ## 非窗口分区实现
         for doc in reorder_relevant_docs:
@@ -247,7 +259,5 @@ class TokenLimiter:
                         f"Failed to process doc {doc.module_name} after {max_retries} attempts: {str(e)}"
                     )
                     return SourceCode(
-                        module_name=doc.module_name,
-                        source_code="",   
-                        tokens= 0                     
+                        module_name=doc.module_name, source_code="", tokens=0
                     )

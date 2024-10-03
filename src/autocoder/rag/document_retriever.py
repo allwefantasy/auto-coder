@@ -159,6 +159,8 @@ def process_file_local(file_path: str) -> List[SourceCode]:
         return v
     except Exception as e:
         logger.error(f"Error processing file {file_path}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return []
 
 
@@ -392,7 +394,7 @@ class AutoCoderRAGAsyncUpdateQueue:
             elif isinstance(file_list, AddOrUpdateEvent):
                 for file_info in file_list.file_infos:
                     logger.info(f"{file_info[0]} is detected to be updated")
-                    result = process_file_local(file_info)
+                    result = process_file_local(file_info[0])
                     self.update_cache(file_info, result)
 
             self.write_cache()

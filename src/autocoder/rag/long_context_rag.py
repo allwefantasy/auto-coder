@@ -488,24 +488,12 @@ class LongContextRAG:
                 f"Start to send to model {target_model} with {request_tokens} tokens"
             )
 
-            new_conversations = conversations[:-1] + [
-                {
-                    "role": "user",
-                    "content": self._answer_question.prompt(
-                        query=query,
-                        relevant_docs=[doc.source_code for doc in relevant_docs],
-                    ),
-                }
-            ]
-
             if LLMComputeEngine is not None:
-                llm_compute_engine = LLMComputeEngine(
-                    model=target_model,
-                    conversations=new_conversations,
-                    role_mapping=role_mapping,
-                    llm_config=llm_config,
-                    delta_mode=True,
+                llm_compute_engine = LLMComputeEngine(llm=self.llm)
+                new_conversations = llm_compute_engine.process_conversation(
+                    conversations, query, [doc.source_code for doc in relevant_docs]
                 )
+
                 return (
                     llm_compute_engine.stream_chat_oai(
                         conversations=new_conversations,
@@ -516,6 +504,16 @@ class LongContextRAG:
                     ),
                     context,
                 )
+
+            new_conversations = conversations[:-1] + [
+                {
+                    "role": "user",
+                    "content": self._answer_question.prompt(
+                        query=query,
+                        relevant_docs=[doc.source_code for doc in relevant_docs],
+                    ),
+                }
+            ]
 
             chunks = self.llm.stream_chat_oai(
                 conversations=new_conversations,
