@@ -1,2 +1,3 @@
-TOKENIZER_PATH = None
-TOKENIZER_MODEL = None
+class VariableHolder:
+    TOKENIZER_PATH = None
+    TOKENIZER_MODEL = None

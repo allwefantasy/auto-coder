@@ -27,7 +27,7 @@ from autocoder.rag.token_checker import check_token_limit
 from autocoder.rag.token_counter import RemoteTokenCounter, TokenCounter
 from autocoder.rag.token_limiter import TokenLimiter
 from tokenizers import Tokenizer
-from autocoder.rag import variable_holder
+from autocoder.rag.variable_holder import VariableHolder
 
 try:
     from autocoder_pro.rag.llm_compute import LLMComputeEngine
@@ -72,8 +72,8 @@ class LongContextRAG:
         self.on_ray = False
 
         if self.tokenizer_path:
-            variable_holder.TOKENIZER_PATH = self.tokenizer_path
-            variable_holder.TOKENIZER_MODEL = Tokenizer.from_file(self.tokenizer_path)
+            VariableHolder.TOKENIZER_PATH = self.tokenizer_path
+            VariableHolder.TOKENIZER_MODEL = Tokenizer.from_file(self.tokenizer_path)
             self.tokenizer = TokenCounter(self.tokenizer_path)
         else:
             if llm.is_model_exist("deepseek_tokenizer"):

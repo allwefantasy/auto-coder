@@ -2,7 +2,7 @@ import time
 from loguru import logger
 from tokenizers import Tokenizer
 from multiprocessing import Pool, cpu_count
-from autocoder.rag.variable_holder import TOKENIZER_MODEL
+from autocoder.rag.variable_holder import VariableHolder
 
 
 class RemoteTokenCounter:
@@ -28,7 +28,7 @@ def initialize_tokenizer(tokenizer_path):
 def count_tokens(text: str) -> int:    
     try:
         # start_time = time.time_ns()
-        encoded = TOKENIZER_MODEL.encode('{"role":"user","content":"' + text + '"}')
+        encoded = VariableHolder.TOKENIZER_MODEL.encode('{"role":"user","content":"' + text + '"}')
         v = len(encoded.ids)
         # elapsed_time = time.time_ns() - start_time
         # logger.info(f"Token counting took {elapsed_time/1000000} ms")
