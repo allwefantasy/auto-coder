@@ -13,6 +13,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 import statistics
+import traceback
 
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.rag.doc_filter import DocFilter
@@ -30,8 +31,9 @@ from tokenizers import Tokenizer
 from autocoder.rag.variable_holder import VariableHolder
 
 try:
-    from autocoder_pro.rag.llm_compute import LLMComputeEngine
-except ImportError:
+    from autocoder_pro.rag.llm_compute import LLMComputeEngine    
+except ImportError:    
+    logger.warning("Please install auto-coder-pro to enhance llm compute ability")
     LLMComputeEngine = None
 
 
@@ -287,8 +289,8 @@ class LongContextRAG:
                 llm_config=llm_config,
             )
         except Exception as e:
-            logger.error(f"Error in stream_chat_oai: {str(e)}")
-            e.print_exc()
+            logger.error(f"Error in stream_chat_oai: {str(e)}")            
+            traceback.print_exc()
             return ["出现错误，请稍后再试。"], []
 
     def _stream_chat_oai(

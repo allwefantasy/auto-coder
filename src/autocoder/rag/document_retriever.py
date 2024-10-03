@@ -2,6 +2,7 @@ import json
 import os
 import platform
 import time
+import traceback
 
 from watchfiles import Change, DefaultFilter, awatch, watch
 
@@ -24,9 +25,9 @@ from autocoder.rag.loaders import (
     extract_text_from_pdf,
     extract_text_from_ppt,
 )
-from autocoder.rag import variable_holder
 from autocoder.rag.token_counter import count_tokens_worker, count_tokens
 from uuid import uuid4
+from autocoder.rag.variable_holder import VariableHolder
 
 cache_lock = threading.Lock()
 
@@ -158,8 +159,7 @@ def process_file_local(file_path: str) -> List[SourceCode]:
         logger.info(f"Load file {file_path} in {time.time() - start_time}")
         return v
     except Exception as e:
-        logger.error(f"Error processing file {file_path}: {str(e)}")
-        import traceback
+        logger.error(f"Error processing file {file_path}: {str(e)}")        
         traceback.print_exc()
         return []
 
@@ -352,7 +352,7 @@ class AutoCoderRAGAsyncUpdateQueue:
             with Pool(
                 processes=os.cpu_count(),
                 initializer=initialize_tokenizer,
-                initargs=(variable_holder.TOKENIZER_PATH,),
+                initargs=(VariableHolder.TOKENIZER_PATH,),
             ) as pool:
                 results = pool.map(process_file_in_multi_process, files_to_process)
 
