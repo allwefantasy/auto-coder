@@ -931,12 +931,7 @@ class CommandCompleter(Completer):
                         field_name + ":"
                         for field_name in AutoCoderArgs.model_fields.keys()
                         if field_name.startswith(current_word)
-                    ]
-                    completions += [
-                        field_name + ":"
-                        for field_name in AutoCoderArgs.model_fields.keys()
-                        if field_name.startswith(current_word)
-                    ]
+                    ]                    
 
                 for completion in completions:
                     yield Completion(completion, start_position=-len(current_word))
