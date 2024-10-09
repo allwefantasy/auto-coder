@@ -31,8 +31,8 @@ from tokenizers import Tokenizer
 from autocoder.rag.variable_holder import VariableHolder
 
 try:
-    from autocoder_pro.rag.llm_compute import LLMComputeEngine    
-except ImportError:    
+    from autocoder_pro.rag.llm_compute import LLMComputeEngine
+except ImportError:
     logger.warning("Please install auto-coder-pro to enhance llm compute ability")
     LLMComputeEngine = None
 
@@ -289,7 +289,7 @@ class LongContextRAG:
                 llm_config=llm_config,
             )
         except Exception as e:
-            logger.error(f"Error in stream_chat_oai: {str(e)}")            
+            logger.error(f"Error in stream_chat_oai: {str(e)}")
             traceback.print_exc()
             return ["出现错误，请稍后再试。"], []
 
@@ -491,7 +491,9 @@ class LongContextRAG:
             )
 
             if LLMComputeEngine is not None:
-                llm_compute_engine = LLMComputeEngine(llm=self.llm)
+                llm_compute_engine = LLMComputeEngine(
+                    llm=self.llm, inference_enhance=True, debug=False
+                )
                 new_conversations = llm_compute_engine.process_conversation(
                     conversations, query, [doc.source_code for doc in relevant_docs]
                 )

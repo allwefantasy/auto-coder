@@ -31,9 +31,6 @@ class Interpreter:
                     output += "Output:\n"
                     result, error = jupyter_client.add_and_run(step.code)
                     if output_callback:
-                        print("===========")
-                        print(result,flush=True)
-                        print("===========")
                         output_callback("result", result)
                         if error:
                             output_callback("error", error)
@@ -62,6 +59,8 @@ class Interpreter:
                     output += stdout + "\n"
                     if stderr:
                         output += f"Error: {stderr}\n"
+                        if output_callback:
+                            output_callback("error", stderr)
                 else:
                     output += f"Unknown step type: {step.lang}\n"
 
