@@ -231,6 +231,17 @@ def main(input_args: Optional[List[str]] = None):
         help="Disable reordering of document segments after retrieval",
     )
 
+    serve_parser.add_argument(
+        "--disable_inference_enhance",
+        action="store_true",
+        help="Disable enhanced inference mode",
+    )
+    serve_parser.add_argument(
+        "--inference_deep_thought",
+        action="store_true",
+        help="Enable deep thought in inference mode",
+    )
+
     # Tools command
     tools_parser = subparsers.add_parser("tools", help="Various tools")
     tools_subparsers = tools_parser.add_subparsers(dest="tool", help="Available tools")

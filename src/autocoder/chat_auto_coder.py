@@ -718,10 +718,11 @@ class CommandCompleter(Completer):
 
                 parser.coding()
                 current_word = parser.current_word()
-
-                for command in parser.get_sub_commands():
-                    if command.startswith(current_word):
-                        yield Completion(command, start_position=-len(current_word))
+                
+                if len(new_text.strip()) == 0 or new_text.strip()=="/":
+                    for command in parser.get_sub_commands():
+                        if command.startswith(current_word):
+                            yield Completion(command, start_position=-len(current_word))
 
                 all_tags = parser.tags
 
@@ -796,6 +797,8 @@ class CommandCompleter(Completer):
                                 start_position=-len(name),
                                 display=f"{symbol.symbol_name} ({display_name}/{symbol.symbol_type})",
                             )
+                
+                tags = [tag for tag in parser.tags]
 
                 if current_word.startswith("<"):
                     name = current_word[1:]
@@ -807,9 +810,7 @@ class CommandCompleter(Completer):
                                 )
                         elif tag.startswith(name):
                             yield Completion(tag, start_position=-len(current_word))
-
-                tags = [tag for tag in parser.tags]
-
+            
                 if tags and tags[-1].start_tag == "<img>" and tags[-1].end_tag == "":
                     raw_file_name = tags[0].content
                     file_name = raw_file_name.strip()

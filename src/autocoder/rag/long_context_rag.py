@@ -492,7 +492,10 @@ class LongContextRAG:
 
             if LLMComputeEngine is not None:
                 llm_compute_engine = LLMComputeEngine(
-                    llm=self.llm, inference_enhance=True, debug=False
+                    llm=self.llm,
+                    inference_enhance=not self.args.disable_inference_enhance,
+                    inference_deep_thought=self.args.inference_deep_thought,
+                    debug=False,
                 )
                 new_conversations = llm_compute_engine.process_conversation(
                     conversations, query, [doc.source_code for doc in relevant_docs]
