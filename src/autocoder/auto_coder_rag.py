@@ -144,6 +144,18 @@ def main(input_args: Optional[List[str]] = None):
     parser = argparse.ArgumentParser(description="Auto Coder RAG Server")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
+    # Build hybrid index command
+    build_index_parser = subparsers.add_parser("build_hybrid_index", help="Build hybrid index for RAG")
+    build_index_parser.add_argument("--file", default="", help=desc["file"])
+    build_index_parser.add_argument("--model", default="deepseek_chat", help=desc["model"])
+    build_index_parser.add_argument("--index_model", default="", help=desc["index_model"])
+    build_index_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
+    build_index_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
+    build_index_parser.add_argument("--required_exts", default="", help=desc["doc_build_parse_required_exts"])
+    build_index_parser.add_argument("--source_dir", default=".", help="")
+    build_index_parser.add_argument("--tokenizer_path", default="", help="")
+    build_index_parser.add_argument("--enable_hybrid_index", action="store_true", help="Enable hybrid index")
+
     # Serve command
     serve_parser = subparsers.add_parser("serve", help="Start the RAG server")
     serve_parser.add_argument(
@@ -298,6 +310,31 @@ def main(input_args: Optional[List[str]] = None):
 
         llm_wrapper = LLWrapper(llm=llm, rag=rag)
         serve(llm=llm_wrapper, args=server_args)
+    elif args.command == "build_hybrid_index":
+        auto_coder_args = AutoCoderArgs(
+            **{
+                arg: getattr(args, arg)
+                for arg in vars(AutoCoderArgs())
+                if hasattr(args, arg)
+            }
+        )
+
+        byzerllm.connect_cluster(address=args.ray_address)
+        llm = byzerllm.ByzerLLM()
+        llm.setup_default_model_name(args.model)
+
+        rag = RAGFactory.get_rag(
+            llm=llm,
+            args=auto_coder_args,
+            path=args.source_dir,
+            tokenizer_path=args.tokenizer_path,
+        )
+        
+        if hasattr(rag.document_retriever, "cacher"):
+            rag.document_retriever.cacher.build_cache()
+        else:
+            logger.error("The document retriever does not support hybrid index building")
+
     elif args.command == "tools" and args.tool == "count":
         # auto-coder.rag tools count --tokenizer_path /Users/allwefantasy/Downloads/tokenizer.json --file /Users/allwefantasy/data/yum/schema/schema.xlsx
         count_tokens(args.tokenizer_path, args.file)
