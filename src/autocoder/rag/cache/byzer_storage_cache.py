@@ -60,8 +60,7 @@ class ByzerStorageCache(BaseCacheManager):
         _ = (
             self.storage.schema_builder()
             .add_field("_id", DataType.STRING)
-            .add_field("file_path", DataType.STRING)
-            .add_field("chunk_id", DataType.STRING)
+            .add_field("file_path", DataType.STRING)            
             .add_field("content", DataType.STRING, [FieldOption.ANALYZE])
             .add_field("raw_content", DataType.STRING, [FieldOption.NO_INDEX])
             .add_array_field("vector", DataType.FLOAT)
@@ -94,8 +93,7 @@ class ByzerStorageCache(BaseCacheManager):
         cache_data = {
             'file_path': file_path,
             'content': content,
-            'mtime': os.path.getmtime(file_path),
-            'chunks': chunks
+            'mtime': os.path.getmtime(file_path)            
         }
         
         self.cache[file_path] = cache_data
@@ -128,18 +126,16 @@ class ByzerStorageCache(BaseCacheManager):
         for source_codes in map(process_file_in_multi_process, files_to_process):
             for doc in source_codes:
                 logger.info(f"Processing file: {doc.module_name}")
-                file_path = str(doc.module_name)
+                file_path = str(doc.module_name)[len("##File: "):]
                 mtime = os.path.getmtime(file_path)
                 self.file_mtimes[file_path] = mtime
                 
                 chunks = self._chunk_text(doc.source_code, self.chunk_size)
                 chunk_items = []
-                for chunk_idx, chunk in enumerate(chunks):
-                    chunk_id = str(uuid.uuid4())
+                for chunk_idx, chunk in enumerate(chunks):                    
                     chunk_item = {
                         "_id": f"{doc.module_name}_{chunk_idx}",
-                        "file_path": doc.module_name,
-                        "chunk_id": chunk_id,
+                        "file_path": file_path,                        
                         "content": chunk,
                         "raw_content": chunk,
                         "vector": chunk,
@@ -244,12 +240,10 @@ class ByzerStorageCache(BaseCacheManager):
                     # Add new entries
                     chunks = self._chunk_text(doc.source_code, self.chunk_size)
                     chunk_items = []
-                    for chunk_idx, chunk in enumerate(chunks):
-                        chunk_id = str(uuid.uuid4())
+                    for chunk_idx, chunk in enumerate(chunks):                        
                         chunk_item = {
                             "_id": f"{file_path}_{chunk_idx}",
-                            "file_path": file_path,
-                            "chunk_id": chunk_id,
+                            "file_path": file_path,                            
                             "content": chunk,
                             "raw_content": chunk,
                             "vector": chunk,
