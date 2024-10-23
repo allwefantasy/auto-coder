@@ -1,6 +1,9 @@
 from autocoder.common import SourceCode
 from autocoder.rag.token_counter import count_tokens_worker, count_tokens
-from autocoder.rag.document_retriever import extract_text_from_pdf, extract_text_from_docx, extract_text_from_excel, extract_text_from_ppt
+from autocoder.rag.loaders.pdf_loader import extract_text_from_pdf
+from autocoder.rag.loaders.docx_loader import extract_text_from_docx
+from autocoder.rag.loaders.excel_loader import extract_text_from_excel
+from autocoder.rag.loaders.ppt_loader import extract_text_from_ppt
 from typing import List, Tuple
 import time
 from loguru import logger

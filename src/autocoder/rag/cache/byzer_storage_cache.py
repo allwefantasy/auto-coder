@@ -6,6 +6,7 @@ from loguru import logger
 import pathspec
 import os
 import uuid
+from autocoder.rag.utils import process_file_in_multi_process,process_file_local
 from byzerllm.apps.byzer_storage.simple_api import (
     ByzerStorage,
     DataType,
@@ -55,9 +56,7 @@ class ByzerStorageCache(BaseCacheManager):
         )
 
     def _build_cache(self):
-        """Build the cache by reading files and storing in Byzer Storage"""
-        from autocoder.rag.utils import process_file_in_multi_process
-
+        """Build the cache by reading files and storing in Byzer Storage"""        
         logger.info(f"Building cache for path: {self.path}")
 
         # Get list of files to process
@@ -77,6 +76,7 @@ class ByzerStorageCache(BaseCacheManager):
         # Process files in parallel
         for source_codes in map(process_file_in_multi_process, files_to_process):
             for doc in source_codes:
+                logger.info(f"Processing file: {doc.module_name}")
                 chunks = self._chunk_text(doc.source_code, self.chunk_size)
                 for chunk_idx, chunk in enumerate(chunks):
                     chunk_id = str(uuid.uuid4())
@@ -146,7 +146,7 @@ class ByzerStorageCache(BaseCacheManager):
             file_path = result["file_path"]
             if file_path not in grouped_results:
                 # 收集所有结果中的file_path并去重
-                file_paths = list(set([result["file_path"] for result in results]))
+                file_paths = list(set([result["file_path"][len("##File: "):] for result in results]))
                 file_infos = [
                     (file_path, file_path, os.path.getmtime(file_path))
                     for file_path in file_paths
