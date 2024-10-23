@@ -137,15 +137,9 @@ class ByzerStorageCache(BaseCacheManager):
             if file_path not in grouped_results:
             # 收集所有结果中的file_path并去重
             file_paths = list(set([result["file_path"] for result in results]))
-            
-            # 参考AutoCoderRAGAsyncUpdateQueue的方式读取文件
-            for file_path in file_paths:
-                try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                        yield SourceCode(
-                            module_name=file_path,
-                            source_code=content
-                        )
-                except Exception as e:
-                    logger.error(f"Error reading file {file_path}: {str(e)}")            
+            file_infos = [(file_path, file_path, os.path.getmtime(file_path)) for file_path in file_paths]
+
+            # 使用 process_file_in_multi_process 并行处理文件
+            for source_codes in map(process_file_in_multi_process, file_infos):
+                for source_code in source_codes:
+                    yield source_code       
