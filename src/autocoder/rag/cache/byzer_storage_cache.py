@@ -127,23 +127,17 @@ class ByzerStorageCache(BaseCacheManager):
         for result in results:
             file_path = result["file_path"]
             if file_path not in grouped_results:
-                grouped_results[file_path] = []
-            grouped_results[file_path].append(result)
-
-        # Yield reconstructed documents
-        for file_path, chunks in grouped_results.items():
-            # Sort chunks by chunk_id to maintain original order
-            chunks.sort(key=lambda x: x["chunk_id"])
-            combined_content = "\n".join(chunk["raw_content"] for chunk in chunks)
+            # 收集所有结果中的file_path并去重
+            file_paths = list(set([result["file_path"] for result in results]))
             
-            yield SourceCode(
-                module_name=file_path,
-                source_code=combined_content,
-                metadata={
-                    "chunk_ids": [chunk["chunk_id"] for chunk in chunks]
-                }
-            )
-
-    def clear_cache(self):
-        """Clear all cached data"""
-        self.storage.drop()
+            # 参考AutoCoderRAGAsyncUpdateQueue的方式读取文件
+            for file_path in file_paths:
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        yield SourceCode(
+                            module_name=file_path,
+                            source_code=content
+                        )
+                except Exception as e:
+                    logger.error(f"Error reading file {file_path}: {str(e)}")            
