@@ -111,6 +111,8 @@ class ByzerStorageCache(BaseCacheManager):
         query = options.get("query", "")
         if not query:
             return None
+        
+        self.update_cache()
 
         # Build query with both vector search and text search
         query_builder = self.storage.query_builder()
@@ -171,7 +173,7 @@ class ByzerStorageCache(BaseCacheManager):
             for source_codes in map(process_file_in_multi_process, files_to_update):
                 for doc in source_codes:
                     logger.info(f"Updating cache for file: {doc.module_name}")
-                    file_path = str(doc.module_name)
+                    file_path = str(doc.module_name)[len("##File: "):]
                     mtime = os.path.getmtime(file_path)
                     
                     # Delete existing entries for this file
