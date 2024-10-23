@@ -259,6 +259,7 @@ def main(input_args: Optional[List[str]] = None):
         action="store_true",
         help="Enable hybrid index",
     )
+    
 
     # Tools command
     tools_parser = subparsers.add_parser("tools", help="Various tools")
@@ -311,6 +312,9 @@ def main(input_args: Optional[List[str]] = None):
         llm_wrapper = LLWrapper(llm=llm, rag=rag)
         serve(llm=llm_wrapper, args=server_args)
     elif args.command == "build_hybrid_index":
+        if not args.quick:
+            initialize_system()
+            
         auto_coder_args = AutoCoderArgs(
             **{
                 arg: getattr(args, arg)
@@ -318,6 +322,8 @@ def main(input_args: Optional[List[str]] = None):
                 if hasattr(args, arg)
             }
         )
+
+        auto_coder_args.enable_hybrid_index = True
 
         byzerllm.connect_cluster(address=args.ray_address)
         llm = byzerllm.ByzerLLM()

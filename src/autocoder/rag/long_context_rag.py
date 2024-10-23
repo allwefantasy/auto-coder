@@ -223,8 +223,8 @@ class LongContextRAG:
                 return pathspec.PathSpec.from_lines("gitwildmatch", ignore_file)
         return None
 
-    def _retrieve_documents(self) -> Generator[SourceCode, None, None]:
-        return self.document_retriever.retrieve_documents()
+    def _retrieve_documents(self,options:Optional[Dict[str,Any]]=None) -> Generator[SourceCode, None, None]:
+        return self.document_retriever.retrieve_documents(options=options)
 
     def build(self):
         pass
@@ -276,7 +276,8 @@ class LongContextRAG:
                 return [SourceCode(module_name=f"RAG:{url}", source_code="".join(v))]
 
     def _filter_docs(self, conversations: List[Dict[str, str]]) -> List[FilterDoc]:
-        documents = self._retrieve_documents()
+        query = conversations[-1]["content"]
+        documents = self._retrieve_documents(options={"query":query})
         return self.doc_filter.filter_docs(
             conversations=conversations, documents=documents
         )

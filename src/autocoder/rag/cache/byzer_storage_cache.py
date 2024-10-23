@@ -158,7 +158,13 @@ class ByzerStorageCache(BaseCacheManager):
         """Search cached documents using query"""
         query = options.get("query", "")
         if not query:
-            return None
+            for _, data in self.cache.items():
+                yield SourceCode(
+                    module_name=f"##File: {data['file_path']}",
+                    source_code=data['content'],
+                    tokens=data['tokens']
+                )
+            return
         
         self.update_cache()
 
