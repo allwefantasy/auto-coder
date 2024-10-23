@@ -508,7 +508,24 @@ def get_or_create_actor(path: str, ignore_spec, required_exts: list, cacher={}):
         return actor
 
 
-class DocumentRetriever:
+from abc import ABC, abstractmethod
+
+class BaseDocumentRetriever(ABC):
+    """Abstract base class for document retrieval."""
+    
+    @abstractmethod
+    def get_cache(self):
+        """Get cached documents."""
+        pass
+
+    @abstractmethod
+    def retrieve_documents(self) -> Generator[SourceCode, None, None]:
+        """Retrieve documents."""
+        pass
+
+class LocalDocumentRetriever(BaseDocumentRetriever):
+    """Local filesystem document retriever implementation."""
+    
     def __init__(
         self,
         path: str,

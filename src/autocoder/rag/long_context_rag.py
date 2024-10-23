@@ -117,7 +117,8 @@ class LongContextRAG:
         self.ignore_spec = self._load_ignore_file()
 
         self.token_limit = self.args.rag_context_window_limit or 120000
-        self.document_retriever = DocumentRetriever(
+        retriever_class = self._get_document_retriever_class()
+        self.document_retriever = retriever_class(
             self.path,
             self.ignore_spec,
             self.required_exts,
@@ -204,6 +205,11 @@ class LongContextRAG:
         回答：
         """
 
+    def _get_document_retriever_class(self):
+        """Get the document retriever class based on configuration."""
+        # Default to LocalDocumentRetriever if not specified
+        return LocalDocumentRetriever
+    
     def _load_ignore_file(self):
         serveignore_path = os.path.join(self.path, ".serveignore")
         gitignore_path = os.path.join(self.path, ".gitignore")
