@@ -54,28 +54,36 @@ class ByzerStorageCache(BaseCacheManager):
 
     def _build_cache(self):
         """Build the cache by reading files and storing in Byzer Storage"""
+        from autocoder.rag.utils import process_file_in_multi_process
+        
         logger.info(f"Building cache for path: {self.path}")
-        documents = AutoCoderSimpleDirectoryReader(
+        
+        # Get list of files to process
+        reader = AutoCoderSimpleDirectoryReader(
             self.path,
             recursive=True,
-            filename_as_id=True,
+            filename_as_id=True, 
             required_exts=self.required_exts,
             exclude=self.ignore_spec,
-        ).load_data()
+        )
+        files_to_process = [(str(f), str(f.relative_to(self.path)), os.path.getmtime(str(f))) 
+                           for f in reader.input_files]
 
         items = []
-        for doc in documents:
-            chunks = self._chunk_text(doc.text, self.chunk_size)
-            for chunk_idx, chunk in enumerate(chunks):
-                chunk_id = str(uuid.uuid4())
-                items.append({
-                    "_id": f"{doc.doc_id}_{chunk_idx}",
-                    "file_path": doc.metadata["file_path"],
-                    "chunk_id": chunk_id,
-                    "content": chunk,
-                    "raw_content": chunk,
-                    "vector": chunk  # Byzer Storage will automatically convert text to vector
-                })
+        # Process files in parallel
+        for source_codes in map(process_file_in_multi_process, files_to_process):
+            for doc in source_codes:
+                chunks = self._chunk_text(doc.source_code, self.chunk_size)
+                for chunk_idx, chunk in enumerate(chunks):
+                    chunk_id = str(uuid.uuid4())
+                    items.append({
+                        "_id": f"{doc.module_name}_{chunk_idx}",
+                        "file_path": doc.module_name,
+                        "chunk_id": chunk_id,
+                        "content": chunk,
+                        "raw_content": chunk,
+                        "vector": chunk  # Byzer Storage will automatically convert text to vector
+                    })
 
         if items:
             self.storage.write_builder().add_items(items, vector_fields=["vector"], search_fields=["content"]).execute()
