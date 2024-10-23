@@ -6,6 +6,7 @@ from loguru import logger
 import pathspec
 import os
 import uuid
+import json
 from autocoder.rag.utils import process_file_in_multi_process,process_file_local
 from byzerllm.apps.byzer_storage.simple_api import (
     ByzerStorage,
@@ -23,6 +24,17 @@ class ByzerStorageCache(BaseCacheManager):
         self.chunk_size = 1000
         self._init_schema()
         self.file_mtimes = {}  # 存储文件修改时间
+        
+        # 设置缓存文件路径
+        self.cache_dir = os.path.join(self.path, ".cache")
+        self.cache_file = os.path.join(self.cache_dir, ".byzer_storage_speedup.jsonl")
+        
+        # 创建缓存目录
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir)
+            
+        # 加载缓存
+        self.cache = self._load_cache()
 
     def _chunk_text(self, text, max_length=1000):
         """Split text into chunks"""
@@ -57,6 +69,43 @@ class ByzerStorageCache(BaseCacheManager):
             .execute()
         )
 
+    def _load_cache(self) -> dict:
+        """Load cache from file"""
+        if os.path.exists(self.cache_file):
+            try:
+                with open(self.cache_file, 'r') as f:
+                    lines = f.readlines()
+                    cache = {}
+                    for line in lines:
+                        try:
+                            data = json.loads(line.strip())
+                            if isinstance(data, dict) and 'file_path' in data:
+                                cache[data['file_path']] = data
+                        except json.JSONDecodeError:
+                            continue
+                    return cache
+            except Exception as e:
+                logger.error(f"Error loading cache file: {str(e)}")
+                return {}
+        return {}
+
+    def _save_cache(self, file_path: str, content: str, chunks: List[Dict[str, Any]]):
+        """Save file info to cache"""
+        cache_data = {
+            'file_path': file_path,
+            'content': content,
+            'mtime': os.path.getmtime(file_path),
+            'chunks': chunks
+        }
+        
+        self.cache[file_path] = cache_data
+        
+        try:
+            with open(self.cache_file, 'a') as f:
+                f.write(json.dumps(cache_data) + '\n')
+        except Exception as e:
+            logger.error(f"Error saving to cache file: {str(e)}")
+
     def build_cache(self):
         """Build the cache by reading files and storing in Byzer Storage"""        
         logger.info(f"Building cache for path: {self.path}")
@@ -84,19 +133,23 @@ class ByzerStorageCache(BaseCacheManager):
                 self.file_mtimes[file_path] = mtime
                 
                 chunks = self._chunk_text(doc.source_code, self.chunk_size)
+                chunk_items = []
                 for chunk_idx, chunk in enumerate(chunks):
                     chunk_id = str(uuid.uuid4())
-                    items.append(
-                        {
-                            "_id": f"{doc.module_name}_{chunk_idx}",
-                            "file_path": doc.module_name,
-                            "chunk_id": chunk_id,
-                            "content": chunk,
-                            "raw_content": chunk,
-                            "vector": chunk,  # Byzer Storage will automatically convert text to vector
-                            "mtime": mtime
-                        }
-                    )
+                    chunk_item = {
+                        "_id": f"{doc.module_name}_{chunk_idx}",
+                        "file_path": doc.module_name,
+                        "chunk_id": chunk_id,
+                        "content": chunk,
+                        "raw_content": chunk,
+                        "vector": chunk,
+                        "mtime": mtime
+                    }
+                    items.append(chunk_item)
+                    chunk_items.append(chunk_item)
+                
+                # Save to local cache
+                self._save_cache(file_path, doc.source_code, chunk_items)
 
         if items:
             self.storage.write_builder().add_items(
@@ -163,7 +216,11 @@ class ByzerStorageCache(BaseCacheManager):
         # Check for new or modified files
         files_to_update = []
         for file_path, current_mtime in current_files.items():
-            if file_path not in self.file_mtimes or current_mtime > self.file_mtimes[file_path]:
+            cached_info = self.cache.get(file_path)
+            if (not cached_info or 
+                current_mtime > cached_info['mtime'] or
+                file_path not in self.file_mtimes or 
+                current_mtime > self.file_mtimes[file_path]):
                 files_to_update.append((file_path, file_path, current_mtime))
                 logger.info(f"Found modified file: {file_path}")
         
@@ -186,9 +243,10 @@ class ByzerStorageCache(BaseCacheManager):
                     
                     # Add new entries
                     chunks = self._chunk_text(doc.source_code, self.chunk_size)
+                    chunk_items = []
                     for chunk_idx, chunk in enumerate(chunks):
                         chunk_id = str(uuid.uuid4())
-                        items.append({
+                        chunk_item = {
                             "_id": f"{file_path}_{chunk_idx}",
                             "file_path": file_path,
                             "chunk_id": chunk_id,
@@ -196,8 +254,12 @@ class ByzerStorageCache(BaseCacheManager):
                             "raw_content": chunk,
                             "vector": chunk,
                             "mtime": mtime
-                        })
+                        }
+                        items.append(chunk_item)
+                        chunk_items.append(chunk_item)
                     
+                    # Update local cache
+                    self._save_cache(file_path, doc.source_code, chunk_items)
                     self.file_mtimes[file_path] = mtime
             
             if items:
