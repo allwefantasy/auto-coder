@@ -17,7 +17,7 @@ import traceback
 
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.rag.doc_filter import DocFilter
-from autocoder.rag.document_retriever import DocumentRetriever
+from autocoder.rag.document_retriever import LocalDocumentRetriever
 from autocoder.rag.relevant_utils import (
     DocRelevance,
     FilterDoc,
