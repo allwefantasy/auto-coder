@@ -183,16 +183,17 @@ class ByzerStorageCache(BaseCacheManager):
             file_path = result["file_path"]
             if file_path not in grouped_results:
                 # 收集所有结果中的file_path并去重
-                file_paths = list(set([result["file_path"][len("##File: "):] for result in results]))
-                file_infos = [
-                    (file_path, file_path, os.path.getmtime(file_path))
-                    for file_path in file_paths
-                ]
-
-            # 使用 process_file_in_multi_process 并行处理文件
-            for source_codes in map(process_file_in_multi_process, file_infos):
-                for source_code in source_codes:
-                    yield source_code
+                file_paths = list(set([result["file_path"] for result in results]))
+                
+                # 从缓存中获取文件内容
+                for file_path in file_paths:
+                    if file_path in self.cache:
+                        cached_data = self.cache[file_path]
+                        yield SourceCode(
+                            module_name=f"##File: {file_path}",
+                            source_code=cached_data['content'],
+                            tokens=0
+                        )
 
     def update_cache(self):
         """Update cache when files are modified"""
