@@ -22,6 +22,7 @@ class ByzerStorageCache(BaseCacheManager):
         self.storage = ByzerStorage("byzerai_store", "rag", "files")
         self.chunk_size = 1000
         self._init_schema()
+        self.file_mtimes = {}  # 存储文件修改时间
 
     def _chunk_text(self, text, max_length=1000):
         """Split text into chunks"""
@@ -52,6 +53,7 @@ class ByzerStorageCache(BaseCacheManager):
             .add_field("content", DataType.STRING, [FieldOption.ANALYZE])
             .add_field("raw_content", DataType.STRING, [FieldOption.NO_INDEX])
             .add_array_field("vector", DataType.FLOAT)
+            .add_field("mtime", DataType.DOUBLE, [FieldOption.SORT])
             .execute()
         )
 
@@ -73,10 +75,14 @@ class ByzerStorageCache(BaseCacheManager):
         ]
 
         items = []
-        # Process files in parallel
+        # Process files in parallel and store modification times
         for source_codes in map(process_file_in_multi_process, files_to_process):
             for doc in source_codes:
                 logger.info(f"Processing file: {doc.module_name}")
+                file_path = str(doc.module_name)
+                mtime = os.path.getmtime(file_path)
+                self.file_mtimes[file_path] = mtime
+                
                 chunks = self._chunk_text(doc.source_code, self.chunk_size)
                 for chunk_idx, chunk in enumerate(chunks):
                     chunk_id = str(uuid.uuid4())
@@ -88,6 +94,7 @@ class ByzerStorageCache(BaseCacheManager):
                             "content": chunk,
                             "raw_content": chunk,
                             "vector": chunk,  # Byzer Storage will automatically convert text to vector
+                            "mtime": mtime
                         }
                     )
 
@@ -135,3 +142,67 @@ class ByzerStorageCache(BaseCacheManager):
             for source_codes in map(process_file_in_multi_process, file_infos):
                 for source_code in source_codes:
                     yield source_code
+
+    def update_cache(self):
+        """Update cache when files are modified"""
+        logger.info("Checking for file updates...")
+        
+        # Get current list of files
+        reader = AutoCoderSimpleDirectoryReader(
+            self.path,
+            recursive=True,
+            filename_as_id=True,
+            required_exts=self.required_exts,
+            exclude=self.ignore_spec,
+        )
+        
+        current_files = {str(f): os.path.getmtime(str(f)) for f in reader.input_files}
+        
+        # Check for new or modified files
+        files_to_update = []
+        for file_path, current_mtime in current_files.items():
+            if file_path not in self.file_mtimes or current_mtime > self.file_mtimes[file_path]:
+                files_to_update.append((file_path, file_path, current_mtime))
+                logger.info(f"Found modified file: {file_path}")
+        
+        # Process modified files
+        if files_to_update:
+            items = []
+            for source_codes in map(process_file_in_multi_process, files_to_update):
+                for doc in source_codes:
+                    logger.info(f"Updating cache for file: {doc.module_name}")
+                    file_path = str(doc.module_name)
+                    mtime = os.path.getmtime(file_path)
+                    
+                    # Delete existing entries for this file
+                    query = self.storage.query_builder()
+                    query.and_filter().add_condition("file_path", file_path).build()
+                    results = query.execute()
+                    if results:
+                        for result in results:
+                            self.storage.delete_by_ids([result["_id"]])
+                    
+                    # Add new entries
+                    chunks = self._chunk_text(doc.source_code, self.chunk_size)
+                    for chunk_idx, chunk in enumerate(chunks):
+                        chunk_id = str(uuid.uuid4())
+                        items.append({
+                            "_id": f"{file_path}_{chunk_idx}",
+                            "file_path": file_path,
+                            "chunk_id": chunk_id,
+                            "content": chunk,
+                            "raw_content": chunk,
+                            "vector": chunk,
+                            "mtime": mtime
+                        })
+                    
+                    self.file_mtimes[file_path] = mtime
+            
+            if items:
+                self.storage.write_builder().add_items(
+                    items, vector_fields=["vector"], search_fields=["content"]
+                ).execute()
+                self.storage.commit()
+                logger.info(f"Successfully updated {len(files_to_update)} files in cache")
+        else:
+            logger.info("No file updates found")
