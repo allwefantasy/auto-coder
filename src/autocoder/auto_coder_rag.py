@@ -242,6 +242,12 @@ def main(input_args: Optional[List[str]] = None):
         help="Enable deep thought in inference mode",
     )
 
+    serve_parser.add_argument(
+        "--enable_hybrid_index",
+        action="store_true",
+        help="Enable hybrid index",
+    )
+
     # Tools command
     tools_parser = subparsers.add_parser("tools", help="Various tools")
     tools_subparsers = tools_parser.add_subparsers(dest="tool", help="Available tools")

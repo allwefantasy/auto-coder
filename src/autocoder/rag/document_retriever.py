@@ -26,7 +26,8 @@ from abc import ABC, abstractmethod
 from autocoder.rag.cache.base_cache import BaseCacheManager
 from autocoder.rag.cache.simple_cache import AutoCoderRAGAsyncUpdateQueue
 from autocoder.rag.cache.file_monitor_cache import AutoCoderRAGDocListener
-from autocoder.rag.utils import process_file_in_multi_process,process_file_local
+from autocoder.rag.cache.byzer_storage_cache import ByzerStorageCache
+from autocoder.rag.utils import process_file_in_multi_process, process_file_local
 
 cache_lock = threading.Lock()
 
@@ -78,11 +79,13 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
         monitor_mode: bool = False,
         single_file_token_limit: int = 60000,
         disable_auto_window: bool = False,
+        enable_hybrid_index: bool = False,
     ) -> None:
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
         self.monitor_mode = monitor_mode
+        self.enable_hybrid_index = enable_hybrid_index
         self.single_file_token_limit = single_file_token_limit
         self.disable_auto_window = disable_auto_window
 
@@ -95,12 +98,17 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
         if self.on_ray:
             self.cacher = get_or_create_actor(path, ignore_spec, required_exts)
         else:
-            if self.monitor_mode:
-                self.cacher = AutoCoderRAGDocListener(path, ignore_spec, required_exts)
+            if self.enable_hybrid_index:
+                self.cacher = ByzerStorageCache(path, ignore_spec, required_exts)
             else:
-                self.cacher = AutoCoderRAGAsyncUpdateQueue(
-                    path, ignore_spec, required_exts
-                )
+                if self.monitor_mode:
+                    self.cacher = AutoCoderRAGDocListener(
+                        path, ignore_spec, required_exts
+                    )
+                else:
+                    self.cacher = AutoCoderRAGAsyncUpdateQueue(
+                        path, ignore_spec, required_exts
+                    )
 
         logger.info(f"DocumentRetriever initialized with:")
         logger.info(f"  Path: {self.path}")
@@ -108,6 +116,7 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
         logger.info(f"  Single file token limit: {self.single_file_token_limit}")
         logger.info(f"  Small file token limit: {self.small_file_token_limit}")
         logger.info(f"  Small file merge limit: {self.small_file_merge_limit}")
+        logger.info(f"  Enable hybrid index: {self.enable_hybrid_index}")
 
     def get_cache(self):
         if self.on_ray:
@@ -115,11 +124,11 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
         else:
             return self.cacher.get_cache()
 
-    def retrieve_documents(self) -> Generator[SourceCode, None, None]:
+    def retrieve_documents(self,options:Optional[Dict[str,Any]]=None) -> Generator[SourceCode, None, None]:
         logger.info("Starting document retrieval process")
         waiting_list = []
         waiting_tokens = 0
-        for _, data in self.get_cache().items():
+        for _, data in self.get_cache(options=options).items():
             for source_code in data["content"]:
                 doc = SourceCode.model_validate(source_code)
                 if self.disable_auto_window:

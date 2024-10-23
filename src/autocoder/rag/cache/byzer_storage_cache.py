@@ -88,12 +88,13 @@ class ByzerStorageCache(BaseCacheManager):
                 return {}
         return {}
 
-    def _save_cache(self, file_path: str, content: str, chunks: List[Dict[str, Any]]):
+    def _save_cache(self, file_path: str, doc: SourceCode):
         """Save file info to cache"""
         cache_data = {
             'file_path': file_path,
-            'content': content,
-            'mtime': os.path.getmtime(file_path)            
+            'content': doc.source_code,
+            'mtime': os.path.getmtime(file_path),
+            'tokens': doc.tokens
         }
         
         self.cache[file_path] = cache_data
@@ -130,8 +131,7 @@ class ByzerStorageCache(BaseCacheManager):
                 mtime = os.path.getmtime(file_path)
                 self.file_mtimes[file_path] = mtime
                 
-                chunks = self._chunk_text(doc.source_code, self.chunk_size)
-                chunk_items = []
+                chunks = self._chunk_text(doc.source_code, self.chunk_size)                
                 for chunk_idx, chunk in enumerate(chunks):                    
                     chunk_item = {
                         "_id": f"{doc.module_name}_{chunk_idx}",
@@ -141,11 +141,10 @@ class ByzerStorageCache(BaseCacheManager):
                         "vector": chunk,
                         "mtime": mtime
                     }
-                    items.append(chunk_item)
-                    chunk_items.append(chunk_item)
+                    items.append(chunk_item)                    
                 
                 # Save to local cache
-                self._save_cache(file_path, doc.source_code, chunk_items)
+                self._save_cache(file_path, doc)
 
         if items:
             self.storage.write_builder().add_items(
@@ -192,7 +191,7 @@ class ByzerStorageCache(BaseCacheManager):
                         yield SourceCode(
                             module_name=f"##File: {file_path}",
                             source_code=cached_data['content'],
-                            tokens=0
+                            tokens=cached_data['tokens']
                         )
 
     def update_cache(self):

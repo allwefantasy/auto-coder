@@ -284,6 +284,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     required_exts: Optional[str] = None
 
     monitor_mode: bool = False
+    enable_hybrid_index: bool = False
     disable_auto_window: bool = False
     disable_segment_reorder: bool = False
     rag_doc_filter_relevance: int = 5

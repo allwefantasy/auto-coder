@@ -91,6 +91,7 @@ class LongContextRAG:
 
         # if open monitor mode
         self.monitor_mode = self.args.monitor_mode or False
+        self.enable_hybrid_index = self.args.enable_hybrid_index
         logger.info(f"Monitor mode: {self.monitor_mode}")
 
         if args.rag_url and args.rag_url.startswith("http://"):
