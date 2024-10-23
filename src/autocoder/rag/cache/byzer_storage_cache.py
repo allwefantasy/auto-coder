@@ -55,7 +55,7 @@ class ByzerStorageCache(BaseCacheManager):
             .execute()
         )
 
-    def _build_cache(self):
+    def build_cache(self):
         """Build the cache by reading files and storing in Byzer Storage"""        
         logger.info(f"Building cache for path: {self.path}")
 
@@ -96,30 +96,8 @@ class ByzerStorageCache(BaseCacheManager):
                 items, vector_fields=["vector"], search_fields=["content"]
             ).execute()
             self.storage.commit()
-
-    def get_cache(self) -> Dict[str, Dict[str, Any]]:
-        """Get all cached documents"""
-        results = self.storage.query_builder().execute()
-        if not results:
-            self._build_cache()
-            results = self.storage.query_builder().execute()
-
-        cache = {}
-        for result in results:
-            file_path = result["file_path"]
-            if file_path not in cache:
-                cache[file_path] = {"content": []}
-
-            cache[file_path]["content"].append(
-                SourceCode(
-                    module_name=file_path,
-                    source_code=result["raw_content"],
-                    metadata={"chunk_id": result["chunk_id"]},
-                )
-            )
-        return cache
-
-    def search_cache(
+    
+    def get_cache(
         self, options: Dict[str, Any]
     ) -> Generator[SourceCode, None, None]:
         """Search cached documents using query"""
@@ -129,6 +107,7 @@ class ByzerStorageCache(BaseCacheManager):
 
         # Build query with both vector search and text search
         query_builder = self.storage.query_builder()
+        query_builder.set_limit(100)
 
         # Add vector search if enabled
         if options.get("enable_vector_search", True):
