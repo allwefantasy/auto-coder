@@ -785,6 +785,7 @@ def main(input_args: Optional[List[str]] = None):
                             expand=False,
                         )
                     )
+                    ##MARK
                 except Exception:
                     logger.warning(get_message("clipboard_not_supported"))
                     console.print(

@@ -1,6 +1,9 @@
-from .base_cache import BaseCacheManager
-from ..simple_directory_reader import AutoCoderSimpleDirectoryReader
-from typing import Generator, List, Dict, Any, Optional
+from autocoder.rag.cache.base_cache import (
+    BaseCacheManager,
+    DeleteEvent,
+    AddOrUpdateEvent,
+)
+from typing import Generator, List, Dict, Any, Optional, Tuple
 from autocoder.common import SourceCode
 from loguru import logger
 import pathspec
@@ -15,6 +18,15 @@ from byzerllm.apps.byzer_storage.simple_api import (
     SortOption,
 )
 from autocoder.common import AutoCoderArgs
+import threading
+from multiprocessing import Pool
+from autocoder.rag.variable_holder import VariableHolder
+import platform
+
+if platform.system() != "Windows":
+    import fcntl
+else:
+    fcntl = None
 
 
 class ByzerStorageCache(BaseCacheManager):
@@ -31,7 +43,6 @@ class ByzerStorageCache(BaseCacheManager):
         self.storage = ByzerStorage("byzerai_store", "rag", "files")
         self.chunk_size = 1000
         self._init_schema()
-        self.file_mtimes = {}  # 存储文件修改时间
 
         if not extra_params:
             raise ValueError("extra_params is required for ByzerStorageCache")
@@ -41,6 +52,13 @@ class ByzerStorageCache(BaseCacheManager):
         # 设置缓存文件路径
         self.cache_dir = os.path.join(self.path, ".cache")
         self.cache_file = os.path.join(self.cache_dir, ".byzer_storage_speedup.jsonl")
+        self.cache = {}
+
+        self.lock = threading.Lock()
+        self.stop_event = threading.Event()
+        self.thread = threading.Thread(target=self._process_queue)
+        self.thread.daemon = True
+        self.thread.start()
 
         # 创建缓存目录
         if not os.path.exists(self.cache_dir):
@@ -101,49 +119,69 @@ class ByzerStorageCache(BaseCacheManager):
                 return {}
         return {}
 
-    def _save_cache(self, file_path: str, doc: SourceCode):
-        """Save file info to cache"""
-        cache_data = {
-            "file_path": file_path,
-            "content": doc.source_code,
-            "mtime": os.path.getmtime(file_path),
-            "tokens": doc.tokens,
-        }
+    def write_cache(self):
+        cache_file = self.cache_file
 
-        self.cache[file_path] = cache_data
+        if not fcntl:
+            with open(cache_file, "w") as f:
+                for data in self.cache.values():
+                    json.dump(data, f, ensure_ascii=False)
+                    f.write("\n")
+        else:
+            lock_file = cache_file + ".lock"
+            with open(lock_file, "w") as lockf:
+                try:
+                    # 获取文件锁
+                    fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    # 写入缓存文件
+                    with open(cache_file, "w") as f:
+                        for data in self.cache.values():
+                            json.dump(data, f, ensure_ascii=False)
+                            f.write("\n")
 
-        try:
-            with open(self.cache_file, "a") as f:
-                f.write(json.dumps(cache_data) + "\n")
-        except Exception as e:
-            logger.error(f"Error saving to cache file: {str(e)}")
+                finally:
+                    # 释放文件锁
+                    fcntl.flock(lockf, fcntl.LOCK_UN)
 
     def build_cache(self):
         """Build the cache by reading files and storing in Byzer Storage"""
         logger.info(f"Building cache for path: {self.path}")
 
-        # Get list of files to process
-        reader = AutoCoderSimpleDirectoryReader(
-            self.path,
-            recursive=True,
-            filename_as_id=True,
-            required_exts=self.required_exts,
-            exclude=self.ignore_spec,
-        )
-        files_to_process = [
-            (str(f), str(f.relative_to(self.path)), os.path.getmtime(str(f)))
-            for f in reader.input_files
-        ]
+        files_to_process = []
+        for file_info in self.get_all_files():
+            file_path, _, modify_time = file_info
+            if (
+                file_path not in self.cache
+                or self.cache[file_path]["modify_time"] < modify_time
+            ):
+                files_to_process.append(file_info)
+
+        if not files_to_process:
+            return
+
+        from autocoder.rag.token_counter import initialize_tokenizer
+
+        with Pool(
+            processes=os.cpu_count(),
+            initializer=initialize_tokenizer,
+            initargs=(VariableHolder.TOKENIZER_PATH,),
+        ) as pool:
+            results = pool.map(process_file_in_multi_process, files_to_process)
 
         items = []
-        # Process files in parallel and store modification times
-        for source_codes in map(process_file_in_multi_process, files_to_process):
-            for doc in source_codes:
-                logger.info(f"Processing file: {doc.module_name}")
-                file_path = str(doc.module_name)[len("##File: ") :]
-                mtime = os.path.getmtime(file_path)
-                self.file_mtimes[file_path] = mtime
+        for file_info, result in zip(files_to_process, results):
+            file_path, relative_path, modify_time = file_info
+            content: List[SourceCode] = result
+            self.cache[file_path] = {
+                "file_path": file_path,
+                "relative_path": relative_path,
+                "content": [c.model_dump() for c in content],
+                "modify_time": modify_time,
+            }
 
+            for doc in content:
+                logger.info(f"Processing file: {doc.module_name}")
+                doc.module_name
                 chunks = self._chunk_text(doc.source_code, self.chunk_size)
                 for chunk_idx, chunk in enumerate(chunks):
                     chunk_item = {
@@ -152,7 +190,7 @@ class ByzerStorageCache(BaseCacheManager):
                         "content": chunk,
                         "raw_content": chunk,
                         "vector": chunk,
-                        "mtime": mtime,
+                        "mtime": modify_time,
                     }
                     items.append(chunk_item)
 
@@ -165,24 +203,90 @@ class ByzerStorageCache(BaseCacheManager):
             ).execute()
             self.storage.commit()
 
-    def get_cache(self, options: Dict[str, Any]) -> Generator[SourceCode, None, None]:
+    def update_storage(self, file_path, is_delete: bool):
+        query = self.storage.query_builder()
+        query.and_filter().add_condition("file_path", file_path).build()
+        results = query.execute()
+        if results:
+            for result in results:
+                self.storage.delete_by_ids([result["_id"]])
+        items = []
+
+        if not is_delete:
+            content = [
+                SourceCode.model_validate(doc)
+                for doc in self.cache[file_path]["content"]
+            ]
+            modify_time = self.cache[file_path]["modify_time"]
+            for doc in content:
+                logger.info(f"Processing file: {doc.module_name}")
+                doc.module_name
+                chunks = self._chunk_text(doc.source_code, self.chunk_size)
+                for chunk_idx, chunk in enumerate(chunks):
+                    chunk_item = {
+                        "_id": f"{doc.module_name}_{chunk_idx}",
+                        "file_path": file_path,
+                        "content": chunk,
+                        "raw_content": chunk,
+                        "vector": chunk,
+                        "mtime": modify_time,
+                    }
+                    items.append(chunk_item)
+        if items:
+            self.storage.write_builder().add_items(
+                items, vector_fields=["vector"], search_fields=["content"]
+            ).execute()
+            self.storage.commit()
+
+    def process_queue(self):
+        while self.queue:
+            file_list = self.queue.pop(0)
+            if isinstance(file_list, DeleteEvent):
+                for item in file_list.file_paths:
+                    logger.info(f"{item} is detected to be removed")
+                    del self.cache[item]
+                    self.update_storage(item, is_delete=True)
+
+            elif isinstance(file_list, AddOrUpdateEvent):
+                for file_info in file_list.file_infos:
+                    logger.info(f"{file_info[0]} is detected to be updated")
+                    result = process_file_local(file_info[0])
+                    self.cache[file_info[0]] = result
+                    self.update_storage(file_info[0], is_delete=False)
+            self.write_cache()
+
+    def trigger_update(self):
+        logger.info("检查文件是否有更新.....")
+        files_to_process = []
+        current_files = set()
+        for file_info in self.get_all_files():
+            file_path, _, modify_time = file_info
+            current_files.add(file_path)
+            if (
+                file_path not in self.cache
+                or self.cache[file_path]["modify_time"] < modify_time
+            ):
+                files_to_process.append(file_info)
+
+        deleted_files = set(self.cache.keys()) - current_files
+        logger.info(f"files_to_process: {files_to_process}")
+        logger.info(f"deleted_files: {deleted_files}")
+        if deleted_files:
+            with self.lock:
+                self.queue.append(DeleteEvent(file_paths=deleted_files))
+        if files_to_process:
+            with self.lock:
+                self.queue.append(AddOrUpdateEvent(file_infos=files_to_process))
+
+    def get_cache(self, options: Dict[str, Any]) -> Dict[str, Dict]:
         """Search cached documents using query"""
+
+        self.trigger_update()
         query = options.get("query", "")
         total_tokens = 0
 
         if not query:
-            for _, data in self.cache.items():
-                if total_tokens + data["tokens"] > self.max_output_tokens:
-                    return
-                total_tokens += data["tokens"]
-                yield SourceCode(
-                    module_name=f"##File: {data['file_path']}",
-                    source_code=data["content"],
-                    tokens=data["tokens"],
-                )
-            return
-
-        self.update_cache()
+            return self.cache
 
         # Build query with both vector search and text search
         query_builder = self.storage.query_builder()
@@ -214,77 +318,33 @@ class ByzerStorageCache(BaseCacheManager):
                     tokens=cached_data["tokens"],
                 )
 
-    def update_cache(self):
-        """Update cache when files are modified"""
-        logger.info("Checking for file updates...")
+    def get_all_files(self) -> List[Tuple[str, str, float]]:
+        all_files = []
+        for root, dirs, files in os.walk(self.path):
+            dirs[:] = [d for d in dirs if not d.startswith(".")]
 
-        # Get current list of files
-        reader = AutoCoderSimpleDirectoryReader(
-            self.path,
-            recursive=True,
-            filename_as_id=True,
-            required_exts=self.required_exts,
-            exclude=self.ignore_spec,
-        )
+            if self.ignore_spec:
+                relative_root = os.path.relpath(root, self.path)
+                dirs[:] = [
+                    d
+                    for d in dirs
+                    if not self.ignore_spec.match_file(os.path.join(relative_root, d))
+                ]
+                files = [
+                    f
+                    for f in files
+                    if not self.ignore_spec.match_file(os.path.join(relative_root, f))
+                ]
 
-        current_files = {str(f): os.path.getmtime(str(f)) for f in reader.input_files}
+            for file in files:
+                if self.required_exts and not any(
+                    file.endswith(ext) for ext in self.required_exts
+                ):
+                    continue
 
-        # Check for new or modified files
-        files_to_update = []
-        for file_path, current_mtime in current_files.items():
-            cached_info = self.cache.get(file_path)
-            if (
-                not cached_info
-                or current_mtime > cached_info["mtime"]
-                or file_path not in self.file_mtimes
-                or current_mtime > self.file_mtimes[file_path]
-            ):
-                files_to_update.append((file_path, file_path, current_mtime))
-                logger.info(f"Found modified file: {file_path}")
+                file_path = os.path.join(root, file)
+                relative_path = os.path.relpath(file_path, self.path)
+                modify_time = os.path.getmtime(file_path)
+                all_files.append((file_path, relative_path, modify_time))
 
-        # Process modified files
-        if files_to_update:
-            items = []
-            for source_codes in map(process_file_in_multi_process, files_to_update):
-                for doc in source_codes:
-                    logger.info(f"Updating cache for file: {doc.module_name}")
-                    file_path = str(doc.module_name)[len("##File: ") :]
-                    mtime = os.path.getmtime(file_path)
-
-                    # Delete existing entries for this file
-                    query = self.storage.query_builder()
-                    query.and_filter().add_condition("file_path", file_path).build()
-                    results = query.execute()
-                    if results:
-                        for result in results:
-                            self.storage.delete_by_ids([result["_id"]])
-
-                    # Add new entries
-                    chunks = self._chunk_text(doc.source_code, self.chunk_size)
-                    chunk_items = []
-                    for chunk_idx, chunk in enumerate(chunks):
-                        chunk_item = {
-                            "_id": f"{file_path}_{chunk_idx}",
-                            "file_path": file_path,
-                            "content": chunk,
-                            "raw_content": chunk,
-                            "vector": chunk,
-                            "mtime": mtime,
-                        }
-                        items.append(chunk_item)
-                        chunk_items.append(chunk_item)
-
-                    # Update local cache
-                    self._save_cache(file_path, doc.source_code, chunk_items)
-                    self.file_mtimes[file_path] = mtime
-
-            if items:
-                self.storage.write_builder().add_items(
-                    items, vector_fields=["vector"], search_fields=["content"]
-                ).execute()
-                self.storage.commit()
-                logger.info(
-                    f"Successfully updated {len(files_to_update)} files in cache"
-                )
-        else:
-            logger.info("No file updates found")
+        return all_files

@@ -6,7 +6,7 @@ import traceback
 
 import threading
 from multiprocessing import Pool
-from typing import Dict, Generator, List, Tuple, Any,Optional
+from typing import Dict, Generator, List, Tuple, Any, Optional
 
 import ray
 from loguru import logger
@@ -58,12 +58,14 @@ class BaseDocumentRetriever(ABC):
     """Abstract base class for document retrieval."""
 
     @abstractmethod
-    def get_cache(self,options:Optional[Dict[str,Any]]=None):
+    def get_cache(self, options: Optional[Dict[str, Any]] = None):
         """Get cached documents."""
         pass
 
     @abstractmethod
-    def retrieve_documents(self,options:Optional[Dict[str,Any]]=None) -> Generator[SourceCode, None, None]:
+    def retrieve_documents(
+        self, options: Optional[Dict[str, Any]] = None
+    ) -> Generator[SourceCode, None, None]:
         """Retrieve documents."""
         pass
 
@@ -101,7 +103,9 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
             self.cacher = get_or_create_actor(path, ignore_spec, required_exts)
         else:
             if self.enable_hybrid_index:
-                self.cacher = ByzerStorageCache(path, ignore_spec, required_exts,extra_params)
+                self.cacher = ByzerStorageCache(
+                    path, ignore_spec, required_exts, extra_params
+                )
             else:
                 if self.monitor_mode:
                     self.cacher = AutoCoderRAGDocListener(
@@ -120,15 +124,19 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
         logger.info(f"  Small file merge limit: {self.small_file_merge_limit}")
         logger.info(f"  Enable hybrid index: {self.enable_hybrid_index}")
         if extra_params:
-        logger.info(f"  Hybrid index max output tokens: {extra_params.hybrid_index_max_output_tokens}")
+            logger.info(
+                f"  Hybrid index max output tokens: {extra_params.hybrid_index_max_output_tokens}"
+            )
 
-    def get_cache(self,options:Optional[Dict[str,Any]]=None):
+    def get_cache(self, options: Optional[Dict[str, Any]] = None):
         if self.on_ray:
             return ray.get(self.cacher.get_cache.remote())
         else:
-            return self.cacher.get_cache()
+            return self.cacher.get_cache(options=options)
 
-    def retrieve_documents(self,options:Optional[Dict[str,Any]]=None) -> Generator[SourceCode, None, None]:
+    def retrieve_documents(
+        self, options: Optional[Dict[str, Any]] = None
+    ) -> Generator[SourceCode, None, None]:
         logger.info("Starting document retrieval process")
         waiting_list = []
         waiting_tokens = 0
