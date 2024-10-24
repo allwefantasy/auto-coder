@@ -785,7 +785,43 @@ def main(input_args: Optional[List[str]] = None):
                             expand=False,
                         )
                     )
-                    ##MARK
+                    # Save chat content to file
+                with open(args.target_file, "w") as f:
+                    f.write(chat_content)
+                
+                lines = []
+                while True:
+                    line = prompt(FormattedText([("#00FF00", "> ")]), multiline=False)
+                    line_lower = line.strip().lower()
+                    if line_lower in ["eof", "/eof"]:
+                        break 
+                    elif line_lower in ["/clear"]:
+                        lines = []
+                        print("\033[2J\033[H")  # Clear terminal screen
+                        continue
+                    elif line_lower in ["/break"]:
+                        raise Exception("User requested to break the operation.")
+                    lines.append(line)
+                
+                result = "\n".join(lines)
+                
+                # Update chat history with user's response
+                chat_history["ask_conversation"].append({
+                    "role": "assistant", 
+                    "content": result
+                })
+                
+                with open(memory_file, "w") as f:
+                    json.dump(chat_history, f, ensure_ascii=False)
+                
+                if result.lower() == "c":
+                    continue
+                
+                request_queue.add_request(
+                    args.request_id,
+                    RequestValue(value=DefaultValue(value=result), status=RequestOption.COMPLETED)
+                )
+                return
                 except Exception:
                     logger.warning(get_message("clipboard_not_supported"))
                     console.print(
