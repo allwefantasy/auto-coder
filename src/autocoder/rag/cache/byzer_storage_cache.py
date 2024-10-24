@@ -297,11 +297,12 @@ class ByzerStorageCache(BaseCacheManager):
         """Search cached documents using query"""
 
         self.trigger_update()
-        query = options.get("query", "")
-        total_tokens = 0
 
-        if not query:
+        if options is None or "query" not in options:
             return self.cache
+        
+        query = options.get("query", "")
+        total_tokens = 0    
 
         # Build query with both vector search and text search
         query_builder = self.storage.query_builder()
