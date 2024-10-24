@@ -202,15 +202,15 @@ class ByzerStorageCache(BaseCacheManager):
         # Save to local cache
         logger.info("Saving cache to local file")
         self.write_cache()
-
-        ##MARK 
+        
         if items:
             logger.info("Saving cache to Byzer Storage")
-            # Split items into 5 chunks
-            chunk_size = max(1, len(items) // 5)
+            max_workers = 5            
+            chunk_size = max(1, len(items) // max_workers)
             item_chunks = [items[i:i + chunk_size] for i in range(0, len(items), chunk_size)]
             
-            with ThreadPoolExecutor(max_workers=5) as executor:
+            ##MARK
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = []
                 for chunk in item_chunks:
                     futures.append(
