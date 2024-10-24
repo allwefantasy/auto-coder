@@ -17,6 +17,7 @@ import shlex
 from rich.console import Console
 from rich.table import Table
 import os
+from loguru import logger
 
 from autocoder.rag.document_retriever import process_file_local
 from autocoder.rag.token_counter import TokenCounter
@@ -305,11 +306,8 @@ def main(input_args: Optional[List[str]] = None):
             # 尝试连接storage                
             try:
                 from byzerllm.apps.byzer_storage.simple_api import ByzerStorage
-                storage = ByzerStorage("byzerai_store", "test", "test")
-                if not storage._is_connected:
-                    logger.error("When enable_hybrid_index is true, ByzerStorage must be started")
-                    logger.error("Please run 'byzerllm storage start' first")
-                    return
+                storage = ByzerStorage("byzerai_store", "rag", "files")
+                storage.retrieval.cluster_info("byzerai_store")
             except Exception as e:
                 logger.error("When enable_hybrid_index is true, ByzerStorage must be started")
                 logger.error("Please run 'byzerllm storage start' first")
@@ -356,11 +354,8 @@ def main(input_args: Optional[List[str]] = None):
                         
         try:
             from byzerllm.apps.byzer_storage.simple_api import ByzerStorage
-            storage = ByzerStorage("byzerai_store", "test", "test")
-            if not storage._is_connected:
-                logger.error("When enable_hybrid_index is true, ByzerStorage must be started")
-                logger.error("Please run 'byzerllm storage start' first")
-                return
+            storage = ByzerStorage("byzerai_store", "rag", "files")
+            storage.retrieval.cluster_info("byzerai_store")
         except Exception as e:
             logger.error("When enable_hybrid_index is true, ByzerStorage must be started")
             logger.error("Please run 'byzerllm storage start' first")
@@ -379,7 +374,7 @@ def main(input_args: Optional[List[str]] = None):
         rag = RAGFactory.get_rag(
             llm=llm,
             args=auto_coder_args,
-            path=args.source_dir,
+            path=args.doc_dir,
             tokenizer_path=args.tokenizer_path,
         )
         

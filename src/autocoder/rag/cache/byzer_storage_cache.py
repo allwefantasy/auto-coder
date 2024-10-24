@@ -160,7 +160,7 @@ class ByzerStorageCache(BaseCacheManager):
                 or self.cache[file_path]["modify_time"] < modify_time
             ):
                 files_to_process.append(file_info)
-
+                
         if not files_to_process:
             return
 
@@ -174,7 +174,7 @@ class ByzerStorageCache(BaseCacheManager):
             results = pool.map(process_file_in_multi_process, files_to_process)
 
         items = []
-        for file_info, result in zip(files_to_process, results):
+        for file_info, result in zip(files_to_process, results):            
             file_path, relative_path, modify_time = file_info
             content: List[SourceCode] = result
             self.cache[file_path] = {
@@ -204,13 +204,17 @@ class ByzerStorageCache(BaseCacheManager):
         self.write_cache()
         
         if items:
-            logger.info("Saving cache to Byzer Storage")
+            logger.info("Clear cache from Byzer Storage")
+            self.storage.truncate_table()
+            logger.info("Save new cache to Byzer Storage")            
             max_workers = 5            
             chunk_size = max(1, len(items) // max_workers)
             item_chunks = [items[i:i + chunk_size] for i in range(0, len(items), chunk_size)]
             
             total_chunks = len(item_chunks)
             completed_chunks = 0
+
+            logger.info(f"Progress: {0}/{total_chunks} chunks completed")
             
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = []
@@ -348,9 +352,10 @@ class ByzerStorageCache(BaseCacheManager):
         for file_path in file_paths:
             if file_path in self.cache:
                 cached_data = self.cache[file_path]
-                if total_tokens + cached_data["tokens"] > self.max_output_tokens:
-                    return
-                total_tokens += cached_data["tokens"]
+                for doc in cached_data["content"]:                    
+                    if total_tokens + doc["tokens"] > self.max_output_tokens:
+                        return result
+                    total_tokens += doc["tokens"]
                 result[file_path] = cached_data
 
         return result
