@@ -385,7 +385,7 @@ def main(input_args: Optional[List[str]] = None):
 
         llm.setup_template(model=args.model, template="auto")
         llm.setup_default_model_name(args.model)
-                
+
         llm.setup_max_output_length(args.model, args.model_max_length)
         llm.setup_max_input_length(args.model, args.model_max_input_length)
         llm.setup_extra_generation_params(
@@ -395,7 +395,7 @@ def main(input_args: Optional[List[str]] = None):
         if args.chat_model:
             chat_model = byzerllm.ByzerLLM()
             chat_model.setup_default_model_name(args.chat_model)
-            llm.setup_sub_client("chat_model", chat_model)            
+            llm.setup_sub_client("chat_model", chat_model)
 
         if args.vl_model:
             vl_model = byzerllm.ByzerLLM()
@@ -642,22 +642,24 @@ def main(input_args: Optional[List[str]] = None):
                     )
                 )
             return
-        
+
         elif raw_args.agent_command == "designer":
-            from autocoder.agent.designer import SVGDesigner, SDDesigner    
+            from autocoder.agent.designer import SVGDesigner, SDDesigner
+
             if args.agent_designer_mode == "svg":
                 designer = SVGDesigner(args, llm)
-                designer.run(args.query)            
+                designer.run(args.query)
                 print("Successfully generated image in output.png")
             elif args.agent_designer_mode == "sd":
                 designer = SDDesigner(args, llm)
-                designer.run(args.query)                
+                designer.run(args.query)
                 print("Successfully generated image in output.jpg")
             if args.request_id:
                 request_queue.add_request(
                     args.request_id,
                     RequestValue(
-                        value=DefaultValue(value=response), status=RequestOption.COMPLETED
+                        value=DefaultValue(value=response),
+                        status=RequestOption.COMPLETED,
                     ),
                 )
             return
@@ -693,6 +695,12 @@ def main(input_args: Optional[List[str]] = None):
                 {"role": "user", "content": args.query}
             )
 
+            if llm.get_sub_client("chat_model"):
+                chat_llm = llm.get_sub_client("chat_model")
+            else:
+                chat_llm = llm
+            
+            source_count = 0
             pre_conversations = []
             if args.context:
                 context = json.loads(args.context)
@@ -701,19 +709,50 @@ def main(input_args: Optional[List[str]] = None):
                     pre_conversations.append(
                         {
                             "role": "user",
-                            "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：{file_content}",
+                            "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：\n{file_content}",
                         },
                     )
                     pre_conversations.append({"role": "assistant", "content": "read"})
+                    source_count += 1
+
+            from autocoder.index.index import IndexManager, build_index_and_filter_files
+            from autocoder.pyproject import PyProject
+            from autocoder.tsproject import TSProject
+            from autocoder.suffixproject import SuffixProject
+
+            if args.project_type == "ts":
+                pp = TSProject(args=args, llm=llm)
+            elif args.project_type == "py":
+                pp = PyProject(args=args, llm=llm)
+            else:
+                pp = SuffixProject(args=args, llm=llm, file_filter=None)
+            pp.run()
+            sources = pp.sources
+            s = build_index_and_filter_files(llm=llm, args=args, sources=sources)
+            if s: 
+                pre_conversations.append(
+                    {
+                        "role": "user",
+                        "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：\n{s}",
+                    }
+                )
+                pre_conversations.append({"role": "assistant", "content": "read"})
+                source_count += 1
 
             loaded_conversations = (
-                pre_conversations + chat_history["ask_conversation"][-31:]
+                pre_conversations + chat_history["ask_conversation"]
             )
 
             if args.human_as_model:
+                console = Console()
+
                 @byzerllm.prompt()
-                def chat_with_human_as_model(pre_conversations, last_conversation):
-                    '''
+                def chat_with_human_as_model(source_codes, pre_conversations, last_conversation):
+                    """
+                    {% if source_codes %}                    
+                    {{ source_codes }}
+                    {% endif %}
+
                     {% if pre_conversations %}
                     历史对话:
                     {% for conv in pre_conversations %}
@@ -722,26 +761,49 @@ def main(input_args: Optional[List[str]] = None):
                     {% endif %}
 
                     用户的问题: {{ last_conversation.content }}
-                    '''
-                    import pyperclip                    
-                    pyperclip.copy(final_question)
-                    ##MARK
-                    print(get_message("chat_human_as_model_instructions"))
-                    return {}
+                    """
+                source_codes_conversations = loaded_conversations[0:source_count*2]
+                source_codes = ""
+                for conv in source_codes_conversations:
+                    if conv["role"] == "user":
+                        source_codes += conv["content"]
 
-                chat_content = chat_with_human_as_model.prompt(pre_conversations=loaded_conversations[:-1], last_conversation=loaded_conversations[-1])                
-                
+                chat_content = chat_with_human_as_model.prompt(
+                    source_codes=source_codes,
+                    pre_conversations=loaded_conversations[source_count*2:-1],
+                    last_conversation=loaded_conversations[-1],
+                )
+                try:
+                    import pyperclip
 
-            if llm.get_sub_client("chat_model"):
-                chat_llm = llm.get_sub_client("chat_model")
-            else:
-                chat_llm = llm
+                    pyperclip.copy(chat_content)
+                    console.print(
+                        Panel(
+                            get_message("chat_human_as_model_instructions"),
+                            title="Instructions",
+                            border_style="blue",
+                            expand=False,
+                        )
+                    )
+                except Exception:
+                    logger.warning(get_message("clipboard_not_supported"))
+                    console.print(
+                        Panel(
+                            get_message("human_as_model_instructions_no_clipboard"),
+                            title="Instructions",
+                            border_style="blue",
+                            expand=False,
+                        )
+                    )
+                return {}
+
+            
 
             if args.enable_rag_search or args.enable_rag_context:
                 rag = RAGFactory.get_rag(llm=chat_llm, args=args, path="")
                 response = rag.stream_chat_oai(conversations=loaded_conversations)[0]
                 v = ([item, None] for item in response)
-            else:                
+            else:
                 v = chat_llm.stream_chat_oai(
                     conversations=loaded_conversations, delta_mode=True
                 )
@@ -835,7 +897,7 @@ def main(input_args: Optional[List[str]] = None):
                     llm, args, code_auto_execute.Mode.SINGLE_ROUND
                 )
                 executor.run(query=args.query, context=s, source_code="")
-            return        
+            return
         elif raw_args.doc_command == "serve":
 
             from autocoder.rag.llm_wrapper import LLWrapper
@@ -860,7 +922,7 @@ def main(input_args: Optional[List[str]] = None):
             llm_wrapper = LLWrapper(llm=llm, rag=rag)
             serve(llm=llm_wrapper, args=server_args)
             return
-        
+
         elif raw_args.doc_command == "chat":
             from autocoder.rag.rag_entry import RAGFactory
 

@@ -17,12 +17,11 @@ MESSAGES = {
             "Use '/break' to exit this mode. If you have issues with copy-paste, use '/clear' to clean and paste again."
         ),
         "chat_human_as_model_instructions": (
-            "\n============= HUMAN AS MODEL MODE =============\n"
-            "Question has been copied to clipboard\n"
-            "Please use browser to search for answers\n"
-            "Enter your response and press Enter, or enter 'c' to skip\n"
-            "=============================================\n"
-        ),
+            "Chat is now in Human as Model mode.\n"
+            "The question has been copied to your clipboard.\n"
+            "Please use Web version model to get the answer.\n"
+            "Or use /conf human_as_model:false to close this mode and get the answer in terminal directly."
+        )
     },
     "zh": {
         "human_as_model_instructions": (
@@ -40,11 +39,10 @@ MESSAGES = {
             "使用'/break'退出此模式。如果复制粘贴有问题，使用'/clear'清理并重新粘贴。"
         ),
         "chat_human_as_model_instructions": (
-            "\n============= 人类模型模式 =============\n"
+            "\n============= Chat 处于 Human as Model 模式 =============\n"
             "问题已复制到剪贴板\n"
-            "请使用浏览器搜索答案\n"
-            "输入回答后按回车，或输入 'c' 跳过\n"
-            "=========================================\n"
+            "请使用Web版本模型获取答案\n"
+            "或者使用 /conf human_as_model:false 关闭该模式直接在终端获得答案。"            
         ),
     }
 }

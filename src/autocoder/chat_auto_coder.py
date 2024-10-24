@@ -718,8 +718,8 @@ class CommandCompleter(Completer):
 
                 parser.coding()
                 current_word = parser.current_word()
-                
-                if len(new_text.strip()) == 0 or new_text.strip()=="/":
+
+                if len(new_text.strip()) == 0 or new_text.strip() == "/":
                     for command in parser.get_sub_commands():
                         if command.startswith(current_word):
                             yield Completion(command, start_position=-len(current_word))
@@ -797,7 +797,7 @@ class CommandCompleter(Completer):
                                 start_position=-len(name),
                                 display=f"{symbol.symbol_name} ({display_name}/{symbol.symbol_type})",
                             )
-                
+
                 tags = [tag for tag in parser.tags]
 
                 if current_word.startswith("<"):
@@ -810,7 +810,7 @@ class CommandCompleter(Completer):
                                 )
                         elif tag.startswith(name):
                             yield Completion(tag, start_position=-len(current_word))
-            
+
                 if tags and tags[-1].start_tag == "<img>" and tags[-1].end_tag == "":
                     raw_file_name = tags[0].content
                     file_name = raw_file_name.strip()
@@ -932,7 +932,7 @@ class CommandCompleter(Completer):
                         field_name + ":"
                         for field_name in AutoCoderArgs.model_fields.keys()
                         if field_name.startswith(current_word)
-                    ]                    
+                    ]
 
                 for completion in completions:
                     yield Completion(completion, start_position=-len(current_word))
@@ -1504,32 +1504,21 @@ def code_review(query: str) -> str:
 
 def chat(query: str):
     conf = memory.get("conf", {})
+    
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+        "include_project_structure": conf.get("include_project_structure", "true") in ["true","True"],
+        "human_as_model": conf.get("human_as_model", "false") == "true",
+        "skip_build_index": conf.get("skip_build_index", "true") == "true",
+        "skip_confirm": conf.get("skip_confirm", "true") == "true",
+        "silence": conf.get("silence", "true") == "true",
+    }
+
     current_files = memory["current_files"]["files"] + get_llm_friendly_package_docs(
         return_paths=True
     )
 
-    file_contents = []
-    for file in current_files:
-        if os.path.exists(file):
-            try:
-                with open(file, "r") as f:
-                    content = f.read()
-                    s = f"##File: {file}\n{content}\n\n"
-                    file_contents.append(s)
-            except Exception as e:
-                print(f"Failed to read file: {file}. Error: {str(e)}")
-
-    all_file_content = "".join(file_contents)
-
-    yaml_config = {
-        "include_file": ["./base/base.yml"],
-        "include_project_structure": conf.get("include_project_structure", "true")
-        == "true",
-    }
-
-    yaml_config["context"] = json.dumps(
-        {"file_content": all_file_content}, ensure_ascii=False
-    )
+    yaml_config["urls"] = current_files
 
     if "emb_model" in conf:
         yaml_config["emb_model"] = conf["emb_model"]
@@ -1548,7 +1537,7 @@ def chat(query: str):
 
     is_no_context = query.strip().startswith("/no_context")
     if is_no_context:
-        query = query.replace("/no_context", "", 1).strip()    
+        query = query.replace("/no_context", "", 1).strip()
 
     for key, value in conf.items():
         converted_value = convert_config_value(key, value)
