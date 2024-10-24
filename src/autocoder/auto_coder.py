@@ -726,11 +726,7 @@ def main(input_args: Optional[List[str]] = None):
                     import pyperclip                    
                     pyperclip.copy(final_question)
                     ##MARK
-                    print("\n============= HUMAN AS MODEL MODE =============")
-                    print("问题已复制到剪贴板")
-                    print("请使用浏览器搜索答案")
-                    print("输入回答后按回车，或输入 'c' 跳过")
-                    print("=============================================\n")
+                    print(get_message("chat_human_as_model_instructions"))
                     return {}
 
                 chat_content = chat_with_human_as_model.prompt(pre_conversations=loaded_conversations[:-1], last_conversation=loaded_conversations[-1])                

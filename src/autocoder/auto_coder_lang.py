@@ -16,7 +16,13 @@ MESSAGES = {
             "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
             "Use '/break' to exit this mode. If you have issues with copy-paste, use '/clear' to clean and paste again."
         ),
-        
+        "chat_human_as_model_instructions": (
+            "\n============= HUMAN AS MODEL MODE =============\n"
+            "Question has been copied to clipboard\n"
+            "Please use browser to search for answers\n"
+            "Enter your response and press Enter, or enter 'c' to skip\n"
+            "=============================================\n"
+        ),
     },
     "zh": {
         "human_as_model_instructions": (
@@ -33,7 +39,13 @@ MESSAGES = {
             "系统正在等待您的输入。完成后，在新行输入'EOF'提交。\n"
             "使用'/break'退出此模式。如果复制粘贴有问题，使用'/clear'清理并重新粘贴。"
         ),
-        
+        "chat_human_as_model_instructions": (
+            "\n============= 人类模型模式 =============\n"
+            "问题已复制到剪贴板\n"
+            "请使用浏览器搜索答案\n"
+            "输入回答后按回车，或输入 'c' 跳过\n"
+            "=========================================\n"
+        ),
     }
 }
 
