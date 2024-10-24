@@ -41,6 +41,7 @@ class ByzerStorageCache(BaseCacheManager):
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
         self.storage = ByzerStorage("byzerai_store", "rag", "files")
+        self.queue = []
         self.chunk_size = 1000
         self._init_schema()
 
@@ -119,14 +120,28 @@ class ByzerStorageCache(BaseCacheManager):
                 return {}
         return {}
 
+    def _save_cache(self, file_path: str, doc: SourceCode) -> None:
+        try:
+            if not os.path.exists(self.cache_dir):
+                os.makedirs(self.cache_dir)
+            
+            with self.lock:
+                self.cache[file_path] = doc
+                self.write_cache()
+        except Exception as e:
+            logger.error(f"Error saving cache for {file_path}: {str(e)}")
+
     def write_cache(self):
         cache_file = self.cache_file
 
         if not fcntl:
-            with open(cache_file, "w") as f:
-                for data in self.cache.values():
-                    json.dump(data, f, ensure_ascii=False)
-                    f.write("\n")
+            try:
+                with open(cache_file, "w") as f:
+                    for data in self.cache.values():
+                        json.dump(data, f, ensure_ascii=False)
+                        f.write("\n")
+            except IOError as e:
+                logger.error(f"Error writing cache file: {str(e)}")
         else:
             lock_file = cache_file + ".lock"
             with open(lock_file, "w") as lockf:
