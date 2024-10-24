@@ -118,18 +118,7 @@ class ByzerStorageCache(BaseCacheManager):
             except Exception as e:
                 logger.error(f"Error loading cache file: {str(e)}")
                 return {}
-        return {}
-
-    def _save_cache(self, file_path: str, doc: SourceCode) -> None:
-        try:
-            if not os.path.exists(self.cache_dir):
-                os.makedirs(self.cache_dir)
-            
-            with self.lock:
-                self.cache[file_path] = doc
-                self.write_cache()
-        except Exception as e:
-            logger.error(f"Error saving cache for {file_path}: {str(e)}")
+        return {}    
 
     def write_cache(self):
         cache_file = self.cache_file
@@ -209,10 +198,13 @@ class ByzerStorageCache(BaseCacheManager):
                     }
                     items.append(chunk_item)
 
-                # Save to local cache
-                self._save_cache(file_path, doc)
+        # Save to local cache
+        logger.info("Saving cache to local file")
+        self.write_cache()
 
+        ##MARK 
         if items:
+            logger.info("Saving cache to Byzer Storage")
             self.storage.write_builder().add_items(
                 items, vector_fields=["vector"], search_fields=["content"]
             ).execute()

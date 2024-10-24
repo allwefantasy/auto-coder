@@ -318,7 +318,7 @@ def main(input_args: Optional[List[str]] = None):
             byzerllm.connect_cluster(address=args.ray_address)
         llm = byzerllm.ByzerLLM()
         llm.setup_default_model_name(args.model)
-                
+
         # 当启用hybrid_index时,检查必要的组件
         if auto_coder_args.enable_hybrid_index:                           
             if not llm.is_model_exist("emb"):
@@ -352,10 +352,29 @@ def main(input_args: Optional[List[str]] = None):
         )
 
         auto_coder_args.enable_hybrid_index = True
-
-        byzerllm.connect_cluster(address=args.ray_address)
+        auto_coder_args.rag_type = "simple"
+                        
+        try:
+            from byzerllm.apps.byzer_storage.simple_api import ByzerStorage
+            storage = ByzerStorage("byzerai_store", "test", "test")
+            if not storage._is_connected:
+                logger.error("When enable_hybrid_index is true, ByzerStorage must be started")
+                logger.error("Please run 'byzerllm storage start' first")
+                return
+        except Exception as e:
+            logger.error("When enable_hybrid_index is true, ByzerStorage must be started")
+            logger.error("Please run 'byzerllm storage start' first")
+            return
+        
         llm = byzerllm.ByzerLLM()
         llm.setup_default_model_name(args.model)
+
+        # 当启用hybrid_index时,检查必要的组件
+        if auto_coder_args.enable_hybrid_index:                           
+            if not llm.is_model_exist("emb"):
+                logger.error("When enable_hybrid_index is true, an 'emb' model must be deployed")
+                return
+            llm.setup_default_emb_model_name("emb")        
 
         rag = RAGFactory.get_rag(
             llm=llm,
