@@ -714,10 +714,35 @@ def main(input_args: Optional[List[str]] = None):
                 @byzerllm.prompt()
                 def chat_with_human_as_model(conversations):
                     '''
+                    {% if conversations[:-1] %}
+                    背景对话:
+                    {% for conv in conversations[:-1] %}
+                    {{ conv.role }}: {{ conv.content }}
+                    {% endfor %}
+                    {% endif %}
+
+                    问题: {{ conversations[-1].content }}
                     '''
+                    import pyperclip
+                    if len(conversations) > 1:
+                        context = "\n".join([f"{conv['role']}: {conv['content']}" for conv in conversations[:-1]])
+                        final_question = f"""
+背景对话:
+{context}
+
+问题: {conversations[-1]['content']}"""
+                    else:
+                        final_question = f"问题: {conversations[-1]['content']}"
+                    
+                    pyperclip.copy(final_question)
+                    print("\n============= HUMAN AS MODEL MODE =============")
+                    print("问题已复制到剪贴板")
+                    print("请使用浏览器搜索答案")
+                    print("输入回答后按回车，或输入 'c' 跳过")
+                    print("=============================================\n")
+                    return {}
 
                 chat_content = chat_with_human_as_model.prompt(conversations=loaded_conversations)                
-                ##MARK
                 
 
             if llm.get_sub_client("chat_model"):
