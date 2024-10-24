@@ -1494,7 +1494,9 @@ def code_review(query: str) -> str:
     1. 有没有调用不符合方法，类的签名的调用
     2. 有没有没有未声明直接使用的变量，方法，类
     3. 有没有明显的语法错误
+    {% if query %}
     4. 用户的额外的检查需求：{{ query }}
+    {% endif %}
 
     如果用户的需求包含了@一个文件名 或者 @@符号， 那么重点关注这些文件或者符号（函数，类）进行上述的review
     """
@@ -1546,7 +1548,7 @@ def chat(query: str):
 
     is_no_context = query.strip().startswith("/no_context")
     if is_no_context:
-        query = query.replace("/no_context", "", 1).strip()
+        query = query.replace("/no_context", "", 1).strip()    
 
     for key, value in conf.items():
         converted_value = convert_config_value(key, value)

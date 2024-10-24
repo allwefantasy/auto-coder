@@ -710,6 +710,16 @@ def main(input_args: Optional[List[str]] = None):
                 pre_conversations + chat_history["ask_conversation"][-31:]
             )
 
+            if args.human_as_model:
+                @byzerllm.prompt()
+                def chat_with_human_as_model(conversations):
+                    '''
+                    '''
+
+                chat_content = chat_with_human_as_model.prompt(conversations=loaded_conversations)                
+                ##MARK
+                
+
             if llm.get_sub_client("chat_model"):
                 chat_llm = llm.get_sub_client("chat_model")
             else:

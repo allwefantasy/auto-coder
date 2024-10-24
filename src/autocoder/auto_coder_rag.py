@@ -259,7 +259,12 @@ def main(input_args: Optional[List[str]] = None):
         action="store_true",
         help="Enable hybrid index",
     )
-    
+    serve_parser.add_argument(
+        "--hybrid_index_max_output_tokens",
+        type=int,
+        default=100000,
+        help="The maximum number of tokens in the output. This is only used when enable_hybrid_index is true.",
+    )
 
     # Tools command
     tools_parser = subparsers.add_parser("tools", help="Various tools")

@@ -129,7 +129,7 @@ class LongContextRAG:
             single_file_token_limit=self.full_text_limit - 100,
             disable_auto_window=self.args.disable_auto_window,            
             enable_hybrid_index=self.args.enable_hybrid_index,
-            extra_params==self.args
+            extra_params=self.args
         )
 
         self.doc_filter = DocFilter(

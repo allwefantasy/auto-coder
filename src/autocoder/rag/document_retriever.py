@@ -6,7 +6,7 @@ import traceback
 
 import threading
 from multiprocessing import Pool
-from typing import Dict, Generator, List, Tuple, Any
+from typing import Dict, Generator, List, Tuple, Any,Optional
 
 import ray
 from loguru import logger

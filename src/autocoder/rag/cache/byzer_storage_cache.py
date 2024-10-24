@@ -32,7 +32,7 @@ class ByzerStorageCache(BaseCacheManager):
         self.chunk_size = 1000
         self._init_schema()
         self.file_mtimes = {}  # 存储文件修改时间
-        self.max_output_tokens = extra_params.max_output_tokens if extra_params else 100000
+        self.max_output_tokens = extra_params.hybrid_index_max_output_tokens if extra_params else 100000
 
         # 设置缓存文件路径
         self.cache_dir = os.path.join(self.path, ".cache")
