@@ -658,7 +658,7 @@ def main(input_args: Optional[List[str]] = None):
                 request_queue.add_request(
                     args.request_id,
                     RequestValue(
-                        value=DefaultValue(value=response),
+                        value=DefaultValue(value="Successfully generated image"),
                         status=RequestOption.COMPLETED,
                     ),
                 )
@@ -699,7 +699,7 @@ def main(input_args: Optional[List[str]] = None):
                 chat_llm = llm.get_sub_client("chat_model")
             else:
                 chat_llm = llm
-            
+
             source_count = 0
             pre_conversations = []
             if args.context:
@@ -729,7 +729,7 @@ def main(input_args: Optional[List[str]] = None):
             pp.run()
             sources = pp.sources
             s = build_index_and_filter_files(llm=llm, args=args, sources=sources)
-            if s: 
+            if s:
                 pre_conversations.append(
                     {
                         "role": "user",
@@ -739,17 +739,17 @@ def main(input_args: Optional[List[str]] = None):
                 pre_conversations.append({"role": "assistant", "content": "read"})
                 source_count += 1
 
-            loaded_conversations = (
-                pre_conversations + chat_history["ask_conversation"]
-            )
+            loaded_conversations = pre_conversations + chat_history["ask_conversation"]
 
             if args.human_as_model:
                 console = Console()
 
                 @byzerllm.prompt()
-                def chat_with_human_as_model(source_codes, pre_conversations, last_conversation):
+                def chat_with_human_as_model(
+                    source_codes, pre_conversations, last_conversation
+                ):
                     """
-                    {% if source_codes %}                    
+                    {% if source_codes %}
                     {{ source_codes }}
                     {% endif %}
 
@@ -762,7 +762,8 @@ def main(input_args: Optional[List[str]] = None):
 
                     用户的问题: {{ last_conversation.content }}
                     """
-                source_codes_conversations = loaded_conversations[0:source_count*2]
+
+                source_codes_conversations = loaded_conversations[0 : source_count * 2]
                 source_codes = ""
                 for conv in source_codes_conversations:
                     if conv["role"] == "user":
@@ -770,7 +771,7 @@ def main(input_args: Optional[List[str]] = None):
 
                 chat_content = chat_with_human_as_model.prompt(
                     source_codes=source_codes,
-                    pre_conversations=loaded_conversations[source_count*2:-1],
+                    pre_conversations=loaded_conversations[source_count * 2 : -1],
                     last_conversation=loaded_conversations[-1],
                 )
                 try:
@@ -785,43 +786,6 @@ def main(input_args: Optional[List[str]] = None):
                             expand=False,
                         )
                     )
-                    # Save chat content to file
-                with open(args.target_file, "w") as f:
-                    f.write(chat_content)
-                
-                lines = []
-                while True:
-                    line = prompt(FormattedText([("#00FF00", "> ")]), multiline=False)
-                    line_lower = line.strip().lower()
-                    if line_lower in ["eof", "/eof"]:
-                        break 
-                    elif line_lower in ["/clear"]:
-                        lines = []
-                        print("\033[2J\033[H")  # Clear terminal screen
-                        continue
-                    elif line_lower in ["/break"]:
-                        raise Exception("User requested to break the operation.")
-                    lines.append(line)
-                
-                result = "\n".join(lines)
-                
-                # Update chat history with user's response
-                chat_history["ask_conversation"].append({
-                    "role": "assistant", 
-                    "content": result
-                })
-                
-                with open(memory_file, "w") as f:
-                    json.dump(chat_history, f, ensure_ascii=False)
-                
-                if result.lower() == "c":
-                    continue
-                
-                request_queue.add_request(
-                    args.request_id,
-                    RequestValue(value=DefaultValue(value=result), status=RequestOption.COMPLETED)
-                )
-                return
                 except Exception:
                     logger.warning(get_message("clipboard_not_supported"))
                     console.print(
@@ -832,9 +796,43 @@ def main(input_args: Optional[List[str]] = None):
                             expand=False,
                         )
                     )
-                return {}
+                    return 
+                # Save chat content to file
+                with open(args.target_file, "w") as f:
+                    f.write(chat_content)
 
-            
+                lines = []
+                while True:
+                    line = prompt(FormattedText([("#00FF00", "> ")]), multiline=False)
+                    line_lower = line.strip().lower()
+                    if line_lower in ["eof", "/eof"]:
+                        break
+                    elif line_lower in ["/clear"]:
+                        lines = []
+                        print("\033[2J\033[H")  # Clear terminal screen
+                        continue
+                    elif line_lower in ["/break"]:
+                        raise Exception("User requested to break the operation.")
+                    lines.append(line)
+
+                result = "\n".join(lines)
+
+                # Update chat history with user's response
+                chat_history["ask_conversation"].append(
+                    {"role": "assistant", "content": result}
+                )
+
+                with open(memory_file, "w") as f:
+                    json.dump(chat_history, f, ensure_ascii=False)
+                
+                request_queue.add_request(
+                    args.request_id,
+                    RequestValue(
+                        value=DefaultValue(value=result), status=RequestOption.COMPLETED
+                    ),
+                )
+
+                return {}
 
             if args.enable_rag_search or args.enable_rag_context:
                 rag = RAGFactory.get_rag(llm=chat_llm, args=args, path="")

@@ -51,12 +51,12 @@ class ByzerStorageCache(BaseCacheManager):
 
         # 设置缓存文件路径
         self.cache_dir = os.path.join(self.path, ".cache")
-        self.cache_file = os.path.join(self.cache_dir, ".byzer_storage_speedup.jsonl")
+        self.cache_file = os.path.join(self.cache_dir, "byzer_storage_speedup.jsonl")
         self.cache = {}
 
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
-        self.thread = threading.Thread(target=self._process_queue)
+        self.thread = threading.Thread(target=self.process_queue)
         self.thread.daemon = True
         self.thread.start()
 
@@ -302,21 +302,28 @@ class ByzerStorageCache(BaseCacheManager):
 
         results = query_builder.execute()
 
-        # Group results by file_path and reconstruct documents
-        file_paths = list(set([result["file_path"] for result in results]))
+        # Group results by file_path and reconstruct documents while preserving order
+        file_paths = []
+        seen = set()
+        for result in results:
+            file_path = result["file_path"]
+            if file_path not in seen:
+                seen.add(file_path)
+                file_paths.append(file_path)
 
         # 从缓存中获取文件内容
+        result = {}
         for file_path in file_paths:
             if file_path in self.cache:
                 cached_data = self.cache[file_path]
                 if total_tokens + cached_data["tokens"] > self.max_output_tokens:
                     return
                 total_tokens += cached_data["tokens"]
-                yield SourceCode(
-                    module_name=f"##File: {file_path}",
-                    source_code=cached_data["content"],
-                    tokens=cached_data["tokens"],
-                )
+                result[file_path] = cached_data
+
+        return result
+
+                
 
     def get_all_files(self) -> List[Tuple[str, str, float]]:
         all_files = []

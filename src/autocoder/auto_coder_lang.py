@@ -21,6 +21,7 @@ MESSAGES = {
             "The question has been copied to your clipboard.\n"
             "Please use Web version model to get the answer.\n"
             "Or use /conf human_as_model:false to close this mode and get the answer in terminal directly."
+            "Paste the answer to the input box below, use '/break' to exit, '/clear' to clear the screen, '/eof' to submit."
         )
     },
     "zh": {
@@ -42,7 +43,8 @@ MESSAGES = {
             "\n============= Chat 处于 Human as Model 模式 =============\n"
             "问题已复制到剪贴板\n"
             "请使用Web版本模型获取答案\n"
-            "或者使用 /conf human_as_model:false 关闭该模式直接在终端获得答案。"            
+            "或者使用 /conf human_as_model:false 关闭该模式直接在终端获得答案。" 
+            "将获得答案黏贴到下面的输入框，换行后，使用 '/break' 退出，'/clear' 清屏，'/eof' 提交。"           
         ),
     }
 }
