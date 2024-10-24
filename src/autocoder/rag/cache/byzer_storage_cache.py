@@ -164,8 +164,13 @@ class ByzerStorageCache(BaseCacheManager):
     def get_cache(self, options: Dict[str, Any]) -> Generator[SourceCode, None, None]:
         """Search cached documents using query"""
         query = options.get("query", "")
+        total_tokens = 0
+
         if not query:
             for _, data in self.cache.items():
+                if total_tokens + data["tokens"] > self.max_output_tokens:
+                    return
+                total_tokens += data["tokens"]
                 yield SourceCode(
                     module_name=f"##File: {data['file_path']}",
                     source_code=data["content"],
@@ -190,22 +195,20 @@ class ByzerStorageCache(BaseCacheManager):
         results = query_builder.execute()
 
         # Group results by file_path and reconstruct documents
-        grouped_results = {}
-        for result in results:
-            file_path = result["file_path"]
-            if file_path not in grouped_results:
-                # 收集所有结果中的file_path并去重
-                file_paths = list(set([result["file_path"] for result in results]))
+        file_paths = list(set([result["file_path"] for result in results]))
 
-                # 从缓存中获取文件内容
-                for file_path in file_paths:
-                    if file_path in self.cache:
-                        cached_data = self.cache[file_path]
-                        yield SourceCode(
-                            module_name=f"##File: {file_path}",
-                            source_code=cached_data["content"],
-                            tokens=cached_data["tokens"],
-                        )
+        # 从缓存中获取文件内容
+        for file_path in file_paths:
+            if file_path in self.cache:
+                cached_data = self.cache[file_path]
+                if total_tokens + cached_data["tokens"] > self.max_output_tokens:
+                    return
+                total_tokens += cached_data["tokens"]
+                yield SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=cached_data["content"],
+                    tokens=cached_data["tokens"],
+                )
 
     def update_cache(self):
         """Update cache when files are modified"""
