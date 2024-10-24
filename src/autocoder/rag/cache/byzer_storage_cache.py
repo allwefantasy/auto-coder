@@ -209,7 +209,9 @@ class ByzerStorageCache(BaseCacheManager):
             chunk_size = max(1, len(items) // max_workers)
             item_chunks = [items[i:i + chunk_size] for i in range(0, len(items), chunk_size)]
             
-            ##MARK
+            total_chunks = len(item_chunks)
+            completed_chunks = 0
+            
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = []
                 for chunk in item_chunks:
@@ -225,6 +227,8 @@ class ByzerStorageCache(BaseCacheManager):
                 for future in as_completed(futures):
                     try:
                         future.result()
+                        completed_chunks += 1
+                        logger.info(f"Progress: {completed_chunks}/{total_chunks} chunks completed")
                     except Exception as e:
                         logger.error(f"Error in saving chunk: {str(e)}")
             
