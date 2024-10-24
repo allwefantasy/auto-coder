@@ -712,29 +712,20 @@ def main(input_args: Optional[List[str]] = None):
 
             if args.human_as_model:
                 @byzerllm.prompt()
-                def chat_with_human_as_model(conversations):
+                def chat_with_human_as_model(pre_conversations, last_conversation):
                     '''
-                    {% if conversations[:-1] %}
-                    背景对话:
-                    {% for conv in conversations[:-1] %}
-                    {{ conv.role }}: {{ conv.content }}
+                    {% if pre_conversations %}
+                    历史对话:
+                    {% for conv in pre_conversations %}
+                    [{{ conv.role }}]: {{ conv.content }}
                     {% endfor %}
                     {% endif %}
 
-                    问题: {{ conversations[-1].content }}
+                    用户的问题: {{ last_conversation.content }}
                     '''
-                    import pyperclip
-                    if len(conversations) > 1:
-                        context = "\n".join([f"{conv['role']}: {conv['content']}" for conv in conversations[:-1]])
-                        final_question = f"""
-背景对话:
-{context}
-
-问题: {conversations[-1]['content']}"""
-                    else:
-                        final_question = f"问题: {conversations[-1]['content']}"
-                    
+                    import pyperclip                    
                     pyperclip.copy(final_question)
+                    ##MARK
                     print("\n============= HUMAN AS MODEL MODE =============")
                     print("问题已复制到剪贴板")
                     print("请使用浏览器搜索答案")
@@ -742,7 +733,7 @@ def main(input_args: Optional[List[str]] = None):
                     print("=============================================\n")
                     return {}
 
-                chat_content = chat_with_human_as_model.prompt(conversations=loaded_conversations)                
+                chat_content = chat_with_human_as_model.prompt(pre_conversations=loaded_conversations[:-1], last_conversation=loaded_conversations[-1])                
                 
 
             if llm.get_sub_client("chat_model"):
