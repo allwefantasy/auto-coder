@@ -146,14 +146,16 @@ def main(input_args: Optional[List[str]] = None):
 
     # Build hybrid index command
     build_index_parser = subparsers.add_parser("build_hybrid_index", help="Build hybrid index for RAG")
+    build_index_parser.add_argument("--quick", action="store_true", help="Skip system initialization")
     build_index_parser.add_argument("--file", default="", help=desc["file"])
     build_index_parser.add_argument("--model", default="deepseek_chat", help=desc["model"])
     build_index_parser.add_argument("--index_model", default="", help=desc["index_model"])
     build_index_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
     build_index_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
     build_index_parser.add_argument("--required_exts", default="", help=desc["doc_build_parse_required_exts"])
-    build_index_parser.add_argument("--source_dir", default=".", help="")
-    build_index_parser.add_argument("--tokenizer_path", default="", help="")
+    build_index_parser.add_argument("--source_dir", default=".", help="Source directory path")
+    build_index_parser.add_argument("--tokenizer_path", default="", help="Path to tokenizer file")
+    build_index_parser.add_argument("--doc_dir", default="", help="Document directory path")
     build_index_parser.add_argument("--enable_hybrid_index", action="store_true", help="Enable hybrid index")
 
     # Serve command
