@@ -28,6 +28,7 @@ from autocoder.rag.cache.simple_cache import AutoCoderRAGAsyncUpdateQueue
 from autocoder.rag.cache.file_monitor_cache import AutoCoderRAGDocListener
 from autocoder.rag.cache.byzer_storage_cache import ByzerStorageCache
 from autocoder.rag.utils import process_file_in_multi_process, process_file_local
+from autocoder.common import AutoCoderArgs
 
 cache_lock = threading.Lock()
 
@@ -80,6 +81,7 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
         single_file_token_limit: int = 60000,
         disable_auto_window: bool = False,
         enable_hybrid_index: bool = False,
+        extra_params: Optional[AutoCoderArgs] = None,
     ) -> None:
         self.path = path
         self.ignore_spec = ignore_spec
@@ -99,7 +101,7 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
             self.cacher = get_or_create_actor(path, ignore_spec, required_exts)
         else:
             if self.enable_hybrid_index:
-                self.cacher = ByzerStorageCache(path, ignore_spec, required_exts)
+                self.cacher = ByzerStorageCache(path, ignore_spec, required_exts,extra_params)
             else:
                 if self.monitor_mode:
                     self.cacher = AutoCoderRAGDocListener(

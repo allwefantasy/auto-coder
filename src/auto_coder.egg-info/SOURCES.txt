@@ -82,7 +82,13 @@ src/autocoder/rag/token_checker.py
 src/autocoder/rag/token_counter.py
 src/autocoder/rag/token_limiter.py
 src/autocoder/rag/types.py
+src/autocoder/rag/utils.py
 src/autocoder/rag/variable_holder.py
+src/autocoder/rag/cache/__init__.py
+src/autocoder/rag/cache/base_cache.py
+src/autocoder/rag/cache/byzer_storage_cache.py
+src/autocoder/rag/cache/file_monitor_cache.py
+src/autocoder/rag/cache/simple_cache.py
 src/autocoder/rag/loaders/__init__.py
 src/autocoder/rag/loaders/docx_loader.py
 src/autocoder/rag/loaders/excel_loader.py
