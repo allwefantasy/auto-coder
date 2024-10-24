@@ -20,6 +20,7 @@ from byzerllm.apps.byzer_storage.simple_api import (
 from autocoder.common import AutoCoderArgs
 import threading
 from multiprocessing import Pool
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from autocoder.rag.variable_holder import VariableHolder
 import platform
 
@@ -205,9 +206,28 @@ class ByzerStorageCache(BaseCacheManager):
         ##MARK 
         if items:
             logger.info("Saving cache to Byzer Storage")
-            self.storage.write_builder().add_items(
-                items, vector_fields=["vector"], search_fields=["content"]
-            ).execute()
+            # Split items into 5 chunks
+            chunk_size = max(1, len(items) // 5)
+            item_chunks = [items[i:i + chunk_size] for i in range(0, len(items), chunk_size)]
+            
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                futures = []
+                for chunk in item_chunks:
+                    futures.append(
+                        executor.submit(
+                            lambda x: self.storage.write_builder().add_items(
+                                x, vector_fields=["vector"], search_fields=["content"]
+                            ).execute(),
+                            chunk
+                        )
+                    )
+                # Wait for all futures to complete
+                for future in as_completed(futures):
+                    try:
+                        future.result()
+                    except Exception as e:
+                        logger.error(f"Error in saving chunk: {str(e)}")
+            
             self.storage.commit()
 
     def update_storage(self, file_path, is_delete: bool):
