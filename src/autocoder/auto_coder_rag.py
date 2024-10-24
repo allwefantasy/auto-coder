@@ -262,7 +262,7 @@ def main(input_args: Optional[List[str]] = None):
     serve_parser.add_argument(
         "--hybrid_index_max_output_tokens",
         type=int,
-        default=100000,
+        default=1000000,
         help="The maximum number of tokens in the output. This is only used when enable_hybrid_index is true.",
     )
 
@@ -302,6 +302,8 @@ def main(input_args: Optional[List[str]] = None):
         byzerllm.connect_cluster(address=args.ray_address)
         llm = byzerllm.ByzerLLM()
         llm.setup_default_model_name(args.model)
+
+        ##MARK
 
         if server_args.doc_dir:
             auto_coder_args.rag_type = "simple"

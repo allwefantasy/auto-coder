@@ -58,12 +58,12 @@ class BaseDocumentRetriever(ABC):
     """Abstract base class for document retrieval."""
 
     @abstractmethod
-    def get_cache(self):
+    def get_cache(self,options:Optional[Dict[str,Any]]=None):
         """Get cached documents."""
         pass
 
     @abstractmethod
-    def retrieve_documents(self) -> Generator[SourceCode, None, None]:
+    def retrieve_documents(self,options:Optional[Dict[str,Any]]=None) -> Generator[SourceCode, None, None]:
         """Retrieve documents."""
         pass
 
@@ -119,8 +119,10 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
         logger.info(f"  Small file token limit: {self.small_file_token_limit}")
         logger.info(f"  Small file merge limit: {self.small_file_merge_limit}")
         logger.info(f"  Enable hybrid index: {self.enable_hybrid_index}")
+        if extra_params:
+        logger.info(f"  Hybrid index max output tokens: {extra_params.hybrid_index_max_output_tokens}")
 
-    def get_cache(self):
+    def get_cache(self,options:Optional[Dict[str,Any]]=None):
         if self.on_ray:
             return ray.get(self.cacher.get_cache.remote())
         else:

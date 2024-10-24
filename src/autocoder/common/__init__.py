@@ -282,7 +282,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     command: Optional[str] = None
     doc_command: Optional[str] = None
     required_exts: Optional[str] = None
-    hybrid_index_max_output_tokens: Optional[int] = 100000
+    hybrid_index_max_output_tokens: Optional[int] = 1000000
 
     monitor_mode: bool = False
     enable_hybrid_index: bool = False
