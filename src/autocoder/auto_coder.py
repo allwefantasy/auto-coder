@@ -754,12 +754,14 @@ def main(input_args: Optional[List[str]] = None):
                     {% endif %}
 
                     {% if pre_conversations %}
-                    历史对话:
+                    下面是我们之间的历史对话，假设我是A，你是B。
                     {% for conv in pre_conversations %}
-                    [{{ conv.role }}]: {{ conv.content }}
+                    {{ "A" if conv.role == "user" else "B" }}: {{ conv.content }}
                     {% endfor %}
                     {% endif %}
 
+                    
+                    参考上面的文件以及对话，回答用户的问题。
                     用户的问题: {{ last_conversation.content }}
                     """
 
