@@ -269,6 +269,12 @@ def main(input_args: Optional[List[str]] = None):
         help="The maximum number of tokens in the output. This is only used when enable_hybrid_index is true.",
     )
 
+    serve_parser.add_argument(
+        "--without_contexts",
+        action="store_true", 
+        help="Whether to return responses without source contexts",
+    )
+
     # Tools command
     tools_parser = subparsers.add_parser("tools", help="Various tools")
     tools_subparsers = tools_parser.add_subparsers(dest="tool", help="Available tools")
