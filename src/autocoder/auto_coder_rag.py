@@ -256,6 +256,17 @@ def main(input_args: Optional[List[str]] = None):
         action="store_true",
         help="Enable deep thought in inference mode",
     )
+    serve_parser.add_argument(
+        "--inference_slow_without_deep_thought",
+        action="store_true",
+        help="Enable slow inference without deep thought",
+    )
+    serve_parser.add_argument(
+        "--inference_compute_precision",
+        type=int,
+        default=64,
+        help="The precision of the inference compute",
+    )
 
     serve_parser.add_argument(
         "--enable_hybrid_index",
@@ -272,7 +283,7 @@ def main(input_args: Optional[List[str]] = None):
     serve_parser.add_argument(
         "--without_contexts",
         action="store_true", 
-        help="Whether to return responses without source contexts",
+        help="Whether to return responses without contexts. only works when pro plugin is installed",
     )
 
     # Tools command

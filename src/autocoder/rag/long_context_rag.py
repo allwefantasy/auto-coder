@@ -29,9 +29,14 @@ from autocoder.rag.token_counter import RemoteTokenCounter, TokenCounter
 from autocoder.rag.token_limiter import TokenLimiter
 from tokenizers import Tokenizer
 from autocoder.rag.variable_holder import VariableHolder
+from importlib.metadata import version
+from autocoder.rag.stream_event import event_writer
 
-try:
+try:        
     from autocoder_pro.rag.llm_compute import LLMComputeEngine
+    pro_version = version("auto-coder-pro")
+    autocoder_version = version("auto-coder")
+    logger.warning(f"auto-coder-pro({pro_version}) plugin is enabled in auto-coder.rag({autocoder_version})")
 except ImportError:
     logger.warning("Please install auto-coder-pro to enhance llm compute ability")
     LLMComputeEngine = None
@@ -342,16 +347,41 @@ class LongContextRAG:
                     delta_mode=True,
                 )
                 return (chunk[0] for chunk in chunks), context
+            
+            try:
+                request_params = json.loads(query)
+                if "request_id" in request_params:                    
+                    request_id = request_params["request_id"]
+                    index = request_params["index"]
+                    
+                    file_path = event_writer.get_event_file_path(request_id)                    
+                    logger.info(f"Get events for request_id: {request_id} index: {index} file_path: {file_path}")
+                    events = []
+                    if not os.path.exists(file_path):
+                        return [],context
 
-            if self.args.xxxx and LLMComputeEngine is not None:
+                    with open(file_path, "r") as f:
+                        for line in f:
+                            event = json.loads(line)
+                            if event["index"] >= index:
+                                events.append(event)
+                    return [json.dumps({
+                        "events": [event for event in events],                        
+                    },ensure_ascii=False)], context                
+            except json.JSONDecodeError:
+                pass
+
+            if self.args.without_contexts and LLMComputeEngine is not None:
                 llm_compute_engine = LLMComputeEngine(
                     llm=self.llm,
                     inference_enhance=not self.args.disable_inference_enhance,
                     inference_deep_thought=self.args.inference_deep_thought,
-                    debug=False,
+                    inference_slow_without_deep_thought=self.args.inference_slow_without_deep_thought,                    
+                    precision=self.args.inference_compute_precision,
                 )
+                conversations = conversations[:-1]
                 new_conversations = llm_compute_engine.process_conversation(
-                    conversations, query, [doc.source_code for doc in relevant_docs]
+                    conversations, query, []
                 )
 
                 return (
@@ -523,11 +553,12 @@ class LongContextRAG:
                 f"Start to send to model {target_model} with {request_tokens} tokens"
             )
 
-            if LLMComputeEngine is not None:
+            if LLMComputeEngine is not None and not self.args.disable_inference_enhance:
                 llm_compute_engine = LLMComputeEngine(
                     llm=self.llm,
                     inference_enhance=not self.args.disable_inference_enhance,
                     inference_deep_thought=self.args.inference_deep_thought,
+                    precision=self.args.inference_compute_precision,
                     debug=False,
                 )
                 new_conversations = llm_compute_engine.process_conversation(

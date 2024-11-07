@@ -19,10 +19,10 @@ from byzerllm.utils.client.entrypoints.openai.protocol import (
     ChatCompletionRequest,
     ErrorResponse,
     CompletionRequest,
-    Embeddings,
-    EmbeddingsOutput,
-    EmbeddingsData,
-    EmbeddingsUsage,
+    EmbeddingCompletionRequest,
+    EmbeddingResponse,
+    EmbeddingResponseData,
+    UsageInfo,
 )
 from pydantic import BaseModel
 from typing import List,Optional
@@ -122,34 +122,49 @@ async def create_chat_completion(
 
 
 @router_app.post("/v1/embeddings")
-async def embed(body: Embeddings):
-    """Given a prompt, the model will return one embedding.
-
+async def embed(body: EmbeddingCompletionRequest):
+    """Generate embeddings for given input text.
+    
+    Args:
+        body: The embedding request containing input text and parameters.
+        
     Returns:
-        A response object with an embedding.
+        EmbeddingResponse with embeddings and usage statistics.
     """
     embedding_id = f"embed-{random_uuid()}"
+    
+    # Handle both string and list inputs
+    inputs = body.input if isinstance(body.input, list) else [body.input]
+    
+    # Generate embeddings for each input
+    results_list = []
+    for text in inputs:
+        result = llm_client.emb(body.model, request=LLMRequest(instruction=text))
+        results_list.extend(result)
 
-    results_list = llm_client.emb(body.model, request=LLMRequest(instruction=body.input))
-    tokens = 0
-
-    return EmbeddingsOutput(
-        data=[
-            EmbeddingsData(
-                embedding=results.output,
-                index=i,
-                object="embedding",
-            )
-            for i, results in enumerate(results_list)
-        ],
-        id=embedding_id,
-        object="list",
-        created=int(time.time()),
+    # Build response data
+    data = [
+        EmbeddingResponseData(
+            embedding=result.output,
+            index=i,
+            object="embedding"
+        )
+        for i, result in enumerate(results_list)
+    ]
+    
+    # Calculate token usage (simplified)
+    token_count = sum(len(str(input).split()) for input in inputs)
+    
+    return EmbeddingResponse(
+        data=data,
         model=body.model,
-        usage=EmbeddingsUsage(
-            prompt_tokens=tokens,
-            total_tokens=tokens,
+        object="list",
+        usage=UsageInfo(
+            prompt_tokens=token_count,
+            total_tokens=token_count
         ),
+        created=int(time.time()),
+        id=embedding_id
     )
 
 class ServerArgs(BaseModel):

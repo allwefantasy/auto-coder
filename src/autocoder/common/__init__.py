@@ -316,6 +316,9 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     disable_inference_enhance: Optional[bool] = False
     inference_deep_thought: Optional[bool] = False
+    inference_slow_without_deep_thought: Optional[bool] = False
+    inference_compute_precision: int = 64
+    without_contexts: Optional[bool] = False
 
     class Config:
         protected_namespaces = ()

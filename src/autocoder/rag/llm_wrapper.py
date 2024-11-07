@@ -9,6 +9,7 @@ from byzerllm.utils.client import LLMResponse
 from byzerllm.utils.types import SingleOutputMeta
 from autocoder.rag.simple_rag import SimpleRAG
 from loguru import logger
+from byzerllm.utils.langutil import asyncfy_with_semaphore
 
 class LLWrapper:
 
@@ -31,7 +32,7 @@ class LLWrapper:
                  model:Optional[str] = None,
                  role_mapping=None,llm_config:Dict[str,Any]={}
                  )->Union[List[LLMResponse],List[LLMFunctionCallResponse],List[LLMClassResponse]]: 
-        res,contexts = self.rag.stream_chat_oai(conversations)
+        res,contexts = self.rag.stream_chat_oai(conversations,llm_config=llm_config)
         s = "".join(res)        
         return [LLMResponse(output=s,metadata={},input="")]
 
@@ -40,7 +41,7 @@ class LLWrapper:
                         role_mapping=None,
                         delta_mode=False,
                         llm_config:Dict[str,Any]={}): 
-        res,contexts = self.rag.stream_chat_oai(conversations)        
+        res,contexts = self.rag.stream_chat_oai(conversations,llm_config=llm_config)        
         for t in res:                        
             yield (t,SingleOutputMeta(0,0))
 
@@ -49,7 +50,7 @@ class LLWrapper:
                         role_mapping=None,
                         delta_mode=False,
                         llm_config:Dict[str,Any]={}): 
-        res,contexts = self.rag.stream_chat_oai(conversations)                
+        res,contexts = await asyncfy_with_semaphore(lambda: self.rag.stream_chat_oai(conversations,llm_config=llm_config))()                
         for t in res:                                    
             yield (t,SingleOutputMeta(0,0))
                          
