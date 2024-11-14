@@ -104,8 +104,7 @@ class SuffixProject:
 
     def should_exclude(self, file_path):
         for pattern in self.exclude_patterns:
-            if pattern.search(file_path):
-                logger.info(f"Excluding file: {file_path}")
+            if pattern.search(file_path):                
                 return True
         return False
 

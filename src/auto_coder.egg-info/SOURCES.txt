@@ -94,6 +94,9 @@ src/autocoder/rag/loaders/docx_loader.py
 src/autocoder/rag/loaders/excel_loader.py
 src/autocoder/rag/loaders/pdf_loader.py
 src/autocoder/rag/loaders/ppt_loader.py
+src/autocoder/rag/stream_event/__init__.py
+src/autocoder/rag/stream_event/event_writer.py
+src/autocoder/rag/stream_event/types.py
 src/autocoder/regexproject/__init__.py
 src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py
