@@ -17,10 +17,41 @@ class SDDesigner:
         self.args = args
 
     @byzerllm.prompt()
-    def enhance_logo_generate(self,query)->str:
+    def enhance_logo_generate(self,data)->str:
         '''
-        
-        '''
+        你是一个非常出色的Logo风格生成器，熟悉各种Logo风格的英文表达。请根据用户指定的公司名称、背景色、主色以及风格等信息生成最终的图像生成 Prompt。
+
+        输入参数的结构：
+        {
+            "selectedStyle": "", # 风格名称，可选值包括 Flashy/Tech/Modern/Playful/Abstract/Minimal           
+            "companyName": "", # 公司名称            
+            "selectedBackgroundColor": "", # 背景色
+            "selectedPrimaryColor": "", # 主色
+            "additionalInfo": "" # 额外信息，可能为空
+        }
+
+        风格描述：
+        {
+            "Flashy": "Flashy, attention grabbing, bold, futuristic, and eye-catching. Use vibrant neon colors with metallic, shiny, and glossy accents.",
+            "Tech": "highly detailed, sharp focus, cinematic, photorealistic, Minimalist, clean, sleek, neutral color pallete with subtle accents, clean lines, shadows, and flat.",
+            "Modern": "modern, forward-thinking, flat design, geometric shapes, clean lines, natural colors with subtle accents, use strategic negative space to create visual interest.",
+            "Playful": "playful, lighthearted, bright bold colors, rounded shapes, lively.",
+            "Abstract": "abstract, artistic, creative, unique shapes, patterns, and textures to create a visually interesting and wild logo.",
+            "Minimal": "minimal, simple, timeless, versatile, single color logo, use negative space, flat design with minimal details, Light, soft, and subtle."
+        }
+
+        生成的prompt需要包含以下部分：
+        1. 一个高质量的logo要求
+        2. 风格描述
+        3. 主色，背景色
+        4. 公司名称
+        5. 额外信息（如果存在）
+
+        输入数据：
+        {{ data }}
+
+        输出一段完整的英文描述，作为图像生成的提示词。
+        '''        
 
     @byzerllm.prompt()
     def enhance_query(self,query:str) -> str:
