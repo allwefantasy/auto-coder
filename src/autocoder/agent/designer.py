@@ -21,6 +21,28 @@ class LogoDesigner:
             raise ValueError("sd_model is not set")
         self.sd_model_llm = self.llm.get_sub_client("sd_model")
         self.args = args
+        
+    @byzerllm.prompt()
+    def extract_logo_info(self, query: str) -> LogoDesign:
+        """
+        根据用户的需求，抽取相关信息，生成一个LogoDesign对象。
+
+        用户需求:
+        我想创建一个闪亮前卫的科技公司logo，我的公司名叫做"ByteWave"，喜欢深蓝色和白色的搭配。我们是一家专注于人工智能的公司。
+
+        LogoDesign对象示例:
+        {
+            "selectedStyle": "Tech",
+            "companyName": "ByteWave", 
+            "selectedBackgroundColor": "white",
+            "selectedPrimaryColor": "dark blue",
+            "additionalInfo": "AI technology focused company"
+        }
+
+        现在请根据如下用户需求生成一个LogoDesign对象:
+
+        {{ query }}
+        """
     
     @byzerllm.prompt()
     def enhance_logo_generate(
