@@ -6,56 +6,69 @@ import json
 import base64
 import platform
 import matplotlib.font_manager as fm
+from pydantic import BaseModel
+class LogoDesign(BaseModel):
+    selectedStyle: str
+    companyName: str
+    selectedBackgroundColor: str
+    selectedPrimaryColor: str
+    additionalInfo: str
 
-
-class SDDesigner:
+class LogoDesigner:
     def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
-        self.llm = llm  
+        self.llm = llm
         if not args.sd_model:
             raise ValueError("sd_model is not set")
         self.sd_model_llm = self.llm.get_sub_client("sd_model")
         self.args = args
-
+    
     @byzerllm.prompt()
-    def enhance_logo_generate(self,selectedStyle,companyName,selectedBackgroundColor,selectedPrimaryColor,additionalInfo)->str:
-        '''
+    def enhance_logo_generate(
+        self,
+        selectedStyle:str,
+        companyName,
+        selectedBackgroundColor,
+        selectedPrimaryColor,
+        additionalInfo,
+    ) -> str:
+        """
         A single logo, high-quality, award-winning professional design, made for both digital and print media, only contains a few vector shapes, {{ selectedStyle }}
 
-        Primary color is {{ selectedPrimaryColor.lower() }} and background color is {{ selectedBackgroundColor.lower() }}. The company name is {{ companyName }}, make sure to include the company name in the logo. {{ "Additional info: " + additionalInfo if additionalInfo else "" }}
-        '''
+        Primary color is {{ selectedPrimaryColor }} and background color is {{ selectedBackgroundColor }}. The company name is {{ companyName }}, make sure to include the company name in the logo. {{ "Additional info: " + additionalInfo if additionalInfo else "" }}
+        """
         style_lookup = {
             "Flashy": "Flashy, attention grabbing, bold, futuristic, and eye-catching. Use vibrant neon colors with metallic, shiny, and glossy accents.",
             "Tech": "highly detailed, sharp focus, cinematic, photorealistic, Minimalist, clean, sleek, neutral color pallete with subtle accents, clean lines, shadows, and flat.",
             "Modern": "modern, forward-thinking, flat design, geometric shapes, clean lines, natural colors with subtle accents, use strategic negative space to create visual interest.",
             "Playful": "playful, lighthearted, bright bold colors, rounded shapes, lively.",
             "Abstract": "abstract, artistic, creative, unique shapes, patterns, and textures to create a visually interesting and wild logo.",
-            "Minimal": "minimal, simple, timeless, versatile, single color logo, use negative space, flat design with minimal details, Light, soft, and subtle."
+            "Minimal": "minimal, simple, timeless, versatile, single color logo, use negative space, flat design with minimal details, Light, soft, and subtle.",
         }
-        return {"selectedStyle": style_lookup[selectedStyle]}
+        return {"selectedStyle": style_lookup[selectedStyle],"additionalInfo":self.enhance_query.prompt(additionalInfo)}
 
     @byzerllm.prompt()
-    def enhance_query(self,query:str) -> str:
-        '''
+    def enhance_query(self, query: str) -> str:
+        """
         你非常擅长使用文生图模型，特别能把用户简单的需求具象化。你的目标是转化用户的需求，使得转化后的
         文本更加适合问生图模型生成符合用户需求的图片。
 
         特别注意：
         1. 无论用户使用的是什么语言，你的改进后的表达都需要是英文。
-        
+
         用户需求：
         我想设计一个偏卡通类的游戏，AGI PoLang 的游戏应用界面。
-        
+
         改进后的表达：
 
         ```text
-        Design a vibrant game app interface titled 'AGI PoLang' with a soothing blue background featuring a lush landscape of towering trees and dense bushes framing the sides. 
-        At the heart of the screen, elegantly display the game's name in a golden, 
-        playful font that captivates attention. 
-        Beneath this, strategically place two interactive buttons labeled 'Play Game' and 'Quit Game', 
-        ensuring they are both visually appealing and user-friendly. 
-        Center stage, introduce an engaging scene where an orange wolf stands majestically on a verdant field, 
-        set against a serene blue sky dotted with fluffy white clouds. 
-        The entire design should radiate a fun and playful atmosphere, 
+        Design a vibrant game app interface titled 'AGI PoLang' with a soothing blue background featuring a lush landscape of towering trees and dense bushes framing the sides.
+        At the heart of the screen, elegantly display the game's name in a golden,
+        playful font that captivates attention.
+        Beneath this, strategically place two interactive buttons labeled 'Play Game' and 'Quit Game',
+        ensuring they are both visually appealing and user-friendly.
+        Center stage, introduce an engaging scene where an orange wolf stands majestically on a verdant field,
+        set against a serene blue sky dotted with fluffy white clouds.
+        The entire design should radiate a fun and playful atmosphere,
         encapsulating the spirit of adventure and joy that 'AGI PoLang' promises to deliver.
         ```
 
@@ -64,12 +77,12 @@ class SDDesigner:
 
         改进后的表达：
         ```text
-        Create a web UI page. Design a sleek and intuitive financial reports web page, 
-        featuring a clean menu layout, seamless navigation, 
-        and a comprehensive display of reports. 
-        The website should embody a clear and organized typography, enhancing readability and user experience. 
-        Incorporate dynamic lighting effects to highlight key financial data, simulating the precision and clarity of a well-managed budget. 
-        The overall design should reflect the stability and growth of financial health, 
+        Create a web UI page. Design a sleek and intuitive financial reports web page,
+        featuring a clean menu layout, seamless navigation,
+        and a comprehensive display of reports.
+        The website should embody a clear and organized typography, enhancing readability and user experience.
+        Incorporate dynamic lighting effects to highlight key financial data, simulating the precision and clarity of a well-managed budget.
+        The overall design should reflect the stability and growth of financial health,
         serving as a visual metaphor for the solid foundation and strategic planning required in personal and corporate finance.
         ```
 
@@ -79,33 +92,162 @@ class SDDesigner:
         将产品置于一种原始风景的背景之前，该风景包括山脉、湖泊和生动的绿色植被。
         包括花朵、石头，可能还有一两只鹿在背景中，以增强户外、新鲜的感觉。
         使用明亮的自然光照强调产品，并确保构图平衡，色彩搭配和谐，与品牌设计相得益彰。
-        
+
         改进后的表达：
         ```text
-        Generate a photorealistic mockup of a sunscreen product displayed in a serene natural setting. 
-        The product should be centered in the frame, with its label clearly visible. 
-        Position the product against a backdrop of a pristine landscape featuring a mountain, a lake, and vibrant greenery. 
-        Include natural elements like flowers, rocks, and possibly a deer or two in the background to enhance the outdoor, fresh feel. 
-        Use bright, natural lighting to highlight the product, and ensure the composition is balanced with a harmonious color palette 
+        Generate a photorealistic mockup of a sunscreen product displayed in a serene natural setting.
+        The product should be centered in the frame, with its label clearly visible.
+        Position the product against a backdrop of a pristine landscape featuring a mountain, a lake, and vibrant greenery.
+        Include natural elements like flowers, rocks, and possibly a deer or two in the background to enhance the outdoor, fresh feel.
+        Use bright, natural lighting to highlight the product, and ensure the composition is balanced with a harmonious color palette
         that complements the brand's design.
         ```
 
         用户需求:
-        一个扎着双马尾、手持棒球棒的女人，走在走廊上。灯光转变为危险的红色，营造出紧张的黑色电影风格氛围。        
+        一个扎着双马尾、手持棒球棒的女人，走在走廊上。灯光转变为危险的红色，营造出紧张的黑色电影风格氛围。
 
         改进后的表达：
         ```text
-        A slow dolly-in camera follows a woman with pigtails holding a baseball bat as she walks down a dimly lit hallway. 
+        A slow dolly-in camera follows a woman with pigtails holding a baseball bat as she walks down a dimly lit hallway.
         The lighting shifts to a menacing red, creating a tense, noir-style atmosphere with echoing footsteps adding suspense.
         ```
 
         现在让我们开始一个新的任务。
-        
+
         用户需求：
         {{ query }}
 
         改进后的表达（改进后的表达请用 ```text ```进行包裹）：
-        '''
+        """
+
+    def run(self, query: str):
+        enhanced_query_str = (
+            self.enhance_logo_generate.with_llm(self.llm)
+            .with_extractor(lambda x: code_utils.extract_code(x)[0][1])
+            .run(query)
+        )
+        print(enhanced_query_str)
+        response = self.sd_model_llm.chat_oai(
+            conversations=[
+                {
+                    "role": "user",
+                    "content": json.dumps(
+                        {"input": enhanced_query_str, "size": "1024x1024"},
+                        ensure_ascii=False,
+                    ),
+                }
+            ]
+        )
+
+        image_data = base64.b64decode(response[0].output)
+        with open("output.jpg", "wb") as f:
+            f.write(image_data)    
+
+class SDDesigner:
+    def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
+        self.llm = llm
+        if not args.sd_model:
+            raise ValueError("sd_model is not set")
+        self.sd_model_llm = self.llm.get_sub_client("sd_model")
+        self.args = args
+
+    @byzerllm.prompt()
+    def enhance_logo_generate(
+        self,
+        selectedStyle:str,
+        companyName,
+        selectedBackgroundColor,
+        selectedPrimaryColor,
+        additionalInfo,
+    ) -> str:
+        """
+        A single logo, high-quality, award-winning professional design, made for both digital and print media, only contains a few vector shapes, {{ selectedStyle }}
+
+        Primary color is {{ selectedPrimaryColor }} and background color is {{ selectedBackgroundColor }}. The company name is {{ companyName }}, make sure to include the company name in the logo. {{ "Additional info: " + additionalInfo if additionalInfo else "" }}
+        """
+        style_lookup = {
+            "Flashy": "Flashy, attention grabbing, bold, futuristic, and eye-catching. Use vibrant neon colors with metallic, shiny, and glossy accents.",
+            "Tech": "highly detailed, sharp focus, cinematic, photorealistic, Minimalist, clean, sleek, neutral color pallete with subtle accents, clean lines, shadows, and flat.",
+            "Modern": "modern, forward-thinking, flat design, geometric shapes, clean lines, natural colors with subtle accents, use strategic negative space to create visual interest.",
+            "Playful": "playful, lighthearted, bright bold colors, rounded shapes, lively.",
+            "Abstract": "abstract, artistic, creative, unique shapes, patterns, and textures to create a visually interesting and wild logo.",
+            "Minimal": "minimal, simple, timeless, versatile, single color logo, use negative space, flat design with minimal details, Light, soft, and subtle.",
+        }
+        return {"selectedStyle": style_lookup[selectedStyle],"additionalInfo":self.enhance_query.prompt(additionalInfo)}
+
+    @byzerllm.prompt()
+    def enhance_query(self, query: str) -> str:
+        """
+        你非常擅长使用文生图模型，特别能把用户简单的需求具象化。你的目标是转化用户的需求，使得转化后的
+        文本更加适合问生图模型生成符合用户需求的图片。
+
+        特别注意：
+        1. 无论用户使用的是什么语言，你的改进后的表达都需要是英文。
+
+        用户需求：
+        我想设计一个偏卡通类的游戏，AGI PoLang 的游戏应用界面。
+
+        改进后的表达：
+
+        ```text
+        Design a vibrant game app interface titled 'AGI PoLang' with a soothing blue background featuring a lush landscape of towering trees and dense bushes framing the sides.
+        At the heart of the screen, elegantly display the game's name in a golden,
+        playful font that captivates attention.
+        Beneath this, strategically place two interactive buttons labeled 'Play Game' and 'Quit Game',
+        ensuring they are both visually appealing and user-friendly.
+        Center stage, introduce an engaging scene where an orange wolf stands majestically on a verdant field,
+        set against a serene blue sky dotted with fluffy white clouds.
+        The entire design should radiate a fun and playful atmosphere,
+        encapsulating the spirit of adventure and joy that 'AGI PoLang' promises to deliver.
+        ```
+
+        用户需求：
+        帮我设计一个财务报告网页页面，要时尚美观。
+
+        改进后的表达：
+        ```text
+        Create a web UI page. Design a sleek and intuitive financial reports web page,
+        featuring a clean menu layout, seamless navigation,
+        and a comprehensive display of reports.
+        The website should embody a clear and organized typography, enhancing readability and user experience.
+        Incorporate dynamic lighting effects to highlight key financial data, simulating the precision and clarity of a well-managed budget.
+        The overall design should reflect the stability and growth of financial health,
+        serving as a visual metaphor for the solid foundation and strategic planning required in personal and corporate finance.
+        ```
+
+        用户需求：
+
+        生成一个在自然环境中展示的防晒产品的逼真模型。产品应置于画面中心，标签清晰可见。
+        将产品置于一种原始风景的背景之前，该风景包括山脉、湖泊和生动的绿色植被。
+        包括花朵、石头，可能还有一两只鹿在背景中，以增强户外、新鲜的感觉。
+        使用明亮的自然光照强调产品，并确保构图平衡，色彩搭配和谐，与品牌设计相得益彰。
+
+        改进后的表达：
+        ```text
+        Generate a photorealistic mockup of a sunscreen product displayed in a serene natural setting.
+        The product should be centered in the frame, with its label clearly visible.
+        Position the product against a backdrop of a pristine landscape featuring a mountain, a lake, and vibrant greenery.
+        Include natural elements like flowers, rocks, and possibly a deer or two in the background to enhance the outdoor, fresh feel.
+        Use bright, natural lighting to highlight the product, and ensure the composition is balanced with a harmonious color palette
+        that complements the brand's design.
+        ```
+
+        用户需求:
+        一个扎着双马尾、手持棒球棒的女人，走在走廊上。灯光转变为危险的红色，营造出紧张的黑色电影风格氛围。
+
+        改进后的表达：
+        ```text
+        A slow dolly-in camera follows a woman with pigtails holding a baseball bat as she walks down a dimly lit hallway.
+        The lighting shifts to a menacing red, creating a tense, noir-style atmosphere with echoing footsteps adding suspense.
+        ```
+
+        现在让我们开始一个新的任务。
+
+        用户需求：
+        {{ query }}
+
+        改进后的表达（改进后的表达请用 ```text ```进行包裹）：
+        """
 
     def run(self, query: str):
         enhanced_query_str = (
@@ -125,10 +267,11 @@ class SDDesigner:
                 }
             ]
         )
-    
+
         image_data = base64.b64decode(response[0].output)
         with open("output.jpg", "wb") as f:
             f.write(image_data)
+
 
 class SVGDesigner:
     def __init__(self, args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
@@ -166,6 +309,7 @@ class SVGDesigner:
 
     def _to_png(self, svg_code: str):
         import cairosvg
+
         cairosvg.svg2svg(bytestring=svg_code, write_to="output.svg")
         cairosvg.svg2png(bytestring=svg_code, write_to="output.png")
 
@@ -180,12 +324,12 @@ class SVGDesigner:
 
         将上面的 lisp 代码转换为 svg 代码。使用 ```svg ```包裹输出。
         注意:
-        1. 根据操作系统选择合适的可用字体,优先使用系统中可用的字体。        
+        1. 根据操作系统选择合适的可用字体,优先使用系统中可用的字体。
         2. 如果指定的字体不可用,请使用系统默认的字体。
         3. 对于中英文混合的文本，请使用不同的字体。
         """
         return {
-            "system_info":self.system_info,
+            "system_info": self.system_info,
         }
 
     @byzerllm.prompt()

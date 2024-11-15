@@ -1635,6 +1635,9 @@ def design(query: str):
     elif query.strip().startswith("/sd"):
         query = query.replace("/svg", "", 1).strip()
         yaml_config["agent_designer_mode"] = "sd"
+    elif query.strip().startswith("/logo"):
+        query = query.replace("/logo", "", 1).strip()
+        yaml_config["agent_designer_mode"] = "logo"
     else:
         yaml_config["agent_designer_mode"] = "svg"
 

@@ -644,7 +644,7 @@ def main(input_args: Optional[List[str]] = None):
             return
 
         elif raw_args.agent_command == "designer":
-            from autocoder.agent.designer import SVGDesigner, SDDesigner
+            from autocoder.agent.designer import SVGDesigner, SDDesigner,LogoDesigner
 
             if args.agent_designer_mode == "svg":
                 designer = SVGDesigner(args, llm)
@@ -654,6 +654,10 @@ def main(input_args: Optional[List[str]] = None):
                 designer = SDDesigner(args, llm)
                 designer.run(args.query)
                 print("Successfully generated image in output.jpg")
+            elif args.agent_designer_mode.startswith("logo"):
+                designer = LogoDesigner(args, llm)
+                designer.run(args.query)
+                print("Successfully generated image in output.png")
             if args.request_id:
                 request_queue.add_request(
                     args.request_id,
