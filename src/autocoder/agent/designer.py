@@ -17,6 +17,12 @@ class SDDesigner:
         self.args = args
 
     @byzerllm.prompt()
+    def enhance_logo_generate(self,query)->str:
+        '''
+        
+        '''
+
+    @byzerllm.prompt()
     def enhance_query(self,query:str) -> str:
         '''
         你非常擅长使用文生图模型，特别能把用户简单的需求具象化。你的目标是转化用户的需求，使得转化后的
