@@ -619,6 +619,44 @@ def build_index_and_filter_files(
                         reason="No related files found, use all files",
                     )
 
+            # Phase 5: Relevance verification
+            logger.info("Phase 5: Performing relevance verification...")
+            phase_start = time.monotonic()
+            verified_files = {}
+            temp_files = list(final_files.values())
+            
+            def verify_single_file(file: TargetFile):
+                for source in sources:
+                    if source.module_name == file.file_path:
+                        file_content = source.source_code
+                        try:
+                            result = index_manager.verify_file_relevance.with_llm(llm).with_return_type(VerifyFileRelevance).run(
+                                file_content=file_content[:index_manager.max_input_length], 
+                                query=args.query
+                            )
+                            if result.relevant_score >= 6:
+                                return file.file_path, TargetFile(
+                                    file_path=file.file_path,
+                                    reason=f"Score:{result.relevant_score}, {result.reason}"
+                                )
+                        except Exception as e:
+                            logger.warning(f"Failed to verify file {file.file_path}: {str(e)}")
+                return None
+
+            with ThreadPoolExecutor(max_workers=args.index_filter_workers) as executor:
+                futures = [executor.submit(verify_single_file, file) for file in temp_files]
+                for future in as_completed(futures):
+                    result = future.result()
+                    if result:
+                        file_path, target_file = result
+                        verified_files[file_path] = target_file
+                        time.sleep(args.anti_quota_limit)
+                        
+            stats["verified_files"] = len(verified_files)
+            stats["timings"]["relevance_verification"] = time.monotonic() - phase_start
+            
+            final_files = verified_files if verified_files else final_files
+
     def display_table_and_get_selections(data):
         from prompt_toolkit.shortcuts import checkboxlist_dialog
         from prompt_toolkit.styles import Style
@@ -740,6 +778,7 @@ def build_index_and_filter_files(
     logger.info(f"Files indexed: {stats['indexed_files']}")
     logger.info(f"Files after Level 1 filter: {stats['level1_filtered']}")
     logger.info(f"Files after Level 2 filter: {stats['level2_filtered']}")
+    logger.info(f"Files after relevance verification: {stats.get('verified_files', 0)}")
     logger.info(f"Final files selected: {stats['final_files']}")
     logger.info("\nTime breakdown:")
     for phase, duration in stats["timings"].items():
