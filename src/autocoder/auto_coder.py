@@ -70,7 +70,8 @@ def load_include_files(config, base_path, max_depth=10, current_depth=0):
             with open(abs_include_path, "r") as f:
                 include_config = yaml.safe_load(f)
                 if not include_config:
-                    logger.info(f"Include file {abs_include_path} is empty,skipping.")
+                    logger.info(
+                        f"Include file {abs_include_path} is empty,skipping.")
                     continue
                 config.update(
                     {
@@ -99,7 +100,7 @@ def main(input_args: Optional[List[str]] = None):
             config = load_include_files(config, args.file)
             for key, value in config.items():
                 if key != "file":  # 排除 --file 参数本身
-                    ## key: ENV {{VARIABLE_NAME}}
+                    # key: ENV {{VARIABLE_NAME}}
                     if isinstance(value, str) and value.startswith("ENV"):
                         template = Template(value.removeprefix("ENV").strip())
                         value = template.render(os.environ)
@@ -154,14 +155,16 @@ def main(input_args: Optional[List[str]] = None):
             )
             return
         os.makedirs(os.path.join(args.source_dir, "actions"), exist_ok=True)
-        os.makedirs(os.path.join(args.source_dir, ".auto-coder"), exist_ok=True)
+        os.makedirs(os.path.join(args.source_dir,
+                    ".auto-coder"), exist_ok=True)
 
         from autocoder.common.command_templates import create_actions
 
         source_dir = os.path.abspath(args.source_dir)
         create_actions(
             source_dir=source_dir,
-            params={"project_type": args.project_type, "source_dir": source_dir},
+            params={"project_type": args.project_type,
+                    "source_dir": source_dir},
         )
         git_utils.init(os.path.abspath(args.source_dir))
 
@@ -204,28 +207,33 @@ def main(input_args: Optional[List[str]] = None):
 
         if raw_args.from_yaml:
             # If --from_yaml is specified, copy content from the matching YAML file
-            from_files = [f for f in action_files if f.startswith(raw_args.from_yaml)]
+            from_files = [
+                f for f in action_files if f.startswith(raw_args.from_yaml)]
             if from_files:
                 from_file = from_files[0]  # Take the first match
                 with open(os.path.join(actions_dir, from_file), "r") as f:
                     content = f.read()
-                new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}.yml")
+                new_file = os.path.join(
+                    actions_dir, f"{new_seq}_{raw_args.name}.yml")
                 with open(new_file, "w") as f:
                     f.write(content)
             else:
-                print(f"No YAML file found matching prefix: {raw_args.from_yaml}")
+                print(
+                    f"No YAML file found matching prefix: {raw_args.from_yaml}")
                 return
         else:
             # If --from_yaml is not specified, use the previous logic
             if not prev_files:
-                new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}.yml")
+                new_file = os.path.join(
+                    actions_dir, f"{new_seq}_{raw_args.name}.yml")
                 with open(new_file, "w") as f:
                     pass
             else:
                 prev_file = sorted(prev_files)[-1]  # 取序号最大的文件
                 with open(os.path.join(actions_dir, prev_file), "r") as f:
                     content = f.read()
-                new_file = os.path.join(actions_dir, f"{new_seq}_{raw_args.name}.yml")
+                new_file = os.path.join(
+                    actions_dir, f"{new_seq}_{raw_args.name}.yml")
                 with open(new_file, "w") as f:
                     f.write(content)
 
@@ -311,7 +319,8 @@ def main(input_args: Optional[List[str]] = None):
                     logger.warning(get_message("clipboard_not_supported"))
                     console.print(
                         Panel(
-                            get_message("human_as_model_instructions_no_clipboard"),
+                            get_message(
+                                "human_as_model_instructions_no_clipboard"),
                             title="Instructions",
                             border_style="blue",
                             expand=False,
@@ -343,7 +352,8 @@ def main(input_args: Optional[List[str]] = None):
 
                 lines = []
                 while True:
-                    line = prompt(FormattedText([("#00FF00", "> ")]), multiline=False)
+                    line = prompt(FormattedText(
+                        [("#00FF00", "> ")]), multiline=False)
                     line_lower = line.strip().lower()
                     if line_lower in ["eof", "/eof"]:
                         break
@@ -352,7 +362,8 @@ def main(input_args: Optional[List[str]] = None):
                         print("\033[2J\033[H")  # Clear terminal screen
                         continue
                     elif line_lower in ["/break"]:
-                        raise Exception("User requested to break the operation.")
+                        raise Exception(
+                            "User requested to break the operation.")
                     lines.append(line)
 
                 result = "\n".join(lines)
@@ -369,7 +380,8 @@ def main(input_args: Optional[List[str]] = None):
                     ]
                     return False, v
 
-            llm.add_event_callback(EventName.BEFORE_CALL_MODEL, intercept_callback)
+            llm.add_event_callback(
+                EventName.BEFORE_CALL_MODEL, intercept_callback)
             code_model = llm.get_sub_client("code_model")
             if code_model:
                 code_model.add_event_callback(
@@ -537,7 +549,8 @@ def main(input_args: Optional[List[str]] = None):
             import tempfile
 
             transcribe_audio = TranscribeAudio()
-            temp_wav_file = os.path.join(tempfile.gettempdir(), "voice_input.wav")
+            temp_wav_file = os.path.join(
+                tempfile.gettempdir(), "voice_input.wav")
 
             console = Console()
 
@@ -644,7 +657,7 @@ def main(input_args: Optional[List[str]] = None):
             return
 
         elif raw_args.agent_command == "designer":
-            from autocoder.agent.designer import SVGDesigner, SDDesigner,LogoDesigner
+            from autocoder.agent.designer import SVGDesigner, SDDesigner, LogoDesigner
 
             if args.agent_designer_mode == "svg":
                 designer = SVGDesigner(args, llm)
@@ -662,7 +675,8 @@ def main(input_args: Optional[List[str]] = None):
                 request_queue.add_request(
                     args.request_id,
                     RequestValue(
-                        value=DefaultValue(value="Successfully generated image"),
+                        value=DefaultValue(
+                            value="Successfully generated image"),
                         status=RequestOption.COMPLETED,
                     ),
                 )
@@ -716,7 +730,8 @@ def main(input_args: Optional[List[str]] = None):
                             "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：\n{file_content}",
                         },
                     )
-                    pre_conversations.append({"role": "assistant", "content": "read"})
+                    pre_conversations.append(
+                        {"role": "assistant", "content": "read"})
                     source_count += 1
 
             from autocoder.index.index import IndexManager, build_index_and_filter_files
@@ -732,7 +747,8 @@ def main(input_args: Optional[List[str]] = None):
                 pp = SuffixProject(args=args, llm=llm, file_filter=None)
             pp.run()
             sources = pp.sources
-            s = build_index_and_filter_files(llm=llm, args=args, sources=sources)
+            s = build_index_and_filter_files(
+                llm=llm, args=args, sources=sources)
             if s:
                 pre_conversations.append(
                     {
@@ -740,10 +756,12 @@ def main(input_args: Optional[List[str]] = None):
                         "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：\n{s}",
                     }
                 )
-                pre_conversations.append({"role": "assistant", "content": "read"})
+                pre_conversations.append(
+                    {"role": "assistant", "content": "read"})
                 source_count += 1
 
-            loaded_conversations = pre_conversations + chat_history["ask_conversation"]
+            loaded_conversations = pre_conversations + \
+                chat_history["ask_conversation"]
 
             if args.human_as_model:
                 console = Console()
@@ -764,12 +782,12 @@ def main(input_args: Optional[List[str]] = None):
                     {% endfor %}
                     {% endif %}
 
-                    
+
                     参考上面的文件以及对话，回答用户的问题。
                     用户的问题: {{ last_conversation.content }}
                     """
 
-                source_codes_conversations = loaded_conversations[0 : source_count * 2]
+                source_codes_conversations = loaded_conversations[0: source_count * 2]
                 source_codes = ""
                 for conv in source_codes_conversations:
                     if conv["role"] == "user":
@@ -777,7 +795,7 @@ def main(input_args: Optional[List[str]] = None):
 
                 chat_content = chat_with_human_as_model.prompt(
                     source_codes=source_codes,
-                    pre_conversations=loaded_conversations[source_count * 2 : -1],
+                    pre_conversations=loaded_conversations[source_count * 2: -1],
                     last_conversation=loaded_conversations[-1],
                 )
                 try:
@@ -796,20 +814,22 @@ def main(input_args: Optional[List[str]] = None):
                     logger.warning(get_message("clipboard_not_supported"))
                     console.print(
                         Panel(
-                            get_message("human_as_model_instructions_no_clipboard"),
+                            get_message(
+                                "human_as_model_instructions_no_clipboard"),
                             title="Instructions",
                             border_style="blue",
                             expand=False,
                         )
                     )
-                    return 
+                    return
                 # Save chat content to file
                 with open(args.target_file, "w") as f:
                     f.write(chat_content)
 
                 lines = []
                 while True:
-                    line = prompt(FormattedText([("#00FF00", "> ")]), multiline=False)
+                    line = prompt(FormattedText(
+                        [("#00FF00", "> ")]), multiline=False)
                     line_lower = line.strip().lower()
                     if line_lower in ["eof", "/eof"]:
                         break
@@ -818,7 +838,8 @@ def main(input_args: Optional[List[str]] = None):
                         print("\033[2J\033[H")  # Clear terminal screen
                         continue
                     elif line_lower in ["/break"]:
-                        raise Exception("User requested to break the operation.")
+                        raise Exception(
+                            "User requested to break the operation.")
                     lines.append(line)
 
                 result = "\n".join(lines)
@@ -830,7 +851,7 @@ def main(input_args: Optional[List[str]] = None):
 
                 with open(memory_file, "w") as f:
                     json.dump(chat_history, f, ensure_ascii=False)
-                
+
                 request_queue.add_request(
                     args.request_id,
                     RequestValue(
@@ -842,7 +863,8 @@ def main(input_args: Optional[List[str]] = None):
 
             if args.enable_rag_search or args.enable_rag_context:
                 rag = RAGFactory.get_rag(llm=chat_llm, args=args, path="")
-                response = rag.stream_chat_oai(conversations=loaded_conversations)[0]
+                response = rag.stream_chat_oai(
+                    conversations=loaded_conversations)[0]
                 v = ([item, None] for item in response)
             else:
                 v = chat_llm.stream_chat_oai(
@@ -852,35 +874,43 @@ def main(input_args: Optional[List[str]] = None):
             assistant_response = ""
             markdown_content = ""
 
-            with Live(
-                Panel("", title="Response"),
-                refresh_per_second=4,
-            ) as live:
-                for res in v:
-                    markdown_content += res[0]
-                    assistant_response += res[0]
-                    request_queue.add_request(
-                        args.request_id,
-                        RequestValue(
-                            value=StreamValue(value=[res[0]]),
-                            status=RequestOption.RUNNING,
-                        ),
-                    )
-                    live.update(
-                        Panel(
-                            Markdown(markdown_content),
-                            title="Response",
-                            border_style="green",
-                            expand=False,
+            try:
+                with Live(
+                    Panel("", title="Response"),
+                    refresh_per_second=4,
+                ) as live:
+                    for res in v:
+                        markdown_content += res[0]
+                        assistant_response += res[0]
+                        request_queue.add_request(
+                            args.request_id,
+                            RequestValue(
+                                value=StreamValue(value=[res[0]]),
+                                status=RequestOption.RUNNING,
+                            ),
                         )
-                    )
-
-            request_queue.add_request(
-                args.request_id,
-                RequestValue(
-                    value=StreamValue(value=[""]), status=RequestOption.COMPLETED
-                ),
-            )
+                        live.update(
+                            Panel(
+                                Markdown(markdown_content),
+                                title="Response",
+                                border_style="green",
+                                expand=False,
+                            )
+                        )
+            except Exception as e:
+                request_queue.add_request(
+                    args.request_id,
+                    RequestValue(
+                        value=StreamValue(value=[str(e)]), status=RequestOption.FAILED
+                    ),
+                )
+            finally:
+                request_queue.add_request(
+                    args.request_id,
+                    RequestValue(
+                        value=StreamValue(value=[""]), status=RequestOption.COMPLETED
+                    ),
+                )
 
             chat_history["ask_conversation"].append(
                 {"role": "assistant", "content": assistant_response}

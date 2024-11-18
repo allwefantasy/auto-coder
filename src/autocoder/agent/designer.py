@@ -23,14 +23,17 @@ class LogoDesigner:
         self.args = args
         
     @byzerllm.prompt()
-    def extract_logo_info(self, query: str) -> LogoDesign:
+    def extract_logo_info(self, query: str) -> str:
         """
-        根据用户的需求，抽取相关信息，生成一个LogoDesign对象。
+        根据用户的需求，抽取相关信息，生成一个LogoDesign对象。生成的信息必须使用英文，对于没有提及的信息，请
+        根据你对用户需求的理解，给出合理的默认值。
 
         用户需求:
         我想创建一个闪亮前卫的科技公司logo，我的公司名叫做"ByteWave"，喜欢深蓝色和白色的搭配。我们是一家专注于人工智能的公司。
 
         LogoDesign对象示例:
+
+        ```json
         {
             "selectedStyle": "Tech",
             "companyName": "ByteWave", 
@@ -38,8 +41,9 @@ class LogoDesigner:
             "selectedPrimaryColor": "dark blue",
             "additionalInfo": "AI technology focused company"
         }
+        ```
 
-        现在请根据如下用户需求生成一个LogoDesign对象:
+        现在请根据如下用户需求生成一个LogoDesign Json对象:
 
         {{ query }}
         """
@@ -143,12 +147,17 @@ class LogoDesigner:
         """
 
     def run(self, query: str):
+        logo_design = self.extract_logo_info.with_llm(self.llm).with_return_type(LogoDesign).run(query)
+    
         enhanced_query_str = (
             self.enhance_logo_generate.with_llm(self.llm)
             .with_extractor(lambda x: code_utils.extract_code(x)[0][1])
-            .run(query)
-        )
-        print(enhanced_query_str)
+            .run(selectedStyle = logo_design.selectedStyle,
+                 companyName = logo_design.companyName,
+                 selectedBackgroundColor = logo_design.selectedBackgroundColor,
+                 selectedPrimaryColor = logo_design.selectedPrimaryColor,
+                 additionalInfo = logo_design.additionalInfo)
+        )        
         response = self.sd_model_llm.chat_oai(
             conversations=[
                 {

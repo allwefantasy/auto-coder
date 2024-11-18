@@ -309,28 +309,41 @@ class IndexManager:
         current_chunk = []
         current_size = 0
 
-        for item in index_items:
-            symbols_str = item.symbols
-            if includes:
-                symbol_info = extract_symbols(symbols_str)
-                symbols_str = symbols_info_to_str(symbol_info, includes)
+        if max_chunk_size == -1:
+            for item in index_items:
+                symbols_str = item.symbols
+                if includes:
+                    symbol_info = extract_symbols(symbols_str)
+                    symbols_str = symbols_info_to_str(symbol_info, includes)
 
-            item_str = f"##{item.module_name}\n{symbols_str}\n\n"
+                item_str = f"##{item.module_name}\n{symbols_str}\n\n"
 
-            if skip_symbols:
-                item_str = f"{item.module_name}\n"
-            item_size = len(item_str)
+                if skip_symbols:
+                    item_str = f"{item.module_name}\n"
+                yield item_str
+        else:
+            for item in index_items:
+                symbols_str = item.symbols
+                if includes:
+                    symbol_info = extract_symbols(symbols_str)
+                    symbols_str = symbols_info_to_str(symbol_info, includes)
 
-            if current_size + item_size > max_chunk_size:
+                item_str = f"##{item.module_name}\n{symbols_str}\n\n"
+
+                if skip_symbols:
+                    item_str = f"{item.module_name}\n"
+                item_size = len(item_str)
+
+                if current_size + item_size > max_chunk_size:
+                    yield "".join(current_chunk)
+                    current_chunk = [item_str]
+                    current_size = item_size
+                else:
+                    current_chunk.append(item_str)
+                    current_size += item_size
+
+            if current_chunk:
                 yield "".join(current_chunk)
-                current_chunk = [item_str]
-                current_size = item_size
-            else:
-                current_chunk.append(item_str)
-                current_size += item_size
-
-        if current_chunk:
-            yield "".join(current_chunk)
 
     def get_related_files(self, file_paths: List[str]):
         all_results = []
@@ -351,7 +364,7 @@ class IndexManager:
             futures = []
             chunk_count = 0
             for chunk in self._get_meta_str(
-                max_chunk_size=self.max_input_length - 1000
+                max_chunk_size= -1
             ):
                 future = executor.submit(process_chunk, chunk, chunk_count)
                 futures.append(future)
@@ -401,7 +414,7 @@ class IndexManager:
         def w():
             return self._get_meta_str(
                 skip_symbols=False,
-                max_chunk_size=self.max_input_length - 1000,
+                max_chunk_size= -1,
                 includes=[SymbolType.USAGE],
             )
 
@@ -415,7 +428,7 @@ class IndexManager:
 
             def w():
                 return self._get_meta_str(
-                    skip_symbols=False, max_chunk_size=self.max_input_length - 1000
+                    skip_symbols=False, max_chunk_size= -1
                 )
 
             temp_result, total_threads, completed_threads = self._query_index_with_thread(query, w)
