@@ -707,8 +707,8 @@ def build_index_and_filter_files(
 
         console.print(panel)
 
-    # Phase 5: File selection and limitation
-    logger.info("Phase 5: Processing file selection and limits...")
+    # Phase 6: File selection and limitation 
+    logger.info("Phase 6: Processing file selection and limits...")
     phase_start = time.monotonic()
     
     if args.index_filter_file_num > 0:
@@ -735,8 +735,8 @@ def build_index_and_filter_files(
     
     stats["timings"]["file_selection"] = time.monotonic() - phase_start
 
-    # Phase 6: Display results and prepare output
-    logger.info("Phase 6: Preparing final output...")
+    # Phase 7: Display results and prepare output
+    logger.info("Phase 7: Preparing final output...")
     phase_start = time.monotonic()
     
     try:
