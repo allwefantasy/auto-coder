@@ -74,7 +74,7 @@ class IndexManager:
             os.makedirs(self.index_dir)
 
     @byzerllm.prompt()
-    def verify_file_relevance(self, file_content: str, query: str) -> bool:
+    def verify_file_relevance(self, file_content: str, query: str) -> str:
         """
         请验证下面的文件内容是否与用户问题相关:
 
@@ -631,9 +631,10 @@ def build_index_and_filter_files(
                         file_content = source.source_code
                         try:
                             result = index_manager.verify_file_relevance.with_llm(llm).with_return_type(VerifyFileRelevance).run(
-                                file_content=file_content[:index_manager.max_input_length], 
+                                file_content=file_content, 
                                 query=args.query
                             )
+                            logger.info(f"Verify file {file.file_path} with score {result.relevant_score} and reason {result.reason}")
                             if result.relevant_score >= 6:
                                 return file.file_path, TargetFile(
                                     file_path=file.file_path,
