@@ -331,6 +331,13 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         help="",
     )
 
+    parser.add_argument(
+        "--verify_file_relevance_score",
+        type=int,
+        default=6,
+        help="",
+    )
+
     doc_serve_parse.add_argument(
         "--required_exts", default="", help=desc["doc_build_parse_required_exts"]
     )

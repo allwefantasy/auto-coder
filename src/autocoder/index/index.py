@@ -634,7 +634,7 @@ def build_index_and_filter_files(
                                 file_content=file_content, 
                                 query=args.query
                             )                            
-                            if result.relevant_score >= 6:
+                            if result.relevant_score >= args.verify_file_relevance_score:
                                 return file.file_path, TargetFile(
                                     file_path=file.file_path,
                                     reason=f"Score:{result.relevant_score}, {result.reason}"
