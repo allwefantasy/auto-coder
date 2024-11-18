@@ -633,8 +633,7 @@ def build_index_and_filter_files(
                             result = index_manager.verify_file_relevance.with_llm(llm).with_return_type(VerifyFileRelevance).run(
                                 file_content=file_content, 
                                 query=args.query
-                            )
-                            logger.info(f"Verify file {file.file_path} with score {result.relevant_score} and reason {result.reason}")
+                            )                            
                             if result.relevant_score >= 6:
                                 return file.file_path, TargetFile(
                                     file_path=file.file_path,

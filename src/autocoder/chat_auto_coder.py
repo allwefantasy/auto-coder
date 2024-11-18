@@ -955,7 +955,7 @@ class CommandCompleter(Completer):
         self.all_files = get_all_file_in_project()
         self.all_dir_names = get_all_dir_names_in_project()
         self.all_files_with_dot = get_all_file_in_project_with_dot()
-        self.symbol_list = get_symbol_list()
+        self.symbol_list = get_symbol_list()        
 
 
 completer = CommandCompleter(commands)
@@ -1019,6 +1019,7 @@ def add_files(args: List[str]):
 
     if args[0] == "/refresh":
         completer.refresh_files()
+        load_memory()
         console.print(
             Panel("Refreshed file list.", title="Files Refreshed", border_style="green")
         )
