@@ -70,23 +70,44 @@ class IndexManager:
         if not os.path.exists(self.index_dir):
             os.makedirs(self.index_dir)
 
-    @byzerllm.prompt(lambda self: self.llm, render="jinja2")
-    def _get_related_files(self, indices: str, file_paths: str) -> FileList:
+    @byzerllm.prompt()
+    def _get_related_files(self, indices: str, file_paths: str) -> str:
         """
         下面是所有文件以及对应的符号信息：
 
-        {{ indices }}
-
-        注意，
-        1. 找到的文件名必须出现在上面的文件列表中
-        2. 如果没有相关的文件，返回空即可
+        {{ indices }}        
 
         请参考上面的信息，找到被下列文件使用或者引用到的文件列表：
 
         {{ file_paths }}
+
+        请按如下格式进行输出：
+
+        ```json
+        {
+            "file_list": [
+                {
+                    "file_path": "path/to/file.py",
+                    "reason": "The reason why the file is the target file"
+                },
+                {
+                    "file_path": "path/to/file.py",
+                    "reason": "The reason why the file is the target file"
+                }
+            ]
+        }
+        ```
+
+        注意，
+        1. 找到的文件名必须出现在上面的文件列表中
+        2. 如果没有相关的文件，输出如下 json 即可：
+        
+        ```json
+        {"file_list": []}
+        ```
         """
 
-    @byzerllm.prompt(lambda self: self.index_llm, render="jinja2")
+    @byzerllm.prompt()
     def get_all_file_symbols(self, path: str, code: str) -> str:
         """
         你的目标是从给定的代码中获取代码里的符号，需要获取的符号类型包括：
@@ -184,12 +205,12 @@ class IndexManager:
                 )
                 symbols = []
                 for chunk in chunks:
-                    chunk_symbols = self.get_all_file_symbols(source.module_name, chunk)
+                    chunk_symbols = self.get_all_file_symbols.with_llm(self.index_llm).run(source.module_name, chunk)
                     time.sleep(self.anti_quota_limit)
                     symbols.append(chunk_symbols)
                 symbols = "\n".join(symbols)
             else:
-                symbols = self.get_all_file_symbols(source.module_name, source_code)
+                symbols = self.get_all_file_symbols.with_llm(self.index_llm).run(source.module_name, source_code)
                 time.sleep(self.anti_quota_limit)
 
             logger.info(
@@ -350,7 +371,7 @@ class IndexManager:
         lock = threading.Lock()
 
         def process_chunk(chunk, chunk_count):
-            result = self._get_related_files(chunk, "\n".join(file_paths))
+            result = self._get_related_files.with_llm(self.llm).with_return_type(FileList).run(chunk, "\n".join(file_paths))
             if result is not None:
                 with lock:
                     all_results.extend(result.file_list)
@@ -384,7 +405,7 @@ class IndexManager:
 
         def process_chunk(chunk):
             nonlocal completed_threads
-            result = self._get_target_files_by_query(chunk, query)
+            result = self._get_target_files_by_query.with_llm(self.llm).with_return_type(FileList).run(chunk, query)
             if result is not None:
                 with lock:
                     all_results.extend(result.file_list)
@@ -440,8 +461,8 @@ class IndexManager:
         limited_results = all_results[: self.args.index_filter_file_num]
         return FileList(file_list=limited_results)
 
-    @byzerllm.prompt(lambda self: self.llm, check_result=True)
-    def _get_target_files_by_query(self, indices: str, query: str) -> FileList:
+    @byzerllm.prompt()
+    def _get_target_files_by_query(self, indices: str, query: str) -> str:
         """
         下面是已知文件以及对应的符号信息：
 
@@ -451,7 +472,28 @@ class IndexManager:
 
         {{ query }}
 
-        现在，请根据用户的问题以及前面的文件和符号信息，寻找相关文件路径。如果没有找到，返回空即可。
+        现在，请根据用户的问题以及前面的文件和符号信息，寻找相关文件路径。返回结果按如下格式：        
+
+        ```json
+        {
+            "file_list": [
+                {
+                    "file_path": "path/to/file.py",
+                    "reason": "The reason why the file is the target file"
+                },
+                {
+                    "file_path": "path/to/file.py",
+                    "reason": "The reason why the file is the target file"
+                }
+            ]
+        }
+        ```
+        
+        如果没有找到，返回如下 json 即可：
+
+        ```json
+            {"file_list": []}
+        ```
 
         请严格遵循以下步骤：
 
@@ -472,15 +514,9 @@ class IndexManager:
            - 如果找到了相关文件，也包括与之直接相关的依赖文件。
 
         5. 考虑文件用途：
-           - 使用每个文件的 "用途" 信息来判断其与查询的相关性。
+           - 使用每个文件的 "用途" 信息来判断其与查询的相关性。 
 
-        6. 构建结果：
-           - 对于每个相关文件，创建一个TargetFile对象。
-           - 在reason字段中，详细说明为什么这个文件与查询相关。
-
-        7. 返回结果：
-           - 将所有找到的TargetFile对象放入FileList中返回。
-           - 如果没有找到相关文件，返回一个空的FileList。
+        6. 按格式要求返回结果
 
         请确保结果的准确性和完整性，包括所有可能相关的文件。
         """
