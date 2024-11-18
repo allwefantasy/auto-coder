@@ -368,7 +368,7 @@ class IndexManager:
                 if skip_symbols:
                     item_str = f"{item.module_name}\n"                
 
-                if len(current_chunk) > 5:
+                if len(current_chunk) > self.args.filter_batch_size:
                     yield "".join(current_chunk)
                     current_chunk = [item_str]                    
                 else:
