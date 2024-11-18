@@ -525,6 +525,16 @@ class IndexManager:
 def build_index_and_filter_files(
     llm, args: AutoCoderArgs, sources: List[SourceCode]
 ) -> str:
+    # Initialize timing and statistics
+    total_start_time = time.monotonic()
+    stats = {
+        "total_files": len(sources),
+        "indexed_files": 0,
+        "level1_filtered": 0,
+        "level2_filtered": 0,
+        "final_files": 0,
+        "timings": {}
+    }
 
     def get_file_path(file_path):
         if file_path.startswith("##"):
@@ -533,46 +543,59 @@ def build_index_and_filter_files(
 
     final_files: Dict[str, TargetFile] = {}
 
-    ## keep Rest/RAG/Search sources
+    # Phase 1: Process REST/RAG/Search sources
+    logger.info("Phase 1: Processing REST/RAG/Search sources...")
+    phase_start = time.monotonic()
     for source in sources:
         if source.tag in ["REST", "RAG", "SEARCH"]:
             final_files[get_file_path(source.module_name)] = TargetFile(
                 file_path=source.module_name, reason="Rest/Rag/Search"
             )
+    stats["timings"]["process_tagged_sources"] = time.monotonic() - phase_start
 
     if not args.skip_build_index and llm:
-        logger.info("Building index for all files...")
+        # Phase 2: Build index
+        logger.info("Phase 2: Building index for all files...")
+        phase_start = time.monotonic()
         index_manager = IndexManager(llm=llm, sources=sources, args=args)
-        index_manager.build_index()
+        index_data = index_manager.build_index()
+        stats["indexed_files"] = len(index_data) if index_data else 0
+        stats["timings"]["build_index"] = time.monotonic() - phase_start
 
         if not args.skip_filter_index:
-            logger.info(f"Finding related files in the index...")
-            start_time = time.monotonic()
+            # Phase 3: Level 1 filtering - Query-based
+            logger.info("Phase 3: Performing Level 1 filtering (query-based)...")
+            phase_start = time.monotonic()
             target_files = index_manager.get_target_files_by_query(args.query)
 
             if target_files:
                 for file in target_files.file_list:
                     file_path = file.file_path.strip()
                     final_files[get_file_path(file_path)] = file
+                stats["level1_filtered"] = len(target_files.file_list)
+            stats["timings"]["level1_filter"] = time.monotonic() - phase_start
 
+            # Phase 4: Level 2 filtering - Related files
             if target_files is not None and args.index_filter_level >= 2:
-                related_fiels = index_manager.get_related_files(
+                logger.info("Phase 4: Performing Level 2 filtering (related files)...")
+                phase_start = time.monotonic()
+                related_files = index_manager.get_related_files(
                     [file.file_path for file in target_files.file_list]
                 )
-                if related_fiels is not None:
-                    for file in related_fiels.file_list:
+                if related_files is not None:
+                    for file in related_files.file_list:
                         file_path = file.file_path.strip()
                         final_files[get_file_path(file_path)] = file
+                    stats["level2_filtered"] = len(related_files.file_list)
+                stats["timings"]["level2_filter"] = time.monotonic() - phase_start
 
             if not final_files:
-                logger.warning("Warning: No related files found, use all files")
+                logger.warning("No related files found, using all files")
                 for source in sources:
                     final_files[get_file_path(source.module_name)] = TargetFile(
                         file_path=source.module_name,
                         reason="No related files found, use all files",
                     )
-
-            logger.info(f"Find related files took {time.monotonic() - start_time:.2f}s")
 
     def display_table_and_get_selections(data):
         from prompt_toolkit.shortcuts import checkboxlist_dialog
@@ -623,12 +646,15 @@ def build_index_and_filter_files(
 
         console.print(panel)
 
+    # Phase 5: File selection and limitation
+    logger.info("Phase 5: Processing file selection and limits...")
+    phase_start = time.monotonic()
+    
     if args.index_filter_file_num > 0:
-        logger.info(f"args.index_filter_file_num: {args.index_filter_file_num} is not 0, so we need to limit the number of files (total: {len(final_filenames)})")    
+        logger.info(f"Limiting files from {len(final_files)} to {args.index_filter_file_num}")
 
     if args.skip_confirm:
         final_filenames = [file.file_path for file in final_files.values()]
-        # Limit the number of files based on index_filter_file_num
         if args.index_filter_file_num > 0:
             final_filenames = final_filenames[: args.index_filter_file_num]
     else:
@@ -642,10 +668,16 @@ def build_index_and_filter_files(
             final_filenames = []
         else:
             final_filenames = display_table_and_get_selections(target_files_data)
-                
+            
         if args.index_filter_file_num > 0:
             final_filenames = final_filenames[: args.index_filter_file_num]
+    
+    stats["timings"]["file_selection"] = time.monotonic() - phase_start
 
+    # Phase 6: Display results and prepare output
+    logger.info("Phase 6: Preparing final output...")
+    phase_start = time.monotonic()
+    
     try:
         print_selected(
             [
@@ -656,9 +688,9 @@ def build_index_and_filter_files(
         )
     except Exception as e:
         logger.warning(
-            f"Fails to display the selected files. You may not in a terminal environment. Try to use print function to display the selected files. "
+            "Failed to display selected files in terminal mode. Falling back to simple print."
         )
-        print(f"Target Files You Selected")
+        print("Target Files Selected:")
         for file in final_filenames:
             print(f"{file} - {final_files[file].reason}")
 
@@ -672,4 +704,25 @@ def build_index_and_filter_files(
             depulicated_sources.add(file.module_name)
             source_code += f"##File: {file.module_name}\n"
             source_code += f"{file.source_code}\n\n"
+    
+    stats["final_files"] = len(depulicated_sources)
+    stats["timings"]["prepare_output"] = time.monotonic() - phase_start
+    
+    # Calculate total time and print summary
+    total_time = time.monotonic() - total_start_time
+    stats["timings"]["total"] = total_time
+    
+    # Print final statistics
+    logger.info("\n=== Build Index and Filter Files Summary ===")
+    logger.info(f"Total files in project: {stats['total_files']}")
+    logger.info(f"Files indexed: {stats['indexed_files']}")
+    logger.info(f"Files after Level 1 filter: {stats['level1_filtered']}")
+    logger.info(f"Files after Level 2 filter: {stats['level2_filtered']}")
+    logger.info(f"Final files selected: {stats['final_files']}")
+    logger.info("\nTime breakdown:")
+    for phase, duration in stats["timings"].items():
+        logger.info(f"  - {phase}: {duration:.2f}s")
+    logger.info(f"Total execution time: {total_time:.2f}s")
+    logger.info("==========================================\n")
+    
     return source_code
