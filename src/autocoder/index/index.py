@@ -366,8 +366,16 @@ class IndexManager:
                 item_str = f"##{item.module_name}\n{symbols_str}\n\n"
 
                 if skip_symbols:
-                    item_str = f"{item.module_name}\n"
-                yield item_str
+                    item_str = f"{item.module_name}\n"                
+
+                if len(current_chunk) > 5:
+                    yield "".join(current_chunk)
+                    current_chunk = [item_str]                    
+                else:
+                    current_chunk.append(item_str)                    
+
+            if current_chunk:
+                yield "".join(current_chunk)
         else:
             for item in index_items:
                 symbols_str = item.symbols
