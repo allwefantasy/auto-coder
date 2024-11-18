@@ -68,17 +68,10 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         "--index_filter_workers", type=int, default=1, help=desc["index_filter_workers"]
     )
     parser.add_argument(
-        "--inference_compute_precision",
+        "--index_filter_file_num",
         type=int,
-        default=64,
-        help="The precision of the inference compute",
-    )
-
-    parser.add_argument(
-        "--verify_file_relevance_score",
-        type=int,
-        default=6,
-        help=desc["verify_file_relevance_score"],
+        default=-1,
+        help=desc["index_filter_file_num"],
     )
     parser.add_argument(
         "--index_build_workers", type=int, default=1, help=desc["index_build_workers"]
