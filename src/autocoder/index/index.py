@@ -39,6 +39,9 @@ class TargetFile(pydantic.BaseModel):
         ..., description="The reason why the file is the target file"
     )
 
+class VerifyFileRelevance(pydantic.BaseModel):
+    relevant_score: int
+    reason: str
 
 class FileList(pydantic.BaseModel):
     file_list: List[TargetFile]
@@ -71,6 +74,28 @@ class IndexManager:
             os.makedirs(self.index_dir)
 
     @byzerllm.prompt()
+    def verify_file_relevance(self, file_content: str, query: str) -> bool:
+        """
+        请验证下面的文件内容是否与用户问题相关:
+
+        文件内容:
+        {{ file_content }}
+
+        用户问题:
+        {{ query }}
+
+        相关是指，需要依赖这个文件提供上下文，或者需要修改这个文件才能解决用户的问题。
+        请给出相应的可能性分数：0-10，并结合用户问题，理由控制在50字以内。格式如下:
+
+        ```json
+        {
+            "relevant_score": 0-10, // 相关分数
+            "reason": "这是相关的原因..."
+        }
+        ```
+        """        
+
+    @byzerllm.prompt()
     def _get_related_files(self, indices: str, file_paths: str) -> str:
         """
         下面是所有文件以及对应的符号信息：
@@ -100,7 +125,8 @@ class IndexManager:
 
         注意，
         1. 找到的文件名必须出现在上面的文件列表中
-        2. 如果没有相关的文件，输出如下 json 即可：
+        2. 原因控制在20字以内
+        3. 如果没有相关的文件，输出如下 json 即可：
         
         ```json
         {"file_list": []}
@@ -438,22 +464,18 @@ class IndexManager:
                 max_chunk_size= -1,
                 includes=[SymbolType.USAGE],
             )
-
-        logger.info("Find the related files by query according to the files...")
-        temp_result, total_threads, completed_threads = self._query_index_with_thread(query, w)
-        logger.info(f"Used {self.args.index_filter_workers} workers in parallel. Completed {completed_threads}/{total_threads} threads.")
+        
+        temp_result, total_threads, completed_threads = self._query_index_with_thread(query, w)        
         all_results.extend(temp_result)
 
         if self.args.index_filter_level >= 1:
-            logger.info("Find the related files by query according to the symbols...")
 
             def w():
                 return self._get_meta_str(
                     skip_symbols=False, max_chunk_size= -1
                 )
 
-            temp_result, total_threads, completed_threads = self._query_index_with_thread(query, w)
-            logger.info(f"Used {self.args.index_filter_workers} workers in parallel. Completed {completed_threads}/{total_threads} threads.")
+            temp_result, total_threads, completed_threads = self._query_index_with_thread(query, w)            
             all_results.extend(temp_result)
 
         all_results = list({file.file_path: file for file in all_results}.values())
