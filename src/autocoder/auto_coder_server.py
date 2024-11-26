@@ -232,14 +232,14 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
                     os.remove(execute_file)
                 except FileNotFoundError:
                     pass
-                _ = queue_communicate.send_event_no_wait(
+                _ = queue_communicate.send_event(
                     request_id=request_id,
                     event=CommunicateEvent(
                         event_type=CommunicateEventType.CODE_END.value, data=""
                     ),
                 )
 
-    _ = queue_communicate.send_event_no_wait(
+    _ = queue_communicate.send_event(
         request_id=request_id,
         event=CommunicateEvent(
             event_type=CommunicateEventType.CODE_START.value, data=request.query

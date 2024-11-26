@@ -820,12 +820,22 @@ def main(input_args: Optional[List[str]] = None):
                             border_style="blue",
                             expand=False,
                         )
+                    )                                    
+                if args.request_id:                    
+                    request_queue.add_request(
+                        args.request_id,
+                        RequestValue(
+                            value=StreamValue(value=[chat_content]), status=RequestOption.RUNNING
+                        ),
                     )
-                    return
-                # Save chat content to file
-                with open(args.target_file, "w") as f:
-                    f.write(chat_content)
-
+                    request_queue.add_request(
+                        args.request_id,
+                        RequestValue(
+                            value=StreamValue(value=[""]), status=RequestOption.COMPLETED
+                        ),
+                    )
+                    return {}
+                                
                 lines = []
                 while True:
                     line = prompt(FormattedText(
@@ -843,6 +853,9 @@ def main(input_args: Optional[List[str]] = None):
                     lines.append(line)
 
                 result = "\n".join(lines)
+
+                with open(args.target_file, "w") as f:
+                    f.write(chat_content)
 
                 # Update chat history with user's response
                 chat_history["ask_conversation"].append(

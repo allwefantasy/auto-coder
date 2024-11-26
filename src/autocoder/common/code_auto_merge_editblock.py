@@ -247,7 +247,7 @@ class CodeAutoMergeEditBlock:
                     }
                 )
 
-            _ = queue_communicate.send_event_no_wait(
+            _ = queue_communicate.send_event(
                 request_id=self.args.request_id,
                 event=CommunicateEvent(
                     event_type=CommunicateEventType.CODE_MERGE_RESULT.value,

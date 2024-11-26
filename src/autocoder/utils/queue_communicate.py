@@ -17,10 +17,12 @@ class CommunicateEventType(Enum):
     ASK_HUMAN = "ask_human"
     CODE_ERROR = "code_error"
 
+TIMEOUT = 600*3
 @dataclass(eq=True, frozen=True)
 class CommunicateEvent:
     event_type: str
     data: str
+
 
 class Singleton(type):
     _instances = {}
@@ -35,11 +37,31 @@ class Singleton(type):
 
 class QueueCommunicate(metaclass=Singleton):
     def __init__(self):
+        # Structure:
+        # {
+        #    "request_id_1": Queue(),
+        #    "request_id_2": Queue(),
+        #    ...
+        # }
         self.request_queues = {}
+
+        # Structure:
+        # {
+        #    "request_id_1": {
+        #        event1: Queue(),
+        #        event2: Queue(),
+        #        ...
+        #    },
+        #    "request_id_2": {
+        #        event1: Queue(),
+        #        event2: Queue(),
+        #        ...
+        #    }
+        # }
         self.response_queues = {}
         self.lock = threading.Lock()
-        self.send_event_executor = ThreadPoolExecutor(max_workers=10)
-        self.consume_event_executor = ThreadPoolExecutor(max_workers=10)
+        self.send_event_executor = ThreadPoolExecutor(max_workers=100)
+        self.consume_event_executor = ThreadPoolExecutor(max_workers=100)
 
     def shutdown(self):
         self.send_event_executor.shutdown()
@@ -57,7 +79,7 @@ class QueueCommunicate(metaclass=Singleton):
             if request_id in self.response_queues:
                 self.response_queues.pop(request_id)
 
-    def send_event(self, request_id: str, event: Any, timeout: int = 300) -> Any:
+    def send_event(self, request_id: str, event: Any, timeout: int = TIMEOUT) -> Any:
         if not request_id:
             return None
 
@@ -65,8 +87,8 @@ class QueueCommunicate(metaclass=Singleton):
             self._send_event_task, request_id, event
         )
         return future.result(timeout=timeout)
-    
-    def send_event_no_wait(self, request_id: str, event: Any, timeout: int = 300)-> Any:
+
+    def send_event_no_wait(self, request_id: str, event: Any, timeout: int = TIMEOUT) -> Any:
         if not request_id:
             return None
 
@@ -75,7 +97,7 @@ class QueueCommunicate(metaclass=Singleton):
         )
         return future
 
-    def _send_event_task(self, request_id: str, event: Any, timeout: int = 300) -> Any:        
+    def _send_event_task(self, request_id: str, event: Any, timeout: int = TIMEOUT) -> Any:
         with self.lock:
             if request_id not in self.request_queues:
                 self.request_queues[request_id] = Queue()
@@ -88,7 +110,7 @@ class QueueCommunicate(metaclass=Singleton):
             response_queues[event] = response_queue
 
         request_queue.put(event)
-        response = response_queue.get(timeout=timeout)        
+        response = response_queue.get(timeout=timeout)
         return response
 
     def consume_events(self, request_id: str, event_handler: Callable[[Any], Any]):
