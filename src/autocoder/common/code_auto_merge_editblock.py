@@ -68,8 +68,27 @@ class CodeAutoMergeEditBlock:
             logger.error(error_message)
             os.unlink(temp_file_path)
             return False, error_message
-
+  
     def parse_whole_text(self, text: str) -> List[PathAndCode]:
+        '''
+        从文本中抽取如下格式代码(two_line_mode)：
+        
+        ```python
+        ##File: /project/path/src/autocoder/index/index.py
+        <<<<<<< SEARCH
+        =======
+        >>>>>>> REPLACE
+        ```
+
+        或者 (one_line_mode)
+
+        ```python:/project/path/src/autocoder/index/index.py
+        <<<<<<< SEARCH
+        =======
+        >>>>>>> REPLACE
+        ```
+
+        '''
         HEAD = "<<<<<<< SEARCH"
         DIVIDER = "======="
         UPDATED = ">>>>>>> REPLACE"
@@ -77,12 +96,29 @@ class CodeAutoMergeEditBlock:
         lines_len = len(lines)
         start_marker_count = 0
         block = []
-        path_and_code_list = []
+        path_and_code_list = []     
+        # two_line_mode or one_line_mode
+        current_editblock_mode = "two_line_mode"
+        current_editblock_path = None
 
         def guard(index):
             return index + 1 < lines_len
 
         def start_marker(line, index):
+            if (
+                line.startswith(self.fence_0)
+                and guard(index)
+                and ":" in lines[index]
+                and lines[index + 1].startswith(HEAD)
+            ):
+                nonlocal current_editblock_mode
+                nonlocal current_editblock_path
+                current_editblock_mode = "one_line_mode"
+                current_editblock_path = lines[index].split(":", 1)[1].strip()
+                return True
+            
+            current_editblock_mode = "two_line_mode"
+            current_editblock_path = None
             return (
                 line.startswith(self.fence_0)
                 and guard(index)
@@ -91,17 +127,22 @@ class CodeAutoMergeEditBlock:
 
         def end_marker(line, index):
             return line.startswith(self.fence_1) and UPDATED in lines[index - 1]
-
+                
         for index, line in enumerate(lines):
             if start_marker(line, index) and start_marker_count == 0:
-                start_marker_count += 1
+                start_marker_count += 1                
             elif end_marker(line, index) and start_marker_count == 1:
                 start_marker_count -= 1
                 if block:
-                    path = block[0].split(":", 1)[1].strip()
-                    content = "\n".join(block[1:])
+                    if current_editblock_mode == "two_line_mode":
+                        path = block[0].split(":", 1)[1].strip()
+                        content = "\n".join(block[1:])
+                    else:
+                        path = current_editblock_path
+                        content = "\n".join(block)
                     block = []
-                    path_and_code_list.append(PathAndCode(path=path, content=content))
+                    path_and_code_list.append(
+                        PathAndCode(path=path, content=content))
             elif start_marker_count > 0:
                 block.append(line)
 
@@ -184,17 +225,19 @@ class CodeAutoMergeEditBlock:
                     else existing_content + "\n" + update
                 )
                 if new_content != existing_content:
-                    changes_to_make.append((file_path, existing_content, new_content))
+                    changes_to_make.append(
+                        (file_path, existing_content, new_content))
                     file_content_mapping[file_path] = new_content
                     changes_made = True
                 else:
-                    ## If the SEARCH BLOCK is not found exactly, then try to use
-                    ## the similarity ratio to find the best matching block
+                    # If the SEARCH BLOCK is not found exactly, then try to use
+                    # the similarity ratio to find the best matching block
                     similarity, best_window = TextSimilarity(
                         head, existing_content
                     ).get_best_matching_window()
                     if similarity > self.args.editblock_similarity:
-                        new_content = existing_content.replace(best_window, update, 1)
+                        new_content = existing_content.replace(
+                            best_window, update, 1)
                         if new_content != existing_content:
                             changes_to_make.append(
                                 (file_path, existing_content, new_content)
@@ -202,7 +245,8 @@ class CodeAutoMergeEditBlock:
                             file_content_mapping[file_path] = new_content
                             changes_made = True
                     else:
-                        unmerged_blocks.append((file_path, head, update, similarity))
+                        unmerged_blocks.append(
+                            (file_path, head, update, similarity))
 
         if unmerged_blocks:
             if self.args.request_id:
@@ -232,7 +276,7 @@ class CodeAutoMergeEditBlock:
             self._print_unmerged_blocks(unmerged_blocks)
             return
 
-        ## lint check
+        # lint check
         for file_path, new_content in file_content_mapping.items():
             if file_path.endswith(".py"):
                 pylint_passed, error_message = self.run_pylint(new_content)
@@ -248,7 +292,8 @@ class CodeAutoMergeEditBlock:
                 )
             except Exception as e:
                 logger.error(
-                    self.git_require_msg(source_dir=self.args.source_dir, error=str(e))
+                    self.git_require_msg(
+                        source_dir=self.args.source_dir, error=str(e))
                 )
                 return
         # Now, apply the changes
@@ -301,11 +346,13 @@ class CodeAutoMergeEditBlock:
         console.print("\n[bold red]Unmerged Blocks:[/bold red]")
         for file_path, head, update, similarity in unmerged_blocks:
             console.print(f"\n[bold blue]File:[/bold blue] {file_path}")
-            console.print(f"\n[bold green]Search Block({similarity}):[/bold green]")
+            console.print(
+                f"\n[bold green]Search Block({similarity}):[/bold green]")
             syntax = Syntax(head, "python", theme="monokai", line_numbers=True)
             console.print(Panel(syntax, expand=False))
             console.print("\n[bold yellow]Replace Block:[/bold yellow]")
-            syntax = Syntax(update, "python", theme="monokai", line_numbers=True)
+            syntax = Syntax(update, "python", theme="monokai",
+                            line_numbers=True)
             console.print(Panel(syntax, expand=False))
         console.print(
             f"\n[bold red]Total unmerged blocks: {len(unmerged_blocks)}[/bold red]"
