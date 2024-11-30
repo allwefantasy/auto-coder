@@ -44,9 +44,11 @@ class TargetFile(pydantic.BaseModel):
         ..., description="The reason why the file is the target file"
     )
 
+
 class VerifyFileRelevance(pydantic.BaseModel):
     relevant_score: int
     reason: str
+
 
 class FileList(pydantic.BaseModel):
     file_list: List[TargetFile]
@@ -98,7 +100,7 @@ class IndexManager:
             "reason": "这是相关的原因..."
         }
         ```
-        """        
+        """
 
     @byzerllm.prompt()
     def _get_related_files(self, indices: str, file_paths: str) -> str:
@@ -132,7 +134,7 @@ class IndexManager:
         1. 找到的文件名必须出现在上面的文件列表中
         2. 原因控制在20字以内
         3. 如果没有相关的文件，输出如下 json 即可：
-        
+
         ```json
         {"file_list": []}
         ```
@@ -236,12 +238,14 @@ class IndexManager:
                 )
                 symbols = []
                 for chunk in chunks:
-                    chunk_symbols = self.get_all_file_symbols.with_llm(self.index_llm).run(source.module_name, chunk)
+                    chunk_symbols = self.get_all_file_symbols.with_llm(
+                        self.index_llm).run(source.module_name, chunk)
                     time.sleep(self.anti_quota_limit)
                     symbols.append(chunk_symbols)
                 symbols = "\n".join(symbols)
             else:
-                symbols = self.get_all_file_symbols.with_llm(self.index_llm).run(source.module_name, source_code)
+                symbols = self.get_all_file_symbols.with_llm(
+                    self.index_llm).run(source.module_name, source_code)
                 time.sleep(self.anti_quota_limit)
 
             logger.info(
@@ -291,7 +295,7 @@ class IndexManager:
                     v = source.source_code.splitlines()
                     new_v = []
                     for line in v:
-                        new_v.append(line[line.find(":") :])
+                        new_v.append(line[line.find(":"):])
                     source_code = "\n".join(new_v)
 
                 md5 = hashlib.md5(source_code.encode("utf-8")).hexdigest()
@@ -304,7 +308,8 @@ class IndexManager:
             counter = 0
             num_files = len(wait_to_build_files)
             total_files = len(self.sources)
-            logger.info(f"Total Files: {total_files}, Need to Build Index: {num_files}")
+            logger.info(
+                f"Total Files: {total_files}, Need to Build Index: {num_files}")
 
             futures = [
                 executor.submit(self.build_index_for_single_source, source)
@@ -371,13 +376,13 @@ class IndexManager:
                 item_str = f"##{item.module_name}\n{symbols_str}\n\n"
 
                 if skip_symbols:
-                    item_str = f"{item.module_name}\n"                
+                    item_str = f"{item.module_name}\n"
 
                 if len(current_chunk) > self.args.filter_batch_size:
                     yield "".join(current_chunk)
-                    current_chunk = [item_str]                    
+                    current_chunk = [item_str]
                 else:
-                    current_chunk.append(item_str)                    
+                    current_chunk.append(item_str)
 
             if current_chunk:
                 yield "".join(current_chunk)
@@ -410,7 +415,8 @@ class IndexManager:
         lock = threading.Lock()
 
         def process_chunk(chunk, chunk_count):
-            result = self._get_related_files.with_llm(self.llm).with_return_type(FileList).run(chunk, "\n".join(file_paths))
+            result = self._get_related_files.with_llm(self.llm).with_return_type(
+                FileList).run(chunk, "\n".join(file_paths))
             if result is not None:
                 with lock:
                     all_results.extend(result.file_list)
@@ -424,7 +430,7 @@ class IndexManager:
             futures = []
             chunk_count = 0
             for chunk in self._get_meta_str(
-                max_chunk_size= -1
+                max_chunk_size=-1
             ):
                 future = executor.submit(process_chunk, chunk, chunk_count)
                 futures.append(future)
@@ -433,7 +439,8 @@ class IndexManager:
             for future in as_completed(futures):
                 future.result()
 
-        all_results = list({file.file_path: file for file in all_results}.values())
+        all_results = list(
+            {file.file_path: file for file in all_results}.values())
         return FileList(file_list=all_results)
 
     def _query_index_with_thread(self, query, func):
@@ -444,7 +451,8 @@ class IndexManager:
 
         def process_chunk(chunk):
             nonlocal completed_threads
-            result = self._get_target_files_by_query.with_llm(self.llm).with_return_type(FileList).run(chunk, query)
+            result = self._get_target_files_by_query.with_llm(
+                self.llm).with_return_type(FileList).run(chunk, query)
             if result is not None:
                 with lock:
                     all_results.extend(result.file_list)
@@ -474,24 +482,27 @@ class IndexManager:
         def w():
             return self._get_meta_str(
                 skip_symbols=False,
-                max_chunk_size= -1,
+                max_chunk_size=-1,
                 includes=[SymbolType.USAGE],
             )
-        
-        temp_result, total_threads, completed_threads = self._query_index_with_thread(query, w)        
+
+        temp_result, total_threads, completed_threads = self._query_index_with_thread(
+            query, w)
         all_results.extend(temp_result)
 
         if self.args.index_filter_level >= 1:
 
             def w():
                 return self._get_meta_str(
-                    skip_symbols=False, max_chunk_size= -1
+                    skip_symbols=False, max_chunk_size=-1
                 )
 
-            temp_result, total_threads, completed_threads = self._query_index_with_thread(query, w)            
+            temp_result, total_threads, completed_threads = self._query_index_with_thread(
+                query, w)
             all_results.extend(temp_result)
 
-        all_results = list({file.file_path: file for file in all_results}.values())
+        all_results = list(
+            {file.file_path: file for file in all_results}.values())
         # Limit the number of files based on index_filter_file_num
         limited_results = all_results[: self.args.index_filter_file_num]
         return FileList(file_list=limited_results)
@@ -523,7 +534,7 @@ class IndexManager:
             ]
         }
         ```
-        
+
         如果没有找到，返回如下 json 即可：
 
         ```json
@@ -611,21 +622,26 @@ def build_index_and_filter_files(
                 request_id=args.request_id,
                 event=CommunicateEvent(
                     event_type=CommunicateEventType.CODE_INDEX_BUILD_END.value,
-                    data=json.dumps({"indexed_files": stats["indexed_files"]})
+                    data=json.dumps({
+                        "indexed_files": stats["indexed_files"],
+                        "build_index_time": stats["timings"]["build_index"],
+                    })
                 )
             )
 
         if not args.skip_filter_index:
-            # Phase 3: Level 1 filtering - Query-based
-            logger.info("Phase 3: Performing Level 1 filtering (query-based)...")
             if args.request_id:
                 queue_communicate.send_event(
                     request_id=args.request_id,
                     event=CommunicateEvent(
                         event_type=CommunicateEventType.CODE_INDEX_FILTER_START.value,
-                        data=json.dumps({"phase": "Level 1 filtering"})
+                        data=json.dumps({})
                     )
                 )
+            # Phase 3: Level 1 filtering - Query-based
+            logger.info(
+                "Phase 3: Performing Level 1 filtering (query-based)...")
+
             phase_start = time.monotonic()
             target_files = index_manager.get_target_files_by_query(args.query)
 
@@ -638,13 +654,14 @@ def build_index_and_filter_files(
 
             # Phase 4: Level 2 filtering - Related files
             if target_files is not None and args.index_filter_level >= 2:
-                logger.info("Phase 4: Performing Level 2 filtering (related files)...")
+                logger.info(
+                    "Phase 4: Performing Level 2 filtering (related files)...")
                 if args.request_id:
                     queue_communicate.send_event(
                         request_id=args.request_id,
                         event=CommunicateEvent(
                             event_type=CommunicateEventType.CODE_INDEX_FILTER_START.value,
-                            data=json.dumps({"phase": "Level 2 filtering"})
+                            data=json.dumps({})
                         )
                     )
                 phase_start = time.monotonic()
@@ -656,18 +673,8 @@ def build_index_and_filter_files(
                         file_path = file.file_path.strip()
                         final_files[get_file_path(file_path)] = file
                     stats["level2_filtered"] = len(related_files.file_list)
-                stats["timings"]["level2_filter"] = time.monotonic() - phase_start
-                if args.request_id:
-                    queue_communicate.send_event(
-                        request_id=args.request_id,
-                        event=CommunicateEvent(
-                            event_type=CommunicateEventType.CODE_INDEX_FILTER_END.value,
-                            data=json.dumps({
-                                "filtered_files": stats["level2_filtered"],
-                                "phase": "Level 2 filtering"
-                            })
-                        )
-                    )
+                stats["timings"]["level2_filter"] = time.monotonic() - \
+                    phase_start
 
             if not final_files:
                 logger.warning("No related files found, using all files")
@@ -682,37 +689,40 @@ def build_index_and_filter_files(
             phase_start = time.monotonic()
             verified_files = {}
             temp_files = list(final_files.values())
-            
+
             def verify_single_file(file: TargetFile):
                 for source in sources:
                     if source.module_name == file.file_path:
                         file_content = source.source_code
                         try:
                             result = index_manager.verify_file_relevance.with_llm(llm).with_return_type(VerifyFileRelevance).run(
-                                file_content=file_content, 
+                                file_content=file_content,
                                 query=args.query
-                            )                            
+                            )
                             if result.relevant_score >= args.verify_file_relevance_score:
                                 return file.file_path, TargetFile(
                                     file_path=file.file_path,
                                     reason=f"Score:{result.relevant_score}, {result.reason}"
                                 )
                         except Exception as e:
-                            logger.warning(f"Failed to verify file {file.file_path}: {str(e)}")
+                            logger.warning(
+                                f"Failed to verify file {file.file_path}: {str(e)}")
                 return None
 
             with ThreadPoolExecutor(max_workers=args.index_filter_workers) as executor:
-                futures = [executor.submit(verify_single_file, file) for file in temp_files]
+                futures = [executor.submit(verify_single_file, file)
+                           for file in temp_files]
                 for future in as_completed(futures):
                     result = future.result()
                     if result:
                         file_path, target_file = result
                         verified_files[file_path] = target_file
                         time.sleep(args.anti_quota_limit)
-                        
+
             stats["verified_files"] = len(verified_files)
-            stats["timings"]["relevance_verification"] = time.monotonic() - phase_start
-            
+            stats["timings"]["relevance_verification"] = time.monotonic() - \
+                phase_start
+
             final_files = verified_files if verified_files else final_files
 
     def display_table_and_get_selections(data):
@@ -764,12 +774,13 @@ def build_index_and_filter_files(
 
         console.print(panel)
 
-    # Phase 6: File selection and limitation 
+    # Phase 6: File selection and limitation
     logger.info("Phase 6: Processing file selection and limits...")
     phase_start = time.monotonic()
-    
+
     if args.index_filter_file_num > 0:
-        logger.info(f"Limiting files from {len(final_files)} to {args.index_filter_file_num}")
+        logger.info(
+            f"Limiting files from {len(final_files)} to {args.index_filter_file_num}")
 
     if args.skip_confirm:
         final_filenames = [file.file_path for file in final_files.values()]
@@ -785,17 +796,17 @@ def build_index_and_filter_files(
             )
             final_filenames = []
         else:
-            final_filenames = display_table_and_get_selections(target_files_data)
-            
+            final_filenames = display_table_and_get_selections(
+                target_files_data)
+
         if args.index_filter_file_num > 0:
             final_filenames = final_filenames[: args.index_filter_file_num]
-    
+
     stats["timings"]["file_selection"] = time.monotonic() - phase_start
 
     # Phase 7: Display results and prepare output
     logger.info("Phase 7: Preparing final output...")
-    phase_start = time.monotonic()
-    
+    phase_start = time.monotonic()    
     try:
         print_selected(
             [
@@ -822,26 +833,52 @@ def build_index_and_filter_files(
             depulicated_sources.add(file.module_name)
             source_code += f"##File: {file.module_name}\n"
             source_code += f"{file.source_code}\n\n"
-    
+
+    if args.request_id:
+        queue_communicate.send_event(
+            request_id=args.request_id,
+            event=CommunicateEvent(
+                event_type=CommunicateEventType.CODE_INDEX_FILTER_FILE_SELECTED.value,
+                data=json.dumps([
+                    (file.file_path, file.reason)
+                    for file in final_files.values()
+                    if file.file_path in depulicated_sources
+                ])
+            )
+        )        
+
     stats["final_files"] = len(depulicated_sources)
     stats["timings"]["prepare_output"] = time.monotonic() - phase_start
-    
+
     # Calculate total time and print summary
     total_time = time.monotonic() - total_start_time
     stats["timings"]["total"] = total_time
-    
+
     # Print final statistics
     logger.info("\n=== Build Index and Filter Files Summary ===")
     logger.info(f"Total files in project: {stats['total_files']}")
     logger.info(f"Files indexed: {stats['indexed_files']}")
     logger.info(f"Files after Level 1 filter: {stats['level1_filtered']}")
     logger.info(f"Files after Level 2 filter: {stats['level2_filtered']}")
-    logger.info(f"Files after relevance verification: {stats.get('verified_files', 0)}")
+    logger.info(
+        f"Files after relevance verification: {stats.get('verified_files', 0)}")
     logger.info(f"Final files selected: {stats['final_files']}")
     logger.info("\nTime breakdown:")
     for phase, duration in stats["timings"].items():
         logger.info(f"  - {phase}: {duration:.2f}s")
     logger.info(f"Total execution time: {total_time:.2f}s")
     logger.info("==========================================\n")
-    
+
+    if args.request_id:
+        queue_communicate.send_event(
+            request_id=args.request_id,
+            event=CommunicateEvent(
+                event_type=CommunicateEventType.CODE_INDEX_FILTER_END.value,
+                data=json.dumps({
+                    "filtered_files": stats["final_files"],
+                    "filter_time": stats['level1_filtered'] + stats['level2_filtered'] + stats.get('verified_files', 0)
+                })
+            )
+        )
+
     return source_code
