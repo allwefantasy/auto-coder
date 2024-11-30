@@ -24,6 +24,11 @@ from rich.panel import Panel
 from rich.text import Text
 
 from loguru import logger
+from autocoder.utils.queue_communicate import (
+    queue_communicate,
+    CommunicateEvent,
+    CommunicateEventType,
+)
 
 
 class IndexItem(pydantic.BaseModel):
@@ -585,6 +590,15 @@ def build_index_and_filter_files(
 
     if not args.skip_build_index and llm:
         # Phase 2: Build index
+        if args.request_id:
+            queue_communicate.send_event(
+                request_id=args.request_id,
+                event=CommunicateEvent(
+                    event_type=CommunicateEventType.CODE_INDEX_BUILD_START.value,
+                    data=json.dumps({"total_files": len(sources)})
+                )
+            )
+
         logger.info("Phase 2: Building index for all files...")
         phase_start = time.monotonic()
         index_manager = IndexManager(llm=llm, sources=sources, args=args)
@@ -592,9 +606,26 @@ def build_index_and_filter_files(
         stats["indexed_files"] = len(index_data) if index_data else 0
         stats["timings"]["build_index"] = time.monotonic() - phase_start
 
+        if args.request_id:
+            queue_communicate.send_event(
+                request_id=args.request_id,
+                event=CommunicateEvent(
+                    event_type=CommunicateEventType.CODE_INDEX_BUILD_END.value,
+                    data=json.dumps({"indexed_files": stats["indexed_files"]})
+                )
+            )
+
         if not args.skip_filter_index:
             # Phase 3: Level 1 filtering - Query-based
             logger.info("Phase 3: Performing Level 1 filtering (query-based)...")
+            if args.request_id:
+                queue_communicate.send_event(
+                    request_id=args.request_id,
+                    event=CommunicateEvent(
+                        event_type=CommunicateEventType.CODE_INDEX_FILTER_START.value,
+                        data=json.dumps({"phase": "Level 1 filtering"})
+                    )
+                )
             phase_start = time.monotonic()
             target_files = index_manager.get_target_files_by_query(args.query)
 
@@ -608,6 +639,14 @@ def build_index_and_filter_files(
             # Phase 4: Level 2 filtering - Related files
             if target_files is not None and args.index_filter_level >= 2:
                 logger.info("Phase 4: Performing Level 2 filtering (related files)...")
+                if args.request_id:
+                    queue_communicate.send_event(
+                        request_id=args.request_id,
+                        event=CommunicateEvent(
+                            event_type=CommunicateEventType.CODE_INDEX_FILTER_START.value,
+                            data=json.dumps({"phase": "Level 2 filtering"})
+                        )
+                    )
                 phase_start = time.monotonic()
                 related_files = index_manager.get_related_files(
                     [file.file_path for file in target_files.file_list]
@@ -618,6 +657,17 @@ def build_index_and_filter_files(
                         final_files[get_file_path(file_path)] = file
                     stats["level2_filtered"] = len(related_files.file_list)
                 stats["timings"]["level2_filter"] = time.monotonic() - phase_start
+                if args.request_id:
+                    queue_communicate.send_event(
+                        request_id=args.request_id,
+                        event=CommunicateEvent(
+                            event_type=CommunicateEventType.CODE_INDEX_FILTER_END.value,
+                            data=json.dumps({
+                                "filtered_files": stats["level2_filtered"],
+                                "phase": "Level 2 filtering"
+                            })
+                        )
+                    )
 
             if not final_files:
                 logger.warning("No related files found, using all files")
