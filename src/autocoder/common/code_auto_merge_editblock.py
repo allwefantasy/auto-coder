@@ -68,11 +68,11 @@ class CodeAutoMergeEditBlock:
             logger.error(error_message)
             os.unlink(temp_file_path)
             return False, error_message
-  
+
     def parse_whole_text(self, text: str) -> List[PathAndCode]:
         '''
         从文本中抽取如下格式代码(two_line_mode)：
-        
+
         ```python
         ##File: /project/path/src/autocoder/index/index.py
         <<<<<<< SEARCH
@@ -96,7 +96,7 @@ class CodeAutoMergeEditBlock:
         lines_len = len(lines)
         start_marker_count = 0
         block = []
-        path_and_code_list = []     
+        path_and_code_list = []
         # two_line_mode or one_line_mode
         current_editblock_mode = "two_line_mode"
         current_editblock_path = None
@@ -105,36 +105,40 @@ class CodeAutoMergeEditBlock:
             return index + 1 < lines_len
 
         def start_marker(line, index):
+            nonlocal current_editblock_mode
+            nonlocal current_editblock_path
             if (
                 line.startswith(self.fence_0)
                 and guard(index)
-                and ":" in lines[index]
+                and ":" in line
                 and lines[index + 1].startswith(HEAD)
             ):
-                nonlocal current_editblock_mode
-                nonlocal current_editblock_path
+
                 current_editblock_mode = "one_line_mode"
-                current_editblock_path = lines[index].split(":", 1)[1].strip()
+                current_editblock_path = line.split(":", 1)[1].strip()
                 return True
-            
-            current_editblock_mode = "two_line_mode"
-            current_editblock_path = None
-            return (
+
+            if (
                 line.startswith(self.fence_0)
                 and guard(index)
                 and lines[index + 1].startswith("##File:")
-            )
+            ):
+                current_editblock_mode = "two_line_mode"
+                current_editblock_path = None
+                return True
+
+            return False
 
         def end_marker(line, index):
             return line.startswith(self.fence_1) and UPDATED in lines[index - 1]
-                
+
         for index, line in enumerate(lines):
             if start_marker(line, index) and start_marker_count == 0:
-                start_marker_count += 1                
+                start_marker_count += 1
             elif end_marker(line, index) and start_marker_count == 1:
                 start_marker_count -= 1
                 if block:
-                    if current_editblock_mode == "two_line_mode":
+                    if current_editblock_mode == "two_line_mode":                        
                         path = block[0].split(":", 1)[1].strip()
                         content = "\n".join(block[1:])
                     else:
