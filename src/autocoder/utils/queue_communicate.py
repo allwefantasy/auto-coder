@@ -11,11 +11,16 @@ class CommunicateEventType(Enum):
     CODE_MERGE = "code_merge"
     CODE_GENERATE = "code_generate"
     CODE_MERGE_RESULT = "code_merge_result"
+    CODE_UNMERGE_RESULT = "code_unmerge_result"
     CODE_START = "code_start"
     CODE_END = "code_end"
     CODE_HUMAN_AS_MODEL = "code_human_as_model"
     ASK_HUMAN = "ask_human"
     CODE_ERROR = "code_error"
+    CODE_INDEX_BUILD_START = "code_index_build_start"
+    CODE_INDEX_BUILD_END = "code_index_build_end"   
+    CODE_INDEX_FILTER_START = "code_index_filter_start"
+    CODE_INDEX_FILTER_END = "code_index_filter_end"
 
 TIMEOUT = 600*3
 @dataclass(eq=True, frozen=True)

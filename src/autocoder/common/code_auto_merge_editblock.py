@@ -205,6 +205,28 @@ class CodeAutoMergeEditBlock:
                         unmerged_blocks.append((file_path, head, update, similarity))
 
         if unmerged_blocks:
+            if self.args.request_id:
+                # collect unmerged blocks
+                event_data = []
+                for file_path, head, update, similarity in unmerged_blocks:
+                    event_data.append(
+                        {
+                            "file_path": file_path,
+                            "head": head,
+                            "update": update,
+                            "similarity": similarity,
+                        }
+                    )
+
+                _ = queue_communicate.send_event(
+                    request_id=self.args.request_id,
+                    event=CommunicateEvent(
+                        event_type=CommunicateEventType.CODE_UNMERGE_RESULT.value,
+                        data=json.dumps(event_data, ensure_ascii=False),
+                    ),
+                )
+                return
+
             s = f"Found {len(unmerged_blocks)} unmerged blocks, the changes will not be applied. Please review them manually then try again."
             logger.warning(s)
             self._print_unmerged_blocks(unmerged_blocks)
