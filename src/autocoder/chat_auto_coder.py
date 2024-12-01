@@ -1420,17 +1420,18 @@ def coding(query: str):
         yaml_config["query"] = v
 
         # Add context for active groups and their query prefixes
-        active_groups_context = "下面是对上面文件按分组给到的一些描述，当用户的需求正好匹配描述的时候，参考描述来做修改：\n"
-        for group in current_groups:
-            group_files = groups.get(group, [])
-            query_prefix = groups_info.get(group, {}).get("query_prefix", "")
-            active_groups_context += f"组名: {group}\n"
-            active_groups_context += f"文件列表:\n"
-            for file in group_files:
-                active_groups_context += f"- {file}\n"
-            active_groups_context += f"组描述: {query_prefix}\n\n"
+        if current_groups:
+            active_groups_context = "下面是对上面文件按分组给到的一些描述，当用户的需求正好匹配描述的时候，参考描述来做修改：\n"
+            for group in current_groups:
+                group_files = groups.get(group, [])
+                query_prefix = groups_info.get(group, {}).get("query_prefix", "")
+                active_groups_context += f"组名: {group}\n"
+                active_groups_context += f"文件列表:\n"
+                for file in group_files:
+                    active_groups_context += f"- {file}\n"
+                active_groups_context += f"组描述: {query_prefix}\n\n"
 
-        yaml_config["context"] = active_groups_context + "\n"
+            yaml_config["context"] = active_groups_context + "\n"
 
         if is_apply:
             memory_dir = os.path.join(".auto-coder", "memory")
