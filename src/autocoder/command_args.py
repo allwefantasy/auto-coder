@@ -343,6 +343,11 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         default=5,
         help=desc["filter_batch_size"],
     )
+    parser.add_argument(
+        "--skip_events",
+        action="store_true",
+        help=desc["skip_events"],
+    )
 
     doc_serve_parse.add_argument(
         "--required_exts", default="", help=desc["doc_build_parse_required_exts"]
