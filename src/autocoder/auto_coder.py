@@ -747,6 +747,7 @@ def main(input_args: Optional[List[str]] = None):
                 pp = SuffixProject(args=args, llm=llm, file_filter=None)
             pp.run()
             sources = pp.sources
+
             s = build_index_and_filter_files(
                 llm=llm, args=args, sources=sources)
             if s:
@@ -762,7 +763,7 @@ def main(input_args: Optional[List[str]] = None):
 
             loaded_conversations = pre_conversations + \
                 chat_history["ask_conversation"]
-
+                        
             if args.human_as_model:
                 console = Console()
 
@@ -874,12 +875,12 @@ def main(input_args: Optional[List[str]] = None):
 
                 return {}
 
-            if args.enable_rag_search or args.enable_rag_context:
+            if args.enable_rag_search or args.enable_rag_context:                
                 rag = RAGFactory.get_rag(llm=chat_llm, args=args, path="")
                 response = rag.stream_chat_oai(
                     conversations=loaded_conversations)[0]
                 v = ([item, None] for item in response)
-            else:
+            else:                
                 v = chat_llm.stream_chat_oai(
                     conversations=loaded_conversations, delta_mode=True
                 )
@@ -895,13 +896,14 @@ def main(input_args: Optional[List[str]] = None):
                     for res in v:
                         markdown_content += res[0]
                         assistant_response += res[0]
-                        request_queue.add_request(
-                            args.request_id,
-                            RequestValue(
-                                value=StreamValue(value=[res[0]]),
-                                status=RequestOption.RUNNING,
-                            ),
-                        )
+                        if args.request_id:                            
+                            request_queue.add_request(
+                                args.request_id,
+                                RequestValue(
+                                    value=StreamValue(value=[res[0]]),
+                                    status=RequestOption.RUNNING,
+                                ),
+                            )
                         live.update(
                             Panel(
                                 Markdown(markdown_content),
