@@ -184,7 +184,7 @@ def main(input_args: Optional[List[str]] = None):
     serve_parser.add_argument(
         "--rag_context_window_limit",
         type=int,
-        default=60000,
+        default=56000,
         help="The input context window limit for RAG",
     )
     serve_parser.add_argument(
