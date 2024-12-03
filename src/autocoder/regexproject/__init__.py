@@ -90,7 +90,7 @@ class RegexProject:
         return SourceCode(module_name=module_name, source_code=source_code)
 
     def get_source_codes(self) -> Generator[SourceCode, None, None]:
-        for root, dirs, files in os.walk(self.directory):
+        for root, dirs, files in os.walk(self.directory,followlinks=True):
             for file in files:
                 file_path = os.path.join(root, file)
                 if self.is_regex_match(file_path):

@@ -120,7 +120,7 @@ class HttpDoc:
                     return temp_documents                                    
 
                  if os.path.isdir(url):
-                    for root, dirs, files in os.walk(url):
+                    for root, dirs, files in os.walk(url,followlinks=True):
                         dirs[:] = [d for d in dirs if d not in ['.git',"node_modules"]]  # Exclude .git directory
                         for file in files:
                             file_path = os.path.join(root, file)                            

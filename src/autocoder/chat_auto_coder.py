@@ -395,7 +395,7 @@ def get_all_file_names_in_project() -> List[str]:
 
     file_names = []
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
-    for root, dirs, files in os.walk(project_root):
+    for root, dirs, files in os.walk(project_root,followlinks=True):
         dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
         file_names.extend(files)
     return file_names
@@ -405,7 +405,7 @@ def get_all_file_in_project() -> List[str]:
 
     file_names = []
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
-    for root, dirs, files in os.walk(project_root):
+    for root, dirs, files in os.walk(project_root,followlinks=True):
         dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
         for file in files:
             file_names.append(os.path.join(root, file))
@@ -415,7 +415,7 @@ def get_all_file_in_project() -> List[str]:
 def get_all_file_in_project_with_dot() -> List[str]:
     file_names = []
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
-    for root, dirs, files in os.walk(project_root):
+    for root, dirs, files in os.walk(project_root,followlinks=True):
         dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
         for file in files:
             file_names.append(os.path.join(root, file).replace(project_root, "."))
@@ -425,7 +425,7 @@ def get_all_file_in_project_with_dot() -> List[str]:
 def get_all_dir_names_in_project() -> List[str]:
     dir_names = []
     final_exclude_dirs = defaut_exclude_dirs + memory.get("exclude_dirs", [])
-    for root, dirs, files in os.walk(project_root):
+    for root, dirs, files in os.walk(project_root,followlinks=True):
         dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
         for dir in dirs:
             dir_names.append(dir)
@@ -449,7 +449,7 @@ def find_files_in_project(patterns: List[str]) -> List[str]:
         else:
             is_added = False
             ## add files belongs to project
-            for root, dirs, files in os.walk(project_root):
+            for root, dirs, files in os.walk(project_root,followlinks=True):
                 dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
                 if pattern in files:
                     matched_files.append(os.path.join(root, pattern))

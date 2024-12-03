@@ -117,7 +117,7 @@ class AutoCoderRAGDocListener(BaseCacheManager):
 
     def get_all_files(self) -> List[str]:
         all_files = []
-        for root, dirs, files in os.walk(self.path):
+        for root, dirs, files in os.walk(self.path,followlinks=True):
             dirs[:] = [d for d in dirs if not d.startswith(".")]
 
             if self.ignore_spec:

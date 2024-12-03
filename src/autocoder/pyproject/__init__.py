@@ -261,7 +261,7 @@ class PyProject:
         return temp + []
 
     def get_source_codes(self) -> Generator[SourceCode, None, None]:
-        for root, dirs, files in os.walk(self.directory):
+        for root, dirs, files in os.walk(self.directory,followlinks=True):
             dirs[:] = [d for d in dirs if d not in self.default_exclude_dirs]
             for file in files:
                 file_path = os.path.join(root, file)

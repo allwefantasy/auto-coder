@@ -174,7 +174,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
 
     def get_all_files(self) -> List[Tuple[str, str, float]]:
         all_files = []
-        for root, dirs, files in os.walk(self.path):
+        for root, dirs, files in os.walk(self.path,followlinks=True):
             dirs[:] = [d for d in dirs if not d.startswith(".")]
 
             if self.ignore_spec:
@@ -184,7 +184,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                     for d in dirs
                     if not self.ignore_spec.match_file(os.path.join(relative_root, d))
                 ]
-                files = [
+                files[:] = [
                     f
                     for f in files
                     if not self.ignore_spec.match_file(os.path.join(relative_root, f))

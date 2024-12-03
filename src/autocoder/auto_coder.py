@@ -327,7 +327,7 @@ def main(input_args: Optional[List[str]] = None):
                         )
                     )
 
-                if args.request_id and not args.silence:
+                if args.request_id and not args.silence and not args.skip_events:
                     event_data = {
                         "instruction": final_ins,
                         "model": model,

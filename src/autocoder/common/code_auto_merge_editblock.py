@@ -253,7 +253,7 @@ class CodeAutoMergeEditBlock:
                             (file_path, head, update, similarity))
 
         if unmerged_blocks:
-            if self.args.request_id:
+            if self.args.request_id and not self.args.skip_events:
                 # collect unmerged blocks
                 event_data = []
                 for file_path, head, update, similarity in unmerged_blocks:
@@ -306,7 +306,7 @@ class CodeAutoMergeEditBlock:
             with open(file_path, "w") as f:
                 f.write(new_content)
 
-        if self.args.request_id:
+        if self.args.request_id and not self.args.skip_events:
             # collect modified files
             event_data = []
             for file_path, old_block, new_block in changes_to_make:

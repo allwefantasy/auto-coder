@@ -601,7 +601,7 @@ def build_index_and_filter_files(
 
     if not args.skip_build_index and llm:
         # Phase 2: Build index
-        if args.request_id:
+        if args.request_id and not args.skip_events:
             queue_communicate.send_event(
                 request_id=args.request_id,
                 event=CommunicateEvent(
@@ -617,7 +617,7 @@ def build_index_and_filter_files(
         stats["indexed_files"] = len(index_data) if index_data else 0
         stats["timings"]["build_index"] = time.monotonic() - phase_start
 
-        if args.request_id:
+        if args.request_id and not args.skip_events:
             queue_communicate.send_event(
                 request_id=args.request_id,
                 event=CommunicateEvent(
@@ -630,7 +630,7 @@ def build_index_and_filter_files(
             )
 
         if not args.skip_filter_index:
-            if args.request_id:
+            if args.request_id and not args.skip_events:
                 queue_communicate.send_event(
                     request_id=args.request_id,
                     event=CommunicateEvent(
@@ -656,7 +656,7 @@ def build_index_and_filter_files(
             if target_files is not None and args.index_filter_level >= 2:
                 logger.info(
                     "Phase 4: Performing Level 2 filtering (related files)...")
-                if args.request_id:
+                if args.request_id and not args.skip_events:
                     queue_communicate.send_event(
                         request_id=args.request_id,
                         event=CommunicateEvent(
@@ -834,7 +834,7 @@ def build_index_and_filter_files(
             source_code += f"##File: {file.module_name}\n"
             source_code += f"{file.source_code}\n\n"
 
-    if args.request_id:
+    if args.request_id and not args.skip_events:
         queue_communicate.send_event(
             request_id=args.request_id,
             event=CommunicateEvent(
@@ -869,7 +869,7 @@ def build_index_and_filter_files(
     logger.info(f"Total execution time: {total_time:.2f}s")
     logger.info("==========================================\n")
 
-    if args.request_id:
+    if args.request_id and not args.skip_events:
         queue_communicate.send_event(
             request_id=args.request_id,
             event=CommunicateEvent(
