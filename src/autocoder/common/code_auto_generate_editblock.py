@@ -2,6 +2,7 @@ from typing import List, Dict, Tuple
 from autocoder.common.types import Mode
 from autocoder.common import AutoCoderArgs
 import byzerllm
+from autocoder.common import sys_prompt
 
 
 class CodeAutoGenerateEditBlock:
@@ -379,8 +380,11 @@ class CodeAutoGenerateEditBlock:
 
         with open(self.args.target_file, "w") as file:
             file.write(init_prompt)
+        
 
-        conversations = [{"role": "user", "content": init_prompt}]
+        conversations = []
+        # conversations.append({"role": "system", "content": sys_prompt.prompt()})
+        conversations.append({"role": "user", "content": init_prompt})
 
         t = self.llm.chat_oai(conversations=conversations, llm_config=llm_config)
         conversations.append({"role": "assistant", "content": t[0].output})
@@ -401,7 +405,9 @@ class CodeAutoGenerateEditBlock:
                 instruction=query, content=source_content
             )
 
-        conversations = [{"role": "user", "content": init_prompt}]
+        conversations = []
+        # conversations.append({"role": "system", "content": sys_prompt.prompt()})
+        conversations.append({"role": "user", "content": init_prompt})
 
         with open(self.args.target_file, "w") as file:
             file.write(init_prompt)
