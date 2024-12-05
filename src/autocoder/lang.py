@@ -72,7 +72,11 @@ lang_desc = {
         "editblock_similarity": "The similarity threshold of TextSimilarity when merging edit blocks. Default is 0.9",
         "include_project_structure": "Whether to include the project directory structure in the code generation prompt. Default is False",
         "filter_batch_size": "The batch size used when filtering files. Default is 5",
-        "skip_events": "Skip sending events during execution. Default is False"
+        "skip_events": "Skip sending events during execution. Default is False",
+         "rag_url": "The URL of the RAG service. Default is empty",
+        "rag_token": "The token for the RAG service. Default is empty",
+        "rag_type": "RAG type (simple/storage), default is storage",
+        "rag_params_max_tokens": "The maximum number of tokens for RAG parameters. Default is 4096",
     },
     "zh": {
         "request_id": "Request ID",
@@ -147,6 +151,10 @@ lang_desc = {
         "editblock_similarity": "合并编辑块时TextSimilarity的相似度阈值。默认为0.9",
         "include_project_structure": "在生成代码的提示中是否包含项目目录结构。默认为False",
         "filter_batch_size": "文件过滤时使用的批处理大小。默认为5",
-        "skip_events": "在执行过程中跳过事件发送。默认为False"
+        "skip_events": "在执行过程中跳过事件发送。默认为False",
+         "rag_url": "RAG服务的URL",
+        "rag_token": "RAG服务的令牌",
+        "rag_type": "RAG类型(simple/storage),默认是storage",
+        "rag_params_max_tokens": "RAG参数的最大token数。默认为4096",    
     }
 }

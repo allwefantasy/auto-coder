@@ -260,6 +260,7 @@ class LongContextRAG:
             response = self.client.chat.completions.create(
                 messages=[{"role": "user", "content": new_query}],
                 model=self.args.model,
+                max_tokens=4096,
             )
             v = response.choices[0].message.content
             if not only_contexts:

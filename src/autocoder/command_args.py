@@ -154,6 +154,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     parser.add_argument("--rag_token", default="", help="")
     parser.add_argument("--rag_url", default="", help="")
+    parser.add_argument("--rag_params_max_tokens", default=4096, help="")
     parser.add_argument(
         "--rag_type", default="storage", help="RAG type, default is storage"
     )
@@ -483,6 +484,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     chat_parser.add_argument("--rag_token", default="", help="")
     chat_parser.add_argument("--rag_url", default="", help="")
+    chat_parser.add_argument("--rag_params_max_tokens", default=4096, help="")
     chat_parser.add_argument(
         "--rag_type",
         default="storage",
@@ -550,6 +552,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     read_project_parser.add_argument("--rag_token", default="", help="")
     read_project_parser.add_argument("--rag_url", default="", help="")
+    read_project_parser.add_argument("--rag_params_max_tokens", default=4096, help="")
     read_project_parser.add_argument(
         "--rag_type", default="storage", help="RAG type, default is storage"
     )
@@ -639,6 +642,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     auto_tool_parser.add_argument("--rag_token", default="", help="")
     auto_tool_parser.add_argument("--rag_url", default="", help="")
+    auto_tool_parser.add_argument("--rag_params_max_tokens", default=4096, help="")
     auto_tool_parser.add_argument(
         "--rag_type", default="storage", help="RAG type, default is storage"
     )
@@ -704,6 +708,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
 
     planner_parser.add_argument("--rag_token", default="", help="")
     planner_parser.add_argument("--rag_url", default="", help="")
+    planner_parser.add_argument("--rag_params_max_tokens", default=4096, help="")   
     planner_parser.add_argument(
         "--rag_type", default="storage", help="RAG type, default is storage"
     )
