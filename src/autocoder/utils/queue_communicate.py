@@ -22,6 +22,8 @@ class CommunicateEventType(Enum):
     CODE_INDEX_FILTER_START = "code_index_filter_start"
     CODE_INDEX_FILTER_END = "code_index_filter_end"
     CODE_INDEX_FILTER_FILE_SELECTED = "code_index_filter_file_selected"
+    CODE_RAG_SEARCH_START = "code_rag_search_start"
+    CODE_RAG_SEARCH_END = "code_rag_search_end"
 
 TIMEOUT = 600*3
 @dataclass(eq=True, frozen=True)
