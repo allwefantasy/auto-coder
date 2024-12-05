@@ -10,6 +10,7 @@ from autocoder.common.search import Search, SearchEngine
 from loguru import logger
 from pydantic import BaseModel, Field
 from rich.console import Console
+import json
 from autocoder.utils.queue_communicate import queue_communicate, CommunicateEvent, CommunicateEventType
 
 
@@ -120,12 +121,12 @@ class RegexProject:
         if not self.args.enable_rag_search and not self.args.enable_rag_context:
             return []
             
-        if hasattr(self.args, 'request_id') and self.args.request_id:
+        if self.args.request_id and not self.args.skip_events:
             _ = queue_communicate.send_event(
                 request_id=self.args.request_id,
                 event=CommunicateEvent(
                     event_type=CommunicateEventType.CODE_RAG_SEARCH_START.value,
-                    data=self.args.query
+                    data=json.dumps({},ensure_ascii=False)
                 )
             )
         else:
@@ -138,12 +139,12 @@ class RegexProject:
         for doc in docs:
             doc.tag = "RAG"
             
-        if hasattr(self.args, 'request_id') and self.args.request_id:
+        if self.args.request_id and not self.args.skip_events:
             _ = queue_communicate.send_event(
                 request_id=self.args.request_id,
                 event=CommunicateEvent(
                     event_type=CommunicateEventType.CODE_RAG_SEARCH_END.value,
-                    data=str(len(docs))
+                    data=json.dumps({},ensure_ascii=False)
                 )
             )
         else:
