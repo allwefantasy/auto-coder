@@ -293,7 +293,113 @@ class Coder:
         }
 
     def parse_assistant_message(msg: str):
-        pass
+        content_blocks = []
+        current_text_content = None
+        current_text_content_start_index = 0
+        current_tool_use = None
+        current_tool_use_start_index = 0
+        current_param_name = None
+        current_param_value_start_index = 0
+        accumulator = ""
+
+        for i, char in enumerate(msg):
+            accumulator += char
+
+            # there should not be a param without a tool use
+            if current_tool_use is not None and current_param_name is not None:
+                current_param_value = accumulator[current_param_value_start_index:]
+                param_closing_tag = f"</{current_param_name}>"
+                if current_param_value.endswith(param_closing_tag):
+                    # end of param value
+                    current_tool_use["params"][current_param_name] = current_param_value[:-len(param_closing_tag)].strip()
+                    current_param_name = None
+                    continue
+                else:
+                    # partial param value is accumulating
+                    continue
+
+            # no currentParamName
+            if current_tool_use is not None:
+                current_tool_value = accumulator[current_tool_use_start_index:]
+                tool_use_closing_tag = f"</{current_tool_use['name']}>"
+                if current_tool_value.endswith(tool_use_closing_tag):
+                    # end of a tool use
+                    current_tool_use["partial"] = False
+                    content_blocks.append(current_tool_use)
+                    current_tool_use = None
+                    continue
+                else:
+                    # Check for possible param opening tags
+                    for param_name in ["command", "path", "content", "regex", "file_pattern", 
+                                     "recursive", "action", "url", "coordinate", "text", 
+                                     "question", "result"]:
+                        param_opening_tag = f"<{param_name}>"
+                        if accumulator.endswith(param_opening_tag):
+                            # start of a new parameter
+                            current_param_name = param_name
+                            current_param_value_start_index = len(accumulator)
+                            break
+
+                    # Special case for write_to_file content param
+                    if current_tool_use["name"] == "write_to_file" and accumulator.endswith("</content>"):
+                        tool_content = accumulator[current_tool_use_start_index:]
+                        content_start_tag = "<content>"
+                        content_end_tag = "</content>"
+                        content_start_index = tool_content.find(content_start_tag) + len(content_start_tag)
+                        content_end_index = tool_content.rfind(content_end_tag)
+                        if content_start_index != -1 and content_end_index != -1 and content_end_index > content_start_index:
+                            current_tool_use["params"]["content"] = tool_content[content_start_index:content_end_index].strip()
+
+                    continue
+
+            # no currentToolUse
+            did_start_tool_use = False
+            for tool_name in ["execute_command", "read_file", "write_to_file", "search_files",
+                            "list_files", "list_code_definition_names", "browser_action",
+                            "ask_followup_question", "attempt_completion"]:
+                tool_use_opening_tag = f"<{tool_name}>"
+                if accumulator.endswith(tool_use_opening_tag):
+                    # start of a new tool use
+                    current_tool_use = {
+                        "type": "tool_use",
+                        "name": tool_name,
+                        "params": {},
+                        "partial": True
+                    }
+                    current_tool_use_start_index = len(accumulator)
+                    # this also indicates the end of the current text content
+                    if current_text_content is not None:
+                        current_text_content["partial"] = False
+                        # remove the partially accumulated tool use tag from the end of text
+                        current_text_content["content"] = current_text_content["content"][:-len(tool_use_opening_tag[:-1])].strip()
+                        content_blocks.append(current_text_content)
+                        current_text_content = None
+
+                    did_start_tool_use = True
+                    break
+
+            if not did_start_tool_use:
+                # no tool use, so it must be text either at the beginning or between tools
+                if current_text_content is None:
+                    current_text_content_start_index = i
+                current_text_content = {
+                    "type": "text",
+                    "content": accumulator[current_text_content_start_index:].strip(),
+                    "partial": True
+                }
+
+        # Handle incomplete blocks at the end of message
+        if current_tool_use is not None:
+            # stream did not complete tool call
+            if current_param_name is not None:
+                # tool call has a parameter that was not completed
+                current_tool_use["params"][current_param_name] = accumulator[current_param_value_start_index:].strip()
+            content_blocks.append(current_tool_use)
+        elif current_text_content is not None:
+            # stream did not complete text content
+            content_blocks.append(current_text_content)
+
+        return content_blocks
 
     def run(self, with_message):
         pass
