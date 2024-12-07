@@ -1,11 +1,12 @@
 import byzerllm
-from pydantic import BaseModel, Field
+from autocoder.common import detect_env
 
 
 class Coder:
     def __init__(self, llm: byzerllm.ByzerLLM) -> None:
         self.llm = llm
         self.memory = []
+        self.env = detect_env()
 
     @byzerllm.prompt()
     def _run(self, user_requirement: str, context: str, support_comupter_use: bool = True) -> str:
@@ -292,7 +293,7 @@ class Coder:
             "homedir": ""
         }
 
-    def parse_assistant_message(msg: str):
+    def parse_assistant_message(self, msg: str):
         content_blocks = []
         current_text_content = None
         current_text_content_start_index = 0
