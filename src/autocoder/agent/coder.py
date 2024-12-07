@@ -9,7 +9,7 @@ class Coder:
         self.env = detect_env()
 
     @byzerllm.prompt()
-    def _run(self, user_requirement: str, context: str, support_comupter_use: bool = True) -> str:
+    def _run(self, custom_instructions: str, context: str, support_comupter_use: bool = True) -> str:
         '''
         You are auto-coder, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
 
@@ -285,12 +285,13 @@ class Coder:
 
         {{ customInstructions }}
         '''
+        env = detect_env()
         return {
-            "cwd": "",
-            "customInstructions": "",
-            "osName": "",
-            "defaultShell": "",
-            "homedir": ""
+            "cwd": env.cwd,
+            "customInstructions": custom_instructions,
+            "osName": env.os_name,
+            "defaultShell": env.default_shell,
+            "homedir": env.home_dir
         }
 
     def parse_assistant_message(self, msg: str):
