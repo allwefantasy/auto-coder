@@ -2,6 +2,96 @@ import byzerllm
 from autocoder.common import detect_env
 
 
+from typing import Dict, List, Optional, Literal, Union
+import pydantic 
+from enum import Enum
+
+class TextContent(pydantic.BaseModel):
+    type: Literal["text"]
+    content: str
+    partial: bool
+
+class ToolUseName(str, Enum):
+    execute_command = "execute_command"
+    read_file = "read_file"
+    write_to_file = "write_to_file"
+    search_files = "search_files"
+    list_files = "list_files"
+    list_code_definition_names = "list_code_definition_names"
+    browser_action = "browser_action"
+    ask_followup_question = "ask_followup_question"
+    attempt_completion = "attempt_completion"
+
+class ToolParamName(str, Enum):
+    command = "command"
+    path = "path"
+    content = "content"
+    regex = "regex"
+    file_pattern = "file_pattern"
+    recursive = "recursive"
+    action = "action"
+    url = "url"
+    coordinate = "coordinate"
+    text = "text"
+    question = "question"
+    result = "result"
+
+class BaseTool(pydantic.BaseModel):
+    type: Literal["tool_use"]
+    name: ToolUseName
+    params: Dict[ToolParamName, str]
+    partial: bool
+
+class ExecuteCommandToolUse(BaseTool):
+    name: Literal[ToolUseName.execute_command]
+    params: Dict[Literal[ToolParamName.command], str]
+
+class ReadFileToolUse(BaseTool):
+    name: Literal[ToolUseName.read_file]
+    params: Dict[Literal[ToolParamName.path], str]
+
+class WriteToFileToolUse(BaseTool):
+    name: Literal[ToolUseName.write_to_file]
+    params: Dict[Union[Literal[ToolParamName.path], Literal[ToolParamName.content]], str]
+
+class SearchFilesToolUse(BaseTool):
+    name: Literal[ToolUseName.search_files]
+    params: Dict[Union[Literal[ToolParamName.path], Literal[ToolParamName.regex], Literal[ToolParamName.file_pattern]], str]
+
+class ListFilesToolUse(BaseTool):
+    name: Literal[ToolUseName.list_files]
+    params: Dict[Union[Literal[ToolParamName.path], Literal[ToolParamName.recursive]], str]
+
+class ListCodeDefinitionNamesToolUse(BaseTool):
+    name: Literal[ToolUseName.list_code_definition_names]
+    params: Dict[Literal[ToolParamName.path], str]
+
+class BrowserActionToolUse(BaseTool):
+    name: Literal[ToolUseName.browser_action]
+    params: Dict[Union[Literal[ToolParamName.action], Literal[ToolParamName.url], Literal[ToolParamName.coordinate], Literal[ToolParamName.text]], str]
+
+class AskFollowupQuestionToolUse(BaseTool):
+    name: Literal[ToolUseName.ask_followup_question]
+    params: Dict[Literal[ToolParamName.question], str]
+
+class AttemptCompletionToolUse(BaseTool):
+    name: Literal[ToolUseName.attempt_completion]
+    params: Dict[Union[Literal[ToolParamName.result], Literal[ToolParamName.command]], str]
+
+ToolUse = Union[
+    ExecuteCommandToolUse,
+    ReadFileToolUse,
+    WriteToFileToolUse,
+    SearchFilesToolUse,
+    ListFilesToolUse,
+    ListCodeDefinitionNamesToolUse,
+    BrowserActionToolUse,
+    AskFollowupQuestionToolUse,
+    AttemptCompletionToolUse
+]
+
+AssistantMessageContent = Union[TextContent, ToolUse]
+
 class Coder:
     def __init__(self, llm: byzerllm.ByzerLLM) -> None:
         self.llm = llm
