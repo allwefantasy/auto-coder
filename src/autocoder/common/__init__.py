@@ -98,6 +98,9 @@ class EnvInfo(pydantic.BaseModel):
     conda_env: Optional[str]
     virtualenv: Optional[str]
     has_bash: bool
+    default_shell: Optional[str]
+    home_dir: Optional[str]
+    cwd: Optional[str]
 
 
 def has_sufficient_content(file_content, min_line_count=10):
@@ -155,8 +158,19 @@ def detect_env() -> EnvInfo:
     )
 
     conda_env = os.environ.get("CONDA_DEFAULT_ENV")
-
     virtualenv = os.environ.get("VIRTUAL_ENV")
+    
+    # Get default shell
+    if os_name == "win32":
+        default_shell = os.environ.get("COMSPEC", "cmd.exe")
+    else:
+        default_shell = os.environ.get("SHELL", "/bin/sh")
+
+    # Get home directory
+    home_dir = os.path.expanduser("~")
+    
+    # Get current working directory
+    cwd = os.getcwd()
 
     has_bash = True
     try:
@@ -171,6 +185,9 @@ def detect_env() -> EnvInfo:
         conda_env=conda_env,
         virtualenv=virtualenv,
         has_bash=has_bash,
+        default_shell=default_shell,
+        home_dir=home_dir,
+        cwd=cwd,
     )
 
 
