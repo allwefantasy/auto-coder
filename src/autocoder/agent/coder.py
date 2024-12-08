@@ -593,6 +593,103 @@ Current working directory: {self.env.cwd}
 Operating System: {self.env.os_name}
 """
 
+    async def run(self, with_message: str):
+        """Main entry point for handling user messages and starting tasks"""
+        # Parse task from message
+        task = with_message.strip()
+        
+        if task.startswith("resume"):
+            await self.resume_task()
+        else:
+            await self.start_task(task)
+
+    async def start_task(self, task: str, images: List[str] = None):
+        """Start a new task with initial message"""
+        self.conversation_history = []
+        await self.save_conversation_history("system", await self._get_system_prompt())
+        
+        # Initial message
+        user_content = [{
+            "type": "text",
+            "text": f"<task>\n{task}\n</task>"
+        }]
+        
+        if images:
+            for image in images:
+                user_content.append({
+                    "type": "image",
+                    "url": image
+                })
+                
+        await self.initiate_task_loop(user_content)
+
+    async def initiate_task_loop(self, user_content: List[Dict]):
+        """Control the main task execution loop"""
+        next_user_content = user_content
+        include_file_details = True
+        
+        while True:
+            did_end_loop = await self.recursively_make_cline_requests(
+                next_user_content, 
+                include_file_details
+            )
+            include_file_details = False
+
+            if did_end_loop:
+                break
+                
+            next_user_content = [{
+                "type": "text",
+                "text": self.format_response("no_tools_used")
+            }]
+            self.consecutive_mistake_count += 1
+
+    def abort_task(self):
+        """Handle task abortion"""
+        self.did_abort = True
+        # Clean up any resources
+        if hasattr(self, 'diff_viewer'):
+            self.diff_viewer.close()
+        # Close any open file handles
+        # Terminate any running processes
+
+    async def resume_task(self):
+        """Resume a previously interrupted task"""
+        # Load previous conversation history
+        if not self.conversation_history:
+            raise Exception("No conversation history to resume")
+            
+        # Get last message before interruption
+        last_message = self.conversation_history[-1]
+        
+        # Prepare resume message
+        resume_content = [{
+            "type": "text",
+            "text": "[TASK RESUMPTION] This task was interrupted. Please reassess the current state and continue."
+        }]
+        
+        await self.initiate_task_loop(resume_content)
+
+    def create_diff(self, filename: str = "file", old_str: str = "", new_str: str = "") -> str:
+        """Create a diff between two strings"""
+        import difflib
+        differ = difflib.Differ()
+        diff = list(differ.compare(old_str.splitlines(), new_str.splitlines()))
+        
+        # Format diff output
+        formatted_diff = []
+        for line in diff:
+            if line.startswith('+'):
+                formatted_diff.append(f"+ {line[2:]}")
+            elif line.startswith('-'):
+                formatted_diff.append(f"- {line[2:]}")
+            elif line.startswith('?'):
+                continue
+            else:
+                formatted_diff.append(f"  {line[2:]}")
+                
+        return f"Diff for {filename}:\n" + "\n".join(formatted_diff)
+
     @byzerllm.prompt()
     def _run(self, custom_instructions: str, context: str, support_computer_use: bool = True) -> str:
         '''
