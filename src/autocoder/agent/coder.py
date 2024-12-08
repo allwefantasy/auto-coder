@@ -116,10 +116,485 @@ class Coder:
     def __init__(self, llm: byzerllm.ByzerLLM) -> None:
         self.llm = llm
         self.memory = []
-        self.env = detect_env()
+        self.env = detect_env()        
+        self.current_streaming_content_index = 0
+        self.assistant_message_content = []
+        self.user_message_content = []
+        self.user_message_content_ready = False
+        self.did_reject_tool = False
+        self.did_already_use_tool = False
+        self.did_complete_reading_stream = False
+        self.present_assistant_message_locked = False
+        self.present_assistant_message_has_pending_updates = False
+
+    def format_response(self, content_type: str, text: str = None, images: List[str] = None):
+        """Format responses similar to Cline.ts formatResponse"""
+        if content_type == "tool_denied":
+            return "The user denied this operation."
+        elif content_type == "tool_denied_with_feedback":
+            return f"The user denied this operation and provided the following feedback:\n<feedback>\n{text}\n</feedback>"
+        elif content_type == "tool_error":
+            return f"The tool execution failed with the following error:\n<error>\n{text}\n</error>"
+        elif content_type == "no_tools_used":
+            return "[ERROR] You did not use a tool in your previous response! Please retry with a tool use."
+        elif content_type == "too_many_mistakes":
+            return f"You seem to be having trouble proceeding. The user has provided the following feedback:\n<feedback>\n{text}\n</feedback>"
+        
+    def format_tool_result(self, text: str, images: List[str] = None):
+        """Format tool execution results"""
+        if images and len(images) > 0:
+            return {"text": text, "images": images}
+        return text
+
+    def present_assistant_message(self):
+        """Present and handle assistant messages and tool executions"""
+        if self.present_assistant_message_locked:
+            self.present_assistant_message_has_pending_updates = True
+            return
+
+        self.present_assistant_message_locked = True
+        self.present_assistant_message_has_pending_updates = False
+
+        if self.current_streaming_content_index >= len(self.assistant_message_content):
+            if self.did_complete_reading_stream:
+                self.user_message_content_ready = True
+            self.present_assistant_message_locked = False
+            return
+
+        block = self.assistant_message_content[self.current_streaming_content_index]
+        
+        if block["type"] == "text":
+            if not (self.did_reject_tool or self.did_already_use_tool):
+                content = block.get("content", "")
+                # Handle text content similar to Cline.ts
+                # Remove thinking tags and format content
+                if content:
+                    content = re.sub(r'<thinking>\s?', '', content)
+                    content = re.sub(r'\s?</thinking>', '', content)
+                
+        elif block["type"] == "tool_use":
+            # Handle tool execution similar to Cline.ts
+            # Execute appropriate tool and handle response
+            if not self.did_reject_tool and not self.did_already_use_tool:
+                tool_name = block.get("name")
+                params = block.get("params", {})
+                
+                # Execute tool and handle response
+                try:
+                    result = self.execute_tool(tool_name, params)
+                    self.user_message_content.append({
+                        "type": "text",
+                        "text": f"[{tool_name}] Result:\n{result}"
+                    })
+                    self.did_already_use_tool = True
+                except Exception as e:
+                    self.user_message_content.append({
+                        "type": "text",
+                        "text": self.format_response("tool_error", str(e))
+                    })
+
+        self.present_assistant_message_locked = False
+        
+        if not block.get("partial", False) or self.did_reject_tool or self.did_already_use_tool:
+            if self.current_streaming_content_index == len(self.assistant_message_content) - 1:
+                self.user_message_content_ready = True
+            
+            self.current_streaming_content_index += 1
+            
+            if self.current_streaming_content_index < len(self.assistant_message_content):
+                self.present_assistant_message()
+
+        if self.present_assistant_message_has_pending_updates:
+            self.present_assistant_message()
+
+    def parse_assistant_message(self, msg: str) -> List[Dict]:
+        """Parse assistant message into content blocks similar to Cline.ts parseAssistantMessage"""
+        content_blocks = []
+        current_text_content = None
+        current_text_content_start_index = 0
+        current_tool_use = None
+        current_tool_use_start_index = 0
+        current_param_name = None
+        current_param_value_start_index = 0
+        accumulator = ""
+
+        for i, char in enumerate(msg):
+            accumulator += char
+
+            # Handle param value if we're in a tool use and have a param name
+            if current_tool_use is not None and current_param_name is not None:
+                current_param_value = accumulator[current_param_value_start_index:]
+                param_closing_tag = f"</{current_param_name}>"
+                if current_param_value.endswith(param_closing_tag):
+                    # End of param value
+                    current_tool_use["params"][current_param_name] = current_param_value[:-len(param_closing_tag)].strip()
+                    current_param_name = None
+                    continue
+
+            # Handle tool use 
+            if current_tool_use is not None:
+                current_tool_value = accumulator[current_tool_use_start_index:]
+                tool_use_closing_tag = f"</{current_tool_use['name']}>"
+                if current_tool_value.endswith(tool_use_closing_tag):
+                    # End of tool use
+                    current_tool_use["partial"] = False
+                    content_blocks.append(current_tool_use)
+                    current_tool_use = None
+                    continue
+                else:
+                    # Check for param opening tags
+                    for param_name in [p.value for p in ToolParamName]:
+                        param_opening_tag = f"<{param_name}>"
+                        if accumulator.endswith(param_opening_tag):
+                            current_param_name = param_name
+                            current_param_value_start_index = len(accumulator)
+                            break
+
+                    # Special case for write_to_file content param
+                    if (current_tool_use["name"] == ToolUseName.write_to_file.value and 
+                        accumulator.endswith("</content>")):
+                        tool_content = accumulator[current_tool_use_start_index:]
+                        content_start_tag = "<content>"
+                        content_end_tag = "</content>"
+                        content_start_index = tool_content.find(content_start_tag) + len(content_start_tag)
+                        content_end_index = tool_content.rfind(content_end_tag)
+                        if (content_start_index != -1 and content_end_index != -1 
+                            and content_end_index > content_start_index):
+                            current_tool_use["params"]["content"] = tool_content[
+                                content_start_index:content_end_index].strip()
+                    continue
+
+            # Check for start of new tool use
+            did_start_tool_use = False
+            for tool_name in [t.value for t in ToolUseName]:
+                tool_use_opening_tag = f"<{tool_name}>"
+                if accumulator.endswith(tool_use_opening_tag):
+                    current_tool_use = {
+                        "type": "tool_use",
+                        "name": tool_name,
+                        "params": {},
+                        "partial": True
+                    }
+                    current_tool_use_start_index = len(accumulator)
+                    if current_text_content is not None:
+                        current_text_content["partial"] = False
+                        current_text_content["content"] = current_text_content["content"][
+                            :-len(tool_use_opening_tag[:-1])].strip()
+                        content_blocks.append(current_text_content)
+                        current_text_content = None
+                    did_start_tool_use = True
+                    break
+
+            if not did_start_tool_use:
+                if current_text_content is None:
+                    current_text_content_start_index = i
+                current_text_content = {
+                    "type": "text",
+                    "content": accumulator[current_text_content_start_index:].strip(),
+                    "partial": True
+                }
+
+        # Handle any incomplete blocks
+        if current_tool_use is not None:
+            if current_param_name is not None:
+                current_tool_use["params"][current_param_name] = accumulator[
+                    current_param_value_start_index:].strip()
+            content_blocks.append(current_tool_use)
+        elif current_text_content is not None:
+            content_blocks.append(current_text_content)
+
+        return content_blocks
+
+    def execute_tool(self, tool_name: str, params: Dict[str, str]) -> str:
+        """Execute tools similar to Cline.ts tool execution"""
+        try:
+            if tool_name == ToolUseName.execute_command.value:
+                command = params.get("command")
+                if not command:
+                    return self.format_response("tool_error", "Command parameter is required")
+                # Execute command implementation
+                return self.execute_command_tool(command)
+
+            elif tool_name == ToolUseName.read_file.value:
+                path = params.get("path")
+                if not path:
+                    return self.format_response("tool_error", "Path parameter is required")
+                with open(os.path.join(self.env.cwd, path), 'r') as f:
+                    return f.read()
+
+            elif tool_name == ToolUseName.write_to_file.value:
+                path = params.get("path")
+                content = params.get("content")
+                if not path or not content:
+                    return self.format_response("tool_error", 
+                                             "Both path and content parameters are required")
+                full_path = os.path.join(self.env.cwd, path)
+                os.makedirs(os.path.dirname(full_path), exist_ok=True)
+                with open(full_path, 'w') as f:
+                    f.write(content)
+                return f"Content successfully written to {path}"
+
+            elif tool_name == ToolUseName.search_files.value:
+                path = params.get("path")
+                regex = params.get("regex")
+                if not path or not regex:
+                    return self.format_response("tool_error", 
+                                             "Both path and regex parameters are required")
+                # Implement search functionality
+                return self.search_files_tool(path, regex)
+
+            elif tool_name == ToolUseName.list_files.value:
+                path = params.get("path")
+                recursive = params.get("recursive", "false").lower() == "true"
+                if not path:
+                    return self.format_response("tool_error", "Path parameter is required")
+                # Implement list files functionality
+                return self.list_files_tool(path, recursive)
+
+            elif tool_name == ToolUseName.attempt_completion.value:
+                result = params.get("result")
+                command = params.get("command")
+                if not result:
+                    return self.format_response("tool_error", "Result parameter is required")
+                completion_response = self.attempt_completion_tool(result, command)
+                return completion_response
+
+            else:
+                return self.format_response("tool_error", f"Unknown tool: {tool_name}")
+
+        except Exception as e:
+            return self.format_response("tool_error", str(e))
+
+    def execute_command_tool(self, command: str) -> str:
+        """Execute command tool implementation"""
+        try:
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, cwd=self.env.cwd)
+            if result.returncode == 0:
+                return result.stdout
+            else:
+                return self.format_response("tool_error", result.stderr)
+        except Exception as e:
+            return self.format_response("tool_error", str(e))
+
+    def search_files_tool(self, path: str, regex: str) -> str:
+        """Search files tool implementation"""
+        results = []
+        full_path = os.path.join(self.env.cwd, path)
+        pattern = re.compile(regex)
+        
+        for root, _, files in os.walk(full_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                try:
+                    with open(file_path, 'r') as f:
+                        for i, line in enumerate(f, 1):
+                            if pattern.search(line):
+                                rel_path = os.path.relpath(file_path, self.env.cwd)
+                                results.append(f"{rel_path}:{i}: {line.strip()}")
+                except Exception:
+                    continue
+                    
+        return "\n".join(results) if results else "No matches found"
+
+    def list_files_tool(self, path: str, recursive: bool) -> str:
+        """List files tool implementation"""
+        full_path = os.path.join(self.env.cwd, path)
+        results = []
+        
+        if recursive:
+            for root, _, files in os.walk(full_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(file_path, self.env.cwd)
+                    results.append(rel_path)
+        else:
+            try:
+                results = [f for f in os.listdir(full_path) 
+                          if os.path.isfile(os.path.join(full_path, f))]
+            except Exception as e:
+                return self.format_response("tool_error", str(e))
+                
+        return "\n".join(results) if results else "No files found"
+
+    def attempt_completion_tool(self, result: str, command: str = None) -> str:
+        """Handle task completion attempts"""
+        completion_msg = f"Task completed:\n{result}"
+        if command:
+            try:
+                cmd_result = self.execute_command_tool(command)
+                completion_msg += f"\nCommand execution result:\n{cmd_result}"
+            except Exception as e:
+                completion_msg += f"\nCommand execution failed: {str(e)}"
+        return completion_msg
+
+    async def recursively_make_cline_requests(self, user_content: List[Dict], include_file_details: bool = False) -> bool:
+        """Handle recursive requests similar to Cline.ts recursivelyMakeClineRequests"""
+        if self.consecutive_mistake_count >= 3:
+            feedback = "You seem to be having trouble. Consider breaking down the task into smaller steps."
+            user_content.append({
+                "type": "text",
+                "text": self.format_response("too_many_mistakes", feedback)
+            })
+            self.consecutive_mistake_count = 0
+
+        # Reset streaming state
+        self.current_streaming_content_index = 0
+        self.assistant_message_content = []
+        self.did_complete_reading_stream = False
+        self.user_message_content = []
+        self.user_message_content_ready = False
+        self.did_reject_tool = False
+        self.did_already_use_tool = False
+        self.present_assistant_message_locked = False
+        self.present_assistant_message_has_pending_updates = False
+
+        try:
+            # Load environment details
+            loaded_content, env_details = await self.load_context(user_content, include_file_details)
+            user_content = loaded_content
+            user_content.append({"type": "text", "text": env_details})
+
+            # Stream from LLM
+            assistant_message = ""
+            async for chunk in self.stream_llm_response(user_content):
+                if isinstance(chunk, dict) and chunk.get("type") == "text":
+                    assistant_message += chunk.get("text", "")
+                    # Parse raw assistant message into content blocks
+                    prev_length = len(self.assistant_message_content)
+                    self.assistant_message_content = self.parse_assistant_message(assistant_message)
+                    if len(self.assistant_message_content) > prev_length:
+                        self.user_message_content_ready = False
+                    # Present content to user
+                    self.present_assistant_message()
+
+                if self.did_reject_tool:
+                    assistant_message += "\n\n[Response interrupted by user feedback]"
+                    break
+
+                if self.did_already_use_tool:
+                    assistant_message += "\n\n[Response interrupted by tool use result]"
+                    break
+
+            self.did_complete_reading_stream = True
+
+            # Set remaining blocks to complete
+            for block in self.assistant_message_content:
+                if block.get("partial"):
+                    block["partial"] = False
+            self.present_assistant_message()
+
+            # Check for tool usage
+            did_end_loop = False
+            if assistant_message:
+                await self.save_conversation_history("assistant", assistant_message)
+                await self._wait_for_user_message_ready()
+
+                did_tool_use = any(block["type"] == "tool_use" 
+                                 for block in self.assistant_message_content)
+                if not did_tool_use:
+                    self.user_message_content.append({
+                        "type": "text",
+                        "text": self.format_response("no_tools_used")
+                    })
+                    self.consecutive_mistake_count += 1
+
+                rec_did_end_loop = await self.recursively_make_cline_requests(self.user_message_content)
+                did_end_loop = rec_did_end_loop
+            else:
+                # Error if no assistant message
+                await self.save_conversation_history(
+                    "assistant", 
+                    "Failure: No response was provided."
+                )
+
+            return did_end_loop
+
+        except Exception as e:
+            return True
+
+    async def stream_llm_response(self, user_content: List[Dict]):
+        """Stream LLM responses with error handling"""
+        try:
+            system_prompt = await self._get_system_prompt()
+            first_chunk = True
+            async for chunk in self.llm.stream_chat_oai(
+                conversations=self.conversation_history + [{"role": "user", "content": user_content}]
+            ):
+                if first_chunk:
+                    first_chunk = False
+                    # Handle potential first chunk errors
+                    if chunk.get("error"):
+                        yield {"type": "error", "text": str(chunk["error"])}
+                        return
+                yield {"type": "text", "text": chunk.get("text", "")}
+        except Exception as e:
+            yield {"type": "error", "text": str(e)}
+
+    async def load_context(self, user_content: List[Dict], include_file_details: bool) -> Tuple[List[Dict], str]:
+        """Load context and environment details similar to Cline.ts loadContext"""
+        # Process user content
+        processed_content = []
+        for block in user_content:
+            if block["type"] == "text":
+                block["text"] = await self._process_mentions(block["text"])
+            processed_content.append(block)
+
+        # Get environment details
+        env_details = await self._get_environment_details(include_file_details)
+        
+        return processed_content, env_details
+
+    async def _get_environment_details(self, include_file_details: bool) -> str:
+        """Build environment details string"""
+        details = []
+
+        # VSCode Visible Files
+        details.append("# VSCode Visible Files")
+        # Implementation would depend on VSCode integration
+        details.append("(No visible files)")
+
+        # VSCode Open Tabs
+        details.append("\n# VSCode Open Tabs")
+        # Implementation would depend on VSCode integration
+        details.append("(No open tabs)")
+
+        if include_file_details:
+            details.append(f"\n# Current Working Directory ({self.env.cwd}) Files")
+            try:
+                files = self.list_files_tool(self.env.cwd, recursive=True)
+                details.append(files)
+            except Exception:
+                details.append("(Error listing files)")
+
+        return "\n".join(details)
+
+    async def _wait_for_user_message_ready(self):
+        """Wait for user message content to be ready"""
+        while not self.user_message_content_ready:
+            await asyncio.sleep(0.1)
+
+    async def save_conversation_history(self, role: str, content: str):
+        """Save message to conversation history"""
+        self.conversation_history.append({
+            "role": role,
+            "content": content
+        })
+
+    async def _process_mentions(self, text: str) -> str:
+        """Process any mentions or special tags in text"""
+        # Implement mention processing if needed
+        return text
+
+    async def _get_system_prompt(self) -> str:
+        """Get system prompt with environment details"""
+        # Implement system prompt generation
+        return f"""You are an AI assistant helping with development tasks.
+Current working directory: {self.env.cwd}
+Operating System: {self.env.os_name}
+"""
 
     @byzerllm.prompt()
-    def _run(self, custom_instructions: str, context: str, support_comupter_use: bool = True) -> str:
+    def _run(self, custom_instructions: str, context: str, support_computer_use: bool = True) -> str:
         '''
         You are auto-coder, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
 
