@@ -3,13 +3,15 @@ from autocoder.common import detect_env
 
 
 from typing import Dict, List, Optional, Literal, Union
-import pydantic 
+import pydantic
 from enum import Enum
+
 
 class TextContent(pydantic.BaseModel):
     type: Literal["text"]
     content: str
     partial: bool
+
 
 class ToolUseName(str, Enum):
     execute_command = "execute_command"
@@ -21,6 +23,7 @@ class ToolUseName(str, Enum):
     browser_action = "browser_action"
     ask_followup_question = "ask_followup_question"
     attempt_completion = "attempt_completion"
+
 
 class ToolParamName(str, Enum):
     command = "command"
@@ -36,47 +39,63 @@ class ToolParamName(str, Enum):
     question = "question"
     result = "result"
 
+
 class BaseTool(pydantic.BaseModel):
     type: Literal["tool_use"]
     name: ToolUseName
     params: Dict[ToolParamName, str]
     partial: bool
 
+
 class ExecuteCommandToolUse(BaseTool):
     name: Literal[ToolUseName.execute_command]
     params: Dict[Literal[ToolParamName.command], str]
+
 
 class ReadFileToolUse(BaseTool):
     name: Literal[ToolUseName.read_file]
     params: Dict[Literal[ToolParamName.path], str]
 
+
 class WriteToFileToolUse(BaseTool):
     name: Literal[ToolUseName.write_to_file]
-    params: Dict[Union[Literal[ToolParamName.path], Literal[ToolParamName.content]], str]
+    params: Dict[Union[Literal[ToolParamName.path],
+                       Literal[ToolParamName.content]], str]
+
 
 class SearchFilesToolUse(BaseTool):
     name: Literal[ToolUseName.search_files]
-    params: Dict[Union[Literal[ToolParamName.path], Literal[ToolParamName.regex], Literal[ToolParamName.file_pattern]], str]
+    params: Dict[Union[Literal[ToolParamName.path],
+                       Literal[ToolParamName.regex], Literal[ToolParamName.file_pattern]], str]
+
 
 class ListFilesToolUse(BaseTool):
     name: Literal[ToolUseName.list_files]
-    params: Dict[Union[Literal[ToolParamName.path], Literal[ToolParamName.recursive]], str]
+    params: Dict[Union[Literal[ToolParamName.path],
+                       Literal[ToolParamName.recursive]], str]
+
 
 class ListCodeDefinitionNamesToolUse(BaseTool):
     name: Literal[ToolUseName.list_code_definition_names]
     params: Dict[Literal[ToolParamName.path], str]
 
+
 class BrowserActionToolUse(BaseTool):
     name: Literal[ToolUseName.browser_action]
-    params: Dict[Union[Literal[ToolParamName.action], Literal[ToolParamName.url], Literal[ToolParamName.coordinate], Literal[ToolParamName.text]], str]
+    params: Dict[Union[Literal[ToolParamName.action], Literal[ToolParamName.url],
+                       Literal[ToolParamName.coordinate], Literal[ToolParamName.text]], str]
+
 
 class AskFollowupQuestionToolUse(BaseTool):
     name: Literal[ToolUseName.ask_followup_question]
     params: Dict[Literal[ToolParamName.question], str]
 
+
 class AttemptCompletionToolUse(BaseTool):
     name: Literal[ToolUseName.attempt_completion]
-    params: Dict[Union[Literal[ToolParamName.result], Literal[ToolParamName.command]], str]
+    params: Dict[Union[Literal[ToolParamName.result],
+                       Literal[ToolParamName.command]], str]
+
 
 ToolUse = Union[
     ExecuteCommandToolUse,
@@ -91,6 +110,7 @@ ToolUse = Union[
 ]
 
 AssistantMessageContent = Union[TextContent, ToolUse]
+
 
 class Coder:
     def __init__(self, llm: byzerllm.ByzerLLM) -> None:
@@ -365,15 +385,15 @@ class Coder:
         4. Once you've completed the user's task, you must use the attempt_completion tool to present the result of the task to the user. You may also provide a CLI command to showcase the result of your task; this can be particularly useful for web development tasks, where you can run e.g. \`open index.html\` to show the website you've built.
         5. The user may provide feedback, which you can use to make improvements and try again. But DO NOT continue in pointless back and forth conversations, i.e. don't end your responses with questions or offers for further assistance.`
 
-        export function addCustomInstructions(customInstructions: string): string {
-            return `
+        {%- if custom_instructions -%}
         ====
 
         USER'S CUSTOM INSTRUCTIONS
 
         The following additional instructions are provided by the user, and should be followed to the best of your ability without interfering with the TOOL USE guidelines.
 
-        {{ customInstructions }}
+        {{ custom_instructions }}
+        {%- endif -%}
         '''
         env = detect_env()
         return {
@@ -403,7 +423,8 @@ class Coder:
                 param_closing_tag = f"</{current_param_name}>"
                 if current_param_value.endswith(param_closing_tag):
                     # end of param value
-                    current_tool_use["params"][current_param_name] = current_param_value[:-len(param_closing_tag)].strip()
+                    current_tool_use["params"][current_param_name] = current_param_value[:-len(
+                        param_closing_tag)].strip()
                     current_param_name = None
                     continue
                 else:
@@ -422,9 +443,9 @@ class Coder:
                     continue
                 else:
                     # Check for possible param opening tags
-                    for param_name in ["command", "path", "content", "regex", "file_pattern", 
-                                     "recursive", "action", "url", "coordinate", "text", 
-                                     "question", "result"]:
+                    for param_name in ["command", "path", "content", "regex", "file_pattern",
+                                       "recursive", "action", "url", "coordinate", "text",
+                                       "question", "result"]:
                         param_opening_tag = f"<{param_name}>"
                         if accumulator.endswith(param_opening_tag):
                             # start of a new parameter
@@ -437,18 +458,20 @@ class Coder:
                         tool_content = accumulator[current_tool_use_start_index:]
                         content_start_tag = "<content>"
                         content_end_tag = "</content>"
-                        content_start_index = tool_content.find(content_start_tag) + len(content_start_tag)
+                        content_start_index = tool_content.find(
+                            content_start_tag) + len(content_start_tag)
                         content_end_index = tool_content.rfind(content_end_tag)
                         if content_start_index != -1 and content_end_index != -1 and content_end_index > content_start_index:
-                            current_tool_use["params"]["content"] = tool_content[content_start_index:content_end_index].strip()
+                            current_tool_use["params"]["content"] = tool_content[content_start_index:content_end_index].strip(
+                            )
 
                     continue
 
             # no currentToolUse
             did_start_tool_use = False
             for tool_name in ["execute_command", "read_file", "write_to_file", "search_files",
-                            "list_files", "list_code_definition_names", "browser_action",
-                            "ask_followup_question", "attempt_completion"]:
+                              "list_files", "list_code_definition_names", "browser_action",
+                              "ask_followup_question", "attempt_completion"]:
                 tool_use_opening_tag = f"<{tool_name}>"
                 if accumulator.endswith(tool_use_opening_tag):
                     # start of a new tool use
@@ -463,7 +486,8 @@ class Coder:
                     if current_text_content is not None:
                         current_text_content["partial"] = False
                         # remove the partially accumulated tool use tag from the end of text
-                        current_text_content["content"] = current_text_content["content"][:-len(tool_use_opening_tag[:-1])].strip()
+                        current_text_content["content"] = current_text_content["content"][:-len(
+                            tool_use_opening_tag[:-1])].strip()
                         content_blocks.append(current_text_content)
                         current_text_content = None
 
@@ -485,7 +509,8 @@ class Coder:
             # stream did not complete tool call
             if current_param_name is not None:
                 # tool call has a parameter that was not completed
-                current_tool_use["params"][current_param_name] = accumulator[current_param_value_start_index:].strip()
+                current_tool_use["params"][current_param_name] = accumulator[current_param_value_start_index:].strip(
+                )
             content_blocks.append(current_tool_use)
         elif current_text_content is not None:
             # stream did not complete text content
