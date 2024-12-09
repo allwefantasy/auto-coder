@@ -5,7 +5,8 @@ import pydantic
 from enum import Enum
 import os
 import asyncio
-
+import subprocess
+import re
 
 class TextContent(pydantic.BaseModel):
     type: Literal["text"]
