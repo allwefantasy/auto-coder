@@ -698,6 +698,101 @@ class Coder:
             }]
             self.consecutive_mistake_count += 1
 
+    def present_assistant_message_in_terminal(self):
+        """Present and handle assistant messages with rich terminal UI"""
+        if self.present_assistant_message_locked:
+            self.present_assistant_message_has_pending_updates = True
+            return
+
+        self.present_assistant_message_locked = True
+        self.present_assistant_message_has_pending_updates = False
+
+        console = Console()
+        session = PromptSession()
+
+        if self.current_streaming_content_index >= len(self.assistant_message_content):
+            if self.did_complete_reading_stream:
+                self.user_message_content_ready = True
+            self.present_assistant_message_locked = False
+            return
+
+        block = self.assistant_message_content[self.current_streaming_content_index]
+
+        if block["type"] == "text":
+            if not (self.did_reject_tool or self.did_already_use_tool):
+                content = block.get("content", "")
+                if content:
+                    # Handle thinking tags with special formatting
+                    thinking_pattern = r'<thinking>(.*?)</thinking>'
+                    matches = re.findall(thinking_pattern, content, re.DOTALL)
+                    if matches:
+                        for thinking in matches:
+                            console.print(Panel(thinking.strip(), title="[bold blue]Thinking", border_style="blue"))
+                        content = re.sub(thinking_pattern, '', content)
+                    
+                    if content.strip():
+                        console.print(content.strip())
+
+        elif block["type"] == "tool_use":
+            if not self.did_reject_tool and not self.did_already_use_tool:
+                tool_name = block.get("name")
+                params = block.get("params", {})
+
+                # Show tool usage confirmation dialog
+                console.print(Panel(
+                    f"[bold]Tool: {tool_name}[/bold]\nParameters:\n" + 
+                    "\n".join([f"- {k}: {v}" for k, v in params.items()]),
+                    title="[bold yellow]Tool Usage Confirmation",
+                    border_style="yellow"
+                ))
+
+                try:
+                    confirm = session.prompt(
+                        "Proceed with tool execution? (y/n) > ",
+                        style=Style.from_dict({
+                            'prompt': 'bold yellow',
+                        })
+                    ).lower().strip()
+
+                    if confirm == 'y':
+                        console.print("[bold green]Executing tool...[/bold green]")
+                        result = self.execute_tool(tool_name, params)
+                        self.user_message_content.append({
+                            "type": "text",
+                            "text": f"[{tool_name}] Result:\n{result}"
+                        })
+                        self.did_already_use_tool = True
+                        console.print(Panel(str(result), title="[bold green]Tool Result", border_style="green"))
+                    else:
+                        self.did_reject_tool = True
+                        self.user_message_content.append({
+                            "type": "text",
+                            "text": "The user denied this operation."
+                        })
+                        console.print("[bold red]Tool execution cancelled[/bold red]")
+
+                except Exception as e:
+                    error_msg = str(e)
+                    self.user_message_content.append({
+                        "type": "text",
+                        "text": self.format_response("tool_error", error_msg)
+                    })
+                    console.print(Panel(error_msg, title="[bold red]Error", border_style="red"))
+
+        self.present_assistant_message_locked = False
+
+        if not block.get("partial", False) or self.did_reject_tool or self.did_already_use_tool:
+            if self.current_streaming_content_index == len(self.assistant_message_content) - 1:
+                self.user_message_content_ready = True
+
+            self.current_streaming_content_index += 1
+
+            if self.current_streaming_content_index < len(self.assistant_message_content):
+                self.present_assistant_message_in_terminal()
+
+        if self.present_assistant_message_has_pending_updates:
+            self.present_assistant_message_in_terminal()
+
     def abort_task(self):
         """Handle task abortion"""
         self.did_abort = True
