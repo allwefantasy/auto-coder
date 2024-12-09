@@ -1,6 +1,5 @@
-
 from autocoder.common import detect_env
-from typing import Dict, List, Literal, Union, Tuple
+from typing import Dict, List, Literal, Union, Tuple, Generator, AsyncGenerator
 import pydantic
 from enum import Enum
 import os
@@ -590,20 +589,19 @@ class Coder:
 
     async def stream_llm_response(self, user_content: List[Dict]):
         """Stream LLM responses with error handling"""
-        try:
-            system_prompt = await self._get_system_prompt()
-            first_chunk = True
-            async for chunk in self.llm.stream_chat_oai(
+        try:            
+            # first_chunk = True
+            async for (chunk,metadata) in self.llm.async_stream_chat_oai(
                 conversations=self.conversation_history +
-                    [{"role": "user", "content": user_content}]
+                    [{"role": "user", "content": user_content[0]["text"]}]
             ):
-                if first_chunk:
-                    first_chunk = False
+                # if first_chunk:
+                #     first_chunk = False
                     # Handle potential first chunk errors
-                    if chunk.get("error"):
-                        yield {"type": "error", "text": str(chunk["error"])}
-                        return
-                yield {"type": "text", "text": chunk.get("text", "")}
+                    # if chunk.get("error"):
+                    #     yield {"type": "error", "text": str(chunk["error"])}
+                    #     return
+                yield {"type": "text", "text": chunk}
         except Exception as e:
             yield {"type": "error", "text": str(e)}
 
@@ -666,7 +664,7 @@ class Coder:
     async def _get_system_prompt(self) -> str:
         return self._run.prompt(custom_instructions="", support_computer_use=False)
 
-    async def run(self, with_message: str) -> Generator[Dict, None, None]:
+    async def run(self, with_message: str) -> AsyncGenerator[Dict, None]:
         """Main entry point for handling user messages and starting tasks
         Returns a Generator that yields execution flow information in real-time
 
@@ -681,7 +679,7 @@ class Coder:
         async for result in self._run_task(task):
             yield result
 
-    async def _run_task(self, task: str) -> Generator[Dict, None, None]:
+    async def _run_task(self, task: str) -> AsyncGenerator[Dict, None]:
         """Internal method to handle task execution and generate execution flow
 
         Args:
