@@ -679,6 +679,111 @@ class Coder:
         async for result in self._run_task(task):
             yield result
 
+    async def _run_task_in_terminal(self, task: str):
+        """Run a task in terminal mode with interactive progress output
+
+        This method executes the given task and provides real-time feedback in the terminal,
+        including support for user interaction when needed.
+
+        Args:
+            task (str): The task to execute
+        """
+        from rich.console import Console
+        from rich.panel import Panel
+        from prompt_toolkit import PromptSession
+        from prompt_toolkit.styles import Style
+
+        console = Console()
+        session = PromptSession()
+        
+        # Display task header
+        console.print(Panel(f"[bold blue]Starting Task:[/] {task}"))
+        
+        try:
+            # Reset conversation history for new task
+            self.conversation_history = []
+            await self.save_conversation_history("system", await self._get_system_prompt())
+            
+            # Initial message
+            user_content = [{
+                "type": "text",
+                "text": f"<task>\n{task}\n</task>"
+            }]
+
+            # Stream from LLM
+            async for chunk in self.stream_llm_response(user_content):
+                if isinstance(chunk, dict):
+                    if chunk.get("type") == "text":
+                        text = chunk.get("text", "")
+                        # Parse raw assistant message into content blocks
+                        self.assistant_message_content = self.parse_assistant_message(text)
+                        
+                        # Process and display assistant's message
+                        for block in self.assistant_message_content:
+                            if block.get("type") == "text":
+                                content = block.get("content", "")
+                                # Remove thinking tags and display content
+                                content = re.sub(r'<thinking>\s?', '', content)
+                                content = re.sub(r'\s?</thinking>', '', content)
+                                if content.strip():
+                                    console.print(f"[cyan]{content}[/]")
+                            
+                            elif block.get("type") == "tool_use" and not block.get("partial", True):
+                                tool_name = block.get("name")
+                                params = block.get("params", {})
+                                
+                                # Display tool execution request
+                                console.print(Panel(f"[bold yellow]Tool Request:[/] {tool_name}"))
+                                for param_name, param_value in params.items():
+                                    console.print(f"[yellow]{param_name}:[/] {param_value}")
+                                
+                                # Ask for user confirmation
+                                confirmation = session.prompt(
+                                    "Execute this tool? (y/n/feedback): ",
+                                    style=Style.from_dict({
+                                        'prompt': '#00ff00 bold',
+                                    })
+                                )
+                                
+                                if confirmation.lower() == 'y':
+                                    try:
+                                        result = self.execute_tool(tool_name, params)
+                                        console.print(Panel(f"[bold green]Tool Result:[/]\n{result}"))
+                                        self.user_message_content.append({
+                                            "type": "text",
+                                            "text": f"[{tool_name}] Result:\n{result}"
+                                        })
+                                        self.did_already_use_tool = True
+                                    except Exception as e:
+                                        error_msg = str(e)
+                                        console.print(Panel(f"[bold red]Tool Error:[/]\n{error_msg}"))
+                                        self.user_message_content.append({
+                                            "type": "text",
+                                            "text": self.format_response("tool_error", error_msg)
+                                        })
+                                elif confirmation.lower() == 'n':
+                                    console.print("[red]Tool execution denied[/]")
+                                    self.user_message_content.append({
+                                        "type": "text",
+                                        "text": self.format_response("tool_denied")
+                                    })
+                                    self.did_reject_tool = True
+                                else:
+                                    feedback = confirmation
+                                    console.print("[yellow]Tool execution denied with feedback[/]")
+                                    self.user_message_content.append({
+                                        "type": "text",
+                                        "text": self.format_response("tool_denied_with_feedback", feedback)
+                                    })
+                                    self.did_reject_tool = True
+
+            # Signal completion of task
+            console.print(Panel("[bold green]Task Complete[/]"))
+
+        except Exception as e:
+            console.print(Panel(f"[bold red]Error:[/] {str(e)}"))
+            raise e
+
     async def _run_task(self, task: str) -> AsyncGenerator[Dict, None]:
         """Internal method to handle task execution and generate execution flow
 
