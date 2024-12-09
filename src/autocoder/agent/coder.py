@@ -11,6 +11,7 @@ from prompt_toolkit.shortcuts import prompt
 from prompt_toolkit.styles import Style
 from rich.console import Console
 from rich.panel import Panel
+from prompt_toolkit import PromptSession
 import byzerllm
 
 
@@ -178,7 +179,7 @@ class Coder:
                 # Remove thinking tags and format content
                 if content:
                     content = re.sub(r'<thinking>\s?', '', content)
-                    content = re.sub(r'\s?</thinking>', '', content)
+                    content = re.sub(r'\s?</thinking>', '', content)                    
 
         elif block["type"] == "tool_use":
             # Handle tool execution similar to Cline.ts
@@ -589,18 +590,20 @@ class Coder:
 
     async def stream_llm_response(self, user_content: List[Dict]):
         """Stream LLM responses with error handling"""
-        try:            
+        try:
             # first_chunk = True
-            async for (chunk,metadata) in self.llm.async_stream_chat_oai(
+            content = "\n".join([item["text"] for item in user_content])
+            async for (chunk, metadata) in self.llm.async_stream_chat_oai(
                 conversations=self.conversation_history +
-                    [{"role": "user", "content": user_content[0]["text"]}]
+                    [{"role": "user", "content": content}],
+                    delta_mode=True
             ):
                 # if first_chunk:
                 #     first_chunk = False
-                    # Handle potential first chunk errors
-                    # if chunk.get("error"):
-                    #     yield {"type": "error", "text": str(chunk["error"])}
-                    #     return
+                # Handle potential first chunk errors
+                # if chunk.get("error"):
+                #     yield {"type": "error", "text": str(chunk["error"])}
+                #     return
                 yield {"type": "text", "text": chunk}
         except Exception as e:
             yield {"type": "error", "text": str(e)}
@@ -621,18 +624,7 @@ class Coder:
 
     async def _get_environment_details(self, include_file_details: bool) -> str:
         """Build environment details string"""
-        details = []
-
-        # VSCode Visible Files
-        details.append("# VSCode Visible Files")
-        # Implementation would depend on VSCode integration
-        details.append("(No visible files)")
-
-        # VSCode Open Tabs
-        details.append("\n# VSCode Open Tabs")
-        # Implementation would depend on VSCode integration
-        details.append("(No open tabs)")
-
+        details = []        
         if include_file_details:
             details.append(
                 f"\n# Current Working Directory ({self.env.cwd}) Files")
@@ -663,191 +655,7 @@ class Coder:
 
     async def _get_system_prompt(self) -> str:
         return self._run.prompt(custom_instructions="", support_computer_use=False)
-
-    async def run(self, with_message: str) -> AsyncGenerator[Dict, None]:
-        """Main entry point for handling user messages and starting tasks
-        Returns a Generator that yields execution flow information in real-time
-
-        Args:
-            with_message (str): User's message/task
-
-        Yields:
-            Dict: Contains assistant's parsed messages, tool usage info, and execution state
-        """
-        task = with_message.strip()
-
-        async for result in self._run_task(task):
-            yield result
-
-    async def _run_task_in_terminal(self, task: str):
-        """Run a task in terminal mode with interactive progress output
-
-        This method executes the given task and provides real-time feedback in the terminal,
-        including support for user interaction when needed.
-
-        Args:
-            task (str): The task to execute
-        """
-        from rich.console import Console
-        from rich.panel import Panel
-        from prompt_toolkit import PromptSession
-        from prompt_toolkit.styles import Style
-
-        console = Console()
-        session = PromptSession()
         
-        # Display task header
-        console.print(Panel(f"[bold blue]Starting Task:[/] {task}"))
-        
-        try:
-            # Reset conversation history for new task
-            self.conversation_history = []
-            await self.save_conversation_history("system", await self._get_system_prompt())
-            
-            # Initial message
-            user_content = [{
-                "type": "text",
-                "text": f"<task>\n{task}\n</task>"
-            }]
-
-            # Stream from LLM
-            async for chunk in self.stream_llm_response(user_content):
-                if isinstance(chunk, dict):
-                    if chunk.get("type") == "text":
-                        text = chunk.get("text", "")
-                        # Parse raw assistant message into content blocks
-                        self.assistant_message_content = self.parse_assistant_message(text)
-                        
-                        # Process and display assistant's message
-                        for block in self.assistant_message_content:
-                            if block.get("type") == "text":
-                                content = block.get("content", "")
-                                # Remove thinking tags and display content
-                                content = re.sub(r'<thinking>\s?', '', content)
-                                content = re.sub(r'\s?</thinking>', '', content)
-                                if content.strip():
-                                    console.print(f"[cyan]{content}[/]")
-                            
-                            elif block.get("type") == "tool_use" and not block.get("partial", True):
-                                tool_name = block.get("name")
-                                params = block.get("params", {})
-                                
-                                # Display tool execution request
-                                console.print(Panel(f"[bold yellow]Tool Request:[/] {tool_name}"))
-                                for param_name, param_value in params.items():
-                                    console.print(f"[yellow]{param_name}:[/] {param_value}")
-                                
-                                # Ask for user confirmation
-                                confirmation = session.prompt(
-                                    "Execute this tool? (y/n/feedback): ",
-                                    style=Style.from_dict({
-                                        'prompt': '#00ff00 bold',
-                                    })
-                                )
-                                
-                                if confirmation.lower() == 'y':
-                                    try:
-                                        result = self.execute_tool(tool_name, params)
-                                        console.print(Panel(f"[bold green]Tool Result:[/]\n{result}"))
-                                        self.user_message_content.append({
-                                            "type": "text",
-                                            "text": f"[{tool_name}] Result:\n{result}"
-                                        })
-                                        self.did_already_use_tool = True
-                                    except Exception as e:
-                                        error_msg = str(e)
-                                        console.print(Panel(f"[bold red]Tool Error:[/]\n{error_msg}"))
-                                        self.user_message_content.append({
-                                            "type": "text",
-                                            "text": self.format_response("tool_error", error_msg)
-                                        })
-                                elif confirmation.lower() == 'n':
-                                    console.print("[red]Tool execution denied[/]")
-                                    self.user_message_content.append({
-                                        "type": "text",
-                                        "text": self.format_response("tool_denied")
-                                    })
-                                    self.did_reject_tool = True
-                                else:
-                                    feedback = confirmation
-                                    console.print("[yellow]Tool execution denied with feedback[/]")
-                                    self.user_message_content.append({
-                                        "type": "text",
-                                        "text": self.format_response("tool_denied_with_feedback", feedback)
-                                    })
-                                    self.did_reject_tool = True
-
-            # Signal completion of task
-            console.print(Panel("[bold green]Task Complete[/]"))
-
-        except Exception as e:
-            console.print(Panel(f"[bold red]Error:[/] {str(e)}"))
-            raise e
-
-    async def _run_task(self, task: str) -> AsyncGenerator[Dict, None]:
-        """Internal method to handle task execution and generate execution flow
-
-        Args:
-            task (str): The task to execute
-
-        Yields:
-            Dict: Contains assistant's parsed messages, tool usage info, and execution state
-        """
-        try:
-            # Reset conversation history for new task
-            self.conversation_history = []
-            await self.save_conversation_history("system", await self._get_system_prompt())
-            
-            # Initial message
-            user_content = [{
-                "type": "text",
-                "text": f"<task>\n{task}\n</task>"
-            }]
-
-            # Stream from LLM
-            async for chunk in self.stream_llm_response(user_content):
-                if isinstance(chunk, dict):
-                    if chunk.get("type") == "text":
-                        text = chunk.get("text", "")
-                        # Parse raw assistant message into content blocks
-                        self.assistant_message_content = self.parse_assistant_message(text)
-                        
-                        # Yield assistant's message content
-                        yield {
-                            "type": "assistant_message",
-                            "content": text,
-                            "parsed_content": self.assistant_message_content
-                        }
-
-                        # If we detect a tool use, wait for user confirmation
-                        for block in self.assistant_message_content:
-                            if block.get("type") == "tool_use" and not block.get("partial", True):
-                                tool_name = block.get("name")
-                                params = block.get("params", {})
-                                
-                                # Yield tool use request and wait for confirmation
-                                yield {
-                                    "type": "tool_request",
-                                    "tool": tool_name,
-                                    "params": params,
-                                    "waiting_confirmation": True
-                                }
-                                
-                                # Here the Generator will pause until the user confirms
-                                # The calling code should handle user confirmation and
-                                # provide the tool execution results back to continue
-
-            # Signal completion of task
-            yield {
-                "type": "task_complete",
-                "final_state": self.conversation_history
-            }
-
-        except Exception as e:
-            yield {
-                "type": "error",
-                "error": str(e)
-            }
 
     async def start_task(self, task: str, images: List[str] = None):
         """Start a new task with initial message"""
@@ -1220,8 +1028,8 @@ class Coder:
             "osName": env.os_name,
             "defaultShell": env.default_shell,
             "homedir": env.home_dir
-        }        
-        return res                
+        }
+        return res
 
     def parse_assistant_message(self, msg: str):
         content_blocks = []
