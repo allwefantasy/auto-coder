@@ -1,6 +1,6 @@
-import byzerllm
+
 from autocoder.common import detect_env
-from typing import Dict, List, Literal, Union
+from typing import Dict, List, Literal, Union, Tuple
 import pydantic
 from enum import Enum
 import os
@@ -12,6 +12,8 @@ from prompt_toolkit.shortcuts import prompt
 from prompt_toolkit.styles import Style
 from rich.console import Console
 from rich.panel import Panel
+import byzerllm
+
 
 class TextContent(pydantic.BaseModel):
     type: Literal["text"]
@@ -122,7 +124,7 @@ class Coder:
     def __init__(self, llm: byzerllm.ByzerLLM) -> None:
         self.llm = llm
         self.memory = []
-        self.env = detect_env()        
+        self.env = detect_env()
         self.current_streaming_content_index = 0
         self.assistant_message_content = []
         self.user_message_content = []
@@ -132,6 +134,7 @@ class Coder:
         self.did_complete_reading_stream = False
         self.present_assistant_message_locked = False
         self.present_assistant_message_has_pending_updates = False
+        self.consecutive_mistake_count = 0
 
     def format_response(self, content_type: str, text: str = None, images: List[str] = None):
         """Format responses similar to Cline.ts formatResponse"""
@@ -145,7 +148,7 @@ class Coder:
             return "[ERROR] You did not use a tool in your previous response! Please retry with a tool use."
         elif content_type == "too_many_mistakes":
             return f"You seem to be having trouble proceeding. The user has provided the following feedback:\n<feedback>\n{text}\n</feedback>"
-        
+
     def format_tool_result(self, text: str, images: List[str] = None):
         """Format tool execution results"""
         if images and len(images) > 0:
@@ -168,7 +171,7 @@ class Coder:
             return
 
         block = self.assistant_message_content[self.current_streaming_content_index]
-        
+
         if block["type"] == "text":
             if not (self.did_reject_tool or self.did_already_use_tool):
                 content = block.get("content", "")
@@ -177,14 +180,14 @@ class Coder:
                 if content:
                     content = re.sub(r'<thinking>\s?', '', content)
                     content = re.sub(r'\s?</thinking>', '', content)
-                
+
         elif block["type"] == "tool_use":
             # Handle tool execution similar to Cline.ts
             # Execute appropriate tool and handle response
             if not self.did_reject_tool and not self.did_already_use_tool:
                 tool_name = block.get("name")
                 params = block.get("params", {})
-                
+
                 # Execute tool and handle response
                 try:
                     result = self.execute_tool(tool_name, params)
@@ -200,13 +203,13 @@ class Coder:
                     })
 
         self.present_assistant_message_locked = False
-        
+
         if not block.get("partial", False) or self.did_reject_tool or self.did_already_use_tool:
             if self.current_streaming_content_index == len(self.assistant_message_content) - 1:
                 self.user_message_content_ready = True
-            
+
             self.current_streaming_content_index += 1
-            
+
             if self.current_streaming_content_index < len(self.assistant_message_content):
                 self.present_assistant_message()
 
@@ -233,11 +236,12 @@ class Coder:
                 param_closing_tag = f"</{current_param_name}>"
                 if current_param_value.endswith(param_closing_tag):
                     # End of param value
-                    current_tool_use["params"][current_param_name] = current_param_value[:-len(param_closing_tag)].strip()
+                    current_tool_use["params"][current_param_name] = current_param_value[:-len(
+                        param_closing_tag)].strip()
                     current_param_name = None
                     continue
 
-            # Handle tool use 
+            # Handle tool use
             if current_tool_use is not None:
                 current_tool_value = accumulator[current_tool_use_start_index:]
                 tool_use_closing_tag = f"</{current_tool_use['name']}>"
@@ -257,15 +261,16 @@ class Coder:
                             break
 
                     # Special case for write_to_file content param
-                    if (current_tool_use["name"] == ToolUseName.write_to_file.value and 
-                        accumulator.endswith("</content>")):
+                    if (current_tool_use["name"] == ToolUseName.write_to_file.value and
+                            accumulator.endswith("</content>")):
                         tool_content = accumulator[current_tool_use_start_index:]
                         content_start_tag = "<content>"
                         content_end_tag = "</content>"
-                        content_start_index = tool_content.find(content_start_tag) + len(content_start_tag)
+                        content_start_index = tool_content.find(
+                            content_start_tag) + len(content_start_tag)
                         content_end_index = tool_content.rfind(content_end_tag)
-                        if (content_start_index != -1 and content_end_index != -1 
-                            and content_end_index > content_start_index):
+                        if (content_start_index != -1 and content_end_index != -1
+                                and content_end_index > content_start_index):
                             current_tool_use["params"]["content"] = tool_content[
                                 content_start_index:content_end_index].strip()
                     continue
@@ -332,8 +337,8 @@ class Coder:
                 path = params.get("path")
                 content = params.get("content")
                 if not path or not content:
-                    return self.format_response("tool_error", 
-                                             "Both path and content parameters are required")
+                    return self.format_response("tool_error",
+                                                "Both path and content parameters are required")
                 full_path = os.path.join(self.env.cwd, path)
                 os.makedirs(os.path.dirname(full_path), exist_ok=True)
                 with open(full_path, 'w') as f:
@@ -344,8 +349,8 @@ class Coder:
                 path = params.get("path")
                 regex = params.get("regex")
                 if not path or not regex:
-                    return self.format_response("tool_error", 
-                                             "Both path and regex parameters are required")
+                    return self.format_response("tool_error",
+                                                "Both path and regex parameters are required")
                 # Implement search functionality
                 return self.search_files_tool(path, regex)
 
@@ -362,7 +367,8 @@ class Coder:
                 command = params.get("command")
                 if not result:
                     return self.format_response("tool_error", "Result parameter is required")
-                completion_response = self.attempt_completion_tool(result, command)
+                completion_response = self.attempt_completion_tool(
+                    result, command)
                 return completion_response
 
             else:
@@ -378,7 +384,7 @@ class Coder:
             console = Console()
             # Create prompt session for input
             session = PromptSession()
-            
+
             # Create and configure the process
             process = subprocess.Popen(
                 command,
@@ -390,29 +396,29 @@ class Coder:
                 bufsize=1,
                 universal_newlines=True
             )
-            
+
             console.print(Panel(f"[bold blue]Executing command:[/] {command}"))
-            
+
             # Initialize output buffer
             output = []
-            
+
             while True:
                 # Check for process completion
                 if process.poll() is not None:
                     break
-                    
+
                 # Read stdout
                 stdout_line = process.stdout.readline()
                 if stdout_line:
                     console.print(stdout_line.strip())
                     output.append(stdout_line)
-                    
+
                 # Read stderr
                 stderr_line = process.stderr.readline()
                 if stderr_line:
                     console.print(f"[red]{stderr_line.strip()}[/]")
                     output.append(stderr_line)
-                
+
                 # Check if process is waiting for input
                 if not stdout_line and not stderr_line and process.poll() is None:
                     try:
@@ -425,7 +431,7 @@ class Coder:
                     except (EOFError, KeyboardInterrupt):
                         process.terminate()
                         break
-            
+
             # Get any remaining output
             remaining_stdout, remaining_stderr = process.communicate()
             if remaining_stdout:
@@ -434,12 +440,12 @@ class Coder:
             if remaining_stderr:
                 console.print(f"[red]{remaining_stderr}[/]")
                 output.append(remaining_stderr)
-            
+
             if process.returncode == 0:
                 return "".join(output)
             else:
                 return self.format_response("tool_error", "".join(output))
-                
+
         except Exception as e:
             return self.format_response("tool_error", str(e))
 
@@ -448,7 +454,7 @@ class Coder:
         results = []
         full_path = os.path.join(self.env.cwd, path)
         pattern = re.compile(regex)
-        
+
         for root, _, files in os.walk(full_path):
             for file in files:
                 file_path = os.path.join(root, file)
@@ -456,18 +462,20 @@ class Coder:
                     with open(file_path, 'r') as f:
                         for i, line in enumerate(f, 1):
                             if pattern.search(line):
-                                rel_path = os.path.relpath(file_path, self.env.cwd)
-                                results.append(f"{rel_path}:{i}: {line.strip()}")
+                                rel_path = os.path.relpath(
+                                    file_path, self.env.cwd)
+                                results.append(
+                                    f"{rel_path}:{i}: {line.strip()}")
                 except Exception:
                     continue
-                    
+
         return "\n".join(results) if results else "No matches found"
 
     def list_files_tool(self, path: str, recursive: bool) -> str:
         """List files tool implementation"""
         full_path = os.path.join(self.env.cwd, path)
         results = []
-        
+
         if recursive:
             for root, _, files in os.walk(full_path):
                 for file in files:
@@ -476,11 +484,11 @@ class Coder:
                     results.append(rel_path)
         else:
             try:
-                results = [f for f in os.listdir(full_path) 
-                          if os.path.isfile(os.path.join(full_path, f))]
+                results = [f for f in os.listdir(full_path)
+                           if os.path.isfile(os.path.join(full_path, f))]
             except Exception as e:
                 return self.format_response("tool_error", str(e))
-                
+
         return "\n".join(results) if results else "No files found"
 
     def attempt_completion_tool(self, result: str, command: str = None) -> str:
@@ -528,7 +536,8 @@ class Coder:
                     assistant_message += chunk.get("text", "")
                     # Parse raw assistant message into content blocks
                     prev_length = len(self.assistant_message_content)
-                    self.assistant_message_content = self.parse_assistant_message(assistant_message)
+                    self.assistant_message_content = self.parse_assistant_message(
+                        assistant_message)
                     if len(self.assistant_message_content) > prev_length:
                         self.user_message_content_ready = False
                     # Present content to user
@@ -556,8 +565,8 @@ class Coder:
                 await self.save_conversation_history("assistant", assistant_message)
                 await self._wait_for_user_message_ready()
 
-                did_tool_use = any(block["type"] == "tool_use" 
-                                 for block in self.assistant_message_content)
+                did_tool_use = any(block["type"] == "tool_use"
+                                   for block in self.assistant_message_content)
                 if not did_tool_use:
                     self.user_message_content.append({
                         "type": "text",
@@ -570,7 +579,7 @@ class Coder:
             else:
                 # Error if no assistant message
                 await self.save_conversation_history(
-                    "assistant", 
+                    "assistant",
                     "Failure: No response was provided."
                 )
 
@@ -585,7 +594,8 @@ class Coder:
             system_prompt = await self._get_system_prompt()
             first_chunk = True
             async for chunk in self.llm.stream_chat_oai(
-                conversations=self.conversation_history + [{"role": "user", "content": user_content}]
+                conversations=self.conversation_history +
+                    [{"role": "user", "content": user_content}]
             ):
                 if first_chunk:
                     first_chunk = False
@@ -608,7 +618,7 @@ class Coder:
 
         # Get environment details
         env_details = await self._get_environment_details(include_file_details)
-        
+
         return processed_content, env_details
 
     async def _get_environment_details(self, include_file_details: bool) -> str:
@@ -626,7 +636,8 @@ class Coder:
         details.append("(No open tabs)")
 
         if include_file_details:
-            details.append(f"\n# Current Working Directory ({self.env.cwd}) Files")
+            details.append(
+                f"\n# Current Working Directory ({self.env.cwd}) Files")
             try:
                 files = self.list_files_tool(self.env.cwd, recursive=True)
                 details.append(files)
@@ -653,18 +664,13 @@ class Coder:
         return text
 
     async def _get_system_prompt(self) -> str:
-        """Get system prompt with environment details"""
-        # Implement system prompt generation
-        return f"""You are an AI assistant helping with development tasks.
-Current working directory: {self.env.cwd}
-Operating System: {self.env.os_name}
-"""
+        return self._run.prompt(custom_instructions="", support_computer_use=False)
 
     async def run(self, with_message: str):
         """Main entry point for handling user messages and starting tasks"""
         # Parse task from message
         task = with_message.strip()
-        
+
         if task.startswith("resume"):
             await self.resume_task()
         else:
@@ -674,37 +680,37 @@ Operating System: {self.env.os_name}
         """Start a new task with initial message"""
         self.conversation_history = []
         await self.save_conversation_history("system", await self._get_system_prompt())
-        
+
         # Initial message
         user_content = [{
             "type": "text",
             "text": f"<task>\n{task}\n</task>"
         }]
-        
+
         if images:
             for image in images:
                 user_content.append({
                     "type": "image",
                     "url": image
                 })
-                
+
         await self.initiate_task_loop(user_content)
 
     async def initiate_task_loop(self, user_content: List[Dict]):
         """Control the main task execution loop"""
         next_user_content = user_content
         include_file_details = True
-        
+
         while True:
             did_end_loop = await self.recursively_make_cline_requests(
-                next_user_content, 
+                next_user_content,
                 include_file_details
             )
             include_file_details = False
 
             if did_end_loop:
                 break
-                
+
             next_user_content = [{
                 "type": "text",
                 "text": self.format_response("no_tools_used")
@@ -725,16 +731,16 @@ Operating System: {self.env.os_name}
         # Load previous conversation history
         if not self.conversation_history:
             raise Exception("No conversation history to resume")
-            
+
         # Get last message before interruption
         last_message = self.conversation_history[-1]
-        
+
         # Prepare resume message
         resume_content = [{
             "type": "text",
             "text": "[TASK RESUMPTION] This task was interrupted. Please reassess the current state and continue."
         }]
-        
+
         await self.initiate_task_loop(resume_content)
 
     def create_diff(self, filename: str = "file", old_str: str = "", new_str: str = "") -> str:
@@ -742,7 +748,7 @@ Operating System: {self.env.os_name}
         import difflib
         differ = difflib.Differ()
         diff = list(differ.compare(old_str.splitlines(), new_str.splitlines()))
-        
+
         # Format diff output
         formatted_diff = []
         for line in diff:
@@ -754,11 +760,11 @@ Operating System: {self.env.os_name}
                 continue
             else:
                 formatted_diff.append(f"  {line[2:]}")
-                
+
         return f"Diff for {filename}:\n" + "\n".join(formatted_diff)
 
     @byzerllm.prompt()
-    def _run(self, custom_instructions: str, context: str, support_computer_use: bool = True) -> str:
+    def _run(self, custom_instructions: str, support_computer_use: bool = True) -> str:
         '''
         You are auto-coder, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
 
@@ -1007,7 +1013,7 @@ Operating System: {self.env.os_name}
 
         SYSTEM INFORMATION
 
-        Operating System: {{ osName() }}
+        Operating System: {{ osName }}
         Default Shell: {{ defaultShell }}
         Home Directory: {{ homedir }}
         Current Working Directory: {{ cwd  }}
@@ -1035,13 +1041,14 @@ Operating System: {self.env.os_name}
         {%- endif -%}
         '''
         env = detect_env()
-        return {
+        res = {
             "cwd": env.cwd,
             "customInstructions": custom_instructions,
             "osName": env.os_name,
             "defaultShell": env.default_shell,
             "homedir": env.home_dir
-        }
+        }        
+        return res                
 
     def parse_assistant_message(self, msg: str):
         content_blocks = []
@@ -1156,6 +1163,3 @@ Operating System: {self.env.os_name}
             content_blocks.append(current_text_content)
 
         return content_blocks
-
-    def run(self, with_message):
-        pass
