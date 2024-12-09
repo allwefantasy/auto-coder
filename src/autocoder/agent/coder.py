@@ -7,6 +7,11 @@ import os
 import asyncio
 import subprocess
 import re
+from prompt_toolkit import PromptSession
+from prompt_toolkit.shortcuts import prompt
+from prompt_toolkit.styles import Style
+from rich.console import Console
+from rich.panel import Panel
 
 class TextContent(pydantic.BaseModel):
     type: Literal["text"]
@@ -367,13 +372,74 @@ class Coder:
             return self.format_response("tool_error", str(e))
 
     def execute_command_tool(self, command: str) -> str:
-        """Execute command tool implementation"""
+        """Execute command tool implementation with interactive support"""
         try:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True, cwd=self.env.cwd)
-            if result.returncode == 0:
-                return result.stdout
+            # Create rich console for pretty output
+            console = Console()
+            # Create prompt session for input
+            session = PromptSession()
+            
+            # Create and configure the process
+            process = subprocess.Popen(
+                command,
+                shell=True,
+                cwd=self.env.cwd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                stdin=subprocess.PIPE,
+                bufsize=1,
+                universal_newlines=True
+            )
+            
+            console.print(Panel(f"[bold blue]Executing command:[/] {command}"))
+            
+            # Initialize output buffer
+            output = []
+            
+            while True:
+                # Check for process completion
+                if process.poll() is not None:
+                    break
+                    
+                # Read stdout
+                stdout_line = process.stdout.readline()
+                if stdout_line:
+                    console.print(stdout_line.strip())
+                    output.append(stdout_line)
+                    
+                # Read stderr
+                stderr_line = process.stderr.readline()
+                if stderr_line:
+                    console.print(f"[red]{stderr_line.strip()}[/]")
+                    output.append(stderr_line)
+                
+                # Check if process is waiting for input
+                if not stdout_line and not stderr_line and process.poll() is None:
+                    try:
+                        # Get user input
+                        user_input = session.prompt("» ")
+                        # Send input to process
+                        process.stdin.write(f"{user_input}\n")
+                        process.stdin.flush()
+                        output.append(f"Input: {user_input}\n")
+                    except (EOFError, KeyboardInterrupt):
+                        process.terminate()
+                        break
+            
+            # Get any remaining output
+            remaining_stdout, remaining_stderr = process.communicate()
+            if remaining_stdout:
+                console.print(remaining_stdout)
+                output.append(remaining_stdout)
+            if remaining_stderr:
+                console.print(f"[red]{remaining_stderr}[/]")
+                output.append(remaining_stderr)
+            
+            if process.returncode == 0:
+                return "".join(output)
             else:
-                return self.format_response("tool_error", result.stderr)
+                return self.format_response("tool_error", "".join(output))
+                
         except Exception as e:
             return self.format_response("tool_error", str(e))
 
