@@ -666,15 +666,85 @@ class Coder:
     async def _get_system_prompt(self) -> str:
         return self._run.prompt(custom_instructions="", support_computer_use=False)
 
-    async def run(self, with_message: str):
-        """Main entry point for handling user messages and starting tasks"""
-        # Parse task from message
+    async def run(self, with_message: str) -> Generator[Dict, None, None]:
+        """Main entry point for handling user messages and starting tasks
+        Returns a Generator that yields execution flow information in real-time
+
+        Args:
+            with_message (str): User's message/task
+
+        Yields:
+            Dict: Contains assistant's parsed messages, tool usage info, and execution state
+        """
         task = with_message.strip()
 
-        if task.startswith("resume"):
-            await self.resume_task()
-        else:
-            await self.start_task(task)
+        async for result in self._run_task(task):
+            yield result
+
+    async def _run_task(self, task: str) -> Generator[Dict, None, None]:
+        """Internal method to handle task execution and generate execution flow
+
+        Args:
+            task (str): The task to execute
+
+        Yields:
+            Dict: Contains assistant's parsed messages, tool usage info, and execution state
+        """
+        try:
+            # Reset conversation history for new task
+            self.conversation_history = []
+            await self.save_conversation_history("system", await self._get_system_prompt())
+            
+            # Initial message
+            user_content = [{
+                "type": "text",
+                "text": f"<task>\n{task}\n</task>"
+            }]
+
+            # Stream from LLM
+            async for chunk in self.stream_llm_response(user_content):
+                if isinstance(chunk, dict):
+                    if chunk.get("type") == "text":
+                        text = chunk.get("text", "")
+                        # Parse raw assistant message into content blocks
+                        self.assistant_message_content = self.parse_assistant_message(text)
+                        
+                        # Yield assistant's message content
+                        yield {
+                            "type": "assistant_message",
+                            "content": text,
+                            "parsed_content": self.assistant_message_content
+                        }
+
+                        # If we detect a tool use, wait for user confirmation
+                        for block in self.assistant_message_content:
+                            if block.get("type") == "tool_use" and not block.get("partial", True):
+                                tool_name = block.get("name")
+                                params = block.get("params", {})
+                                
+                                # Yield tool use request and wait for confirmation
+                                yield {
+                                    "type": "tool_request",
+                                    "tool": tool_name,
+                                    "params": params,
+                                    "waiting_confirmation": True
+                                }
+                                
+                                # Here the Generator will pause until the user confirms
+                                # The calling code should handle user confirmation and
+                                # provide the tool execution results back to continue
+
+            # Signal completion of task
+            yield {
+                "type": "task_complete",
+                "final_state": self.conversation_history
+            }
+
+        except Exception as e:
+            yield {
+                "type": "error",
+                "error": str(e)
+            }
 
     async def start_task(self, task: str, images: List[str] = None):
         """Start a new task with initial message"""
