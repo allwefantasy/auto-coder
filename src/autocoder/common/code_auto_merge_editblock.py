@@ -207,15 +207,17 @@ class CodeAutoMergeEditBlock:
         codes = self.get_edits(content)
         changes_to_make = []
         changes_made = False
-        unmerged_blocks = []        
+        unmerged_blocks = []  
+        merged_blocks = []      
 
         # First, check if there are any changes to be made
         file_content_mapping = {}
         for block in codes:
             file_path, head, update = block
             if not os.path.exists(file_path):
-                changes_to_make.append((file_path, None, update))
+                changes_to_make.append((file_path, None, update))                
                 file_content_mapping[file_path] = update
+                merged_blocks.append((file_path, "", update, 1))
                 changes_made = True
             else:
                 if file_path not in file_content_mapping:
@@ -232,7 +234,8 @@ class CodeAutoMergeEditBlock:
                     changes_to_make.append(
                         (file_path, existing_content, new_content))
                     file_content_mapping[file_path] = new_content
-                    changes_made = True
+                    merged_blocks.append((file_path, head, update, 1))
+                    changes_made = True                    
                 else:
                     # If the SEARCH BLOCK is not found exactly, then try to use
                     # the similarity ratio to find the best matching block
@@ -247,7 +250,8 @@ class CodeAutoMergeEditBlock:
                                 (file_path, existing_content, new_content)
                             )
                             file_content_mapping[file_path] = new_content
-                            changes_made = True
+                            merged_blocks.append((file_path, head, update, similarity))
+                            changes_made = True                            
                     else:
                         unmerged_blocks.append(
                             (file_path, head, update, similarity))
@@ -309,7 +313,8 @@ class CodeAutoMergeEditBlock:
         if self.args.request_id and not self.args.skip_events:
             # collect modified files
             event_data = []
-            for file_path, head, update in codes:
+            for code in merged_blocks:
+                file_path, head, update, similarity = code
                 event_data.append(
                     {
                             "file_path": file_path,
