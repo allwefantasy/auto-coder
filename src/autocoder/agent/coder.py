@@ -541,7 +541,7 @@ class Coder:
                     if len(self.assistant_message_content) > prev_length:
                         self.user_message_content_ready = False
                     # Present content to user
-                    self.present_assistant_message()
+                    self.present_assistant_message_in_terminal()
 
                 if self.did_reject_tool:
                     assistant_message += "\n\n[Response interrupted by user feedback]"
@@ -557,7 +557,7 @@ class Coder:
             for block in self.assistant_message_content:
                 if block.get("partial"):
                     block["partial"] = False
-            self.present_assistant_message()
+            self.present_assistant_message_in_terminal()
 
             # Check for tool usage
             did_end_loop = False
@@ -731,7 +731,7 @@ class Coder:
                         content = re.sub(thinking_pattern, '', content)
                     
                     if content.strip():
-                        console.print(content.strip())
+                        console.print(content.strip(),end="")
 
         elif block["type"] == "tool_use":
             if not self.did_reject_tool and not self.did_already_use_tool:
