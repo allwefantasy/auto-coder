@@ -2,11 +2,6 @@ from typing import List, Dict, Tuple
 from autocoder.common.types import Mode
 from autocoder.common import AutoCoderArgs
 import byzerllm
-from autocoder.utils.queue_communicate import (
-    queue_communicate,
-    CommunicateEvent,
-    CommunicateEventType,
-)
 
 
 class CodeAutoGenerate:
@@ -188,26 +183,8 @@ class CodeAutoGenerate:
 
         with open(self.args.target_file, "w") as file:
             file.write(init_prompt)
-            
-        if not self.args.skip_events:
-            _ = queue_communicate.send_event_no_wait(
-                request_id=self.args.request_id,
-                event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_GENERATE_START.value,
-                    data=query
-                )
-            )
 
         t = self.llm.chat_oai(conversations=conversations, llm_config=llm_config)
-
-        if not self.args.skip_events:
-            _ = queue_communicate.send_event_no_wait(
-                request_id=self.args.request_id,
-                event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_GENERATE_END.value,
-                    data=t[0].output
-                )
-            )
 
         result.append(t[0].output)
 
