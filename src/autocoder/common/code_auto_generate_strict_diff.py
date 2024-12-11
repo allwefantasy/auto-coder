@@ -2,6 +2,7 @@ from typing import List, Dict, Tuple
 from autocoder.common.types import Mode
 from autocoder.common import AutoCoderArgs
 import byzerllm
+from autocoder.utils.queue_communicate import queue_communicate, CommunicateEvent, CommunicateEventType
 
 
 class CodeAutoGenerateStrictDiff:
@@ -260,6 +261,15 @@ class CodeAutoGenerateStrictDiff:
     ) -> Tuple[str, Dict[str, str]]:
         llm_config = {"human_as_model": self.args.human_as_model}
 
+        if self.args.request_id and not self.args.skip_events:
+            queue_communicate.send_event_no_wait(
+                request_id=self.args.request_id,
+                event=CommunicateEvent(
+                    event_type=CommunicateEventType.CODE_GENERATE_START.value,
+                    data=query,
+                ),
+            )
+
         init_prompt = self.single_round_instruction.prompt(
             instruction=query, content=source_content, context=self.args.context
         )
@@ -271,6 +281,16 @@ class CodeAutoGenerateStrictDiff:
 
         t = self.llm.chat_oai(conversations=conversations, llm_config=llm_config)
         conversations.append({"role": "assistant", "content": t[0].output})
+
+        if self.args.request_id and not self.args.skip_events:
+            queue_communicate.send_event_no_wait(
+                request_id=self.args.request_id,
+                event=CommunicateEvent(
+                    event_type=CommunicateEventType.CODE_GENERATE_END.value,
+                    data="",
+                ),
+            )
+
         return [t[0].output], conversations
 
     def multi_round_run(
