@@ -14,6 +14,8 @@ class CommunicateEventType(Enum):
     CODE_UNMERGE_RESULT = "code_unmerge_result"
     CODE_START = "code_start"
     CODE_END = "code_end"
+    CODE_GENERATE_START = "code_generate_start"
+    CODE_GENERATE_END = "code_generate_end"
     CODE_HUMAN_AS_MODEL = "code_human_as_model"
     ASK_HUMAN = "ask_human"
     CODE_ERROR = "code_error"

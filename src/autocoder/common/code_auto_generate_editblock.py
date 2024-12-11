@@ -3,6 +3,12 @@ from autocoder.common.types import Mode
 from autocoder.common import AutoCoderArgs
 import byzerllm
 from autocoder.common import sys_prompt
+from autocoder.utils.queue_communicate import (
+    queue_communicate,
+    CommunicateEvent,
+    CommunicateEventType,
+)
+import json
 
 
 class CodeAutoGenerateEditBlock:
@@ -44,7 +50,7 @@ class CodeAutoGenerateEditBlock:
         """
 
     @byzerllm.prompt(llm=lambda self: self.llm)
-    def multi_round_instruction(self, instruction: str, content: str,context:str="") -> str:
+    def multi_round_instruction(self, instruction: str, content: str, context: str = "") -> str:
         """
         如果你需要生成代码，对于每个需要更改的文件,你需要按 *SEARCH/REPLACE block* 的格式进行生成。
 
@@ -141,7 +147,7 @@ class CodeAutoGenerateEditBlock:
 
         Here are the *SEARCH/REPLACE* blocks:
 
-        
+
         {{ fence_0 }}python
         ##File: /tmp/projects/mathweb/hello.py
         <<<<<<< SEARCH
@@ -152,7 +158,7 @@ class CodeAutoGenerateEditBlock:
             print("hello")
         >>>>>>> REPLACE
         {{ fence_1 }}
-        
+
         {{ fence_0 }}python
         ##File: /tmp/projects/mathweb/main.py
         <<<<<<< SEARCH
@@ -206,7 +212,7 @@ class CodeAutoGenerateEditBlock:
         }
 
     @byzerllm.prompt(llm=lambda self: self.llm)
-    def single_round_instruction(self, instruction: str, content: str, context:str="") -> str:
+    def single_round_instruction(self, instruction: str, content: str, context: str = "") -> str:
         """
         如果你需要生成代码，对于每个需要更改的文件,你需要按 *SEARCH/REPLACE block* 的格式进行生成。
 
@@ -302,7 +308,7 @@ class CodeAutoGenerateEditBlock:
         2. Remove hello() from main.py and replace it with an import.
 
         Here are the *SEARCH/REPLACE* blocks:
-        
+
         {{ fence_0 }}python
         ##File: /tmp/projects/mathweb/hello.py
         <<<<<<< SEARCH
@@ -313,7 +319,7 @@ class CodeAutoGenerateEditBlock:
             print("hello")
         >>>>>>> REPLACE
         {{ fence_1 }}
-        
+
         {{ fence_0 }}python
         ##File: /tmp/projects/mathweb/main.py
         <<<<<<< SEARCH
@@ -353,7 +359,7 @@ class CodeAutoGenerateEditBlock:
                 "fence_0": self.fence_0,
                 "fence_1": self.fence_1,
             }
-        
+
         return {
             "structure": (
                 self.action.pp.get_tree_like_directory_structure()
@@ -371,7 +377,7 @@ class CodeAutoGenerateEditBlock:
 
         if self.args.template == "common":
             init_prompt = self.single_round_instruction.prompt(
-                instruction=query, content=source_content,context=self.args.context
+                instruction=query, content=source_content, context=self.args.context
             )
         elif self.args.template == "auto_implement":
             init_prompt = self.auto_implement_function.prompt(
@@ -380,15 +386,37 @@ class CodeAutoGenerateEditBlock:
 
         with open(self.args.target_file, "w") as file:
             file.write(init_prompt)
-        
 
         conversations = []
         # conversations.append({"role": "system", "content": sys_prompt.prompt()})
         conversations.append({"role": "user", "content": init_prompt})
 
-        t = self.llm.chat_oai(conversations=conversations, llm_config=llm_config)
-        conversations.append({"role": "assistant", "content": t[0].output})
-        return [t[0].output], conversations
+        if self.args.request_id and not self.args.skip_events:
+            _ = queue_communicate.send_event(
+                request_id=self.args.request_id,
+                event=CommunicateEvent(
+                    event_type=CommunicateEventType.CODE_GENERATE_START.value,
+                    data=json.dumps({}, ensure_ascii=False),
+                ),
+            )
+            
+            t = self.llm.chat_oai(
+                conversations=conversations, llm_config=llm_config)
+            conversations.append({"role": "assistant", "content": t[0].output})
+            
+            _ = queue_communicate.send_event(
+                request_id=self.args.request_id,
+                event=CommunicateEvent(
+                    event_type=CommunicateEventType.CODE_GENERATE_END.value,
+                    data=json.dumps({}, ensure_ascii=False),
+                ),
+            )
+            return [t[0].output], conversations
+        else:
+            t = self.llm.chat_oai(
+                conversations=conversations, llm_config=llm_config)
+            conversations.append({"role": "assistant", "content": t[0].output})
+            return [t[0].output], conversations
 
     def multi_round_run(
         self, query: str, source_content: str, max_steps: int = 10
@@ -398,7 +426,7 @@ class CodeAutoGenerateEditBlock:
 
         if self.args.template == "common":
             init_prompt = self.multi_round_instruction.prompt(
-                instruction=query, content=source_content,context=self.args.context
+                instruction=query, content=source_content, context=self.args.context
             )
         elif self.args.template == "auto_implement":
             init_prompt = self.auto_implement_function.prompt(
@@ -412,7 +440,8 @@ class CodeAutoGenerateEditBlock:
         with open(self.args.target_file, "w") as file:
             file.write(init_prompt)
 
-        t = self.llm.chat_oai(conversations=conversations, llm_config=llm_config)
+        t = self.llm.chat_oai(conversations=conversations,
+                              llm_config=llm_config)
 
         result.append(t[0].output)
 
@@ -430,7 +459,8 @@ class CodeAutoGenerateEditBlock:
             with open(self.args.target_file, "w") as file:
                 file.write("继续")
 
-            t = self.llm.chat_oai(conversations=conversations, llm_config=llm_config)
+            t = self.llm.chat_oai(
+                conversations=conversations, llm_config=llm_config)
 
             result.append(t[0].output)
             conversations.append({"role": "assistant", "content": t[0].output})
