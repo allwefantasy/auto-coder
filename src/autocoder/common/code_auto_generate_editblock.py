@@ -388,7 +388,12 @@ class CodeAutoGenerateEditBlock:
             file.write(init_prompt)
 
         conversations = []
-        # conversations.append({"role": "system", "content": sys_prompt.prompt()})
+        
+        if self.args.system_prompt and self.args.system_prompt.strip() == "claude":
+            conversations.append({"role": "system", "content": sys_prompt.prompt()})
+        elif self.args.system_prompt:
+            conversations.append({"role": "system", "content": self.args.system_prompt})
+        
         conversations.append({"role": "user", "content": init_prompt})
 
         if self.args.request_id and not self.args.skip_events:

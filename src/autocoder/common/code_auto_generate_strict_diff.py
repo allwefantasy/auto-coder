@@ -3,7 +3,7 @@ from autocoder.common.types import Mode
 from autocoder.common import AutoCoderArgs
 import byzerllm
 from autocoder.utils.queue_communicate import queue_communicate, CommunicateEvent, CommunicateEventType
-
+from autocoder.common import sys_prompt
 
 class CodeAutoGenerateStrictDiff:
     def __init__(
@@ -277,7 +277,13 @@ class CodeAutoGenerateStrictDiff:
         with open(self.args.target_file, "w") as file:
             file.write(init_prompt)
 
-        conversations = [{"role": "user", "content": init_prompt}]
+        conversations = []
+        if self.args.system_prompt and self.args.system_prompt.strip() == "claude":
+            conversations.append({"role": "system", "content": sys_prompt.prompt()})
+        elif self.args.system_prompt:
+            conversations.append({"role": "system", "content": self.args.system_prompt})
+        
+        conversations.append({"role": "user", "content": init_prompt})
 
         t = self.llm.chat_oai(conversations=conversations, llm_config=llm_config)
         conversations.append({"role": "assistant", "content": t[0].output})
