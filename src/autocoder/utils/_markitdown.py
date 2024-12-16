@@ -1050,48 +1050,15 @@ class MarkItDown:
         ext = kwargs.get("file_extension")
         extensions = [ext] if ext is not None else []
 
-                # Save the file locally to a temporary file. It will be deleted before this method exits
-                handle, temp_path = tempfile.mkstemp()
-                fh = os.fdopen(handle, "wb")
-                
-                # Check if first few bytes match common image headers
-                def detect_image_format(data):
-                    if data.startswith(b'\xff\xff\xff'):
-                        return 'RGB'
-                    elif data.startswith(b'\xf8\xf8\xf8'):
-                        return 'L'
-                    return None
+        # Save the file locally to a temporary file. It will be deleted before this method exits
+        handle, temp_path = tempfile.mkstemp()
+        fh = os.fdopen(handle, "wb")
         result = None
         try:
             # Write to the temporary file
             content = stream.read()
             if isinstance(content, str):
-                content = content.encode("utf-8")
-                
-            # Try to detect and save as proper image format
-            import numpy as np
-            from PIL import Image
-            
-            img_format = detect_image_format(content)
-            if img_format:
-                try:
-                    # Get image dimensions based on data length and format
-                    data_len = len(content)
-                    if img_format == 'RGB':
-                        height = int(np.sqrt(data_len/3))
-                        width = height
-                        img_array = np.frombuffer(content, dtype=np.uint8).reshape((height, width, 3))
-                    else: # 'L' format
-                        height = int(np.sqrt(data_len))
-                        width = height  
-                        img_array = np.frombuffer(content, dtype=np.uint8).reshape((height, width))
-                    
-                    # Convert to PIL Image and save
-                    img = Image.fromarray(img_array, img_format)
-                    img.save(fh.name, format='PNG')
-                except Exception as e:
-                    print(f"Failed to process as image: {str(e)}")
-                    fh.write(content) # Fallback to original content
+                fh.write(content.encode("utf-8"))
             else:
                 fh.write(content)
             fh.close()
