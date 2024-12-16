@@ -210,6 +210,9 @@ class LongContextRAG:
 
         问题：{{ query }}
 
+        要求：
+        1. 注意相应的markdown图片如果存在也要输出,尽可能图文并茂
+        
         回答：
         """
 

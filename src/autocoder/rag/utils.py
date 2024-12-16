@@ -15,9 +15,8 @@ def process_file_in_multi_process(
     start_time = time.time()
     file_path, relative_path, _ = file_info
     try:
-        if file_path.endswith(".pdf"):
-            with open(file_path, "rb") as f:
-                content = extract_text_from_pdf(f.read())
+        if file_path.endswith(".pdf"):            
+            content = extract_text_from_pdf(file_path)
             v = [
                 SourceCode(
                     module_name=file_path,
@@ -75,9 +74,8 @@ def process_file_in_multi_process(
 def process_file_local(file_path: str) -> List[SourceCode]:
     start_time = time.time()
     try:
-        if file_path.endswith(".pdf"):
-            with open(file_path, "rb") as f:
-                content = extract_text_from_pdf(f.read())
+        if file_path.endswith(".pdf"):            
+            content = extract_text_from_pdf(file_path)
             v = [
                 SourceCode(
                     module_name=file_path,
