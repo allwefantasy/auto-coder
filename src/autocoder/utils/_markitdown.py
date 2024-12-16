@@ -26,8 +26,8 @@ from pdfminer.layout import LAParams, LTImage, LTFigure
 from pdfminer.pdfdevice import PDFDevice
 from pdfminer.pdfdocument import PDFDocument
 from pdfminer.pdfparser import PDFParser
-from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.pdfpage import PDFPage
+from pdfminer.pdfinterp import PDFResourceManager,PDFPageInterpreter
 import pptx
 
 # File-format detection
@@ -539,15 +539,44 @@ class PdfConverter(DocumentConverter):
             if isinstance(lt_obj, LTImage) or (isinstance(lt_obj, LTFigure) and lt_obj.name.startswith('Im')):
                 try:
                     image_count += 1
-                    image_path = os.path.join(
-                        image_output_dir, f"image_{image_count}.png")
-
+                    image_data = None
+                    
+                    
                     if hasattr(lt_obj, 'stream'):
                         image_data = lt_obj.stream.get_data()
+                    elif hasattr(lt_obj, 'filter'):
+                        image_data = lt_obj.filter
+                    
+                    if image_data:
+                        # Try to detect image format from magic numbers
+                        format_ext = 'png'  # default format
+                        if image_data.startswith(b'\xFF\xD8'):  # JPEG
+                            format_ext = 'jpg'
+                        elif image_data.startswith(b'\x89PNG'):  # PNG
+                            format_ext = 'png'
+                        elif image_data.startswith(b'GIF'):  # GIF
+                            format_ext = 'gif'
+                        else:
+                            print(f"Unknown image format")
+                            try:
+                                ## 如何处理费标准格式的图片
+                                # 比如 \xf8\xf8 模式（十进制值为248）可能表示：
+                                # 未压缩的原始RGB或灰度数据
+                                # PDF内部使用的某种特殊编码格式
+                                # 可能是经过某种简单编码的图像数据                                                                    
+                            except Exception as e:
+                                print(f"Failed to convert raw data: {e}")
+                                print(f"Data size: {len(image_data)}, First bytes: {image_data[:20].hex()}")
+                        
+                                                                        
+                        image_path = os.path.join(
+                            image_output_dir, f"image_{image_count}.{format_ext}")
+                        print("All processing attempts failed, writing original data")
                         with open(image_path, 'wb') as img_file:
                             img_file.write(image_data)
-                        content.append(
-                            f"![Image {image_count}]({image_path})\n")
+                            
+                        content.append(f"![Image {image_count}]({image_path})\n")
+                            
                 except Exception as e:
                     print(f"Error extracting image: {e}")
 
