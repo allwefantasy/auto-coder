@@ -27,8 +27,12 @@ from pdfminer.pdfdevice import PDFDevice
 from pdfminer.pdfdocument import PDFDocument
 from pdfminer.pdfparser import PDFParser
 from pdfminer.pdfpage import PDFPage
-from pdfminer.pdfinterp import PDFResourceManager,PDFPageInterpreter
+from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 import pptx
+from pdfminer.image import ImageWriter
+
+import numpy as np
+from PIL import Image
 
 # File-format detection
 import puremagic
@@ -64,8 +68,7 @@ class _CustomMarkdownify(markdownify.MarkdownConverter):
     """
 
     def __init__(self, **options: Any):
-        options["heading_style"] = options.get(
-            "heading_style", markdownify.ATX)
+        options["heading_style"] = options.get("heading_style", markdownify.ATX)
         # Explicitly cast options to the expected type if necessary
         super().__init__(**options)
 
@@ -90,10 +93,15 @@ class _CustomMarkdownify(markdownify.MarkdownConverter):
             try:
                 parsed_url = urlparse(href)  # type: ignore
                 # type: ignore
-                if parsed_url.scheme and parsed_url.scheme.lower() not in ["http", "https", "file"]:
+                if parsed_url.scheme and parsed_url.scheme.lower() not in [
+                    "http",
+                    "https",
+                    "file",
+                ]:
                     return "%s%s%s" % (prefix, text, suffix)
-                href = urlunparse(parsed_url._replace(
-                    path=quote(unquote(parsed_url.path))))  # type: ignore
+                href = urlunparse(
+                    parsed_url._replace(path=quote(unquote(parsed_url.path)))
+                )  # type: ignore
             except ValueError:  # It's not clear if this ever gets thrown
                 return "%s%s%s" % (prefix, text, suffix)
 
@@ -310,9 +318,10 @@ class YouTubeConverter(DocumentConverter):
                     obj_start = lines[0].find("{")
                     obj_end = lines[0].rfind("}")
                     if obj_start >= 0 and obj_end >= 0:
-                        data = json.loads(lines[0][obj_start: obj_end + 1])
+                        data = json.loads(lines[0][obj_start : obj_end + 1])
                         attrdesc = self._findKey(
-                            data, "attributedDescriptionBodyText")  # type: ignore
+                            data, "attributedDescriptionBodyText"
+                        )  # type: ignore
                         if attrdesc:
                             metadata["description"] = str(attrdesc["content"])
                     break
@@ -322,8 +331,7 @@ class YouTubeConverter(DocumentConverter):
         # Start preparing the page
         webpage_text = "# YouTube\n"
 
-        title = self._get(
-            metadata, ["title", "og:title", "name"])  # type: ignore
+        title = self._get(metadata, ["title", "og:title", "name"])  # type: ignore
         assert isinstance(title, str)
 
         if title:
@@ -346,7 +354,8 @@ class YouTubeConverter(DocumentConverter):
             webpage_text += f"\n### Video Metadata\n{stats}\n"
 
         description = self._get(
-            metadata, ["description", "og:description"])  # type: ignore
+            metadata, ["description", "og:description"]
+        )  # type: ignore
         if description:
             webpage_text += f"\n### Description\n{description}\n"
 
@@ -360,9 +369,11 @@ class YouTubeConverter(DocumentConverter):
                 try:
                     # Must be a single transcript.
                     transcript = YouTubeTranscriptApi.get_transcript(
-                        video_id)  # type: ignore
+                        video_id
+                    )  # type: ignore
                     transcript_text = " ".join(
-                        [part["text"] for part in transcript])  # type: ignore
+                        [part["text"] for part in transcript]
+                    )  # type: ignore
                     # Alternative formatting:
                     # formatter = TextFormatter()
                     # formatter.format_transcript(transcript)
@@ -457,8 +468,7 @@ class BingSerpConverter(DocumentConverter):
 
                     try:
                         # RFC 4648 / Base64URL" variant, which uses "-" and "_"
-                        a["href"] = base64.b64decode(
-                            u, altchars="-_").decode("utf-8")
+                        a["href"] = base64.b64decode(u, altchars="-_").decode("utf-8")
                     except UnicodeDecodeError:
                         pass
                     except binascii.Error:
@@ -467,8 +477,7 @@ class BingSerpConverter(DocumentConverter):
             # Convert to markdown
             md_result = _markdownify.convert_soup(result).strip()
             lines = [line.strip() for line in re.split(r"\n+", md_result)]
-            results.append(
-                "\n".join([line for line in lines if len(line) > 0]))
+            results.append("\n".join([line for line in lines if len(line) > 0]))
 
         webpage_text = (
             f"## A Bing search for '{query}' found the following results:\n\n"
@@ -497,8 +506,9 @@ class PdfConverter(DocumentConverter):
             image_output_dir = kwargs.get("image_output_dir")
         else:
             # Create output directory for images if it doesn't exist
-            image_output_dir = os.path.join(os.path.dirname(
-                local_path), "_images", os.path.basename(local_path))
+            image_output_dir = os.path.join(
+                os.path.dirname(local_path), "_images", os.path.basename(local_path)
+            )
         os.makedirs(image_output_dir, exist_ok=True)
 
         text_content = []
@@ -521,7 +531,8 @@ class PdfConverter(DocumentConverter):
 
                 # Extract text and images from the page
                 page_content = self._process_layout(
-                    layout, image_output_dir, image_count)
+                    layout, image_output_dir, image_count
+                )
                 text_content.extend(page_content)
                 image_count += len([c for c in page_content if c.startswith("![Image")])
 
@@ -530,66 +541,92 @@ class PdfConverter(DocumentConverter):
             text_content="\n".join(text_content),
         )
 
-    def _process_layout(self, layout, image_output_dir: str, image_count: int) -> List[str]:
+    def _process_layout(
+        self, layout, image_output_dir: str, image_count: int
+    ) -> List[str]:
         """Process the layout of a PDF page, extracting both text and images."""
-        content = []
+        content = []        
+        iw = ImageWriter(image_output_dir)
 
         for lt_obj in layout:
             # Handle images
-            if isinstance(lt_obj, LTImage) or (isinstance(lt_obj, LTFigure) and lt_obj.name.startswith('Im')):
-                try:
-                    image_count += 1
-                    image_data = None
-                    
-                    
-                    if hasattr(lt_obj, 'stream'):
-                        image_data = lt_obj.stream.get_data()
-                    elif hasattr(lt_obj, 'filter'):
-                        image_data = lt_obj.filter
-                    
-                    if image_data:
-                        # Try to detect image format from magic numbers
-                        format_ext = 'png'  # default format
-                        if image_data.startswith(b'\xFF\xD8'):  # JPEG
-                            format_ext = 'jpg'
-                        elif image_data.startswith(b'\x89PNG'):  # PNG
-                            format_ext = 'png'
-                        elif image_data.startswith(b'GIF'):  # GIF
-                            format_ext = 'gif'
-                        else:
-                            print(f"Unknown image format")
-                            try:
-                                ## 如何处理费标准格式的图片
-                                # 比如 \xf8\xf8 模式（十进制值为248）可能表示：
-                                # 未压缩的原始RGB或灰度数据
-                                # PDF内部使用的某种特殊编码格式
-                                # 可能是经过某种简单编码的图像数据                                                                    
-                            except Exception as e:
-                                print(f"Failed to convert raw data: {e}")
-                                print(f"Data size: {len(image_data)}, First bytes: {image_data[:20].hex()}")
-                        
-                                                                        
-                        image_path = os.path.join(
-                            image_output_dir, f"image_{image_count}.{format_ext}")
-                        print("All processing attempts failed, writing original data")
-                        with open(image_path, 'wb') as img_file:
-                            img_file.write(image_data)
-                            
-                        content.append(f"![Image {image_count}]({image_path})\n")
-                            
-                except Exception as e:
-                    print(f"Error extracting image: {e}")
+            if isinstance(lt_obj, LTImage) or (
+                isinstance(lt_obj, LTFigure) and lt_obj.name.startswith("Im")
+            ):
+                image_count += 1
+                image_data = None
+                image_meta = {}
+                image_path = os.path.join(image_output_dir, f"image_{image_count}.png")
+
+                if hasattr(lt_obj, "stream"):
+                    image_data = lt_obj.stream.get_data()
+                    image_meta = lt_obj.stream.attrs
+                elif hasattr(lt_obj, "filter"):
+                    image_data = lt_obj.filter
+
+                if image_data:
+                    if isinstance(lt_obj, LTImage):
+                        name = iw.export_image(lt_obj)
+                        suffix = os.path.splitext(name)[1]  
+                        temp_path = os.path.join(image_output_dir, name)
+                        image_path = os.path.join(image_output_dir, f"image_{image_count}{suffix}")
+                        os.rename(temp_path, image_path)
+                        content.append(f"![Image {image_count}]({image_path})")
+                        continue
+                    try:
+                        # Try to handle raw pixel data
+                        if "BitsPerComponent" in image_meta:
+                            width = image_meta["Width"]
+                            height = image_meta["Height"]
+                            bits = image_meta["BitsPerComponent"]
+                            colorspace = image_meta["ColorSpace"].name
+                            new_image_data = np.frombuffer(image_data, dtype=np.uint8)
+                            # Normalize to 8-bit if necessary
+                            if bits != 8:
+                                max_val = (1 << bits) - 1
+                                new_image_data = (
+                                    new_image_data.astype("float32") * 255 / max_val
+                                ).astype("uint8")
+
+                            if colorspace == "DeviceRGB":
+                                new_image_data = new_image_data.reshape(
+                                    (height, width, 3)
+                                )
+                                img = Image.fromarray(new_image_data, "RGB")
+                                img.save(image_path)
+                                content.append(
+                                    f"![Image {image_count}]({image_path})\n"
+                                )
+                                continue
+                            elif colorspace == "DeviceGray":
+                                new_image_data = new_image_data.reshape((height, width))
+                                img = Image.fromarray(new_image_data, "L")
+                                img.save(image_path)
+                                content.append(
+                                    f"![Image {image_count}]({image_path})\n"
+                                )
+                                continue
+                    except Exception as e:
+                        print(
+                            f"Error extracting image: {e} fallback to writing original data"
+                        )
+
+                    with open(image_path, "wb") as img_file:
+                        img_file.write(image_data)
+
+                    content.append(f"![Image {image_count}]({image_path})\n")
 
             # Handle text
-            if hasattr(lt_obj, 'get_text'):
+            if hasattr(lt_obj, "get_text"):
                 text = lt_obj.get_text().strip()
                 if text:
                     content.append(text)
 
             # Recursively process nested layouts
-            elif hasattr(lt_obj, '_objs'):
-                content.extend(self._process_layout(
-                    lt_obj._objs, image_output_dir, image_count))
+            elif hasattr(lt_obj, "_objs"):
+                content.extend(
+                    self._process_layout(lt_obj._objs, image_output_dir, image_count)
+                )
 
         return content
 
@@ -630,8 +667,7 @@ class XlsxConverter(HtmlConverter):
         for s in sheets:
             md_content += f"## {s}\n"
             html_content = sheets[s].to_html(index=False)
-            md_content += self._convert(
-                html_content).text_content.strip() + "\n\n"
+            md_content += self._convert(html_content).text_content.strip() + "\n\n"
 
         return DocumentConverterResult(
             title=None,
@@ -666,8 +702,7 @@ class PptxConverter(HtmlConverter):
                     # https://github.com/scanny/python-pptx/pull/512#issuecomment-1713100069
                     alt_text = ""
                     try:
-                        alt_text = shape._element._nvXxPr.cNvPr.attrib.get(
-                            "descr", "")
+                        alt_text = shape._element._nvXxPr.cNvPr.attrib.get("descr", "")
                     except Exception:
                         pass
 
@@ -689,17 +724,14 @@ class PptxConverter(HtmlConverter):
                         html_table += "<tr>"
                         for cell in row.cells:
                             if first_row:
-                                html_table += "<th>" + \
-                                    html.escape(cell.text) + "</th>"
+                                html_table += "<th>" + html.escape(cell.text) + "</th>"
                             else:
-                                html_table += "<td>" + \
-                                    html.escape(cell.text) + "</td>"
+                                html_table += "<td>" + html.escape(cell.text) + "</td>"
                         html_table += "</tr>"
                         first_row = False
                     html_table += "</table></body></html>"
                     md_content += (
-                        "\n" +
-                        self._convert(html_table).text_content.strip() + "\n"
+                        "\n" + self._convert(html_table).text_content.strip() + "\n"
                     )
 
                 # Text areas
@@ -953,8 +985,7 @@ class ImageConverter(MediaConverter):
             }
         ]
 
-        response = client.chat.completions.create(
-            model=model, messages=messages)
+        response = client.chat.completions.create(model=model, messages=messages)
         return response.choices[0].message.content
 
 
@@ -1167,11 +1198,9 @@ class MarkItDown:
                 if res is not None:
                     # Normalize the content
                     res.text_content = "\n".join(
-                        [line.rstrip()
-                         for line in re.split(r"\r?\n", res.text_content)]
+                        [line.rstrip() for line in re.split(r"\r?\n", res.text_content)]
                     )
-                    res.text_content = re.sub(
-                        r"\n{3,}", "\n\n", res.text_content)
+                    res.text_content = re.sub(r"\n{3,}", "\n\n", res.text_content)
 
                     # Todo
                     return res
