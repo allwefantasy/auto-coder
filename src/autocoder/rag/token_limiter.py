@@ -113,7 +113,7 @@ class TokenLimiter:
                 num_count += 1
                 reorder_relevant_docs.append(doc)
                 if "original_doc" in doc.metadata and "chunk_index" in doc.metadata:
-                    original_doc_name = doc.metadata["original_doc"].module_name
+                    original_doc_name = doc.metadata["original_doc"]
 
                     temp_docs = []
                     for temp_doc in relevant_docs[num_count:]:
@@ -122,7 +122,7 @@ class TokenLimiter:
                             and "chunk_index" in temp_doc.metadata
                         ):
                             if (
-                                temp_doc.metadata["original_doc"].module_name
+                                temp_doc.metadata["original_doc"]
                                 == original_doc_name
                             ):
                                 if temp_doc not in reorder_relevant_docs:
