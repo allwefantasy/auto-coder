@@ -24,9 +24,8 @@ def process_file_in_multi_process(
                     tokens=count_tokens_worker(content),
                 )
             ]
-        elif file_path.endswith(".docx"):
-            with open(file_path, "rb") as f:
-                content = extract_text_from_docx(f.read())
+        elif file_path.endswith(".docx"):            
+            content = extract_text_from_docx(file_path)
             v = [
                 SourceCode(
                     module_name=f"##File: {file_path}",
@@ -83,9 +82,8 @@ def process_file_local(file_path: str) -> List[SourceCode]:
                     tokens=count_tokens(content),
                 )
             ]
-        elif file_path.endswith(".docx"):
-            with open(file_path, "rb") as f:
-                content = extract_text_from_docx(f.read())
+        elif file_path.endswith(".docx"):            
+            content = extract_text_from_docx(file_path)
             v = [
                 SourceCode(
                     module_name=f"##File: {file_path}",
