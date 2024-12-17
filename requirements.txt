@@ -72,3 +72,11 @@ python-pptx
 watchfiles
 cairosvg
 matplotlib
+mammoth
+markdownify
+pdfminer.six
+puremagic
+pydub
+youtube-transcript-api
+SpeechRecognition
+pathvalidate
