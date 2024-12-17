@@ -13,7 +13,7 @@ def process_file_in_multi_process(
     file_info: Tuple[str, str, float]
 ) -> List[SourceCode]:
     start_time = time.time()
-    file_path, relative_path, _ = file_info
+    file_path, relative_path, _, _ = file_info
     try:
         if file_path.endswith(".pdf"):            
             content = extract_text_from_pdf(file_path)

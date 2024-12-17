@@ -23,13 +23,34 @@ from multiprocessing import Pool
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from autocoder.rag.variable_holder import VariableHolder
 import platform
+import hashlib
+from typing import Union
 
 if platform.system() != "Windows":
     import fcntl
 else:
     fcntl = None
 
+def generate_file_md5(file_path: str) -> str:
+    md5_hash = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            md5_hash.update(chunk)
+    return md5_hash.hexdigest()
 
+
+def generate_content_md5(content: Union[str, bytes]) -> str:
+    if isinstance(content, str):
+        content = content.encode("utf-8")
+    md5_hash = hashlib.md5()
+    md5_hash.update(content)
+    return md5_hash.hexdigest()
+
+default_ignore_dirs = [
+    "__pycache__",
+    "node_modules",
+    "_images"
+]
 class ByzerStorageCache(BaseCacheManager):
     def __init__(
         self,
@@ -154,10 +175,10 @@ class ByzerStorageCache(BaseCacheManager):
 
         files_to_process = []
         for file_info in self.get_all_files():
-            file_path, _, modify_time = file_info
+            file_path, _, modify_time, file_md5 = file_info
             if (
-                file_path not in self.cache
-                or self.cache[file_path]["modify_time"] < modify_time
+                file_path not in self.cache                
+                or self.cache[file_path]["md5"] != file_md5
             ):
                 files_to_process.append(file_info)
                 
@@ -175,13 +196,14 @@ class ByzerStorageCache(BaseCacheManager):
 
         items = []
         for file_info, result in zip(files_to_process, results):            
-            file_path, relative_path, modify_time = file_info
+            file_path, relative_path, modify_time, file_md5 = file_info
             content: List[SourceCode] = result
             self.cache[file_path] = {
                 "file_path": file_path,
                 "relative_path": relative_path,
                 "content": [c.model_dump() for c in content],
                 "modify_time": modify_time,
+                "md5": file_md5,
             }
 
             for doc in content:
@@ -295,11 +317,11 @@ class ByzerStorageCache(BaseCacheManager):
         files_to_process = []
         current_files = set()
         for file_info in self.get_all_files():
-            file_path, _, modify_time = file_info
+            file_path, _, _, file_md5 = file_info
             current_files.add(file_path)
             if (
                 file_path not in self.cache
-                or self.cache[file_path]["modify_time"] < modify_time
+                or self.cache[file_path]["md5"] != file_md5
             ):
                 files_to_process.append(file_info)
 
@@ -362,10 +384,10 @@ class ByzerStorageCache(BaseCacheManager):
 
                 
 
-    def get_all_files(self) -> List[Tuple[str, str, float]]:
+    def get_all_files(self) -> List[Tuple[str, str, float, str]]:
         all_files = []
         for root, dirs, files in os.walk(self.path,followlinks=True):
-            dirs[:] = [d for d in dirs if not d.startswith(".")]
+            dirs[:] = [d for d in dirs if not d.startswith(".") and d not in default_ignore_dirs]
 
             if self.ignore_spec:
                 relative_root = os.path.relpath(root, self.path)
@@ -389,6 +411,7 @@ class ByzerStorageCache(BaseCacheManager):
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, self.path)
                 modify_time = os.path.getmtime(file_path)
-                all_files.append((file_path, relative_path, modify_time))
+                file_md5 = generate_file_md5(file_path)
+                all_files.append((file_path, relative_path, modify_time, file_md5))
 
         return all_files

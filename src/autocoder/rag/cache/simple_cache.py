@@ -2,7 +2,7 @@
 from multiprocessing import Pool
 from autocoder.common import SourceCode
 from autocoder.rag.cache.base_cache import BaseCacheManager, DeleteEvent, AddOrUpdateEvent
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, List, Tuple, Any, Optional, Union
 import os
 import threading
 import json
@@ -15,12 +15,29 @@ import time
 from loguru import logger
 from autocoder.rag.utils import process_file_in_multi_process, process_file_local
 from autocoder.rag.variable_holder import VariableHolder
+import hashlib
 
 default_ignore_dirs = [
     "__pycache__",
     "node_modules",
     "_images"
 ]
+
+
+def generate_file_md5(file_path: str) -> str:
+    md5_hash = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            md5_hash.update(chunk)
+    return md5_hash.hexdigest()
+
+
+def generate_content_md5(content: Union[str, bytes]) -> str:
+    if isinstance(content, str):
+        content = content.encode("utf-8")
+    md5_hash = hashlib.md5()
+    md5_hash.update(content)
+    return md5_hash.hexdigest()
 
 
 class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
@@ -58,10 +75,10 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 return
             files_to_process = []
             for file_info in self.get_all_files():
-                file_path, _, modify_time = file_info
+                file_path, _, modify_time, file_md5 = file_info
                 if (
                     file_path not in self.cache
-                    or self.cache[file_path]["modify_time"] < modify_time
+                    or self.cache[file_path]["md5"] != file_md5
                 ):
                     files_to_process.append(file_info)
             if not files_to_process:
@@ -90,11 +107,11 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         files_to_process = []
         current_files = set()
         for file_info in self.get_all_files():
-            file_path, _, modify_time = file_info
+            file_path, _, _, file_md5 = file_info
             current_files.add(file_path)
             if (
                 file_path not in self.cache
-                or self.cache[file_path]["modify_time"] < modify_time
+                or self.cache[file_path]["md5"] != file_md5
             ):
                 files_to_process.append(file_info)
 
@@ -123,7 +140,8 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                         result = process_file_local(file_info[0])
                         self.update_cache(file_info, result)
                     except Exception as e:
-                        logger.error(f"SimpleCache Error in process_queue: {e}")
+                        logger.error(
+                            f"SimpleCache Error in process_queue: {e}")
 
             self.write_cache()
 
@@ -149,8 +167,12 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         if not fcntl:
             with open(cache_file, "w") as f:
                 for data in self.cache.values():
-                    json.dump(data, f, ensure_ascii=False)
-                    f.write("\n")
+                    try:
+                        json.dump(data, f, ensure_ascii=False)
+                        f.write("\n")
+                    except Exception as e:
+                        logger.error(
+                            f"Failed to write {data['file_path']} to .cache/cache.jsonl: {e}")
         else:
             lock_file = cache_file + ".lock"
             with open(lock_file, "w") as lockf:
@@ -160,22 +182,27 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                     # 写入缓存文件
                     with open(cache_file, "w") as f:
                         for data in self.cache.values():
-                            json.dump(data, f, ensure_ascii=False)
-                            f.write("\n")
+                            try:
+                                json.dump(data, f, ensure_ascii=False)
+                                f.write("\n")
+                            except Exception as e:
+                                logger.error(
+                                    f"Failed to write {data['file_path']} to .cache/cache.jsonl: {e}")
 
                 finally:
                     # 释放文件锁
                     fcntl.flock(lockf, fcntl.LOCK_UN)
 
     def update_cache(
-        self, file_info: Tuple[str, str, float], content: List[SourceCode]
+        self, file_info: Tuple[str, str, float, str], content: List[SourceCode]
     ):
-        file_path, relative_path, modify_time = file_info
+        file_path, relative_path, modify_time, file_md5 = file_info
         self.cache[file_path] = {
             "file_path": file_path,
             "relative_path": relative_path,
             "content": [c.model_dump() for c in content],
             "modify_time": modify_time,
+            "md5": file_md5,
         }
 
     def get_cache(self, options: Optional[Dict[str, Any]] = None):
@@ -186,7 +213,8 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
     def get_all_files(self) -> List[Tuple[str, str, float]]:
         all_files = []
         for root, dirs, files in os.walk(self.path, followlinks=True):
-            dirs[:] = [d for d in dirs if not d.startswith(".") and d not in default_ignore_dirs]
+            dirs[:] = [d for d in dirs if not d.startswith(
+                ".") and d not in default_ignore_dirs]
 
             if self.ignore_spec:
                 relative_root = os.path.relpath(root, self.path)
@@ -210,6 +238,8 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, self.path)
                 modify_time = os.path.getmtime(file_path)
-                all_files.append((file_path, relative_path, modify_time))
+                file_md5 = generate_file_md5(file_path)
+                all_files.append(
+                    (file_path, relative_path, modify_time, file_md5))
 
         return all_files

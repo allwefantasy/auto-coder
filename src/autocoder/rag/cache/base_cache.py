@@ -6,7 +6,7 @@ class DeleteEvent(BaseModel):
     file_paths: List[str]
 
 class AddOrUpdateEvent(BaseModel):
-    file_infos: List[Tuple[str, str, float]]
+    file_infos: List[Tuple[str, str, float, str]]
 
 class BaseCacheManager(ABC):
     @abstractmethod
