@@ -636,6 +636,25 @@ class DocxConverter(HtmlConverter):
     Converts DOCX files to Markdown. Style information (e.g.m headings) and tables are preserved where possible.
     """
 
+    def _save_image(self, image, output_dir: str) -> str:
+        """
+        保存图片并返回相对路径
+        """
+        # 获取图片内容和格式
+        image_content = image.open()
+        image_format = image.content_type.split('/')[-1] if image.content_type else 'png'
+        
+        # 生成唯一文件名
+        image_filename = f"image_{hash(image_content.read())}.{image_format}"
+        image_content.seek(0)  # 重置文件指针
+        
+        # 保存图片
+        image_path = os.path.join(output_dir, image_filename)
+        with open(image_path, 'wb') as f:
+            f.write(image_content.read())
+            
+        return image_path
+
     def convert(self, local_path, **kwargs) -> Union[None, DocumentConverterResult]:
         # Bail if not a DOCX
         extension = kwargs.get("file_extension", "")
@@ -668,26 +687,7 @@ class DocxConverter(HtmlConverter):
             html_content = result.value
             result = self._convert(html_content)
 
-        return result
-
-    def _save_image(self, image, output_dir: str) -> str:
-        """
-        保存图片并返回相对路径
-        """
-        # 获取图片内容和格式
-        image_content = image.open()
-        image_format = image.content_type.split('/')[-1] if image.content_type else 'png'
-        
-        # 生成唯一文件名
-        image_filename = f"image_{hash(image_content.read())}.{image_format}"
-        image_content.seek(0)  # 重置文件指针
-        
-        # 保存图片
-        image_path = os.path.join(output_dir, image_filename)
-        with open(image_path, 'wb') as f:
-            f.write(image_content.read())
-            
-        return image_path
+        return result    
 
 
 class XlsxConverter(HtmlConverter):
