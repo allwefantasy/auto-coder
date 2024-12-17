@@ -635,18 +635,22 @@ class DocxConverter(HtmlConverter):
     """
     Converts DOCX files to Markdown. Style information (e.g.m headings) and tables are preserved where possible.
     """
+    
+    def __init__(self):
+        self._image_counter = 0
+        super().__init__()
 
     def _save_image(self, image, output_dir: str) -> str:
         """
-        保存图片并返回相对路径
+        保存图片并返回相对路径，使用递增的计数器来命名文件
         """
         # 获取图片内容和格式
         image_content = image.open()
         image_format = image.content_type.split('/')[-1] if image.content_type else 'png'
         
-        # 生成唯一文件名
-        image_filename = f"image_{hash(image_content.read())}.{image_format}"
-        image_content.seek(0)  # 重置文件指针
+        # 增加计数器并生成文件名
+        self._image_counter += 1
+        image_filename = f"image_{self._image_counter}.{image_format}"
         
         # 保存图片
         image_path = os.path.join(output_dir, image_filename)
