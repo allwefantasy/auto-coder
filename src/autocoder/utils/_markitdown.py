@@ -642,13 +642,52 @@ class DocxConverter(HtmlConverter):
         if extension.lower() != ".docx":
             return None
 
+        # 设置图片输出目录
+        image_output_dir = None
+        if kwargs.get("image_output_dir", None):
+            image_output_dir = kwargs.get("image_output_dir")
+        else:
+            # Create output directory for images if it doesn't exist
+            image_output_dir = os.path.join(os.path.dirname(
+                local_path), "_images", os.path.basename(local_path))
+        os.makedirs(image_output_dir, exist_ok=True)
+
         result = None
         with open(local_path, "rb") as docx_file:
-            result = mammoth.convert_to_html(docx_file)
+            # 配置图片转换器
+            transform_image = mammoth.images.img_element(lambda image: {
+                "src": self._save_image(image, image_output_dir),
+                "alt": image.alt_text if image.alt_text else "Image"
+            })
+            
+            # 进行转换
+            result = mammoth.convert_to_html(
+                docx_file,
+                convert_image=mammoth.images.inline(transform_image)
+            )
             html_content = result.value
             result = self._convert(html_content)
 
         return result
+
+    def _save_image(self, image, output_dir: str) -> str:
+        """
+        保存图片并返回相对路径
+        """
+        # 获取图片内容和格式
+        image_content = image.open()
+        image_format = image.content_type.split('/')[-1] if image.content_type else 'png'
+        
+        # 生成唯一文件名
+        image_filename = f"image_{hash(image_content.read())}.{image_format}"
+        image_content.seek(0)  # 重置文件指针
+        
+        # 保存图片
+        image_path = os.path.join(output_dir, image_filename)
+        with open(image_path, 'wb') as f:
+            f.write(image_content.read())
+            
+        return image_path
 
 
 class XlsxConverter(HtmlConverter):
