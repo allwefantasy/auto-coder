@@ -119,8 +119,11 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             elif isinstance(file_list, AddOrUpdateEvent):
                 for file_info in file_list.file_infos:
                     logger.info(f"{file_info[0]} is detected to be updated")
-                    result = process_file_local(file_info[0])
-                    self.update_cache(file_info, result)
+                    try:
+                        result = process_file_local(file_info[0])
+                        self.update_cache(file_info, result)
+                    except Exception as e:
+                        logger.error(f"SimpleCache Error in process_queue: {e}")
 
             self.write_cache()
 
