@@ -1,8 +1,8 @@
 
-from multiprocessing import Pool 
-from autocoder.common import SourceCode 
-from autocoder.rag.cache.base_cache import BaseCacheManager,DeleteEvent,AddOrUpdateEvent
-from typing import Dict, List, Tuple,Any,Optional
+from multiprocessing import Pool
+from autocoder.common import SourceCode
+from autocoder.rag.cache.base_cache import BaseCacheManager, DeleteEvent, AddOrUpdateEvent
+from typing import Dict, List, Tuple, Any, Optional
 import os
 import threading
 import json
@@ -13,8 +13,14 @@ else:
     fcntl = None
 import time
 from loguru import logger
-from autocoder.rag.utils import process_file_in_multi_process,process_file_local
+from autocoder.rag.utils import process_file_in_multi_process, process_file_local
 from autocoder.rag.variable_holder import VariableHolder
+
+default_ignore_dirs = [
+    "__pycache__",
+    "node_modules",
+    "_images"
+]
 
 
 class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
@@ -71,7 +77,8 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 initializer=initialize_tokenizer,
                 initargs=(VariableHolder.TOKENIZER_PATH,),
             ) as pool:
-                results = pool.map(process_file_in_multi_process, files_to_process)
+                results = pool.map(
+                    process_file_in_multi_process, files_to_process)
 
             for file_info, result in zip(files_to_process, results):
                 self.update_cache(file_info, result)
@@ -99,7 +106,8 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 self.queue.append(DeleteEvent(file_paths=deleted_files))
         if files_to_process:
             with self.lock:
-                self.queue.append(AddOrUpdateEvent(file_infos=files_to_process))
+                self.queue.append(AddOrUpdateEvent(
+                    file_infos=files_to_process))
 
     def process_queue(self):
         while self.queue:
@@ -167,15 +175,15 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             "modify_time": modify_time,
         }
 
-    def get_cache(self,options:Optional[Dict[str,Any]]=None):
+    def get_cache(self, options: Optional[Dict[str, Any]] = None):
         self.load_first()
         self.trigger_update()
         return self.cache
 
     def get_all_files(self) -> List[Tuple[str, str, float]]:
         all_files = []
-        for root, dirs, files in os.walk(self.path,followlinks=True):
-            dirs[:] = [d for d in dirs if not d.startswith(".")]
+        for root, dirs, files in os.walk(self.path, followlinks=True):
+            dirs[:] = [d for d in dirs if not d.startswith(".") and d not in default_ignore_dirs]
 
             if self.ignore_spec:
                 relative_root = os.path.relpath(root, self.path)

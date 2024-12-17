@@ -644,8 +644,7 @@ class DocxConverter(HtmlConverter):
         """
         保存图片并返回相对路径，使用递增的计数器来命名文件
         """
-        # 获取图片内容和格式
-        image_content = image.open()
+        # 获取图片内容和格式        
         image_format = image.content_type.split('/')[-1] if image.content_type else 'png'
         
         # 增加计数器并生成文件名
@@ -654,7 +653,7 @@ class DocxConverter(HtmlConverter):
         
         # 保存图片
         image_path = os.path.join(output_dir, image_filename)
-        with open(image_path, 'wb') as f:
+        with image.open() as image_content, open(image_path, 'wb') as f:
             f.write(image_content.read())
             
         return image_path
@@ -678,11 +677,12 @@ class DocxConverter(HtmlConverter):
         result = None
         with open(local_path, "rb") as docx_file:
             # 配置图片转换器
-            transform_image = mammoth.images.img_element(lambda image: {
-                "src": self._save_image(image, image_output_dir),
-                "alt": image.alt_text if image.alt_text else "Image"
-            })
-            
+            def transform_image(image):
+                return {
+                    "src": self._save_image(image, image_output_dir),
+                    "alt": image.alt_text if image.alt_text else f"Image {self._image_counter}"
+                }
+                        
             # 进行转换
             result = mammoth.convert_to_html(
                 docx_file,
@@ -1110,8 +1110,9 @@ class MarkItDown:
         base, ext = os.path.splitext(path)
         self._append_ext(extensions, ext)
 
-        for g in self._guess_ext_magic(path):
-            self._append_ext(extensions, g)
+        if not extensions:
+            for g in self._guess_ext_magic(path):
+                self._append_ext(extensions, g)
 
         # Convert
         return self._convert(path, extensions, **kwargs)

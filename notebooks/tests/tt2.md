@@ -88,23 +88,23 @@
 
 [按照最新的界面菜单样式，简要截图+文字介绍每个页面的大致功能]
 
-![](data:image/png;base64...)
+![Image 1](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_1.png)
 
 #### 数据解读助手
 
 打开页面服务，数据解读助手为默认页面。左侧为输入面板，右侧为结果面板。
 
-![](data:image/png;base64...)
+![Image 2](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_2.png)
 
 右侧结果面板，可以点开每个panel 查看系统返回的结果：
 
-![](data:image/png;base64...)
+![Image 3](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_3.png)
 
 #### 解读指标验证
 
 解读指标验证工功能是一个相对独立的功能，在前面的解读小助手里，它可以被一个选项按钮控制是否开启。但是用户也可能有从别的渠道或者方式获取到的解读数据以及解读结果，那么可以黏贴复制到这里，在这里，将得到更详细的细节。
 
-![](data:image/png;base64...)
+![Image 4](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_4.png)
 
 在上面，上下文部分为可以包含对这个CSV数据的背景介绍，以及解读内容的补充。因为解读文本里的内容不一定完全来自 CSV 数据，可能参考了其他的信息，那么可以在这里添加进去，方便校验服务更好的校验。
 
@@ -124,11 +124,11 @@
 
 在数据解读助手页面，你可以得到解读服务的最终提示词：
 
-![](data:image/png;base64...)
+![Image 5](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_5.png)
 
 拷贝该提示词到 Prompt 测试页面：
 
-![](data:image/png;base64...)
+![Image 6](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_6.png)
 
 可以得到原生的大模型的内容，没有其他干扰。此外，用户也可以将该提示词黏贴到其他模型的测试页面，查看其他模型的回答效果。
 
@@ -138,15 +138,15 @@
 
 首先是上传页面：
 
-![](data:image/png;base64...)
+![Image 7](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_7.png)
 
 接着是列表页：
 
-![](data:image/png;base64...)
+![Image 8](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_8.png)
 
 以及删除页：
 
-![](data:image/png;base64...)
+![Image 9](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_9.png)
 
 所以新增删除更新动作在知识库中都是即刻生效的。
 
@@ -158,7 +158,7 @@
 
 数据解读助手由两部分构成，左侧面板为交互区，右侧面板为结果区。
 
-![](data:image/png;base64...)
+![Image 10](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_10.png)
 
 #### 启用引用
 
@@ -166,7 +166,7 @@
 
 如果使用内置知识库，那么系统会默认提供引用文档地址：
 
-![](data:image/png;base64...)
+![Image 11](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_11.png)
 
 如果用户提供了“数据上下文” 以及 emb 模型，那么可以开启该功能，则会一步展示，我们的解读参考了哪些“数据上下文”。
 
@@ -176,7 +176,7 @@
 
 系统会让让你选emb模型以及相似度分数。大多情况使用默认值即可。
 
-![](data:image/png;base64...)
+![Image 12](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_12.png)
 
 通过上下文，我们纠正了 csv 中的一些“错误数据”。
 
@@ -184,11 +184,11 @@
 
 系统根据上下文，纠正了原始 csv 数据中的错误：
 
-![](data:image/png;base64...)
+![Image 13](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_13.png)
 
 同时系统会告诉你，哪一句话（使用 \n分割）引用了这个“上下文”：
 
-![](data:image/png;base64...)
+![Image 14](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_14.png)
 
 #### 启用数据校验
 
@@ -200,17 +200,17 @@
 
 按界面要求输入CSV数据，主题等，然后开启黄框中的“启用数据校验”
 
-![](data:image/png;base64...)
+![Image 15](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_15.png)
 
 1. 测试效果（查看方式+测试效果截图及文字描述）
 
 在右侧结果面板中，点击 “数据验证”面板：
 
-![](data:image/png;base64...)
+![Image 16](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_16.png)
 
 此时可以看到校验结果：
 
-![](data:image/png;base64...)
+![Image 17](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_17.png)
 
 如果你需要看到更加细节的展示，可以在 “解读指标验证” 界面查看。
 
@@ -224,29 +224,29 @@
 
 我们先来看关闭的解读效果：
 
-![](data:image/png;base64...)
+![Image 18](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_18.png)
 
 此时解读效果如下，大模型会自由发挥解读，做了比较细致的分析：
 
-![](data:image/png;base64...)
+![Image 19](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_19.png)
 
 现在我们在相同的数据情况下，开启 RAG:
 
-![](data:image/png;base64...)
+![Image 20](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_20.png)
 
 1. 测试效果（查看方式+测试效果截图及文字描述）
 
 此时的结果如下：
 
-![](data:image/png;base64...)
+![Image 21](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_21.png)
 
 相当简约了。我们可以在 prompt 中看到系统从知识库中找到的示例解读：
 
-![](data:image/png;base64...)
+![Image 22](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_22.png)
 
 该示例的出处可以可以在引用 panel 中找到：
 
-![](data:image/png;base64...)
+![Image 23](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_23.png)
 
 ### 数据解读整体操作流程
 
@@ -257,15 +257,15 @@
 1. 开启内置RAG知识库
 2. 输入需要解读的 CSV以及这个csv 数据背后的主题
 
-![](data:image/png;base64...)
+![Image 24](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_24.png)
 
 得到如下结果：
 
-![](data:image/png;base64...)
+![Image 25](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_25.png)
 
 然后将结果拷贝到解读指标验证页面，完成指标的校验：
 
-![](data:image/png;base64...)
+![Image 26](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_26.png)
 
 1. 测试结果演示（启用的各个功能的测试结果查看方式截图+说明文字）
 
@@ -282,15 +282,15 @@
 1. 开启内置RAG知识库
 2. 输入需要解读的 CSV以及这个csv 数据背后的主题
 
-![](data:image/png;base64...)
+![Image 27](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_27.png)
 
 得到如下结果：
 
-![](data:image/png;base64...)
+![Image 28](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_28.png)
 
 然后将结果拷贝到解读指标验证页面，完成指标的校验：
 
-![](data:image/png;base64...)
+![Image 29](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_29.png)
 
 ## Prompt测试
 
@@ -302,11 +302,11 @@ Prompt 测试方便用户拷贝解读页面生成的 Prompt ,然后在此页面�
 
 在数据解读助手页面，你可以得到解读服务的最终提示词：
 
-![](data:image/png;base64...)
+![Image 30](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_30.png)
 
 拷贝该提示词到 Prompt 测试页面：
 
-![](data:image/png;base64...)
+![Image 31](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_31.png)
 
 可以得到原生的大模型的内容，没有其他干扰。此外，用户也可以将该提示词黏贴到其他模型的测试页面，查看其他模型的回答效果。
 
@@ -320,19 +320,19 @@ Prompt 测试方便用户拷贝解读页面生成的 Prompt ,然后在此页面�
 
 首先进入文件上传界面，你可以上传文本文件，word 文档，excel文档，pdf 文档 等四种格式的文档。
 
-![](data:image/png;base64...)
+![Image 32](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_32.png)
 
 选择文件后点击上传：
 
-![](data:image/png;base64...)
+![Image 33](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_33.png)
 
 此时进入 文件列表菜单：
 
-![](data:image/png;base64...)
+![Image 34](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_34.png)
 
 可以看到文件已经在知识库中。接着进入文件删除页面：
 
-![](data:image/png;base64...)
+![Image 35](/Users/allwefantasy/Downloads/_images/副本银联数据大模型报告生成项目_数据解读服务界面用户使用手册_v1.0_241108.docx/image_35.png)
 
 可以点击删除 来删除对应的文件。
 

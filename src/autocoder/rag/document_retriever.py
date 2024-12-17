@@ -13,13 +13,6 @@ from loguru import logger
 from pydantic import BaseModel
 
 from autocoder.common import SourceCode
-from autocoder.rag.loaders import (
-    extract_text_from_docx,
-    extract_text_from_excel,
-    extract_text_from_pdf,
-    extract_text_from_ppt,
-)
-from autocoder.rag.token_counter import count_tokens_worker, count_tokens
 from uuid import uuid4
 from autocoder.rag.variable_holder import VariableHolder
 from abc import ABC, abstractmethod
@@ -119,7 +112,8 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
         logger.info(f"DocumentRetriever initialized with:")
         logger.info(f"  Path: {self.path}")
         logger.info(f"  Diable auto window: {self.disable_auto_window} ")
-        logger.info(f"  Single file token limit: {self.single_file_token_limit}")
+        logger.info(
+            f"  Single file token limit: {self.single_file_token_limit}")
         logger.info(f"  Small file token limit: {self.small_file_token_limit}")
         logger.info(f"  Small file merge limit: {self.small_file_merge_limit}")
         logger.info(f"  Enable hybrid index: {self.enable_hybrid_index}")
@@ -200,9 +194,10 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
     ) -> Generator[SourceCode, None, None]:
         chunk_size = self.single_file_token_limit
         total_chunks = (doc.tokens + chunk_size - 1) // chunk_size
-        logger.info(f"Splitting document {doc.module_name} into {total_chunks} chunks")
+        logger.info(
+            f"Splitting document {doc.module_name} into {total_chunks} chunks")
         for i in range(0, doc.tokens, chunk_size):
-            chunk_content = doc.source_code[i : i + chunk_size]
+            chunk_content = doc.source_code[i: i + chunk_size]
             chunk_tokens = min(chunk_size, doc.tokens - i)
             chunk_name = f"{doc.module_name}#chunk{i//chunk_size+1}"
             # logger.debug(f"  Created chunk: {chunk_name} (tokens: {chunk_tokens})")
