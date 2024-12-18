@@ -216,6 +216,9 @@ def main(input_args: Optional[List[str]] = None):
     serve_parser.add_argument("--api_key", default="", help="")
     serve_parser.add_argument("--served_model_name", default="", help="")
     serve_parser.add_argument("--prompt_template", default="", help="")
+    serve_parser.add_argument("--recall_model", default="", help="Model used for recall stage")
+    serve_parser.add_argument("--dynamic_chunk_model", default="", help="Model used for dynamic chunk stage")
+    serve_parser.add_argument("--answer_model", default="", help="Model used for answer stage")
     serve_parser.add_argument("--ssl_keyfile", default="", help="")
     serve_parser.add_argument("--ssl_certfile", default="", help="")
     serve_parser.add_argument("--response_role", default="assistant", help="")
@@ -333,6 +336,11 @@ def main(input_args: Optional[List[str]] = None):
             byzerllm.connect_cluster(address=args.ray_address)
         llm = byzerllm.ByzerLLM()
         llm.setup_default_model_name(args.model)
+        
+        # Setup models for different stages, fallback to default model if not specified
+        args.recall_model = args.recall_model or args.model
+        args.dynamic_chunk_model = args.dynamic_chunk_model or args.model  
+        args.answer_model = args.answer_model or args.model
 
         # 当启用hybrid_index时,检查必要的组件
         if auto_coder_args.enable_hybrid_index:                           
