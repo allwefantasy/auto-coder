@@ -68,7 +68,8 @@ class _CustomMarkdownify(markdownify.MarkdownConverter):
     """
 
     def __init__(self, **options: Any):
-        options["heading_style"] = options.get("heading_style", markdownify.ATX)
+        options["heading_style"] = options.get(
+            "heading_style", markdownify.ATX)
         # Explicitly cast options to the expected type if necessary
         super().__init__(**options)
 
@@ -318,7 +319,7 @@ class YouTubeConverter(DocumentConverter):
                     obj_start = lines[0].find("{")
                     obj_end = lines[0].rfind("}")
                     if obj_start >= 0 and obj_end >= 0:
-                        data = json.loads(lines[0][obj_start : obj_end + 1])
+                        data = json.loads(lines[0][obj_start: obj_end + 1])
                         attrdesc = self._findKey(
                             data, "attributedDescriptionBodyText"
                         )  # type: ignore
@@ -331,7 +332,8 @@ class YouTubeConverter(DocumentConverter):
         # Start preparing the page
         webpage_text = "# YouTube\n"
 
-        title = self._get(metadata, ["title", "og:title", "name"])  # type: ignore
+        title = self._get(
+            metadata, ["title", "og:title", "name"])  # type: ignore
         assert isinstance(title, str)
 
         if title:
@@ -468,7 +470,8 @@ class BingSerpConverter(DocumentConverter):
 
                     try:
                         # RFC 4648 / Base64URL" variant, which uses "-" and "_"
-                        a["href"] = base64.b64decode(u, altchars="-_").decode("utf-8")
+                        a["href"] = base64.b64decode(
+                            u, altchars="-_").decode("utf-8")
                     except UnicodeDecodeError:
                         pass
                     except binascii.Error:
@@ -477,7 +480,8 @@ class BingSerpConverter(DocumentConverter):
             # Convert to markdown
             md_result = _markdownify.convert_soup(result).strip()
             lines = [line.strip() for line in re.split(r"\n+", md_result)]
-            results.append("\n".join([line for line in lines if len(line) > 0]))
+            results.append(
+                "\n".join([line for line in lines if len(line) > 0]))
 
         webpage_text = (
             f"## A Bing search for '{query}' found the following results:\n\n"
@@ -507,7 +511,8 @@ class PdfConverter(DocumentConverter):
         else:
             # Create output directory for images if it doesn't exist
             image_output_dir = os.path.join(
-                os.path.dirname(local_path), "_images", os.path.basename(local_path)
+                os.path.dirname(local_path), "_images", os.path.basename(
+                    local_path).replace(" ", "_")
             )
         os.makedirs(image_output_dir, exist_ok=True)
 
@@ -545,18 +550,17 @@ class PdfConverter(DocumentConverter):
         self, layout, image_output_dir: str, image_count: int
     ) -> List[str]:
         """Process the layout of a PDF page, extracting both text and images."""
-        content = []        
-        iw = ImageWriter(image_output_dir)
-
+        content = [] 
+        local_image_count = image_count       
         for lt_obj in layout:
             # Handle images
             if isinstance(lt_obj, LTImage) or (
                 isinstance(lt_obj, LTFigure) and lt_obj.name.startswith("Im")
-            ):
-                image_count += 1
+            ):                
                 image_data = None
                 image_meta = {}
-                image_path = os.path.join(image_output_dir, f"image_{image_count}.png")
+                image_path = os.path.join(
+                    image_output_dir, f"image_{local_image_count}.png")
 
                 if hasattr(lt_obj, "stream"):
                     image_data = lt_obj.stream.get_data()
@@ -566,12 +570,15 @@ class PdfConverter(DocumentConverter):
 
                 if image_data:
                     if isinstance(lt_obj, LTImage):
+                        iw = ImageWriter(image_output_dir)
                         name = iw.export_image(lt_obj)
-                        suffix = os.path.splitext(name)[1]  
+                        suffix = os.path.splitext(name)[1]
                         temp_path = os.path.join(image_output_dir, name)
-                        image_path = os.path.join(image_output_dir, f"image_{image_count}{suffix}")
+                        image_path = os.path.join(
+                            image_output_dir, f"image_{local_image_count}{suffix}")
                         os.rename(temp_path, image_path)
-                        content.append(f"![Image {image_count}]({image_path})")
+                        content.append(f"![Image {local_image_count}]({image_path})")
+                        local_image_count += 1
                         continue
                     try:
                         # Try to handle raw pixel data
@@ -580,12 +587,14 @@ class PdfConverter(DocumentConverter):
                             height = image_meta["Height"]
                             bits = image_meta["BitsPerComponent"]
                             colorspace = image_meta["ColorSpace"].name
-                            new_image_data = np.frombuffer(image_data, dtype=np.uint8)
+                            new_image_data = np.frombuffer(
+                                image_data, dtype=np.uint8)
                             # Normalize to 8-bit if necessary
                             if bits != 8:
                                 max_val = (1 << bits) - 1
                                 new_image_data = (
-                                    new_image_data.astype("float32") * 255 / max_val
+                                    new_image_data.astype(
+                                        "float32") * 255 / max_val
                                 ).astype("uint8")
 
                             if colorspace == "DeviceRGB":
@@ -595,16 +604,19 @@ class PdfConverter(DocumentConverter):
                                 img = Image.fromarray(new_image_data, "RGB")
                                 img.save(image_path)
                                 content.append(
-                                    f"![Image {image_count}]({image_path})\n"
+                                    f"![Image {local_image_count}]({image_path})\n"
                                 )
+                                local_image_count += 1
                                 continue
                             elif colorspace == "DeviceGray":
-                                new_image_data = new_image_data.reshape((height, width))
+                                new_image_data = new_image_data.reshape(
+                                    (height, width))
                                 img = Image.fromarray(new_image_data, "L")
                                 img.save(image_path)
                                 content.append(
-                                    f"![Image {image_count}]({image_path})\n"
+                                    f"![Image {local_image_count}]({image_path})\n"
                                 )
+                                local_image_count += 1
                                 continue
                     except Exception as e:
                         print(
@@ -614,7 +626,8 @@ class PdfConverter(DocumentConverter):
                     with open(image_path, "wb") as img_file:
                         img_file.write(image_data)
 
-                    content.append(f"![Image {image_count}]({image_path})\n")
+                    content.append(f"![Image {local_image_count}]({image_path})\n")
+                    local_image_count += 1
 
             # Handle text
             if hasattr(lt_obj, "get_text"):
@@ -625,7 +638,8 @@ class PdfConverter(DocumentConverter):
             # Recursively process nested layouts
             elif hasattr(lt_obj, "_objs"):
                 content.extend(
-                    self._process_layout(lt_obj._objs, image_output_dir, image_count)
+                    self._process_layout(
+                        lt_obj._objs, image_output_dir, image_count)
                 )
 
         return content
@@ -635,7 +649,7 @@ class DocxConverter(HtmlConverter):
     """
     Converts DOCX files to Markdown. Style information (e.g.m headings) and tables are preserved where possible.
     """
-    
+
     def __init__(self):
         self._image_counter = 0
         super().__init__()
@@ -644,18 +658,19 @@ class DocxConverter(HtmlConverter):
         """
         保存图片并返回相对路径，使用递增的计数器来命名文件
         """
-        # 获取图片内容和格式        
-        image_format = image.content_type.split('/')[-1] if image.content_type else 'png'
-        
+        # 获取图片内容和格式
+        image_format = image.content_type.split(
+            '/')[-1] if image.content_type else 'png'
+
         # 增加计数器并生成文件名
         self._image_counter += 1
         image_filename = f"image_{self._image_counter}.{image_format}"
-        
+
         # 保存图片
         image_path = os.path.join(output_dir, image_filename)
         with image.open() as image_content, open(image_path, 'wb') as f:
             f.write(image_content.read())
-            
+
         return image_path
 
     def convert(self, local_path, **kwargs) -> Union[None, DocumentConverterResult]:
@@ -671,7 +686,7 @@ class DocxConverter(HtmlConverter):
         else:
             # Create output directory for images if it doesn't exist
             image_output_dir = os.path.join(os.path.dirname(
-                local_path), "_images", os.path.basename(local_path))
+                local_path), "_images", os.path.basename(local_path).replace(" ", "_"))
         os.makedirs(image_output_dir, exist_ok=True)
 
         result = None
@@ -682,7 +697,7 @@ class DocxConverter(HtmlConverter):
                     "src": self._save_image(image, image_output_dir),
                     "alt": image.alt_text if image.alt_text else f"Image {self._image_counter}"
                 }
-                        
+
             # 进行转换
             result = mammoth.convert_to_html(
                 docx_file,
@@ -691,7 +706,7 @@ class DocxConverter(HtmlConverter):
             html_content = result.value
             result = self._convert(html_content)
 
-        return result    
+        return result
 
 
 class XlsxConverter(HtmlConverter):
@@ -710,7 +725,8 @@ class XlsxConverter(HtmlConverter):
         for s in sheets:
             md_content += f"## {s}\n"
             html_content = sheets[s].to_html(index=False)
-            md_content += self._convert(html_content).text_content.strip() + "\n\n"
+            md_content += self._convert(
+                html_content).text_content.strip() + "\n\n"
 
         return DocumentConverterResult(
             title=None,
@@ -745,7 +761,8 @@ class PptxConverter(HtmlConverter):
                     # https://github.com/scanny/python-pptx/pull/512#issuecomment-1713100069
                     alt_text = ""
                     try:
-                        alt_text = shape._element._nvXxPr.cNvPr.attrib.get("descr", "")
+                        alt_text = shape._element._nvXxPr.cNvPr.attrib.get(
+                            "descr", "")
                     except Exception:
                         pass
 
@@ -767,14 +784,17 @@ class PptxConverter(HtmlConverter):
                         html_table += "<tr>"
                         for cell in row.cells:
                             if first_row:
-                                html_table += "<th>" + html.escape(cell.text) + "</th>"
+                                html_table += "<th>" + \
+                                    html.escape(cell.text) + "</th>"
                             else:
-                                html_table += "<td>" + html.escape(cell.text) + "</td>"
+                                html_table += "<td>" + \
+                                    html.escape(cell.text) + "</td>"
                         html_table += "</tr>"
                         first_row = False
                     html_table += "</table></body></html>"
                     md_content += (
-                        "\n" + self._convert(html_table).text_content.strip() + "\n"
+                        "\n" +
+                        self._convert(html_table).text_content.strip() + "\n"
                     )
 
                 # Text areas
@@ -1028,7 +1048,8 @@ class ImageConverter(MediaConverter):
             }
         ]
 
-        response = client.chat.completions.create(model=model, messages=messages)
+        response = client.chat.completions.create(
+            model=model, messages=messages)
         return response.choices[0].message.content
 
 
@@ -1242,9 +1263,11 @@ class MarkItDown:
                 if res is not None:
                     # Normalize the content
                     res.text_content = "\n".join(
-                        [line.rstrip() for line in re.split(r"\r?\n", res.text_content)]
+                        [line.rstrip()
+                         for line in re.split(r"\r?\n", res.text_content)]
                     )
-                    res.text_content = re.sub(r"\n{3,}", "\n\n", res.text_content)
+                    res.text_content = re.sub(
+                        r"\n{3,}", "\n\n", res.text_content)
 
                     # Todo
                     return res
