@@ -78,7 +78,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 file_path, _, modify_time, file_md5 = file_info
                 if (
                     file_path not in self.cache
-                    or self.cache[file_path]["md5"] != file_md5
+                    or self.cache[file_path].get("md5","") != file_md5
                 ):
                     files_to_process.append(file_info)
             if not files_to_process:
@@ -111,7 +111,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             current_files.add(file_path)
             if (
                 file_path not in self.cache
-                or self.cache[file_path]["md5"] != file_md5
+                or self.cache[file_path].get("md5","") != file_md5
             ):
                 files_to_process.append(file_info)
 

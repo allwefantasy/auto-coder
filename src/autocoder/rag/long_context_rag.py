@@ -200,20 +200,29 @@ class LongContextRAG:
     def _answer_question(
         self, query: str, relevant_docs: List[str]
     ) -> Generator[str, None, None]:
-        """
-        使用以下文档来回答问题。如果文档中没有相关信息，请说"我没有足够的信息来回答这个问题"。
-
+        """        
         文档：
         {% for doc in relevant_docs %}
         {{ doc }}
         {% endfor %}
 
-        问题：{{ query }}
+        使用以上文档来回答问题。回答要求：
 
-        要求：
-        1. 注意相应的markdown图片如果存在也要输出,尽可能图文并茂
-        
-        回答：
+        1. 严格基于文档内容回答        
+        - 如果文档不包含足够信息,请明确回复:"抱歉,文档中没有足够的信息来回答这个问题。" 
+        - 不要添加、推测或扩展文档未提及的信息
+
+        2. 当相关的文档内容包含Markdown图片路径,类似 ![image](./image.png)        
+        - 根据图片路径前后内容推测图片与问题的相关性，有相关性则尽可能在回答中输出该Markdown图片路径。
+        - 需要输出完整的Markdown图片路径，不要省略。
+
+        3. 回答格式要求
+        - 使用清晰的段落结构
+        - 保持逻辑连贯性
+        - 必要时使用markdown格式提升可读性
+        - 确保图文内容紧密结合、相互补充
+
+        问题：{{ query }}
         """
 
     def _get_document_retriever_class(self):

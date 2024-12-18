@@ -102,6 +102,7 @@ src/autocoder/regexproject/__init__.py
 src/autocoder/suffixproject/__init__.py
 src/autocoder/tsproject/__init__.py
 src/autocoder/utils/__init__.py
+src/autocoder/utils/_markitdown.py
 src/autocoder/utils/conversation_store.py
 src/autocoder/utils/llm_client_interceptors.py
 src/autocoder/utils/log_capture.py

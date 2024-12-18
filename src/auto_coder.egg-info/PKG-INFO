@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.200
+Version: 0.1.201
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -49,6 +49,14 @@ Requires-Dist: python-pptx
 Requires-Dist: watchfiles
 Requires-Dist: cairosvg
 Requires-Dist: matplotlib
+Requires-Dist: mammoth
+Requires-Dist: markdownify
+Requires-Dist: pdfminer.six
+Requires-Dist: puremagic
+Requires-Dist: pydub
+Requires-Dist: youtube-transcript-api
+Requires-Dist: SpeechRecognition
+Requires-Dist: pathvalidate
 
 <p align="center">
   <picture>    
