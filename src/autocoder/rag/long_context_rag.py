@@ -341,6 +341,11 @@ class LongContextRAG:
 
             return response_generator(), []
         else:
+            
+            target_llm = self.llm
+            if self.llm.get_sub_client("qa_model"):
+                target_llm = self.llm.get_sub_client("qa_model")
+
             query = conversations[-1]["content"]
             context = []
 
@@ -349,8 +354,9 @@ class LongContextRAG:
                 in query
                 or "简要总结一下对话内容，用作后续的上下文提示 prompt，控制在 200 字以内"
                 in query
-            ):
-                chunks = self.llm.stream_chat_oai(
+            ):                
+
+                chunks = target_llm.stream_chat_oai(
                     conversations=conversations,
                     model=model,
                     role_mapping=role_mapping,
@@ -384,7 +390,7 @@ class LongContextRAG:
 
             if self.args.without_contexts and LLMComputeEngine is not None:
                 llm_compute_engine = LLMComputeEngine(
-                    llm=self.llm,
+                    llm=target_llm,
                     inference_enhance=not self.args.disable_inference_enhance,
                     inference_deep_thought=self.args.inference_deep_thought,
                     inference_slow_without_deep_thought=self.args.inference_slow_without_deep_thought,                    
@@ -566,7 +572,7 @@ class LongContextRAG:
 
             if LLMComputeEngine is not None and not self.args.disable_inference_enhance:
                 llm_compute_engine = LLMComputeEngine(
-                    llm=self.llm,
+                    llm=target_llm,
                     inference_enhance=not self.args.disable_inference_enhance,
                     inference_deep_thought=self.args.inference_deep_thought,
                     precision=self.args.inference_compute_precision,
@@ -597,7 +603,7 @@ class LongContextRAG:
                 }
             ]
 
-            chunks = self.llm.stream_chat_oai(
+            chunks = target_llm.stream_chat_oai(
                 conversations=new_conversations,
                 model=model,
                 role_mapping=role_mapping,

@@ -72,7 +72,8 @@ class DocFilterWorker:
                 conversations=conversations, documents=docs
             )
         except Exception as e:
-            logger.error(f"Error in _check_relevance_with_conversation: {str(e)}")
+            logger.error(
+                f"Error in _check_relevance_with_conversation: {str(e)}")
             return (None, submit_time_1, time.time())
 
         end_time_2 = time.time()
@@ -95,7 +96,8 @@ class DocFilter:
         if self.on_ray:
             cpu_count = os.cpu_count() or 1
             self.workers = [
-                DocFilterWorker.options(max_concurrency=1000, num_cpus=0).remote(llm)
+                DocFilterWorker.options(
+                    max_concurrency=1000, num_cpus=0).remote(llm)
                 for _ in range(cpu_count)
             ]
 
@@ -137,10 +139,17 @@ class DocFilter:
                         submit_time_1 = time.time()
                         try:
                             llm = ByzerLLM()
-                            llm.setup_default_model_name(self.llm.default_model_name)
                             llm.skip_nontext_check = True
+                            if self.llm.get_sub_client("recall_model"):
+                                llm.setup_sub_client(
+                                    "recall_model", self.llm.get_sub_client("recall_model"))
+                            else:
+                                llm.setup_default_model_name(
+                                    self.llm.default_model_name)
+
                             v = (
-                                _check_relevance_with_conversation.with_llm(llm)
+                                _check_relevance_with_conversation.with_llm(
+                                    llm)
                                 .options({"llm_config": {"max_length": 10}})
                                 .run(
                                     conversations=conversations,
@@ -194,10 +203,12 @@ class DocFilter:
                             )
                         )
                 except Exception as exc:
-                    logger.error(f"Document processing generated an exception: {exc}")
+                    logger.error(
+                        f"Document processing generated an exception: {exc}")
 
         # Sort relevant_docs by relevance score in descending order
-        relevant_docs.sort(key=lambda x: x.relevance.relevant_score, reverse=True)
+        relevant_docs.sort(
+            key=lambda x: x.relevance.relevant_score, reverse=True)
         return relevant_docs
 
     def filter_docs_with_ray(
@@ -210,7 +221,8 @@ class DocFilter:
             worker = self.workers[count % len(self.workers)]
             count += 1
             future = worker.filter_doc.remote(
-                conversations, [f"##File: {doc.module_name}\n{doc.source_code}"]
+                conversations, [
+                    f"##File: {doc.module_name}\n{doc.source_code}"]
             )
             futures.append((future, doc))
 
@@ -248,8 +260,10 @@ class DocFilter:
                         )
                     )
             except Exception as exc:
-                logger.error(f"Document processing generated an exception: {exc}")
+                logger.error(
+                    f"Document processing generated an exception: {exc}")
 
         # Sort relevant_docs by relevance score in descending order
-        relevant_docs.sort(key=lambda x: x.relevance.relevant_score, reverse=True)
+        relevant_docs.sort(
+            key=lambda x: x.relevance.relevant_score, reverse=True)
         return relevant_docs

@@ -16,7 +16,7 @@ class TokenLimiter:
         full_text_limit: int,
         segment_limit: int,
         buff_limit: int,
-        llm,
+        llm:ByzerLLM,
         disable_segment_reorder: bool,
     ):
         self.count_tokens = count_tokens
@@ -219,10 +219,13 @@ class TokenLimiter:
                 source_code_lines = doc.source_code.split("\n")
                 for idx, line in enumerate(source_code_lines):
                     source_code_with_line_number += f"{idx+1} {line}\n"
-
+                
                 llm = ByzerLLM()
-                llm.setup_default_model_name(self.llm.default_model_name)
                 llm.skip_nontext_check = True
+                if self.llm.get_sub_client("chunk_model"):                                 
+                    llm.setup_default_model_name(self.llm.get_sub_client("chunk_model").default_model_name)                    
+                else:
+                    llm.setup_default_model_name(self.llm.default_model_name)
 
                 extracted_info = (
                     self.extract_relevance_range_from_docs_with_conversation.options(
