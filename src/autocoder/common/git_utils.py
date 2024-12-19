@@ -3,6 +3,7 @@ from git import Repo, GitCommandError
 from loguru import logger
 from typing import List, Optional
 from pydantic import BaseModel
+import byzerllm
 from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
@@ -168,6 +169,110 @@ def revert_change(repo_path: str, message: str) -> bool:
         logger.warning(f"No commit found with message: {message}")
         return False
 
+
+def get_uncommitted_changes(repo_path: str) -> str:
+    """
+    获取当前仓库未提交的所有变更,并以markdown格式返回详细报告
+    
+    Args:
+        repo_path: Git仓库路径
+        
+    Returns:
+        str: markdown格式的变更报告,包含新增/修改/删除的文件列表及其差异
+    """
+    repo = get_repo(repo_path)
+    if repo is None:
+        return "Error: Repository is not initialized."
+        
+    try:
+        # 获取所有变更
+        changes = {
+            'new': [],      # 新增的文件
+            'modified': [], # 修改的文件 
+            'deleted': []   # 删除的文件
+        }
+        
+        # 获取未暂存的变更
+        diff_index = repo.index.diff(None)
+        
+        # 获取未追踪的文件
+        untracked = repo.untracked_files
+        
+        # 处理未暂存的变更
+        for diff_item in diff_index:
+            file_path = diff_item.a_path
+            
+            if diff_item.new_file:
+                changes['new'].append((file_path, diff_item.diff.decode('utf-8')))
+            elif diff_item.deleted_file:
+                changes['deleted'].append((file_path, diff_item.diff.decode('utf-8')))
+            else:
+                changes['modified'].append((file_path, diff_item.diff.decode('utf-8')))
+                
+        # 处理未追踪的文件    
+        for file_path in untracked:
+            try:
+                with open(os.path.join(repo_path, file_path), 'r') as f:
+                    content = f.read()
+                changes['new'].append((file_path, f'+++ {file_path}\n{content}'))
+            except Exception as e:
+                logger.error(f"Error reading file {file_path}: {e}")
+                
+        # 生成markdown报告
+        report = ["# Git Changes Report\n"]
+        
+        # 新增文件
+        if changes['new']:
+            report.append("\n## New Files")
+            for file_path, diff in changes['new']:
+                report.append(f"\n### {file_path}")
+                report.append("```diff")
+                report.append(diff)
+                report.append("```")
+                
+        # 修改的文件        
+        if changes['modified']:
+            report.append("\n## Modified Files")
+            for file_path, diff in changes['modified']:
+                report.append(f"\n### {file_path}")
+                report.append("```diff")
+                report.append(diff)
+                report.append("```")
+                
+        # 删除的文件
+        if changes['deleted']:
+            report.append("\n## Deleted Files")
+            for file_path, diff in changes['deleted']:
+                report.append(f"\n### {file_path}")
+                report.append("```diff")
+                report.append(diff)
+                report.append("```")
+                
+        # 如果没有任何变更
+        if not any(changes.values()):
+            return "No uncommitted changes found."
+            
+        return "\n".join(report)
+        
+    except GitCommandError as e:
+        logger.error(f"Error getting uncommitted changes: {e}")
+        return f"Error: {str(e)}"
+
+@byzerllm.prompt()
+def generate_commit_message(changes_report: str) -> str:
+    """
+    我是一个Git提交信息生成助手。请查看下面的变更报告，生成一个清晰简洁的commit message。
+    遵循以下规则：
+    1. 使用动词开头，比如"Add", "Update", "Remove", "Fix", "Refactor"等
+    2. 第一部分用冒号分隔，简述主要变更类型
+    3. 在冒号后总结具体的变更内容
+    4. 如果文件较多，只列出前3个文件名，后面用"and X more"表示
+    5. 多个不同类型的变更用分号分隔
+    6. commit message应该简洁但信息完整，通常不超过100个字符
+    
+    下面是变更报告：
+    {{ changes_report }}        
+    """
 
 def print_commit_info(commit_result: CommitResult):
     console = Console()
