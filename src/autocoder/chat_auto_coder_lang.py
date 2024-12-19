@@ -64,7 +64,8 @@ MESSAGES = {
         "mode_desc": "Switch input mode",
         "lib_desc": "Manage libraries",
         "exit_desc": "Exit the program",
-        "design_desc": "Generate SVG image based on the provided description",        
+        "design_desc": "Generate SVG image based on the provided description",
+        "commit_desc": "Auto generate yaml file and commit changes",
     },
     "zh": {
         "initializing": "🚀 正在初始化系统...",
@@ -130,15 +131,18 @@ MESSAGES = {
         "lib_desc": "管理库",
         "exit_desc": "退出程序",
         "design_desc": "根据需求设计SVG图片",
-        
+        "commit_desc": "自动生成yaml文件并提交更改",
+
     }
 }
+
 
 def get_system_language():
     try:
         return locale.getdefaultlocale()[0][:2]
     except:
         return 'en'
+
 
 def get_message(key):
     lang = get_system_language()
