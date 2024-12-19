@@ -24,6 +24,10 @@ class TokenLimiter:
         self.segment_limit = segment_limit
         self.buff_limit = buff_limit
         self.llm = llm
+        if self.llm.get_sub_client("chunk_model"):
+            self.chunk_llm = self.llm.get_sub_client("chunk_model")
+        else:
+            self.chunk_llm = self.llm
         self.first_round_full_docs = []
         self.second_round_extracted_docs = []
         self.sencond_round_time = 0
@@ -222,10 +226,7 @@ class TokenLimiter:
                 
                 llm = ByzerLLM()
                 llm.skip_nontext_check = True
-                if self.llm.get_sub_client("chunk_model"):                                 
-                    llm.setup_default_model_name(self.llm.get_sub_client("chunk_model").default_model_name)                    
-                else:
-                    llm.setup_default_model_name(self.llm.default_model_name)
+                llm.setup_default_model_name(self.chunk_llm.default_model_name)
 
                 extracted_info = (
                     self.extract_relevance_range_from_docs_with_conversation.options(

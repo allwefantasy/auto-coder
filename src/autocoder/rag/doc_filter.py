@@ -62,6 +62,10 @@ def _check_relevance_with_conversation(
 class DocFilterWorker:
     def __init__(self, llm: ByzerLLM):
         self.llm = llm
+        if self.llm.get_sub_client("recall_model"):
+            self.recall_llm = self.llm.get_sub_client("recall_model")
+        else:
+            self.recall_llm = self.llm
 
     def filter_doc(
         self, conversations: List[Dict[str, str]], docs: List[str]
@@ -140,12 +144,7 @@ class DocFilter:
                         try:
                             llm = ByzerLLM()
                             llm.skip_nontext_check = True
-                            if self.llm.get_sub_client("recall_model"):
-                                llm.setup_sub_client(
-                                    "recall_model", self.llm.get_sub_client("recall_model"))
-                            else:
-                                llm.setup_default_model_name(
-                                    self.llm.default_model_name)
+                            llm.setup_default_model_name(self.recall_llm.default_model_name)
 
                             v = (
                                 _check_relevance_with_conversation.with_llm(
