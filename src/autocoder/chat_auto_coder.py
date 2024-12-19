@@ -1461,8 +1461,7 @@ def commit():
             )
             args = convert_yaml_to_config(execute_file)
             llm = byzerllm.ByzerLLM.from_default_model(args.code_model or args.model)
-            uncommitted_changes = git_utils.get_uncommitted_changes(".")
-            print(uncommitted_changes)
+            uncommitted_changes = git_utils.get_uncommitted_changes(".")            
             commit_message = git_utils.generate_commit_message.with_llm(
                 llm).run(uncommitted_changes)
             memory["conversation"].append({"role": "user", "content": commit_message})
