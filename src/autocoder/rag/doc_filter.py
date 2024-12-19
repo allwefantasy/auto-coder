@@ -93,6 +93,11 @@ class DocFilter:
         path: Optional[str] = None,
     ):
         self.llm = llm
+        if self.llm.get_sub_client("recall_model"):
+            self.recall_llm = self.llm.get_sub_client("recall_model")
+        else:
+            self.recall_llm = self.llm
+        
         self.args = args
         self.relevant_score = self.args.rag_doc_filter_relevance or 5
         self.on_ray = on_ray
