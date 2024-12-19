@@ -194,16 +194,20 @@ def main(input_args: Optional[List[str]] = None):
             return
 
         action_files = [
-            f for f in os.listdir(actions_dir) if f[:3].isdigit() and f.endswith(".yml")
+            f for f in os.listdir(actions_dir) if f[:3].isdigit() and "_" in f and f.endswith(".yml")
         ]
+
+        def get_old_seq(name):
+            return name.split("_")[0]
+
         if not action_files:
             max_seq = 0
         else:
-            seqs = [int(f[:3]) for f in action_files]
+            seqs = [int(get_old_seq(f)) for f in action_files]
             max_seq = max(seqs)
 
-        new_seq = str(max_seq + 1).zfill(3)
-        prev_files = [f for f in action_files if int(f[:3]) < int(new_seq)]
+        new_seq = str(max_seq + 1).zfill(12)
+        prev_files = [f for f in action_files if int(get_old_seq(f)) < int(new_seq)]
 
         if raw_args.from_yaml:
             # If --from_yaml is specified, copy content from the matching YAML file
