@@ -10,22 +10,10 @@ def get_last_yaml_file(actions_dir:str)->Optional[str]:
         ]
 
     def get_old_seq(name):
-        return name.split("_")[0]
+        return int(name.split("_")[0])
 
-    if not action_files:
-        max_seq = 0
-    else:
-        seqs = [int(get_old_seq(f)) for f in action_files]
-        max_seq = max(seqs)
-
-    new_seq = str(max_seq + 1).zfill(12)
-    prev_files = [f for f in action_files if int(get_old_seq(f)) < int(new_seq)]
-
-    if not prev_files:
-        return None
-    else:
-        prev_file = sorted(prev_files)[-1]  # 取序号最大的文件        
-        return prev_file
+    sorted_action_files = sorted(action_files, key=get_old_seq)
+    return sorted_action_files[-1] if sorted_action_files else None
 
 def open_yaml_file_in_editor(new_file:str):
     try:
