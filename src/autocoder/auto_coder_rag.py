@@ -286,6 +286,24 @@ def main(input_args: Optional[List[str]] = None):
         help="Whether to return responses without contexts. only works when pro plugin is installed",
     )
 
+    serve_parser.add_argument(
+        "--recall_model",
+        default="",
+        help="The model used for recall documents",
+    )
+
+    serve_parser.add_argument(
+        "--chunk_model",
+        default="",
+        help="The model used for chunk documents",
+    )
+
+    serve_parser.add_argument(
+        "--qa_model",
+        default="",
+        help="The model used for question answering",
+    )
+
     # Tools command
     tools_parser = subparsers.add_parser("tools", help="Various tools")
     tools_subparsers = tools_parser.add_subparsers(dest="tool", help="Available tools")
@@ -333,6 +351,22 @@ def main(input_args: Optional[List[str]] = None):
             byzerllm.connect_cluster(address=args.ray_address)
         llm = byzerllm.ByzerLLM()
         llm.setup_default_model_name(args.model)
+
+        # Setup sub models if specified
+        if args.recall_model:
+            recall_model = byzerllm.ByzerLLM()
+            recall_model.setup_default_model_name(args.recall_model)
+            llm.setup_sub_client("recall_model", recall_model)
+
+        if args.chunk_model:
+            chunk_model = byzerllm.ByzerLLM()
+            chunk_model.setup_default_model_name(args.chunk_model)
+            llm.setup_sub_client("chunk_model", chunk_model)
+
+        if args.qa_model:
+            qa_model = byzerllm.ByzerLLM()
+            qa_model.setup_default_model_name(args.qa_model)
+            llm.setup_sub_client("qa_model", qa_model)
 
         # 当启用hybrid_index时,检查必要的组件
         if auto_coder_args.enable_hybrid_index:                           
