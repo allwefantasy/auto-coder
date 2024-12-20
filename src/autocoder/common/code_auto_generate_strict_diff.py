@@ -279,7 +279,7 @@ class CodeAutoGenerateStrictDiff:
 
         conversations = []
         if self.args.system_prompt and self.args.system_prompt.strip() == "claude":
-            conversations.append({"role": "system", "content": sys_prompt.prompt()})
+            conversations.append({"role": "system", "content": sys_prompt.claude_sys_prompt.prompt()})
         elif self.args.system_prompt:
             conversations.append({"role": "system", "content": self.args.system_prompt})
         
