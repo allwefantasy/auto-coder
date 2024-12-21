@@ -43,21 +43,26 @@ class AutoFileGroup:
     @byzerllm.prompt()
     def group_by_similarity(self, querie_with_urls: List[Tuple[str, List[str], str]]) -> str:
         """
-        urls 和 query 之间关系：
-        大模型参考一组 urls（文件路径列表）对应的源码文件来实现对需求（query）进行编码，从而实现该需求。
-        大模型最后编码产出是会对urls里的部分或者全部文件进行更新，以及新增一些文件,我们可以从 diff 信息中看到
-        具体的信息。
+        分析多个开发任务的关联性，将相互关联的任务进行分组。
 
-        下面是为了完成用户需求，对应的文件列表和代码修改：
+        输入说明：
+        querie_with_urls 包含多个开发任务信息，每个任务由以下部分组成：
+        1. query: 任务需求描述
+        2. urls: 需要修改的文件路径列表
+        3. diff: Git diff信息，展示具体的代码修改
+
+        示例数据：
         <queries>
         {% for query,urls,diff in querie_with_urls %}
         ## {{ query }}        
 
+        修改的文件:
         {% for url in urls %}
         - {{ url }}
         {% endfor %}
         {% if diff %}
 
+        代码变更:
         ```diff
         {{ diff }}
         ```
@@ -65,20 +70,31 @@ class AutoFileGroup:
         {% endfor %}
         </queries>
 
-        要求：
-        1. 每个分组至少两个以上的query
+        分组规则：
+        1. 每个分组至少包含2个query
+        2. 根据以下维度判断任务的关联性：
+           - 功能相似性：任务是否属于同一个功能模块
+           - 文件关联：修改的文件是否有重叠或紧密关联
+           - 代码依赖：代码修改是否存在依赖关系
+           - 业务目的：任务的最终业务目标是否一致
 
-        请分析这些查询和文件以及代码修改，根据它们的相关性进行分组。返回以下格式的JSON:
+        期望输出：
+        返回符合以下格式的JSON:
         {
           "groups": [
             {
               "name": "分组名称",
-              "description": "分组描述，用简短的词语概括这个分组的主要功能或目的",
+              "description": "分组的功能概述，描述该组任务的共同目标",
               "queries": ["相关的query1", "相关的query2"],
-              "urls": ["相关的文件1", "相关的文件2"],              
+              "urls": ["相关的文件1", "相关的文件2"]
             }
           ]
         }
+
+        特别说明：
+        1. 分组名称应该简洁且具有描述性，能反映该组任务的主要特征
+        2. 分组描述应突出任务间的共同点和关联性
+        3. 返回的urls应该是该组任务涉及的所有相关文件的并集
         """
 
 
