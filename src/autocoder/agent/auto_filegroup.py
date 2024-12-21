@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any,Tuple
 import os
 import yaml
 from loguru import logger
@@ -14,7 +14,7 @@ def load_yaml_config(yaml_file: str) -> Dict:
         return {}
 
 class AutoFileGroup:
-    def __init__(self, actions_dir: str):
+    def __init__(self,llm:byzerllm.ByzerLLM, actions_dir: str,file_size_limit:int=100):
         """
         初始化AutoFileGroup
         
@@ -22,23 +22,27 @@ class AutoFileGroup:
             actions_dir: 包含YAML文件的目录
         """
         self.actions_dir = actions_dir
-        self.llm = byzerllm.ByzerLLM()
-        self.llm.setup_template(model="deepseek_chat", template="auto")
+        self.llm = llm
+        self.file_size_limit = file_size_limit
     
     @byzerllm.prompt()
-    def group_by_similarity(self, queries: List[str], urls: List[str]) -> Dict[str, Any]:
+    def group_by_similarity(self, querie_with_urls: List[Tuple[str,List[str]]]) -> Dict[str, Any]:
         """
-        根据query和urls的相似性进行分组
-        
-        用户的查询列表:
-        {% for query in queries %}
-        - {{ query }}
-        {% endfor %}
-        
-        相关的文件列表:
+        urls 和 query 之间关系：
+        大模型可以根据一组 urls（文件路径列表） 来实现对需求（query）进行编码，从而实现该需求。
+        大模型最后编码产出是会对urls里��部分或者全部文件进行更新，以及新增一些文件。
+
+        下面是用户查询以及对应的文件列表：
+        <queries>
+        {% for query,urls in querie_with_urls %}
+        ## {{ query }}        
         {% for url in urls %}
         - {{ url }}
         {% endfor %}
+        </urls>
+        {% endfor %}
+        </queries>
+        
         
         请分析这些查询和文件，根据它们的相关性进行分组。返回以下格式的JSON:
         {
@@ -69,11 +73,12 @@ class AutoFileGroup:
         def get_seq(name):
             return int(name.split("_")[0])
         action_files = sorted(action_files, key=get_seq)
+
+        action_files = action_files[:self.file_size_limit]
         
-        all_queries = []
-        all_urls = []
+        querie_with_urls = []
         
-        # 收集所有query和urls
+        # 收集所有query和对应的urls
         for yaml_file in action_files:
             yaml_path = os.path.join(self.actions_dir, yaml_file)
             config = load_yaml_config(yaml_path)
@@ -85,17 +90,15 @@ class AutoFileGroup:
             urls = config.get('urls', [])
             
             if query and urls:
-                all_queries.append(query)
-                all_urls.extend(urls)
+                querie_with_urls.append((query, urls))
         
-        if not all_queries or not all_urls:
+        if not querie_with_urls:
             return []
         
         # 使用LLM进行分组
         try:
             result = self.group_by_similarity.with_llm(self.llm).run(
-                queries=all_queries,
-                urls=all_urls
+                querie_with_urls=querie_with_urls
             )
             return yaml.safe_load(result)['groups']
         except Exception as e:
