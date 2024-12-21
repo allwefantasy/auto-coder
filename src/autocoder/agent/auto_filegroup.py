@@ -117,7 +117,9 @@ class AutoFileGroup:
         # 按序号排序
         def get_seq(name):
             return int(name.split("_")[0])
-        action_files = sorted(action_files, key=get_seq)
+        
+        # 获取最新的action文件列表
+        action_files = sorted(action_files, key=get_seq).reverse()
 
         action_files = action_files[:self.file_size_limit]
 
