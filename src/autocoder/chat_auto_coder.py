@@ -1579,25 +1579,15 @@ def coding(query: str):
                 elif conv["role"] == "assistant":
                     yaml_config["context"] += f"你: {conv['content']}\n"
 
-                yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)            
-            
-                execute_file = os.path.join("actions", latest_yaml_file)
-                with open(os.path.join(execute_file), "w") as f:
-                    f.write(yaml_content)
+        yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
-                # Mark
-                temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
-                try:
-                    with open(temp_yaml, "w") as f:
-                        f.write(yaml_content)
-                    args = convert_yaml_to_config(temp_yaml)
-                finally:
-                    if os.path.exists(temp_yaml):
-                        os.remove(temp_yaml)
+        execute_file = os.path.join("actions", latest_yaml_file)
+        with open(os.path.join(execute_file), "w") as f:
+            f.write(yaml_content)
 
-                def execute_chat():
-                    cmd = ["--file", execute_file] 
-                    auto_coder_main(cmd)
+        def execute_chat():
+            cmd = ["--file", execute_file]
+            auto_coder_main(cmd)
 
         execute_chat()
     else:
