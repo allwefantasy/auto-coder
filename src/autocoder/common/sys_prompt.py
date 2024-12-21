@@ -1,5 +1,5 @@
 import byzerllm
-import datetime
+from datetime import datetime
 
 @byzerllm.prompt()
 def claude_sys_prompt():

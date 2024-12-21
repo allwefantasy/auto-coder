@@ -1459,7 +1459,7 @@ def commit():
             yaml_config["urls"] = current_files + get_llm_friendly_package_docs(
                 return_paths=True
             )
-            args = convert_yaml_to_config(execute_file)
+            args = convert_yaml_to_config(execute_file)            
             llm = byzerllm.ByzerLLM.from_default_model(args.code_model or args.model)
             uncommitted_changes = git_utils.get_uncommitted_changes(".")            
             commit_message = git_utils.generate_commit_message.with_llm(
