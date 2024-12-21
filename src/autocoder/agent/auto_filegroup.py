@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import os
 import yaml
 from loguru import logger
@@ -26,21 +26,29 @@ class AutoFileGroup:
         self.llm.setup_template(model="deepseek_chat", template="auto")
     
     @byzerllm.prompt()
-    def analyze_file_similarity(self, query: str, urls: List[str]) -> str:
+    def group_by_similarity(self, queries: List[str], urls: List[str]) -> Dict[str, Any]:
         """
-        分析一组文件是否属于同一个需求组
+        根据query和urls的相似性进行分组
         
-        {{ query }}
+        用户的查询列表:
+        {% for query in queries %}
+        - {{ query }}
+        {% endfor %}
         
-        Files to analyze:
+        相关的文件列表:
         {% for url in urls %}
         - {{ url }}
         {% endfor %}
         
-        请分析这些文件是否与query描述的需求相关,返回以下格式的JSON:
+        请分析这些查询和文件，根据它们的相关性进行分组。返回以下格式的JSON:
         {
-            "is_related": true/false,
-            "reason": "详细解释文件之间的关联性"
+          "groups": [
+            {
+              "name": "分组名称，用简短的词语概括这个分组的主要功能或目的",
+              "queries": ["相关的query1", "相关的query2"],
+              "urls": ["相关的文件1", "相关的文件2"]
+            }
+          ]
         }
         """
     
@@ -49,7 +57,7 @@ class AutoFileGroup:
         根据YAML文件中的query和urls进行文件分组
         
         Returns:
-            List[Dict]: 分组结果列表，每个字典包含一组相关文件
+            List[Dict]: 分组结果列表
         """
         # 获取所有YAML文件
         action_files = [
@@ -62,9 +70,10 @@ class AutoFileGroup:
             return int(name.split("_")[0])
         action_files = sorted(action_files, key=get_seq)
         
-        file_groups = []
-        current_group = None
+        all_queries = []
+        all_urls = []
         
+        # 收集所有query和urls
         for yaml_file in action_files:
             yaml_path = os.path.join(self.actions_dir, yaml_file)
             config = load_yaml_config(yaml_path)
@@ -75,34 +84,23 @@ class AutoFileGroup:
             query = config.get('query', '')
             urls = config.get('urls', [])
             
-            if not query or not urls:
-                continue
-            
-            # 分析当前文件与已有分组的关联性
-            if current_group:
-                similarity_result = self.analyze_file_similarity.with_llm(self.llm).run(
-                    query=query,
-                    urls=urls
-                )
-                try:
-                    result = yaml.safe_load(similarity_result)
-                    if result.get('is_related', False):
-                        # 添加到当前分组
-                        current_group['files'].extend(urls)
-                        current_group['queries'].append(query)
-                        continue
-                except Exception as e:
-                    logger.error(f"Error parsing similarity result: {str(e)}")
-            
-            # 创建新分组
-            current_group = {
-                'files': urls.copy(),
-                'queries': [query],
-                'group_id': len(file_groups) + 1
-            }
-            file_groups.append(current_group)
+            if query and urls:
+                all_queries.append(query)
+                all_urls.extend(urls)
         
-        return file_groups
+        if not all_queries or not all_urls:
+            return []
+        
+        # 使用LLM进行分组
+        try:
+            result = self.group_by_similarity.with_llm(self.llm).run(
+                queries=all_queries,
+                urls=all_urls
+            )
+            return yaml.safe_load(result)['groups']
+        except Exception as e:
+            logger.error(f"Error during grouping: {str(e)}")
+            return []
 
 def create_file_groups(actions_dir: str) -> List[Dict]:
     """
@@ -112,7 +110,7 @@ def create_file_groups(actions_dir: str) -> List[Dict]:
         actions_dir: YAML文件所在目录
     
     Returns:
-        List[Dict]: 分组结果
+        List[Dict]: 分组结果，每个字典包含name, queries和urls
     """
     grouper = AutoFileGroup(actions_dir)
     return grouper.group_files()
