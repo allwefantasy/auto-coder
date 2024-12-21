@@ -1459,7 +1459,17 @@ def commit():
             yaml_config["urls"] = current_files + get_llm_friendly_package_docs(
                 return_paths=True
             )
-            args = convert_yaml_to_config(execute_file)            
+
+            # 临时保存yaml文件，然后读取yaml文件，转换为args
+            temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
+            try:
+                with open(temp_yaml, "w") as f:
+                    f.write(convert_yaml_config_to_str(yaml_config=yaml_config))
+                args = convert_yaml_to_config(temp_yaml)
+            finally:
+                if os.path.exists(temp_yaml):
+                    os.remove(temp_yaml)
+            
             llm = byzerllm.ByzerLLM.from_default_model(args.code_model or args.model)
             uncommitted_changes = git_utils.get_uncommitted_changes(".")            
             commit_message = git_utils.generate_commit_message.with_llm(
