@@ -58,6 +58,7 @@ from prompt_toolkit.patch_stdout import patch_stdout
 import byzerllm
 from byzerllm.utils import format_str_jinja2
 from autocoder.chat_auto_coder_lang import get_message
+from autocoder.utils import operate_config_api
 
 
 class SymbolItem(BaseModel):

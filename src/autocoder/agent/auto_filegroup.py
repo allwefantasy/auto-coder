@@ -28,7 +28,11 @@ def load_yaml_config(yaml_file: str) -> Dict:
 
 
 class AutoFileGroup:
-    def __init__(self, llm: byzerllm.ByzerLLM, project_dir: str, file_size_limit: int = 100):
+    def __init__(self, llm: byzerllm.ByzerLLM, 
+                 project_dir: str, 
+                 skip_diff: bool = False,
+                 group_num_limit: int = 10,
+                 file_size_limit: int = 100):
         """
         初始化AutoFileGroup
 
@@ -39,6 +43,8 @@ class AutoFileGroup:
         self.actions_dir = os.path.join(project_dir, "actions")
         self.llm = llm
         self.file_size_limit = file_size_limit
+        self.skip_diff = skip_diff
+        self.group_num_limit = group_num_limit
 
     @byzerllm.prompt()
     def group_by_similarity(self, querie_with_urls: List[Tuple[str, List[str], str]]) -> str:
@@ -77,6 +83,7 @@ class AutoFileGroup:
            - 文件关联：修改的文件是否有重叠或紧密关联
            - 代码依赖：代码修改是否存在依赖关系
            - 业务目的：任务的最终业务目标是否一致
+        3. 输出的分组数量最多不超过 {{ group_num_limit }}
 
         期望输出：
         返回符合以下格式的JSON:
@@ -96,6 +103,9 @@ class AutoFileGroup:
         2. 分组描述应突出任务间的共同点和关联性
         3. 返回的urls应该是该组任务涉及的所有相关文件的并集
         """
+        return {
+            "group_num_limit": self.group_num_limit
+        }
 
 
     def group_files(self) -> List[Dict]:
@@ -119,7 +129,8 @@ class AutoFileGroup:
             return int(name.split("_")[0])
         
         # 获取最新的action文件列表
-        action_files = sorted(action_files, key=get_seq).reverse()
+        action_files = sorted(action_files, key=get_seq)
+        action_files.reverse()
 
         action_files = action_files[:self.file_size_limit]
 
@@ -137,27 +148,27 @@ class AutoFileGroup:
             query = config.get('query', '')
             urls = config.get('urls', [])
 
-            if query and urls:
-                # 计算文件的MD5用于匹配commit
-                file_md5 = hashlib.md5(open(yaml_path, 'rb').read()).hexdigest()
-                response_id = f"auto_coder_{yaml_file}_{file_md5}"
-
-                # 查找对应的commit
+            if query and urls:  
                 commit_diff = ""
-                try:
-                    for commit in repo.iter_commits():
-                        if response_id in commit.message:
-                            if commit.parents:
-                                parent = commit.parents[0]
-                                commit_diff = repo.git.diff(
-                                    parent.hexsha, commit.hexsha)
-                            else:
-                                commit_diff = repo.git.show(commit.hexsha)
-                            break
-                except git.exc.GitCommandError as e:
-                    logger.error(f"Git命令执行错误: {str(e)}")
-                except Exception as e:
-                    logger.error(f"获取commit diff时出错: {str(e)}")
+                if not self.skip_diff:
+                    # 计算文件的MD5用于匹配commit
+                    file_md5 = hashlib.md5(open(yaml_path, 'rb').read()).hexdigest()
+                    response_id = f"auto_coder_{yaml_file}_{file_md5}"
+                    # 查找对应的commit                   
+                    try:
+                        for commit in repo.iter_commits():
+                            if response_id in commit.message:
+                                if commit.parents:
+                                    parent = commit.parents[0]
+                                    commit_diff = repo.git.diff(
+                                        parent.hexsha, commit.hexsha)
+                                else:
+                                    commit_diff = repo.git.show(commit.hexsha)
+                                break
+                    except git.exc.GitCommandError as e:
+                        logger.error(f"Git命令执行错误: {str(e)}")
+                    except Exception as e:
+                        logger.error(f"获取commit diff时出错: {str(e)}")
 
                 querie_with_urls_and_diffs.append((query, urls, commit_diff))
 
@@ -165,7 +176,7 @@ class AutoFileGroup:
             return []
 
         # 使用LLM进行分组
-        try:
+        try:            
             result = self.group_by_similarity.with_llm(self.llm).with_return_type(FileGroups).run(
                 querie_with_urls=querie_with_urls_and_diffs
             )
