@@ -325,6 +325,12 @@ def main(input_args: Optional[List[str]] = None):
     recall_parser.add_argument("--model", required=True, help="Model to use for recall validation")
     recall_parser.add_argument("--content", default=None, help="Content to validate against")
     recall_parser.add_argument("--query", default=None, help="Query to use for validation")
+
+    # Add chunk model validation tool
+    chunk_parser = tools_subparsers.add_parser("chunk", help="Validate chunk model performance")
+    chunk_parser.add_argument("--model", required=True, help="Model to use for chunk validation")
+    chunk_parser.add_argument("--content", default=None, help="Content to validate against")
+    chunk_parser.add_argument("--query", default=None, help="Query to use for validation")
     count_parser.add_argument(
         "--tokenizer_path", required=True, help="Path to the tokenizer"
     )
@@ -471,6 +477,14 @@ def main(input_args: Optional[List[str]] = None):
             content = None if not args.content else [args.content]
             result = validate_recall(llm, content=content, query=args.query)
             print(f"Recall Validation Result:\n{result}")
+        elif args.tool == "chunk":
+            from .common.chunk_validation import validate_chunk
+            llm = byzerllm.ByzerLLM()
+            llm.setup_default_model_name(args.model)
+            
+            content = None if not args.content else [args.content]
+            result = validate_chunk(llm, content=content, query=args.query)
+            print(f"Chunk Model Validation Result:\n{result}")
 
 
 def count_tokens(tokenizer_path: str, file_path: str):
