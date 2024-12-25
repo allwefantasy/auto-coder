@@ -67,23 +67,27 @@ def benchmark_byzerllm(model: str, parallel: int):
     llm = byzerllm.ByzerLLM()
     llm.setup_default_model_name(model)
 
-    @ray.remote
-    def single_request():
-        try:
-            t1 = time.time()
-            llm.chat_oai(conversations=[{
-                "role": "user",
-                "content": "Hello, how are you?"
-            }])
-            t2 = time.time()
-            return t2 - t1
-        except Exception as e:
-            logger.error(f"Request failed: {e}")
-            return None
+from concurrent.futures import ThreadPoolExecutor
 
-    start_time = time.time()
-    futures = [single_request.remote() for _ in range(parallel)]
-    results = ray.get(futures)
+def single_request(llm):
+    try:
+        t1 = time.time()
+        llm.chat_oai(conversations=[{
+            "role": "user",
+            "content": "Hello, how are you?"
+        }])
+        t2 = time.time()
+        return t2 - t1
+    except Exception as e:
+        logger.error(f"Request failed: {e}")
+        return None
+
+start_time = time.time()
+with ThreadPoolExecutor(max_workers=parallel) as executor:
+    # submit tasks to the executor
+    futures = [executor.submit(single_request, llm) for _ in range(parallel)]
+    # get results from futures
+    results = [future.result() for future in futures]
     
     # Filter out None values from failed requests
     results = [r for r in results if r is not None]
