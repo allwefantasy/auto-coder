@@ -7,13 +7,12 @@ Auto-coder 提供了一个强大的 benchmark 工具，可以帮助开发者评�
 ### 1.1 命令行使用
 
 ```bash
-auto-coder.rag benchmark --model MODEL_NAME [--parallel PARALLEL] [--rounds ROUNDS] [--type CLIENT_TYPE] [--api_key API_KEY] [--base_url BASE_URL]
+auto-coder.rag benchmark --model MODEL_NAME [--parallel PARALLEL] [--type CLIENT_TYPE] [--api_key API_KEY] [--base_url BASE_URL]
 ```
 
 参数说明：
 - `--model`: (必需) 要测试的模型名称，如 deepseek_chat
 - `--parallel`: (可选) 并发请求数，默认 10
-- `--rounds`: (可选) 运行轮数，默认 1
 - `--type`: (可选) 客户端类型，可选 byzerllm（默认）或 openai
 - `--api_key`: (可选) 当使用 OpenAI 客户端时需要提供 API key
 - `--base_url`: (可选) 自定义 OpenAI 客户端的基础 URL
@@ -22,7 +21,7 @@ auto-coder.rag benchmark --model MODEL_NAME [--parallel PARALLEL] [--rounds ROUN
 
 1. 测试 ByzerLLM 的 deepseek_chat 模型：
 ```bash
-auto-coder.rag benchmark --model deepseek_chat --parallel 20 --rounds 3
+auto-coder.rag benchmark --model deepseek_chat --parallel 20
 ```
 
 2. 测试 OpenAI 的 gpt-4 模型：
