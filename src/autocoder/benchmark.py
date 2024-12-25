@@ -7,6 +7,7 @@ import numpy as np
 import ray
 from loguru import logger
 import byzerllm
+from concurrent.futures import ThreadPoolExecutor
 
 async def benchmark_openai(model: str, parallel: int, api_key: str, base_url: str = None):
     client = AsyncOpenAI(api_key=api_key, base_url=base_url if base_url else None)
@@ -65,60 +66,58 @@ async def benchmark_openai(model: str, parallel: int, api_key: str, base_url: st
 def benchmark_byzerllm(model: str, parallel: int):
     byzerllm.connect_cluster(address="auto")
     llm = byzerllm.ByzerLLM()
-    llm.setup_default_model_name(model)
+    llm.setup_default_model_name(model)    
 
-from concurrent.futures import ThreadPoolExecutor
+    def single_request(llm):
+        try:
+            t1 = time.time()
+            llm.chat_oai(conversations=[{
+                "role": "user",
+                "content": "Hello, how are you?"
+            }])
+            t2 = time.time()
+            return t2 - t1
+        except Exception as e:
+            logger.error(f"Request failed: {e}")
+            return None
 
-def single_request(llm):
-    try:
-        t1 = time.time()
-        llm.chat_oai(conversations=[{
-            "role": "user",
-            "content": "Hello, how are you?"
-        }])
-        t2 = time.time()
-        return t2 - t1
-    except Exception as e:
-        logger.error(f"Request failed: {e}")
-        return None
+    start_time = time.time()
+    with ThreadPoolExecutor(max_workers=parallel) as executor:
+        # submit tasks to the executor
+        futures = [executor.submit(single_request, llm) for _ in range(parallel)]
+        # get results from futures
+        results = [future.result() for future in futures]
+        
+        # Filter out None values from failed requests
+        results = [r for r in results if r is not None]
+        
+        end_time = time.time()
+        total_time = end_time - start_time
 
-start_time = time.time()
-with ThreadPoolExecutor(max_workers=parallel) as executor:
-    # submit tasks to the executor
-    futures = [executor.submit(single_request, llm) for _ in range(parallel)]
-    # get results from futures
-    results = [future.result() for future in futures]
-    
-    # Filter out None values from failed requests
-    results = [r for r in results if r is not None]
-    
-    end_time = time.time()
-    total_time = end_time - start_time
+        if not results:
+            print("All requests failed")
+            return
 
-    if not results:
-        print("All requests failed")
-        return
-
-    # Calculate statistics
-    avg_time = np.mean(results)
-    p50 = np.percentile(results, 50)
-    p90 = np.percentile(results, 90)
-    p95 = np.percentile(results, 95)
-    p99 = np.percentile(results, 99)
-    
-    # Create rich table for output
-    console = Console()
-    table = Table(title=f"ByzerLLM Client Benchmark Results (Parallel={parallel})")
-    
-    table.add_column("Metric", style="cyan")
-    table.add_column("Value (seconds)", style="magenta")
-    
-    table.add_row("Total Time", f"{total_time:.2f}")
-    table.add_row("Average Response Time", f"{avg_time:.2f}")
-    table.add_row("Median (P50)", f"{p50:.2f}")
-    table.add_row("P90", f"{p90:.2f}")
-    table.add_row("P95", f"{p95:.2f}")
-    table.add_row("P99", f"{p99:.2f}")
-    table.add_row("Requests/Second", f"{parallel/total_time:.2f}")
-    
-    console.print(table)
+        # Calculate statistics
+        avg_time = np.mean(results)
+        p50 = np.percentile(results, 50)
+        p90 = np.percentile(results, 90)
+        p95 = np.percentile(results, 95)
+        p99 = np.percentile(results, 99)
+        
+        # Create rich table for output
+        console = Console()
+        table = Table(title=f"ByzerLLM Client Benchmark Results (Parallel={parallel})")
+        
+        table.add_column("Metric", style="cyan")
+        table.add_column("Value (seconds)", style="magenta")
+        
+        table.add_row("Total Time", f"{total_time:.2f}")
+        table.add_row("Average Response Time", f"{avg_time:.2f}")
+        table.add_row("Median (P50)", f"{p50:.2f}")
+        table.add_row("P90", f"{p90:.2f}")
+        table.add_row("P95", f"{p95:.2f}")
+        table.add_row("P99", f"{p99:.2f}")
+        table.add_row("Requests/Second", f"{parallel/total_time:.2f}")
+        
+        console.print(table)
