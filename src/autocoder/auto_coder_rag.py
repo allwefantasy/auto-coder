@@ -471,16 +471,14 @@ def main(input_args: Optional[List[str]] = None):
             count_tokens(args.tokenizer_path, args.file)
         elif args.tool == "recall":
             from .common.recall_validation import validate_recall
-            llm = byzerllm.ByzerLLM()
-            llm.setup_default_model_name(args.model)
+            llm = byzerllm.ByzerLLM.from_default_model(args.model)            
             
             content = None if not args.content else [args.content]
             result = validate_recall(llm, content=content, query=args.query)
             print(f"Recall Validation Result:\n{result}")
         elif args.tool == "chunk":
             from .common.chunk_validation import validate_chunk
-            llm = byzerllm.ByzerLLM()
-            llm.setup_default_model_name(args.model)
+            llm = byzerllm.ByzerLLM.from_default_model(args.model)
             
             content = None if not args.content else [args.content]
             result = validate_chunk(llm, content=content, query=args.query)

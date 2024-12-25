@@ -44,8 +44,7 @@ def validate_recall(llm: byzerllm.ByzerLLM, content: Optional[List[str]] = None,
     try:
         relevance = llm.chat_oai(
             conversations=conversations, 
-            documents=content,
-            model=llm.get_default_model_name()
+            documents=content            
         )
         return relevance[0].output
     except Exception as e:
