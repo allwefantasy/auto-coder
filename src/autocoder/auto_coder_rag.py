@@ -309,6 +309,7 @@ def main(input_args: Optional[List[str]] = None):
     benchmark_parser = subparsers.add_parser("benchmark", help="Benchmark LLM client performance")
     benchmark_parser.add_argument("--model", default="deepseek_chat", help="Model to benchmark")
     benchmark_parser.add_argument("--parallel", type=int, default=10, help="Number of parallel requests")
+    benchmark_parser.add_argument("--rounds", type=int, default=1, help="Number of rounds to run")
     benchmark_parser.add_argument("--type", choices=["openai", "byzerllm"], default="byzerllm", help="Client type to benchmark")
     benchmark_parser.add_argument("--api_key", default="", help="OpenAI API key for OpenAI client")
     benchmark_parser.add_argument("--base_url", default="", help="Base URL for OpenAI client")
@@ -346,9 +347,9 @@ def main(input_args: Optional[List[str]] = None):
             if not args.api_key:
                 print("OpenAI API key is required for OpenAI client benchmark")
                 return
-            asyncio.run(benchmark_openai(args.model, args.parallel, args.api_key, args.base_url))
+            asyncio.run(benchmark_openai(args.model, args.parallel, args.api_key, args.base_url, args.rounds))
         else:  # byzerllm
-            benchmark_byzerllm(args.model, args.parallel)
+            benchmark_byzerllm(args.model, args.parallel, args.rounds)
 
     elif args.command == "serve":
         if not args.quick:

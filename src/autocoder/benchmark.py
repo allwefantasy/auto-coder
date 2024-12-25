@@ -9,7 +9,7 @@ from loguru import logger
 import byzerllm
 from concurrent.futures import ThreadPoolExecutor
 
-async def benchmark_openai(model: str, parallel: int, api_key: str, base_url: str = None):
+async def benchmark_openai(model: str, parallel: int, api_key: str, base_url: str = None, rounds: int = 1):
     client = AsyncOpenAI(api_key=api_key, base_url=base_url if base_url else None)
     start_time = time.time()
     
@@ -26,8 +26,14 @@ async def benchmark_openai(model: str, parallel: int, api_key: str, base_url: st
             logger.error(f"Request failed: {e}")
             return None
 
-    tasks = [single_request() for _ in range(parallel)]
-    results = await asyncio.gather(*tasks)
+    all_results = []
+    for round_num in range(rounds):
+        print(f"Running round {round_num + 1}/{rounds}")
+        tasks = [single_request() for _ in range(parallel)]
+        results = await asyncio.gather(*tasks)
+        all_results.extend(results)
+    
+    results = all_results
     
     # Filter out None values from failed requests
     results = [r for r in results if r is not None]
@@ -63,7 +69,7 @@ async def benchmark_openai(model: str, parallel: int, api_key: str, base_url: st
     
     console.print(table)
 
-def benchmark_byzerllm(model: str, parallel: int):
+def benchmark_byzerllm(model: str, parallel: int, rounds: int = 1):
     byzerllm.connect_cluster(address="auto")
     llm = byzerllm.ByzerLLM()
     llm.setup_default_model_name(model)    
@@ -82,11 +88,17 @@ def benchmark_byzerllm(model: str, parallel: int):
             return None
 
     start_time = time.time()
-    with ThreadPoolExecutor(max_workers=parallel) as executor:
-        # submit tasks to the executor
-        futures = [executor.submit(single_request, llm) for _ in range(parallel)]
-        # get results from futures
-        results = [future.result() for future in futures]
+    all_results = []
+    for round_num in range(rounds):
+        print(f"Running round {round_num + 1}/{rounds}")
+        with ThreadPoolExecutor(max_workers=parallel) as executor:
+            # submit tasks to the executor
+            futures = [executor.submit(single_request, llm) for _ in range(parallel)]
+            # get results from futures
+            results = [future.result() for future in futures]
+            all_results.extend(results)
+    
+    results = all_results
         
         # Filter out None values from failed requests
         results = [r for r in results if r is not None]
