@@ -9,7 +9,7 @@ from loguru import logger
 import byzerllm
 from concurrent.futures import ThreadPoolExecutor
 
-async def benchmark_openai(model: str, parallel: int, api_key: str, base_url: str = None, rounds: int = 1):
+async def benchmark_openai(model: str, parallel: int, api_key: str, base_url: str = None):
     client = AsyncOpenAI(api_key=api_key, base_url=base_url if base_url else None)
     start_time = time.time()
     
@@ -26,24 +26,11 @@ async def benchmark_openai(model: str, parallel: int, api_key: str, base_url: st
             logger.error(f"Request failed: {e}")
             return None
 
-    all_results = []
-    for round in range(rounds):
-        logger.info(f"Starting round {round + 1}/{rounds}")
-        round_start_time = time.time()
-        tasks = [single_request() for _ in range(parallel)]
-        round_results = await asyncio.gather(*tasks)
-        
-        # Filter out None values from failed requests
-        round_results = [r for r in round_results if r is not None]
-        if round_results:
-            all_results.extend(round_results)
-        
-        round_end_time = time.time()
-        logger.info(f"Round {round + 1} completed in {round_end_time - round_start_time:.2f} seconds")
-
-    if not all_results:
-        print("All requests failed")
-        return
+    tasks = [single_request() for _ in range(parallel)]
+    results = await asyncio.gather(*tasks)
+    
+    # Filter out None values from failed requests
+    results = [r for r in results if r is not None]
     
     end_time = time.time()
     total_time = end_time - start_time
@@ -76,7 +63,7 @@ async def benchmark_openai(model: str, parallel: int, api_key: str, base_url: st
     
     console.print(table)
 
-def benchmark_byzerllm(model: str, parallel: int, rounds: int = 1):
+def benchmark_byzerllm(model: str, parallel: int):
     byzerllm.connect_cluster(address="auto")
     llm = byzerllm.ByzerLLM()
     llm.setup_default_model_name(model)    
@@ -94,27 +81,15 @@ def benchmark_byzerllm(model: str, parallel: int, rounds: int = 1):
             logger.error(f"Request failed: {e}")
             return None
 
-    all_results = []
-    for round in range(rounds):
-        logger.info(f"Starting round {round + 1}/{rounds}")
-        start_time = time.time()
-        with ThreadPoolExecutor(max_workers=parallel) as executor:
-            # submit tasks to the executor
-            futures = [executor.submit(single_request, llm) for _ in range(parallel)]
-            # get results from futures
-            round_results = [future.result() for future in futures]
-            
-            # Filter out None values from failed requests
-            round_results = [r for r in round_results if r is not None]
-            if round_results:
-                all_results.extend(round_results)
-            
-        end_time = time.time()
-        logger.info(f"Round {round + 1} completed in {end_time - start_time:.2f} seconds")
-
-    if not all_results:
-        print("All requests failed")
-        return
+    start_time = time.time()
+    with ThreadPoolExecutor(max_workers=parallel) as executor:
+        # submit tasks to the executor
+        futures = [executor.submit(single_request, llm) for _ in range(parallel)]
+        # get results from futures
+        results = [future.result() for future in futures]
+        
+        # Filter out None values from failed requests
+        results = [r for r in results if r is not None]
         
         end_time = time.time()
         total_time = end_time - start_time
