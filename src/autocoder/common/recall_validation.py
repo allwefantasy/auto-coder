@@ -1,6 +1,7 @@
 from typing import List, Optional
 import byzerllm
 from loguru import logger
+from autocoder.rag.doc_filter import _check_relevance_with_conversation
 
 def validate_recall(llm: byzerllm.ByzerLLM, content: Optional[List[str]] = None, query: Optional[str] = None) -> str:
     """
@@ -12,41 +13,39 @@ def validate_recall(llm: byzerllm.ByzerLLM, content: Optional[List[str]] = None,
         query: 查询语句
     
     Returns:
-        验证结果
+        验证结果,格式为"yes/10"或"no/10"
     """
     if content is None:
         content = [
             """
-            # Deploying Models with ByzerLLM
+            # ByzerLLM API Guide
             
-            To deploy a model using ByzerLLM, follow these steps:
+            ByzerLLM provides a simple API for interacting with language models. 
+            Here's how to use it:
             
             1. Initialize the client
-            2. Configure model parameters
-            3. Deploy the model
+            2. Send requests
+            3. Process responses
             
             Example:
             ```python
             import byzerllm
             llm = byzerllm.ByzerLLM()
-            llm.deploy_model('my_model')
+            response = llm.chat(prompt="Hello")
             ```
             """
         ]
     
     if query is None:
-        query = "How do I deploy a model with ByzerLLM?"
+        query = "How do I use the ByzerLLM API?"
     
     conversations = [
         {"role": "user", "content": query}
     ]
     
     try:
-        relevance = llm.chat_oai(
-            conversations=conversations, 
-            documents=content            
-        )
-        return relevance[0].output
+        relevance = _check_relevance_with_conversation.with_llm(llm).run(conversations, content)
+        return relevance
     except Exception as e:
         logger.error(f"Error validating recall: {str(e)}")
         return f"Error: {str(e)}"
