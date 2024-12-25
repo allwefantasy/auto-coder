@@ -319,6 +319,12 @@ def main(input_args: Optional[List[str]] = None):
 
     # Count tool
     count_parser = tools_subparsers.add_parser("count", help="Count tokens in a file")
+    
+    # Recall validation tool
+    recall_parser = tools_subparsers.add_parser("recall", help="Validate recall model performance")
+    recall_parser.add_argument("--model", required=True, help="Model to use for recall validation")
+    recall_parser.add_argument("--content", default=None, help="Content to validate against")
+    recall_parser.add_argument("--query", default=None, help="Query to use for validation")
     count_parser.add_argument(
         "--tokenizer_path", required=True, help="Path to the tokenizer"
     )
@@ -453,9 +459,18 @@ def main(input_args: Optional[List[str]] = None):
         else:
             logger.error("The document retriever does not support hybrid index building")
 
-    elif args.command == "tools" and args.tool == "count":
-        # auto-coder.rag tools count --tokenizer_path /Users/allwefantasy/Downloads/tokenizer.json --file /Users/allwefantasy/data/yum/schema/schema.xlsx
-        count_tokens(args.tokenizer_path, args.file)
+    elif args.command == "tools":
+        if args.tool == "count":
+            # auto-coder.rag tools count --tokenizer_path /Users/allwefantasy/Downloads/tokenizer.json --file /Users/allwefantasy/data/yum/schema/schema.xlsx
+            count_tokens(args.tokenizer_path, args.file)
+        elif args.tool == "recall":
+            from .common.recall_validation import validate_recall
+            llm = byzerllm.ByzerLLM()
+            llm.setup_default_model_name(args.model)
+            
+            content = None if not args.content else [args.content]
+            result = validate_recall(llm, content=content, query=args.query)
+            print(f"Recall Validation Result:\n{result}")
 
 
 def count_tokens(tokenizer_path: str, file_path: str):
