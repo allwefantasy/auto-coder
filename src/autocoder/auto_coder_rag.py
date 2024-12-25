@@ -304,7 +304,15 @@ def main(input_args: Optional[List[str]] = None):
         help="The model used for question answering",
     )
 
-    # Tools command
+    # Benchmark command
+    benchmark_parser = subparsers.add_parser("benchmark", help="Benchmark LLM client performance")
+    benchmark_parser.add_argument("--model", default="deepseek_chat", help="Model to benchmark")
+    benchmark_parser.add_argument("--parallel", type=int, default=10, help="Number of parallel requests")
+    benchmark_parser.add_argument("--type", choices=["openai", "byzerllm"], default="byzerllm", help="Client type to benchmark")
+    benchmark_parser.add_argument("--api_key", default="", help="OpenAI API key for OpenAI client")
+    benchmark_parser.add_argument("--base_url", default="", help="Base URL for OpenAI client")
+
+    # Tools command 
     tools_parser = subparsers.add_parser("tools", help="Various tools")
     tools_subparsers = tools_parser.add_subparsers(dest="tool", help="Available tools")
 
@@ -319,7 +327,138 @@ def main(input_args: Optional[List[str]] = None):
 
     args = parser.parse_args(input_args)
 
-    if args.command == "serve":
+    if args.command == "benchmark":
+        if args.type == "openai":
+            if not args.api_key:
+                print("OpenAI API key is required for OpenAI client benchmark")
+                return
+            from openai import AsyncOpenAI
+            import asyncio
+            import time
+            from rich.console import Console
+            from rich.table import Table
+            import numpy as np
+
+            async def benchmark_openai():
+                client = AsyncOpenAI(api_key=args.api_key, base_url=args.base_url if args.base_url else None)
+                start_time = time.time()
+                
+                async def single_request():
+                    try:
+                        t1 = time.time()
+                        response = await client.chat.completions.create(
+                            model=args.model,
+                            messages=[{"role": "user", "content": "Hello, how are you?"}]
+                        )
+                        t2 = time.time()
+                        return t2 - t1
+                    except Exception as e:
+                        logger.error(f"Request failed: {e}")
+                        return None
+
+                tasks = [single_request() for _ in range(args.parallel)]
+                results = await asyncio.gather(*tasks)
+                
+                # Filter out None values from failed requests
+                results = [r for r in results if r is not None]
+                
+                end_time = time.time()
+                total_time = end_time - start_time
+                
+                if not results:
+                    print("All requests failed")
+                    return
+
+                # Calculate statistics
+                avg_time = np.mean(results)
+                p50 = np.percentile(results, 50)
+                p90 = np.percentile(results, 90)
+                p95 = np.percentile(results, 95)
+                p99 = np.percentile(results, 99)
+                
+                # Create rich table for output
+                console = Console()
+                table = Table(title=f"OpenAI Client Benchmark Results (Parallel={args.parallel})")
+                
+                table.add_column("Metric", style="cyan")
+                table.add_column("Value (seconds)", style="magenta")
+                
+                table.add_row("Total Time", f"{total_time:.2f}")
+                table.add_row("Average Response Time", f"{avg_time:.2f}")
+                table.add_row("Median (P50)", f"{p50:.2f}")
+                table.add_row("P90", f"{p90:.2f}")
+                table.add_row("P95", f"{p95:.2f}")
+                table.add_row("P99", f"{p99:.2f}")
+                table.add_row("Requests/Second", f"{args.parallel/total_time:.2f}")
+                
+                console.print(table)
+
+            asyncio.run(benchmark_openai())
+        
+        else:  # byzerllm
+            import time
+            import ray
+            from rich.console import Console
+            from rich.table import Table
+            import numpy as np
+
+            byzerllm.connect_cluster(address="auto")
+            llm = byzerllm.ByzerLLM()
+            llm.setup_default_model_name(args.model)
+
+            @ray.remote
+            def single_request():
+                try:
+                    t1 = time.time()
+                    llm.chat_oai(conversations=[{
+                        "role": "user",
+                        "content": "Hello, how are you?"
+                    }])
+                    t2 = time.time()
+                    return t2 - t1
+                except Exception as e:
+                    logger.error(f"Request failed: {e}")
+                    return None
+
+            start_time = time.time()
+            futures = [single_request.remote() for _ in range(args.parallel)]
+            results = ray.get(futures)
+            
+            # Filter out None values from failed requests
+            results = [r for r in results if r is not None]
+            
+            end_time = time.time()
+            total_time = end_time - start_time
+
+            if not results:
+                print("All requests failed")
+                return
+
+            # Calculate statistics
+            avg_time = np.mean(results)
+            p50 = np.percentile(results, 50)
+            p90 = np.percentile(results, 90)
+            p95 = np.percentile(results, 95)
+            p99 = np.percentile(results, 99)
+            
+            # Create rich table for output
+            console = Console()
+            table = Table(title=f"ByzerLLM Client Benchmark Results (Parallel={args.parallel})")
+            
+            table.add_column("Metric", style="cyan")
+            table.add_column("Value (seconds)", style="magenta")
+            
+            table.add_row("Total Time", f"{total_time:.2f}")
+            table.add_row("Average Response Time", f"{avg_time:.2f}")
+            table.add_row("Median (P50)", f"{p50:.2f}")
+            table.add_row("P90", f"{p90:.2f}")
+            table.add_row("P95", f"{p95:.2f}")
+            table.add_row("P99", f"{p99:.2f}")
+            table.add_row("Requests/Second", f"{args.parallel/total_time:.2f}")
+            
+            console.print(table)
+
+    elif args.command == "serve":
         if not args.quick:
             initialize_system()
         server_args = ServerArgs(
