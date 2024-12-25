@@ -18,6 +18,7 @@ from rich.console import Console
 from rich.table import Table
 import os
 from loguru import logger
+import asyncio
 
 from autocoder.rag.document_retriever import process_file_local
 from autocoder.rag.token_counter import TokenCounter
