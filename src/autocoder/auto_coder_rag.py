@@ -358,6 +358,9 @@ def main(input_args: Optional[List[str]] = None):
     benchmark_parser.add_argument(
         "--base_url", default="", help="Base URL for OpenAI client"
     )
+    benchmark_parser.add_argument(
+        "--query", default="Hello, how are you?", help="Query to use for benchmarking"
+    )
 
     # Tools command
     tools_parser = subparsers.add_parser("tools", help="Various tools")
@@ -413,11 +416,11 @@ def main(input_args: Optional[List[str]] = None):
                 return
             asyncio.run(
                 benchmark_openai(
-                    args.model, args.parallel, args.api_key, args.base_url, args.rounds
+                    args.model, args.parallel, args.api_key, args.base_url, args.rounds, args.query
                 )
             )
         else:  # byzerllm
-            benchmark_byzerllm(args.model, args.parallel, args.rounds)
+            benchmark_byzerllm(args.model, args.parallel, args.rounds, args.query)
 
     elif args.command == "serve":
         if not args.quick:

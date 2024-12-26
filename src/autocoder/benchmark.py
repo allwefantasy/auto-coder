@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 async def benchmark_openai(
-    model: str, parallel: int, api_key: str, base_url: str = None, rounds: int = 1
+    model: str, parallel: int, api_key: str, base_url: str = None, rounds: int = 1, query: str = "Hello, how are you?"
 ):
     client = AsyncOpenAI(api_key=api_key, base_url=base_url if base_url else None)
     start_time = time.time()
@@ -21,7 +21,7 @@ async def benchmark_openai(
             t1 = time.time()
             response = await client.chat.completions.create(
                 model=model,
-                messages=[{"role": "user", "content": "Hello, how are you?"}],
+                messages=[{"role": "user", "content": query}],
             )
             t2 = time.time()
             return t2 - t1
@@ -73,7 +73,7 @@ async def benchmark_openai(
     console.print(table)
 
 
-def benchmark_byzerllm(model: str, parallel: int, rounds: int = 1):
+def benchmark_byzerllm(model: str, parallel: int, rounds: int = 1, query: str = "Hello, how are you?"):
     byzerllm.connect_cluster(address="auto")
     llm = byzerllm.ByzerLLM()
     llm.setup_default_model_name(model)
@@ -82,7 +82,7 @@ def benchmark_byzerllm(model: str, parallel: int, rounds: int = 1):
         try:
             t1 = time.time()
             llm.chat_oai(
-                conversations=[{"role": "user", "content": "Hello, how are you?"}]
+                conversations=[{"role": "user", "content": query}]
             )
             t2 = time.time()
             return t2 - t1
