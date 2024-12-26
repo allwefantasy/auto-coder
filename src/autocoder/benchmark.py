@@ -109,30 +109,30 @@ def benchmark_byzerllm(model: str, parallel: int, rounds: int = 1, query: str = 
         end_time = time.time()
         total_time = end_time - start_time
 
-        if not results:
-            print("All requests failed")
-            return
+    if not results:
+        print("All requests failed")
+        return
 
-        # Calculate statistics
-        avg_time = np.mean(results)
-        p50 = np.percentile(results, 50)
-        p90 = np.percentile(results, 90)
-        p95 = np.percentile(results, 95)
-        p99 = np.percentile(results, 99)
+    # Calculate statistics
+    avg_time = np.mean(results)
+    p50 = np.percentile(results, 50)
+    p90 = np.percentile(results, 90)
+    p95 = np.percentile(results, 95)
+    p99 = np.percentile(results, 99)
 
-        # Create rich table for output
-        console = Console()
-        table = Table(title=f"ByzerLLM Client Benchmark Results (Parallel={parallel})")
+    # Create rich table for output
+    console = Console()
+    table = Table(title=f"ByzerLLM Client Benchmark Results (Parallel={parallel})")
 
-        table.add_column("Metric", style="cyan")
-        table.add_column("Value (seconds)", style="magenta")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value (seconds)", style="magenta")
 
-        table.add_row("Total Time", f"{total_time:.2f}")
-        table.add_row("Average Response Time", f"{avg_time:.2f}")
-        table.add_row("Median (P50)", f"{p50:.2f}")
-        table.add_row("P90", f"{p90:.2f}")
-        table.add_row("P95", f"{p95:.2f}")
-        table.add_row("P99", f"{p99:.2f}")
-        table.add_row("Requests/Second", f"{parallel/total_time:.2f}")
+    table.add_row("Total Time", f"{total_time:.2f}")
+    table.add_row("Average Response Time", f"{avg_time:.2f}")
+    table.add_row("Median (P50)", f"{p50:.2f}")
+    table.add_row("P90", f"{p90:.2f}")
+    table.add_row("P95", f"{p95:.2f}")
+    table.add_row("P99", f"{p99:.2f}")
+    table.add_row("Requests/Second", f"{parallel/total_time:.2f}")
 
-        console.print(table)
+    console.print(table)
