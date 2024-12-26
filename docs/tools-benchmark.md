@@ -1,6 +1,6 @@
 # 大模型性能基准测试指南
 
-Auto-coder 提供了一个强大的 benchmark 工具，可以帮助开发者评估和比较不同大语言模型（LLM）的性能。本文将详细介绍如何使用这个工具进行性能测试。
+auto-coder.rag 提供了一个简单的 benchmark 工具，可以帮助开发者评估和比较不同大语言模型（LLM）的性能。本文将详细介绍如何使用这个工具进行性能测试。
 
 ## 1. 基本用法
 
@@ -20,14 +20,14 @@ auto-coder.rag benchmark --model MODEL_NAME [--parallel PARALLEL] [--rounds ROUN
 
 ### 1.2 使用示例
 
-1. 测试 ByzerLLM 的 deepseek_chat 模型：
+1. 测试 ByzerLLM 部署的模型服务：
 ```bash
 auto-coder.rag benchmark --model deepseek_chat --parallel 20 --rounds 3
 ```
 
-2. 测试 OpenAI 的 gpt-4 模型：
+2. 测试 OpenAI SDK兼容的模型服务：
 ```bash
-auto-coder.rag benchmark --model gpt-4 --type openai --api_key YOUR_API_KEY
+auto-coder.rag benchmark --model gpt-4 --type openai --base_url xxxx --api_key YOUR_API_KEY
 ```
 
 ## 2. 测试指标说明

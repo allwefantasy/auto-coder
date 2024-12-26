@@ -98,7 +98,7 @@ def benchmark_byzerllm(model: str, parallel: int, rounds: int = 1):
             results = [future.result() for future in futures]
             all_results.extend(results)
     
-    results = all_results
+        results = all_results
         
         # Filter out None values from failed requests
         results = [r for r in results if r is not None]

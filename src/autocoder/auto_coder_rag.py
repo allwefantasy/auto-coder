@@ -21,6 +21,7 @@ from loguru import logger
 import asyncio
 
 from autocoder.rag.document_retriever import process_file_local
+import pkg_resources
 from autocoder.rag.token_counter import TokenCounter
 
 if platform.system() == "Windows":
@@ -140,6 +141,13 @@ def initialize_system():
 
 def main(input_args: Optional[List[str]] = None):
 
+    try:
+        tokenizer_path = pkg_resources.resource_filename(
+            "autocoder", "data/tokenizer.json"
+        )
+    except FileNotFoundError:
+        tokenizer_path = None
+
     system_lang, _ = locale.getdefaultlocale()
     lang = "zh" if system_lang and system_lang.startswith("zh") else "en"
     desc = lang_desc[lang]
@@ -147,18 +155,38 @@ def main(input_args: Optional[List[str]] = None):
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Build hybrid index command
-    build_index_parser = subparsers.add_parser("build_hybrid_index", help="Build hybrid index for RAG")
-    build_index_parser.add_argument("--quick", action="store_true", help="Skip system initialization")
+    build_index_parser = subparsers.add_parser(
+        "build_hybrid_index", help="Build hybrid index for RAG"
+    )
+    build_index_parser.add_argument(
+        "--quick", action="store_true", help="Skip system initialization"
+    )
     build_index_parser.add_argument("--file", default="", help=desc["file"])
-    build_index_parser.add_argument("--model", default="deepseek_chat", help=desc["model"])
-    build_index_parser.add_argument("--index_model", default="", help=desc["index_model"])
+    build_index_parser.add_argument(
+        "--model", default="deepseek_chat", help=desc["model"]
+    )
+    build_index_parser.add_argument(
+        "--index_model", default="", help=desc["index_model"]
+    )
     build_index_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
-    build_index_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
-    build_index_parser.add_argument("--required_exts", default="", help=desc["doc_build_parse_required_exts"])
-    build_index_parser.add_argument("--source_dir", default=".", help="Source directory path")
-    build_index_parser.add_argument("--tokenizer_path", default="", help="Path to tokenizer file")
-    build_index_parser.add_argument("--doc_dir", default="", help="Document directory path")
-    build_index_parser.add_argument("--enable_hybrid_index", action="store_true", help="Enable hybrid index")
+    build_index_parser.add_argument(
+        "--ray_address", default="auto", help=desc["ray_address"]
+    )
+    build_index_parser.add_argument(
+        "--required_exts", default="", help=desc["doc_build_parse_required_exts"]
+    )
+    build_index_parser.add_argument(
+        "--source_dir", default=".", help="Source directory path"
+    )
+    build_index_parser.add_argument(
+        "--tokenizer_path", default=tokenizer_path, help="Path to tokenizer file"
+    )
+    build_index_parser.add_argument(
+        "--doc_dir", default="", help="Document directory path"
+    )
+    build_index_parser.add_argument(
+        "--enable_hybrid_index", action="store_true", help="Enable hybrid index"
+    )
 
     # Serve command
     serve_parser = subparsers.add_parser("serve", help="Start the RAG server")
@@ -221,7 +249,7 @@ def main(input_args: Optional[List[str]] = None):
     serve_parser.add_argument("--ssl_certfile", default="", help="")
     serve_parser.add_argument("--response_role", default="assistant", help="")
     serve_parser.add_argument("--doc_dir", default="", help="")
-    serve_parser.add_argument("--tokenizer_path", default="", help="")
+    serve_parser.add_argument("--tokenizer_path", default=tokenizer_path, help="")
     serve_parser.add_argument(
         "--collections", default="", help="Collection name for indexing"
     )
@@ -283,7 +311,7 @@ def main(input_args: Optional[List[str]] = None):
 
     serve_parser.add_argument(
         "--without_contexts",
-        action="store_true", 
+        action="store_true",
         help="Whether to return responses without contexts. only works when pro plugin is installed",
     )
 
@@ -306,34 +334,69 @@ def main(input_args: Optional[List[str]] = None):
     )
 
     # Benchmark command
-    benchmark_parser = subparsers.add_parser("benchmark", help="Benchmark LLM client performance")
-    benchmark_parser.add_argument("--model", default="deepseek_chat", help="Model to benchmark")
-    benchmark_parser.add_argument("--parallel", type=int, default=10, help="Number of parallel requests")
-    benchmark_parser.add_argument("--rounds", type=int, default=1, help="Number of rounds to run")
-    benchmark_parser.add_argument("--type", choices=["openai", "byzerllm"], default="byzerllm", help="Client type to benchmark")
-    benchmark_parser.add_argument("--api_key", default="", help="OpenAI API key for OpenAI client")
-    benchmark_parser.add_argument("--base_url", default="", help="Base URL for OpenAI client")
+    benchmark_parser = subparsers.add_parser(
+        "benchmark", help="Benchmark LLM client performance"
+    )
+    benchmark_parser.add_argument(
+        "--model", default="deepseek_chat", help="Model to benchmark"
+    )
+    benchmark_parser.add_argument(
+        "--parallel", type=int, default=10, help="Number of parallel requests"
+    )
+    benchmark_parser.add_argument(
+        "--rounds", type=int, default=1, help="Number of rounds to run"
+    )
+    benchmark_parser.add_argument(
+        "--type",
+        choices=["openai", "byzerllm"],
+        default="byzerllm",
+        help="Client type to benchmark",
+    )
+    benchmark_parser.add_argument(
+        "--api_key", default="", help="OpenAI API key for OpenAI client"
+    )
+    benchmark_parser.add_argument(
+        "--base_url", default="", help="Base URL for OpenAI client"
+    )
 
-    # Tools command 
+    # Tools command
     tools_parser = subparsers.add_parser("tools", help="Various tools")
     tools_subparsers = tools_parser.add_subparsers(dest="tool", help="Available tools")
 
     # Count tool
     count_parser = tools_subparsers.add_parser("count", help="Count tokens in a file")
-    
+
     # Recall validation tool
-    recall_parser = tools_subparsers.add_parser("recall", help="Validate recall model performance")
-    recall_parser.add_argument("--model", required=True, help="Model to use for recall validation")
-    recall_parser.add_argument("--content", default=None, help="Content to validate against")
-    recall_parser.add_argument("--query", default=None, help="Query to use for validation")
+    recall_parser = tools_subparsers.add_parser(
+        "recall", help="Validate recall model performance"
+    )
+    recall_parser.add_argument(
+        "--model", required=True, help="Model to use for recall validation"
+    )
+    recall_parser.add_argument(
+        "--content", default=None, help="Content to validate against"
+    )
+    recall_parser.add_argument(
+        "--query", default=None, help="Query to use for validation"
+    )
 
     # Add chunk model validation tool
-    chunk_parser = tools_subparsers.add_parser("chunk", help="Validate chunk model performance")
-    chunk_parser.add_argument("--model", required=True, help="Model to use for chunk validation")
-    chunk_parser.add_argument("--content", default=None, help="Content to validate against")
-    chunk_parser.add_argument("--query", default=None, help="Query to use for validation")
+    chunk_parser = tools_subparsers.add_parser(
+        "chunk", help="Validate chunk model performance"
+    )
+    chunk_parser.add_argument(
+        "--model", required=True, help="Model to use for chunk validation"
+    )
+    chunk_parser.add_argument(
+        "--content", default=None, help="Content to validate against"
+    )
+    chunk_parser.add_argument(
+        "--query", default=None, help="Query to use for validation"
+    )
     count_parser.add_argument(
-        "--tokenizer_path", required=True, help="Path to the tokenizer"
+        "--tokenizer_path",
+        default=tokenizer_path,        
+        help="Path to the tokenizer",
     )
     count_parser.add_argument(
         "--file", required=True, help="Path to the file to count tokens"
@@ -343,11 +406,16 @@ def main(input_args: Optional[List[str]] = None):
 
     if args.command == "benchmark":
         from .benchmark import benchmark_openai, benchmark_byzerllm
+
         if args.type == "openai":
             if not args.api_key:
                 print("OpenAI API key is required for OpenAI client benchmark")
                 return
-            asyncio.run(benchmark_openai(args.model, args.parallel, args.api_key, args.base_url, args.rounds))
+            asyncio.run(
+                benchmark_openai(
+                    args.model, args.parallel, args.api_key, args.base_url, args.rounds
+                )
+            )
         else:  # byzerllm
             benchmark_byzerllm(args.model, args.parallel, args.rounds)
 
@@ -369,14 +437,17 @@ def main(input_args: Optional[List[str]] = None):
             }
         )
 
-        if auto_coder_args.enable_hybrid_index:     
-            # 尝试连接storage                
+        if auto_coder_args.enable_hybrid_index:
+            # 尝试连接storage
             try:
                 from byzerllm.apps.byzer_storage.simple_api import ByzerStorage
+
                 storage = ByzerStorage("byzerai_store", "rag", "files")
                 storage.retrieval.cluster_info("byzerai_store")
             except Exception as e:
-                logger.error("When enable_hybrid_index is true, ByzerStorage must be started")
+                logger.error(
+                    "When enable_hybrid_index is true, ByzerStorage must be started"
+                )
                 logger.error("Please run 'byzerllm storage start' first")
                 return
         else:
@@ -401,12 +472,14 @@ def main(input_args: Optional[List[str]] = None):
             llm.setup_sub_client("qa_model", qa_model)
 
         # 当启用hybrid_index时,检查必要的组件
-        if auto_coder_args.enable_hybrid_index:                           
+        if auto_coder_args.enable_hybrid_index:
             if not llm.is_model_exist("emb"):
-                logger.error("When enable_hybrid_index is true, an 'emb' model must be deployed")
+                logger.error(
+                    "When enable_hybrid_index is true, an 'emb' model must be deployed"
+                )
                 return
             llm.setup_default_emb_model_name("emb")
-                
+
         if server_args.doc_dir:
             auto_coder_args.rag_type = "simple"
             rag = RAGFactory.get_rag(
@@ -423,7 +496,7 @@ def main(input_args: Optional[List[str]] = None):
     elif args.command == "build_hybrid_index":
         if not args.quick:
             initialize_system()
-            
+
         auto_coder_args = AutoCoderArgs(
             **{
                 arg: getattr(args, arg)
@@ -434,25 +507,30 @@ def main(input_args: Optional[List[str]] = None):
 
         auto_coder_args.enable_hybrid_index = True
         auto_coder_args.rag_type = "simple"
-                        
+
         try:
             from byzerllm.apps.byzer_storage.simple_api import ByzerStorage
+
             storage = ByzerStorage("byzerai_store", "rag", "files")
             storage.retrieval.cluster_info("byzerai_store")
         except Exception as e:
-            logger.error("When enable_hybrid_index is true, ByzerStorage must be started")
+            logger.error(
+                "When enable_hybrid_index is true, ByzerStorage must be started"
+            )
             logger.error("Please run 'byzerllm storage start' first")
             return
-        
+
         llm = byzerllm.ByzerLLM()
         llm.setup_default_model_name(args.model)
 
         # 当启用hybrid_index时,检查必要的组件
-        if auto_coder_args.enable_hybrid_index:                           
+        if auto_coder_args.enable_hybrid_index:
             if not llm.is_model_exist("emb"):
-                logger.error("When enable_hybrid_index is true, an 'emb' model must be deployed")
+                logger.error(
+                    "When enable_hybrid_index is true, an 'emb' model must be deployed"
+                )
                 return
-            llm.setup_default_emb_model_name("emb")        
+            llm.setup_default_emb_model_name("emb")
 
         rag = RAGFactory.get_rag(
             llm=llm,
@@ -460,11 +538,13 @@ def main(input_args: Optional[List[str]] = None):
             path=args.doc_dir,
             tokenizer_path=args.tokenizer_path,
         )
-        
+
         if hasattr(rag.document_retriever, "cacher"):
             rag.document_retriever.cacher.build_cache()
         else:
-            logger.error("The document retriever does not support hybrid index building")
+            logger.error(
+                "The document retriever does not support hybrid index building"
+            )
 
     elif args.command == "tools":
         if args.tool == "count":
@@ -472,22 +552,27 @@ def main(input_args: Optional[List[str]] = None):
             count_tokens(args.tokenizer_path, args.file)
         elif args.tool == "recall":
             from .common.recall_validation import validate_recall
-            llm = byzerllm.ByzerLLM.from_default_model(args.model)            
-            
+
+            llm = byzerllm.ByzerLLM.from_default_model(args.model)
+
             content = None if not args.content else [args.content]
             result = validate_recall(llm, content=content, query=args.query)
             print(f"Recall Validation Result:\n{result}")
         elif args.tool == "chunk":
             from .common.chunk_validation import validate_chunk
+
             llm = byzerllm.ByzerLLM.from_default_model(args.model)
-            
             content = None if not args.content else [args.content]
             result = validate_chunk(llm, content=content, query=args.query)
             print(f"Chunk Model Validation Result:\n{result}")
 
 
 def count_tokens(tokenizer_path: str, file_path: str):
-    token_counter = TokenCounter(tokenizer_path)
+    from autocoder.rag.variable_holder import VariableHolder
+    from tokenizers import Tokenizer
+    VariableHolder.TOKENIZER_PATH = tokenizer_path
+    VariableHolder.TOKENIZER_MODEL = Tokenizer.from_file(tokenizer_path)
+    token_counter = TokenCounter(tokenizer_path)    
     source_codes = process_file_local(file_path)
 
     console = Console()

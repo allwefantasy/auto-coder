@@ -21,11 +21,11 @@ class RemoteTokenCounter:
 
 
 def initialize_tokenizer(tokenizer_path):
-    global tokenizer_model
+    global tokenizer_model    
     tokenizer_model = Tokenizer.from_file(tokenizer_path)
 
 
-def count_tokens(text: str) -> int:    
+def count_tokens(text: str) -> int:       
     try:
         # start_time = time.time_ns()
         encoded = VariableHolder.TOKENIZER_MODEL.encode('{"role":"user","content":"' + text + '"}')
@@ -33,7 +33,7 @@ def count_tokens(text: str) -> int:
         # elapsed_time = time.time_ns() - start_time
         # logger.info(f"Token counting took {elapsed_time/1000000} ms")
         return v
-    except Exception as e:
+    except Exception as e:        
         logger.error(f"Error counting tokens: {str(e)}")
         return -1
 

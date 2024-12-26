@@ -4,7 +4,7 @@ Auto-coder 提供了两个用于评估和验证文档相关性的命令行工具
 
 ## recall 工具
 
-`recall` 工具用于验证文档召回模型的效果。它可以帮助我们了解模型在给定查询时是否能够正确检索到相关文档。
+recall 工具用于验证指定的模型是否可以支持 auto-coder.rag  recall 功能。
 
 ### 基本用法
 
@@ -43,7 +43,7 @@ auto-coder.rag tools recall \
 
 ## chunk 工具
 
-`chunk` 工具用于验证文本分块模型的性能。它可以帮助我们评估模型在文档分段方面的表现。
+chunk 工具可以用于指定的模型是否能够支持 auto-coder.rag 动态文本抽取的能力。
 
 ### 基本用法
 

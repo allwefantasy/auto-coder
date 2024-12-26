@@ -1427,11 +1427,15 @@ def convert_yaml_to_config(yaml_file: str):
                 setattr(args, key, value)
     return args
 
-def commit():
+def commit(query: str):
     def prepare_commit_yaml():
         auto_coder_main(["next", "chat_action"])
 
     prepare_commit_yaml()
+
+    no_diff = query.strip().startswith("/no_diff")
+    if no_diff:
+        query = query.replace("/no_diff", "", 1).strip()            
 
     latest_yaml_file = get_last_yaml_file("actions")
     
@@ -1472,7 +1476,7 @@ def commit():
                     os.remove(temp_yaml)
             
             llm = byzerllm.ByzerLLM.from_default_model(args.code_model or args.model)
-            uncommitted_changes = git_utils.get_uncommitted_changes(".")            
+            uncommitted_changes = git_utils.get_uncommitted_changes(".")                       
             commit_message = git_utils.generate_commit_message.with_llm(
                 llm).run(uncommitted_changes)
             memory["conversation"].append({"role": "user", "content": commit_message})
@@ -2305,7 +2309,8 @@ def main():
             elif user_input.startswith("/revert"):
                 revert()
             elif user_input.startswith("/commit"):
-                commit()
+                query = user_input[len("/commit"):].strip()
+                commit(query)
             elif user_input.startswith("/help"):
                 show_help()
             elif user_input.startswith("/exclude_dirs"):

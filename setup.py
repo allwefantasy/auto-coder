@@ -41,7 +41,8 @@ setup(
     },
     package_dir={"": "src"},
     packages=find_packages("src"),    
-    package_data={        
+    package_data={
+        "autocoder": ["data/**/*"],
     },
     install_requires=install_requires,
     classifiers=[        
