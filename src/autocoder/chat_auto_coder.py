@@ -1433,9 +1433,9 @@ def commit(query: str):
 
     prepare_commit_yaml()
 
-    no_diff = query.strip().startswith("/no_diff")
-    if no_diff:
-        query = query.replace("/no_diff", "", 1).strip()            
+    # no_diff = query.strip().startswith("/no_diff")
+    # if no_diff:
+    #     query = query.replace("/no_diff", "", 1).strip()            
 
     latest_yaml_file = get_last_yaml_file("actions")
     
