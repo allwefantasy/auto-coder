@@ -96,6 +96,8 @@ class AutoGuessQuery:
         4. reason: 为什么建议这个任务
         5. dependency_queries: 相关的历史任务列表
 
+
+
         注意：
         1. 预测的任务应该具体且可执行，而不是抽象的目标
         2. 文件路径预测应该基于已有文件的实际路径
@@ -182,12 +184,10 @@ class AutoGuessQuery:
             return None
 
         try:
-            result = self.guess_next_query.with_llm(self.llm).run(
+            result = self.guess_next_query.with_llm(self.llm).with_return_type(NextQuery).run(
                 querie_with_urls=history_tasks
             )
-            import json
-            next_query = NextQuery.parse_raw(result)
-            return next_query
+            return result
         except Exception as e:
             import traceback
             traceback.print_exc()
