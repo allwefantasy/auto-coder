@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional,Union
 from autocoder.common import AutoCoderArgs, SourceCode
 from byzerllm import ByzerLLM
 from .simple_rag import SimpleRAG
@@ -7,7 +7,7 @@ class RAGFactory:
     
     
     @staticmethod
-    def get_rag(llm: ByzerLLM, args: AutoCoderArgs, path: str,**kargs) -> SimpleRAG | LongContextRAG:
+    def get_rag(llm: ByzerLLM, args: AutoCoderArgs, path: str,**kargs) -> Union[SimpleRAG, LongContextRAG]:
         """
         Factory method to get the appropriate RAG implementation based on arguments.
         
