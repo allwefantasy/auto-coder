@@ -47,7 +47,7 @@ class AutoGuessQuery:
         self.skip_diff = skip_diff
 
     @byzerllm.prompt()
-    def guess_next_query(self, querie_with_urls: List[Tuple[str, List[str], str]]) -> str:
+    def guess_next_query(self, querie_with_urls: List[Tuple[str, List[str], str]], task_limit_size: int = 5) -> str:
         """
         根据历史开发任务，预测接下来可能的多个开发任务，按照可能性从高到低排序。
 
@@ -121,7 +121,7 @@ class AutoGuessQuery:
         2. 文件路径预测应该基于已有文件的实际路径
         3. reason应该详细解释为什么这个任务重要，以及为什么需要修改这些文件
         4. priority的指定需要考虑任务的紧迫性和重要性
-        5. 建议返回3-5个不同优先级的任务，覆盖不同的改进方向
+        3. 建议返回最多{{ task_limit_size }}个不同优先级的任务，覆盖不同的改进方向
         """
         pass
 
@@ -189,9 +189,12 @@ class AutoGuessQuery:
 
         return querie_with_urls_and_diffs
 
-    def predict_next_tasks(self) -> Optional[List[NextQuery]]:
+    def predict_next_tasks(self, task_limit_size: int = 5) -> Optional[List[NextQuery]]:
         """
         预测接下来可能的开发任务列表，按照可能性从高到低排序
+
+        Args:
+            task_limit_size: 返回的任务数量限制，默认5个
 
         Returns:
             List[NextQuery]: 预测的任务列表，如果预测失败则返回None
@@ -204,7 +207,8 @@ class AutoGuessQuery:
 
         try:
             result = self.guess_next_query.with_llm(self.llm).with_return_type(NextQuery).run(
-                querie_with_urls=history_tasks
+                querie_with_urls=history_tasks,
+                task_limit_size=task_limit_size
             )
             return result
         except Exception as e:
