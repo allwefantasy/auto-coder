@@ -208,33 +208,54 @@ class AutoGuessQuery:
 
         try:
             if is_human_as_model:
-                # 生成prompt并写入文件
-                prompt = self.guess_next_query.prompt(
+                from prompt_toolkit import prompt
+                from prompt_toolkit.formatted_text import FormattedText
+                from rich.console import Console
+                
+                console = Console()
+                
+                # 生成prompt
+                prompt_content = self.guess_next_query.prompt(
                     querie_with_urls=history_tasks,
                     task_limit_size=task_limit_size
                 )
                 
-                # 写入output.txt文件
-                with open("output.txt", "w") as f:
-                    f.write(prompt)
-                
                 try:
                     import pyperclip
-                    pyperclip.copy(prompt)
-                    print("Prompt has been copied to clipboard and saved to output.txt")
-                except:
-                    print("Unable to copy to clipboard, but prompt has been saved to output.txt")
+                    pyperclip.copy(prompt_content)
+                    console.print(
+                        Panel(
+                            "The prompt has been copied to clipboard. Please paste it into the LLM and input the response below.",
+                            title="Instructions",
+                            border_style="blue",
+                            expand=False,
+                        )
+                    )
+                except Exception:
+                    logger.warning("Clipboard not supported")
+                    console.print(
+                        Panel(
+                            "The prompt could not be copied to clipboard. Please manually copy the following content:",
+                            title="Instructions",
+                            border_style="blue",
+                            expand=False,
+                        )
+                    )
+                    console.print(prompt_content)
                 
-                print("\nPlease input your response (press Ctrl+D or type 'EOF' to finish):")
                 lines = []
                 while True:
-                    try:
-                        line = input()
-                        if line.strip().upper() == "EOF":
-                            break
-                        lines.append(line)
-                    except EOFError:
+                    line = prompt(FormattedText([("#00FF00", "> ")]), multiline=False)
+                    line_lower = line.strip().lower()
+                    if line_lower in ["eof", "/eof"]:
                         break
+                    elif line_lower in ["/clear"]:
+                        lines = []
+                        print("\033[2J\033[H")  # Clear terminal screen
+                        continue
+                    elif line_lower in ["/break"]:
+                        raise Exception("User requested to break the operation.")
+                    lines.append(line)
                 
                 result = "\n".join(lines)
                 
