@@ -704,7 +704,7 @@ def main(input_args: Optional[List[str]] = None):
                         expand=False,
                         border_style="green",
                     )
-                )
+                )                
                 if not args.query:
                     return
 
