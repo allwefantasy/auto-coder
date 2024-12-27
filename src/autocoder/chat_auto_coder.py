@@ -59,7 +59,7 @@ import byzerllm
 from byzerllm.utils import format_str_jinja2
 from autocoder.chat_auto_coder_lang import get_message
 from autocoder.utils import operate_config_api
-
+from autocoder.agent.auto_guess_query import AutoGuessQuery
 
 class SymbolItem(BaseModel):
     symbol_name: str
@@ -1436,14 +1436,38 @@ def convert_yaml_to_config(yaml_file: str):
                 setattr(args, key, value)
     return args
 
-def code_next(query: str):
+def code_next(query:str):
     conf = memory.get("conf", {})
-    current_files = memory["current_files"]["files"]
-
+    yaml_config = {
+                "include_file": ["./base/base.yml"],
+                "auto_merge": conf.get("auto_merge", "editblock"),
+                "human_as_model": conf.get("human_as_model", "false") == "true",
+                "skip_build_index": conf.get("skip_build_index", "true") == "true",
+                "skip_confirm": conf.get("skip_confirm", "true") == "true",
+                "silence": conf.get("silence", "true") == "true",
+                "include_project_structure": conf.get("include_project_structure", "true")
+                == "true",
+            }
+    for key, value in conf.items():
+        converted_value = convert_config_value(key, value)
+        if converted_value is not None:
+            yaml_config[key] = converted_value
+    
+    temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
+    try:
+        with open(temp_yaml, "w") as f:
+            f.write(convert_yaml_config_to_str(yaml_config=yaml_config))
+        args = convert_yaml_to_config(temp_yaml)
+    finally:
+        if os.path.exists(temp_yaml):
+            os.remove(temp_yaml)
+    
+    llm = byzerllm.ByzerLLM.from_default_model(args.code_model or args.model)
+    
     auto_guesser = AutoGuessQuery(
-        llm=byzerllm.ByzerLLM.from_default_model(conf.get("code_model", conf.get("model", "deepseek_chat"))),
+        llm=llm,
         project_dir=os.getcwd(),
-        skip_diff=False
+        skip_diff=True
     )
 
     predicted_tasks = auto_guesser.predict_next_tasks(5)
@@ -1458,10 +1482,10 @@ def code_next(query: str):
     # Create main panel for all predicted tasks
     table = Table(show_header=True, header_style="bold magenta", show_lines=True)
     table.add_column("Priority", style="cyan", width=8)
-    table.add_column("Task Description", style="green")
-    table.add_column("Files", style="yellow")
-    table.add_column("Reason", style="blue")
-    table.add_column("Dependencies", style="magenta")
+    table.add_column("Task Description", style="green", width=40, overflow="fold")
+    table.add_column("Files", style="yellow", width=30, overflow="fold")
+    table.add_column("Reason", style="blue", width=30, overflow="fold")
+    table.add_column("Dependencies", style="magenta", width=30, overflow="fold")
 
     for task in predicted_tasks:
         # Format file paths to be more readable
@@ -1482,7 +1506,7 @@ def code_next(query: str):
         table,
         title="[bold]Predicted Next Tasks[/bold]",
         border_style="blue",
-        padding=1
+        padding=(1, 2)  # Add more horizontal padding
     ))
 
 def commit(query: str):
@@ -1563,6 +1587,10 @@ def coding(query: str):
     is_next = query.strip().startswith("/next")
     if is_next:
         query = query.replace("/next", "", 1).strip()
+
+    if is_next:
+        code_next(query)
+        return
 
     memory["conversation"].append({"role": "user", "content": query})
     conf = memory.get("conf", {})
