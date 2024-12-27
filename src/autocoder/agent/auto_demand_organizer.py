@@ -15,7 +15,8 @@ class DemandItem(pydantic.BaseModel):
 
 
 class OrganizedDemands(pydantic.BaseModel):
-    """整理后的需求列表"""    
+    """整理后的需求列表，按组织划分"""    
+    group_name: str = pydantic.Field(description="需求组名")
     demands: List[DemandItem]
 
 
@@ -94,6 +95,7 @@ class AutoDemandOrganizer:
         返回格式说明：
         返回符合以下格式的JSON:
         {
+          "group_name": "需求组名称",
           "demands": [
             {
               "type": "需求类型",
@@ -105,6 +107,7 @@ class AutoDemandOrganizer:
 
         示例返回：
         {
+          "group_name": "用户系统优化",
           "demands": [
             {
               "type": "New",
