@@ -948,10 +948,7 @@ def main(input_args: Optional[List[str]] = None):
 
             with open(memory_file, "w") as f:
                 json.dump(chat_history, f, ensure_ascii=False)
-            
-            # 如果会话历史过长，可以限制保存的会话数量
-            if len(chat_history["conversation_history"]) > 10:  # 保留最近10个会话历史
-                chat_history["conversation_history"] = chat_history["conversation_history"][-10:]
+                        
             return
 
         else:
