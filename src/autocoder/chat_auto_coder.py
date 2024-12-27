@@ -1686,7 +1686,7 @@ def chat(query: str):
     def execute_ask():
         cmd = ["agent", "chat", "--file", execute_file]
         if is_new:
-            cmd.append("--new_session")
+            cmd.append("--new_session")            
         auto_coder_main(cmd)
 
     try:

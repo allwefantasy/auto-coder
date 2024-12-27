@@ -705,7 +705,8 @@ def main(input_args: Optional[List[str]] = None):
                         border_style="green",
                     )
                 )
-                return
+                if not args.query:
+                    return
 
             if os.path.exists(memory_file):
                 with open(memory_file, "r") as f:
