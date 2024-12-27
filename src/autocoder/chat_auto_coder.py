@@ -61,6 +61,7 @@ from autocoder.chat_auto_coder_lang import get_message
 from autocoder.utils import operate_config_api
 from autocoder.agent.auto_guess_query import AutoGuessQuery
 
+
 class SymbolItem(BaseModel):
     symbol_name: str
     symbol_type: SymbolType
@@ -938,7 +939,6 @@ class CommandCompleter(Completer):
                 for command in parser.get_sub_commands():
                     if command.startswith(current_word):
                         yield Completion(command, start_position=-len(current_word))
-                               
 
             elif words[0] == "/conf":
                 new_words = text[len("/conf"):].strip().split()
@@ -1436,23 +1436,24 @@ def convert_yaml_to_config(yaml_file: str):
                 setattr(args, key, value)
     return args
 
-def code_next(query:str):
+
+def code_next(query: str):
     conf = memory.get("conf", {})
     yaml_config = {
-                "include_file": ["./base/base.yml"],
-                "auto_merge": conf.get("auto_merge", "editblock"),
-                "human_as_model": conf.get("human_as_model", "false") == "true",
-                "skip_build_index": conf.get("skip_build_index", "true") == "true",
-                "skip_confirm": conf.get("skip_confirm", "true") == "true",
-                "silence": conf.get("silence", "true") == "true",
-                "include_project_structure": conf.get("include_project_structure", "true")
-                == "true",
-            }
+        "include_file": ["./base/base.yml"],
+        "auto_merge": conf.get("auto_merge", "editblock"),
+        "human_as_model": conf.get("human_as_model", "false") == "true",
+        "skip_build_index": conf.get("skip_build_index", "true") == "true",
+        "skip_confirm": conf.get("skip_confirm", "true") == "true",
+        "silence": conf.get("silence", "true") == "true",
+        "include_project_structure": conf.get("include_project_structure", "true")
+        == "true",
+    }
     for key, value in conf.items():
         converted_value = convert_config_value(key, value)
         if converted_value is not None:
             yaml_config[key] = converted_value
-    
+
     temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
     try:
         with open(temp_yaml, "w") as f:
@@ -1461,16 +1462,18 @@ def code_next(query:str):
     finally:
         if os.path.exists(temp_yaml):
             os.remove(temp_yaml)
-    
-    llm = byzerllm.ByzerLLM.from_default_model(args.inference_model or args.model)
-    
+
+    llm = byzerllm.ByzerLLM.from_default_model(
+        args.inference_model or args.model)
+
     auto_guesser = AutoGuessQuery(
         llm=llm,
         project_dir=os.getcwd(),
         skip_diff=True
     )
 
-    predicted_tasks = auto_guesser.predict_next_tasks(5)
+    predicted_tasks = auto_guesser.predict_next_tasks(
+        5, is_human_as_model=args.human_as_model)
 
     if not predicted_tasks:
         console = Console()
@@ -1480,19 +1483,24 @@ def code_next(query:str):
     console = Console()
 
     # Create main panel for all predicted tasks
-    table = Table(show_header=True, header_style="bold magenta", show_lines=True)
+    table = Table(show_header=True,
+                  header_style="bold magenta", show_lines=True)
     table.add_column("Priority", style="cyan", width=8)
-    table.add_column("Task Description", style="green", width=40, overflow="fold")
+    table.add_column("Task Description", style="green",
+                     width=40, overflow="fold")
     table.add_column("Files", style="yellow", width=30, overflow="fold")
     table.add_column("Reason", style="blue", width=30, overflow="fold")
-    table.add_column("Dependencies", style="magenta", width=30, overflow="fold")
+    table.add_column("Dependencies", style="magenta",
+                     width=30, overflow="fold")
 
     for task in predicted_tasks:
         # Format file paths to be more readable
-        file_list = "\n".join([os.path.relpath(f, os.getcwd()) for f in task.urls])
-        
+        file_list = "\n".join([os.path.relpath(f, os.getcwd())
+                              for f in task.urls])
+
         # Format dependencies to be more readable
-        dependencies = "\n".join(task.dependency_queries) if task.dependency_queries else "None"
+        dependencies = "\n".join(
+            task.dependency_queries) if task.dependency_queries else "None"
 
         table.add_row(
             str(task.priority),
@@ -1509,6 +1517,7 @@ def code_next(query:str):
         padding=(1, 2)  # Add more horizontal padding
     ))
 
+
 def commit(query: str):
     def prepare_commit_yaml():
         auto_coder_main(["next", "chat_action"])
@@ -1517,15 +1526,15 @@ def commit(query: str):
 
     # no_diff = query.strip().startswith("/no_diff")
     # if no_diff:
-    #     query = query.replace("/no_diff", "", 1).strip()            
+    #     query = query.replace("/no_diff", "", 1).strip()
 
     latest_yaml_file = get_last_yaml_file("actions")
-    
+
     conf = memory.get("conf", {})
     current_files = memory["current_files"]["files"]
     execute_file = None
-    
-    if latest_yaml_file:        
+
+    if latest_yaml_file:
         try:
             execute_file = os.path.join("actions", latest_yaml_file)
             yaml_config = {
@@ -1551,26 +1560,30 @@ def commit(query: str):
             temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
             try:
                 with open(temp_yaml, "w") as f:
-                    f.write(convert_yaml_config_to_str(yaml_config=yaml_config))
+                    f.write(convert_yaml_config_to_str(
+                        yaml_config=yaml_config))
                 args = convert_yaml_to_config(temp_yaml)
             finally:
                 if os.path.exists(temp_yaml):
                     os.remove(temp_yaml)
-            
-            llm = byzerllm.ByzerLLM.from_default_model(args.code_model or args.model)
-            uncommitted_changes = git_utils.get_uncommitted_changes(".")                       
+
+            llm = byzerllm.ByzerLLM.from_default_model(
+                args.code_model or args.model)
+            uncommitted_changes = git_utils.get_uncommitted_changes(".")
             commit_message = git_utils.generate_commit_message.with_llm(
                 llm).run(uncommitted_changes)
-            memory["conversation"].append({"role": "user", "content": commit_message})
+            memory["conversation"].append(
+                {"role": "user", "content": commit_message})
             yaml_config["query"] = commit_message
-            yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)            
+            yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
             with open(os.path.join(execute_file), "w") as f:
-                f.write(yaml_content) 
-                        
+                f.write(yaml_content)
+
             file_content = open(execute_file).read()
-            md5 = hashlib.md5(file_content.encode('utf-8')).hexdigest()            
-            file_name = os.path.basename(execute_file)             
-            commit_result = git_utils.commit_changes(".", f"auto_coder_{file_name}_{md5}")            
+            md5 = hashlib.md5(file_content.encode('utf-8')).hexdigest()
+            file_name = os.path.basename(execute_file)
+            commit_result = git_utils.commit_changes(
+                ".", f"auto_coder_{file_name}_{md5}")
             git_utils.print_commit_info(commit_result=commit_result)
         except Exception as e:
             print(f"Failed to commit: {e}")
@@ -1776,7 +1789,7 @@ def chat(query: str):
     def execute_ask():
         cmd = ["agent", "chat", "--file", execute_file]
         if is_new:
-            cmd.append("--new_session")            
+            cmd.append("--new_session")
         auto_coder_main(cmd)
 
     try:
