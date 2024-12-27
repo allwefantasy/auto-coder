@@ -694,25 +694,35 @@ def main(input_args: Optional[List[str]] = None):
             memory_file = os.path.join(memory_dir, "chat_history.json")
             console = Console()
             if args.new_session:
-                chat_history = {"ask_conversation": []}
+                if os.path.exists(memory_file):
+                    with open(memory_file, "r") as f:
+                        old_chat_history = json.load(f)
+                    if "conversation_history" not in old_chat_history:
+                        old_chat_history["conversation_history"] = []
+                    old_chat_history["conversation_history"].append(old_chat_history.get("ask_conversation", []))
+                    chat_history = {"ask_conversation": [], "conversation_history": old_chat_history["conversation_history"]}
+                else:
+                    chat_history = {"ask_conversation": [], "conversation_history": []}
                 with open(memory_file, "w") as f:
                     json.dump(chat_history, f, ensure_ascii=False)
                 console.print(
                     Panel(
-                        "New session started. Previous chat history has been cleared.",
+                        "New session started. Previous chat history has been archived.",
                         title="Session Status",
                         expand=False,
                         border_style="green",
                     )
-                )                
+                )
                 if not args.query:
                     return
 
             if os.path.exists(memory_file):
                 with open(memory_file, "r") as f:
                     chat_history = json.load(f)
+                if "conversation_history" not in chat_history:
+                    chat_history["conversation_history"] = []
             else:
-                chat_history = {"ask_conversation": []}
+                chat_history = {"ask_conversation": [], "conversation_history": []}
 
             chat_history["ask_conversation"].append(
                 {"role": "user", "content": args.query}
@@ -938,6 +948,10 @@ def main(input_args: Optional[List[str]] = None):
 
             with open(memory_file, "w") as f:
                 json.dump(chat_history, f, ensure_ascii=False)
+            
+            # 如果会话历史过长，可以限制保存的会话数量
+            if len(chat_history["conversation_history"]) > 10:  # 保留最近10个会话历史
+                chat_history["conversation_history"] = chat_history["conversation_history"][-10:]
             return
 
         else:
