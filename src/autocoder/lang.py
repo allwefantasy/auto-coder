@@ -143,6 +143,7 @@ lang_desc = {
         "screenshot_url": "要捕获的网页的URL",
         "screenshot_output": "保存截图的目录",
         "code_model": "要使用的代码模型的名称。默认为空",
+        "inference_model": "要使用的推理模型的名称。默认为空",
         "system_prompt": "模型使用的系统提示词。默认为空",
         "next_desc": "基于上一个action文件创建一个新的action文件",
         "planner_model": "要使用的规划模型的名称。默认为空",
