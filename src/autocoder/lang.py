@@ -62,6 +62,7 @@ lang_desc = {
         "screenshot_url": "The URL of the webpage to capture",
         "screenshot_output": "The directory to save the screenshots",
         "code_model": "The name of the code model to use. Default is empty",
+        "inference_model": "The name of the inference model to use. Default is empty",
         "system_prompt": "The system prompt for the model. Default is empty",
         "planner_model": "The name of the planner model to use. Default is empty",
         "designer_model": "The name of the designer model to use. Default is empty",

@@ -248,8 +248,9 @@ class AutoCoderArgs(pydantic.BaseModel):
     sd_model: Optional[str] = ""
     emb_model: Optional[str] = ""
     code_model: Optional[str] = ""
+    inference_model: Optional[str] = ""
     system_prompt: Optional[str] = ""
-    text2voice_model: Optional[str] = ""
+    planner_model: Optional[str] = ""
     voice2text_model: Optional[str] = ""
     
     skip_build_index: Optional[bool] = False

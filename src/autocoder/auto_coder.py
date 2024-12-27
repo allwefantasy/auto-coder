@@ -282,6 +282,11 @@ def main(input_args: Optional[List[str]] = None):
             code_model.setup_default_model_name(args.code_model)
             llm.setup_sub_client("code_model", code_model)
 
+        if args.inference_model:
+            inference_model = byzerllm.ByzerLLM()
+            inference_model.setup_default_model_name(args.inference_model)
+            llm.setup_sub_client("inference_model", inference_model)
+
         if args.human_as_model:
 
             def intercept_callback(
