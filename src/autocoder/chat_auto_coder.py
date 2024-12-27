@@ -1470,7 +1470,34 @@ def code_next(query:str):
         skip_diff=True
     )
 
-    predicted_tasks = auto_guesser.predict_next_tasks(5)
+    if args.human_as_model:
+        console = Console()
+        console.print(Panel(
+            "Human-as-model mode is enabled. Please provide the next tasks manually.",
+            title="Human-as-model",
+            border_style="yellow"
+        ))
+        
+        predicted_tasks = []
+        while True:
+            task_desc = prompt("Task description (or type /done to finish): ")
+            if task_desc.strip().lower() == "/done":
+                break
+                
+            priority = prompt("Task priority (1-5): ")
+            files = prompt("Related files (comma separated): ")
+            reason = prompt("Reason for this task: ")
+            dependencies = prompt("Dependencies (comma separated): ")
+            
+            predicted_tasks.append({
+                "priority": int(priority),
+                "query": task_desc,
+                "urls": [f.strip() for f in files.split(",")] if files else [],
+                "reason": reason,
+                "dependency_queries": [d.strip() for d in dependencies.split(",")] if dependencies else []
+            })
+    else:
+        predicted_tasks = auto_guesser.predict_next_tasks(5)
 
     if not predicted_tasks:
         console = Console()
@@ -1489,16 +1516,16 @@ def code_next(query:str):
 
     for task in predicted_tasks:
         # Format file paths to be more readable
-        file_list = "\n".join([os.path.relpath(f, os.getcwd()) for f in task.urls])
+        file_list = "\n".join([os.path.relpath(f, os.getcwd()) for f in task.get("urls", [])])
         
         # Format dependencies to be more readable
-        dependencies = "\n".join(task.dependency_queries) if task.dependency_queries else "None"
+        dependencies = "\n".join(task.get("dependency_queries", [])) if task.get("dependency_queries") else "None"
 
         table.add_row(
-            str(task.priority),
-            task.query,
+            str(task.get("priority", 1)),
+            task.get("query", ""),
             file_list,
-            task.reason,
+            task.get("reason", ""),
             dependencies
         )
 
