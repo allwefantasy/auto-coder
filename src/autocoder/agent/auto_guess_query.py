@@ -189,12 +189,13 @@ class AutoGuessQuery:
 
         return querie_with_urls_and_diffs
 
-    def predict_next_tasks(self, task_limit_size: int = 5) -> Optional[List[NextQuery]]:
+    def predict_next_tasks(self, task_limit_size: int = 5, is_human_as_model: bool = False) -> Optional[List[NextQuery]]:
         """
         预测接下来可能的开发任务列表，按照可能性从高到低排序
 
         Args:
             task_limit_size: 返回的任务数量限制，默认5个
+            is_human_as_model: 是否人工模式，如果为True则输出prompt供人工编写结果
 
         Returns:
             List[NextQuery]: 预测的任务列表，如果预测失败则返回None
@@ -206,11 +207,54 @@ class AutoGuessQuery:
             return None
 
         try:
-            result = self.guess_next_query.with_llm(self.llm).with_return_type(NextQuery).run(
-                querie_with_urls=history_tasks,
-                task_limit_size=task_limit_size
-            )
-            return result
+            if is_human_as_model:
+                # 生成prompt并写入文件
+                prompt = self.guess_next_query.prompt(
+                    querie_with_urls=history_tasks,
+                    task_limit_size=task_limit_size
+                )
+                
+                # 写入output.txt文件
+                with open("output.txt", "w") as f:
+                    f.write(prompt)
+                
+                try:
+                    import pyperclip
+                    pyperclip.copy(prompt)
+                    print("Prompt has been copied to clipboard and saved to output.txt")
+                except:
+                    print("Unable to copy to clipboard, but prompt has been saved to output.txt")
+                
+                print("\nPlease input your response (press Ctrl+D or type 'EOF' to finish):")
+                lines = []
+                while True:
+                    try:
+                        line = input()
+                        if line.strip().upper() == "EOF":
+                            break
+                        lines.append(line)
+                    except EOFError:
+                        break
+                
+                result = "\n".join(lines)
+                
+                # 从输入中抽取JSON字符串并解析
+                from byzerllm.utils.client import code_utils
+                import json
+                
+                try:
+                    json_str = code_utils.extract_code(result)[0][1]
+                    task_list = json.loads(json_str)
+                    return [NextQuery(**task) for task in task_list]
+                except Exception as e:
+                    logger.error(f"Error parsing input: {str(e)}")
+                    return None
+            else:
+                result = self.guess_next_query.with_llm(self.llm).with_return_type(NextQuery).run(
+                    querie_with_urls=history_tasks,
+                    task_limit_size=task_limit_size
+                )
+                return result
         except Exception as e:
             import traceback
             traceback.print_exc()
