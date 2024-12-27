@@ -4,18 +4,18 @@ import yaml
 from loguru import logger
 import byzerllm
 import pydantic
+import git
 
 
 class DemandItem(pydantic.BaseModel):
     """单个需求项"""
     type: str = pydantic.Field(description="需求类型：New/Update/Delete/Other")
     description: str = pydantic.Field(description="需求描述")
-    reason: Optional[str] = pydantic.Field(description="需求原因", default=None)
-    related_files: Optional[List[str]] = pydantic.Field(description="相关文件", default_factory=list)
+    reason: Optional[str] = pydantic.Field(description="需求原因", default=None)    
 
 
 class OrganizedDemands(pydantic.BaseModel):
-    """整理后的需求列表"""
+    """整理后的需求列表"""    
     demands: List[DemandItem]
 
 
@@ -32,6 +32,7 @@ def load_yaml_config(yaml_file: str) -> Dict:
 class AutoDemandOrganizer:
     def __init__(self, llm: byzerllm.ByzerLLM,
                  project_dir: str,
+                 skip_diff: bool = False,
                  file_size_limit: int = 100):
         """
         初始化需求整理器
@@ -45,6 +46,7 @@ class AutoDemandOrganizer:
         self.actions_dir = os.path.join(project_dir, "actions")
         self.llm = llm
         self.file_size_limit = file_size_limit
+        self.skip_diff = skip_diff
 
     @byzerllm.prompt()
     def organize_demands(self, querie_with_urls: List[Tuple[str, List[str], str]]) -> str:
@@ -96,8 +98,7 @@ class AutoDemandOrganizer:
             {
               "type": "需求类型",
               "description": "需求描述",
-              "reason": "需求原因（可选）",
-              "related_files": ["相关文件路径（可选）"]
+              "reason": "需求原因（可选）"              
             }
           ]
         }
@@ -108,25 +109,23 @@ class AutoDemandOrganizer:
             {
               "type": "New",
               "description": "新增用户登录功能",
-              "reason": "满足用户身份验证需求",
-              "related_files": ["src/auth/login.py"]
+              "reason": "满足用户身份验证需求"              
             },
             {
               "type": "Update",
-              "description": "优化登录页面UI",
-              "related_files": ["src/views/login.html"]
+              "description": "优化登录页面UI"              
             }
           ]
         }
         """
         pass
 
-    def parse_history_tasks(self) -> List[Tuple[str, List[str], str]]:
+    def parse_history_tasks(self) -> List[Dict]:
         """
         解析历史任务信息
 
         Returns:
-            List[Tuple[str, List[str], str]]: 每个元组包含一个历史任务的信息
+            List[Dict]: 每个字典包含一个历史任务的信息
         """
         # 获取所有YAML文件
         action_files = [
@@ -145,6 +144,7 @@ class AutoDemandOrganizer:
         action_files = action_files[:self.file_size_limit]
 
         querie_with_urls_and_diffs = []
+        repo = git.Repo(self.project_dir)
 
         # 收集所有query、urls和对应的commit diff
         for yaml_file in action_files:
@@ -158,7 +158,29 @@ class AutoDemandOrganizer:
             urls = config.get('urls', [])
 
             if query and urls:
-                querie_with_urls_and_diffs.append((query, urls, ""))
+                commit_diff = ""
+                if not self.skip_diff:
+                    # 计算文件的MD5用于匹配commit
+                    import hashlib
+                    file_md5 = hashlib.md5(open(yaml_path, 'rb').read()).hexdigest()
+                    response_id = f"auto_coder_{yaml_file}_{file_md5}"
+                    # 查找对应的commit                   
+                    try:
+                        for commit in repo.iter_commits():
+                            if response_id in commit.message:
+                                if commit.parents:
+                                    parent = commit.parents[0]
+                                    commit_diff = repo.git.diff(
+                                        parent.hexsha, commit.hexsha)
+                                else:
+                                    commit_diff = repo.git.show(commit.hexsha)
+                                break
+                    except git.exc.GitCommandError as e:
+                        logger.error(f"Git命令执行错误: {str(e)}")
+                    except Exception as e:
+                        logger.error(f"获取commit diff时出错: {str(e)}")
+
+                querie_with_urls_and_diffs.append((query, urls, commit_diff))
 
         return querie_with_urls_and_diffs
 
