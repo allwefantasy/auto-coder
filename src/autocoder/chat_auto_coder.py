@@ -930,6 +930,15 @@ class CommandCompleter(Completer):
                             yield Completion(
                                 lib_name, start_position=-len(current_word)
                             )
+            elif words[0] == "/coding":
+                new_text = text[len("/coding"):]
+                parser = CommandTextParser(new_text, words[0])
+                parser.lib()
+                current_word = parser.current_word()
+                for command in parser.get_sub_commands():
+                    if command.startswith(current_word):
+                        yield Completion(command, start_position=-len(current_word))
+                               
 
             elif words[0] == "/conf":
                 new_words = text[len("/conf"):].strip().split()
@@ -1501,6 +1510,10 @@ def coding(query: str):
     is_apply = query.strip().startswith("/apply")
     if is_apply:
         query = query.replace("/apply", "", 1).strip()
+
+    is_next = query.strip().startswith("/next")
+    if is_next:
+        query = query.replace("/next", "", 1).strip()
 
     memory["conversation"].append({"role": "user", "content": query})
     conf = memory.get("conf", {})
@@ -2198,7 +2211,7 @@ def main():
         mode = memory["mode"]
         human_as_model = memory["conf"].get("human_as_model", "false")
         return (
-            f" Mode: {MODES[mode]} (ctl+k) | Human as Model: {human_as_model} (ctl+n)"
+            f" Mode: {MODES[mode]} (ctl+k) | Human as Model: {human_as_model} (ctl+n or /conf human_as_model:true/false)"
         )
 
     session = PromptSession(

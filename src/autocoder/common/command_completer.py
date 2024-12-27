@@ -12,7 +12,7 @@ COMMANDS = {
         "/svg": {},
         "/sd": {},
     },
-    "/coding": {},
+    "/coding": {"/apply": {}, "/next": {}},
     "/chat": {"/new": {}, "/review": {}, "/no_context": {}},
     "/lib": {
         "/add": "",
@@ -147,7 +147,8 @@ class CommandTextParser:
                 current_word += v
         self.is_extracted = True
         self.current_word_end_pos = self.pos + 1
-        self.current_word_start_pos = self.current_word_end_pos - len(current_word)
+        self.current_word_start_pos = self.current_word_end_pos - \
+            len(current_word)
 
     def previous(self) -> str:
         if self.pos > 1:
@@ -227,10 +228,11 @@ class CommandTextParser:
             self.is_extracted = True
 
         self.current_word_end_pos = self.pos + 1
-        self.current_word_start_pos = self.current_word_end_pos - len(current_word)
+        self.current_word_start_pos = self.current_word_end_pos - \
+            len(current_word)
 
     def current_word(self) -> str:
-        return self.text[self.current_word_start_pos : self.current_word_end_pos]
+        return self.text[self.current_word_start_pos: self.current_word_end_pos]
 
     def get_current_word(self) -> str:
         return self.current_word()
