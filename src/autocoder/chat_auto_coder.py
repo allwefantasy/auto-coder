@@ -1462,7 +1462,7 @@ def code_next(query:str):
         if os.path.exists(temp_yaml):
             os.remove(temp_yaml)
     
-    llm = byzerllm.ByzerLLM.from_default_model(args.code_model or args.model)
+    llm = byzerllm.ByzerLLM.from_default_model(args.inference_model or args.model)
     
     auto_guesser = AutoGuessQuery(
         llm=llm,

@@ -252,6 +252,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     system_prompt: Optional[str] = ""
     planner_model: Optional[str] = ""
     voice2text_model: Optional[str] = ""
+    text2voice_model: Optional[str] = ""
     
     skip_build_index: Optional[bool] = False
     skip_filter_index: Optional[bool] = False
