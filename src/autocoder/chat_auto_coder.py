@@ -1436,6 +1436,55 @@ def convert_yaml_to_config(yaml_file: str):
                 setattr(args, key, value)
     return args
 
+def code_next(query: str):
+    conf = memory.get("conf", {})
+    current_files = memory["current_files"]["files"]
+
+    auto_guesser = AutoGuessQuery(
+        llm=byzerllm.ByzerLLM.from_default_model(conf.get("code_model", conf.get("model", "deepseek_chat"))),
+        project_dir=os.getcwd(),
+        skip_diff=False
+    )
+
+    predicted_tasks = auto_guesser.predict_next_tasks(5)
+
+    if not predicted_tasks:
+        console = Console()
+        console.print(Panel("No task predictions available", style="yellow"))
+        return
+
+    console = Console()
+
+    # Create main panel for all predicted tasks
+    table = Table(show_header=True, header_style="bold magenta", show_lines=True)
+    table.add_column("Priority", style="cyan", width=8)
+    table.add_column("Task Description", style="green")
+    table.add_column("Files", style="yellow")
+    table.add_column("Reason", style="blue")
+    table.add_column("Dependencies", style="magenta")
+
+    for task in predicted_tasks:
+        # Format file paths to be more readable
+        file_list = "\n".join([os.path.relpath(f, os.getcwd()) for f in task.urls])
+        
+        # Format dependencies to be more readable
+        dependencies = "\n".join(task.dependency_queries) if task.dependency_queries else "None"
+
+        table.add_row(
+            str(task.priority),
+            task.query,
+            file_list,
+            task.reason,
+            dependencies
+        )
+
+    console.print(Panel(
+        table,
+        title="[bold]Predicted Next Tasks[/bold]",
+        border_style="blue",
+        padding=1
+    ))
+
 def commit(query: str):
     def prepare_commit_yaml():
         auto_coder_main(["next", "chat_action"])
