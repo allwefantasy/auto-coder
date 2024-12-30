@@ -5,6 +5,11 @@ from loguru import logger
 import byzerllm
 import pydantic
 import git
+from rich.console import Console
+from rich.panel import Panel
+from prompt_toolkit import prompt
+from prompt_toolkit.formatted_text import FormattedText
+from rich.console import Console
 
 
 class NextQuery(pydantic.BaseModel):
@@ -207,11 +212,7 @@ class AutoGuessQuery:
             return None
 
         try:
-            if is_human_as_model:
-                from prompt_toolkit import prompt
-                from prompt_toolkit.formatted_text import FormattedText
-                from rich.console import Console
-                
+            if is_human_as_model:                          
                 console = Console()
                 
                 # 生成prompt
