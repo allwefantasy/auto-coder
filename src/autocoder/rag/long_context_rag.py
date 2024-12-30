@@ -395,6 +395,7 @@ class LongContextRAG:
                     inference_deep_thought=self.args.inference_deep_thought,
                     inference_slow_without_deep_thought=self.args.inference_slow_without_deep_thought,                    
                     precision=self.args.inference_compute_precision,
+                    data_cells_max_num=self.args.data_cells_max_num,
                 )
                 conversations = conversations[:-1]
                 new_conversations = llm_compute_engine.process_conversation(
@@ -576,6 +577,7 @@ class LongContextRAG:
                     inference_enhance=not self.args.disable_inference_enhance,
                     inference_deep_thought=self.args.inference_deep_thought,
                     precision=self.args.inference_compute_precision,
+                    data_cells_max_num=self.args.data_cells_max_num,
                     debug=False,
                 )
                 new_conversations = llm_compute_engine.process_conversation(
