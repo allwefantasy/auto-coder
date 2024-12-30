@@ -314,6 +314,12 @@ def main(input_args: Optional[List[str]] = None):
         action="store_true",
         help="Whether to return responses without contexts. only works when pro plugin is installed",
     )
+    serve_parser.add_argument(
+        "--data_cells_max_num",
+        type=int,
+        default=2000,
+        help="Maximum number of data cells to process",
+    )
 
     serve_parser.add_argument(
         "--recall_model",

@@ -343,6 +343,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     inference_compute_precision: int = 64
     without_contexts: Optional[bool] = False
     skip_events: Optional[bool] = False
+    data_cells_max_num: Optional[int] = 2000
 
     class Config:
         protected_namespaces = ()
