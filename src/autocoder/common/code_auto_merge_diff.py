@@ -460,7 +460,7 @@ class CodeAutoMergeDiff:
                 errors += other_hunks_applied
             raise ValueError(errors)    
 
-    def _merge_code_without_effect(self, content: str) -> MergeResult:
+    def _merge_code_without_effect(self, content: str) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
         """Merge code without any side effects like git operations or file writing.
         Returns a tuple of:
         - list of (file_path, new_content) tuples for successfully merged blocks
