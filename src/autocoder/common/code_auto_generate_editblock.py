@@ -1,5 +1,5 @@
 from typing import List, Dict, Tuple
-from autocoder.common.types import Mode
+from autocoder.common.types import Mode, CodeGenerateResult
 from autocoder.common import AutoCoderArgs
 import byzerllm
 from autocoder.common import sys_prompt
@@ -377,7 +377,7 @@ class CodeAutoGenerateEditBlock:
 
     def single_round_run(
         self, query: str, source_content: str
-    ) -> Tuple[List[str], Dict[str, str]]:
+    ) -> CodeGenerateResult:
         llm_config = {"human_as_model": self.args.human_as_model}
 
         if self.args.template == "common":
@@ -431,11 +431,11 @@ class CodeAutoGenerateEditBlock:
                 ),
             )
 
-        return results, conversations
+        return CodeGenerateResult(contents=results, conversations=conversations)
 
     def multi_round_run(
         self, query: str, source_content: str, max_steps: int = 10
-    ) -> Tuple[List[str], List[Dict[str, str]]]:
+    ) -> CodeGenerateResult:
         llm_config = {"human_as_model": self.args.human_as_model}
         result = []
 
@@ -464,7 +464,7 @@ class CodeAutoGenerateEditBlock:
         conversations.append({"role": "assistant", "content": t[0].output})
 
         if "__完成__" in t[0].output or "/done" in t[0].output or "__EOF__" in t[0].output:
-            return result, conversations
+            return CodeGenerateResult(contents=result, conversations=conversations)
 
         current_step = 0
 
