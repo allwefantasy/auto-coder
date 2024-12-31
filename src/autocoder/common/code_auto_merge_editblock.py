@@ -161,6 +161,12 @@ class CodeAutoMergeEditBlock:
     def choose_best_choice(self, generate_result: CodeGenerateResult) -> str:
         ranker = CodeModificationRanker(self.llm, self.args, self)
         ranked_result = ranker.rank_modifications(generate_result)
+        # Filter out contents with failed blocks
+        for content in ranked_result.contents:
+            merge_result = self._merge_code_without_effect(content)
+            if not merge_result.failed_blocks:
+                return content
+        # If all have failed blocks, return the first one
         return ranked_result.contents[0]
 
     @byzerllm.prompt()
