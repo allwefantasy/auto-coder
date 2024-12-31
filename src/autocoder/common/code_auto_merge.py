@@ -108,6 +108,24 @@ class CodeAutoMerge:
         Error: {{ error }}
         '''
 
+    def _merge_code_without_effect(self, content: str) -> List[Tuple[str, str]]:
+        """Merge code without any side effects like git operations or file writing.
+        Returns a list of (file_path, new_content) tuples."""
+        codes = self.parse_whole_text_v2(content)
+        file_content_mapping = {}
+        
+        for block in codes:
+            file_path = block.path
+            if not os.path.exists(file_path):
+                file_content_mapping[file_path] = block.content
+            else:
+                if file_path not in file_content_mapping:
+                    with open(file_path, "r") as f:
+                        file_content_mapping[file_path] = f.read()
+                file_content_mapping[file_path] = block.content
+                
+        return [(path, content) for path, content in file_content_mapping.items()]
+
     def _merge_code(self, content: str,force_skip_git:bool=False):        
         total = 0
         
@@ -123,18 +141,6 @@ class CodeAutoMerge:
                 logger.error(self.git_require_msg(source_dir=self.args.source_dir,error=str(e)))
                 return            
 
-        # codes =  code_utils.extract_code(content)
-        # for (lang,code) in codes:            
-        #     parsed_blocks = self.parse_text(code)
-
-        #     for block in parsed_blocks:
-        #         file_path = block.path
-        #         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
-        #         with open(file_path, "w") as f:
-        #             logger.info(f"Upsert path: {file_path}")
-        #             total += 1
-        #             f.write(block.content)
         codes = self.parse_whole_text_v2(content)
         for block in codes:
             file_path = block.path

@@ -459,6 +459,30 @@ class CodeAutoMergeDiff:
                 errors += other_hunks_applied
             raise ValueError(errors)    
 
+    def _merge_code_without_effect(self, content: str) -> List[Tuple[str, str]]:
+        """Merge code without any side effects like git operations or file writing.
+        Returns a list of (file_path, new_content) tuples."""
+        edits = self.get_edits(content)
+        file_content_mapping = {}
+        
+        for path, hunk in edits:
+            full_path = self.abs_root_path(path)
+            if not os.path.exists(full_path):
+                _, after = hunk_to_before_after(hunk)
+                file_content_mapping[full_path] = after
+                continue
+                
+            if full_path not in file_content_mapping:
+                with open(full_path, "r") as f:
+                    file_content_mapping[full_path] = f.read()
+            
+            content = file_content_mapping[full_path]
+            new_content = do_replace(full_path, content, hunk)
+            if new_content:
+                file_content_mapping[full_path] = new_content
+                
+        return [(path, content) for path, content in file_content_mapping.items()]
+
     def _merge_code(self, content: str,force_skip_git:bool=False):        
         total = 0
         

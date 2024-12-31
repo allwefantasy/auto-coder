@@ -143,6 +143,42 @@ class CodeAutoMergeStrictDiff:
         res = Path(self.args.source_dir) / path
         return safe_abs_path(res)            
 
+    def _merge_code_without_effect(self, content: str) -> List[Tuple[str, str]]:
+        """Merge code without any side effects like git operations or file writing.
+        Returns a list of (file_path, new_content) tuples."""
+        diff_blocks = self.parse_diff_block(content)
+        file_content_mapping = {}
+        
+        for block in diff_blocks:
+            path = block.path
+            content = block.content
+            full_path = self.abs_root_path(path)
+            
+            if not os.path.exists(full_path):
+                file_content_mapping[full_path] = content
+                continue
+                
+            if full_path not in file_content_mapping:
+                with open(full_path, "r") as f:
+                    file_content_mapping[full_path] = f.read()
+            
+            try:
+                import patch
+                patch_obj = patch.fromstring(content.encode('utf-8'))
+                root_path = None
+                if not path.startswith(self.args.source_dir):
+                    root_path = self.args.source_dir
+
+                # Create a copy of the content to apply patch
+                temp_content = file_content_mapping[full_path]
+                success = patch_obj.apply(root=root_path, content=temp_content)
+                if success:
+                    file_content_mapping[full_path] = temp_content
+            except Exception as e:
+                logger.warning(f"Failed to apply patch to {full_path}: {str(e)}")
+                
+        return [(path, content) for path, content in file_content_mapping.items()]
+
     def _merge_code(self, content: str, force_skip_git: bool = False):        
         total = 0
         
@@ -162,35 +198,6 @@ class CodeAutoMergeStrictDiff:
         for diff_blocks in diff_blocks:
             path = diff_blocks.path
             content = diff_blocks.content          
-
-            # unidiff_patch = unidiff.PatchSet(content)
-            # dmp_patches = []
-            # for patched_file in unidiff_patch:
-            #     diffs = []
-            #     start_line = 0
-            #     for hunk in patched_file:
-            #         start_line = hunk.target_start - 1  # 获取hunk的起始位置
-            #         for line in hunk:
-            #             if line.is_added:
-            #                 diffs.append(dmp_module.diff('', line.value.strip(), start_line))
-            #                 start_line += 1
-            #             elif line.is_removed:
-            #                 diffs.append(dmp_module.diff(line.value.strip(), '', start_line))
-            #             else:
-            #                 start_line += 1
-            #     patch_text = dmp.patch_make(diffs)
-            #     dmp_patches.extend(patch_text)
-            
-            # with open(path, 'r') as f:
-            #     original_content = f.read()
-                
-            # dmp = dmp_module.diff_match_patch()            
-            # new_text, results = dmp.patch_apply(dmp_patches, original_content)            
-            # if any(results) is False:
-            #     raise Exception("Error applying diff to file: " + path)
-            # with open(self.abs_root_path(path), 'w') as f:
-            #     f.write(new_text)
-            # total += 1 
 
             import patch
             patch_obj = patch.fromstring(content.encode('utf-8'))
