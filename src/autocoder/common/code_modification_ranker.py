@@ -25,13 +25,13 @@ class CodeModificationRanker:
         </edit_requirement>
         
         下面是相应的代码修改：
-        {% for content in s.contents %}
-        <edit_block>
+        {% for idx, content in enumerate(s.contents) %}
+        <edit_block id="{{ idx }}">
         {{content}}
         </edit_block>
         {% endfor %}
         
-        返回一个索引列表，表示修改质量的排序，最好的修改排在最前面。
+        返回一个JSON数组，包含修改质量的排序序号，最好的修改排在最前面。
         
         示例：
         输入：["修改1", "修改2", "修改3"]
