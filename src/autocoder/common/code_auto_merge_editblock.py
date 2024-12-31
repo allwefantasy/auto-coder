@@ -163,7 +163,7 @@ class CodeAutoMergeEditBlock:
         if len(generate_result.contents) == 1:
             return generate_result.contents[0]
 
-        ranker = CodeModificationRanker(self.llm, self.args, self)
+        ranker = CodeModificationRanker(self.llm, self.args)
         ranked_result = ranker.rank_modifications(generate_result)
         # Filter out contents with failed blocks
         for content,conversations in zip(ranked_result.contents,ranked_result.conversations):
@@ -218,15 +218,7 @@ class CodeAutoMergeEditBlock:
                 if in_updated:
                     updates.append(line)
             result.append((edit.path, "\n".join(heads), "\n".join(updates)))
-        return result
-
-    def _merge_code(self, content: str, force_skip_git: bool = False):
-        self._merge_code(self.choose_best_choice(content), force_skip_git)
-
-    def choose_best_choice(self, generate_result: CodeGenerateResult) -> str:
-        ranker = CodeModificationRanker(self.llm, self.args, self)
-        ranked_result = ranker.rank_modifications(generate_result)
-        return ranked_result.contents[0]
+        return result        
 
     def _merge_code_without_effect(self, content: str) -> MergeCodeWithoutEffect:
         """Merge code without any side effects like git operations, linting or file writing.

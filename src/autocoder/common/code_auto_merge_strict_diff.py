@@ -138,7 +138,7 @@ class CodeAutoMergeStrictDiff:
         if len(generate_result.contents) == 1:
             return generate_result
 
-        ranker = CodeModificationRanker(self.llm, self.args, self)
+        ranker = CodeModificationRanker(self.llm, self.args)
         ranked_result = ranker.rank_modifications(generate_result)
         # Filter out contents with failed blocks
         for content,conversations in zip(ranked_result.contents,ranked_result.conversations):

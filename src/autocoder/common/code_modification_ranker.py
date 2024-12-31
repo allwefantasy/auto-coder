@@ -1,10 +1,6 @@
 import byzerllm
 from typing import List,Union
 from autocoder.common import AutoCoderArgs
-from autocoder.common.code_auto_merge_diff import CodeAutoMergeDiff
-from autocoder.common.code_auto_merge_editblock import CodeAutoMergeEditBlock
-from autocoder.common.code_auto_merge_strict_diff import CodeAutoMergeStrictDiff
-from autocoder.common.code_auto_merge import CodeAutoMerge
 from autocoder.common.types import CodeGenerateResult
 from pydantic import BaseModel
 
@@ -12,10 +8,9 @@ class RankResult(BaseModel):
     rank_result:List[int]
 
 class CodeModificationRanker:
-    def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs, merger:Union[CodeAutoMergeDiff,CodeAutoMergeEditBlock,CodeAutoMergeStrictDiff,CodeAutoMerge]):
+    def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs):
         self.llm = llm
-        self.args = args
-        self.merger = merger        
+        self.args = args        
     
     @byzerllm.prompt()
     def _rank_modifications(self, s:CodeGenerateResult) -> str:
