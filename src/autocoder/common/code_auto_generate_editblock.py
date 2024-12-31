@@ -420,7 +420,7 @@ class CodeAutoGenerateEditBlock:
             results = [future.result()[0].output for future in futures]
         conversations_list = []
         for result in results:
-            conversations_list.append({"role": "assistant", "content": result})
+            conversations_list.append(conversations + [{"role": "assistant", "content": result}])
 
         if self.args.request_id and not self.args.skip_events:
             _ = queue_communicate.send_event(
@@ -431,7 +431,7 @@ class CodeAutoGenerateEditBlock:
                 ),
             )
 
-        return CodeGenerateResult(contents=results, conversations=conversations)
+        return CodeGenerateResult(contents=results, conversations=conversations_list)
 
     def multi_round_run(
         self, query: str, source_content: str, max_steps: int = 10
