@@ -207,7 +207,8 @@ def main(input_args: Optional[List[str]] = None):
             max_seq = max(seqs)
 
         new_seq = str(max_seq + 1).zfill(12)
-        prev_files = [f for f in action_files if int(get_old_seq(f)) < int(new_seq)]
+        prev_files = [f for f in action_files if int(
+            get_old_seq(f)) < int(new_seq)]
 
         if raw_args.from_yaml:
             # If --from_yaml is specified, copy content from the matching YAML file
@@ -281,10 +282,12 @@ def main(input_args: Optional[List[str]] = None):
             if "," in args.code_model:
                 # Multiple code models specified
                 model_names = args.code_model.split(",")
-                for i, model_name in enumerate(model_names):
+                models = []
+                for _, model_name in enumerate(model_names):
                     code_model = byzerllm.ByzerLLM()
                     code_model.setup_default_model_name(model_name.strip())
-                    llm.setup_sub_client(f"code_model_{i}", code_model)
+                    models.append(code_model)
+                llm.setup_sub_client("code_model", models)
             else:
                 # Single code model
                 code_model = byzerllm.ByzerLLM()
@@ -507,7 +510,7 @@ def main(input_args: Optional[List[str]] = None):
         from autocoder.index.for_command import index_query_command
 
         index_query_command(args, llm)
-        return   
+        return
 
     if raw_args.command == "agent":
         if raw_args.agent_command == "planner":
@@ -713,10 +716,13 @@ def main(input_args: Optional[List[str]] = None):
                         old_chat_history = json.load(f)
                     if "conversation_history" not in old_chat_history:
                         old_chat_history["conversation_history"] = []
-                    old_chat_history["conversation_history"].append(old_chat_history.get("ask_conversation", []))
-                    chat_history = {"ask_conversation": [], "conversation_history": old_chat_history["conversation_history"]}
+                    old_chat_history["conversation_history"].append(
+                        old_chat_history.get("ask_conversation", []))
+                    chat_history = {"ask_conversation": [
+                    ], "conversation_history": old_chat_history["conversation_history"]}
                 else:
-                    chat_history = {"ask_conversation": [], "conversation_history": []}
+                    chat_history = {"ask_conversation": [],
+                                    "conversation_history": []}
                 with open(memory_file, "w") as f:
                     json.dump(chat_history, f, ensure_ascii=False)
                 console.print(
@@ -736,7 +742,8 @@ def main(input_args: Optional[List[str]] = None):
                 if "conversation_history" not in chat_history:
                     chat_history["conversation_history"] = []
             else:
-                chat_history = {"ask_conversation": [], "conversation_history": []}
+                chat_history = {"ask_conversation": [],
+                                "conversation_history": []}
 
             chat_history["ask_conversation"].append(
                 {"role": "user", "content": args.query}
@@ -962,7 +969,7 @@ def main(input_args: Optional[List[str]] = None):
 
             with open(memory_file, "w") as f:
                 json.dump(chat_history, f, ensure_ascii=False)
-                        
+
             return
 
         else:
