@@ -26,7 +26,7 @@ class CodeAutoGenerateEditBlock:
         self.action = action
         self.fence_0 = fence_0
         self.fence_1 = fence_1
-        self.generate_times_same_model = 1
+        self.generate_times_same_model = args.generate_times_same_model
         if not self.llm:
             raise ValueError(
                 "Please provide a valid model instance to use for code generation."
