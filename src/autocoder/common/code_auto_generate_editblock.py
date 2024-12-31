@@ -26,6 +26,7 @@ class CodeAutoGenerateEditBlock:
         self.action = action
         self.fence_0 = fence_0
         self.fence_1 = fence_1
+        self.generate_times_same_model = 1
         if not self.llm:
             raise ValueError(
                 "Please provide a valid model instance to use for code generation."
@@ -411,9 +412,11 @@ class CodeAutoGenerateEditBlock:
                 ),
             )
         
-        with ThreadPoolExecutor(max_workers=len(self.llms)) as executor:
-            futures = [executor.submit(llm.chat_oai, conversations=conversations, llm_config=llm_config) 
-                      for llm in self.llms]
+        with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
+            futures = []
+            for llm in self.llms:
+                for _ in range(self.generate_times_same_model):
+                    futures.append(executor.submit(llm.chat_oai, conversations=conversations, llm_config=llm_config))
             results = [future.result()[0].output for future in futures]
 
         conversations.append({"role": "assistant", "content": results[0]})

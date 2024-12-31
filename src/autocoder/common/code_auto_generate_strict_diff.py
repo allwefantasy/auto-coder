@@ -14,6 +14,7 @@ class CodeAutoGenerateStrictDiff:
         self.args = args
         self.action = action
         self.llms = []
+        self.generate_times_same_model = 1
         if not self.llm:
             raise ValueError(
                 "Please provide a valid model instance to use for code generation."
@@ -289,9 +290,11 @@ class CodeAutoGenerateStrictDiff:
         
         conversations.append({"role": "user", "content": init_prompt})
         
-        with ThreadPoolExecutor(max_workers=len(self.llms)) as executor:
-            futures = [executor.submit(llm.chat_oai, conversations=conversations, llm_config=llm_config) 
-                      for llm in self.llms]
+        with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
+            futures = []
+            for llm in self.llms:
+                for _ in range(self.generate_times_same_model):
+                    futures.append(executor.submit(llm.chat_oai, conversations=conversations, llm_config=llm_config))
             results = [future.result()[0].output for future in futures]
 
         conversations.append({"role": "assistant", "content": results[0]})
