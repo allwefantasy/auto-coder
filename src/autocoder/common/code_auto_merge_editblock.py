@@ -218,6 +218,32 @@ class CodeAutoMergeEditBlock:
         else:
             return content
 
+    def _merge_code_without_effect(self, content: str) -> List[Tuple[str, str]]:
+        """Merge code without any side effects like git operations, linting or file writing.
+        Returns a list of (file_path, new_content) tuples."""
+        codes = self.get_edits(content)
+        file_content_mapping = {}
+        
+        for block in codes:
+            file_path, head, update = block
+            if not os.path.exists(file_path):
+                file_content_mapping[file_path] = update
+            else:
+                if file_path not in file_content_mapping:
+                    with open(file_path, "r") as f:
+                        temp = f.read()
+                        file_content_mapping[file_path] = temp
+                existing_content = file_content_mapping[file_path]
+                new_content = (
+                    existing_content.replace(head, update, 1)
+                    if head
+                    else existing_content + "\n" + update
+                )
+                if new_content != existing_content:
+                    file_content_mapping[file_path] = new_content
+                    
+        return [(path, content) for path, content in file_content_mapping.items()]
+
     def _merge_code(self, content: str, force_skip_git: bool = False):
         file_content = open(self.args.file).read()
         md5 = hashlib.md5(file_content.encode("utf-8")).hexdigest()
