@@ -1,5 +1,5 @@
 import byzerllm
-from typing import List
+from typing import List,Union
 from autocoder.common import AutoCoderArgs
 from autocoder.common.code_auto_merge_diff import CodeAutoMergeDiff
 from autocoder.common.code_auto_merge_editblock import CodeAutoMergeEditBlock
@@ -7,13 +7,10 @@ from autocoder.common.code_auto_merge_strict_diff import CodeAutoMergeStrictDiff
 from autocoder.common.code_auto_merge import CodeAutoMerge
 
 class CodeModificationRanker:
-    def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs):
+    def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs, merger:Union[CodeAutoMergeDiff,CodeAutoMergeEditBlock,CodeAutoMergeStrictDiff,CodeAutoMerge]):
         self.llm = llm
         self.args = args
-        self.merge_diff = CodeAutoMergeDiff(llm, args)
-        self.merge_editblock = CodeAutoMergeEditBlock(llm, args)
-        self.merge_strict_diff = CodeAutoMergeStrictDiff(llm, args)
-        self.merge_code = CodeAutoMerge(llm, args)
+        self.merger = merger        
 
     @byzerllm.prompt()
     def rank_modifications(self, modifications: List[str]) -> List[int]:
