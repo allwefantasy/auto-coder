@@ -18,6 +18,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 import json
+from typing import Union, List
 
 
 class PathAndCode(pydantic.BaseModel):
@@ -198,8 +199,17 @@ class CodeAutoMergeEditBlock:
                     updates.append(line)
             result.append((edit.path, "\n".join(heads), "\n".join(updates)))
         return result
+    
+    def merge_code(self, content: Union[str, List[str]], force_skip_git: bool = False):
+        self._merge_code(self.choose_best_choice(content), force_skip_git)
 
-    def merge_code(self, content: str, force_skip_git: bool = False):
+    def choose_best_choice(self, content: Union[str, List[str]]):
+        if isinstance(content, list):
+            return content[0]
+        else:
+            return content
+
+    def _merge_code(self, content: str, force_skip_git: bool = False):
         file_content = open(self.args.file).read()
         md5 = hashlib.md5(file_content.encode("utf-8")).hexdigest()
         file_name = os.path.basename(self.args.file)
