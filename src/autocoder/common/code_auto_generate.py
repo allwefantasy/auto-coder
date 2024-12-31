@@ -13,12 +13,15 @@ class CodeAutoGenerate:
         self.llm = llm
         self.args = args
         self.action = action
+        self.llms = []
         if not self.llm:
             raise ValueError(
                 "Please provide a valid model instance to use for code generation."
             )
         if self.llm.get_sub_client("code_model"):
             self.llm = self.llm.get_sub_client("code_model")
+            if not isinstance(self.llms, list):
+                self.llms = [self.llm]
 
     @byzerllm.prompt(llm=lambda self: self.llm)
     def auto_implement_function(self, instruction: str, content: str) -> str:
@@ -145,7 +148,7 @@ class CodeAutoGenerate:
 
     def single_round_run(
         self, query: str, source_content: str
-    ) -> Tuple[str, Dict[str, str]]:
+    ) -> Tuple[List[str], Dict[str, str]]:
         llm_config = {"human_as_model": self.args.human_as_model}
 
         if self.args.request_id and not self.args.skip_events:
@@ -178,9 +181,13 @@ class CodeAutoGenerate:
         
         conversations.append({"role": "user", "content": init_prompt})
 
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=len(self.llms)) as executor:
+            futures = [executor.submit(llm.chat_oai, conversations=conversations, llm_config=llm_config) 
+                      for llm in self.llms]
+            results = [future.result()[0].output for future in futures]
 
-        t = self.llm.chat_oai(conversations=conversations, llm_config=llm_config)
-        conversations.append({"role": "assistant", "content": t[0].output})
+        conversations.append({"role": "assistant", "content": results[0]})
 
         if self.args.request_id and not self.args.skip_events:
             queue_communicate.send_event_no_wait(
@@ -191,7 +198,7 @@ class CodeAutoGenerate:
                 ),
             )
 
-        return [t[0].output], conversations
+        return results, conversations
 
     def multi_round_run(
         self, query: str, source_content: str, max_steps: int = 10
