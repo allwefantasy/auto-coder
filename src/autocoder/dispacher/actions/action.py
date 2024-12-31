@@ -104,9 +104,9 @@ class ActionTSProject:
                 generate_result = generate.single_round_run(
                     query=args.query, source_content=content
                 )
+            merge_result = None
             if args.execute and args.auto_merge:
                 logger.info("Auto merge the code...")
-                merge_result = None
                 if args.auto_merge == "diff":
                     code_merge = CodeAutoMergeDiff(llm=self.llm, args=self.args)
                     merge_result = code_merge.merge_code(generate_result=generate_result)
@@ -185,9 +185,9 @@ class ActionPyScriptProject:
                 generate_result = generate.single_round_run(
                     query=args.query, source_content=content
                 )
+            merge_result = None
             if args.execute and args.auto_merge:
                 logger.info("Auto merge the code...")
-                merge_result = None
                 if args.auto_merge == "diff":
                     code_merge = CodeAutoMergeDiff(llm=self.llm, args=self.args)
                     merge_result = code_merge.merge_code(generate_result=generate_result)
@@ -285,9 +285,9 @@ class ActionPyProject:
                     query=args.query, source_content=content
                 )
                
+            merge_result = None
             if args.execute and args.auto_merge:
                 logger.info("Auto merge the code...")
-                merge_result = None
                 if args.auto_merge == "diff":
                     code_merge = CodeAutoMergeDiff(llm=self.llm, args=self.args)
                     merge_result = code_merge.merge_code(generate_result=generate_result)
@@ -379,9 +379,9 @@ class ActionSuffixProject:
                 )
               
 
+        merge_result = None
         if args.execute and args.auto_merge:
             logger.info("Auto merge the code...")
-            merge_result = None
             if args.auto_merge == "diff":
                 code_merge = CodeAutoMergeDiff(llm=self.llm, args=self.args)
                 merge_result = code_merge.merge_code(generate_result=generate_result)
