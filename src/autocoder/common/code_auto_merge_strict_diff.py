@@ -9,6 +9,7 @@ from loguru import logger
 import hashlib
 from pathlib import Path
 from autocoder.common.types import CodeGenerateResult
+from autocoder.common.code_modification_ranker import CodeModificationRanker
 
 class PathAndCode(pydantic.BaseModel):
     path: str
