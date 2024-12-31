@@ -375,7 +375,7 @@ class CodeAutoGenerateEditBlock:
 
     def single_round_run(
         self, query: str, source_content: str
-    ) -> Tuple[str, Dict[str, str]]:
+    ) -> Tuple[List[str], Dict[str, str]]:
         llm_config = {"human_as_model": self.args.human_as_model}
 
         if self.args.template == "common":
@@ -410,10 +410,15 @@ class CodeAutoGenerateEditBlock:
                 ),
             )
 
-            t = self.llm.chat_oai(
-                conversations=conversations, llm_config=llm_config)
-            conversations.append({"role": "assistant", "content": t[0].output})
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=len(self.llms)) as executor:
+            futures = [executor.submit(llm.chat_oai, conversations=conversations, llm_config=llm_config) 
+                      for llm in self.llms]
+            results = [future.result()[0].output for future in futures]
 
+        conversations.append({"role": "assistant", "content": results[0]})
+
+        if self.args.request_id and not self.args.skip_events:
             _ = queue_communicate.send_event(
                 request_id=self.args.request_id,
                 event=CommunicateEvent(
@@ -421,12 +426,8 @@ class CodeAutoGenerateEditBlock:
                     data=json.dumps({}, ensure_ascii=False),
                 ),
             )
-            return [t[0].output], conversations
-        else:
-            t = self.llm.chat_oai(
-                conversations=conversations, llm_config=llm_config)
-            conversations.append({"role": "assistant", "content": t[0].output})
-            return [t[0].output], conversations
+
+        return results, conversations
 
     def multi_round_run(
         self, query: str, source_content: str, max_steps: int = 10
