@@ -132,7 +132,9 @@ class CodeAutoMergeStrictDiff:
         self._merge_code(self.choose_best_choice(generate_result), force_skip_git)
 
     def choose_best_choice(self, generate_result: CodeGenerateResult) -> str:
-        return generate_result.contents[0]    
+        ranker = CodeModificationRanker(self.llm, self.args, self)
+        ranked_result = ranker.rank_modifications(generate_result)
+        return ranked_result.contents[0]
     
 
     def abs_root_path(self, path):
