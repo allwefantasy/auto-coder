@@ -24,19 +24,21 @@ class CodeModificationRanker:
         </edit_requirement>
         
         下面是相应的代码修改：
-        {% for idx, content in enumerate(s.contents) %}
-        <edit_block id="{{ idx }}">
+        {% for content in s.contents %}
+        <edit_block id="{{ loop.index0 }}">
         {{content}}
         </edit_block>
         {% endfor %}
         
-        返回格式如下JSON数组
+        返回格式如下JSON格式数据：
         
         ```json
-        [id3, id2, id1]
+        {
+            "rank_result": [id3, id2, id1]
+        }
         ```
 
-        包含修改质量的排序序号，最好的修改排在最前面
+        其中rank_result包含修改质量的排序序号，最好的修改排在最前面。
         '''
         
 

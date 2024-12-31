@@ -1,6 +1,6 @@
 from enum import Enum
 import pydantic
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple,Any
 class Mode(Enum):
     MULTI_ROUND = "multi_round"
     SINGLE_ROUND = "single_round"
@@ -11,7 +11,7 @@ class StepNum(pydantic.BaseModel):
 
 class CodeGenerateResult(pydantic.BaseModel):
     contents:List[str]
-    conversations:List[Dict[str, str]]
+    conversations:List[List[Dict[str, Any]]]
 
 class MergeCodeWithoutEffect(pydantic.BaseModel):
     success_blocks: List[Tuple[str, str]]

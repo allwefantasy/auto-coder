@@ -32,8 +32,8 @@ class CodeAutoGenerateEditBlock:
                 "Please provide a valid model instance to use for code generation."
             )
         self.llms = []
-        if self.llms.get_sub_client("code_model"):
-            self.llms = self.llms.get_sub_client("code_model")
+        if self.llm.get_sub_client("code_model"):
+            self.llms = self.llm.get_sub_client("code_model")
             if not isinstance(self.llms, list):
                 self.llms = [self.llms]
 
@@ -411,7 +411,7 @@ class CodeAutoGenerateEditBlock:
                     data=json.dumps({}, ensure_ascii=False),
                 ),
             )
-
+        
         with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
             futures = []
             for llm in self.llms:
