@@ -234,11 +234,24 @@ class CodeAutoMergeEditBlock:
                         temp = f.read()
                         file_content_mapping[file_path] = temp
                 existing_content = file_content_mapping[file_path]
+                
+                # First try exact match
                 new_content = (
                     existing_content.replace(head, update, 1)
                     if head
                     else existing_content + "\n" + update
                 )
+                
+                # If exact match fails, try similarity match
+                if new_content == existing_content and head:
+                    similarity, best_window = TextSimilarity(
+                        head, existing_content
+                    ).get_best_matching_window()
+                    if similarity > self.args.editblock_similarity:
+                        new_content = existing_content.replace(
+                            best_window, update, 1
+                        )
+                
                 if new_content != existing_content:
                     file_content_mapping[file_path] = new_content
                     
