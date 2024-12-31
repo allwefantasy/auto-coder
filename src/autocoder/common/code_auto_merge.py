@@ -2,7 +2,7 @@
 import os
 from byzerllm.utils.client import code_utils
 from autocoder.common import AutoCoderArgs,git_utils
-from typing import List
+from typing import List,Union
 import pydantic
 import byzerllm
 from loguru import logger
