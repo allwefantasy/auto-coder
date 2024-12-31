@@ -218,11 +218,14 @@ class CodeAutoMergeEditBlock:
         ranked_result = ranker.rank_modifications(generate_result)
         return ranked_result.contents[0]
 
-    def _merge_code_without_effect(self, content: str) -> List[Tuple[str, str]]:
+    def _merge_code_without_effect(self, content: str) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str, str]]]:
         """Merge code without any side effects like git operations, linting or file writing.
-        Returns a list of (file_path, new_content) tuples."""
+        Returns a tuple of:
+        - list of (file_path, new_content) tuples for successfully merged blocks
+        - list of (file_path, head, update) tuples for failed to merge blocks"""
         codes = self.get_edits(content)
         file_content_mapping = {}
+        failed_blocks = []
 
         for block in codes:
             file_path, head, update = block
@@ -254,8 +257,10 @@ class CodeAutoMergeEditBlock:
 
                 if new_content != existing_content:
                     file_content_mapping[file_path] = new_content
+                else:
+                    failed_blocks.append((file_path, head, update))
 
-        return [(path, content) for path, content in file_content_mapping.items()]
+        return ([(path, content) for path, content in file_content_mapping.items()], failed_blocks)
 
     def _merge_code(self, content: str, force_skip_git: bool = False):
         file_content = open(self.args.file).read()

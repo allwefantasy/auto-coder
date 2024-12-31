@@ -144,11 +144,14 @@ class CodeAutoMergeStrictDiff:
         res = Path(self.args.source_dir) / path
         return safe_abs_path(res)            
 
-    def _merge_code_without_effect(self, content: str) -> List[Tuple[str, str]]:
+    def _merge_code_without_effect(self, content: str) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
         """Merge code without any side effects like git operations or file writing.
-        Returns a list of (file_path, new_content) tuples."""
+        Returns a tuple of:
+        - list of (file_path, new_content) tuples for successfully merged blocks
+        - list of (file_path, content) tuples for failed to merge blocks"""
         diff_blocks = self.parse_diff_block(content)
         file_content_mapping = {}
+        failed_blocks = []
         
         for block in diff_blocks:
             path = block.path
@@ -175,10 +178,13 @@ class CodeAutoMergeStrictDiff:
                 success = patch_obj.apply(root=root_path, content=temp_content)
                 if success:
                     file_content_mapping[full_path] = temp_content
+                else:
+                    failed_blocks.append((full_path, content))
             except Exception as e:
                 logger.warning(f"Failed to apply patch to {full_path}: {str(e)}")
+                failed_blocks.append((full_path, content))
                 
-        return [(path, content) for path, content in file_content_mapping.items()]
+        return ([(path, content) for path, content in file_content_mapping.items()], failed_blocks)
 
     def _merge_code(self, content: str, force_skip_git: bool = False):        
         total = 0
