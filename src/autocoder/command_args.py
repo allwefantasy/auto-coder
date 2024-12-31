@@ -398,6 +398,12 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         action="store_true",
         help=desc["skip_events"],
     )
+    parser.add_argument(
+        "--generate_times_same_model",
+        type=int,
+        default=1,
+        help=desc["generate_times_same_model"]
+    )
 
     doc_serve_parse.add_argument(
         "--required_exts", default="", help=desc["doc_build_parse_required_exts"]
