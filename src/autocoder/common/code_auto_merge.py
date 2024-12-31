@@ -65,7 +65,7 @@ class CodeAutoMerge:
     def merge_code(self, generate_result: CodeGenerateResult, force_skip_git: bool = False):
         self._merge_code(self.choose_best_choice(generate_result), force_skip_git)
 
-    def choose_best_choice(self, generate_result: CodeGenerateResult) -> str:
+    def choose_best_choice(self, generate_result: CodeGenerateResult) -> str:                        
         ranker = CodeModificationRanker(self.llm, self.args, self)
         ranked_result = ranker.rank_modifications(generate_result)
         # Filter out contents with failed blocks
