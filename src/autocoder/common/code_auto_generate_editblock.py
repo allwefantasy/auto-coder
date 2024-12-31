@@ -9,6 +9,7 @@ from autocoder.utils.queue_communicate import (
     CommunicateEventType,
 )
 import json
+from concurrent.futures import ThreadPoolExecutor
 
 
 class CodeAutoGenerateEditBlock:
@@ -409,8 +410,7 @@ class CodeAutoGenerateEditBlock:
                     data=json.dumps({}, ensure_ascii=False),
                 ),
             )
-
-        from concurrent.futures import ThreadPoolExecutor
+        
         with ThreadPoolExecutor(max_workers=len(self.llms)) as executor:
             futures = [executor.submit(llm.chat_oai, conversations=conversations, llm_config=llm_config) 
                       for llm in self.llms]
@@ -450,8 +450,9 @@ class CodeAutoGenerateEditBlock:
 
         with open(self.args.target_file, "w") as file:
             file.write(init_prompt)
-
-        t = self.llm.chat_oai(conversations=conversations,
+        
+        code_llm = self.llms[0]
+        t = code_llm.chat_oai(conversations=conversations,
                               llm_config=llm_config)
 
         result.append(t[0].output)
@@ -470,7 +471,7 @@ class CodeAutoGenerateEditBlock:
             with open(self.args.target_file, "w") as file:
                 file.write("继续")
 
-            t = self.llm.chat_oai(
+            t = code_llm.chat_oai(
                 conversations=conversations, llm_config=llm_config)
 
             result.append(t[0].output)

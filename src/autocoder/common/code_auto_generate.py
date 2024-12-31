@@ -4,6 +4,7 @@ from autocoder.common import AutoCoderArgs
 import byzerllm
 from autocoder.utils.queue_communicate import queue_communicate, CommunicateEvent, CommunicateEventType
 from autocoder.common import sys_prompt
+from concurrent.futures import ThreadPoolExecutor
 
 
 class CodeAutoGenerate:
@@ -181,7 +182,6 @@ class CodeAutoGenerate:
         
         conversations.append({"role": "user", "content": init_prompt})
 
-        from concurrent.futures import ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=len(self.llms)) as executor:
             futures = [executor.submit(llm.chat_oai, conversations=conversations, llm_config=llm_config) 
                       for llm in self.llms]
