@@ -75,7 +75,7 @@ class ActionRegexProject:
                 generate_result = generate.single_round_run(
                     query=args.query, source_content=content
                 )
-            content = "\n\n".join(generate_result.contents)
+            content = generate_result.contents[0]
 
             store_code_model_conversation(
                 args=self.args,
