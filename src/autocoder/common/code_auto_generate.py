@@ -5,6 +5,7 @@ import byzerllm
 from autocoder.utils.queue_communicate import queue_communicate, CommunicateEvent, CommunicateEventType
 from autocoder.common import sys_prompt
 from concurrent.futures import ThreadPoolExecutor
+from autocoder.common.types import CodeGenerateResult
 
 
 class CodeAutoGenerate:
@@ -190,7 +191,10 @@ class CodeAutoGenerate:
                     futures.append(executor.submit(llm.chat_oai, conversations=conversations, llm_config=llm_config))
             results = [future.result()[0].output for future in futures]
 
-        conversations.append({"role": "assistant", "content": results[0]})
+        conversations_list = []
+        for result in results:
+            conversations_list.append(
+                conversations + [{"role": "assistant", "content": result}])
 
         if self.args.request_id and not self.args.skip_events:
             queue_communicate.send_event_no_wait(
@@ -201,7 +205,7 @@ class CodeAutoGenerate:
                 ),
             )
 
-        return results, conversations
+        return CodeGenerateResult(contents=results, conversations=conversations_list)
 
     def multi_round_run(
         self, query: str, source_content: str, max_steps: int = 10
@@ -256,6 +260,6 @@ class CodeAutoGenerate:
                 or "/done" in t[0].output
                 or "__EOF__" in t[0].output
             ):
-                return result, conversations
+                return CodeGenerateResult(contents=["\n\n".join(result)], conversations=[conversations])
 
-        return result, conversations
+        return CodeGenerateResult(contents=["\n\n".join(result)], conversations=[conversations])

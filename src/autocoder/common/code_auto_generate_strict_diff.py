@@ -5,6 +5,7 @@ import byzerllm
 from autocoder.utils.queue_communicate import queue_communicate, CommunicateEvent, CommunicateEventType
 from autocoder.common import sys_prompt
 from concurrent.futures import ThreadPoolExecutor
+import json
 
 class CodeAutoGenerateStrictDiff:
     def __init__(
@@ -350,7 +351,7 @@ class CodeAutoGenerateStrictDiff:
         conversations.append({"role": "assistant", "content": t[0].output})
 
         if "__完成__" in t[0].output or "/done" in t[0].output or "__EOF__" in t[0].output:
-            return CodeGenerateResult(contents=result, conversations=conversations)
+            return CodeGenerateResult(contents=["\n\n".join(result)], conversations=[conversations])
 
         current_step = 0
 
@@ -369,6 +370,6 @@ class CodeAutoGenerateStrictDiff:
             current_step += 1
 
             if "__完成__" in t[0].output or "/done" in t[0].output or "__EOF__" in t[0].output:
-                return result, conversations
+                return CodeGenerateResult(contents=["\n\n".join(result)], conversations=[conversations])
 
-        return result, conversations
+        return CodeGenerateResult(contents=["\n\n".join(result)], conversations=[conversations])

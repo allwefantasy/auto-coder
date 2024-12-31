@@ -411,16 +411,18 @@ class CodeAutoGenerateEditBlock:
                     data=json.dumps({}, ensure_ascii=False),
                 ),
             )
-        
+
         with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
             futures = []
             for llm in self.llms:
                 for _ in range(self.generate_times_same_model):
-                    futures.append(executor.submit(llm.chat_oai, conversations=conversations, llm_config=llm_config))
+                    futures.append(executor.submit(
+                        llm.chat_oai, conversations=conversations, llm_config=llm_config))
             results = [future.result()[0].output for future in futures]
         conversations_list = []
         for result in results:
-            conversations_list.append(conversations + [{"role": "assistant", "content": result}])
+            conversations_list.append(
+                conversations + [{"role": "assistant", "content": result}])
 
         if self.args.request_id and not self.args.skip_events:
             _ = queue_communicate.send_event(
@@ -454,7 +456,7 @@ class CodeAutoGenerateEditBlock:
 
         with open(self.args.target_file, "w") as file:
             file.write(init_prompt)
-        
+
         code_llm = self.llms[0]
         t = code_llm.chat_oai(conversations=conversations,
                               llm_config=llm_config)
@@ -464,7 +466,7 @@ class CodeAutoGenerateEditBlock:
         conversations.append({"role": "assistant", "content": t[0].output})
 
         if "__完成__" in t[0].output or "/done" in t[0].output or "__EOF__" in t[0].output:
-            return CodeGenerateResult(contents=result, conversations=conversations)
+            return CodeGenerateResult(contents=["\n\n".join(result)], conversations=[conversations])
 
         current_step = 0
 
@@ -483,6 +485,7 @@ class CodeAutoGenerateEditBlock:
             current_step += 1
 
             if "__完成__" in t[0].output or "/done" in t[0].output or "__EOF__" in t[0].output:
-                return result, conversations
 
-        return result, conversations
+                return CodeGenerateResult(contents=["\n\n".join(result)], conversations=[conversations])
+
+        return CodeGenerateResult(contents=["\n\n".join(result)], conversations=[conversations])
