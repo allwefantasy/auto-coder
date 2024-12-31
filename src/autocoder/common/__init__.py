@@ -332,11 +332,6 @@ class AutoCoderArgs(pydantic.BaseModel):
     prompt_review: Optional[str] = None
 
     agent_designer_mode: Optional[str] = "svg"
-    
-    generate_times_same_model: Optional[int] = pydantic.Field(
-        default=1,
-        description="Number of times to generate using the same model"
-    )
 
     full_text_ratio: Optional[float] = 0.7
     segment_ratio: Optional[float] = 0.2
