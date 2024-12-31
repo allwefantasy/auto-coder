@@ -278,9 +278,18 @@ def main(input_args: Optional[List[str]] = None):
         llm = byzerllm.ByzerLLM(verbose=args.print_request)
 
         if args.code_model:
-            code_model = byzerllm.ByzerLLM()
-            code_model.setup_default_model_name(args.code_model)
-            llm.setup_sub_client("code_model", code_model)
+            if "," in args.code_model:
+                # Multiple code models specified
+                model_names = args.code_model.split(",")
+                for i, model_name in enumerate(model_names):
+                    code_model = byzerllm.ByzerLLM()
+                    code_model.setup_default_model_name(model_name.strip())
+                    llm.setup_sub_client(f"code_model_{i}", code_model)
+            else:
+                # Single code model
+                code_model = byzerllm.ByzerLLM()
+                code_model.setup_default_model_name(args.code_model)
+                llm.setup_sub_client("code_model", code_model)
 
         if args.inference_model:
             inference_model = byzerllm.ByzerLLM()
