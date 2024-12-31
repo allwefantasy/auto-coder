@@ -381,6 +381,9 @@ class CodeAutoMergeDiff:
         self._merge_code(self.choose_best_choice(generate_result), force_skip_git)
 
     def choose_best_choice(self, generate_result: CodeGenerateResult) -> str:
+        if len(generate_result.contents) == 1:
+            return generate_result.contents[0]
+            
         ranker = CodeModificationRanker(self.llm, self.args, self)
         ranked_result = ranker.rank_modifications(generate_result)
         # Filter out contents with failed blocks
