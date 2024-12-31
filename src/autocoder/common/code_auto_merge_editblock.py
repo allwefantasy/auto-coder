@@ -153,14 +153,11 @@ class CodeAutoMergeEditBlock:
 
         return path_and_code_list
 
-    def merge_code(self, content: Union[str, List[str]], force_skip_git: bool = False):
-        self._merge_code(self.choose_best_choice(content), force_skip_git)
+    def merge_code(self, generate_result: CodeGenerateResult, force_skip_git: bool = False):
+        self._merge_code(self.choose_best_choice(generate_result), force_skip_git)
 
-    def choose_best_choice(self, content: Union[str, List[str]]):
-        if isinstance(content, list):
-            return content[0]
-        else:
-            return content
+    def choose_best_choice(self, generate_result: CodeGenerateResult) -> str:
+        return generate_result.contents[0]
 
     @byzerllm.prompt()
     def git_require_msg(self, source_dir: str, error: str) -> str:
