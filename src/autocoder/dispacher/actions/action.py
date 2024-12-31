@@ -120,26 +120,25 @@ class ActionTSProject:
                     code_merge = CodeAutoMerge(llm=self.llm, args=self.args)
                     merge_result = code_merge.merge_code(generate_result=generate_result)
 
-                content = merge_result.contents[0]
+                if merge_result is not None:
+                    content = merge_result.contents[0]
+                    store_code_model_conversation(
+                        args=self.args,
+                        instruction=self.args.query,
+                        conversations=merge_result.conversations[0],
+                        model=self.llm.default_model_name,
+                    )
+                else:
+                    content = generate_result.contents[0]
+                    store_code_model_conversation(
+                        args=self.args,
+                        instruction=self.args.query,
+                        conversations=generate_result.conversations[0],
+                        model=self.llm.default_model_name,
+                    )
 
-                store_code_model_conversation(
-                    args=self.args,
-                    instruction=self.args.query,
-                    conversations=merge_result.conversations[0],
-                    model=self.llm.default_model_name,
-                )
-            else:
-                content = generate_result.contents[0]
-
-                store_code_model_conversation(
-                    args=self.args,
-                    instruction=self.args.query,
-                    conversations=generate_result.conversations[0],
-                    model=self.llm.default_model_name,
-                )
-
-            with open(args.target_file, "w") as file:
-                file.write(content)
+                with open(args.target_file, "w") as file:
+                    file.write(content)
 
 
 class ActionPyScriptProject:
@@ -395,15 +394,14 @@ class ActionSuffixProject:
                 code_merge = CodeAutoMerge(llm=self.llm, args=self.args)
                 merge_result = code_merge.merge_code(generate_result=generate_result)
 
-        content = merge_result.contents[0]
-
-        store_code_model_conversation(
-            args=self.args,
-            instruction=self.args.query,
-            conversations=merge_result.conversations[0],
-            model=self.llm.default_model_name,
-        )   
-
-        with open(args.target_file, "w") as file:
-            file.write(content)
+        if merge_result is not None:
+            content = merge_result.contents[0]
+            store_code_model_conversation(
+                args=self.args,
+                instruction=self.args.query,
+                conversations=merge_result.conversations[0],
+                model=self.llm.default_model_name,
+            )
+            with open(args.target_file, "w") as file:
+                file.write(content)
 
