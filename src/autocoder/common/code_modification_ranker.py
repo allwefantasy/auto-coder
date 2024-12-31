@@ -3,6 +3,7 @@ from typing import List,Union
 from autocoder.common import AutoCoderArgs
 from autocoder.common.types import CodeGenerateResult
 from pydantic import BaseModel
+from loguru import logger
 
 class RankResult(BaseModel):
     rank_result:List[int]
@@ -43,6 +44,7 @@ class CodeModificationRanker:
         
 
     def rank_modifications(self, generate_result: CodeGenerateResult) -> CodeGenerateResult:
+        logger.info(f"Rank candidates={len(generate_result.contents)}")
         v =  self._rank_modifications.with_llm(self.llm).with_return_type(RankResult).run(generate_result)
         rerank_contents = [generate_result.contents[i] for i in v.rank_result]
         rerank_conversations = [generate_result.conversations[i] for i in v.rank_result]
