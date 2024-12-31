@@ -15,7 +15,7 @@ class CodeAutoGenerate:
         self.args = args
         self.action = action
         self.llms = []
-        self.generate_times_same_model = 1
+        self.generate_times_same_model = args.generate_times_same_model
         if not self.llm:
             raise ValueError(
                 "Please provide a valid model instance to use for code generation."

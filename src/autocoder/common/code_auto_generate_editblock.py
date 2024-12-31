@@ -418,8 +418,9 @@ class CodeAutoGenerateEditBlock:
                 for _ in range(self.generate_times_same_model):
                     futures.append(executor.submit(llm.chat_oai, conversations=conversations, llm_config=llm_config))
             results = [future.result()[0].output for future in futures]
-
-        conversations.append({"role": "assistant", "content": results[0]})
+        conversations_list = []
+        for result in results:
+            conversations_list.append({"role": "assistant", "content": result})
 
         if self.args.request_id and not self.args.skip_events:
             _ = queue_communicate.send_event(
