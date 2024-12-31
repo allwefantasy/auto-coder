@@ -460,7 +460,7 @@ class CodeAutoMergeDiff:
                 errors += other_hunks_applied
             raise ValueError(errors)    
 
-    def _merge_code_without_effect(self, content: str) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]]]:
+    def _merge_code_without_effect(self, content: str) -> MergeCodeWithoutEffect:
         """Merge code without any side effects like git operations or file writing.
         Returns a tuple of:
         - list of (file_path, new_content) tuples for successfully merged blocks
@@ -487,7 +487,10 @@ class CodeAutoMergeDiff:
             else:
                 failed_blocks.append((full_path, "\n".join(hunk)))
                 
-        return ([(path, content) for path, content in file_content_mapping.items()], failed_blocks)
+        return MergeCodeWithoutEffect(
+            success_blocks=[(path, content) for path, content in file_content_mapping.items()],
+            failed_blocks=failed_blocks
+        )
 
     def _merge_code(self, content: str,force_skip_git:bool=False):        
         total = 0
