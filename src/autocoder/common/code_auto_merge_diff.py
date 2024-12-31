@@ -15,6 +15,7 @@ from autocoder.common.search_replace import (
     flexible_search_and_replace,
     search_and_replace,
 )
+from autocoder.common.types import CodeGenerateResult
 
 class PathAndCode(pydantic.BaseModel):
     path: str
@@ -375,14 +376,11 @@ class CodeAutoMergeDiff:
 
         return edits
 
-    def merge_code(self, content: Union[str, List[str]], force_skip_git: bool = False):
-        self._merge_code(self.choose_best_choice(content), force_skip_git)
+    def merge_code(self, generate_result: CodeGenerateResult, force_skip_git: bool = False):
+        self._merge_code(self.choose_best_choice(generate_result), force_skip_git)
 
-    def choose_best_choice(self, content: Union[str, List[str]]):
-        if isinstance(content, list):
-            return content[0]
-        else:
-            return content
+    def choose_best_choice(self, generate_result: CodeGenerateResult)->str:
+        return generate_result.contents[0]
     
     @byzerllm.prompt(render="jinja2")
     def git_require_msg(self,source_dir:str,error:str)->str:
