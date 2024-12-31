@@ -6,6 +6,7 @@ from typing import List,Union,Tuple
 import pydantic
 import byzerllm
 from loguru import logger
+from autocoder.common.types import CodeGenerateResult
 import hashlib
 
 class PathAndCode(pydantic.BaseModel):

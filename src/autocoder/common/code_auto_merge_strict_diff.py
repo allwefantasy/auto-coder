@@ -2,12 +2,13 @@ import os
 import difflib
 import diff_match_patch as dmp_module
 from autocoder.common import AutoCoderArgs, git_utils
-from typing import List,Union,Tuple
+from typing import List,Tuple
 import pydantic
 import byzerllm
 from loguru import logger
 import hashlib
 from pathlib import Path
+from autocoder.common.types import CodeGenerateResult
 
 class PathAndCode(pydantic.BaseModel):
     path: str

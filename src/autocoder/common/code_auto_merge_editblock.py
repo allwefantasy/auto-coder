@@ -19,7 +19,7 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 import json
 from typing import Union, List
-
+from autocoder.common.types import CodeGenerateResult
 
 class PathAndCode(pydantic.BaseModel):
     path: str
