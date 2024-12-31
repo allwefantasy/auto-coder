@@ -130,21 +130,23 @@ class CodeAutoMergeStrictDiff:
         return path_and_code_list
 
     def merge_code(self, generate_result: CodeGenerateResult, force_skip_git: bool = False):
-        self._merge_code(self.choose_best_choice(generate_result), force_skip_git)
+        result = self.choose_best_choice(generate_result)
+        self._merge_code(result.contents[0], force_skip_git)
+        return result
 
-    def choose_best_choice(self, generate_result: CodeGenerateResult) -> str:
+    def choose_best_choice(self, generate_result: CodeGenerateResult) -> CodeGenerateResult:
         if len(generate_result.contents) == 1:
-            return generate_result.contents[0]
-            
+            return generate_result
+
         ranker = CodeModificationRanker(self.llm, self.args, self)
         ranked_result = ranker.rank_modifications(generate_result)
         # Filter out contents with failed blocks
-        for content in ranked_result.contents:
+        for content,conversations in zip(ranked_result.contents,ranked_result.conversations):
             merge_result = self._merge_code_without_effect(content)
             if not merge_result.failed_blocks:
-                return content
+                return CodeGenerateResult(contents=[content], conversations=[conversations])
         # If all have failed blocks, return the first one
-        return ranked_result.contents[0]
+        return CodeGenerateResult(contents=[ranked_result.contents[0]], conversations=[ranked_result.conversations[0]])
     
 
     def abs_root_path(self, path):
