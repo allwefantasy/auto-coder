@@ -344,6 +344,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     without_contexts: Optional[bool] = False
     skip_events: Optional[bool] = False
     data_cells_max_num: Optional[int] = 2000
+    generate_times_same_model: Optional[int] = 1
 
     class Config:
         protected_namespaces = ()
