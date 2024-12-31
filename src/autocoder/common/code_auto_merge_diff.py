@@ -374,6 +374,15 @@ class CodeAutoMergeDiff:
             edits.append((path, hunk))
 
         return edits
+
+    def merge_code(self, content: Union[str, List[str]], force_skip_git: bool = False):
+        self._merge_code(self.choose_best_choice(content), force_skip_git)
+
+    def choose_best_choice(self, content: Union[str, List[str]]):
+        if isinstance(content, list):
+            return content[0]
+        else:
+            return content
     
     @byzerllm.prompt(render="jinja2")
     def git_require_msg(self,source_dir:str,error:str)->str:
@@ -450,7 +459,7 @@ class CodeAutoMergeDiff:
                 errors += other_hunks_applied
             raise ValueError(errors)    
 
-    def merge_code(self, content: str,force_skip_git:bool=False):        
+    def _merge_code(self, content: str,force_skip_git:bool=False):        
         total = 0
         
         file_content = open(self.args.file).read()

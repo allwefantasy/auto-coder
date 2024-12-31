@@ -58,7 +58,16 @@ class CodeAutoMerge:
             elif start_marker_count > 0:
                 block.append(line)                
 
-        return path_and_code_list     
+        return path_and_code_list
+
+    def merge_code(self, content: Union[str, List[str]], force_skip_git: bool = False):
+        self._merge_code(self.choose_best_choice(content), force_skip_git)
+
+    def choose_best_choice(self, content: Union[str, List[str]]):
+        if isinstance(content, list):
+            return content[0]
+        else:
+            return content     
 
 
     def parse_text(self, text: str) -> List[PathAndCode]:
@@ -99,7 +108,7 @@ class CodeAutoMerge:
         Error: {{ error }}
         '''
 
-    def merge_code(self, content: str,force_skip_git:bool=False):        
+    def _merge_code(self, content: str,force_skip_git:bool=False):        
         total = 0
         
         file_content = open(self.args.file).read()
