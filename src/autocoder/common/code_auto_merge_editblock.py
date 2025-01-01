@@ -161,7 +161,7 @@ class CodeAutoMergeEditBlock:
 
     def choose_best_choice(self, generate_result: CodeGenerateResult) -> CodeGenerateResult:
         if len(generate_result.contents) == 1:
-            return generate_result.contents[0]
+            return generate_result
 
         ranker = CodeModificationRanker(self.llm, self.args)
         ranked_result = ranker.rank_modifications(generate_result)
