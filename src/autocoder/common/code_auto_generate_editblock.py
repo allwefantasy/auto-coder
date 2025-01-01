@@ -413,6 +413,7 @@ class CodeAutoGenerateEditBlock:
             )
 
         conversations_list = []
+        results = []
         if not self.args.human_as_model:
             with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
                 futures = []
