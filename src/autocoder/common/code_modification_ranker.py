@@ -22,7 +22,7 @@ class CodeModificationRanker:
     @byzerllm.prompt()
     def _rank_modifications(self, s:CodeGenerateResult) -> str:
         '''
-        对一组代码修改进行质量评估，并返回索引排序，最好的修改排在最前面。
+        对一组代码修改进行质量评估并排序。
 
         下面是修改需求：
         
@@ -37,15 +37,15 @@ class CodeModificationRanker:
         </edit_block>
         {% endfor %}
         
-        返回格式如下JSON格式数据：
-        
+        请输出如下格式的评估结果,只包含 JSON 数据:
+
         ```json
         {
-            "rank_result": [id3, id2, id1]
+            "rank_result": [id1, id2, id3]  // id 为 edit_block 的 id,按质量从高到低排序
         }
         ```
 
-        其中rank_result包含修改质量的排序序号，最好的修改排在最前面。
+        注意，只输出前面要求的 Json 格式就好，不要输出其他内容，Json 需要使用 ```json ```包裹。
         '''
         
 

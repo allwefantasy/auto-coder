@@ -55,6 +55,8 @@ class SuffixProject:
             "node_modules",
             ".auto-coder",
             ".vscode",
+            "actions",
+            ".idea",
         ]
 
     @byzerllm.prompt()

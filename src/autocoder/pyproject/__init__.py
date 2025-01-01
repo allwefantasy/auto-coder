@@ -114,6 +114,10 @@ class PyProject:
             "dist",
             "__pycache__",
             "node_modules",
+            ".auto-coder",
+            "actions",
+            ".vscode",
+            ".idea",
         ]
 
     @byzerllm.prompt()

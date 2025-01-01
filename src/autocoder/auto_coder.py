@@ -408,18 +408,25 @@ def main(input_args: Optional[List[str]] = None):
 
             llm.add_event_callback(
                 EventName.BEFORE_CALL_MODEL, intercept_callback)
-            code_model = llm.get_sub_client("code_model")
-            if code_model:
-                code_model.add_event_callback(
-                    EventName.BEFORE_CALL_MODEL, intercept_callback
-                )
+            
+            code_models = llm.get_sub_client("code_model")
+            if code_models:
+                if not isinstance(code_models, list):
+                    code_models = [code_models]
+                for model in code_models:
+                    model.add_event_callback(
+                        EventName.BEFORE_CALL_MODEL, intercept_callback
+                    )
         # llm.add_event_callback(EventName.AFTER_CALL_MODEL, token_counter_interceptor)
 
-        code_model = llm.get_sub_client("code_model")
-        if code_model:
-            code_model.add_event_callback(
-                EventName.AFTER_CALL_MODEL, token_counter_interceptor
-            )
+        code_models = llm.get_sub_client("code_model")
+        if code_models:
+            if not isinstance(code_models, list):
+                code_models = [code_models]
+            for model in code_models:
+                model.add_event_callback(
+                    EventName.AFTER_CALL_MODEL, token_counter_interceptor
+                )
 
         llm.setup_template(model=args.model, template="auto")
         llm.setup_default_model_name(args.model)
