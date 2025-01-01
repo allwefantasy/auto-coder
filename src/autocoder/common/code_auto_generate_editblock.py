@@ -411,18 +411,25 @@ class CodeAutoGenerateEditBlock:
                     data=json.dumps({}, ensure_ascii=False),
                 ),
             )
-        
-        with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
-            futures = []
-            for llm in self.llms:
-                for _ in range(self.generate_times_same_model):
-                    futures.append(executor.submit(
-                        llm.chat_oai, conversations=conversations, llm_config=llm_config))
-            results = [future.result()[0].output for future in futures]
+
         conversations_list = []
-        for result in results:
-            conversations_list.append(
-                conversations + [{"role": "assistant", "content": result}])
+        if not self.args.human_as_model:
+            with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
+                futures = []
+                for llm in self.llms:
+                    for _ in range(self.generate_times_same_model):
+                        futures.append(executor.submit(
+                            llm.chat_oai, conversations=conversations, llm_config=llm_config))
+                results = [future.result()[0].output for future in futures]
+            for result in results:
+                conversations_list.append(
+                    conversations + [{"role": "assistant", "content": result}])
+        else:
+            v = self.llms[0].chat_oai(
+                conversations=conversations, llm_config=llm_config)
+            results = [v[0].output]
+            conversations_list = [conversations +
+                                  [{"role": "assistant", "content": results[0]}]]
 
         if self.args.request_id and not self.args.skip_events:
             _ = queue_communicate.send_event(
