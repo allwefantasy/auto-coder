@@ -294,6 +294,11 @@ def main(input_args: Optional[List[str]] = None):
                 code_model.setup_default_model_name(args.code_model)
                 llm.setup_sub_client("code_model", code_model)
 
+        if args.generate_rerank_model:
+            generate_rerank_model = byzerllm.ByzerLLM()
+            generate_rerank_model.setup_default_model_name(args.generate_rerank_model)
+            llm.setup_sub_client("generate_rerank_model", generate_rerank_model)
+
         if args.inference_model:
             inference_model = byzerllm.ByzerLLM()
             inference_model.setup_default_model_name(args.inference_model)

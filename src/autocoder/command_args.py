@@ -102,6 +102,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
         "--print_request", action="store_true", help=desc["print_request"]
     )
     parser.add_argument("--code_model", default="", help=desc["code_model"])
+    parser.add_argument("--generate_rerank_model", default="", help=desc["generate_rerank_model"])
     parser.add_argument("--inference_model", default="",
                         help="The name of the inference model to use. Default is empty")
     parser.add_argument("--system_prompt", default="",

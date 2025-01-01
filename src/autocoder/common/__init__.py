@@ -248,6 +248,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     sd_model: Optional[str] = ""
     emb_model: Optional[str] = ""
     code_model: Optional[str] = ""
+    generate_rerank_model: Optional[str] = ""
     inference_model: Optional[str] = ""
     system_prompt: Optional[str] = ""
     planner_model: Optional[str] = ""
