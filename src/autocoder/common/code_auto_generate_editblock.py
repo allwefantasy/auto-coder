@@ -31,11 +31,9 @@ class CodeAutoGenerateEditBlock:
             raise ValueError(
                 "Please provide a valid model instance to use for code generation."
             )
-        self.llms = []
-        if self.llm.get_sub_client("code_model"):
-            self.llms = self.llm.get_sub_client("code_model")
-            if not isinstance(self.llms, list):
-                self.llms = [self.llms]
+        self.llms = self.llm.get_sub_client("code_model") or [self.llm]
+        if not isinstance(self.llms, list):
+            self.llms = [self.llms]
 
     @byzerllm.prompt()
     def auto_implement_function(self, instruction: str, content: str) -> str:
