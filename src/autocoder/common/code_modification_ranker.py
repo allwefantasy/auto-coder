@@ -46,35 +46,51 @@ class CodeModificationRanker:
         
 
     def rank_modifications(self, generate_result: CodeGenerateResult) -> CodeGenerateResult:
-        logger.info(f"Rank candidates={len(generate_result.contents)}")
-        generate_times = self.args.generate_times_same_model
-                       
-        # Create a thread pool with generate_times workers
-        with ThreadPoolExecutor(max_workers=generate_times) as executor:
-            # Submit tasks
-            futures = [
-                executor.submit(
-                    self._rank_modifications.with_llm(self.llm).with_return_type(RankResult).run,
-                    generate_result
-                ) for _ in range(generate_times)
-            ]
-            
-            # Process results as they complete
-            for future in as_completed(futures):
-                try:
-                    v = future.result()
-                    # If we get a valid result, use it and cancel other tasks
-                    for f in futures:
-                        f.cancel()
-                    logger.info(f"Ranking request success, rank_result={v.rank_result}")
-                    rerank_contents = [generate_result.contents[i] for i in v.rank_result]
-                    rerank_conversations = [generate_result.conversations[i] for i in v.rank_result]
-                    return CodeGenerateResult(contents=rerank_contents,conversations=rerank_conversations)
-                except Exception as e:
-                    logger.warning(f"Ranking request failed: {str(e)}")
-                    logger.debug(traceback.format_exc())
-                    continue
+        import time
+        start_time = time.time()
         
-        # If all requests failed, raise the last exception        
-        logger.warning("All rerank requests failed, use the original codes")
+        # 如果只有一个候选，直接返回
+        if len(generate_result.contents) == 1:
+            logger.info("Only 1 candidate, skip ranking")
+            return generate_result
+            
+        logger.info(f"Start ranking {len(generate_result.contents)} candidates")
+        generate_times = self.args.generate_times_same_model
+        
+        try:
+            # Create a thread pool with generate_times workers
+            with ThreadPoolExecutor(max_workers=generate_times) as executor:
+                # Submit tasks
+                futures = [
+                    executor.submit(
+                        self._rank_modifications.with_llm(self.llm).with_return_type(RankResult).run,
+                        generate_result
+                    ) for _ in range(generate_times)
+                ]
+                
+                # Process results as they complete
+                for future in as_completed(futures):
+                    try:
+                        v = future.result()
+                        # If we get a valid result, use it and cancel other tasks
+                        for f in futures:
+                            f.cancel()
+                            
+                        elapsed = time.time() - start_time
+                        logger.info(f"Ranking completed in {elapsed:.2f}s, best candidate index: {v.rank_result[0]}")
+                        
+                        rerank_contents = [generate_result.contents[i] for i in v.rank_result]
+                        rerank_conversations = [generate_result.conversations[i] for i in v.rank_result]
+                        return CodeGenerateResult(contents=rerank_contents,conversations=rerank_conversations)
+                    except Exception as e:
+                        logger.warning(f"Ranking request failed: {str(e)}")
+                        logger.debug(traceback.format_exc())
+                        continue
+        except Exception as e:
+            logger.error(f"Ranking process failed: {str(e)}")
+            logger.debug(traceback.format_exc())
+        
+        # If all requests failed, use the original codes
+        elapsed = time.time() - start_time
+        logger.warning(f"All ranking requests failed in {elapsed:.2f}s, using original order")
         return generate_result
