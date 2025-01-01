@@ -198,11 +198,13 @@ class CodeAutoGenerate:
                 conversations_list.append(
                     conversations + [{"role": "assistant", "content": result}])
         else:
-            v = self.llms[0].chat_oai(
-                conversations=conversations, llm_config=llm_config)
-            results = [v[0].output]
-            conversations_list = [conversations +
-                                  [{"role": "assistant", "content": results[0]}]]
+            results = []
+            conversations_list = []
+            for _ in range(self.args.human_model_num):
+                v = self.llms[0].chat_oai(
+                    conversations=conversations, llm_config=llm_config)
+                results.append(v[0].output)
+                conversations_list.append(conversations + [{"role": "assistant", "content": v[0].output}])
 
         if self.args.request_id and not self.args.skip_events:
             queue_communicate.send_event_no_wait(
