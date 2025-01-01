@@ -15,4 +15,4 @@ class CodeGenerateResult(pydantic.BaseModel):
 
 class MergeCodeWithoutEffect(pydantic.BaseModel):
     success_blocks: List[Tuple[str, str]]
-    failed_blocks: List[Tuple[str, str]]
+    failed_blocks: List[Any]

@@ -45,6 +45,7 @@ class CodeModificationRanker:
 
     def rank_modifications(self, generate_result: CodeGenerateResult) -> CodeGenerateResult:
         logger.info(f"Rank candidates={len(generate_result.contents)}")
+        generate_times = self.args.generate_times_same_model                
         v =  self._rank_modifications.with_llm(self.llm).with_return_type(RankResult).run(generate_result)
         rerank_contents = [generate_result.contents[i] for i in v.rank_result]
         rerank_conversations = [generate_result.conversations[i] for i in v.rank_result]
