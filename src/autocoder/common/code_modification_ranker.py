@@ -4,6 +4,8 @@ from autocoder.common import AutoCoderArgs
 from autocoder.common.types import CodeGenerateResult
 from pydantic import BaseModel
 from loguru import logger
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import traceback
 
 class RankResult(BaseModel):
     rank_result:List[int]
@@ -46,10 +48,7 @@ class CodeModificationRanker:
     def rank_modifications(self, generate_result: CodeGenerateResult) -> CodeGenerateResult:
         logger.info(f"Rank candidates={len(generate_result.contents)}")
         generate_times = self.args.generate_times_same_model
-        
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-        import traceback
-        
+                       
         # Create a thread pool with generate_times workers
         with ThreadPoolExecutor(max_workers=generate_times) as executor:
             # Submit tasks
@@ -67,6 +66,7 @@ class CodeModificationRanker:
                     # If we get a valid result, use it and cancel other tasks
                     for f in futures:
                         f.cancel()
+                    logger.info(f"Ranking request success, rank_result={v.rank_result}")
                     rerank_contents = [generate_result.contents[i] for i in v.rank_result]
                     rerank_conversations = [generate_result.conversations[i] for i in v.rank_result]
                     return CodeGenerateResult(contents=rerank_contents,conversations=rerank_conversations)
@@ -75,5 +75,6 @@ class CodeModificationRanker:
                     logger.debug(traceback.format_exc())
                     continue
         
-        # If all requests failed, raise the last exception
-        raise Exception("All ranking requests failed")
+        # If all requests failed, raise the last exception        
+        logger.warning("All rerank requests failed, use the original codes")
+        return generate_result
