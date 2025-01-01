@@ -13,7 +13,11 @@ class RankResult(BaseModel):
 class CodeModificationRanker:
     def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs):
         self.llm = llm
-        self.args = args        
+        self.args = args     
+        if self.llm.get_sub_client("generate_rerank_model"):
+            self.rerank_llm = self.llm.get_sub_client("generate_rerank_model")
+        else:
+            self.rerank_llm = self.llm
     
     @byzerllm.prompt()
     def _rank_modifications(self, s:CodeGenerateResult) -> str:
@@ -63,7 +67,7 @@ class CodeModificationRanker:
                 # Submit tasks
                 futures = [
                     executor.submit(
-                        self._rank_modifications.with_llm(self.llm).with_return_type(RankResult).run,
+                        self._rank_modifications.with_llm(self.rerank_llm).with_return_type(RankResult).run,
                         generate_result
                     ) for _ in range(generate_times)
                 ]
