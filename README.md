@@ -9,13 +9,14 @@ Auto-Coder (powered by Byzer-LLM)
 </h3>
 
 <p align="center">
-| <a href="./docs/en"><b>English</b></a> | <a href="https://uelng8wukz.feishu.cn/wiki/QIpkwpQo2iSdkwk9nP6cNSPlnPc"><b>中文</b></a> |
+<a href="https://uelng8wukz.feishu.cn/wiki/QIpkwpQo2iSdkwk9nP6cNSPlnPc"><b>中文</b></a> |
 
 </p>
 
 ---
 
 *Latest News* 🔥
+- [2025/01] Release Auto-Coder 0.1.208
 - [2024/09] Release Auto-Coder 0.1.163
 - [2024/08] Release Auto-Coder 0.1.143
 - [2024/07] Release Auto-Coder 0.1.115

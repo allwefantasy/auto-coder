@@ -19,7 +19,9 @@ src/autocoder/command_args.py
 src/autocoder/lang.py
 src/autocoder/version.py
 src/autocoder/agent/__init__.py
+src/autocoder/agent/auto_demand_organizer.py
 src/autocoder/agent/auto_filegroup.py
+src/autocoder/agent/auto_guess_query.py
 src/autocoder/agent/auto_tool.py
 src/autocoder/agent/coder.py
 src/autocoder/agent/designer.py
@@ -42,6 +44,7 @@ src/autocoder/common/code_auto_merge.py
 src/autocoder/common/code_auto_merge_diff.py
 src/autocoder/common/code_auto_merge_editblock.py
 src/autocoder/common/code_auto_merge_strict_diff.py
+src/autocoder/common/code_modification_ranker.py
 src/autocoder/common/command_completer.py
 src/autocoder/common/command_generator.py
 src/autocoder/common/command_templates.py
