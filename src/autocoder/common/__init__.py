@@ -294,6 +294,7 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     auto_merge: Optional[Union[bool, str]] = False
     human_as_model: Optional[bool] = False
+    human_model_num: Optional[int] = 1
 
     image_file: Optional[str] = ""
     image_mode: Optional[str] = "direct"

@@ -115,6 +115,9 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     parser.add_argument(
         "--human_as_model", action="store_true", help=desc["human_as_model"]
     )
+    parser.add_argument(
+        "--human_model_num", type=int, default=1, help=desc["human_model_num"]
+    )
     parser.add_argument("--urls", default="", help=desc["urls"])
     parser.add_argument(
         "--urls_use_model", action="store_true", help=desc["urls_use_model"]
