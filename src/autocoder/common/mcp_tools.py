@@ -552,7 +552,7 @@ class McpExecutor:
             "server_names": self.get_server_names()
         }
 
-    async def extract_mcp_calls(content: str) -> List[Union[McpToolCall, McpResourceAccess]]:
+    async def extract_mcp_calls(self,content: str) -> List[Union[McpToolCall, McpResourceAccess]]:
         """
         Extract MCP tool calls and resource accesses from content.
 
