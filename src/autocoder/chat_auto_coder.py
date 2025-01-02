@@ -1435,14 +1435,17 @@ def mcp(query: str):
             os.remove(temp_yaml)
 
     llm = byzerllm.ByzerLLM.from_default_model(args.inference_model or args.model) 
-                 
-    hub = McpHub()       
-    hub.initialize()        
-    mcp_executor = McpExecutor(hub, llm)
-    conversations = [{"role": "user", "content": query}]
-    _, results = mcp_executor.run(conversations)
-    results_str = "\n\n".join(mcp_executor.format_mcp_result(result) for result in results)            
-    
+       
+    async def run_mcp():         
+        hub = McpHub()       
+        await hub.initialize()        
+        mcp_executor = McpExecutor(hub, llm)
+        conversations = [{"role": "user", "content": query}]
+        _, results = await mcp_executor.run(conversations)
+        results_str = "\n\n".join(mcp_executor.format_mcp_result(result) for result in results)
+        return results_str            
+
+    results_str = asyncio.run(run_mcp())        
     print(results_str)
 
 
