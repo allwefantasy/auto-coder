@@ -1,5 +1,69 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 from byzerllm import prompt
+from ..common.mcp_hub import McpHub
+
+def get_connected_servers_info(mcp_hub: McpHub) -> str:
+    """Generate formatted information about connected MCP servers
+    
+    Args:
+        mcp_hub: McpHub instance to get server information from
+        
+    Returns:
+        Formatted string with server details
+    """
+    servers = mcp_hub.get_servers()
+    if not servers:
+        return "(No MCP servers currently connected)"
+    
+    info = []
+    for server in servers:
+        if server.status != "connected":
+            continue
+            
+        # Format tools information
+        tools_info = []
+        if server.tools:
+            for tool in server.tools:
+                tool_str = f"- {tool.name}: {tool.description}"
+                if tool.input_schema:
+                    schema_str = "    Input Schema:\n" + \
+                        "\n".join(f"    {line}" for line in 
+                                 json.dumps(tool.input_schema, indent=2).split("\n"))
+                    tool_str += f"\n{schema_str}"
+                tools_info.append(tool_str)
+                
+        # Format resource templates
+        templates_info = []
+        if server.resource_templates:
+            for template in server.resource_templates:
+                template_str = f"- {template.uri_template} ({template.name}): {template.description}"
+                templates_info.append(template_str)
+                
+        # Format direct resources
+        resources_info = []
+        if server.resources:
+            for resource in server.resources:
+                resource_str = f"- {resource.uri} ({resource.name}): {resource.description}"
+                resources_info.append(resource_str)
+                
+        # Parse server config
+        config = json.loads(server.config)
+        command = config['command']
+        args = config.get('args', [])
+        command_str = f"{command} {' '.join(args)}"
+        
+        # Build server section
+        server_info = f"## {server.name} (`{command_str}`)"
+        if tools_info:
+            server_info += "\n\n### Available Tools\n" + "\n\n".join(tools_info)
+        if templates_info:
+            server_info += "\n\n### Resource Templates\n" + "\n".join(templates_info)
+        if resources_info:
+            server_info += "\n\n### Direct Resources\n" + "\n".join(resources_info)
+            
+        info.append(server_info)
+        
+    return "\n\n".join(info)
 
 @prompt()
 def mcp_prompt() -> Dict[str, Any]:
