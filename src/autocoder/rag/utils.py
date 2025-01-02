@@ -9,13 +9,14 @@ import time
 from loguru import logger
 import traceback
 
+
 def process_file_in_multi_process(
     file_info: Tuple[str, str, float]
 ) -> List[SourceCode]:
     start_time = time.time()
     file_path, relative_path, _, _ = file_info
     try:
-        if file_path.endswith(".pdf"):            
+        if file_path.endswith(".pdf"):
             content = extract_text_from_pdf(file_path)
             v = [
                 SourceCode(
@@ -24,7 +25,7 @@ def process_file_in_multi_process(
                     tokens=count_tokens_worker(content),
                 )
             ]
-        elif file_path.endswith(".docx"):            
+        elif file_path.endswith(".docx"):
             content = extract_text_from_docx(file_path)
             v = [
                 SourceCode(
@@ -45,7 +46,8 @@ def process_file_in_multi_process(
             ]
         elif file_path.endswith(".pptx"):
             slides = extract_text_from_ppt(file_path)
-            content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
+            content = "".join(
+                f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
             v = [
                 SourceCode(
                     module_name=f"##File: {file_path}",
@@ -65,7 +67,7 @@ def process_file_in_multi_process(
             ]
         logger.info(f"Load file {file_path} in {time.time() - start_time}")
         return v
-    except (UnboundLocalError, NameError, AttributeError, ValueError, TypeError, Exception) as e:
+    except (BaseException, Exception) as e:
         logger.error(f"Error processing file {file_path}: {str(e)}")
         logger.error(f"Error type: {type(e).__name__}")
         return []
@@ -74,7 +76,7 @@ def process_file_in_multi_process(
 def process_file_local(file_path: str) -> List[SourceCode]:
     start_time = time.time()
     try:
-        if file_path.endswith(".pdf"):            
+        if file_path.endswith(".pdf"):
             content = extract_text_from_pdf(file_path)
             v = [
                 SourceCode(
@@ -83,7 +85,7 @@ def process_file_local(file_path: str) -> List[SourceCode]:
                     tokens=count_tokens(content),
                 )
             ]
-        elif file_path.endswith(".docx"):            
+        elif file_path.endswith(".docx"):
             content = extract_text_from_docx(file_path)
             v = [
                 SourceCode(
@@ -104,7 +106,8 @@ def process_file_local(file_path: str) -> List[SourceCode]:
             ]
         elif file_path.endswith(".pptx"):
             slides = extract_text_from_ppt(file_path)
-            content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
+            content = "".join(
+                f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
             v = [
                 SourceCode(
                     module_name=f"##File: {file_path}",
@@ -124,7 +127,7 @@ def process_file_local(file_path: str) -> List[SourceCode]:
             ]
         logger.info(f"Load file {file_path} in {time.time() - start_time}")
         return v
-    except (UnboundLocalError, NameError, AttributeError, ValueError, TypeError, Exception) as e:
+    except (BaseException, Exception) as e:
         logger.error(f"Error processing file {file_path}: {str(e)}")
         logger.error(f"Error type: {type(e).__name__}")
         traceback.print_exc()

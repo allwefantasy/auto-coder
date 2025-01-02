@@ -1,7 +1,7 @@
 from io import BytesIO
 import docx2txt
 from autocoder.utils._markitdown import MarkItDown
-
+import traceback
 
 def extract_text_from_docx_old(docx_path):
     with open(docx_path, "rb") as f:
@@ -16,5 +16,6 @@ def extract_text_from_docx(docx_path):
         md_converter = MarkItDown()
         result = md_converter.convert(docx_path)
         return result.text_content
-    except Exception as e:
+    except (BaseException, Exception) as e:
+        traceback.print_exc()
         return extract_text_from_docx_old(docx_path)
