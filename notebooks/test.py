@@ -31,7 +31,7 @@ async def test_filesystem_operations():
                     "args": [
                         "-y",
                         "@modelcontextprotocol/server-filesystem",
-                        "/Users/allwefantasy/projects/tests"
+                        "/Users/allwefantasy/projects/tests"                        
                     ]
                 }
             }
@@ -46,8 +46,7 @@ async def test_filesystem_operations():
         
         # Create directory using tools
         create_dir_args = {
-            "path": "tt",
-            "recursive": True
+            "path": "/Users/allwefantasy/projects/tests/tt"            
         }
         
         try:
