@@ -11,7 +11,6 @@ from mcp.client.stdio import stdio_client, StdioServerParameters
 import mcp.types as mcp_types
 from loguru import logger
 
-
 class McpTool(BaseModel):
     """Represents an MCP tool configuration"""
 
@@ -69,7 +68,7 @@ class McpHub:
 
     _instance = None
 
-    def __new__(cls, settings_path: str):
+    def __new__(cls, settings_path: Optional[str] = None):
         if cls._instance is None:
             cls._instance = super(McpHub, cls).__new__(cls)
             cls._instance._initialized = False
@@ -136,7 +135,7 @@ class McpHub:
             transport_manager = stdio_client(server_params)
             transport = await transport_manager.__aenter__()
             try:
-                session = await ClientSession(transport[0], transport[1]).__aenter__()
+                session = await ClientSession(transport[0], transport[1]).__aenter__()                 
                 await session.initialize()
 
                 # Store connection with transport manager
@@ -149,8 +148,9 @@ class McpHub:
                 server.resources = await self._fetch_resources(name)
                 server.resource_templates = await self._fetch_resource_templates(name)
 
-            except Exception:
+            except Exception as e:                                
                 # Clean up transport if session initialization fails
+                
                 await transport_manager.__aexit__(None, None, None)
                 raise
 
@@ -298,7 +298,7 @@ class McpHub:
 
     async def call_tool(
         self, server_name: str, tool_name: str, tool_arguments: Optional[Dict] = None
-    ) -> Any:
+    ) -> mcp_types.CallToolResult:
         """
         Call an MCP tool with arguments
         """
@@ -308,7 +308,7 @@ class McpHub:
 
         return await connection.session.call_tool(tool_name, tool_arguments or {})
 
-    async def read_resource(self, server_name: str, uri: str) -> Any:
+    async def read_resource(self, server_name: str, uri: str) -> mcp_types.ReadResourceResult:
         """
         Read an MCP resource
         """

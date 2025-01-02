@@ -6,7 +6,7 @@ import byzerllm
 import re
 from pydantic import BaseModel, Field
 from loguru import logger
-from datetime import datetime
+import mcp.types as mcp_types
 
 
 class McpToolCall(BaseModel):
@@ -600,7 +600,7 @@ class McpExecutor:
 
         return results
 
-    async def run(self, conversations: List[Dict[str, Any]]) -> str:        
+    async def run(self, conversations: List[Dict[str, Any]]):        
         new_conversations = [{
             "role": "user",
             "content": self.mcp_prompt.prompt()
@@ -609,24 +609,30 @@ class McpExecutor:
             "content": "I have read the tools usage instructions."
         }] + conversations
 
+        all_tool_results = []
+
         v = self.llm.chat_oai(conversations=new_conversations)
         content = v[0].output        
         tools = await self.extract_mcp_calls(content)
-        while tools:
+        # while tools:            
+        #     results = await self.execute_mcp_tools(tools)
+        #     all_tool_results += results
+        #     str_results = "\n\n".join(self.format_mcp_result(result) for result in results)            
+        #     new_conversations += [{
+        #         "role": "assistant",
+        #         "content": f"Tool results: {str_results}"
+        #     },{
+        #         "role": "user",
+        #         "content": "continue"
+        #     }]
+        #     v = self.llm.chat_oai(conversations=new_conversations)
+        #     content = v[0].output        
+        #     tools = await self.extract_mcp_calls(content)
+        if tools:
             results = await self.execute_mcp_tools(tools)
-            str_results = "\n\n".join(self.format_mcp_result(result) for result in results)            
-            new_conversations += [{
-                "role": "assistant",
-                "content": f"Tool results: {str_results}"
-            },{
-                "role": "user",
-                "content": "continue"
-            }]
-            v = self.llm.chat_oai(conversations=new_conversations)
-            content = v[0].output        
-            tools = await self.extract_mcp_calls(content)
+            all_tool_results += results            
             
-        return new_conversations
+        return new_conversations,all_tool_results
 
     def format_mcp_result(self, result: Any) -> str:
         """
@@ -639,35 +645,14 @@ class McpExecutor:
             Formatted string representation of the result
         """
         if result is None:
-            return "No result"
-        
-        if isinstance(result, str):
-            return result
-            
-        if isinstance(result, (int, float, bool)):
-            return str(result)
-            
-        if isinstance(result, dict):
-            try:
-                return json.dumps(result, indent=2, ensure_ascii=False)
-            except:
-                return str(result)
-                
-        if isinstance(result, list):
-            if all(isinstance(item, (str, int, float, bool)) for item in result):
-                return "\n".join(str(item) for item in result)
-            return "\n".join(self.format_mcp_result(item) for item in result)
-            
-        if isinstance(result, BaseModel):
-            try:
-                return result.json(indent=2, ensure_ascii=False)
-            except:
-                return str(result)
-                
-        if isinstance(result, datetime):
-            return result.isoformat()
-            
-        return str(result)
+            return "(No result)"
+        # if isinstance(result, mcp_types.CallToolResult):
+        #     for content in result.contents:
+        #         if isinstance(content, mcp_types.TextContent):
+        #             return content.text
+        # if isinstance(result, mcp_types.ReadResourceResult):
+        #     return result.contents                    
+        return json.dumps(result.model_dump(), indent=2, ensure_ascii=False)
 
     async def execute_mcp_tools(self, tools: List[Union[McpToolCall, McpResourceAccess]]) -> List[Any]:
         """
