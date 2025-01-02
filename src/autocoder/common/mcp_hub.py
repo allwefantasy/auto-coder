@@ -54,7 +54,17 @@ class McpHub:
     Similar to the TypeScript McpHub but adapted for Python/asyncio.
     """
     
+    _instance = None
+    
+    def __new__(cls, settings_path: str):
+        if cls._instance is None:
+            cls._instance = super(McpHub, cls).__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+    
     def __init__(self, settings_path: str):
+        if self._initialized:
+            return
         """Initialize the MCP Hub with a path to settings file"""
         self.settings_path = Path(settings_path)
         self.connections: Dict[str, McpConnection] = {}
@@ -64,6 +74,8 @@ class McpHub:
         self.settings_path.parent.mkdir(parents=True, exist_ok=True)
         if not self.settings_path.exists():
             self._write_default_settings()
+            
+        self._initialized = True
 
     def _write_default_settings(self):
         """Write default MCP settings file"""
