@@ -5,6 +5,7 @@ from autocoder.common import (
     split_code_into_segments,
     SourceCode,
 )
+from autocoder.common.buildin_tokenizer import BuildinTokenizer
 from autocoder.pyproject import PyProject, Level1PyProject
 from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
@@ -25,7 +26,16 @@ from autocoder.utils.conversation_store import store_code_model_conversation
 from loguru import logger
 
 
-class ActionTSProject:
+class BaseAction:
+    def _get_content_length(self, content: str) -> int:
+        try:
+            tokenizer = BuildinTokenizer()
+            return tokenizer.count_tokens(content)
+        except Exception as e:
+            logger.warning(f"Failed to use tokenizer to count tokens, fallback to len(): {e}")
+            return len(content)
+
+class ActionTSProject(BaseAction):
     def __init__(
         self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None
     ) -> None:
@@ -74,9 +84,10 @@ class ActionTSProject:
         args = self.args
 
         if args.execute and self.llm and not args.human_as_model:
-            if len(content) > self.args.model_max_input_length:
+            content_length = self._get_content_length(content)
+            if content_length > self.args.model_max_input_length:
                 logger.warning(
-                    f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
+                    f"Content length is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
                 )
                 content = content[: self.args.model_max_input_length]
 
@@ -141,7 +152,7 @@ class ActionTSProject:
                     file.write(content)
 
 
-class ActionPyScriptProject:
+class ActionPyScriptProject(BaseAction):
     def __init__(
         self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None
     ) -> None:
@@ -222,7 +233,7 @@ class ActionPyScriptProject:
                 file.write(content)
 
 
-class ActionPyProject:
+class ActionPyProject(BaseAction):
     def __init__(
         self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None
     ) -> None:
@@ -250,9 +261,10 @@ class ActionPyProject:
         args = self.args
 
         if args.execute and self.llm and not args.human_as_model:
-            if len(content) > self.args.model_max_input_length:
+            content_length = self._get_content_length(content)
+            if content_length > self.args.model_max_input_length:
                 logger.warning(
-                    f'''Content length is {len(content)}(you may collect too much files), which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...'''
+                    f'''Content length is {content_length} tokens (you may collect too much files), which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...'''
                 )
                 content = content[: self.args.model_max_input_length]
 
@@ -322,7 +334,7 @@ class ActionPyProject:
                 file.write(content)
 
 
-class ActionSuffixProject:
+class ActionSuffixProject(BaseAction):
     def __init__(
         self, args: AutoCoderArgs, llm: Optional[byzerllm.ByzerLLM] = None
     ) -> None:
@@ -346,9 +358,10 @@ class ActionSuffixProject:
         args = self.args
 
         if args.execute and self.llm and not args.human_as_model:
-            if len(content) > self.args.model_max_input_length:
+            content_length = self._get_content_length(content)
+            if content_length > self.args.model_max_input_length:
                 logger.warning(
-                    f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
+                    f"Content length is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
                 )
                 content = content[: self.args.model_max_input_length]
 
