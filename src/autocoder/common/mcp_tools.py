@@ -1,8 +1,20 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, Union
 from byzerllm import prompt
 from ..common.mcp_hub import McpHub
 import json
 import byzerllm
+import re
+from pydantic import BaseModel, Field
+
+class McpToolCall(BaseModel):
+    server_name: str = Field(..., description="The name of the MCP server")
+    tool_name: str = Field(..., description="The name of the tool to call")
+    arguments: Dict[str, Any] = Field(default_factory=dict, description="The arguments to pass to the tool")
+
+class McpResourceAccess(BaseModel):
+    server_name: str = Field(..., description="The name of the MCP server")
+    uri: str = Field(..., description="The URI of the resource to access")
+
 
 def get_connected_servers_info(mcp_hub: McpHub) -> str:
     """Generate formatted information about connected MCP servers
@@ -521,6 +533,54 @@ def mcp_prompt() -> str:
         "connected_servers_info": get_connected_servers_info(mcp_hub)
     }
 
+def extract_mcp_calls(content: str) -> List[Union[McpToolCall, McpResourceAccess]]:
+    """
+    Extract MCP tool calls and resource accesses from content.
+    
+    Args:
+        content: The content to parse for MCP tool calls
+        
+    Returns:
+        List of McpToolCall and McpResourceAccess objects
+    """
+    results = []
+    
+    # Regex pattern to match tool calls
+    tool_pattern = re.compile(
+        r"<use_mcp_tool>.*?<server_name>(.*?)</server_name>.*?"
+        r"<tool_name>(.*?)</tool_name>.*?"
+        r"<arguments>(.*?)</arguments>.*?</use_mcp_tool>",
+        re.DOTALL
+    )
+    
+    # Regex pattern to match resource accesses
+    resource_pattern = re.compile(
+        r"<access_mcp_resource>.*?<server_name>(.*?)</server_name>.*?"
+        r"<uri>(.*?)</uri>.*?</access_mcp_resource>",
+        re.DOTALL
+    )
+    
+    # Extract tool calls
+    for match in tool_pattern.finditer(content):
+        try:
+            arguments = json.loads(match.group(3).strip())
+            results.append(McpToolCall(
+                server_name=match.group(1).strip(),
+                tool_name=match.group(2).strip(),
+                arguments=arguments
+            ))
+        except json.JSONDecodeError:
+            continue
+            
+    # Extract resource accesses
+    for match in resource_pattern.finditer(content):
+        results.append(McpResourceAccess(
+            server_name=match.group(1).strip(),
+            uri=match.group(2).strip()
+        ))
+        
+    return results
+
 def invoke_mcp_tool(llm:byzerllm.ByzerLLM, conversations:List[Dict[str, Any]]) -> str:
     new_conversations = [{
         "role": "user",
@@ -531,5 +591,8 @@ def invoke_mcp_tool(llm:byzerllm.ByzerLLM, conversations:List[Dict[str, Any]]) -
     }] + conversations
     
     v = llm.chat_oai(conversations=new_conversations)
-    content = v[0].output    
+    content = v[0].output
+    
+    # Extract and return the tool calls
+    return extract_mcp_calls(content)
     
