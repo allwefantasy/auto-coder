@@ -15,224 +15,115 @@ def process_file_in_multi_process(
     start_time = time.time()
     file_path, relative_path, _, _ = file_info
     try:
-        # Check if file exists and is accessible
-        if not os.path.exists(file_path):
-            logger.error(f"File not found: {file_path}")
-            return []
-        if not os.access(file_path, os.R_OK):
-            logger.error(f"Permission denied: {file_path}")
-            return []
-
-        # Process different file types
         if file_path.endswith(".pdf"):            
-            try:
-                content = extract_text_from_pdf(file_path)
-                if not content:
-                    logger.warning(f"Empty content extracted from PDF: {file_path}")
-                    return []
-                v = [
-                    SourceCode(
-                        module_name=file_path,
-                        source_code=content,
-                        tokens=count_tokens_worker(content),
-                    )
-                ]
-            except Exception as e:
-                logger.error(f"PDF processing error for {file_path}: {str(e)}")
-                traceback.print_exc()
-                return []
-
+            content = extract_text_from_pdf(file_path)
+            v = [
+                SourceCode(
+                    module_name=file_path,
+                    source_code=content,
+                    tokens=count_tokens_worker(content),
+                )
+            ]
         elif file_path.endswith(".docx"):            
-            try:
-                content = extract_text_from_docx(file_path)
-                if not content:
-                    logger.warning(f"Empty content extracted from DOCX: {file_path}")
-                    return []
-                v = [
-                    SourceCode(
-                        module_name=f"##File: {file_path}",
-                        source_code=content,
-                        tokens=count_tokens_worker(content),
-                    )
-                ]
-            except Exception as e:
-                logger.error(f"DOCX processing error for {file_path}: {str(e)}")
-                traceback.print_exc()
-                return []
-
+            content = extract_text_from_docx(file_path)
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens_worker(content),
+                )
+            ]
         elif file_path.endswith(".xlsx") or file_path.endswith(".xls"):
-            try:
-                sheets = extract_text_from_excel(file_path)
-                if not sheets:
-                    logger.warning(f"Empty content extracted from Excel: {file_path}")
-                    return []
-                v = [
-                    SourceCode(
-                        module_name=f"##File: {file_path}#{sheet[0]}",
-                        source_code=sheet[1],
-                        tokens=count_tokens_worker(sheet[1]),
-                    )
-                    for sheet in sheets
-                ]
-            except Exception as e:
-                logger.error(f"Excel processing error for {file_path}: {str(e)}")
-                traceback.print_exc()
-                return []
-
+            sheets = extract_text_from_excel(file_path)
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}#{sheet[0]}",
+                    source_code=sheet[1],
+                    tokens=count_tokens_worker(sheet[1]),
+                )
+                for sheet in sheets
+            ]
         elif file_path.endswith(".pptx"):
-            try:
-                slides = extract_text_from_ppt(file_path)
-                if not slides:
-                    logger.warning(f"Empty content extracted from PPT: {file_path}")
-                    return []
-                content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
-                v = [
-                    SourceCode(
-                        module_name=f"##File: {file_path}",
-                        source_code=content,
-                        tokens=count_tokens_worker(content),
-                    )
-                ]
-            except Exception as e:
-                logger.error(f"PPT processing error for {file_path}: {str(e)}")
-                traceback.print_exc()
-                return []
-
+            slides = extract_text_from_ppt(file_path)
+            content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens_worker(content),
+                )
+            ]
         else:
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                if not content:
-                    logger.warning(f"Empty content read from file: {file_path}")
-                    return []
-                v = [
-                    SourceCode(
-                        module_name=f"##File: {file_path}",
-                        source_code=content,
-                        tokens=count_tokens_worker(content),
-                    )
-                ]
-            except Exception as e:
-                logger.error(f"Text file processing error for {file_path}: {str(e)}")
-                traceback.print_exc()
-                return []
-
-        logger.info(f"Successfully loaded file {file_path} in {time.time() - start_time:.2f}s")
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens_worker(content),
+                )
+            ]
+        logger.info(f"Load file {file_path} in {time.time() - start_time}")
         return v
     except Exception as e:
-        logger.error(f"Unexpected error processing file {file_path}: {str(e)}")
-        traceback.print_exc()
+        logger.error(f"Error processing file {file_path}: {str(e)}")
         return []
 
 
 def process_file_local(file_path: str) -> List[SourceCode]:
     start_time = time.time()
     try:
-        # Check if file exists and is accessible
-        if not os.path.exists(file_path):
-            logger.error(f"File not found: {file_path}")
-            return []
-        if not os.access(file_path, os.R_OK):
-            logger.error(f"Permission denied: {file_path}")
-            return []
-
-        # Process different file types
         if file_path.endswith(".pdf"):            
-            try:
-                content = extract_text_from_pdf(file_path)
-                if not content:
-                    logger.warning(f"Empty content extracted from PDF: {file_path}")
-                    return []
-                v = [
-                    SourceCode(
-                        module_name=file_path,
-                        source_code=content,
-                        tokens=count_tokens(content),
-                    )
-                ]
-            except Exception as e:
-                logger.error(f"PDF processing error for {file_path}: {str(e)}")
-                traceback.print_exc()
-                return []
-
+            content = extract_text_from_pdf(file_path)
+            v = [
+                SourceCode(
+                    module_name=file_path,
+                    source_code=content,
+                    tokens=count_tokens(content),
+                )
+            ]
         elif file_path.endswith(".docx"):            
-            try:
-                content = extract_text_from_docx(file_path)
-                if not content:
-                    logger.warning(f"Empty content extracted from DOCX: {file_path}")
-                    return []
-                v = [
-                    SourceCode(
-                        module_name=f"##File: {file_path}",
-                        source_code=content,
-                        tokens=count_tokens(content),
-                    )
-                ]
-            except Exception as e:
-                logger.error(f"DOCX processing error for {file_path}: {str(e)}")
-                traceback.print_exc()
-                return []
-
+            content = extract_text_from_docx(file_path)
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens(content),
+                )
+            ]
         elif file_path.endswith(".xlsx") or file_path.endswith(".xls"):
-            try:
-                sheets = extract_text_from_excel(file_path)
-                if not sheets:
-                    logger.warning(f"Empty content extracted from Excel: {file_path}")
-                    return []
-                v = [
-                    SourceCode(
-                        module_name=f"##File: {file_path}#{sheet[0]}",
-                        source_code=sheet[1],
-                        tokens=count_tokens(sheet[1]),
-                    )
-                    for sheet in sheets
-                ]
-            except Exception as e:
-                logger.error(f"Excel processing error for {file_path}: {str(e)}")
-                traceback.print_exc()
-                return []
-
+            sheets = extract_text_from_excel(file_path)
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}#{sheet[0]}",
+                    source_code=sheet[1],
+                    tokens=count_tokens(sheet[1]),
+                )
+                for sheet in sheets
+            ]
         elif file_path.endswith(".pptx"):
-            try:
-                slides = extract_text_from_ppt(file_path)
-                if not slides:
-                    logger.warning(f"Empty content extracted from PPT: {file_path}")
-                    return []
-                content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
-                v = [
-                    SourceCode(
-                        module_name=f"##File: {file_path}",
-                        source_code=content,
-                        tokens=count_tokens(content),
-                    )
-                ]
-            except Exception as e:
-                logger.error(f"PPT processing error for {file_path}: {str(e)}")
-                traceback.print_exc()
-                return []
-
+            slides = extract_text_from_ppt(file_path)
+            content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens(content),
+                )
+            ]
         else:
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                if not content:
-                    logger.warning(f"Empty content read from file: {file_path}")
-                    return []
-                v = [
-                    SourceCode(
-                        module_name=f"##File: {file_path}",
-                        source_code=content,
-                        tokens=count_tokens(content),
-                    )
-                ]
-            except Exception as e:
-                logger.error(f"Text file processing error for {file_path}: {str(e)}")
-                traceback.print_exc()
-                return []
-
-        logger.info(f"Successfully loaded file {file_path} in {time.time() - start_time:.2f}s")
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens(content),
+                )
+            ]
+        logger.info(f"Load file {file_path} in {time.time() - start_time}")
         return v
     except Exception as e:
-        logger.error(f"Unexpected error processing file {file_path}: {str(e)}")
+        logger.error(f"Error processing file {file_path}: {str(e)}")
         traceback.print_exc()
         return []
