@@ -111,17 +111,15 @@ class McpHub:
                 }
             )
 
-            # Create transport and session using async context manager
-            async with stdio_client(server_params) as transport:
-                session = ClientSession(transport[0], transport[1])
-                
-                # Store connection
-                connection = McpConnection(server, session)
-                connection.transport = transport
-                self.connections[name] = connection
-
-            # Initialize session
+            # Create transport without context manager
+            transport = await stdio_client(server_params).__aenter__()
+            session = ClientSession(transport[0], transport[1])
             await session.initialize()
+            
+            # Store connection
+            connection = McpConnection(server, session)
+            connection.transport = transport
+            self.connections[name] = connection
             
             # Update server status and fetch capabilities
             server.status = "connected"
@@ -143,12 +141,14 @@ class McpHub:
         """
         if name in self.connections:
             try:
-                connection = self.connections[name]
-                if connection.transport:
-                    # Transport is already closed by the context manager
-                    pass
-                await connection.session.aclose()
-                del self.connections[name]
+            connection = self.connections[name]
+            if connection.transport:
+                # Explicitly close the transport
+                await connection.transport[0].aclose()
+                await connection.transport[1].aclose()
+                await connection.transport.__aexit__(None, None, None)
+            await connection.session.aclose()
+            del self.connections[name]
             except Exception as e:
                 logger.error(f"Error closing connection to {name}: {e}")
                 raise
