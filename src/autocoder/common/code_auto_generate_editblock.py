@@ -423,9 +423,7 @@ class CodeAutoGenerateEditBlock:
             for result in results:
                 conversations_list.append(
                     conversations + [{"role": "assistant", "content": result}])
-        else:
-            results = []
-            conversations_list = []
+        else:            
             for _ in range(self.args.human_model_num):
                 v = self.llms[0].chat_oai(
                     conversations=conversations, llm_config=llm_config)
