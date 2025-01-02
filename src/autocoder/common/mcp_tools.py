@@ -1,6 +1,8 @@
 from typing import Dict, Any, List
 from byzerllm import prompt
 from ..common.mcp_hub import McpHub
+import json
+import byzerllm
 
 def get_connected_servers_info(mcp_hub: McpHub) -> str:
     """Generate formatted information about connected MCP servers
@@ -66,12 +68,8 @@ def get_connected_servers_info(mcp_hub: McpHub) -> str:
     return "\n\n".join(info)
 
 @prompt()
-def mcp_prompt() -> Dict[str, Any]:
-    """
-    You are auto-coder.chat, a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
-
-    ====
-
+def mcp_prompt() -> str:
+    """    
     TOOL USE
 
     You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
@@ -157,49 +155,13 @@ def mcp_prompt() -> Dict[str, Any]:
 
     # Connected MCP Servers
 
-    When a server is connected, you can use the server's tools via the \`use_mcp_tool\` tool, and access the server's resources via the \`access_mcp_resource\` tool.
+    When a server is connected, you can use the server's tools via the `use_mcp_tool` tool, and access the server's resources via the `access_mcp_resource` tool.
 
-    ${
-      mcpHub.getServers().length > 0
-        ? `${mcpHub
-            .getServers()
-            .filter((server) => server.status === "connected")
-            .map((server) => {
-              const tools = server.tools
-                ?.map((tool) => {
-                  const schemaStr = tool.inputSchema
-                    ? `    Input Schema:
-        ${JSON.stringify(tool.inputSchema, null, 2).split("\n").join("\n    ")}`
-                    : ""
-
-                  return `- ${tool.name}: ${tool.description}\n${schemaStr}`
-                })
-                .join("\n\n")
-
-              const templates = server.resourceTemplates
-                ?.map((template) => `- ${template.uriTemplate} (${template.name}): ${template.description}`)
-                .join("\n")
-
-              const resources = server.resources
-                ?.map((resource) => `- ${resource.uri} (${resource.name}): ${resource.description}`)
-                .join("\n")
-
-              const config = JSON.parse(server.config)
-
-              return (
-                `## ${server.name} (\`${config.command}${config.args && Array.isArray(config.args) ? ` ${config.args.join(" ")}` : ""}\`)` +
-                (tools ? `\n\n### Available Tools\n${tools}` : "") +
-                (templates ? `\n\n### Resource Templates\n${templates}` : "") +
-                (resources ? `\n\n### Direct Resources\n${resources}` : "")
-              )
-            })
-            .join("\n\n")}`
-        : "(No MCP servers currently connected)"
-    }
+    {{ connected_servers_info }}
 
     ## Creating an MCP Server
 
-    The user may ask you something along the lines of "add a tool" that does some function, in other words to create an MCP server that provides tools and resources that may connect to external APIs for example. You have the ability to create an MCP server and add it to a configuration file that will then expose the tools and resources for you to use with \`use_mcp_tool\` and \`access_mcp_resource\`.
+    The user may ask you something along the lines of "add a tool" that does some function, in other words to create an MCP server that provides tools and resources that may connect to external APIs for example. You have the ability to create an MCP server and add it to a configuration file that will then expose the tools and resources for you to use with `use_mcp_tool` and `access_mcp_resource`.
 
     When creating MCP servers, it's important to understand that they operate in a non-interactive environment. The server cannot initiate OAuth flows, open browser windows, or prompt for user input during runtime. All credentials and authentication tokens must be provided upfront through environment variables in the MCP settings configuration. For example, Spotify's API uses OAuth to get a refresh token for the user, but the MCP server cannot initiate this flow. While you can walk the user through obtaining an application client ID and secret, you may have to create a separate one-time setup script (like get-refresh-token.js) that captures and logs the final piece of the puzzle: the user's refresh token (i.e. you might run the script using execute_command which would open a browser for authentication, and then log the refresh token so that you can see it in the command output for you to use in the MCP settings configuration).
 
@@ -211,19 +173,19 @@ def mcp_prompt() -> Dict[str, Any]:
 
     The following example demonstrates how to build an MCP server that provides weather data functionality. While this example shows how to implement resources, resource templates, and tools, in practice you should prefer using tools since they are more flexible and can handle dynamic parameters. The resource and resource template implementations are included here mainly for demonstration purposes of the different MCP capabilities, but a real weather server would likely just expose tools for fetching weather data. (The following steps are for macOS)
 
-    1. Use the \`create-typescript-server\` tool to bootstrap a new project in the default MCP servers directory:
+    1. Use the `create-typescript-server` tool to bootstrap a new project in the default MCP servers directory:
 
-    \`\`\`bash
+    ```bash
     cd ${await mcpHub.getMcpServersPath()}
     npx @modelcontextprotocol/create-server weather-server
     cd weather-server
     # Install dependencies
     npm install axios
-    \`\`\`
+    ```
 
     This will create a new project with the following structure:
 
-    \`\`\`
+    ```
     weather-server/
       ├── package.json
           {
@@ -239,11 +201,11 @@ def mcp_prompt() -> Dict[str, Any]:
       └── src/
           └── weather-server/
               └── index.ts      # Main server implementation
-    \`\`\`
+    ```
 
-    2. Replace \`src/index.ts\` with the following:
+    2. Replace `src/index.ts` with the following:
 
-    \`\`\`typescript
+    ```typescript
     #!/usr/bin/env node
     import { Server } from '@modelcontextprotocol/sdk/server/index.js';
     import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -318,15 +280,15 @@ def mcp_prompt() -> Dict[str, Any]:
         });
       }
 
-      // MCP Resources represent any kind of UTF-8 encoded data that an MCP server wants to make available to clients, such as database records, API responses, log files, and more. Servers define direct resources with a static URI or dynamic resources with a URI template that follows the format \`[protocol]://[host]/[path]\`.
+      // MCP Resources represent any kind of UTF-8 encoded data that an MCP server wants to make available to clients, such as database records, API responses, log files, and more. Servers define direct resources with a static URI or dynamic resources with a URI template that follows the format `[protocol]://[host]/[path]`.
       private setupResourceHandlers() {
         // For static resources, servers can expose a list of resources:
         this.server.setRequestHandler(ListResourcesRequestSchema, async () => ({
           resources: [
             // This is a poor example since you could use the resource template to get the same information but this demonstrates how to define a static resource
             {
-              uri: \`weather://San Francisco/current\`, // Unique identifier for San Francisco weather resource
-              name: \`Current weather in San Francisco\`, // Human-readable name
+              uri: `weather://San Francisco/current`, // Unique identifier for San Francisco weather resource
+              name: `Current weather in San Francisco`, // Human-readable name
               mimeType: 'application/json', // Optional MIME type
               // Optional description
               description:
@@ -360,7 +322,7 @@ def mcp_prompt() -> Dict[str, Any]:
             if (!match) {
               throw new McpError(
                 ErrorCode.InvalidRequest,
-                \`Invalid URI format: \${request.params.uri}\`
+                `Invalid URI format: ${request.params.uri}`
               );
             }
             const city = decodeURIComponent(match[1]);
@@ -396,9 +358,9 @@ def mcp_prompt() -> Dict[str, Any]:
               if (axios.isAxiosError(error)) {
                 throw new McpError(
                   ErrorCode.InternalError,
-                  \`Weather API error: \${
+                  `Weather API error: ${
                     error.response?.data.message ?? error.message
-                  }\`
+                  }`
                 );
               }
               throw error;
@@ -442,7 +404,7 @@ def mcp_prompt() -> Dict[str, Any]:
           if (request.params.name !== 'get_forecast') {
             throw new McpError(
               ErrorCode.MethodNotFound,
-              \`Unknown tool: \${request.params.name}\`
+              `Unknown tool: ${request.params.name}`
             );
           }
 
@@ -480,9 +442,9 @@ def mcp_prompt() -> Dict[str, Any]:
                 content: [
                   {
                     type: 'text',
-                    text: \`Weather API error: \${
+                    text: `Weather API error: ${
                       error.response?.data.message ?? error.message
-                    }\`,
+                    }`,
                   },
                 ],
                 isError: true,
@@ -502,21 +464,21 @@ def mcp_prompt() -> Dict[str, Any]:
 
     const server = new WeatherServer();
     server.run().catch(console.error);
-    \`\`\`
+    ```
 
     (Remember: This is just an example–you may use different dependencies, break the implementation up into multiple files, etc.)
 
     3. Build and compile the executable JavaScript file
 
-    \`\`\`bash
+    ```bash
     npm run build
-    \`\`\`
+    ```
 
     4. Whenever you need an environment variable such as an API key to configure the MCP server, walk the user through the process of getting the key. For example, they may need to create an account and go to a developer dashboard to generate the key. Provide step-by-step instructions and URLs to make it easy for the user to retrieve the necessary information. Then use the ask_followup_question tool to ask the user for the key, in this case the OpenWeather API key.
 
-    5. Install the MCP Server by adding the MCP server configuration to the settings file located at '${await mcpHub.getMcpSettingsFilePath()}'. The settings file may have other MCP servers already configured, so you would read it first and then add your new server to the existing \`mcpServers\` object.
+    5. Install the MCP Server by adding the MCP server configuration to the settings file located at '${await mcpHub.getMcpSettingsFilePath()}'. The settings file may have other MCP servers already configured, so you would read it first and then add your new server to the existing `mcpServers` object.
 
-    \`\`\`json
+    ```json
     {
       "mcpServers": {
         ...,
@@ -529,9 +491,9 @@ def mcp_prompt() -> Dict[str, Any]:
         },
       }
     }
-    \`\`\`
+    ```
 
-    (Note: the user may also ask you to install the MCP server to the Claude desktop app, in which case you would read then modify \`~/Library/Application\ Support/Claude/claude_desktop_config.json\` on macOS for example. It follows the same format of a top level \`mcpServers\` object.)
+    (Note: the user may also ask you to install the MCP server to the Claude desktop app, in which case you would read then modify `~/Library/Application\ Support/Claude/claude_desktop_config.json` on macOS for example. It follows the same format of a top level `mcpServers` object.)
 
     6. After you have edited the MCP settings configuration file, the system will automatically run all the servers and expose the available tools and resources in the 'Connected MCP Servers' section.
 
@@ -554,4 +516,20 @@ def mcp_prompt() -> Dict[str, Any]:
 
     Remember: The MCP documentation and example provided above are to help you understand and work with existing MCP servers or create new ones when requested by the user. You already have access to tools and capabilities that can be used to accomplish a wide range of tasks.
     """
-    return {}
+    mcp_hub = McpHub()
+    return {
+        "connected_servers_info": get_connected_servers_info(mcp_hub)
+    }
+
+def invoke_mcp_tool(llm:byzerllm.ByzerLLM, conversations:List[Dict[str, Any]]) -> str:
+    new_conversations = [{
+        "role": "user",
+        "content": mcp_prompt.prompt()
+    },{
+        "role": "assistant",
+        "content": "I have read the tools usage instructions."
+    }] + conversations
+    
+    v = llm.chat_oai(conversations=new_conversations)
+    content = v[0].output    
+    

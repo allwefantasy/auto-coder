@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 
 from autocoder.common.mcp_hub import McpHub, McpServer, McpTool, McpResource, McpResourceTemplate
-
+from autocoder.common.mcp_tools import get_connected_servers_info
 # Helper function for async tests
 async def run_test(test_func):
     """Helper to run async test functions"""
@@ -43,6 +43,8 @@ async def test_filesystem_operations():
         # Initialize hub
         hub = McpHub(settings_path)
         await hub.initialize()
+
+        print(get_connected_servers_info(hub))
         
         # Create directory using tools
         list_dir_args = {
