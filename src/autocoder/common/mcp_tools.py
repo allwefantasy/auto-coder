@@ -601,6 +601,7 @@ class McpExecutor:
         return results
 
     async def run(self, conversations: List[Dict[str, Any]]) -> str:
+        print(self.mcp_prompt.prompt())
         new_conversations = [{
             "role": "user",
             "content": self.mcp_prompt.prompt()
@@ -611,7 +612,7 @@ class McpExecutor:
 
         v = self.llm.chat_oai(conversations=new_conversations)
         content = v[0].output        
-        tools = self.extract_mcp_calls(content)
+        tools = await self.extract_mcp_calls(content)
         while tools:
             results = await self.execute_mcp_tools(tools)
             str_results = "\n\n".join(self.format_mcp_result(result) for result in results)            
@@ -624,7 +625,7 @@ class McpExecutor:
             }]
             v = self.llm.chat_oai(conversations=new_conversations)
             content = v[0].output        
-            tools = self.extract_mcp_calls(content)
+            tools = await self.extract_mcp_calls(content)
             
         return new_conversations
 
