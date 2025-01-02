@@ -182,19 +182,25 @@ class LongContextRAG:
         使用以下文档和对话历史来提取相关信息。
 
         文档：
+        <documents>
         {% for doc in documents %}
         {{ doc }}
         {% endfor %}
+        </documents>
 
         对话历史：
+        <conversations>
         {% for msg in conversations %}
-        <{{ msg.role }}>: {{ msg.content }}
+        [{{ msg.role }}]: 
+        {{ msg.content }}
+        
         {% endfor %}
+        </conversations>
 
         请根据提供的文档内容、用户对话历史以及最后一个问题，提取并总结文档中与问题相关的重要信息。
         如果文档中没有相关信息，请回复"该文档中没有与问题相关的信息"。
         提取的信息尽量保持和原文中的一样，并且只输出这些信息。
-        """
+        """        
 
     @byzerllm.prompt()
     def _answer_question(
@@ -202,9 +208,11 @@ class LongContextRAG:
     ) -> Generator[str, None, None]:
         """        
         文档：
+        <documents>
         {% for doc in relevant_docs %}
         {{ doc }}
         {% endfor %}
+        </documents>
 
         使用以上文档来回答用户的问题。回答要求：
 
