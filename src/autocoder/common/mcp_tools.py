@@ -596,3 +596,30 @@ def invoke_mcp_tool(llm:byzerllm.ByzerLLM, conversations:List[Dict[str, Any]]) -
     # Extract and return the tool calls
     tools = extract_mcp_calls(content)    
     return tools
+
+async def execute_mcp_tools(mcp_hub: McpHub, tools: List[Union[McpToolCall, McpResourceAccess]]) -> List[Any]:
+    """
+    Execute MCP tools and return results in order.
+    
+    Args:
+        mcp_hub: McpHub instance to execute tools
+        tools: List of McpToolCall and McpResourceAccess objects
+        
+    Returns:
+        List of results in the same order as the input tools
+    """
+    results = []
+    for tool in tools:
+        try:
+            if isinstance(tool, McpToolCall):
+                result = await mcp_hub.call_tool(tool.server_name, tool.tool_name, tool.arguments)
+                results.append(result)
+            elif isinstance(tool, McpResourceAccess):
+                result = await mcp_hub.read_resource(tool.server_name, tool.uri)
+                results.append(result)
+            else:
+                results.append(None)
+        except Exception as e:
+            logger.error(f"Failed to execute MCP tool {tool}: {e}")
+            results.append(None)
+    return results
