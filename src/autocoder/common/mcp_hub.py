@@ -98,10 +98,6 @@ class McpHub:
         """Get list of all configured servers"""
         return [conn.server for conn in self.connections.values()]
 
-    def has_connected_servers(self) -> bool:
-        """Check if there are any connected MCP servers"""
-        return any(conn.server.status == "connected" for conn in self.connections.values())
-
     async def connect_to_server(self, name: str, config: dict) -> None:
         """
         Establish connection to an MCP server with proper resource management
