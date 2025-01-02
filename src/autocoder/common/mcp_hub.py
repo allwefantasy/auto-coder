@@ -1,7 +1,6 @@
 import os
 import json
 import asyncio
-import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Set
 from pathlib import Path
@@ -11,8 +10,7 @@ from pydantic import BaseModel, Field
 from mcp.client import ClientSession
 from mcp.client.stdio import stdio_client, StdioServerParameters
 import mcp.types as mcp_types
-
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 class McpTool(BaseModel):
     """Represents an MCP tool configuration"""
