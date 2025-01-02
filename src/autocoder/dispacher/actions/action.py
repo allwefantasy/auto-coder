@@ -87,9 +87,8 @@ class ActionTSProject(BaseAction):
             content_length = self._get_content_length(content)
             if content_length > self.args.model_max_input_length:
                 logger.warning(
-                    f"Content length is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
-                )
-                content = content[: self.args.model_max_input_length]
+                    f"Content(send to model) is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}"
+                )                
 
         if args.execute:
             logger.info("Auto generate the code...")
@@ -264,9 +263,8 @@ class ActionPyProject(BaseAction):
             content_length = self._get_content_length(content)
             if content_length > self.args.model_max_input_length:
                 logger.warning(
-                    f'''Content length is {content_length} tokens (you may collect too much files), which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...'''
+                    f'''Content(send to model) is {content_length} tokens (you may collect too much files), which is larger than the maximum input length {self.args.model_max_input_length}'''
                 )
-                content = content[: self.args.model_max_input_length]
 
         if args.execute:
             logger.info("Auto generate the code...")
@@ -361,9 +359,8 @@ class ActionSuffixProject(BaseAction):
             content_length = self._get_content_length(content)
             if content_length > self.args.model_max_input_length:
                 logger.warning(
-                    f"Content length is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
-                )
-                content = content[: self.args.model_max_input_length]
+                    f"Content(send to model) is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}"
+                )                
 
         if args.execute:
             logger.info("Auto generate the code...")
@@ -404,7 +401,7 @@ class ActionSuffixProject(BaseAction):
                 code_merge = CodeAutoMergeEditBlock(llm=self.llm, args=self.args)
                 merge_result = code_merge.merge_code(generate_result=generate_result)
             else:
-                code_merge = CodeAutoMerge(llm=self.llm, args=self.args)Content length
+                code_merge = CodeAutoMerge(llm=self.llm, args=self.args)
                 merge_result = code_merge.merge_code(generate_result=generate_result)
 
         if merge_result is not None:
