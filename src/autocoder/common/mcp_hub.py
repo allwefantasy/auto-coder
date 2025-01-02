@@ -242,7 +242,10 @@ class McpHub:
             if not connection:
                 return []
             
-            response = await connection.session.list_resource_templates()
+            response = await connection.session.request(
+                {"method": "resources/templates/list"},
+                ListResourceTemplatesResultSchema
+            )
             return [McpResourceTemplate(
                 uri_template=template.uriTemplate,
                 name=template.name,
