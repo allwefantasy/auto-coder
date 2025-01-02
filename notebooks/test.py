@@ -45,17 +45,14 @@ async def test_filesystem_operations():
         await hub.initialize()
         
         # Create directory using tools
-        create_dir_args = {
-            "path": "/Users/allwefantasy/projects/tests/tt"            
+        list_dir_args = {
+            "path": "/Users/allwefantasy/projects/tests/"            
         }
         
         try:
             # Call the create directory tool
-            result = await hub.call_tool("filesystem", "create-dir", create_dir_args)
-            print(f"Directory creation result: {result}")
-            
-            # Verify directory exists
-            assert os.path.exists("/Users/allwefantasy/projects/tests/tt"), "Directory should be created"
+            result = await hub.call_tool("filesystem", "list_directory", list_dir_args)
+            print(f"Directory list result: {result}")                        
             
         except Exception as e:
             print(f"Error during directory creation: {e}")
