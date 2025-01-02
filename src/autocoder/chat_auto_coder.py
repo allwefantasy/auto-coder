@@ -1434,19 +1434,20 @@ def mcp(query: str):
         if os.path.exists(temp_yaml):
             os.remove(temp_yaml)
 
-    llm = byzerllm.ByzerLLM.from_default_model(args.inference_model or args.model) 
-       
-    async def run_mcp():         
-        hub = McpHub()       
-        await hub.initialize()        
-        mcp_executor = McpExecutor(hub, llm)
-        conversations = [{"role": "user", "content": query}]
-        _, results = await mcp_executor.run(conversations)
-        results_str = "\n\n".join(mcp_executor.format_mcp_result(result) for result in results)
-        return results_str            
-
-    results_str = asyncio.run(run_mcp())        
-    print(results_str)
+    from autocoder.common.mcp_server import get_mcp_server, McpRequest
+    
+    mcp_server = get_mcp_server()
+    response = mcp_server.send_request(
+        McpRequest(
+            query=query,
+            model=args.inference_model or args.model
+        )
+    )
+    
+    if response.error:
+        print(f"Error from MCP server: {response.error}")
+    else:
+        print(response.result)
 
 
 def code_next(query: str):
