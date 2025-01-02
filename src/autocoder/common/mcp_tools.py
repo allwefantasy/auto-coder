@@ -594,5 +594,5 @@ def invoke_mcp_tool(llm:byzerllm.ByzerLLM, conversations:List[Dict[str, Any]]) -
     content = v[0].output
     
     # Extract and return the tool calls
-    return extract_mcp_calls(content)
-    
+    tools = extract_mcp_calls(content)    
+    return tools
