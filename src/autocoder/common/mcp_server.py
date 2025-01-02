@@ -1,5 +1,5 @@
 import asyncio
-import queue
+from asyncio import Queue as AsyncQueue
 import threading
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
@@ -19,63 +19,58 @@ class McpResponse:
 
 class McpServer:
     def __init__(self):
-        self._request_queue = queue.Queue()
-        self._response_queue = queue.Queue()
+        self._request_queue = AsyncQueue()
+        self._response_queue = AsyncQueue()
         self._running = False
-        self._thread = None
+        self._task = None
+        self._loop = None
         
     def start(self):
         if self._running:
             return
             
         self._running = True
-        self._thread = threading.Thread(target=self._run_server)
-        self._thread.daemon = True
-        self._thread.start()
+        self._loop = asyncio.new_event_loop()
+        threading.Thread(target=self._run_event_loop, daemon=True).start()
         
     def stop(self):
-        self._running = False
-        if self._thread:
-            self._thread.join()
-            
-    def _run_server(self):
-        while self._running:
-            try:
-                request = self._request_queue.get(timeout=1)
-                if request is None:
-                    continue
-                    
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
+        if self._running:
+            self._running = False            
+            if self._loop:
+                self._loop.stop()
+                self._loop.close()
                 
-                try:
-                    result = loop.run_until_complete(self._process_request(request))
-                    self._response_queue.put(McpResponse(result=result))
-                except Exception as e:
-                    self._response_queue.put(McpResponse(result="", error=str(e)))
-                finally:
-                    loop.close()
-                    
-            except queue.Empty:
-                continue
-            except Exception as e:
-                print(f"Error in MCP server: {e}")
+    def _run_event_loop(self):
+        asyncio.set_event_loop(self._loop)
+        self._task = self._loop.create_task(self._process_request())
+        self._loop.run_forever()
                 
-    async def _process_request(self, request: McpRequest) -> str:
+    async def _process_request(self):
         hub = McpHub()
         await hub.initialize()
         
-        llm = byzerllm.ByzerLLM.from_default_model(request.model) if request.model else byzerllm.ByzerLLM()
-        
-        mcp_executor = McpExecutor(hub, llm)
-        conversations = [{"role": "user", "content": request.query}]
-        _, results = await mcp_executor.run(conversations)
-        results_str = "\n\n".join(mcp_executor.format_mcp_result(result) for result in results)
-        return results_str
+        while self._running:
+            try:
+                request = await self._request_queue.get()
+                if request is None:
+                    break
+                    
+                llm = byzerllm.ByzerLLM.from_default_model(model=request.model)
+                mcp_executor = McpExecutor(hub, llm)
+                conversations = [{"role": "user", "content": request.query}]
+                _, results = await mcp_executor.run(conversations)
+                results_str = "\n\n".join(mcp_executor.format_mcp_result(result) for result in results)
+                await self._response_queue.put(McpResponse(result=results_str))
+            except Exception as e:
+                await self._response_queue.put(McpResponse(result="", error=str(e)))
         
     def send_request(self, request: McpRequest) -> McpResponse:
-        self._request_queue.put(request)
-        return self._response_queue.get()
+        async def _send():
+            await self._request_queue.put(request)
+            return await self._response_queue.get()
+            
+        future = asyncio.run_coroutine_threadsafe(_send(), self._loop)
+        return future.result()
 
 # Global MCP server instance
 _mcp_server = None

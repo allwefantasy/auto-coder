@@ -60,8 +60,7 @@ from byzerllm.utils import format_str_jinja2
 from autocoder.chat_auto_coder_lang import get_message
 from autocoder.utils import operate_config_api
 from autocoder.agent.auto_guess_query import AutoGuessQuery
-from autocoder.common.mcp_hub import McpHub
-from autocoder.common.mcp_tools import McpExecutor
+from autocoder.common.mcp_server import get_mcp_server, McpRequest
 import asyncio
 
 class SymbolItem(BaseModel):
@@ -1432,9 +1431,7 @@ def mcp(query: str):
         args = convert_yaml_to_config(temp_yaml)
     finally:
         if os.path.exists(temp_yaml):
-            os.remove(temp_yaml)
-
-    from autocoder.common.mcp_server import get_mcp_server, McpRequest
+            os.remove(temp_yaml)    
     
     mcp_server = get_mcp_server()
     response = mcp_server.send_request(
@@ -2485,6 +2482,8 @@ def main():
         except EOFError:
             try:
                 save_memory()
+                if get_mcp_server():
+                    get_mcp_server().stop()                
             except Exception as e:
                 print(
                     f"\033[91mAn error occurred while saving memory:\033[0m \033[93m{type(e).__name__}\033[0m - {str(e)}"
