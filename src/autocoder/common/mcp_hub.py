@@ -111,14 +111,14 @@ class McpHub:
                 }
             )
 
-            # Create transport and session
-            transport = await stdio_client(server_params)
-            session = ClientSession(transport[0], transport[1])
-            
-            # Store connection
-            connection = McpConnection(server, session)
-            connection.transport = transport
-            self.connections[name] = connection
+            # Create transport and session using async context manager
+            async with stdio_client(server_params) as transport:
+                session = ClientSession(transport[0], transport[1])
+                
+                # Store connection
+                connection = McpConnection(server, session)
+                connection.transport = transport
+                self.connections[name] = connection
 
             # Initialize session
             await session.initialize()
@@ -145,9 +145,8 @@ class McpHub:
             try:
                 connection = self.connections[name]
                 if connection.transport:
-                    transport = connection.transport
-                    await transport[0].aclose()
-                    await transport[1].aclose()
+                    # Transport is already closed by the context manager
+                    pass
                 await connection.session.aclose()
                 del self.connections[name]
             except Exception as e:
