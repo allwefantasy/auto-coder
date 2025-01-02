@@ -600,8 +600,7 @@ class McpExecutor:
 
         return results
 
-    async def run(self, conversations: List[Dict[str, Any]]) -> str:
-        print(self.mcp_prompt.prompt())
+    async def run(self, conversations: List[Dict[str, Any]]) -> str:        
         new_conversations = [{
             "role": "user",
             "content": self.mcp_prompt.prompt()
