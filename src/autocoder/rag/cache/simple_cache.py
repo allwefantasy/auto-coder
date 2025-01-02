@@ -98,7 +98,10 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                     process_file_in_multi_process, files_to_process)
 
             for file_info, result in zip(files_to_process, results):
-                self.update_cache(file_info, result)
+                if result:  # 只有当result不为空时才更新缓存
+                    self.update_cache(file_info, result)
+                else:
+                    logger.warning(f"Empty result for file: {file_info[0]}, skipping cache update")
 
             self.write_cache()
 
@@ -138,7 +141,10 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                     logger.info(f"{file_info[0]} is detected to be updated")
                     try:
                         result = process_file_local(file_info[0])
-                        self.update_cache(file_info, result)
+                        if result:  # 只有当result不为空时才更新缓存
+                            self.update_cache(file_info, result)
+                        else:
+                            logger.warning(f"Empty result for file: {file_info[0]}, skipping cache update")
                     except Exception as e:
                         logger.error(
                             f"SimpleCache Error in process_queue: {e}")
