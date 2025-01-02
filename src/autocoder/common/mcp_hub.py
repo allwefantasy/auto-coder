@@ -4,7 +4,6 @@ import asyncio
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Set
 from pathlib import Path
-from weakref import WeakRef
 from pydantic import BaseModel, Field
 
 from mcp.client import ClientSession
