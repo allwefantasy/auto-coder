@@ -391,7 +391,7 @@ class ActionSuffixProject:
                 code_merge = CodeAutoMergeEditBlock(llm=self.llm, args=self.args)
                 merge_result = code_merge.merge_code(generate_result=generate_result)
             else:
-                code_merge = CodeAutoMerge(llm=self.llm, args=self.args)
+                code_merge = CodeAutoMerge(llm=self.llm, args=self.args)Content length
                 merge_result = code_merge.merge_code(generate_result=generate_result)
 
         if merge_result is not None:

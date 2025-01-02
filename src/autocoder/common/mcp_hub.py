@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any, Set
 from pathlib import Path
 from pydantic import BaseModel, Field
 
-from mcp.client import ClientSession
+from mcp import ClientSession
 from mcp.client.stdio import stdio_client, StdioServerParameters
 import mcp.types as mcp_types
 from loguru import logger
