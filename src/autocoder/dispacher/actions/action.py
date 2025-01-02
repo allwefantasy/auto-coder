@@ -74,11 +74,22 @@ class ActionTSProject:
         args = self.args
 
         if args.execute and self.llm and not args.human_as_model:
-            if len(content) > self.args.model_max_input_length:
-                logger.warning(
-                    f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
-                )
-                content = content[: self.args.model_max_input_length]
+            try:
+                from autocoder.common.buildin_tokenizer import BuildinTokenizer
+                tokenizer = BuildinTokenizer()
+                token_count = tokenizer.count_tokens(content)
+                if token_count > self.args.model_max_input_length:
+                    logger.warning(
+                        f"Content token count is {token_count}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
+                    )
+                    content = content[: self.args.model_max_input_length]
+            except Exception as e:
+                logger.warning(f"Failed to count tokens: {e}, fallback to string length")
+                if len(content) > self.args.model_max_input_length:
+                    logger.warning(
+                        f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
+                    )
+                    content = content[: self.args.model_max_input_length]
 
         if args.execute:
             logger.info("Auto generate the code...")
@@ -250,11 +261,22 @@ class ActionPyProject:
         args = self.args
 
         if args.execute and self.llm and not args.human_as_model:
-            if len(content) > self.args.model_max_input_length:
-                logger.warning(
-                    f'''Content length is {len(content)}(you may collect too much files), which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...'''
-                )
-                content = content[: self.args.model_max_input_length]
+            try:
+                from autocoder.common.buildin_tokenizer import BuildinTokenizer
+                tokenizer = BuildinTokenizer()
+                token_count = tokenizer.count_tokens(content)
+                if token_count > self.args.model_max_input_length:
+                    logger.warning(
+                        f"Content token count is {token_count}(you may collect too much files), which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
+                    )
+                    content = content[: self.args.model_max_input_length]
+            except Exception as e:
+                logger.warning(f"Failed to count tokens: {e}, fallback to string length")
+                if len(content) > self.args.model_max_input_length:
+                    logger.warning(
+                        f'''Content length is {len(content)}(you may collect too much files), which is larger than the maximum input length {self.args.model_max_input_length}. chunk it...'''
+                    )
+                    content = content[: self.args.model_max_input_length]
 
         if args.execute:
             logger.info("Auto generate the code...")
@@ -346,11 +368,22 @@ class ActionSuffixProject:
         args = self.args
 
         if args.execute and self.llm and not args.human_as_model:
-            if len(content) > self.args.model_max_input_length:
-                logger.warning(
-                    f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
-                )
-                content = content[: self.args.model_max_input_length]
+            try:
+                from autocoder.common.buildin_tokenizer import BuildinTokenizer
+                tokenizer = BuildinTokenizer()
+                token_count = tokenizer.count_tokens(content)
+                if token_count > self.args.model_max_input_length:
+                    logger.warning(
+                        f"Content token count is {token_count}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
+                    )
+                    content = content[: self.args.model_max_input_length]
+            except Exception as e:
+                logger.warning(f"Failed to count tokens: {e}, fallback to string length")
+                if len(content) > self.args.model_max_input_length:
+                    logger.warning(
+                        f"Content length is {len(content)}, which is larger than the maximum input length {self.args.model_max_input_length}. chunk it..."
+                    )
+                    content = content[: self.args.model_max_input_length]
 
         if args.execute:
             logger.info("Auto generate the code...")
