@@ -60,6 +60,9 @@ from byzerllm.utils import format_str_jinja2
 from autocoder.chat_auto_coder_lang import get_message
 from autocoder.utils import operate_config_api
 from autocoder.agent.auto_guess_query import AutoGuessQuery
+from autocoder.common.mcp_hub import McpHub
+from autocoder.common.mcp_tools import McpExecutor
+import asyncio
 
 
 class SymbolItem(BaseModel):
@@ -125,6 +128,7 @@ commands = [
     "/mode",
     "/lib",
     "/design",
+    "/mcp",
 ]
 
 
@@ -2460,6 +2464,27 @@ def main():
             elif user_input.startswith("/lib"):
                 args = user_input[len("/lib"):].strip().split()
                 lib_command(args)
+
+            elif user_input.startswith("/mcp"):
+                query = user_input[len("/mcp"):].strip()
+                if not query:
+                    print("\033[91mPlease enter your request.\033[0m")
+                else:
+                    # Initialize MCP hub and executor
+                    hub = McpHub(None)
+                    asyncio.run(hub.initialize())
+                    llm = byzerllm.ByzerLLM.from_default_model(model="deepseek_chat")
+                    executor = McpExecutor(hub, llm)
+                    
+                    # Create conversation
+                    conversations = [{
+                        "role": "user",
+                        "content": query
+                    }]
+                    
+                    # Run MCP executor
+                    result = asyncio.run(executor.run(conversations))
+                    print(json.dumps(result, indent=2, ensure_ascii=False))
 
             elif user_input.startswith("/debug"):
                 code = user_input[len("/debug"):].strip()
