@@ -2,7 +2,7 @@ import os
 import json
 import asyncio
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Set
+from typing import Dict, List, Optional, Any, Set, Optional
 from pathlib import Path
 from pydantic import BaseModel, Field
 
@@ -75,11 +75,14 @@ class McpHub:
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, settings_path: str):
+    def __init__(self, settings_path: Optional[str] = None):
         if self._initialized:
             return
         """Initialize the MCP Hub with a path to settings file"""
-        self.settings_path = Path(settings_path)
+        if settings_path is None:
+            self.settings_path = Path.home() / ".auto-coder" / "mcp" / "settings.json"
+        else:
+            self.settings_path = Path(settings_path)
         self.connections: Dict[str, McpConnection] = {}
         self.is_connecting = False
 
