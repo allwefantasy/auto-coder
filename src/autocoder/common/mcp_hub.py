@@ -43,10 +43,10 @@ class McpServer(BaseModel):
 
 class McpConnection:
     """Represents an active MCP server connection"""
-    def __init__(self, server: McpServer, session: ClientSession):
+    def __init__(self, server: McpServer, session: ClientSession, transport_manager):
         self.server = server
         self.session = session
-        self.transport = None  # Will hold transport streams
+        self.transport_manager = transport_manager  # Will hold transport context manager
 
 class McpHub:
     """
@@ -88,7 +88,7 @@ class McpHub:
 
     async def connect_to_server(self, name: str, config: dict) -> None:
         """
-        Establish connection to an MCP server
+        Establish connection to an MCP server with proper resource management
         """
         # Remove existing connection if present
         if name in self.connections:
@@ -111,21 +111,27 @@ class McpHub:
                 }
             )
 
-            # Create transport without context manager
-            transport = await stdio_client(server_params).__aenter__()
-            session = ClientSession(transport[0], transport[1])
-            await session.initialize()
-            
-            # Store connection
-            connection = McpConnection(server, session)
-            connection.transport = transport
-            self.connections[name] = connection
-            
-            # Update server status and fetch capabilities
-            server.status = "connected"
-            server.tools = await self._fetch_tools(name)
-            server.resources = await self._fetch_resources(name)
-            server.resource_templates = await self._fetch_resource_templates(name)
+            # Create transport using context manager
+            transport_manager = stdio_client(server_params)
+            transport = await transport_manager.__aenter__()
+            try:
+                session = await ClientSession(transport[0], transport[1]).__aenter__()
+                await session.initialize()
+                
+                # Store connection with transport manager
+                connection = McpConnection(server, session, transport_manager)
+                self.connections[name] = connection
+                
+                # Update server status and fetch capabilities
+                server.status = "connected"
+                server.tools = await self._fetch_tools(name)
+                server.resources = await self._fetch_resources(name)
+                server.resource_templates = await self._fetch_resource_templates(name)
+
+            except Exception:
+                # Clean up transport if session initialization fails
+                await transport_manager.__aexit__(None, None, None)
+                raise
 
         except Exception as e:
             error_msg = str(e)
@@ -137,21 +143,20 @@ class McpHub:
 
     async def delete_connection(self, name: str) -> None:
         """
-        Close and remove a server connection
+        Close and remove a server connection with proper cleanup
         """
         if name in self.connections:
             try:
                 connection = self.connections[name]
-                if connection.transport:
-                    # Explicitly close the transport
-                    await connection.transport[0].aclose()
-                    await connection.transport[1].aclose()
-                    await connection.transport.__aexit__(None, None, None)
-                await connection.session.aclose()
+                # Clean up in reverse order of creation
+                await connection.session.__aexit__(None, None, None)
+                await connection.transport_manager.__aexit__(None, None, None)
                 del self.connections[name]
             except Exception as e:
                 logger.error(f"Error closing connection to {name}: {e}")
-                raise
+                # Continue with deletion even if cleanup fails
+                if name in self.connections:
+                    del self.connections[name]
 
     async def update_server_connections(self, new_servers: Dict[str, Any]) -> None:
         """
