@@ -26,6 +26,17 @@ class McpExecutor:
         self.mcp_hub = mcp_hub
         self.llm = llm
 
+    def get_server_names(self) -> List[str]:
+        """
+        Get the names of all connected MCP servers.
+
+        Returns:
+            List of server names
+            
+        """
+        server_names = [server.name for server in self.mcp_hub.get_servers()]
+        return ",".join(server_names) or "(None running currently)"
+
     def get_connected_servers_info(self) -> str:
         """Generate formatted information about connected MCP servers
 
@@ -526,12 +537,7 @@ class McpExecutor:
 
         ## Editing MCP Servers
 
-        The user may ask to add tools or resources that may make sense to add to an existing MCP server (listed under 'Connected MCP Servers' above: ${
-          mcpHub
-            .getServers()
-            .map((server) => server.name)
-            .join(", ") || "(None running currently)"
-        }, e.g. if it would use the same API. This would be possible if you can locate the MCP server repository on the user's system by looking at the server arguments for a filepath. You might then use list_files and read_file to explore the files in the repository, and use replace_in_file to make changes to the files.
+        The user may ask to add tools or resources that may make sense to add to an existing MCP server (listed under 'Connected MCP Servers' above: {{ server_names }}, e.g. if it would use the same API. This would be possible if you can locate the MCP server repository on the user's system by looking at the server arguments for a filepath. You might then use list_files and read_file to explore the files in the repository, and use replace_in_file to make changes to the files.
 
         However some MCP servers may be running from installed packages rather than a local repository, in which case it may make more sense to create a new MCP server.
 
@@ -542,7 +548,8 @@ class McpExecutor:
         Remember: The MCP documentation and example provided above are to help you understand and work with existing MCP servers or create new ones when requested by the user. You already have access to tools and capabilities that can be used to accomplish a wide range of tasks.
         """
         return {
-            "connected_servers_info": self.get_connected_servers_info()
+            "connected_servers_info": self.get_connected_servers_info(),
+            "server_names": self.get_server_names()
         }
 
     async def extract_mcp_calls(content: str) -> List[Union[McpToolCall, McpResourceAccess]]:
@@ -607,15 +614,19 @@ class McpExecutor:
         tools = self.extract_mcp_calls(content)
         while tools:
             results = await self.execute_mcp_tools(tools)
+            str_results = "\n\n".join(self.format_mcp_result(result) for result in results)            
             new_conversations += [{
                 "role": "assistant",
-                "content": f"Tool results: {','.join(results)}"
+                "content": f"Tool results: {str_results}"
+            },{
+                "role": "user",
+                "content": "continue"
             }]
             v = self.llm.chat_oai(conversations=new_conversations)
             content = v[0].output        
             tools = self.extract_mcp_calls(content)
             
-        return tools
+        return new_conversations
 
     def format_mcp_result(self, result: Any) -> str:
         """
