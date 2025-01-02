@@ -65,8 +65,9 @@ def process_file_in_multi_process(
             ]
         logger.info(f"Load file {file_path} in {time.time() - start_time}")
         return v
-    except Exception as e:
+    except (UnboundLocalError, NameError, AttributeError, ValueError, TypeError, Exception) as e:
         logger.error(f"Error processing file {file_path}: {str(e)}")
+        logger.error(f"Error type: {type(e).__name__}")
         return []
 
 
@@ -123,7 +124,8 @@ def process_file_local(file_path: str) -> List[SourceCode]:
             ]
         logger.info(f"Load file {file_path} in {time.time() - start_time}")
         return v
-    except Exception as e:
+    except (UnboundLocalError, NameError, AttributeError, ValueError, TypeError, Exception) as e:
         logger.error(f"Error processing file {file_path}: {str(e)}")
+        logger.error(f"Error type: {type(e).__name__}")
         traceback.print_exc()
         return []
