@@ -1,3 +1,4 @@
+import time
 from typing import List, Dict, Tuple
 from autocoder.common.types import Mode, CodeGenerateResult
 from autocoder.common import AutoCoderArgs
@@ -311,6 +312,7 @@ class CodeAutoGenerateStrictDiff:
             for result in results:
                 conversations_list.append(
                     conversations + [{"role": "assistant", "content": result}])
+            print(f"Code generation time cost: {time.monotonic() - start_time} seconds")
         else:
             results = []
             conversations_list = []
@@ -319,6 +321,7 @@ class CodeAutoGenerateStrictDiff:
                     conversations=conversations, llm_config=llm_config)
                 results.append(v[0].output)
                 conversations_list.append(conversations + [{"role": "assistant", "content": v[0].output}])
+            print(f"Code generation time cost: {time.monotonic() - start_time} seconds")
 
         if self.args.request_id and not self.args.skip_events:
             _ = queue_communicate.send_event(
