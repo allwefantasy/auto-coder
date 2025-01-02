@@ -6,6 +6,7 @@ import byzerllm
 import re
 from pydantic import BaseModel, Field
 from loguru import logger
+from datetime import datetime
 
 
 class McpToolCall(BaseModel):
@@ -615,6 +616,47 @@ class McpExecutor:
             tools = self.extract_mcp_calls(content)
             
         return tools
+
+    def format_mcp_result(self, result: Any) -> str:
+        """
+        Format MCP tool or resource result into a human-readable string.
+
+        Args:
+            result: The result from MCP tool call or resource access
+
+        Returns:
+            Formatted string representation of the result
+        """
+        if result is None:
+            return "No result"
+        
+        if isinstance(result, str):
+            return result
+            
+        if isinstance(result, (int, float, bool)):
+            return str(result)
+            
+        if isinstance(result, dict):
+            try:
+                return json.dumps(result, indent=2, ensure_ascii=False)
+            except:
+                return str(result)
+                
+        if isinstance(result, list):
+            if all(isinstance(item, (str, int, float, bool)) for item in result):
+                return "\n".join(str(item) for item in result)
+            return "\n".join(self.format_mcp_result(item) for item in result)
+            
+        if isinstance(result, BaseModel):
+            try:
+                return result.json(indent=2, ensure_ascii=False)
+            except:
+                return str(result)
+                
+        if isinstance(result, datetime):
+            return result.isoformat()
+            
+        return str(result)
 
     async def execute_mcp_tools(self, tools: List[Union[McpToolCall, McpResourceAccess]]) -> List[Any]:
         """
