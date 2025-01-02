@@ -68,7 +68,6 @@ class McpHub:
     """
 
     _instance = None
-    mcp_settings_file_path = Path.home() / ".auto-coder" / "mcp" / "settings.json"
 
     def __new__(cls, settings_path: str):
         if cls._instance is None:
@@ -81,11 +80,6 @@ class McpHub:
             return
         """Initialize the MCP Hub with a path to settings file"""
         self.settings_path = Path(settings_path)
-
-    @classmethod
-    def get_mcp_settings_file_path(cls) -> str:
-        """Get the default MCP settings file path"""
-        return str(cls.mcp_settings_file_path)
         self.connections: Dict[str, McpConnection] = {}
         self.is_connecting = False
 
