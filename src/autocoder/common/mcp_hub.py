@@ -141,14 +141,14 @@ class McpHub:
         """
         if name in self.connections:
             try:
-            connection = self.connections[name]
-            if connection.transport:
-                # Explicitly close the transport
-                await connection.transport[0].aclose()
-                await connection.transport[1].aclose()
-                await connection.transport.__aexit__(None, None, None)
-            await connection.session.aclose()
-            del self.connections[name]
+                connection = self.connections[name]
+                if connection.transport:
+                    # Explicitly close the transport
+                    await connection.transport[0].aclose()
+                    await connection.transport[1].aclose()
+                    await connection.transport.__aexit__(None, None, None)
+                await connection.session.aclose()
+                del self.connections[name]
             except Exception as e:
                 logger.error(f"Error closing connection to {name}: {e}")
                 raise
