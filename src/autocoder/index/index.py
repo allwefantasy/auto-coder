@@ -702,6 +702,28 @@ def build_index_and_filter_files(
             phase_start = time.monotonic()
             verified_files = {}
             temp_files = list(final_files.values())
+            verification_results = []
+            
+            def print_verification_results(results):
+                from rich.table import Table
+                from rich.console import Console
+                
+                console = Console()
+                table = Table(title="File Relevance Verification Results", show_header=True, header_style="bold magenta")
+                table.add_column("File Path", style="cyan", no_wrap=True)
+                table.add_column("Score", justify="right", style="green")
+                table.add_column("Status", style="yellow")
+                table.add_column("Reason/Error")
+                
+                for file_path, score, status, reason in results:
+                    table.add_row(
+                        file_path,
+                        str(score) if score is not None else "N/A",
+                        status,
+                        reason
+                    )
+                
+                console.print(table)
 
             def verify_single_file(file: TargetFile):
                 for source in sources:
@@ -713,13 +735,20 @@ def build_index_and_filter_files(
                                 query=args.query
                             )
                             if result.relevant_score >= args.verify_file_relevance_score:
-                                return file.file_path, TargetFile(
+                                verified_files[file.file_path] = TargetFile(
                                     file_path=file.file_path,
                                     reason=f"Score:{result.relevant_score}, {result.reason}"
                                 )
+                                return file.file_path, result.relevant_score, "PASS", result.reason
+                            else:
+                                return file.file_path, result.relevant_score, "FAIL", result.reason
                         except Exception as e:
-                            logger.warning(
-                                f"Failed to verify file {file.file_path}: {str(e)}")
+                            error_msg = str(e)
+                            verified_files[file.file_path] = TargetFile(
+                                file_path=file.file_path,
+                                reason=f"Verification failed: {error_msg}"
+                            )
+                            return file.file_path, None, "ERROR", error_msg
                 return None
 
             with ThreadPoolExecutor(max_workers=args.index_filter_workers) as executor:
@@ -728,15 +757,18 @@ def build_index_and_filter_files(
                 for future in as_completed(futures):
                     result = future.result()
                     if result:
-                        file_path, target_file = result
-                        verified_files[file_path] = target_file
+                        verification_results.append(result)
                         time.sleep(args.anti_quota_limit)
 
+            # Print verification results in a table
+            print_verification_results(verification_results)
+            
             stats["verified_files"] = len(verified_files)
             phase_end = time.monotonic()
             stats["timings"]["relevance_verification"] = phase_end - phase_start
 
-            final_files = verified_files if verified_files else final_files
+            # Keep all files, not just verified ones
+            final_files = verified_files
 
     def display_table_and_get_selections(data):
         from prompt_toolkit.shortcuts import checkboxlist_dialog
