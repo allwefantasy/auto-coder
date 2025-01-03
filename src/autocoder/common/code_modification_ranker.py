@@ -14,15 +14,9 @@ class CodeModificationRanker:
     def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs):
         self.llm = llm
         self.args = args     
-        rerank_models = self.llm.get_sub_client("generate_rerank_model")
-        if rerank_models:
-            if isinstance(rerank_models, list):
-                # If multiple rerank models are configured, use the first one
-                self.rerank_llm = rerank_models[0]
-            else:
-                self.rerank_llm = rerank_models
-        else:
-            self.rerank_llm = self.llm
+        self.llms = self.llm.get_sub_client("generate_rerank_model") or [self.llm]
+        if not isinstance(self.llms, list):
+            self.llms = [self.llms]
     
     @byzerllm.prompt()
     def _rank_modifications(self, s:CodeGenerateResult) -> str:
