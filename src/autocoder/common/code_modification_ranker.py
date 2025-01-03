@@ -64,15 +64,19 @@ class CodeModificationRanker:
         generate_times = self.args.generate_times_same_model
         
         try:
-            # Create a thread pool with generate_times workers
-            with ThreadPoolExecutor(max_workers=generate_times) as executor:
-                # Submit tasks
-                futures = [
-                    executor.submit(
-                        self._rank_modifications.with_llm(self.rerank_llm).with_return_type(RankResult).run,
-                        generate_result
-                    ) for _ in range(generate_times)
-                ]
+            # Create a thread pool with (number of models * generate_times) workers
+            total_tasks = len(self.llms) * generate_times
+            with ThreadPoolExecutor(max_workers=total_tasks) as executor:
+                # Submit tasks for each model and generate_times
+                futures = []
+                for llm in self.llms:
+                    for _ in range(generate_times):
+                        futures.append(
+                            executor.submit(
+                                self._rank_modifications.with_llm(llm).with_return_type(RankResult).run,
+                                generate_result
+                            )
+                        )
                 
                 # Collect all results
                 results = []
