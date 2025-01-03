@@ -800,7 +800,7 @@ def build_index_and_filter_files(
         console = Console()
 
         table = Table(
-            title="Target Files You Selected",
+            title="Files Used as Context",
             show_header=True,
             header_style="bold magenta",
         )
