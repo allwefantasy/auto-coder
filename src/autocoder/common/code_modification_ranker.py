@@ -62,10 +62,9 @@ class CodeModificationRanker:
             
         logger.info(f"Start ranking {len(generate_result.contents)} candidates")
         generate_times = self.args.generate_times_same_model
-        
+        total_tasks = len(self.llms) * generate_times
         try:
-            # Create a thread pool with (number of models * generate_times) workers
-            total_tasks = len(self.llms) * generate_times
+            # Create a thread pool with (number of models * generate_times) workers            
             with ThreadPoolExecutor(max_workers=total_tasks) as executor:
                 # Submit tasks for each model and generate_times
                 futures = []
@@ -107,7 +106,7 @@ class CodeModificationRanker:
                 elapsed = time.time() - start_time
                 # Format scores for logging
                 score_details = ", ".join([f"candidate {i}: {candidate_scores[i]:.2f}" for i in sorted_candidates])
-                logger.info(f"Ranking completed in {elapsed:.2f}s, best candidate index: {sorted_candidates[0]}, scores: {score_details}")
+                logger.info(f"Ranking completed in {elapsed:.2f}s, total voters: {total_tasks}, best candidate index: {sorted_candidates[0]}, scores: {score_details}")
                 
                 rerank_contents = [generate_result.contents[i] for i in sorted_candidates]
                 rerank_conversations = [generate_result.conversations[i] for i in sorted_candidates]
