@@ -6,7 +6,7 @@ from pydantic import BaseModel,Field
 import requests
 from enum import Enum
 import byzerllm
-from langchain_core.prompts import PromptTemplate
+from byzerllm.utils import format_str_jinja2
 from autocoder.utils.rest import HttpDoc
 
 # Search engine related. You don't really need to change this.
@@ -51,10 +51,7 @@ def llm_rerank(llm:byzerllm.ByzerLLM,query:str,docs:List[str],top_k:int=1):
         "{context_str}\n"
         "Question: {query_str}\n"
         "Answer:\n"
-    )
-    DEFAULT_CHOICE_SELECT_PROMPT = PromptTemplate.from_template(
-        DEFAULT_CHOICE_SELECT_PROMPT_TMPL
-    )
+    )    
 
     context_str = ""
     for i,metric in enumerate(docs):
@@ -64,7 +61,7 @@ def llm_rerank(llm:byzerllm.ByzerLLM,query:str,docs:List[str],top_k:int=1):
 
     r = llm.chat_oai(conversations=[{
         "role": "user",
-        "content": DEFAULT_CHOICE_SELECT_PROMPT.format(context_str=context_str,query_str=query_str)
+        "content": format_str_jinja2(DEFAULT_CHOICE_SELECT_PROMPT_TMPL,context_str=context_str,query_str=query_str)
     }])
     
     r = llm.chat_oai(conversations=[{
