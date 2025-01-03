@@ -52,6 +52,8 @@ class CodeModificationRanker:
 
     def rank_modifications(self, generate_result: CodeGenerateResult) -> CodeGenerateResult:
         import time
+        from collections import defaultdict
+
         start_time = time.time()
         
         # 如果只有一个候选，直接返回
@@ -73,29 +75,42 @@ class CodeModificationRanker:
                     ) for _ in range(generate_times)
                 ]
                 
-                # Process results as they complete
+                # Collect all results
+                results = []
                 for future in as_completed(futures):
                     try:
                         v = future.result()
-                        # If we get a valid result, use it and cancel other tasks
-                        for f in futures:
-                            f.cancel()
-                            
-                        elapsed = time.time() - start_time
-                        logger.info(f"Ranking completed in {elapsed:.2f}s, best candidate index: {v.rank_result[0]}")
-                        
-                        rerank_contents = [generate_result.contents[i] for i in v.rank_result]
-                        rerank_conversations = [generate_result.conversations[i] for i in v.rank_result]
-                        return CodeGenerateResult(contents=rerank_contents,conversations=rerank_conversations)
+                        results.append(v.rank_result)
                     except Exception as e:
                         logger.warning(f"Ranking request failed: {str(e)}")
                         logger.debug(traceback.format_exc())
                         continue
+                
+                if not results:
+                    raise Exception("All ranking requests failed")
+                
+                # Calculate scores for each candidate
+                candidate_scores = defaultdict(float)
+                for rank_result in results:
+                    for idx, candidate_id in enumerate(rank_result):
+                        # Score is 1/(position + 1) since position starts from 0
+                        candidate_scores[candidate_id] += 1.0 / (idx + 1)
+                
+                # Sort candidates by score in descending order
+                sorted_candidates = sorted(candidate_scores.keys(), 
+                                         key=lambda x: candidate_scores[x], 
+                                         reverse=True)
+                
+                elapsed = time.time() - start_time
+                logger.info(f"Ranking completed in {elapsed:.2f}s, best candidate index: {sorted_candidates[0]}")
+                
+                rerank_contents = [generate_result.contents[i] for i in sorted_candidates]
+                rerank_conversations = [generate_result.conversations[i] for i in sorted_candidates]
+                return CodeGenerateResult(contents=rerank_contents,conversations=rerank_conversations)
+                
         except Exception as e:
             logger.error(f"Ranking process failed: {str(e)}")
             logger.debug(traceback.format_exc())
-        
-        # If all requests failed, use the original codes
-        elapsed = time.time() - start_time
-        logger.warning(f"All ranking requests failed in {elapsed:.2f}s, using original order")
-        return generate_result
+            elapsed = time.time() - start_time
+            logger.warning(f"Ranking failed in {elapsed:.2f}s, using original order")
+            return generate_result
