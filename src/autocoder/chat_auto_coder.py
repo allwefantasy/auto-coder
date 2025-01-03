@@ -2482,8 +2482,11 @@ def main():
         except EOFError:
             try:
                 save_memory()
-                if get_mcp_server():
-                    get_mcp_server().stop()                
+                try:
+                    if get_mcp_server():
+                        get_mcp_server().stop()                
+                except Exception as e:
+                    pass
             except Exception as e:
                 print(
                     f"\033[91mAn error occurred while saving memory:\033[0m \033[93m{type(e).__name__}\033[0m - {str(e)}"

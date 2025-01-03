@@ -47,3 +47,4 @@ pydub
 youtube-transcript-api
 SpeechRecognition
 pathvalidate
+mcp

@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.209
+Version: 0.1.212
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -57,6 +57,7 @@ Requires-Dist: pydub
 Requires-Dist: youtube-transcript-api
 Requires-Dist: SpeechRecognition
 Requires-Dist: pathvalidate
+Requires-Dist: mcp
 
 <p align="center">
   <picture>    
