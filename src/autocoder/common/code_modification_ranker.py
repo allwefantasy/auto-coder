@@ -102,7 +102,9 @@ class CodeModificationRanker:
                                          reverse=True)
                 
                 elapsed = time.time() - start_time
-                logger.info(f"Ranking completed in {elapsed:.2f}s, best candidate index: {sorted_candidates[0]}")
+                # Format scores for logging
+                score_details = ", ".join([f"candidate {i}: {candidate_scores[i]:.2f}" for i in sorted_candidates])
+                logger.info(f"Ranking completed in {elapsed:.2f}s, best candidate index: {sorted_candidates[0]}, scores: {score_details}")
                 
                 rerank_contents = [generate_result.contents[i] for i in sorted_candidates]
                 rerank_conversations = [generate_result.conversations[i] for i in sorted_candidates]
