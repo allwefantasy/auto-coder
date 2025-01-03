@@ -854,20 +854,27 @@ def build_index_and_filter_files(
     total_time = time.monotonic() - total_start_time
     stats["timings"]["total"] = total_time
 
-    # Print final statistics
-    logger.info("\n=== Build Index and Filter Files Summary ===")
-    logger.info(f"Total files in project: {stats['total_files']}")
-    logger.info(f"Files indexed: {stats['indexed_files']}")
-    logger.info(f"Files after Level 1 filter: {stats['level1_filtered']}")
-    logger.info(f"Files after Level 2 filter: {stats['level2_filtered']}")
-    logger.info(
-        f"Files after relevance verification: {stats.get('verified_files', 0)}")
-    logger.info(f"Final files selected: {stats['final_files']}")
-    logger.info("\nTime breakdown:")
-    for phase, duration in stats["timings"].items():
-        logger.info(f"  - {phase}: {duration:.2f}s")
-    logger.info(f"Total execution time: {total_time:.2f}s")
-    logger.info("==========================================\n")
+    # Print final statistics in a more structured way
+    summary = f"""
+=== Indexing and Filtering Summary ===
+• Total files scanned: {stats['total_files']}
+• Files indexed: {stats['indexed_files']}
+• Files filtered:
+  - Level 1 (query-based): {stats['level1_filtered']}
+  - Level 2 (related files): {stats['level2_filtered']}
+  - Relevance verified: {stats.get('verified_files', 0)}
+• Final files selected: {stats['final_files']}
+
+=== Time Breakdown ===
+• Index build: {stats['timings'].get('build_index', 0):.2f}s
+• Level 1 filter: {stats['timings'].get('level1_filter', 0):.2f}s
+• Level 2 filter: {stats['timings'].get('level2_filter', 0):.2f}s
+• Relevance check: {stats['timings'].get('relevance_verification', 0):.2f}s
+• File selection: {stats['timings'].get('file_selection', 0):.2f}s
+• Total time: {total_time:.2f}s
+====================================
+"""
+    logger.info(summary)
 
     if args.request_id and not args.skip_events:
         queue_communicate.send_event(
