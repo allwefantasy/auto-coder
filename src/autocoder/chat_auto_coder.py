@@ -314,54 +314,29 @@ def initialize_system():
     except subprocess.CalledProcessError:
         print_status(get_message("model_error"), "error")
 
-    # If deepseek_chat is not available, prompt user to choose a provider
-    print_status(get_message("model_not_available"), "warning")
-    choice = radiolist_dialog(
-        title=get_message("provider_selection"),
-        text=get_message("provider_selection"),
-        values=[
-            ("1", "硅基流动(https://siliconflow.cn)"),
-            ("2", "Deepseek官方(https://www.deepseek.com/)"),
-        ],
-    ).run()
-
-    if choice is None:
-        print_status(get_message("no_provider"), "error")
-        return
-
+    # If deepseek_chat is not available
+    print_status(get_message("model_not_available"), "warning")        
     api_key = prompt(HTML(f"<b>{get_message('enter_api_key')} </b>"))
-
-    if choice == "1":
-        print_status(get_message("deploying_model").format("硅基流动"), "")
-        deploy_cmd = [
-            "easy-byzerllm",
-            "deploy",
-            "deepseek-ai/deepseek-v2-chat",
-            "--token",
-            api_key,
-            "--alias",
-            "deepseek_chat",
-        ]
-    else:
-        print_status(get_message("deploying_model").format("Deepseek官方"), "")
-        deploy_cmd = [
-            "byzerllm",
-            "deploy",
-            "--pretrained_model_type",
-            "saas/openai",
-            "--cpus_per_worker",
-            "0.001",
-            "--gpus_per_worker",
-            "0",
-            "--worker_concurrency",
-            "1000",
-            "--num_workers",
-            "1",
-            "--infer_params",
-            f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
-            "--model",
-            "deepseek_chat",
-        ]
+    
+    print_status(get_message("deploying_model").format("Deepseek官方"), "")
+    deploy_cmd = [
+        "byzerllm",
+        "deploy",
+        "--pretrained_model_type",
+        "saas/openai",
+        "--cpus_per_worker",
+        "0.001",
+        "--gpus_per_worker",
+        "0",
+        "--worker_concurrency",
+        "1000",
+        "--num_workers",
+        "1",
+        "--infer_params",
+        f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
+        "--model",
+        "deepseek_chat",
+    ]
 
     try:
         subprocess.run(deploy_cmd, check=True)
