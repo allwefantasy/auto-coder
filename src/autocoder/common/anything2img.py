@@ -1,18 +1,13 @@
 import os
 from typing import List, Optional, Dict, Any, Tuple
 import fitz  # PyMuPDF
-from PIL import Image
 import byzerllm
 from autocoder.common import AutoCoderArgs
 from loguru import logger
-import platform
 import pydantic
 from docx import Document
-import base64
-import json
-from byzerllm.utils.client import code_utils
-import tempfile
-
+from spire.doc import Document
+from spire.doc.common import ImageType
 class ImageInfo(pydantic.BaseModel):
     """
     图片信息
@@ -76,16 +71,7 @@ class Anything2Img:
     def convert_pdf(self, file_path: str) -> List[str]:
         """转换PDF文件为图片列表"""
         pdf_document = fitz.open(file_path)
-        image_paths = []        
-       
-        # 分别保存每一页
-        for page_num in range(len(pdf_document)):
-            page = pdf_document[page_num]
-            pix = page.get_pixmap()
-            image_path = os.path.join(self.output_dir, f"{os.path.basename(file_path)}_page{page_num + 1}.png")
-            pix.save(image_path)
-            image_paths.append(image_path)
-        
+        image_paths = []                             
         try:
             # 分别保存每一页
             for page_num in range(len(pdf_document)):
@@ -101,24 +87,14 @@ class Anything2Img:
 
     def convert_docx(self, file_path: str) -> List[str]:
         """使用 Spire.Doc 将 Word 文档直接转换为图片"""
-        from spire.doc import Document
-        from spire.doc.common import ImageType
+       
 
         # 创建 Spire.Doc 文档对象
         doc = Document()
         doc.LoadFromFile(file_path)
 
         # 设置图片保存选项
-        image_paths = []
-        for i in range(doc.GetPageCount()):
-            # 将每一页保存为图片
-            image_path = os.path.join(
-                self.output_dir, 
-                f"{os.path.basename(file_path)}_page{i+1}.png"
-            )
-            doc.SaveToImages(i, ImageType.Bitmap, image_path)
-            image_paths.append(image_path)
-
+        image_paths = []        
         try:
             # 将每一页保存为图片
             for i in range(doc.GetPageCount()):
