@@ -14,8 +14,6 @@ class ImageInfo(pydantic.BaseModel):
     """
     coordinates: List[float] = pydantic.Field(..., description="图片坐标 [x1,y1,x2,y2]")
     text: Optional[str] = pydantic.Field(None, description="图片描述")
-    width: int = pydantic.Field(..., description="图片宽度")
-    height: int = pydantic.Field(..., description="图片高度")
 
 class Page(pydantic.BaseModel):
     """
@@ -43,7 +41,8 @@ class Anything2Img:
     @byzerllm.prompt()
     def analyze_image(self, image_path: str) -> str:
         """
-        分析下面的图片，返回该图片包含的文本内容以及图片位置信息（如果有）。请遵循以下格式返回：
+        {{ image }}
+        分析图片，返回该图片包含的文本内容以及图片位置信息（如果有，图片里有部分区域也是图片）。请遵循以下格式返回：
 
         ```json
         {
@@ -51,9 +50,7 @@ class Anything2Img:
             "images": [
                 {
                     "coordinates": [x1, y1, x2, y2],
-                    "text": "对图片的描述",
-                    "width": 图片宽度,
-                    "height": 图片高度
+                    "text": "对图片的描述"                    
                 }
             ],
             "width": 页面宽度,
@@ -62,8 +59,10 @@ class Anything2Img:
         ```
 
         注意：
-        1. 图片坐标使用相对位置，即x和y都除以页面宽度和高度得到0-1之间的值
+        1. 其中x1,y1是左上角坐标，x2,y2是右下角坐标，坐标使用相对位置，即x和y都除以页面宽度和高度得到0-1之间的值
         2. 文本内容应保持原有的段落格式
+        3. width和height是页面宽度，高度,要求整数类型
+        4. 格局图片中文本和图片的位置关系，在文本中使用 <image_placeholder> 来表示图片。
         """
         image = byzerllm.Image.load_image_from_path(image_path)
         return {"image": image}
@@ -132,7 +131,7 @@ class Anything2Img:
         
         pages: List[Page] = []
         # 分析每个图片
-        for image_path in image_paths:
+        for image_path in image_paths[0:2]:
             result = self.analyze_image.with_llm(self.vl_model).with_return_type(Page).run(image_path)
             pages.append(result)
             logger.info(f"Analyzed {image_path}")
