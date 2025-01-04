@@ -131,73 +131,48 @@ class Anything2Img:
         
         pages: List[Page] = []
         # 分析每个图片
-        for image_path in image_paths[0:2]:
+        for image_path in image_paths:
             result = self.analyze_image.with_llm(self.vl_model).with_return_type(Page).run(image_path)
             pages.append(result)
             logger.info(f"Analyzed {image_path}")
         
         # 生成Markdown内容
         markdown_content = []
-        for page in pages:
-            # 添加文本内容
-            text_lines = page.text.split('\n')
-            current_position = 0
-            
-            # 处理图片和文本的混合
-            for line in text_lines:
-                # 检查是否需要在这个位置插入图片
-                for img in page.images:
-                    relative_position = img.coordinates[1]  # 使用y1坐标作为相对位置
-                    if (current_position/len(text_lines)) >= relative_position:
-                        # 根据坐标截取图片区域
-                        import fitz  # PyMuPDF
-                        doc = fitz.open(image_path)
-                        page_num = int(os.path.basename(image_path).split("_page")[1].split(".")[0]) - 1
-                        page = doc[page_num]
-                        
-                        # 将相对坐标转换为绝对坐标
-                        x1 = int(img.coordinates[0] * page.rect.width)
-                        y1 = int(img.coordinates[1] * page.rect.height)
-                        x2 = int(img.coordinates[2] * page.rect.width)
-                        y2 = int(img.coordinates[3] * page.rect.height)
-                        
-                        # 截取区域
-                        clip = fitz.Rect(x1, y1, x2, y2)
-                        pix = page.get_pixmap(matrix=fitz.Matrix(1, 1), clip=clip)
-                        
-                        # 保存截取的图片
-                        cropped_image_path = os.path.join(images_dir, f"{os.path.basename(image_path).split('.')[0]}_crop_{x1}_{y1}_{x2}_{y2}.png")
-                        pix.save(cropped_image_path)
-                        
-                        # 计算图片在markdown中的显示位置
-                        image_placeholder = f"![{img.text}]({cropped_image_path})"
-                        markdown_content.append(image_placeholder)
-                        # 移除已处理的图片
-                        page.images = [i for i in page.images if i != img]
-                
-                markdown_content.append(line)
-                current_position += 1
-            
-            # 添加剩余未插入的图片
+        
+        # 遍历每个页面和对应的图片路径
+        for page, image_path in zip(pages, image_paths):
+            # 处理页面中的每个图片
             for img in page.images:
-                # 同样处理剩余图片
-                import fitz
+                # 打开图片文件
                 doc = fitz.open(image_path)
                 page_num = int(os.path.basename(image_path).split("_page")[1].split(".")[0]) - 1
                 page = doc[page_num]
                 
+                # 将相对坐标转换为绝对坐标
                 x1 = int(img.coordinates[0] * page.rect.width)
                 y1 = int(img.coordinates[1] * page.rect.height)
                 x2 = int(img.coordinates[2] * page.rect.width)
                 y2 = int(img.coordinates[3] * page.rect.height)
                 
+                # 截取图片区域
                 clip = fitz.Rect(x1, y1, x2, y2)
                 pix = page.get_pixmap(matrix=fitz.Matrix(1, 1), clip=clip)
                 
-                cropped_image_path = os.path.join(images_dir, f"{os.path.basename(image_path).split('.')[0]}_crop_{x1}_{y1}_{x2}_{y2}.png")
+                # 保存截取的图片
+                cropped_image_path = os.path.join(
+                    images_dir, 
+                    f"{os.path.basename(image_path).split('.')[0]}_crop_{x1}_{y1}_{x2}_{y2}.png"
+                )
                 pix.save(cropped_image_path)
                 
-                image_placeholder = f"![{img.text}]({cropped_image_path})"
-                markdown_content.append(image_placeholder)
+                # 将图片路径转换为Markdown格式
+                image_markdown = f"![{img.text}]({cropped_image_path})"
+                
+                # 替换文本中的<image_placeholder>为实际的图片Markdown
+                page.text = page.text.replace("<image_placeholder>", image_markdown, 1)
+            
+            # 将处理后的页面文本添加到Markdown内容中
+            markdown_content.append(page.text)
         
-        return '\n'.join(markdown_content)
+        # 将所有页面内容合并为一个Markdown文档
+        return '\n\n'.join(markdown_content)
