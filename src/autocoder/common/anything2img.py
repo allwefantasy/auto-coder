@@ -77,7 +77,8 @@ class Anything2Img:
             for page_num in range(len(pdf_document)):
                 page = pdf_document[page_num]
                 pix = page.get_pixmap()
-                image_path = os.path.join(self.output_dir, f"{os.path.basename(file_path)}_page{page_num + 1}.png")
+                basename = os.path.basename(file_path).replace(" ", "_")
+                image_path = os.path.join(self.output_dir, f"{basename}_page{page_num + 1}.png")
                 pix.save(image_path)
                 image_paths.append(image_path)
         finally:
@@ -97,7 +98,8 @@ class Anything2Img:
             # 将每一页保存为图片
             for i in range(doc.GetPageCount()):
                 imageStream = doc.SaveImageToStreams(i, ImageType.Bitmap)
-                image_path = os.path.join(self.output_dir, f"{os.path.basename(file_path)}_page{i + 1}.png")
+                basename = os.path.basename(file_path).replace(" ", "_")
+                image_path = os.path.join(self.output_dir, f"{basename}_page{i + 1}.png")
                 with open(image_path, 'wb') as imageFile:
                     imageFile.write(imageStream.ToArray())
                 image_paths.append(image_path)
