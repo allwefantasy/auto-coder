@@ -7,7 +7,7 @@ from loguru import logger
 import pydantic
 from docx import Document
 from spire.doc import Document
-from spire.doc.common import ImageType
+from spire.doc import ImageType
 class ImageInfo(pydantic.BaseModel):
     """
     图片信息
