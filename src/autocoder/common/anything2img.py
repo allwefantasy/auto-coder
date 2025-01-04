@@ -94,20 +94,28 @@ class Anything2Img:
         return image_paths
 
     def convert_docx(self, file_path: str) -> List[str]:
-        """转换Word文档为PDF后再转为图片"""
-        # 首先转换为PDF
-        pdf_path = os.path.join(tempfile.gettempdir(), f"{os.path.basename(file_path)}.pdf")
-        doc = Document(file_path)
-        
-        
-        
-        # 转换PDF为图片
-        image_paths = self.convert_pdf(pdf_path)
-        
-        # 清理临时PDF文件
-        if os.path.exists(pdf_path):
-            os.remove(pdf_path)
-            
+        """使用 Spire.Doc 将 Word 文档直接转换为图片"""
+        from spire.doc import Document
+        from spire.doc.common import ImageType
+
+        # 创建 Spire.Doc 文档对象
+        doc = Document()
+        doc.LoadFromFile(file_path)
+
+        # 设置图片保存选项
+        image_paths = []
+        for i in range(doc.GetPageCount()):
+            # 将每一页保存为图片
+            image_path = os.path.join(
+                self.output_dir, 
+                f"{os.path.basename(file_path)}_page{i+1}.png"
+            )
+            doc.SaveToImages(i, ImageType.Bitmap, image_path)
+            image_paths.append(image_path)
+
+        # 关闭文档
+        doc.Close()
+
         return image_paths
 
     def convert(self, file_path: str) -> List[str]:
