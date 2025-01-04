@@ -31,7 +31,7 @@ class Page(pydantic.BaseModel):
     width: int = pydantic.Field(..., description="页面宽度")
     height: int = pydantic.Field(..., description="页面高度")
 
-class Anything2ImagesV2:
+class Anything2Img:
     def __init__(
         self,
         llm: byzerllm.ByzerLLM,
@@ -80,35 +80,15 @@ class Anything2ImagesV2:
     def convert_pdf(self, file_path: str) -> List[str]:
         """转换PDF文件为图片列表"""
         pdf_document = fitz.open(file_path)
-        image_paths = []
-        
-        if self.args.single_file:
-            # 合并所有页面为一张大图
-            total_height = sum(page.rect.height for page in pdf_document)
-            max_width = max(page.rect.width for page in pdf_document)
-            
-            # 创建一个新的PIL图像
-            merged_image = Image.new('RGB', (int(max_width), int(total_height)), 'white')
-            y_offset = 0
-            
-            for page in pdf_document:
-                pix = page.get_pixmap()
-                img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                merged_image.paste(img, (0, y_offset))
-                y_offset += pix.height
-            
-            # 保存合并后的图片
-            merged_image_path = os.path.join(self.output_dir, f"{os.path.basename(file_path)}_merged.png")
-            merged_image.save(merged_image_path)
-            image_paths.append(merged_image_path)
-        else:
-            # 分别保存每一页
-            for page_num in range(len(pdf_document)):
-                page = pdf_document[page_num]
-                pix = page.get_pixmap()
-                image_path = os.path.join(self.output_dir, f"{os.path.basename(file_path)}_page{page_num + 1}.png")
-                pix.save(image_path)
-                image_paths.append(image_path)
+        image_paths = []        
+       
+        # 分别保存每一页
+        for page_num in range(len(pdf_document)):
+            page = pdf_document[page_num]
+            pix = page.get_pixmap()
+            image_path = os.path.join(self.output_dir, f"{os.path.basename(file_path)}_page{page_num + 1}.png")
+            pix.save(image_path)
+            image_paths.append(image_path)
         
         pdf_document.close()
         return image_paths
@@ -119,10 +99,7 @@ class Anything2ImagesV2:
         pdf_path = os.path.join(tempfile.gettempdir(), f"{os.path.basename(file_path)}.pdf")
         doc = Document(file_path)
         
-        # 使用已有的转换逻辑
-        from autocoder.common.anything2images import Anything2Images
-        converter = Anything2Images(self.llm, self.args)
-        converter.convert_word_to_pdf_v2(file_path, pdf_path)
+        
         
         # 转换PDF为图片
         image_paths = self.convert_pdf(pdf_path)
