@@ -52,12 +52,15 @@ class CodeAutoGenerate:
 
         {%- if content %}
         下面是一些文件路径以及每个文件对应的源码：
-
+        <files>
         {{ content }}
+        </files>
         {%- endif %}
 
         {%- if context %}
+        <extra_context>
         {{ context }}
+        </extra_context>
         {%- endif %}
 
         下面是用户的需求：

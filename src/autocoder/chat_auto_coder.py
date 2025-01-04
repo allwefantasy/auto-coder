@@ -1607,6 +1607,8 @@ def coding(query: str):
             == "true",
         }
 
+        yaml_config["context"] = ""
+
         for key, value in conf.items():
             converted_value = convert_config_value(key, value)
             if converted_value is not None:
@@ -1618,7 +1620,7 @@ def coding(query: str):
 
         # handle image
         v = Image.convert_image_paths_from(query)
-        yaml_config["query"] = v
+        yaml_config["query"] = v        
 
         # Add context for active groups and their query prefixes
         if current_groups:
@@ -1664,12 +1666,13 @@ def coding(query: str):
 
             yaml_config[
                 "context"
-            ] += f"下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码。\n\n"
+            ] += f"下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码。\n\n<history>\n"
             for conv in conversations:
                 if conv["role"] == "user":
                     yaml_config["context"] += f"用户: {conv['content']}\n"
                 elif conv["role"] == "assistant":
                     yaml_config["context"] += f"你: {conv['content']}\n"
+            yaml_config["context"] += "</history>\n"
 
         yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
