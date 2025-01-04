@@ -86,7 +86,17 @@ class Anything2Img:
             pix.save(image_path)
             image_paths.append(image_path)
         
-        pdf_document.close()
+        try:
+            # 分别保存每一页
+            for page_num in range(len(pdf_document)):
+                page = pdf_document[page_num]
+                pix = page.get_pixmap()
+                image_path = os.path.join(self.output_dir, f"{os.path.basename(file_path)}_page{page_num + 1}.png")
+                pix.save(image_path)
+                image_paths.append(image_path)
+        finally:
+            # 确保PDF文档关闭
+            pdf_document.close()
         return image_paths
 
     def convert_docx(self, file_path: str) -> List[str]:
@@ -109,8 +119,18 @@ class Anything2Img:
             doc.SaveToImages(i, ImageType.Bitmap, image_path)
             image_paths.append(image_path)
 
-        # 关闭文档
-        doc.Close()
+        try:
+            # 将每一页保存为图片
+            for i in range(doc.GetPageCount()):
+                image_path = os.path.join(
+                    self.output_dir, 
+                    f"{os.path.basename(file_path)}_page{i+1}.png"
+                )
+                doc.SaveToImages(i, ImageType.Bitmap, image_path)
+                image_paths.append(image_path)
+        finally:
+            # 确保文档关闭
+            doc.Close()
 
         return image_paths
 
