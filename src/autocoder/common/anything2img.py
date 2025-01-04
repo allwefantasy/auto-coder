@@ -36,18 +36,14 @@ class Anything2Img:
         self,
         llm: byzerllm.ByzerLLM,
         args: AutoCoderArgs,        
-        keep_conversion: bool = False,
-        continue_prompt: str = "接着前面的内容继续",
-        max_steps: int = 20,
+        keep_conversion: bool = False,                
     ):
         self.llm = llm
         self.vl_model = llm.get_sub_client("vl_model")
         self.args = args
         self.output_dir = args.output
         os.makedirs(self.output_dir, exist_ok=True)
-        self.keep_conversion = keep_conversion
-        self.continue_prompt = continue_prompt
-        self.max_steps = max_steps
+        self.keep_conversion = keep_conversion            
 
     @byzerllm.prompt()
     def analyze_image(self, image_path: str) -> str:
