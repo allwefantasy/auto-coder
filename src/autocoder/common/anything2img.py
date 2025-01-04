@@ -86,9 +86,7 @@ class Anything2Img:
         return image_paths
 
     def convert_docx(self, file_path: str) -> List[str]:
-        """使用 Spire.Doc 将 Word 文档直接转换为图片"""
-       
-
+        """使用 Spire.Doc 将 Word 文档直接转换为图片"""       
         # 创建 Spire.Doc 文档对象
         doc = Document()
         doc.LoadFromFile(file_path)
@@ -98,12 +96,10 @@ class Anything2Img:
         try:
             # 将每一页保存为图片
             for i in range(doc.GetPageCount()):
-                image_path = os.path.join(
-                    self.output_dir, 
-                    f"{os.path.basename(file_path)}_page{i+1}.png"
-                )
-                doc.SaveToImages(i, ImageType.Bitmap, image_path)
-                image_paths.append(image_path)
+                imageStream = doc.SaveImageToStreams(i, ImageType.Bitmap)
+                with open(f"output_image_{i}.png", 'wb') as imageFile:
+                    imageFile.write(imageStream.ToArray())
+                image_paths.append(imageFile)
         finally:
             # 确保文档关闭
             doc.Close()
