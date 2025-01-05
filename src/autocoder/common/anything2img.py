@@ -9,6 +9,7 @@ import pydantic
 from docx import Document
 from spire.doc import Document
 from spire.doc import ImageType
+from PIL import Image     
 class ImageInfo(pydantic.BaseModel):
     """
     图片信息
@@ -43,7 +44,8 @@ class Anything2Img:
     def analyze_image(self, image_path: str) -> str:
         """
         {{ image }}
-        分析图片，返回该图片包含的文本内容以及图片位置信息（如果有，图片里有部分区域也是图片）。请遵循以下格式返回：
+        图片中一般包含文字，图片，图表。分析图片，返回该图片包含的文本内容以及图片位置信息。
+        请遵循以下格式返回：
 
         ```json
         {
@@ -60,7 +62,7 @@ class Anything2Img:
         ```
 
         注意：
-        1. 其中x1,y1是左上角坐标，x2,y2是右下角坐标，坐标使用相对位置，即x和y都除以页面宽度和高度得到0-1之间的值
+        1. 其中x1,y1是左上角坐标，x2,y2是右下角坐标，使用绝对坐标，也就是图片的像素坐标。
         2. 文本内容应保持原有的段落格式
         3. width和height是页面宽度，高度,要求整数类型
         4. 格局图片中文本和图片的位置关系，在文本中使用 <image_placeholder> 来表示图片。
@@ -119,7 +121,7 @@ class Anything2Img:
         else:
             raise ValueError(f"Unsupported file format: {file_path}")
 
-    def to_markdown(self, file_path: str) -> str:
+    def to_markdown(self, file_path: str, size: int = -1) -> str:
         """
         将文档转换为Markdown格式
         """
@@ -128,7 +130,10 @@ class Anything2Img:
         os.makedirs(images_dir, exist_ok=True)
         
         # 转换文档为图片
-        image_paths = self.convert(file_path)
+        if size == -1:
+            image_paths = self.convert(file_path)
+        else:
+            image_paths = self.convert(file_path)[0:size]
         
         pages: List[Page] = []
         # 分析每个图片
@@ -143,21 +148,15 @@ class Anything2Img:
         # 遍历每个页面和对应的图片路径
         for page, image_path in zip(pages, image_paths):
             # 处理页面中的每个图片
-            for img in page.images:
-                
-                # 读取原始图片
-                from PIL import Image
-                import numpy as np
-                
+            for img in page.images:                                
                 # 打开原始图片
-                original_image = Image.open(image_path)
-                width, height = original_image.size
+                original_image = Image.open(image_path)                
                 
-                # 将相对坐标转换为绝对坐标
-                x1 = int(img.coordinates[0] * width)
-                y1 = int(img.coordinates[1] * height)
-                x2 = int(img.coordinates[2] * width)
-                y2 = int(img.coordinates[3] * height)
+                # 获得坐标
+                x1 = img.coordinates[0]
+                y1 = img.coordinates[1]
+                x2 = img.coordinates[2]
+                y2 = img.coordinates[3]
                 
                 # 截取图片
                 cropped_image = original_image.crop((x1, y1, x2, y2))
