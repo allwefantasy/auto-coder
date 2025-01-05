@@ -122,7 +122,7 @@ class Anything2Img:
         else:
             raise ValueError(f"Unsupported file format: {file_path}")
 
-    def to_markdown(self, file_path: str, size: int = -1, max_workers: int = 4) -> str:
+    def to_markdown(self, file_path: str, size: int = -1, max_workers: int = 10) -> str:
         """
         将文档转换为Markdown格式
 
