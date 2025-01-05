@@ -27,3 +27,29 @@ class RAGServiceInfo(pydantic.BaseModel):
         # Save to JSON
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(self.model_dump(), f, ensure_ascii=False, indent=2)
+
+    @classmethod
+    def load(cls, host: str, port: int) -> Optional["RAGServiceInfo"]:
+        """Load RAGServiceInfo from file"""
+        home_dir = os.path.expanduser("~")
+        rag_dir = os.path.join(home_dir, ".auto-coder", "rags")
+        filename = f"{host}_{port}.json"
+        filepath = os.path.join(rag_dir, filename)
+        
+        if not os.path.exists(filepath):
+            return None
+            
+        with open(filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return cls(**data)
+
+    def is_alive(self) -> bool:
+        """Check if the RAG service process is still running"""
+        try:
+            os.kill(self._pid, 0)
+            return True
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            # Process exists but we don't have permission to signal it
+            return True
