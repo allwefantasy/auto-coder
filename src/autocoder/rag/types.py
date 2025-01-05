@@ -3,8 +3,9 @@ import os
 import json
 import time
 import pydantic
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import psutil
+import glob
 
 class RAGServiceInfo(pydantic.BaseModel):
     host: str
@@ -53,3 +54,24 @@ class RAGServiceInfo(pydantic.BaseModel):
         except psutil.AccessDenied:
             # Process exists but we don't have permission to access it
             return True
+
+    @classmethod
+    def load_all(cls) -> List["RAGServiceInfo"]:
+        """Load all RAGServiceInfo from ~/.auto-coder/rags directory"""
+        home_dir = os.path.expanduser("~")
+        rag_dir = os.path.join(home_dir, ".auto-coder", "rags")
+        
+        if not os.path.exists(rag_dir):
+            return []
+            
+        service_infos = []
+        for filepath in glob.glob(os.path.join(rag_dir, "*.json")):
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    service_info = cls(**data)
+                    service_infos.append(service_info)
+            except Exception as e:
+                continue
+                
+        return service_infos
