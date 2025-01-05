@@ -4,7 +4,7 @@ import json
 import time
 import pydantic
 from typing import Dict, Any, Optional
-from datetime import datetime
+import psutil
 
 class RAGServiceInfo(pydantic.BaseModel):
     host: str
@@ -44,8 +44,7 @@ class RAGServiceInfo(pydantic.BaseModel):
             return cls(**data)
 
     def is_alive(self) -> bool:
-        """Check if the RAG service process is still running using psutil"""
-        import psutil
+        """Check if the RAG service process is still running using psutil"""        
         try:
             process = psutil.Process(self._pid)
             return process.is_running()
