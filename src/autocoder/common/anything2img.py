@@ -1,5 +1,6 @@
 import os
 from typing import List, Optional, Dict, Any, Tuple
+from PIL import Image
 import fitz  # PyMuPDF
 import byzerllm
 from autocoder.common import AutoCoderArgs
@@ -144,8 +145,26 @@ class Anything2Img:
             # 处理页面中的每个图片
             for img in page.images:
                 
-                #MARK 通过image_path 读取图片，根据根据 img 信息，截取图片
+                # 读取原始图片
+                from PIL import Image
+                import numpy as np
                 
+                # 打开原始图片
+                original_image = Image.open(image_path)
+                width, height = original_image.size
+                
+                # 将相对坐标转换为绝对坐标
+                x1 = int(img.coordinates[0] * width)
+                y1 = int(img.coordinates[1] * height)
+                x2 = int(img.coordinates[2] * width)
+                y2 = int(img.coordinates[3] * height)
+                
+                # 截取图片
+                cropped_image = original_image.crop((x1, y1, x2, y2))
+                
+                # 保存截取后的图片
+                cropped_image_path = os.path.join(images_dir, f"cropped_{os.path.basename(image_path)}")
+                cropped_image.save(cropped_image_path)
                 
                 # 将图片路径转换为Markdown格式
                 image_markdown = f"![{img.text}]({cropped_image_path})"
