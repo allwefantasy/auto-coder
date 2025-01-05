@@ -9,7 +9,8 @@ import pydantic
 from docx import Document
 from spire.doc import Document
 from spire.doc import ImageType
-from PIL import Image     
+from PIL import Image
+from concurrent.futures import ThreadPoolExecutor, as_completed
 class ImageInfo(pydantic.BaseModel):
     """
     图片信息
@@ -121,9 +122,14 @@ class Anything2Img:
         else:
             raise ValueError(f"Unsupported file format: {file_path}")
 
-    def to_markdown(self, file_path: str, size: int = -1) -> str:
+    def to_markdown(self, file_path: str, size: int = -1, max_workers: int = 4) -> str:
         """
         将文档转换为Markdown格式
+
+        Args:
+            file_path: 文件路径
+            size: 转换的页数，-1表示全部
+            max_workers: 并行度，控制同时分析图片的线程数
         """
         # 创建 _images 目录
         images_dir = os.path.join(self.output_dir, "_images")
@@ -136,11 +142,23 @@ class Anything2Img:
             image_paths = self.convert(file_path)[0:size]
         
         pages: List[Page] = []
-        # 分析每个图片
-        for image_path in image_paths:
-            result = self.analyze_image.with_llm(self.vl_model).with_return_type(Page).run(image_path)
-            pages.append(result)
-            logger.info(f"Analyzed {image_path}")
+        # 使用线程池并行分析图片
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(
+                    self.analyze_image.with_llm(self.vl_model).with_return_type(Page).run,
+                    image_path
+                ): image_path for image_path in image_paths
+            }
+            
+            for future in as_completed(futures):
+                image_path = futures[future]
+                try:
+                    result = future.result()
+                    pages.append(result)
+                    logger.info(f"Analyzed {image_path}")
+                except Exception as e:
+                    logger.error(f"Failed to analyze {image_path}: {str(e)}")
         
         # 生成Markdown内容
         markdown_content = []
