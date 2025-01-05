@@ -44,12 +44,13 @@ class RAGServiceInfo(pydantic.BaseModel):
             return cls(**data)
 
     def is_alive(self) -> bool:
-        """Check if the RAG service process is still running"""
+        """Check if the RAG service process is still running using psutil"""
+        import psutil
         try:
-            os.kill(self._pid, 0)
-            return True
-        except ProcessLookupError:
+            process = psutil.Process(self._pid)
+            return process.is_running()
+        except psutil.NoSuchProcess:
             return False
-        except PermissionError:
-            # Process exists but we don't have permission to signal it
+        except psutil.AccessDenied:
+            # Process exists but we don't have permission to access it
             return True
