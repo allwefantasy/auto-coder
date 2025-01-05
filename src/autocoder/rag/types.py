@@ -3,7 +3,7 @@ import os
 import json
 import time
 import pydantic
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from datetime import datetime
 
 class RAGServiceInfo(pydantic.BaseModel):
