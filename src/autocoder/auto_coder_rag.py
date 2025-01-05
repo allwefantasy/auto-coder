@@ -512,7 +512,10 @@ def main(input_args: Optional[List[str]] = None):
             _timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  
             args={k: v for k, v in vars(args).items() if not k.startswith("_")}
         )
-        service_info.save()
+        try:
+            service_info.save()
+        except Exception as e:
+            logger.warning(f"Failed to save service info: {str(e)}")
         
         serve(llm=llm_wrapper, args=server_args)
     elif args.command == "build_hybrid_index":
