@@ -96,7 +96,7 @@ class IndexManager:
 
         ```json
         {
-            "relevant_score": 0-10, // 相关分数
+            "relevant_score": 0-10,
             "reason": "这是相关的原因..."
         }
         ```
