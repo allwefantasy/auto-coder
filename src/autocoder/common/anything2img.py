@@ -143,27 +143,9 @@ class Anything2Img:
         for page, image_path in zip(pages, image_paths):
             # 处理页面中的每个图片
             for img in page.images:
-                # 打开图片文件
-                doc = fitz.open(image_path)
-                page_num = int(os.path.basename(image_path).split("_page")[1].split(".")[0]) - 1
-                page = doc[page_num]
                 
-                # 将相对坐标转换为绝对坐标
-                x1 = int(img.coordinates[0] * page.rect.width)
-                y1 = int(img.coordinates[1] * page.rect.height)
-                x2 = int(img.coordinates[2] * page.rect.width)
-                y2 = int(img.coordinates[3] * page.rect.height)
+                #MARK 通过image_path 读取图片，根据根据 img 信息，截取图片
                 
-                # 截取图片区域
-                clip = fitz.Rect(x1, y1, x2, y2)
-                pix = page.get_pixmap(matrix=fitz.Matrix(1, 1), clip=clip)
-                
-                # 保存截取的图片
-                cropped_image_path = os.path.join(
-                    images_dir, 
-                    f"{os.path.basename(image_path).split('.')[0]}_crop_{x1}_{y1}_{x2}_{y2}.png"
-                )
-                pix.save(cropped_image_path)
                 
                 # 将图片路径转换为Markdown格式
                 image_markdown = f"![{img.text}]({cropped_image_path})"
