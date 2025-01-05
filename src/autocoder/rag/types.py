@@ -11,8 +11,8 @@ class RAGServiceInfo(pydantic.BaseModel):
     port: int
     model: str
     args: Dict[str, Any]
-    _pid: int = pydantic.Field(default_factory=lambda: os.getpid())
-    _timestamp: str = pydantic.Field(default_factory=lambda: datetime.now().isoformat())
+    _pid: int 
+    _timestamp:str
 
     def save(self):
         # Get home directory in a cross-platform way
@@ -26,4 +26,4 @@ class RAGServiceInfo(pydantic.BaseModel):
         
         # Save to JSON
         with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(self.dict(), f, ensure_ascii=False, indent=2)
+            json.dump(self.model_dump(), f, ensure_ascii=False, indent=2)

@@ -19,10 +19,12 @@ from rich.table import Table
 import os
 from loguru import logger
 import asyncio
+from datetime import datetime
 
 from autocoder.rag.document_retriever import process_file_local
 import pkg_resources
 from autocoder.rag.token_counter import TokenCounter
+from autocoder.rag.types import RAGServiceInfo
 
 if platform.system() == "Windows":
     from colorama import init
@@ -501,12 +503,13 @@ def main(input_args: Optional[List[str]] = None):
             rag = RAGFactory.get_rag(llm=llm, args=auto_coder_args, path="")
 
         llm_wrapper = LLWrapper(llm=llm, rag=rag)
-        # Save service info
-        from autocoder.rag.types import RAGServiceInfo
+        # Save service info    
         service_info = RAGServiceInfo(
-            host=server_args.host or "localhost",
+            host=server_args.host or "127.0.0.1",
             port=server_args.port,
             model=args.model,
+            _pid=os.getpid(),
+            _timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),  
             args={k: v for k, v in vars(args).items() if not k.startswith("_")}
         )
         service_info.save()
