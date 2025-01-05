@@ -501,6 +501,16 @@ def main(input_args: Optional[List[str]] = None):
             rag = RAGFactory.get_rag(llm=llm, args=auto_coder_args, path="")
 
         llm_wrapper = LLWrapper(llm=llm, rag=rag)
+        # Save service info
+        from autocoder.rag.types import RAGServiceInfo
+        service_info = RAGServiceInfo(
+            host=server_args.host or "localhost",
+            port=server_args.port,
+            model=args.model,
+            args={k: v for k, v in vars(args).items() if not k.startswith("_")}
+        )
+        service_info.save()
+        
         serve(llm=llm_wrapper, args=server_args)
     elif args.command == "build_hybrid_index":
         if not args.quick:
