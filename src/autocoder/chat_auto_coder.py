@@ -1386,6 +1386,28 @@ def mcp(query: str):
     is_install = query.strip().startswith("/install")
     if is_install:
         query = query.replace("/install", "", 1).strip()
+        # Parse install config from query
+        try:
+            config = json.loads(query)
+            if "server_name" not in config or "config" not in config:
+                raise ValueError("Invalid install config format")
+                
+            mcp_server = get_mcp_server()
+            response = mcp_server.send_request(
+                McpRequest(
+                    query="",
+                    install_config=config
+                )
+            )
+            
+            if response.error:
+                print(f"Error installing MCP server: {response.error}")
+            else:
+                print(response.result)
+            return
+        except Exception as e:
+            print(f"Invalid install config: {e}")
+            return
 
     conf = memory.get("conf", {})
     yaml_config = {

@@ -347,3 +347,35 @@ class McpHub:
         """
         for name in list(self.connections.keys()):
             await self.delete_connection(name)
+
+    async def install_server(self, name: str, config: dict) -> None:
+        """
+        Install a new MCP server by adding it to settings.json
+        """
+        try:
+            settings = self._read_settings()
+            if name in settings["mcpServers"]:
+                raise ValueError(f"Server {name} already exists")
+            
+            settings["mcpServers"][name] = config
+            self._write_settings(settings)
+            await self.connect_to_server(name, config)
+        except Exception as e:
+            logger.error(f"Failed to install MCP server {name}: {e}")
+            raise
+
+    async def uninstall_server(self, name: str) -> None:
+        """
+        Uninstall an MCP server by removing it from settings.json
+        """
+        try:
+            settings = self._read_settings()
+            if name not in settings["mcpServers"]:
+                raise ValueError(f"Server {name} not found")
+            
+            await self.delete_connection(name)
+            del settings["mcpServers"][name]
+            self._write_settings(settings)
+        except Exception as e:
+            logger.error(f"Failed to uninstall MCP server {name}: {e}")
+            raise
