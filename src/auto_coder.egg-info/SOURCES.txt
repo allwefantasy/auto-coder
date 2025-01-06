@@ -32,6 +32,7 @@ src/autocoder/common/JupyterClient.py
 src/autocoder/common/ShellClient.py
 src/autocoder/common/__init__.py
 src/autocoder/common/anything2images.py
+src/autocoder/common/anything2img.py
 src/autocoder/common/audio.py
 src/autocoder/common/buildin_tokenizer.py
 src/autocoder/common/chunk_validation.py

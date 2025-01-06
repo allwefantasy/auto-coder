@@ -1383,6 +1383,10 @@ def convert_yaml_to_config(yaml_file: str):
 
 
 def mcp(query: str):
+    is_install = query.strip().startswith("/install")
+    if is_install:
+        query = query.replace("/install", "", 1).strip()
+
     conf = memory.get("conf", {})
     yaml_config = {
         "include_file": ["./base/base.yml"],
@@ -1494,6 +1498,16 @@ def code_next(query: str):
     )
 
 
+def get_single_llm(model_names: str):
+    if "," in model_names:
+        # Multiple code models specified
+        model_names = model_names.split(",")        
+        for _, model_name in enumerate(model_names):
+            return byzerllm.ByzerLLM.from_default_model(model_name)        
+    else:
+        # Single code model
+        return byzerllm.ByzerLLM.from_default_model(model_names)
+
 def commit(query: str):
     def prepare_commit_yaml():
         auto_coder_main(["next", "chat_action"])
@@ -1541,8 +1555,9 @@ def commit(query: str):
             finally:
                 if os.path.exists(temp_yaml):
                     os.remove(temp_yaml)
+            
 
-            llm = byzerllm.ByzerLLM.from_default_model(args.code_model or args.model)
+            llm = get_single_llm(args.code_model or args.model)
             uncommitted_changes = git_utils.get_uncommitted_changes(".")
             commit_message = git_utils.generate_commit_message.with_llm(llm).run(
                 uncommitted_changes

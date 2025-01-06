@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.215
+Version: 0.1.216
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -38,6 +38,7 @@ Requires-Dist: azure-cognitiveservices-speech
 Requires-Dist: python-docx
 Requires-Dist: docx2txt
 Requires-Dist: pdf2image
+Requires-Dist: Spire.Doc
 Requires-Dist: docx2pdf
 Requires-Dist: pyperclip
 Requires-Dist: colorama

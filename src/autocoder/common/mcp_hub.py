@@ -11,6 +11,7 @@ from mcp.client.stdio import stdio_client, StdioServerParameters
 import mcp.types as mcp_types
 from loguru import logger
 
+
 class McpTool(BaseModel):
     """Represents an MCP tool configuration"""
 
@@ -58,6 +59,25 @@ class McpConnection:
         self.transport_manager = (
             transport_manager  # Will hold transport context manager
         )
+
+
+MCP_PERPLEXITY_SERVER = '''
+{
+    "Perplexity": {
+        "command": "python",
+        "args": [
+            "-m", "autocoer.common.mcp_servers.mcp_server_perplexity"
+        ],
+        "env": {
+            "PERPLEXITY_API_KEY": "{{PERPLEXITY_API_KEY}}"
+        }
+    }
+}
+'''
+
+MCP_BUILD_IN_SERVERS = {
+    "Perplexity": MCP_PERPLEXITY_SERVER
+}
 
 
 class McpHub:
@@ -128,14 +148,15 @@ class McpHub:
             server_params = StdioServerParameters(
                 command=config["command"],
                 args=config.get("args", []),
-                env={**config.get("env", {}), "PATH": os.environ.get("PATH", "")},
+                env={**config.get("env", {}),
+                     "PATH": os.environ.get("PATH", "")},
             )
 
             # Create transport using context manager
             transport_manager = stdio_client(server_params)
             transport = await transport_manager.__aenter__()
             try:
-                session = await ClientSession(transport[0], transport[1]).__aenter__()                 
+                session = await ClientSession(transport[0], transport[1]).__aenter__()
                 await session.initialize()
 
                 # Store connection with transport manager
@@ -148,9 +169,9 @@ class McpHub:
                 server.resources = await self._fetch_resources(name)
                 server.resource_templates = await self._fetch_resource_templates(name)
 
-            except Exception as e:                                
+            except Exception as e:
                 # Clean up transport if session initialization fails
-                
+
                 await transport_manager.__aexit__(None, None, None)
                 raise
 
@@ -204,7 +225,8 @@ class McpHub:
                 elif current_conn.server.config != json.dumps(config):
                     # Updated configuration
                     await self.connect_to_server(name, config)
-                    logger.info(f"Reconnected MCP server with updated config: {name}")
+                    logger.info(
+                        f"Reconnected MCP server with updated config: {name}")
 
         finally:
             self.is_connecting = False
@@ -284,7 +306,8 @@ class McpHub:
                 for template in response.resourceTemplates
             ]
         except Exception as e:
-            logger.error(f"Failed to fetch resource templates for {server_name}: {e}")
+            logger.error(
+                f"Failed to fetch resource templates for {server_name}: {e}")
             return []
 
     def _read_settings(self) -> dict:
@@ -294,7 +317,7 @@ class McpHub:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Failed to read MCP settings: {e}")
-            return {"mcpServers": {}}
+            return {"mcpServers": {}}        
 
     async def call_tool(
         self, server_name: str, tool_name: str, tool_arguments: Optional[Dict] = None
