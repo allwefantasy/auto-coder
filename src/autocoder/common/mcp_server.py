@@ -12,6 +12,8 @@ import json
 import os
 import time
 from pydantic import BaseModel
+import sys
+from loguru import logger
 
 
 @dataclass
@@ -119,6 +121,8 @@ class McpServer:
 
     async def _install_server(self, request: McpInstallRequest) -> McpResponse:
         """Install an MCP server with module dependency check"""
+        name = ""
+        config = {}
         try:
             server_name_or_config = request.server_name_or_config
             try:
@@ -145,22 +149,25 @@ class McpServer:
                                 except ImportError:
                                     # Install missing module
                                     import subprocess
-                                    subprocess.run([sys.executable, "-m", "pip", "install", name], check=True)
-                                
+                                    subprocess.run(
+                                        [sys.executable, "-m", "pip", "install", name], check=True)
+
                                 config = {
                                     "command": "python",
                                     "args": [
                                         "-m", name
-                                    ],                                               
+                                    ],
                                 }
                             elif s.runtime == "node":
                                 # Check if package exists
                                 try:
-                                    subprocess.run(["npx", name, "--version"], check=True)
+                                    subprocess.run(
+                                        ["npx", name, "--version"], check=True)
                                 except:
                                     # Install missing package
-                                    subprocess.run(["npm", "install", "-g", name], check=True)
-                                
+                                    subprocess.run(
+                                        ["npm", "install", "-y", "-g", name], check=True)
+
                                 config = {
                                     "command": "npx",
                                     "args": [
@@ -171,7 +178,8 @@ class McpServer:
                             break
                 else:
                     config = MCP_BUILD_IN_SERVERS[name]
-
+            if not name:
+                raise ValueError("MCP server name is not available in MCP_BUILD_IN_SERVERS or external servers")
             hub = McpHub()
             await hub.add_server_config(name, config)
             return McpResponse(result=f"Successfully installed MCP server: {request.server_name_or_config}")
