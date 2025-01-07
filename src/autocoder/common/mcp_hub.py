@@ -119,7 +119,7 @@ class McpHub:
         with open(self.settings_path, "w") as f:
             json.dump(default_settings, f, indent=2)
 
-    async def add_server_config(self, server_name_or_config: str) -> None:
+    async def add_server_config(self, name: str, config:Dict[str,Any]) -> None:
         """
         Add or update MCP server configuration in settings file.
 
@@ -127,22 +127,7 @@ class McpHub:
             server_name_or_config: Name of the server or server configuration dictionary
         """
         try:
-            settings = self._read_settings()
-            try:
-                raw_config = json.loads(server_name_or_config)
-                ## 用户给了一个完整的配置
-                if "mcpServers" in raw_config:                    
-                    raw_config = raw_config["mcpServers"]
-                
-                ## 取第一个server 配置
-                config = list(raw_config.values())[0]
-                name = list(raw_config.keys())[0]
-            except json.JSONDecodeError:
-                name = server_name_or_config
-                if name not in MCP_BUILD_IN_SERVERS:
-                    raise ValueError(
-                        f"MCP server {name} not found in built-in servers")
-                config = MCP_BUILD_IN_SERVERS[name]
+            settings = self._read_settings()            
             settings["mcpServers"][name] = config
             with open(self.settings_path, "w") as f:
                 json.dump(settings, f, indent=2, ensure_ascii=False)
