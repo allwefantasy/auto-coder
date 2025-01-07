@@ -26,16 +26,12 @@ from autocoder.version import __version__
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.common.command_completer import CommandTextParser
 from autocoder.utils import get_last_yaml_file
-import pathlib
 from autocoder.index.symbols_utils import (
     extract_symbols,
-    symbols_info_to_str,
-    SymbolsInfo,
     SymbolType,
 )
 import platform
 import subprocess
-import shlex
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -43,25 +39,14 @@ from rich.live import Live
 from rich.text import Text
 from rich.live import Live
 from byzerllm.utils.nontext import Image
-import re
 import git
 from autocoder.common import git_utils
-from autocoder.utils.request_queue import (
-    request_queue,
-    RequestValue,
-    DefaultValue,
-    RequestOption,
-)
-import asyncio
-from byzerllm.utils.langutil import asyncfy_with_semaphore
-from prompt_toolkit.patch_stdout import patch_stdout
-import byzerllm
-from byzerllm.utils import format_str_jinja2
 from autocoder.chat_auto_coder_lang import get_message
 from autocoder.utils import operate_config_api
 from autocoder.agent.auto_guess_query import AutoGuessQuery
-from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest
+from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest
 import asyncio
+
 
 class SymbolItem(BaseModel):
     symbol_name: str
@@ -73,7 +58,8 @@ def parse_arguments():
     import argparse
 
     parser = argparse.ArgumentParser(description="Chat Auto Coder")
-    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    parser.add_argument("--debug", action="store_true",
+                        help="Enable debug mode")
     parser.add_argument(
         "--quick",
         action="store_true",
@@ -156,8 +142,10 @@ def show_help():
     print(
         f"  \033[94m/summon\033[0m \033[93m<query>\033[0m - \033[92m{get_message('summon_desc')}\033[0m"
     )
-    print(f"  \033[94m/revert\033[0m - \033[92m{get_message('revert_desc')}\033[0m")
-    print(f"  \033[94m/commit\033[0m - \033[92m{get_message('commit_desc')}\033[0m")
+    print(
+        f"  \033[94m/revert\033[0m - \033[92m{get_message('revert_desc')}\033[0m")
+    print(
+        f"  \033[94m/commit\033[0m - \033[92m{get_message('commit_desc')}\033[0m")
     print(
         f"  \033[94m/conf\033[0m \033[93m<key>:<value>\033[0m  - \033[92m{get_message('conf_desc')}\033[0m"
     )
@@ -170,7 +158,8 @@ def show_help():
     print(
         f"  \033[94m/list_files\033[0m - \033[92m{get_message('list_files_desc')}\033[0m"
     )
-    print(f"  \033[94m/help\033[0m - \033[92m{get_message('help_desc')}\033[0m")
+    print(
+        f"  \033[94m/help\033[0m - \033[92m{get_message('help_desc')}\033[0m")
     print(
         f"  \033[94m/exclude_dirs\033[0m \033[93m<dir1>,<dir2> ...\033[0m - \033[92m{get_message('exclude_dirs_desc')}\033[0m"
     )
@@ -180,9 +169,11 @@ def show_help():
     print(
         f"  \033[94m/voice_input\033[0m - \033[92m{get_message('voice_input_desc')}\033[0m"
     )
-    print(f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
+    print(
+        f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
     print(f"  \033[94m/lib\033[0m - \033[92m{get_message('lib_desc')}\033[0m")
-    print(f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
+    print(
+        f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
     print()
 
 
@@ -207,10 +198,12 @@ def configure_project_type():
         print_formatted_text(HTML(f"<info>{escape(text)}</info>"), style=style)
 
     def print_warning(text):
-        print_formatted_text(HTML(f"<warning>{escape(text)}</warning>"), style=style)
+        print_formatted_text(
+            HTML(f"<warning>{escape(text)}</warning>"), style=style)
 
     def print_header(text):
-        print_formatted_text(HTML(f"<header>{escape(text)}</header>"), style=style)
+        print_formatted_text(
+            HTML(f"<header>{escape(text)}</header>"), style=style)
 
     print_header(f"\n=== {get_message('project_type_config')} ===\n")
     print_info(get_message("project_type_supports"))
@@ -256,7 +249,8 @@ def initialize_system():
         if not os.path.exists(".auto-coder"):
             first_time = True
             print_status(get_message("not_initialized"), "warning")
-            init_choice = input(f"  {get_message('init_prompt')}").strip().lower()
+            init_choice = input(
+                f"  {get_message('init_prompt')}").strip().lower()
             if init_choice == "y":
                 try:
                     subprocess.run(
@@ -273,7 +267,8 @@ def initialize_system():
 
         if not os.path.exists(base_persist_dir):
             os.makedirs(base_persist_dir, exist_ok=True)
-            print_status(get_message("created_dir").format(base_persist_dir), "success")
+            print_status(get_message("created_dir").format(
+                base_persist_dir), "success")
 
         if first_time:
             configure_project_type()
@@ -283,7 +278,8 @@ def initialize_system():
     init_project()
     # Check if Ray is running
     print_status(get_message("checking_ray"), "")
-    ray_status = subprocess.run(["ray", "status"], capture_output=True, text=True)
+    ray_status = subprocess.run(
+        ["ray", "status"], capture_output=True, text=True)
     if ray_status.returncode != 0:
         print_status(get_message("ray_not_running"), "warning")
         try:
@@ -315,9 +311,9 @@ def initialize_system():
         print_status(get_message("model_error"), "error")
 
     # If deepseek_chat is not available
-    print_status(get_message("model_not_available"), "warning")        
+    print_status(get_message("model_not_available"), "warning")
     api_key = prompt(HTML(f"<b>{get_message('enter_api_key')} </b>"))
-    
+
     print_status(get_message("deploying_model").format("Deepseek官方"), "")
     deploy_cmd = [
         "byzerllm",
@@ -401,7 +397,8 @@ def get_all_file_in_project_with_dot() -> List[str]:
     for root, dirs, files in os.walk(project_root, followlinks=True):
         dirs[:] = [d for d in dirs if d not in final_exclude_dirs]
         for file in files:
-            file_names.append(os.path.join(root, file).replace(project_root, "."))
+            file_names.append(os.path.join(
+                root, file).replace(project_root, "."))
     return file_names
 
 
@@ -529,8 +526,10 @@ def show_help():
     print(
         f"  \033[94m/summon\033[0m \033[93m<query>\033[0m - \033[92m{get_message('summon_desc')}\033[0m"
     )
-    print(f"  \033[94m/revert\033[0m - \033[92m{get_message('revert_desc')}\033[0m")
-    print(f"  \033[94m/commit\033[0m - \033[92m{get_message('commit_desc')}\033[0m")
+    print(
+        f"  \033[94m/revert\033[0m - \033[92m{get_message('revert_desc')}\033[0m")
+    print(
+        f"  \033[94m/commit\033[0m - \033[92m{get_message('commit_desc')}\033[0m")
     print(
         f"  \033[94m/conf\033[0m \033[93m<key>:<value>\033[0m  - \033[92m{get_message('conf_desc')}\033[0m"
     )
@@ -543,7 +542,8 @@ def show_help():
     print(
         f"  \033[94m/list_files\033[0m - \033[92m{get_message('list_files_desc')}\033[0m"
     )
-    print(f"  \033[94m/help\033[0m - \033[92m{get_message('help_desc')}\033[0m")
+    print(
+        f"  \033[94m/help\033[0m - \033[92m{get_message('help_desc')}\033[0m")
     print(
         f"  \033[94m/exclude_dirs\033[0m \033[93m<dir1>,<dir2> ...\033[0m - \033[92m{get_message('exclude_dirs_desc')}\033[0m"
     )
@@ -553,9 +553,11 @@ def show_help():
     print(
         f"  \033[94m/voice_input\033[0m - \033[92m{get_message('voice_input_desc')}\033[0m"
     )
-    print(f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
+    print(
+        f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
     print(f"  \033[94m/lib\033[0m - \033[92m{get_message('lib_desc')}\033[0m")
-    print(f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
+    print(
+        f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
     print()
 
 
@@ -619,13 +621,13 @@ class CommandCompleter(Completer):
 
         if len(words) > 0:
             if words[0] == "/mode":
-                left_word = text[len("/mode") :]
+                left_word = text[len("/mode"):]
                 for mode in ["normal", "auto_detect", "voice_input"]:
                     if mode.startswith(left_word.strip()):
                         yield Completion(mode, start_position=-len(left_word.strip()))
 
             if words[0] == "/add_files":
-                new_text = text[len("/add_files") :]
+                new_text = text[len("/add_files"):]
                 parser = CommandTextParser(new_text, words[0])
                 parser.add_files()
                 current_word = parser.current_word()
@@ -656,18 +658,21 @@ class CommandCompleter(Completer):
                         for file_name in self.all_files_with_dot:
                             if file_name.startswith(current_word):
                                 yield Completion(
-                                    file_name, start_position=-len(current_word)
+                                    file_name, start_position=-
+                                    len(current_word)
                                 )
                     else:
                         for file_name in self.all_file_names:
                             if file_name.startswith(current_word):
                                 yield Completion(
-                                    file_name, start_position=-len(current_word)
+                                    file_name, start_position=-
+                                    len(current_word)
                                 )
                         for file_name in self.all_files:
                             if current_word and current_word in file_name:
                                 yield Completion(
-                                    file_name, start_position=-len(current_word)
+                                    file_name, start_position=-
+                                    len(current_word)
                                 )
             elif words[0] in ["/chat", "/coding"]:
                 image_extensions = (
@@ -697,7 +702,7 @@ class CommandCompleter(Completer):
                     ".psd",
                     ".xcf",
                 )
-                new_text = text[len(words[0]) :]
+                new_text = text[len(words[0]):]
                 parser = CommandTextParser(new_text, words[0])
 
                 parser.coding()
@@ -724,7 +729,8 @@ class CommandCompleter(Completer):
                                 if len(path_parts) > 3
                                 else file_name
                             )
-                            relative_path = os.path.relpath(file_name, project_root)
+                            relative_path = os.path.relpath(
+                                file_name, project_root)
                             yield Completion(
                                 relative_path,
                                 start_position=-len(name),
@@ -741,7 +747,8 @@ class CommandCompleter(Completer):
                                 if len(path_parts) > 3
                                 else file_name
                             )
-                            relative_path = os.path.relpath(file_name, project_root)
+                            relative_path = os.path.relpath(
+                                file_name, project_root)
 
                             yield Completion(
                                 relative_path,
@@ -757,7 +764,8 @@ class CommandCompleter(Completer):
                                 if len(path_parts) > 3
                                 else file_name
                             )
-                            relative_path = os.path.relpath(file_name, project_root)
+                            relative_path = os.path.relpath(
+                                file_name, project_root)
                             yield Completion(
                                 relative_path,
                                 start_position=-len(name),
@@ -775,7 +783,8 @@ class CommandCompleter(Completer):
                                 if len(path_parts) > 3
                                 else symbol.symbol_name
                             )
-                            relative_path = os.path.relpath(file_name, project_root)
+                            relative_path = os.path.relpath(
+                                file_name, project_root)
                             yield Completion(
                                 f"{symbol.symbol_name}(location: {relative_path})",
                                 start_position=-len(name),
@@ -810,7 +819,8 @@ class CommandCompleter(Completer):
                         for dir in dirs:
                             full_path = os.path.join(root, dir)
                             if full_path.startswith(file_name):
-                                relative_path = os.path.relpath(full_path, search_dir)
+                                relative_path = os.path.relpath(
+                                    full_path, search_dir)
                                 yield Completion(
                                     relative_path,
                                     start_position=-len(file_basename),
@@ -822,7 +832,8 @@ class CommandCompleter(Completer):
                                 image_extensions
                             ) and file.startswith(file_basename):
                                 full_path = os.path.join(root, file)
-                                relative_path = os.path.relpath(full_path, search_dir)
+                                relative_path = os.path.relpath(
+                                    full_path, search_dir)
                                 yield Completion(
                                     relative_path,
                                     start_position=-len(file_basename),
@@ -832,7 +843,7 @@ class CommandCompleter(Completer):
                         break
 
             elif words[0] == "/remove_files":
-                new_words = text[len("/remove_files") :].strip().split(",")
+                new_words = text[len("/remove_files"):].strip().split(",")
 
                 is_at_space = text[-1] == " "
                 last_word = new_words[-2] if len(new_words) > 1 else ""
@@ -859,7 +870,7 @@ class CommandCompleter(Completer):
                                 file_name, start_position=-len(current_word)
                             )
             elif words[0] == "/exclude_dirs":
-                new_words = text[len("/exclude_dirs") :].strip().split(",")
+                new_words = text[len("/exclude_dirs"):].strip().split(",")
                 current_word = new_words[-1]
 
                 for file_name in self.all_dir_names:
@@ -867,7 +878,7 @@ class CommandCompleter(Completer):
                         yield Completion(file_name, start_position=-len(current_word))
 
             elif words[0] == "/lib":
-                new_text = text[len("/lib") :]
+                new_text = text[len("/lib"):]
                 parser = CommandTextParser(new_text, words[0])
                 parser.lib()
                 current_word = parser.current_word()
@@ -882,8 +893,17 @@ class CommandCompleter(Completer):
                             yield Completion(
                                 lib_name, start_position=-len(current_word)
                             )
+            elif words[0] == "/mcp":
+                new_text = text[len("/mcp"):]
+                parser = CommandTextParser(new_text, words[0])
+                parser.lib()
+                current_word = parser.current_word()
+                for command in parser.get_sub_commands():
+                    if command.startswith(current_word):
+                        yield Completion(command, start_position=-len(current_word))
+
             elif words[0] == "/coding":
-                new_text = text[len("/coding") :]
+                new_text = text[len("/coding"):]
                 parser = CommandTextParser(new_text, words[0])
                 parser.lib()
                 current_word = parser.current_word()
@@ -892,7 +912,7 @@ class CommandCompleter(Completer):
                         yield Completion(command, start_position=-len(current_word))
 
             elif words[0] == "/conf":
-                new_words = text[len("/conf") :].strip().split()
+                new_words = text[len("/conf"):].strip().split()
                 is_at_space = text[-1] == " "
                 last_word = new_words[-2] if len(new_words) > 1 else ""
                 current_word = new_words[-1] if new_words else ""
@@ -911,7 +931,8 @@ class CommandCompleter(Completer):
                     ]
                 # /conf [curosr]
                 elif not last_word and not current_word:
-                    completions = ["/drop"] if "/drop".startswith(current_word) else []
+                    completions = [
+                        "/drop"] if "/drop".startswith(current_word) else []
                     completions += [
                         field_name + ":"
                         for field_name in AutoCoderArgs.model_fields.keys()
@@ -919,7 +940,8 @@ class CommandCompleter(Completer):
                     ]
                 # /conf p[cursor]
                 elif not last_word and current_word:
-                    completions = ["/drop"] if "/drop".startswith(current_word) else []
+                    completions = [
+                        "/drop"] if "/drop".startswith(current_word) else []
                     completions += [
                         field_name + ":"
                         for field_name in AutoCoderArgs.model_fields.keys()
@@ -1013,7 +1035,8 @@ def add_files(args: List[str]):
         completer.refresh_files()
         load_memory()
         console.print(
-            Panel("Refreshed file list.", title="Files Refreshed", border_style="green")
+            Panel("Refreshed file list.",
+                  title="Files Refreshed", border_style="green")
         )
         return
 
@@ -1021,7 +1044,8 @@ def add_files(args: List[str]):
         if len(args) == 1 or (len(args) == 2 and args[1] == "list"):
             if not groups:
                 console.print(
-                    Panel("No groups defined.", title="Groups", border_style="yellow")
+                    Panel("No groups defined.", title="Groups",
+                          border_style="yellow")
                 )
             else:
                 table = Table(
@@ -1046,7 +1070,8 @@ def add_files(args: List[str]):
                     )
                     table.add_row(
                         group_name,
-                        "\n".join([os.path.relpath(f, project_root) for f in files]),
+                        "\n".join([os.path.relpath(f, project_root)
+                                  for f in files]),
                         query_prefix,
                         is_active,
                         end_section=(i == len(groups) - 1),
@@ -1078,7 +1103,8 @@ def add_files(args: List[str]):
                 if group_name in groups_info:
                     del memory["current_files"]["groups_info"][group_name]
                 if group_name in memory["current_files"]["current_groups"]:
-                    memory["current_files"]["current_groups"].remove(group_name)
+                    memory["current_files"]["current_groups"].remove(
+                        group_name)
                 console.print(
                     Panel(
                         f"Dropped group '{group_name}'.",
@@ -1251,7 +1277,8 @@ def remove_files(file_names: List[str]):
         memory["current_files"]["files"] = []
         memory["current_files"]["current_groups"] = []
         console.print(
-            Panel("Removed all files.", title="Files Removed", border_style="green")
+            Panel("Removed all files.",
+                  title="Files Removed", border_style="green")
         )
     else:
         removed_files = []
@@ -1385,11 +1412,12 @@ def convert_yaml_to_config(yaml_file: str):
 def mcp(query: str):
     query = query.strip()
     mcp_server = get_mcp_server()
-    
+
     # Handle remove command
     if query.startswith("/remove"):
         server_name = query.replace("/remove", "", 1).strip()
-        response = mcp_server.send_request(McpRemoveRequest(server_name=server_name))
+        response = mcp_server.send_request(
+            McpRemoveRequest(server_name=server_name))
         if response.error:
             print(f"Error removing MCP server: {response.error}")
         else:
@@ -1419,9 +1447,9 @@ def mcp(query: str):
     # Handle add command
     if query.startswith("/add"):
         query = query.replace("/add", "", 1).strip()
-        request = McpInstallRequest(server_name_or_config=query)        
+        request = McpInstallRequest(server_name_or_config=query)
         response = mcp_server.send_request(request)
-        
+
         if response.error:
             print(f"Error installing MCP server: {response.error}")
         else:
@@ -1452,8 +1480,8 @@ def mcp(query: str):
         args = convert_yaml_to_config(temp_yaml)
     finally:
         if os.path.exists(temp_yaml):
-            os.remove(temp_yaml)    
-    
+            os.remove(temp_yaml)
+
     mcp_server = get_mcp_server()
     response = mcp_server.send_request(
         McpRequest(
@@ -1461,7 +1489,7 @@ def mcp(query: str):
             model=args.inference_model or args.model
         )
     )
-    
+
     if response.error:
         print(f"Error from MCP server: {response.error}")
     else:
@@ -1494,9 +1522,11 @@ def code_next(query: str):
         if os.path.exists(temp_yaml):
             os.remove(temp_yaml)
 
-    llm = byzerllm.ByzerLLM.from_default_model(args.inference_model or args.model)
+    llm = byzerllm.ByzerLLM.from_default_model(
+        args.inference_model or args.model)
 
-    auto_guesser = AutoGuessQuery(llm=llm, project_dir=os.getcwd(), skip_diff=True)
+    auto_guesser = AutoGuessQuery(
+        llm=llm, project_dir=os.getcwd(), skip_diff=True)
 
     predicted_tasks = auto_guesser.predict_next_tasks(
         5, is_human_as_model=args.human_as_model
@@ -1510,20 +1540,25 @@ def code_next(query: str):
     console = Console()
 
     # Create main panel for all predicted tasks
-    table = Table(show_header=True, header_style="bold magenta", show_lines=True)
+    table = Table(show_header=True,
+                  header_style="bold magenta", show_lines=True)
     table.add_column("Priority", style="cyan", width=8)
-    table.add_column("Task Description", style="green", width=40, overflow="fold")
+    table.add_column("Task Description", style="green",
+                     width=40, overflow="fold")
     table.add_column("Files", style="yellow", width=30, overflow="fold")
     table.add_column("Reason", style="blue", width=30, overflow="fold")
-    table.add_column("Dependencies", style="magenta", width=30, overflow="fold")
+    table.add_column("Dependencies", style="magenta",
+                     width=30, overflow="fold")
 
     for task in predicted_tasks:
         # Format file paths to be more readable
-        file_list = "\n".join([os.path.relpath(f, os.getcwd()) for f in task.urls])
+        file_list = "\n".join([os.path.relpath(f, os.getcwd())
+                              for f in task.urls])
 
         # Format dependencies to be more readable
         dependencies = (
-            "\n".join(task.dependency_queries) if task.dependency_queries else "None"
+            "\n".join(
+                task.dependency_queries) if task.dependency_queries else "None"
         )
 
         table.add_row(
@@ -1543,12 +1578,13 @@ def code_next(query: str):
 def get_single_llm(model_names: str):
     if "," in model_names:
         # Multiple code models specified
-        model_names = model_names.split(",")        
+        model_names = model_names.split(",")
         for _, model_name in enumerate(model_names):
-            return byzerllm.ByzerLLM.from_default_model(model_name)        
+            return byzerllm.ByzerLLM.from_default_model(model_name)
     else:
         # Single code model
         return byzerllm.ByzerLLM.from_default_model(model_names)
+
 
 def commit(query: str):
     def prepare_commit_yaml():
@@ -1592,19 +1628,20 @@ def commit(query: str):
             temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
             try:
                 with open(temp_yaml, "w") as f:
-                    f.write(convert_yaml_config_to_str(yaml_config=yaml_config))
+                    f.write(convert_yaml_config_to_str(
+                        yaml_config=yaml_config))
                 args = convert_yaml_to_config(temp_yaml)
             finally:
                 if os.path.exists(temp_yaml):
                     os.remove(temp_yaml)
-            
 
             llm = get_single_llm(args.code_model or args.model)
             uncommitted_changes = git_utils.get_uncommitted_changes(".")
             commit_message = git_utils.generate_commit_message.with_llm(llm).run(
                 uncommitted_changes
             )
-            memory["conversation"].append({"role": "user", "content": commit_message})
+            memory["conversation"].append(
+                {"role": "user", "content": commit_message})
             yaml_config["query"] = commit_message
             yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
             with open(os.path.join(execute_file), "w") as f:
@@ -1677,14 +1714,15 @@ def coding(query: str):
 
         # handle image
         v = Image.convert_image_paths_from(query)
-        yaml_config["query"] = v        
+        yaml_config["query"] = v
 
         # Add context for active groups and their query prefixes
         if current_groups:
             active_groups_context = "下面是对上面文件按分组给到的一些描述，当用户的需求正好匹配描述的时候，参考描述来做修改：\n"
             for group in current_groups:
                 group_files = groups.get(group, [])
-                query_prefix = groups_info.get(group, {}).get("query_prefix", "")
+                query_prefix = groups_info.get(
+                    group, {}).get("query_prefix", "")
                 active_groups_context += f"组名: {group}\n"
                 active_groups_context += f"文件列表:\n"
                 for file in group_files:
@@ -2130,7 +2168,8 @@ def execute_shell_command(command: str):
                 f"[bold red]Command failed with return code {process.returncode}[/bold red]"
             )
         else:
-            console.print("[bold green]Command completed successfully[/bold green]")
+            console.print(
+                "[bold green]Command completed successfully[/bold green]")
 
     except FileNotFoundError:
         console.print(
@@ -2178,7 +2217,8 @@ def lib_command(args: List[str]):
                     proxy_url,
                     llm_friendly_packages_dir,
                 )
-                console.print("Successfully cloned llm_friendly_packages repository")
+                console.print(
+                    "Successfully cloned llm_friendly_packages repository")
             except git.exc.GitCommandError as e:
                 console.print(f"Error cloning repository: {e}")
 
@@ -2239,7 +2279,8 @@ def lib_command(args: List[str]):
                     console.print(f"Updated remote URL to: {new_url}")
 
                 origin.pull()
-                console.print("Successfully updated llm_friendly_packages repository")
+                console.print(
+                    "Successfully updated llm_friendly_packages repository")
 
             except git.exc.GitCommandError as e:
                 console.print(f"Error updating repository: {e}")
@@ -2261,7 +2302,8 @@ def lib_command(args: List[str]):
                 table.add_row(doc)
             console.print(table)
         else:
-            console.print(f"No markdown files found for package: {package_name}")
+            console.print(
+                f"No markdown files found for package: {package_name}")
 
     else:
         console.print(f"Unknown subcommand: {subcommand}")
@@ -2383,7 +2425,8 @@ def main():
                     FormattedText(prompt_message), default=new_prompt, style=style
                 )
             else:
-                user_input = session.prompt(FormattedText(prompt_message), style=style)
+                user_input = session.prompt(
+                    FormattedText(prompt_message), style=style)
             new_prompt = ""
 
             if "mode" not in memory:
@@ -2408,13 +2451,14 @@ def main():
                 new_prompt = "/coding " + text
 
             elif user_input.startswith("/add_files"):
-                args = user_input[len("/add_files") :].strip().split()
+                args = user_input[len("/add_files"):].strip().split()
                 add_files(args)
             elif user_input.startswith("/remove_files"):
-                file_names = user_input[len("/remove_files") :].strip().split(",")
+                file_names = user_input[len(
+                    "/remove_files"):].strip().split(",")
                 remove_files(file_names)
             elif user_input.startswith("/index/query"):
-                query = user_input[len("/index/query") :].strip()
+                query = user_input[len("/index/query"):].strip()
                 index_query(query)
 
             elif user_input.startswith("/index/build"):
@@ -2424,14 +2468,14 @@ def main():
                 list_files()
 
             elif user_input.startswith("/mode"):
-                conf = user_input[len("/mode") :].strip()
+                conf = user_input[len("/mode"):].strip()
                 if not conf:
                     print(memory["mode"])
                 else:
                     memory["mode"] = conf
 
             elif user_input.startswith("/conf"):
-                conf = user_input[len("/conf") :].strip()
+                conf = user_input[len("/conf"):].strip()
                 if not conf:
                     print(memory["conf"])
                 else:
@@ -2439,15 +2483,16 @@ def main():
             elif user_input.startswith("/revert"):
                 revert()
             elif user_input.startswith("/commit"):
-                query = user_input[len("/commit") :].strip()
+                query = user_input[len("/commit"):].strip()
                 commit(query)
             elif user_input.startswith("/help"):
                 show_help()
             elif user_input.startswith("/exclude_dirs"):
-                dir_names = user_input[len("/exclude_dirs") :].strip().split(",")
+                dir_names = user_input[len(
+                    "/exclude_dirs"):].strip().split(",")
                 exclude_dirs(dir_names)
             elif user_input.startswith("/ask"):
-                query = user_input[len("/ask") :].strip()
+                query = user_input[len("/ask"):].strip()
                 if not query:
                     print("Please enter your question.")
                 else:
@@ -2457,45 +2502,45 @@ def main():
                 raise EOFError()
 
             elif user_input.startswith("/coding"):
-                query = user_input[len("/coding") :].strip()
+                query = user_input[len("/coding"):].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
                     continue
                 coding(query)
             elif user_input.startswith("/chat"):
-                query = user_input[len("/chat") :].strip()
+                query = user_input[len("/chat"):].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
                 else:
                     chat(query)
 
             elif user_input.startswith("/design"):
-                query = user_input[len("/design") :].strip()
+                query = user_input[len("/design"):].strip()
                 if not query:
                     print("\033[91mPlease enter your design request.\033[0m")
                 else:
                     design(query)
 
             elif user_input.startswith("/summon"):
-                query = user_input[len("/summon") :].strip()
+                query = user_input[len("/summon"):].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
                 else:
                     summon(query)
 
             elif user_input.startswith("/lib"):
-                args = user_input[len("/lib") :].strip().split()
+                args = user_input[len("/lib"):].strip().split()
                 lib_command(args)
 
             elif user_input.startswith("/mcp"):
-                query = user_input[len("/mcp") :].strip()
+                query = user_input[len("/mcp"):].strip()
                 if not query:
                     print("Please enter your query.")
                 else:
                     mcp(query)
 
             elif user_input.startswith("/debug"):
-                code = user_input[len("/debug") :].strip()
+                code = user_input[len("/debug"):].strip()
                 try:
                     result = eval(code)
                     print(f"Debug result: {result}")
@@ -2506,7 +2551,7 @@ def main():
             else:
                 command = user_input
                 if user_input.startswith("/shell"):
-                    command = user_input[len("/shell") :].strip()
+                    command = user_input[len("/shell"):].strip()
                 if not command:
                     print("Please enter a shell command to execute.")
                 else:
@@ -2519,7 +2564,7 @@ def main():
                 save_memory()
                 try:
                     if get_mcp_server():
-                        get_mcp_server().stop()                
+                        get_mcp_server().stop()
                 except Exception as e:
                     pass
             except Exception as e:
