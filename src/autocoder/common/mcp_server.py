@@ -14,7 +14,6 @@ from pydantic import BaseModel
 import sys
 from loguru import logger
 
-
 @dataclass
 class McpRequest:
     query: str
@@ -41,6 +40,11 @@ class McpListRequest:
 class McpListRunningRequest:
     """Request to list all running MCP servers"""
     pass
+
+@dataclass
+class McpResponse:
+    result: str
+    error: Optional[str] = None
 
 
 @dataclass
