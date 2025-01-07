@@ -141,21 +141,16 @@ class McpServer:
                     external_servers = get_mcp_external_servers()
                     for s in external_servers:
                         if s.name == name:
-                            elif s.runtime == "python":
+                            if s.runtime == "python":
                                 # Check if module exists
                                 try:
                                     import importlib
                                     importlib.import_module(name)
                                 except ImportError:
                                     # Install missing module
-                                    install_cmd = [sys.executable, "-m", "pip", "install", name]
-                                    try:
-                                        subprocess.run(install_cmd, check=True)
-                                    except subprocess.CalledProcessError as e:
-                                        # Get settings path for user information
-                                        settings_path = Path.home() / ".auto-coder" / "mcp" / "settings.json"
-                                        manual_cmd = " ".join(install_cmd)
-                                        return McpResponse(result="", error=f"Failed to install package {name}. Please try installing manually with:\n{manual_cmd}\n\nNote: We've added the server configuration to {settings_path}. Once you've installed the package, the server should work automatically.")
+                                    import subprocess
+                                    subprocess.run(
+                                        [sys.executable, "-m", "pip", "install", name], check=True)
 
                                 config = {
                                     "command": "python",
@@ -170,14 +165,8 @@ class McpServer:
                                         ["npx", name, "--version"], check=True)
                                 except:
                                     # Install missing package
-                                    install_cmd = ["npm", "install", "-y", "-g", name]
-                                    try:
-                                        subprocess.run(install_cmd, check=True)
-                                    except subprocess.CalledProcessError as e:
-                                        # Get settings path for user information
-                                        settings_path = Path.home() / ".auto-coder" / "mcp" / "settings.json"
-                                        manual_cmd = " ".join(install_cmd)
-                                        return McpResponse(result="", error=f"Failed to install package {name}. Please try installing manually with:\n{manual_cmd}\n\nNote: We've added the server configuration to {settings_path}. Once you've installed the package, the server should work automatically.")
+                                    subprocess.run(
+                                        ["npm", "install", "-y", "-g", name], check=True)
 
                                 config = {
                                     "command": "npx",
