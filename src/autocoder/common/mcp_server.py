@@ -7,7 +7,6 @@ import byzerllm
 from autocoder.common.mcp_hub import McpHub
 from autocoder.common.mcp_tools import McpExecutor
 from autocoder.common.mcp_hub import MCP_BUILD_IN_SERVERS
-from autocoder.common.mcp_tools import get_mcp_external_servers
 import json
 import os
 import time
@@ -155,13 +154,13 @@ class McpServer:
                                     except subprocess.CalledProcessError:
                                         print(f"\n\033[93mFailed to automatically install {name}. Please manually install it using:\n")
                                         print(f"    pip install {name}\n")
-                                        print(f"We have already updated the server configuration in settings.json.\n")
-                                        print(f"After installation, you can start using the server.\033[0m\n")
+                                        print(f"We have already updated the server configuration in ~/.autocoder/mcp/settings.json.\n")
+                                        print(f"After installation, you can restart the auto-coder.chat using the server.\033[0m\n")
 
                                     config = {
                                         "command": "python",
                                         "args": [
-                                            "-m", name
+                                            "-m", name.replace("-", "_")
                                         ],
                                     }
                             elif s.runtime == "node":
@@ -177,8 +176,8 @@ class McpServer:
                                     except subprocess.CalledProcessError:
                                         print(f"\n\033[93mFailed to automatically install {name}. Please manually install it using:\n")
                                         print(f"    npm install -g {name}\n")
-                                        print(f"We have already updated the server configuration in settings.json.\n")
-                                        print(f"After installation, you can start using the server.\033[0m\n")
+                                        print(f"We have already updated the server configuration in ~/.autocoder/mcp/settings.json.\n")
+                                        print(f"After installation, you can restart the auto-coder.chat using the server.\033[0m\n")
 
                                     config = {
                                         "command": "npx",
@@ -228,7 +227,7 @@ class McpServer:
                         # Get external servers
                         external_servers = get_mcp_external_servers()
                         external_list = [
-                            f"- External: {s['name']} ({s['description']})" for s in external_servers]
+                            f"- External: {s.name} ({s.description})" for s in external_servers]
 
                         # Combine results
                         all_servers = builtin_servers + external_list
