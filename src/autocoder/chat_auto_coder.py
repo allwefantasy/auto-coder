@@ -60,7 +60,7 @@ from byzerllm.utils import format_str_jinja2
 from autocoder.chat_auto_coder_lang import get_message
 from autocoder.utils import operate_config_api
 from autocoder.agent.auto_guess_query import AutoGuessQuery
-from autocoder.common.mcp_server import get_mcp_server, McpRequest
+from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest
 import asyncio
 
 class SymbolItem(BaseModel):
@@ -1386,39 +1386,16 @@ def mcp(query: str):
     is_install = query.strip().startswith("/install")
     if is_install:
         query = query.replace("/install", "", 1).strip()
-        
-        try:
-            # Try to parse as JSON first (full config case)
-            config = json.loads(query)
-            if not isinstance(config, dict) or "name" not in config or "config" not in config:
-                print("Invalid JSON configuration. Must include 'name' and 'config' fields.")
-                return
-            server_name = config["name"]
-            server_config = config["config"]
-        except json.JSONDecodeError:
-            # If not JSON, treat as server name (predefined config case)
-            server_name = query.strip()
-            if server_name not in MCP_BUILD_IN_SERVERS:
-                print(f"Server {server_name} not found in predefined configurations.")
-                print(f"Available servers: {', '.join(MCP_BUILD_IN_SERVERS.keys())}")
-                return
-            server_config = json.loads(MCP_BUILD_IN_SERVERS[server_name])
-            
+        request = McpInstallRequest(server_name_or_config=query)        
         mcp_server = get_mcp_server()
-        response = mcp_server.send_request(
-            McpInstallRequest(
-                server_name=server_name,
-                config=server_config
-            )
-        )
+        response = mcp_server.send_request(request)
         
         if response.error:
             print(f"Error installing MCP server: {response.error}")
         else:
-            print(response.result)
+            print(f"Successfully installed MCP server: {response.result}")
         return
 
-    # Normal query handling
     conf = memory.get("conf", {})
     yaml_config = {
         "include_file": ["./base/base.yml"],

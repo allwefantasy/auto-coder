@@ -118,16 +118,30 @@ class McpHub:
         with open(self.settings_path, "w") as f:
             json.dump(default_settings, f, indent=2)
 
-    def add_server_config(self, name: str, config: dict) -> None:
+    def add_server_config(self, server_name_or_config: str) -> None:
         """
         Add or update MCP server configuration in settings file.
-        
+
         Args:
-            name: Name of the server
-            config: Server configuration dictionary
+            server_name_or_config: Name of the server or server configuration dictionary
         """
         try:
             settings = self._read_settings()
+            try:
+                raw_config = json.loads(server_name_or_config)
+                ## 用户给了一个完整的配置
+                if "mcpServers" in raw_config:                    
+                    raw_config = raw_config["mcpServers"]
+                
+                ## 取第一个server 配置
+                config = list(raw_config.values())[0]
+                name = list(raw_config.keys())[0]
+            except json.JSONDecodeError:
+                name = server_name_or_config
+                if name not in MCP_BUILD_IN_SERVERS:
+                    raise ValueError(
+                        f"MCP server {name} not found in built-in servers")
+                config = MCP_BUILD_IN_SERVERS[name]
             settings["mcpServers"][name] = config
             with open(self.settings_path, "w") as f:
                 json.dump(settings, f, indent=2)
@@ -139,7 +153,7 @@ class McpHub:
     def remove_server_config(self, name: str) -> None:
         """
         Remove MCP server configuration from settings file.
-        
+
         Args:
             name: Name of the server to remove
         """
@@ -355,7 +369,7 @@ class McpHub:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Failed to read MCP settings: {e}")
-            return {"mcpServers": {}}        
+            return {"mcpServers": {}}
 
     async def call_tool(
         self, server_name: str, tool_name: str, tool_arguments: Optional[Dict] = None

@@ -13,9 +13,8 @@ class McpRequest:
     model: Optional[str] = None
     
 @dataclass
-class McpInstallRequest:
-    server_name: str
-    config: Dict[str, Any]
+class McpInstallRequest:    
+    server_name_or_config: Optional[str] = None
 
 @dataclass
 class McpResponse:
@@ -54,16 +53,15 @@ class McpServer:
         hub = McpHub()
         await hub.initialize()
         
-        while self._running:
-            try:
+        while self._running:            
             try:
                 request = await self._request_queue.get()
                 if request is None:
                     break
                 
                 if isinstance(request, McpInstallRequest):
-                    try:
-                        hub.add_server_config(request.server_name, request.config)
+                    try:                        
+                        hub.add_server_config(request.server_name_or_config)
                         await self._response_queue.put(McpResponse(result=f"Successfully installed MCP server: {request.server_name}"))
                     except Exception as e:
                         await self._response_queue.put(McpResponse(result="", error=f"Failed to install MCP server: {str(e)}"))
