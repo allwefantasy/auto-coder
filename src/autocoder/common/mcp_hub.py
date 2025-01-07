@@ -169,46 +169,15 @@ class McpHub:
         """Get list of all configured servers"""
         return [conn.server for conn in self.connections.values()]
 
-    def validate_server_config(self, name: str) -> dict:
-        """
-        Validate server configuration and return config dict
-        
-        Args:
-            name: Server name to validate
-            
-        Returns:
-            dict: Server configuration
-            
-        Raises:
-            ValueError: If server name is invalid
-        """
-        if name not in MCP_BUILD_IN_SERVERS:
-            raise ValueError(
-                f"Server {name} not found in predefined configurations. "
-                f"Available servers: {', '.join(MCP_BUILD_IN_SERVERS.keys())}"
-            )
-        return json.loads(MCP_BUILD_IN_SERVERS[name])
-
-    async def connect_to_server(self, name: str, config: Optional[dict] = None) -> None:
+    async def connect_to_server(self, name: str, config: dict) -> None:
         """
         Establish connection to an MCP server with proper resource management
-        
-        Args:
-            name: Server name to connect to
-            config: Optional server configuration. If None, will use predefined config
-            
-        Raises:
-            ValueError: If server name is invalid or connection fails
         """
         # Remove existing connection if present
         if name in self.connections:
             await self.delete_connection(name)
 
         try:
-            # If no config provided, use predefined config
-            if config is None:
-                config = self.validate_server_config(name)
-
             server = McpServer(
                 name=name, config=json.dumps(config), status="connecting"
             )

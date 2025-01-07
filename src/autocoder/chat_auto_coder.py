@@ -1397,12 +1397,12 @@ def mcp(query: str):
             server_config = config["config"]
         except json.JSONDecodeError:
             # If not JSON, treat as server name (predefined config case)
-        server_name = query.strip()
-        try:
-            server_config = mcp_server.validate_server_config(server_name)
-        except ValueError as e:
-            print(str(e))
-            return
+            server_name = query.strip()
+            if server_name not in MCP_BUILD_IN_SERVERS:
+                print(f"Server {server_name} not found in predefined configurations.")
+                print(f"Available servers: {', '.join(MCP_BUILD_IN_SERVERS.keys())}")
+                return
+            server_config = json.loads(MCP_BUILD_IN_SERVERS[server_name])
             
         mcp_server = get_mcp_server()
         response = mcp_server.send_request(
