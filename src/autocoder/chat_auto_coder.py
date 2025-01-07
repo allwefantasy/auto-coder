@@ -45,8 +45,7 @@ from autocoder.chat_auto_coder_lang import get_message
 from autocoder.utils import operate_config_api
 from autocoder.agent.auto_guess_query import AutoGuessQuery
 from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest
-import asyncio
-
+import byzerllm
 
 class SymbolItem(BaseModel):
     symbol_name: str

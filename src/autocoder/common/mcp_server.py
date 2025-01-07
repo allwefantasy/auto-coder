@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import byzerllm
 from autocoder.common.mcp_hub import McpHub
 from autocoder.common.mcp_tools import McpExecutor
+from autocoder.common.mcp_hub import MCP_BUILD_IN_SERVERS
 
 @dataclass 
 class McpRequest:
@@ -89,7 +90,7 @@ class McpServer:
 
                 elif isinstance(request, McpListRequest):
                     try:
-                        builtin_servers = "\n".join([f"- {name}" for name in hub.MCP_BUILD_IN_SERVERS.keys()])
+                        builtin_servers = "\n".join([f"- {name}" for name in MCP_BUILD_IN_SERVERS.keys()])
                         await self._response_queue.put(McpResponse(result=builtin_servers))
                     except Exception as e:
                         await self._response_queue.put(McpResponse(result="", error=f"Failed to list builtin servers: {str(e)}"))
