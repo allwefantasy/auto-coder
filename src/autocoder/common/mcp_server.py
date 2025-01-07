@@ -17,20 +17,6 @@ class McpInstallRequest:
     server_name_or_config: Optional[str] = None
 
 @dataclass
-class McpRemoveRequest:
-    server_name: str
-
-@dataclass
-class McpListRequest:
-    """Request to list all builtin MCP servers"""
-    pass
-
-@dataclass
-class McpListRunningRequest:
-    """Request to list all running MCP servers"""
-    pass
-
-@dataclass
 class McpResponse:
     result: str
     error: Optional[str] = None
@@ -79,28 +65,6 @@ class McpServer:
                         await self._response_queue.put(McpResponse(result=f"Successfully installed MCP server: {request.server_name_or_config}"))
                     except Exception as e:
                         await self._response_queue.put(McpResponse(result="", error=f"Failed to install MCP server: {str(e)}"))
-                
-                elif isinstance(request, McpRemoveRequest):
-                    try:
-                        await hub.remove_server_config(request.server_name)
-                        await self._response_queue.put(McpResponse(result=f"Successfully removed MCP server: {request.server_name}"))
-                    except Exception as e:
-                        await self._response_queue.put(McpResponse(result="", error=f"Failed to remove MCP server: {str(e)}"))
-
-                elif isinstance(request, McpListRequest):
-                    try:
-                        builtin_servers = "\n".join([f"- {name}" for name in hub.MCP_BUILD_IN_SERVERS.keys()])
-                        await self._response_queue.put(McpResponse(result=builtin_servers))
-                    except Exception as e:
-                        await self._response_queue.put(McpResponse(result="", error=f"Failed to list builtin servers: {str(e)}"))
-
-                elif isinstance(request, McpListRunningRequest):
-                    try:
-                        running_servers = "\n".join([f"- {server.name}" for server in hub.get_servers()])
-                        await self._response_queue.put(McpResponse(result=running_servers))
-                    except Exception as e:
-                        await self._response_queue.put(McpResponse(result="", error=f"Failed to list running servers: {str(e)}"))
-                        
                 else:
                     llm = byzerllm.ByzerLLM.from_default_model(model=request.model)
                     mcp_executor = McpExecutor(hub, llm)
