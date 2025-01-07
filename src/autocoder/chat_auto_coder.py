@@ -126,6 +126,9 @@ commands = [
     "/lib",
     "/design",
     "/mcp",
+    "/mcp/remove",
+    "/mcp/list",
+    "/mcp/list_running",
 ]
 
 
@@ -143,6 +146,15 @@ def show_help():
     )
     print(
         f"  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92m{get_message('chat_desc')}\033[0m"
+    )
+    print(
+        f"  \033[94m/mcp/remove\033[0m \033[93m<server_name>\033[0m - \033[92mRemove a MCP server\033[0m"
+    )
+    print(
+        f"  \033[94m/mcp/list\033[0m - \033[92mList all available builtin MCP servers\033[0m"
+    )
+    print(
+        f"  \033[94m/mcp/list_running\033[0m - \033[92mList all running MCP servers\033[0m"
     )
     print(
         f"  \033[94m/coding\033[0m \033[93m<query>\033[0m - \033[92m{get_message('coding_desc')}\033[0m"
@@ -1383,11 +1395,43 @@ def convert_yaml_to_config(yaml_file: str):
 
 
 def mcp(query: str):
-    is_add = query.strip().startswith("/add")
-    if is_add:
+    query = query.strip()
+    mcp_server = get_mcp_server()
+    
+    # Handle remove command
+    if query.startswith("/remove"):
+        server_name = query.replace("/remove", "", 1).strip()
+        response = mcp_server.send_request(McpRemoveRequest(server_name=server_name))
+        if response.error:
+            print(f"Error removing MCP server: {response.error}")
+        else:
+            print(f"Successfully removed MCP server: {response.result}")
+        return
+
+    # Handle list command
+    if query.startswith("/list_running"):
+        response = mcp_server.send_request(McpListRunningRequest())
+        if response.error:
+            print(f"Error listing running MCP servers: {response.error}")
+        else:
+            print("Running MCP servers:")
+            print(response.result)
+        return
+
+    # Handle list command
+    if query.startswith("/list"):
+        response = mcp_server.send_request(McpListRequest())
+        if response.error:
+            print(f"Error listing builtin MCP servers: {response.error}")
+        else:
+            print("Available builtin MCP servers:")
+            print(response.result)
+        return
+
+    # Handle add command
+    if query.startswith("/add"):
         query = query.replace("/add", "", 1).strip()
         request = McpInstallRequest(server_name_or_config=query)        
-        mcp_server = get_mcp_server()
         response = mcp_server.send_request(request)
         
         if response.error:
@@ -1396,6 +1440,7 @@ def mcp(query: str):
             print(f"Successfully installed MCP server: {response.result}")
         return
 
+    # Handle default query
     conf = memory.get("conf", {})
     yaml_config = {
         "include_file": ["./base/base.yml"],
