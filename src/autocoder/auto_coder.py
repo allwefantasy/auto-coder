@@ -786,7 +786,7 @@ def main(input_args: Optional[List[str]] = None):
                     pre_conversations.append(
                         {
                             "role": "user",
-                            "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：\n{file_content}",
+                            "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：\n <files>\n{file_content}</files>",
                         },
                     )
                     pre_conversations.append(
@@ -813,7 +813,7 @@ def main(input_args: Optional[List[str]] = None):
                 pre_conversations.append(
                     {
                         "role": "user",
-                        "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：\n{s}",
+                        "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：\n <files>{s}</files>",
                     }
                 )
                 pre_conversations.append(
@@ -831,15 +831,19 @@ def main(input_args: Optional[List[str]] = None):
                     source_codes, pre_conversations, last_conversation
                 ):
                     """
+                    <files>
                     {% if source_codes %}
                     {{ source_codes }}
                     {% endif %}
+                    </files>
 
                     {% if pre_conversations %}
                     下面是我们之间的历史对话，假设我是A，你是B。
+                    <conversations>
                     {% for conv in pre_conversations %}
                     {{ "A" if conv.role == "user" else "B" }}: {{ conv.content }}
                     {% endfor %}
+                    </conversations>
                     {% endif %}
 
 
