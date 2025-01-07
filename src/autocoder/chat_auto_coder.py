@@ -1443,6 +1443,15 @@ def mcp(query: str):
             print(response.result)
         return
 
+    # Handle refresh command
+    if query.startswith("/refresh"):
+        response = mcp_server.send_request(McpRefreshRequest())
+        if response.error:
+            print(f"Error refreshing MCP servers: {response.error}")
+        else:
+            print("Successfully refreshed MCP servers")
+        return
+
     # Handle add command
     if query.startswith("/add"):
         query = query.replace("/add", "", 1).strip()

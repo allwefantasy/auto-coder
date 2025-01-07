@@ -44,7 +44,13 @@ class McpListRunningRequest:
 
 
 @dataclass
-class McpResponse:
+class McpRefreshRequest:
+    """Request to refresh MCP server connections"""
+    pass
+
+
+@dataclass
+class McpExternalServer(BaseModel):
     result: str
     error: Optional[str] = None
 
@@ -257,6 +263,13 @@ class McpServer:
                         await self._response_queue.put(McpResponse(result=running_servers))
                     except Exception as e:
                         await self._response_queue.put(McpResponse(result="", error=f"Failed to list running servers: {str(e)}"))
+
+                elif isinstance(request, McpRefreshRequest):
+                    try:
+                        await hub.initialize()
+                        await self._response_queue.put(McpResponse(result="Successfully refreshed MCP server connections"))
+                    except Exception as e:
+                        await self._response_queue.put(McpResponse(result="", error=f"Failed to refresh MCP servers: {str(e)}"))
 
                 else:
                     llm = byzerllm.ByzerLLM.from_default_model(
