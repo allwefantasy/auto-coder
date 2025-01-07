@@ -66,14 +66,25 @@ class McpServer:
                     except Exception as e:
                         await self._response_queue.put(McpResponse(result="", error=f"Failed to install MCP server: {str(e)}"))
                 else:
-                    llm = byzerllm.ByzerLLM.from_default_model(model=request.model)
-                    mcp_executor = McpExecutor(hub, llm)
-                    conversations = [{"role": "user", "content": request.query}]
-                    _, results = await mcp_executor.run(conversations)          
-                    if not results:
-                        await self._response_queue.put(McpResponse(result="[No Result]", error="No results"))
-                    results_str = "\n\n".join(mcp_executor.format_mcp_result(result) for result in results)
-                    await self._response_queue.put(McpResponse(result=results_str))
+                    if request.query.startswith("/remove"):
+                        server_name = request.query.replace("/remove", "", 1).strip()
+                        try:
+                            await hub.remove_server_config(server_name)
+                            await self._response_queue.put(McpResponse(result=f"Successfully removed MCP server: {server_name}"))
+                        except Exception as e:
+                            await self._response_queue.put(McpResponse(result="", error=f"Failed to remove MCP server: {str(e)}"))
+                    elif request.query.startswith("/list"):
+                        servers = hub.get_servers()
+                        await self._response_queue.put(McpResponse(result=json.dumps([s.dict() for s in servers])))
+                    else:
+                        llm = byzerllm.ByzerLLM.from_default_model(model=request.model)
+                        mcp_executor = McpExecutor(hub, llm)
+                        conversations = [{"role": "user", "content": request.query}]
+                        _, results = await mcp_executor.run(conversations)          
+                        if not results:
+                            await self._response_queue.put(McpResponse(result="[No Result]", error="No results"))
+                        results_str = "\n\n".join(mcp_executor.format_mcp_result(result) for result in results)
+                        await self._response_queue.put(McpResponse(result=results_str))
             except Exception as e:
                 await self._response_queue.put(McpResponse(result="", error=str(e)))
         
