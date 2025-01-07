@@ -1383,22 +1383,18 @@ def convert_yaml_to_config(yaml_file: str):
 
 
 def mcp(query: str):
-    if query.strip().startswith("/add"):
+    is_add = query.strip().startswith("/add")
+    if is_add:
         query = query.replace("/add", "", 1).strip()
         request = McpInstallRequest(server_name_or_config=query)        
-    elif query.strip().startswith("/remove"):
-        query = query.replace("/remove", "", 1).strip()
-        request = McpRemoveRequest(server_name=query)
-    else:
-        request = McpRequest(query=query)
+        mcp_server = get_mcp_server()
+        response = mcp_server.send_request(request)
         
-    mcp_server = get_mcp_server()
-    response = mcp_server.send_request(request)
-    
-    if response.error:
-        print(f"Error: {response.error}")
-    else:
-        print(response.result)
+        if response.error:
+            print(f"Error installing MCP server: {response.error}")
+        else:
+            print(f"Successfully installed MCP server: {response.result}")
+        return
 
     conf = memory.get("conf", {})
     yaml_config = {
