@@ -1383,18 +1383,20 @@ def convert_yaml_to_config(yaml_file: str):
 
 
 def mcp(query: str):
-    if query.strip().startswith("/add"):
+    is_add = query.strip().startswith("/add")
+    if is_add:
         query = query.replace("/add", "", 1).strip()
         request = McpInstallRequest(server_name_or_config=query)        
-    elif query.strip().startswith("/remove"):
-        server_name = query.replace("/remove", "", 1).strip()
-        request = McpRemoveRequest(server_name=server_name)
-    elif query.strip().startswith("/list"):
-        list_type = query.replace("/list", "", 1).strip() or "all"
-        request = McpListRequest(list_type=list_type)
-    else:
-        # Original query handling
-        conf = memory.get("conf", {})
+        mcp_server = get_mcp_server()
+        response = mcp_server.send_request(request)
+        
+        if response.error:
+            print(f"Error installing MCP server: {response.error}")
+        else:
+            print(f"Successfully installed MCP server: {response.result}")
+        return
+
+    conf = memory.get("conf", {})
     yaml_config = {
         "include_file": ["./base/base.yml"],
         "auto_merge": conf.get("auto_merge", "editblock"),
