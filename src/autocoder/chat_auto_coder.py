@@ -1383,17 +1383,53 @@ def convert_yaml_to_config(yaml_file: str):
 
 
 def mcp(query: str):
-    is_add = query.strip().startswith("/add")
-    if is_add:
+    console = Console()
+    
+    if query.strip().startswith("/add"):
         query = query.replace("/add", "", 1).strip()
         request = McpInstallRequest(server_name_or_config=query)        
         mcp_server = get_mcp_server()
         response = mcp_server.send_request(request)
         
         if response.error:
-            print(f"Error installing MCP server: {response.error}")
+            console.print(Panel(f"Error installing MCP server: {response.error}", title="Error", border_style="red"))
         else:
-            print(f"Successfully installed MCP server: {response.result}")
+            console.print(Panel(f"Successfully installed MCP server: {response.result}", title="MCP Server Added", border_style="green"))
+        return
+    elif query.strip().startswith("/remove"):
+        server_name = query.replace("/remove", "", 1).strip()
+        if not server_name:
+            console.print(Panel("Please specify server name to remove", title="Error", border_style="red"))
+            return
+            
+        mcp_server = get_mcp_server()
+        response = mcp_server.send_request(McpInstallRequest(server_name_or_config=server_name))
+        
+        if response.error:
+            console.print(Panel(f"Error removing MCP server: {response.error}", title="Error", border_style="red"))
+        else:
+            console.print(Panel(f"Successfully removed MCP server: {server_name}", title="MCP Server Removed", border_style="green"))
+        return
+    elif query.strip().startswith("/list"):
+        mcp_server = get_mcp_server()
+        servers = mcp_server.mcp_hub.get_servers()
+        
+        if not servers:
+            console.print(Panel("No MCP servers found", title="MCP Servers", border_style="yellow"))
+            return
+            
+        table = Table(title="MCP Servers", show_header=True, header_style="bold magenta")
+        table.add_column("Name", style="cyan")
+        table.add_column("Status", style="green")
+        table.add_column("Tools", style="yellow")
+        table.add_column("Resources", style="blue")
+        
+        for server in servers:
+            tools = len(server.tools)
+            resources = len(server.resources)
+            table.add_row(server.name, server.status, str(tools), str(resources))
+            
+        console.print(Panel(table, border_style="blue"))
         return
 
     conf = memory.get("conf", {})
