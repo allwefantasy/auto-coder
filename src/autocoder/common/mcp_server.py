@@ -11,17 +11,11 @@ from autocoder.common.mcp_tools import McpExecutor
 class McpRequest:
     query: str
     model: Optional[str] = None
-    install_config: Optional[dict] = None
     
 @dataclass
 class McpResponse:
     result: str
     error: Optional[str] = None
-
-@dataclass
-class McpInstallRequest:
-    server_name: str
-    config: dict
 
 class McpServer:
     def __init__(self):
@@ -60,13 +54,6 @@ class McpServer:
                 request = await self._request_queue.get()
                 if request is None:
                     break
-                    
-                if request.install_config:
-                    # Handle installation request
-                    await hub.install_server(request.install_config["server_name"], 
-                                           request.install_config["config"])
-                    await self._response_queue.put(McpResponse(result=f"Successfully installed {request.install_config['server_name']}"))
-                    continue
                     
                 llm = byzerllm.ByzerLLM.from_default_model(model=request.model)
                 mcp_executor = McpExecutor(hub, llm)
