@@ -149,15 +149,21 @@ class McpServer:
                                 except ImportError:
                                     # Install missing module
                                     import subprocess
-                                    subprocess.run(
-                                        [sys.executable, "-m", "pip", "install", name], check=True)
+                                    try:
+                                        subprocess.run(
+                                            [sys.executable, "-m", "pip", "install", name], check=True)
+                                    except subprocess.CalledProcessError:
+                                        print(f"\n\033[93mFailed to automatically install {name}. Please manually install it using:\n")
+                                        print(f"    pip install {name}\n")
+                                        print(f"We have already updated the server configuration in settings.json.\n")
+                                        print(f"After installation, you can start using the server.\033[0m\n")
 
-                                config = {
-                                    "command": "python",
-                                    "args": [
-                                        "-m", name
-                                    ],
-                                }
+                                    config = {
+                                        "command": "python",
+                                        "args": [
+                                            "-m", name
+                                        ],
+                                    }
                             elif s.runtime == "node":
                                 # Check if package exists
                                 try:
@@ -165,16 +171,22 @@ class McpServer:
                                         ["npx", name, "--version"], check=True)
                                 except:
                                     # Install missing package
-                                    subprocess.run(
-                                        ["npm", "install", "-y", "-g", name], check=True)
+                                    try:
+                                        subprocess.run(
+                                            ["npm", "install", "-y", "-g", name], check=True)
+                                    except subprocess.CalledProcessError:
+                                        print(f"\n\033[93mFailed to automatically install {name}. Please manually install it using:\n")
+                                        print(f"    npm install -g {name}\n")
+                                        print(f"We have already updated the server configuration in settings.json.\n")
+                                        print(f"After installation, you can start using the server.\033[0m\n")
 
-                                config = {
-                                    "command": "npx",
-                                    "args": [
-                                        "-y",
-                                        name
-                                    ]
-                                }
+                                    config = {
+                                        "command": "npx",
+                                        "args": [
+                                            "-y",
+                                            name
+                                        ]
+                                    }
                             break
                 else:
                     config = MCP_BUILD_IN_SERVERS[name]
