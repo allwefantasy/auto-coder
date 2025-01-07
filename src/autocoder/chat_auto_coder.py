@@ -1386,7 +1386,39 @@ def mcp(query: str):
     is_install = query.strip().startswith("/install")
     if is_install:
         query = query.replace("/install", "", 1).strip()
+        
+        try:
+            # Try to parse as JSON first (full config case)
+            config = json.loads(query)
+            if not isinstance(config, dict) or "name" not in config or "config" not in config:
+                print("Invalid JSON configuration. Must include 'name' and 'config' fields.")
+                return
+            server_name = config["name"]
+            server_config = config["config"]
+        except json.JSONDecodeError:
+            # If not JSON, treat as server name (predefined config case)
+            server_name = query.strip()
+            if server_name not in MCP_BUILD_IN_SERVERS:
+                print(f"Server {server_name} not found in predefined configurations.")
+                print(f"Available servers: {', '.join(MCP_BUILD_IN_SERVERS.keys())}")
+                return
+            server_config = json.loads(MCP_BUILD_IN_SERVERS[server_name])
+            
+        mcp_server = get_mcp_server()
+        response = mcp_server.send_request(
+            McpInstallRequest(
+                server_name=server_name,
+                config=server_config
+            )
+        )
+        
+        if response.error:
+            print(f"Error installing MCP server: {response.error}")
+        else:
+            print(response.result)
+        return
 
+    # Normal query handling
     conf = memory.get("conf", {})
     yaml_config = {
         "include_file": ["./base/base.yml"],

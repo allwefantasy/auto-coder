@@ -118,6 +118,44 @@ class McpHub:
         with open(self.settings_path, "w") as f:
             json.dump(default_settings, f, indent=2)
 
+    def add_server_config(self, name: str, config: dict) -> None:
+        """
+        Add or update MCP server configuration in settings file.
+        
+        Args:
+            name: Name of the server
+            config: Server configuration dictionary
+        """
+        try:
+            settings = self._read_settings()
+            settings["mcpServers"][name] = config
+            with open(self.settings_path, "w") as f:
+                json.dump(settings, f, indent=2)
+            logger.info(f"Added/updated MCP server config: {name}")
+        except Exception as e:
+            logger.error(f"Failed to add MCP server config: {e}")
+            raise
+
+    def remove_server_config(self, name: str) -> None:
+        """
+        Remove MCP server configuration from settings file.
+        
+        Args:
+            name: Name of the server to remove
+        """
+        try:
+            settings = self._read_settings()
+            if name in settings["mcpServers"]:
+                del settings["mcpServers"][name]
+                with open(self.settings_path, "w") as f:
+                    json.dump(settings, f, indent=2)
+                logger.info(f"Removed MCP server config: {name}")
+            else:
+                logger.warning(f"MCP server {name} not found in settings")
+        except Exception as e:
+            logger.error(f"Failed to remove MCP server config: {e}")
+            raise
+
     async def initialize(self):
         """Initialize MCP server connections from settings"""
         try:
