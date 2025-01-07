@@ -14,6 +14,9 @@ COMMANDS = {
     },
     "/coding": {"/apply": {}, "/next": {}},
     "/chat": {"/new": {}, "/review": {}, "/no_context": {}},
+    "/mcp": {
+        "/add": "",      
+    },
     "/lib": {
         "/add": "",
         "/remove": "",

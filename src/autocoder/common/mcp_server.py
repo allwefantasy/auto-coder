@@ -61,15 +61,17 @@ class McpServer:
                 
                 if isinstance(request, McpInstallRequest):
                     try:                        
-                        hub.add_server_config(request.server_name_or_config)
-                        await self._response_queue.put(McpResponse(result=f"Successfully installed MCP server: {request.server_name}"))
+                        await hub.add_server_config(request.server_name_or_config)
+                        await self._response_queue.put(McpResponse(result=f"Successfully installed MCP server: {request.server_name_or_config}"))
                     except Exception as e:
                         await self._response_queue.put(McpResponse(result="", error=f"Failed to install MCP server: {str(e)}"))
                 else:
                     llm = byzerllm.ByzerLLM.from_default_model(model=request.model)
                     mcp_executor = McpExecutor(hub, llm)
                     conversations = [{"role": "user", "content": request.query}]
-                    _, results = await mcp_executor.run(conversations)
+                    _, results = await mcp_executor.run(conversations)          
+                    if not results:
+                        await self._response_queue.put(McpResponse(result="[No Result]", error="No results"))
                     results_str = "\n\n".join(mcp_executor.format_mcp_result(result) for result in results)
                     await self._response_queue.put(McpResponse(result=results_str))
             except Exception as e:

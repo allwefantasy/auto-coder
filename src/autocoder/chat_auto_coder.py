@@ -1383,9 +1383,9 @@ def convert_yaml_to_config(yaml_file: str):
 
 
 def mcp(query: str):
-    is_install = query.strip().startswith("/install")
-    if is_install:
-        query = query.replace("/install", "", 1).strip()
+    is_add = query.strip().startswith("/add")
+    if is_add:
+        query = query.replace("/add", "", 1).strip()
         request = McpInstallRequest(server_name_or_config=query)        
         mcp_server = get_mcp_server()
         response = mcp_server.send_request(request)

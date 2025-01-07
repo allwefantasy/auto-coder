@@ -63,10 +63,10 @@ class McpConnection:
 
 MCP_PERPLEXITY_SERVER = '''
 {
-    "Perplexity": {
+    "perplexity": {
         "command": "python",
         "args": [
-            "-m", "autocoer.common.mcp_servers.mcp_server_perplexity"
+            "-m", "autocoder.common.mcp_servers.mcp_server_perplexity"
         ],
         "env": {
             "PERPLEXITY_API_KEY": "{{PERPLEXITY_API_KEY}}"
@@ -76,7 +76,7 @@ MCP_PERPLEXITY_SERVER = '''
 '''
 
 MCP_BUILD_IN_SERVERS = {
-    "Perplexity": MCP_PERPLEXITY_SERVER
+    "perplexity": json.loads(MCP_PERPLEXITY_SERVER)["perplexity"]
 }
 
 
@@ -118,7 +118,7 @@ class McpHub:
         with open(self.settings_path, "w") as f:
             json.dump(default_settings, f, indent=2)
 
-    def add_server_config(self, server_name_or_config: str) -> None:
+    async def add_server_config(self, server_name_or_config: str) -> None:
         """
         Add or update MCP server configuration in settings file.
 
@@ -144,13 +144,14 @@ class McpHub:
                 config = MCP_BUILD_IN_SERVERS[name]
             settings["mcpServers"][name] = config
             with open(self.settings_path, "w") as f:
-                json.dump(settings, f, indent=2)
+                json.dump(settings, f, indent=2, ensure_ascii=False)
+            await self.initialize()
             logger.info(f"Added/updated MCP server config: {name}")
         except Exception as e:
             logger.error(f"Failed to add MCP server config: {e}")
             raise
 
-    def remove_server_config(self, name: str) -> None:
+    async def remove_server_config(self, name: str) -> None:
         """
         Remove MCP server configuration from settings file.
 
@@ -162,8 +163,9 @@ class McpHub:
             if name in settings["mcpServers"]:
                 del settings["mcpServers"][name]
                 with open(self.settings_path, "w") as f:
-                    json.dump(settings, f, indent=2)
+                    json.dump(settings, f, indent=2, ensure_ascii=False)
                 logger.info(f"Removed MCP server config: {name}")
+                await self.initialize()
             else:
                 logger.warning(f"MCP server {name} not found in settings")
         except Exception as e:

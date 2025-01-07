@@ -6,6 +6,7 @@ import mcp.server.stdio
 import mcp.types as types
 from mcp.server import NotificationOptions, Server
 from mcp.server.models import InitializationOptions
+import json
 
 PERPLEXITY_API_KEY = getenv("PERPLEXITY_API_KEY")
 PERPLEXITY_API_BASE_URL = "https://api.perplexity.ai"
@@ -105,12 +106,12 @@ async def handle_call_tool(
     except httpx.HTTPError as e:
         raise RuntimeError(f"API error: {str(e)}")
 
-    return [
-        types.TextContent(
+    result = json.loads(response.text)
+    c = result["choices"][0]["message"]["content"]
+    return [types.TextContent(
             type="text",
-            text=response.text,
-        )
-    ]
+            text= c,
+            )]
 
 
 async def main():
@@ -122,8 +123,13 @@ async def main():
                 server_name="mcp-server-perplexity",
                 server_version="0.1.2",
                 capabilities=server.get_capabilities(
-                    notification_options=NotificationOptions(tools_changed=True),
+                    notification_options=NotificationOptions(
+                        tools_changed=True),
                     experimental_capabilities={},
                 ),
             ),
         )
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
