@@ -117,6 +117,67 @@ class McpServer:
         self._task = self._loop.create_task(self._process_request())
         self._loop.run_forever()
 
+    async def _install_server(self, request: McpInstallRequest) -> McpResponse:
+        """Install an MCP server with module dependency check"""
+        try:
+            server_name_or_config = request.server_name_or_config
+            try:
+                raw_config = json.loads(server_name_or_config)
+                # 用户给了一个完整的配置
+                if "mcpServers" in raw_config:
+                    raw_config = raw_config["mcpServers"]
+
+                # 取第一个server 配置
+                config = list(raw_config.values())[0]
+                name = list(raw_config.keys())[0]
+            except json.JSONDecodeError:
+                name = server_name_or_config
+                if name not in MCP_BUILD_IN_SERVERS:
+                    # 查找外部server
+                    external_servers = get_mcp_external_servers()
+                    for s in external_servers:
+                        if s.name == name:
+                            if s.runtime == "python":
+                                # Check if module exists
+                                try:
+                                    import importlib
+                                    importlib.import_module(name)
+                                except ImportError:
+                                    # Install missing module
+                                    import subprocess
+                                    subprocess.run([sys.executable, "-m", "pip", "install", name], check=True)
+                                
+                                config = {
+                                    "command": "python",
+                                    "args": [
+                                        "-m", name
+                                    ],                                               
+                                }
+                            elif s.runtime == "node":
+                                # Check if package exists
+                                try:
+                                    subprocess.run(["npx", name, "--version"], check=True)
+                                except:
+                                    # Install missing package
+                                    subprocess.run(["npm", "install", "-g", name], check=True)
+                                
+                                config = {
+                                    "command": "npx",
+                                    "args": [
+                                        "-y",
+                                        name
+                                    ]
+                                }
+                            break
+                else:
+                    config = MCP_BUILD_IN_SERVERS[name]
+
+            hub = McpHub()
+            await hub.add_server_config(name, config)
+            return McpResponse(result=f"Successfully installed MCP server: {request.server_name_or_config}")
+        except Exception as e:
+            return McpResponse(result="", error=f"Failed to install MCP server: {str(e)}")
+
     async def _process_request(self):
         hub = McpHub()
         await hub.initialize()
@@ -128,47 +189,8 @@ class McpServer:
                     break
 
                 if isinstance(request, McpInstallRequest):
-                    try:
-                        server_name_or_config = request.server_name_or_config
-                        try:
-                            raw_config = json.loads(server_name_or_config)
-                            # 用户给了一个完整的配置
-                            if "mcpServers" in raw_config:
-                                raw_config = raw_config["mcpServers"]
-
-                            # 取第一个server 配置
-                            config = list(raw_config.values())[0]
-                            name = list(raw_config.keys())[0]
-                        except json.JSONDecodeError:
-                            name = server_name_or_config
-                            if name not in MCP_BUILD_IN_SERVERS:
-                                # 查找外部server
-                                external_servers = get_mcp_external_servers()
-                                for s in external_servers:
-                                    if s.name == name:
-                                        if s.runtime == "python":
-                                            config = {
-                                                "command": "python",
-                                                "args": [
-                                                    "-m", name
-                                                ],                                               
-                                            }
-                                        elif s.runtime == "node":
-                                            config = {
-                                                "command": "npx",
-                                                "args": [
-                                                    "-y",
-                                                    name
-                                                ]
-                                            }
-                                        break
-                            else:
-                                config = MCP_BUILD_IN_SERVERS[name]
-
-                        await hub.add_server_config(name, config)
-                        await self._response_queue.put(McpResponse(result=f"Successfully installed MCP server: {request.server_name_or_config}"))
-                    except Exception as e:
-                        await self._response_queue.put(McpResponse(result="", error=f"Failed to install MCP server: {str(e)}"))
+                    response = await self._install_server(request)
+                    await self._response_queue.put(response)
 
                 elif isinstance(request, McpRemoveRequest):
                     try:
