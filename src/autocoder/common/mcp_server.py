@@ -54,8 +54,7 @@ class McpServer:
         hub = McpHub()
         await hub.initialize()
         
-        while self._running:
-            try:
+        while self._running:            
             try:
                 request = await self._request_queue.get()
                 if request is None:
