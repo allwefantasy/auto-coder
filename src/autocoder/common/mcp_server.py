@@ -118,7 +118,7 @@ class McpServer:
         self._task = self._loop.create_task(self._process_request())
         self._loop.run_forever()
 
-    async def _install_server(self, request: McpInstallRequest) -> McpResponse:
+    async def _install_server(self, request: McpInstallRequest, hub: McpHub) -> McpResponse:
         """Install an MCP server with module dependency check"""
         name = ""
         config = {}
@@ -134,7 +134,7 @@ class McpServer:
                 config = list(raw_config.values())[0]
                 name = list(raw_config.keys())[0]
             except json.JSONDecodeError:
-                name = server_name_or_config
+                name = server_name_or_config.strip()
                 if name not in MCP_BUILD_IN_SERVERS:
                     # 查找外部server
                     external_servers = get_mcp_external_servers()
@@ -144,7 +144,8 @@ class McpServer:
                                 # Check if module exists
                                 try:
                                     import importlib
-                                    importlib.import_module(name)
+                                    importlib.import_module(
+                                        name.replace("-", "_"))
                                 except ImportError:
                                     # Install missing module
                                     import subprocess
@@ -152,17 +153,20 @@ class McpServer:
                                         subprocess.run(
                                             [sys.executable, "-m", "pip", "install", name], check=True)
                                     except subprocess.CalledProcessError:
-                                        print(f"\n\033[93mFailed to automatically install {name}. Please manually install it using:\n")
+                                        print(
+                                            f"\n\033[93mFailed to automatically install {name}. Please manually install it using:\n")
                                         print(f"    pip install {name}\n")
-                                        print(f"We have already updated the server configuration in ~/.autocoder/mcp/settings.json.\n")
-                                        print(f"After installation, you can restart the auto-coder.chat using the server.\033[0m\n")
+                                        print(
+                                            f"We have already updated the server configuration in ~/.autocoder/mcp/settings.json.\n")
+                                        print(
+                                            f"After installation, you can restart the auto-coder.chat using the server.\033[0m\n")
 
-                                    config = {
-                                        "command": "python",
-                                        "args": [
-                                            "-m", name.replace("-", "_")
-                                        ],
-                                    }
+                                config = {
+                                    "command": "python",
+                                    "args": [
+                                        "-m", name.replace("-", "_")
+                                    ],
+                                }
                             elif s.runtime == "node":
                                 # Check if package exists
                                 try:
@@ -174,24 +178,32 @@ class McpServer:
                                         subprocess.run(
                                             ["npm", "install", "-y", "-g", name], check=True)
                                     except subprocess.CalledProcessError:
-                                        print(f"\n\033[93mFailed to automatically install {name}. Please manually install it using:\n")
+                                        print(
+                                            f"\n\033[93mFailed to automatically install {name}. Please manually install it using:\n")
                                         print(f"    npm install -g {name}\n")
-                                        print(f"We have already updated the server configuration in ~/.autocoder/mcp/settings.json.\n")
-                                        print(f"After installation, you can restart the auto-coder.chat using the server.\033[0m\n")
+                                        print(
+                                            f"We have already updated the server configuration in ~/.autocoder/mcp/settings.json.\n")
+                                        print(
+                                            f"After installation, you can restart the auto-coder.chat using the server.\033[0m\n")
 
-                                    config = {
-                                        "command": "npx",
-                                        "args": [
-                                            "-y",
-                                            name
-                                        ]
-                                    }
+                                config = {
+                                    "command": "npx",
+                                    "args": [
+                                        "-y",
+                                        name
+                                    ]
+                                }
                             break
                 else:
                     config = MCP_BUILD_IN_SERVERS[name]
             if not name:
-                raise ValueError("MCP server name is not available in MCP_BUILD_IN_SERVERS or external servers")
-            hub = McpHub()
+                raise ValueError(
+                    "MCP server name is not available in MCP_BUILD_IN_SERVERS or external servers")
+
+            logger.info(f"Installing MCP server: {name} with config: {config}")
+            if not config:
+                raise ValueError(f"MCP server {name} config is not available")
+
             await hub.add_server_config(name, config)
             return McpResponse(result=f"Successfully installed MCP server: {request.server_name_or_config}")
         except Exception as e:
@@ -208,7 +220,7 @@ class McpServer:
                     break
 
                 if isinstance(request, McpInstallRequest):
-                    response = await self._install_server(request)
+                    response = await self._install_server(request, hub)
                     await self._response_queue.put(response)
 
                 elif isinstance(request, McpRemoveRequest):

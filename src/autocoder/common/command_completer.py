@@ -18,7 +18,8 @@ COMMANDS = {
         "/add": "",         
         "/remove": "",
         "/list": "",
-        "/list_running": ""
+        "/list_running": "",
+        "/refresh": ""
     },
     "/lib": {
         "/add": "",
