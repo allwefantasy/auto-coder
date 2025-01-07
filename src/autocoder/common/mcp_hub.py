@@ -309,7 +309,7 @@ class McpHub:
                 for resource in response.resources
             ]
         except Exception as e:
-            logger.error(f"Failed to fetch resources for {server_name}: {e}")
+            logger.warning(f"Failed to fetch resources for {server_name}: {e}")
             return []
 
     async def _fetch_resource_templates(
@@ -346,7 +346,7 @@ class McpHub:
                 for template in response.resourceTemplates
             ]
         except Exception as e:
-            logger.error(
+            logger.warning(
                 f"Failed to fetch resource templates for {server_name}: {e}")
             return []
 
