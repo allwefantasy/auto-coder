@@ -1446,11 +1446,32 @@ def mcp(query: str):
 
     # Handle refresh command
     if query.startswith("/refresh"):
-        response = mcp_server.send_request(McpRefreshRequest())
-        if response.error:
-            print(f"Error refreshing MCP servers: {response.error}")
+        server_name = query.replace("/refresh", "", 1).strip()
+        if server_name:
+            # Refresh specific server by removing and re-adding
+            settings = mcp_server._read_settings()
+            if server_name in settings["mcpServers"]:
+                config = settings["mcpServers"][server_name]
+                # Remove first
+                response = mcp_server.send_request(McpRemoveRequest(server_name=server_name))
+                if response.error:
+                    print(f"Error removing MCP server {server_name}: {response.error}")
+                    return
+                # Then add back
+                response = mcp_server.send_request(McpInstallRequest(server_name_or_config=json.dumps({server_name: config})))
+                if response.error:
+                    print(f"Error adding MCP server {server_name}: {response.error}")
+                else:
+                    print(f"Successfully refreshed MCP server: {server_name}")
+            else:
+                print(f"MCP server {server_name} not found in settings")
         else:
-            print("Successfully refreshed MCP servers")
+            # Refresh all servers
+            response = mcp_server.send_request(McpRefreshRequest())
+            if response.error:
+                print(f"Error refreshing MCP servers: {response.error}")
+            else:
+                print("Successfully refreshed MCP servers")
         return
 
     # Handle add command
