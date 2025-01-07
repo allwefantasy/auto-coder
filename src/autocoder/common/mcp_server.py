@@ -50,7 +50,7 @@ class McpResponse:
 @dataclass
 class McpRefreshRequest:
     """Request to refresh MCP server connections"""
-    pass
+    name: Optional[str] = None
 
 
 @dataclass
@@ -270,7 +270,10 @@ class McpServer:
 
                 elif isinstance(request, McpRefreshRequest):
                     try:
-                        await hub.initialize()
+                        if request.name:
+                            await hub.refresh_server_connection(request.name)
+                        else:
+                            await hub.initialize()
                         await self._response_queue.put(McpResponse(result="Successfully refreshed MCP server connections"))
                     except Exception as e:
                         await self._response_queue.put(McpResponse(result="", error=f"Failed to refresh MCP servers: {str(e)}"))

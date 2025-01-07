@@ -240,6 +240,19 @@ class McpHub:
                 if name in self.connections:
                     del self.connections[name]
 
+    async def refresh_server_connection(self, name: str) -> None:
+        """
+        Refresh a server connection
+        """
+        try:
+            config = self._read_settings()
+            await self.delete_connection(name)
+            await self.connect_to_server(name, config.get("mcpServers", {}).get(name, {}))
+        except Exception as e:
+            logger.error(f"Failed to refresh MCP server {name}: {e}")
+            raise
+        
+
     async def update_server_connections(self, new_servers: Dict[str, Any]) -> None:
         """
         Update server connections based on new configuration
