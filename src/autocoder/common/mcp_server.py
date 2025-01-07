@@ -90,10 +90,22 @@ class McpServer:
 
                 elif isinstance(request, McpListRequest):
                     try:
-                        builtin_servers = "\n".join([f"- {name}" for name in MCP_BUILD_IN_SERVERS.keys()])
-                        await self._response_queue.put(McpResponse(result=builtin_servers))
+                        from ..common.mcp_hub import get_mcp_external_servers, MCP_BUILD_IN_SERVERS
+                        
+                        # Get built-in servers
+                        builtin_servers = [f"- Built-in: {name}" for name in MCP_BUILD_IN_SERVERS.keys()]
+                        
+                        # Get external servers
+                        external_servers = get_mcp_external_servers()
+                        external_list = [f"- External: {s['name']} ({s['description']})" for s in external_servers]
+                        
+                        # Combine results
+                        all_servers = builtin_servers + external_list
+                        result = "Available MCP servers:\n" + "\n".join(all_servers)
+                        
+                        await self._response_queue.put(McpResponse(result=result))
                     except Exception as e:
-                        await self._response_queue.put(McpResponse(result="", error=f"Failed to list builtin servers: {str(e)}"))
+                        await self._response_queue.put(McpResponse(result="", error=f"Failed to list servers: {str(e)}"))
 
                 elif isinstance(request, McpListRunningRequest):
                     try:

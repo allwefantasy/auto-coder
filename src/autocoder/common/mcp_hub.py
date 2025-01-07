@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+import aiohttp
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Set, Optional
 from pathlib import Path
@@ -10,6 +11,7 @@ from mcp import ClientSession
 from mcp.client.stdio import stdio_client, StdioServerParameters
 import mcp.types as mcp_types
 from loguru import logger
+import time
 
 
 class McpTool(BaseModel):
@@ -79,6 +81,41 @@ MCP_BUILD_IN_SERVERS = {
     "perplexity": json.loads(MCP_PERPLEXITY_SERVER)["perplexity"]
 }
 
+
+def get_mcp_external_servers() -> List[Dict[str, str]]:
+    """Get external MCP servers list from GitHub"""
+    cache_dir = Path(".auto-coder/tmp")
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_file = cache_dir / "mcp_external_servers.json"
+    
+    # Check cache first
+    if cache_file.exists():
+        cache_time = cache_file.stat().st_mtime
+        if time.time() - cache_time < 3600:  # 1 hour cache
+            with open(cache_file, "r") as f:
+                return json.load(f)
+    
+    # Fetch from GitHub
+    url = "https://raw.githubusercontent.com/michaellatman/mcp-get/refs/heads/main/packages/package-list.json"
+    try:
+        import aiohttp
+        async def fetch():
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        with open(cache_file, "w") as f:
+                            json.dump(data, f)
+                        return data
+                    return []
+        
+        # Run sync in async context
+        loop = asyncio.get_event_loop()
+        servers = loop.run_until_complete(fetch())
+        return servers
+    except Exception as e:
+        logger.error(f"Failed to fetch external MCP servers: {e}")
+        return []
 
 class McpHub:
     """
