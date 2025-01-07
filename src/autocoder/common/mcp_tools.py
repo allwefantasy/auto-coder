@@ -11,6 +11,33 @@ import os
 import time
 
 
+def get_mcp_external_servers() -> List[Dict[str, str]]:
+      """Get external MCP servers list from GitHub"""
+      cache_dir = os.path.join(".auto-coder", "tmp")
+      os.makedirs(cache_dir, exist_ok=True)
+      cache_file = os.path.join(cache_dir, "mcp_external_servers.json")
+      
+      # Check cache first
+      if os.path.exists(cache_file):
+          cache_time = os.path.getmtime(cache_file)
+          if time.time() - cache_time < 3600:  # 1 hour cache
+              with open(cache_file, "r") as f:
+                  return json.load(f)
+      
+      # Fetch from GitHub
+      url = "https://raw.githubusercontent.com/michaellatman/mcp-get/refs/heads/main/packages/package-list.json"
+      try:
+          import requests
+          response = requests.get(url)
+          if response.status_code == 200:
+              data = response.json()
+              with open(cache_file, "w") as f:
+                  json.dump(data, f)
+              return data
+          return []
+      except Exception as e:
+          logger.error(f"Failed to fetch external MCP servers: {e}")
+          return []
 class McpToolCall(BaseModel):
     server_name: str = Field(..., description="The name of the MCP server")
     tool_name: str = Field(..., description="The name of the tool to call")
@@ -105,33 +132,7 @@ class McpExecutor:
 
         return "\n\n".join(info)
     
-    def get_mcp_external_servers() -> List[Dict[str, str]]:
-        """Get external MCP servers list from GitHub"""
-        cache_dir = os.path.join(".auto-coder", "tmp")
-        os.makedirs(cache_dir, exist_ok=True)
-        cache_file = os.path.join(cache_dir, "mcp_external_servers.json")
-        
-        # Check cache first
-        if os.path.exists(cache_file):
-            cache_time = os.path.getmtime(cache_file)
-            if time.time() - cache_time < 3600:  # 1 hour cache
-                with open(cache_file, "r") as f:
-                    return json.load(f)
-        
-        # Fetch from GitHub
-        url = "https://raw.githubusercontent.com/michaellatman/mcp-get/refs/heads/main/packages/package-list.json"
-        try:
-            import requests
-            response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                with open(cache_file, "w") as f:
-                    json.dump(data, f)
-                return data
-            return []
-        except Exception as e:
-            logger.error(f"Failed to fetch external MCP servers: {e}")
-            return []
+    
 
     @byzerllm.prompt()
     def mcp_prompt(self,query:str) -> str:

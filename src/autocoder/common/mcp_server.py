@@ -7,7 +7,7 @@ import byzerllm
 from autocoder.common.mcp_hub import McpHub
 from autocoder.common.mcp_tools import McpExecutor
 from autocoder.common.mcp_hub import MCP_BUILD_IN_SERVERS
-
+from autocoder.common.mcp_tools import get_mcp_external_servers
 @dataclass 
 class McpRequest:
     query: str
@@ -89,9 +89,7 @@ class McpServer:
                         await self._response_queue.put(McpResponse(result="", error=f"Failed to remove MCP server: {str(e)}"))
 
                 elif isinstance(request, McpListRequest):
-                    try:
-                        from ..common.mcp_hub import get_mcp_external_servers, MCP_BUILD_IN_SERVERS
-                        
+                    try:                                                
                         # Get built-in servers
                         builtin_servers = [f"- Built-in: {name}" for name in MCP_BUILD_IN_SERVERS.keys()]
                         
