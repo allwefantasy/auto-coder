@@ -466,7 +466,7 @@ class LongContextRAG:
             if only_contexts:
                 final_docs = []
                 for doc in relevant_docs:
-                    final_docs.append(doc)
+                    final_docs.append(doc.model_dump())
                 return [json.dumps(final_docs,ensure_ascii=False)], []                
 
             if not relevant_docs:
