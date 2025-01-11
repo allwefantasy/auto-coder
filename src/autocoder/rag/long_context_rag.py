@@ -463,9 +463,10 @@ class LongContextRAG:
             )
 
             if only_contexts:
-                return (
-                    doc.source_code.model_dump_json() + "\n" for doc in relevant_docs
-                ), []
+                final_docs = []
+                for doc in relevant_docs:
+                    final_docs.append(doc)
+                return [json.dumps(final_docs,ensure_ascii=False)], []                
 
             if not relevant_docs:
                 return ["没有找到相关的文档来回答这个问题。"], []
@@ -612,7 +613,7 @@ class LongContextRAG:
                     ),
                 }
             ]
-
+            
             chunks = target_llm.stream_chat_oai(
                 conversations=new_conversations,
                 model=model,
