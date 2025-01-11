@@ -428,6 +428,7 @@ class LongContextRAG:
                 if "only_contexts" in v:
                     query = v["query"]
                     only_contexts = v["only_contexts"]
+                    conversations[-1]["content"] = query
             except json.JSONDecodeError:
                 pass
 
