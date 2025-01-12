@@ -955,6 +955,8 @@ def main(input_args: Optional[List[str]] = None):
                 with Live(
                     Panel("", title="Response"),
                     refresh_per_second=4,
+                    auto_refresh=True,
+                    vertical_overflow="visible"
                 ) as live:
                     for res in v:
                         markdown_content += res[0]
@@ -975,6 +977,14 @@ def main(input_args: Optional[List[str]] = None):
                                 expand=False,
                             )
                         )
+                live.update(
+                            Panel(
+                                Markdown(markdown_content),
+                                title="Response",
+                                border_style="green",
+                                expand=False,
+                            )
+                        )        
             except Exception as e:
                 request_queue.add_request(
                     args.request_id,
