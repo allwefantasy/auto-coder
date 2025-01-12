@@ -953,7 +953,7 @@ def main(input_args: Optional[List[str]] = None):
 
             try:
                 with Live(
-                    Panel("", title="Response"),
+                    Panel("", title="Response", expand=True, overflow="visible"),
                     refresh_per_second=4,
                 ) as live:
                     for res in v:
@@ -972,7 +972,8 @@ def main(input_args: Optional[List[str]] = None):
                                 Markdown(markdown_content),
                                 title="Response",
                                 border_style="green",
-                                expand=False,
+                                expand=True,
+                                overflow="visible",
                             )
                         )
             except Exception as e:
