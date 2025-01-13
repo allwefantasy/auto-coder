@@ -38,6 +38,7 @@ from rich.table import Table
 from rich.live import Live
 from rich.text import Text
 from rich.live import Live
+from rich.markdown import Markdown
 from byzerllm.utils.nontext import Image
 import git
 from autocoder.common import git_utils
@@ -1499,7 +1500,7 @@ def mcp(query: str):
             model=args.inference_model or args.model
         )
     )
-
+    console = Console()
     if response.error:
         console.print(Panel(
             f"Error from MCP server: {response.error}",
@@ -1522,8 +1523,7 @@ def mcp(query: str):
             
         # Print with markdown formatting
         console.print(Panel(
-            Markdown(markdown_content),
-            title="MCP Response",
+            Markdown(markdown_content),            
             border_style="green"
         ))
 
