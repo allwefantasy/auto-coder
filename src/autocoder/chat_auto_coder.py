@@ -1501,10 +1501,31 @@ def mcp(query: str):
     )
 
     if response.error:
-        print(f"Error from MCP server: {response.error}")
+        console.print(Panel(
+            f"Error from MCP server: {response.error}",
+            title="Error",
+            border_style="red"
+        ))
     else:
-        #MARK
-        print(response.result)
+        # Save conversation
+        mcp_dir = os.path.join(".auto-coder", "mcp", "conversations")
+        os.makedirs(mcp_dir, exist_ok=True)
+        timestamp = str(int(time.time()))
+        file_path = os.path.join(mcp_dir, f"{timestamp}.md")
+        
+        # Format response as markdown
+        markdown_content = f"# MCP Response\n\n{response.result}"
+        
+        # Save to file
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(markdown_content)
+            
+        # Print with markdown formatting
+        console.print(Panel(
+            Markdown(markdown_content),
+            title="MCP Response",
+            border_style="green"
+        ))
 
 
 def code_next(query: str):
