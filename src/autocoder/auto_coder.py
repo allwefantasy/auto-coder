@@ -577,6 +577,9 @@ def main(input_args: Optional[List[str]] = None):
             with Live(
                 Panel("", title="Response", border_style="green", expand=False),
                 refresh_per_second=4,
+                auto_refresh=True,
+                vertical_overflow="visible",
+                console=Console(force_terminal=True, color_system="auto", height=None)
             ) as live:
                 live.update(
                     Panel(
@@ -689,6 +692,9 @@ def main(input_args: Optional[List[str]] = None):
             with Live(
                 Panel("", title="Response", border_style="green", expand=False),
                 refresh_per_second=4,
+                auto_refresh=True,
+                vertical_overflow="visible",
+                console=Console(force_terminal=True, color_system="auto", height=None)
             ) as live:
                 live.update(
                     Panel(
@@ -698,8 +704,8 @@ def main(input_args: Optional[List[str]] = None):
                         expand=False,
                     )
                 )
-            return
 
+            return
         elif raw_args.agent_command == "designer":
             from autocoder.agent.designer import SVGDesigner, SDDesigner, LogoDesigner
 
@@ -953,10 +959,11 @@ def main(input_args: Optional[List[str]] = None):
 
             try:
                 with Live(
-                    Panel("", title="Response"),
+                    Panel("", title="Response", border_style="green", expand=False),
                     refresh_per_second=4,
                     auto_refresh=True,
-                    vertical_overflow="visible"
+                    vertical_overflow="visible",
+                    console=Console(force_terminal=True, color_system="auto", height=None)
                 ) as live:
                     for res in v:
                         markdown_content += res[0]
@@ -977,7 +984,7 @@ def main(input_args: Optional[List[str]] = None):
                                 expand=False,
                             )
                         )
-                live.update(
+                    live.update(
                             Panel(
                                 Markdown(markdown_content),
                                 title="Response",

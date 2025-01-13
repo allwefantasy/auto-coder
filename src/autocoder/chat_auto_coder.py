@@ -1503,6 +1503,7 @@ def mcp(query: str):
     if response.error:
         print(f"Error from MCP server: {response.error}")
     else:
+        #MARK
         print(response.result)
 
 

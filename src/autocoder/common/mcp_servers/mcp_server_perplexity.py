@@ -51,11 +51,11 @@ async def handle_list_tools() -> list[types.Tool]:
                         "type": "string",
                         "description": "The name of the model that will complete your prompt.",
                         "enum": [
-                            "llama-3.1-sonar-small-128k-online",
+                            # "llama-3.1-sonar-small-128k-online",
                             # Commenting out larger models,which have higher risks of timing out,
                             # until Claude Desktop can handle long-running tasks effectively.
                             # "llama-3.1-sonar-large-128k-online",
-                            # "llama-3.1-sonar-huge-128k-online",
+                            "llama-3.1-sonar-huge-128k-online",
                         ],
                     },
                     "messages": {
