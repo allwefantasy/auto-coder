@@ -104,6 +104,8 @@ class LongContextRAG:
                 raise ValueError(
                     "You are in client mode, please provide the RAG token. e.g. rag_token: your_token_here"
                 )
+            if not args.rag_url.endswith("/v1"):
+                args.rag_url = args.rag_url.rstrip("/") + "/v1"
             self.client = OpenAI(api_key=args.rag_token, base_url=args.rag_url)
         else:
             self.client = None
