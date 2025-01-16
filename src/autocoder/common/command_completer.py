@@ -13,7 +13,7 @@ COMMANDS = {
         "/sd": {},
     },
     "/coding": {"/apply": {}, "/next": {}},
-    "/chat": {"/new": {}, "/review": {}, "/no_context": {}},
+    "/chat": {"/new": {}, "/mcp": {}, "/rag": {}, "/review": {}, "/no_context": {}},
     "/mcp": {
         "/add": "",         
         "/remove": "",

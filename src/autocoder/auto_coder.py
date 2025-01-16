@@ -944,11 +944,24 @@ def main(input_args: Optional[List[str]] = None):
 
                 return {}
 
-            if args.enable_rag_search or args.enable_rag_context:
+            if args.action == "rag":
+                args.enable_rag_search = True
+                args.enable_rag_context = False
                 rag = RAGFactory.get_rag(llm=chat_llm, args=args, path="")
                 response = rag.stream_chat_oai(
-                    conversations=loaded_conversations)[0]
+                    conversations=[{"role": "user", "content": args.query}])[0]                                                
                 v = ([item, None] for item in response)
+                
+            elif args.action == "mcp": 
+                from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest                               
+                mcp_server = get_mcp_server()
+                response = mcp_server.send_request(
+                    McpRequest(
+                        query=args.query,
+                        model=args.inference_model or args.model
+                    )
+                )
+                v = [[response.result,None]]
             else:
                 v = chat_llm.stream_chat_oai(
                     conversations=loaded_conversations, delta_mode=True
@@ -1007,6 +1020,7 @@ def main(input_args: Optional[List[str]] = None):
                     ),
                 )
 
+            print(markdown_content,flush=True) 
             chat_history["ask_conversation"].append(
                 {"role": "assistant", "content": assistant_response}
             )

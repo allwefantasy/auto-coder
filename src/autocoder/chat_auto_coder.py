@@ -47,6 +47,7 @@ from autocoder.utils import operate_config_api
 from autocoder.agent.auto_guess_query import AutoGuessQuery
 from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest
 import byzerllm
+from byzerllm.utils import format_str_jinja2
 
 
 class SymbolItem(BaseModel):
@@ -1859,9 +1860,17 @@ def chat(query: str):
     if "emb_model" in conf:
         yaml_config["emb_model"] = conf["emb_model"]
 
-    is_new = query.strip().startswith("/new")
+    is_new = "/new" in query
     if is_new:
         query = query.replace("/new", "", 1).strip()
+
+    if "/mcp " in query:
+        yaml_config["action"] = "mcp"
+        query = query.replace("/mcp ", "", 1).strip()
+
+    if "/rag " in query:
+        yaml_config["action"] = "rag"
+        query = query.replace("/rag ", "", 1).strip()
 
     is_review = query.strip().startswith("/review")
     if is_review:

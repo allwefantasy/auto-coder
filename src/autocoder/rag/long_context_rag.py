@@ -340,6 +340,7 @@ class LongContextRAG:
                 model=model,
                 messages=conversations,
                 stream=True,
+                max_tokens=self.args.rag_params_max_tokens
             )
 
             def response_generator():
