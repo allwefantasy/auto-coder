@@ -1019,8 +1019,7 @@ def main(input_args: Optional[List[str]] = None):
                         value=StreamValue(value=[""]), status=RequestOption.COMPLETED
                     ),
                 )
-
-            print(markdown_content,flush=True) 
+            
             chat_history["ask_conversation"].append(
                 {"role": "assistant", "content": assistant_response}
             )
