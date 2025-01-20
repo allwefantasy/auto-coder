@@ -128,6 +128,35 @@ class McpServer:
         self._task = self._loop.create_task(self._process_request())
         self._loop.run_forever()
 
+    def _install_python_package(self, package_name: str) -> None:
+        """Install a Python package using pip"""
+        try:
+            import importlib
+            importlib.import_module(package_name.replace("-", "_"))
+        except ImportError:
+            import subprocess
+            try:
+                subprocess.run([sys.executable, "-m", "pip", "install", package_name], check=True)
+            except subprocess.CalledProcessError:
+                print(f"\n\033[93mFailed to automatically install {package_name}. Please manually install it using:\n")
+                print(f"    pip install {package_name}\n")
+                print(f"We have already updated the server configuration in ~/.autocoder/mcp/settings.json.\n")
+                print(f"After installation, you can restart the auto-coder.chat using the server.\033[0m\n")
+
+    def _install_node_package(self, package_name: str) -> None:
+        """Install a Node.js package using npm"""
+        import subprocess
+        try:
+            subprocess.run(["npx", package_name, "--version"], check=True)
+        except:
+            try:
+                subprocess.run(["npm", "install", "-y", "-g", package_name], check=True)
+            except subprocess.CalledProcessError:
+                print(f"\n\033[93mFailed to automatically install {package_name}. Please manually install it using:\n")
+                print(f"    npm install -g {package_name}\n")
+                print(f"We have already updated the server configuration in ~/.autocoder/mcp/settings.json.\n")
+                print(f"After installation, you can restart the auto-coder.chat using the server.\033[0m\n")
+
     async def _install_server(self, request: McpInstallRequest, hub: McpHub) -> McpResponse:
         """Install an MCP server with module dependency check"""
         name = ""
@@ -143,6 +172,12 @@ class McpServer:
                 # 取第一个server 配置
                 config = list(raw_config.values())[0]
                 name = list(raw_config.keys())[0]
+                if name.startswith("@") or config["command"] in ["npx","npm"]:
+                    for item in config["args"]:
+                        if name in item:
+                            self._install_node_package(item)                    
+                else:
+                    self._install_python_package(name)
             except json.JSONDecodeError:
                 name = server_name_or_config.strip()
                 if name not in MCP_BUILD_IN_SERVERS:
@@ -151,26 +186,7 @@ class McpServer:
                     for s in external_servers:
                         if s.name == name:
                             if s.runtime == "python":
-                                # Check if module exists
-                                try:
-                                    import importlib
-                                    importlib.import_module(
-                                        name.replace("-", "_"))
-                                except ImportError:
-                                    # Install missing module
-                                    import subprocess
-                                    try:
-                                        subprocess.run(
-                                            [sys.executable, "-m", "pip", "install", name], check=True)
-                                    except subprocess.CalledProcessError:
-                                        print(
-                                            f"\n\033[93mFailed to automatically install {name}. Please manually install it using:\n")
-                                        print(f"    pip install {name}\n")
-                                        print(
-                                            f"We have already updated the server configuration in ~/.autocoder/mcp/settings.json.\n")
-                                        print(
-                                            f"After installation, you can restart the auto-coder.chat using the server.\033[0m\n")
-
+                                self._install_python_package(name)
                                 config = {
                                     "command": "python",
                                     "args": [
@@ -178,28 +194,12 @@ class McpServer:
                                     ],
                                 }
                             elif s.runtime == "node":
-                                # Check if package exists
-                                try:
-                                    subprocess.run(
-                                        ["npx", name, "--version"], check=True)
-                                except:
-                                    # Install missing package
-                                    try:
-                                        subprocess.run(
-                                            ["npm", "install", "-y", "-g", name], check=True)
-                                    except subprocess.CalledProcessError:
-                                        print(
-                                            f"\n\033[93mFailed to automatically install {name}. Please manually install it using:\n")
-                                        print(f"    npm install -g {name}\n")
-                                        print(
-                                            f"We have already updated the server configuration in ~/.autocoder/mcp/settings.json.\n")
-                                        print(
-                                            f"After installation, you can restart the auto-coder.chat using the server.\033[0m\n")
-
+                                self._install_node_package(name)
                                 config = {
                                     "command": "npx",
                                     "args": [
                                         "-y",
+                                        "-g",
                                         name
                                     ]
                                 }

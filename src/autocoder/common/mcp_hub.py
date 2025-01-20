@@ -192,7 +192,7 @@ class McpHub:
                      "PATH": os.environ.get("PATH", "")},
             )
 
-            # Create transport using context manager
+            # Create transport using context manager            
             transport_manager = stdio_client(server_params)
             transport = await transport_manager.__aenter__()
             try:
@@ -204,9 +204,9 @@ class McpHub:
                 self.connections[name] = connection
 
                 # Update server status and fetch capabilities
-                server.status = "connected"
-                server.tools = await self._fetch_tools(name)
-                server.resources = await self._fetch_resources(name)
+                server.status = "connected"                
+                server.tools = await self._fetch_tools(name)                
+                server.resources = await self._fetch_resources(name)                
                 server.resource_templates = await self._fetch_resource_templates(name)
 
             except Exception as e:

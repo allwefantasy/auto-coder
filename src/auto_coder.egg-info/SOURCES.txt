@@ -11,6 +11,7 @@ src/autocoder/__init__.py
 src/autocoder/auto_coder.py
 src/autocoder/auto_coder_lang.py
 src/autocoder/auto_coder_rag.py
+src/autocoder/auto_coder_rag_client_mcp.py
 src/autocoder/auto_coder_rag_mcp.py
 src/autocoder/auto_coder_server.py
 src/autocoder/benchmark.py

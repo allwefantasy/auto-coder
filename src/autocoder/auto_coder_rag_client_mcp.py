@@ -83,7 +83,7 @@ class AutoCoderRAGClientMCP:
                 response = self.client.chat.completions.create(
                     messages=[{"role": "user", "content": json.dumps({
                         "query": query,
-                        "only_contexts": False
+                        "only_contexts": True
                     })}],
                     model=self.args.model,
                     max_tokens=self.args.rag_params_max_tokens,
@@ -139,14 +139,7 @@ class AutoCoderRAGClientMCP:
                 ),
             )
 
-def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
-    try:
-        tokenizer_path = pkg_resources.resource_filename(
-            "autocoder", "data/tokenizer.json"
-        )
-    except FileNotFoundError:
-        tokenizer_path = None
-
+def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:    
     system_lang, _ = locale.getdefaultlocale()
     lang = "zh" if system_lang and system_lang.startswith("zh") else "en"
     desc = lang_desc[lang]
