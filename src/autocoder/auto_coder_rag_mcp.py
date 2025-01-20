@@ -158,28 +158,28 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     parser.add_argument("--qa_model", default="", help="Model used for question answering")    
 
     args = parser.parse_args(input_args)
-    return AutoCoderArgs(**vars(args))
+    return AutoCoderArgs(**vars(args)),args
 
 async def main():
     # Parse command line arguments
-    args = parse_args()
+    args,raw_rags = parse_args()
     
     # Initialize LLM
     llm = ByzerLLM()
     llm.setup_default_model_name(args.model)
     
     # Setup sub models if specified
-    if args.recall_model:
+    if raw_rags.recall_model:
         recall_model = ByzerLLM()
         recall_model.setup_default_model_name(args.recall_model)
         llm.setup_sub_client("recall_model", recall_model)
 
-    if args.chunk_model:
+    if raw_rags.chunk_model:
         chunk_model = ByzerLLM()
         chunk_model.setup_default_model_name(args.chunk_model)
         llm.setup_sub_client("chunk_model", chunk_model)
 
-    if args.qa_model:
+    if raw_rags.qa_model:
         qa_model = ByzerLLM()
         qa_model.setup_default_model_name(args.qa_model)
         llm.setup_sub_client("qa_model", qa_model)
