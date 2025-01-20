@@ -11,6 +11,7 @@ from autocoder.common import AutoCoderArgs
 from byzerllm import ByzerLLM
 from autocoder.lang import lang_desc
 import locale
+import pkg_resources
 
 class AutoCoderRAGMCP:
     def __init__(self, llm: ByzerLLM, args: AutoCoderArgs):
@@ -116,13 +117,20 @@ class AutoCoderRAGMCP:
             )
 
 def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
+    try:
+        tokenizer_path = pkg_resources.resource_filename(
+            "autocoder", "data/tokenizer.json"
+        )
+    except FileNotFoundError:
+        tokenizer_path = None
+
     system_lang, _ = locale.getdefaultlocale()
     lang = "zh" if system_lang and system_lang.startswith("zh") else "en"
     desc = lang_desc[lang]
     
     parser = argparse.ArgumentParser(description="Auto Coder RAG MCP Server")
     parser.add_argument("--source_dir", default=".", help="Source directory path")
-    parser.add_argument("--tokenizer_path", default=None, help="Path to tokenizer file")
+    parser.add_argument("--tokenizer_path", default=tokenizer_path, help="Path to tokenizer file")
     parser.add_argument("--model", default="deepseek_chat", help=desc["model"])
     parser.add_argument("--index_model", default="", help=desc["index_model"])
     parser.add_argument("--emb_model", default="", help=desc["emb_model"])
@@ -147,7 +155,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     parser.add_argument("--data_cells_max_num", type=int, default=2000, help="Maximum number of data cells to process")
     parser.add_argument("--recall_model", default="", help="Model used for document recall")
     parser.add_argument("--chunk_model", default="", help="Model used for document chunking")
-    parser.add_argument("--qa_model", default="", help="Model used for question answering")
+    parser.add_argument("--qa_model", default="", help="Model used for question answering")    
 
     args = parser.parse_args(input_args)
     return AutoCoderArgs(**vars(args))
