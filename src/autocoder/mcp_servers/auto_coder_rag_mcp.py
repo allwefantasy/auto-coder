@@ -1,6 +1,7 @@
-from typing import Any, List, Dict, Generator
+from typing import Any, List, Dict, Generator, Optional
 import asyncio
 import httpx
+import argparse
 from mcp.server.models import InitializationOptions
 import mcp.types as types
 from mcp.server import NotificationOptions, Server
@@ -8,6 +9,8 @@ import mcp.server.stdio
 from autocoder.rag.long_context_rag import LongContextRAG
 from autocoder.common import AutoCoderArgs
 from byzerllm import ByzerLLM
+from autocoder.lang import lang_desc
+import locale
 
 class AutoCoderRAGMCP:
     def __init__(self, llm: ByzerLLM, args: AutoCoderArgs):
@@ -112,22 +115,68 @@ class AutoCoderRAGMCP:
                 ),
             )
 
-async def main():
-    # Initialize LLM and AutoCoderArgs
-    llm = ByzerLLM()
-    llm.setup_default_model_name("deepseek_chat")
+def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
+    system_lang, _ = locale.getdefaultlocale()
+    lang = "zh" if system_lang and system_lang.startswith("zh") else "en"
+    desc = lang_desc[lang]
     
-    args = AutoCoderArgs(
-        source_dir=".",  # Set your document directory
-        tokenizer_path=None,  # Set tokenizer path if needed
-        rag_doc_filter_relevance=5,
-        rag_context_window_limit=56000,
-        full_text_ratio=0.7,
-        segment_ratio=0.2,
-        index_filter_workers=5,
-        index_filter_file_num=3
-    )
+    parser = argparse.ArgumentParser(description="Auto Coder RAG MCP Server")
+    parser.add_argument("--source_dir", default=".", help="Source directory path")
+    parser.add_argument("--tokenizer_path", default=None, help="Path to tokenizer file")
+    parser.add_argument("--model", default="deepseek_chat", help=desc["model"])
+    parser.add_argument("--index_model", default="", help=desc["index_model"])
+    parser.add_argument("--emb_model", default="", help=desc["emb_model"])
+    parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
+    parser.add_argument("--required_exts", default="", help=desc["doc_build_parse_required_exts"])
+    parser.add_argument("--rag_doc_filter_relevance", type=int, default=5, help="Relevance score threshold for document filtering")
+    parser.add_argument("--rag_context_window_limit", type=int, default=56000, help="Context window limit for RAG")
+    parser.add_argument("--full_text_ratio", type=float, default=0.7, help="Ratio of full text area in context window")
+    parser.add_argument("--segment_ratio", type=float, default=0.2, help="Ratio of segment area in context window")
+    parser.add_argument("--index_filter_workers", type=int, default=5, help="Number of workers for document filtering")
+    parser.add_argument("--index_filter_file_num", type=int, default=3, help="Maximum number of files to filter")
+    parser.add_argument("--host", default="", help="Server host address")
+    parser.add_argument("--port", type=int, default=8000, help="Server port")
+    parser.add_argument("--monitor_mode", action="store_true", help="Enable document monitoring mode")
+    parser.add_argument("--enable_hybrid_index", action="store_true", help="Enable hybrid index")
+    parser.add_argument("--disable_auto_window", action="store_true", help="Disable automatic window adaptation")
+    parser.add_argument("--disable_segment_reorder", action="store_true", help="Disable segment reordering")
+    parser.add_argument("--disable_inference_enhance", action="store_true", help="Disable inference enhancement")
+    parser.add_argument("--inference_deep_thought", action="store_true", help="Enable deep thought in inference")
+    parser.add_argument("--inference_slow_without_deep_thought", action="store_true", help="Enable slow inference without deep thought")
+    parser.add_argument("--inference_compute_precision", type=int, default=64, help="Inference compute precision")
+    parser.add_argument("--data_cells_max_num", type=int, default=2000, help="Maximum number of data cells to process")
+    parser.add_argument("--recall_model", default="", help="Model used for document recall")
+    parser.add_argument("--chunk_model", default="", help="Model used for document chunking")
+    parser.add_argument("--qa_model", default="", help="Model used for question answering")
 
+    args = parser.parse_args(input_args)
+    return AutoCoderArgs(**vars(args))
+
+async def main():
+    # Parse command line arguments
+    args = parse_args()
+    
+    # Initialize LLM
+    llm = ByzerLLM()
+    llm.setup_default_model_name(args.model)
+    
+    # Setup sub models if specified
+    if args.recall_model:
+        recall_model = ByzerLLM()
+        recall_model.setup_default_model_name(args.recall_model)
+        llm.setup_sub_client("recall_model", recall_model)
+
+    if args.chunk_model:
+        chunk_model = ByzerLLM()
+        chunk_model.setup_default_model_name(args.chunk_model)
+        llm.setup_sub_client("chunk_model", chunk_model)
+
+    if args.qa_model:
+        qa_model = ByzerLLM()
+        qa_model.setup_default_model_name(args.qa_model)
+        llm.setup_sub_client("qa_model", qa_model)
+
+    # Initialize and run server
     server = AutoCoderRAGMCP(llm=llm, args=args)
     await server.setup_server()
     await server.run()
