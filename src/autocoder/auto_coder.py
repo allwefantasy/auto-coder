@@ -56,8 +56,7 @@ def resolve_include_path(base_path, include_path):
 def load_include_files(config, base_path, max_depth=10, current_depth=0):
     if current_depth >= max_depth:
         raise ValueError(
-            f"Exceeded maximum include depth of {
-                max_depth},you may have a circular dependency in your include files."
+            f"Exceeded maximum include depth of {max_depth},you may have a circular dependency in your include files."
         )
 
     if "include_file" in config:
@@ -175,8 +174,7 @@ def main(input_args: Optional[List[str]] = None):
             f.write("\noutput.txt")
 
         print(
-            f"""Successfully initialized auto-coder project in {
-                os.path.abspath(args.source_dir)}."""
+            f"""Successfully initialized auto-coder project in {os.path.abspath(args.source_dir)}."""
         )
         return
 
@@ -185,8 +183,7 @@ def main(input_args: Optional[List[str]] = None):
 
         gen_screenshots(args.urls, args.output)
         print(
-            f"Successfully captured screenshot of {
-                args.urls} and saved to {args.output}"
+            f"Successfully captured screenshot of {args.urls} and saved to {args.output}"
         )
         return
 
@@ -275,8 +272,7 @@ def main(input_args: Optional[List[str]] = None):
             )
         except Exception as e:
             logger.warning(
-                f"Detecting error when connecting to ray cluster: {
-                    e}, try to connect to ray cluster without storage support."
+                f"Detecting error when connecting to ray cluster: {e}, try to connect to ray cluster without storage support."
             )
             byzerllm.connect_cluster(address=args.ray_address)
 
@@ -311,8 +307,7 @@ def main(input_args: Optional[List[str]] = None):
             else:
                 # Single rerank model
                 rerank_model = byzerllm.ByzerLLM()
-                rerank_model.setup_default_model_name(
-                    args.generate_rerank_model)
+                rerank_model.setup_default_model_name(args.generate_rerank_model)
                 llm.setup_sub_client("generate_rerank_model", rerank_model)
 
         if args.inference_model:
@@ -424,7 +419,7 @@ def main(input_args: Optional[List[str]] = None):
 
             llm.add_event_callback(
                 EventName.BEFORE_CALL_MODEL, intercept_callback)
-
+            
             code_models = llm.get_sub_client("code_model")
             if code_models:
                 if not isinstance(code_models, list):
@@ -584,8 +579,7 @@ def main(input_args: Optional[List[str]] = None):
                 refresh_per_second=4,
                 auto_refresh=True,
                 vertical_overflow="visible",
-                console=Console(force_terminal=True,
-                                color_system="auto", height=None)
+                console=Console(force_terminal=True, color_system="auto", height=None)
             ) as live:
                 live.update(
                     Panel(
@@ -626,8 +620,7 @@ def main(input_args: Optional[List[str]] = None):
 
             console.print(
                 Panel(
-                    f"Transcription: <_transcription_>{
-                        transcription}</_transcription_>",
+                    f"Transcription: <_transcription_>{transcription}</_transcription_>",
                     title="Result",
                     border_style="magenta",
                 )
@@ -701,8 +694,7 @@ def main(input_args: Optional[List[str]] = None):
                 refresh_per_second=4,
                 auto_refresh=True,
                 vertical_overflow="visible",
-                console=Console(force_terminal=True,
-                                color_system="auto", height=None)
+                console=Console(force_terminal=True, color_system="auto", height=None)
             ) as live:
                 live.update(
                     Panel(
@@ -800,7 +792,7 @@ def main(input_args: Optional[List[str]] = None):
                     pre_conversations.append(
                         {
                             "role": "user",
-                            "content": f"请阅读下面的文档和源码：\n <files>\n{file_content}\n</files>",
+                            "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：\n <files>\n{file_content}</files>",
                         },
                     )
                     pre_conversations.append(
@@ -827,7 +819,7 @@ def main(input_args: Optional[List[str]] = None):
                 pre_conversations.append(
                     {
                         "role": "user",
-                        "content": f"请阅读下面的文档和源码：\n <files>\n{s}\n</files>",
+                        "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：\n <files>{s}</files>",
                     }
                 )
                 pre_conversations.append(
@@ -957,11 +949,11 @@ def main(input_args: Optional[List[str]] = None):
                 args.enable_rag_context = False
                 rag = RAGFactory.get_rag(llm=chat_llm, args=args, path="")
                 response = rag.stream_chat_oai(
-                    conversations=[{"role": "user", "content": args.query}])[0]
+                    conversations=[{"role": "user", "content": args.query}])[0]                                                
                 v = ([item, None] for item in response)
-
-            elif args.action == "mcp":
-                from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest
+                
+            elif args.action == "mcp": 
+                from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest                               
                 mcp_server = get_mcp_server()
                 response = mcp_server.send_request(
                     McpRequest(
@@ -969,7 +961,7 @@ def main(input_args: Optional[List[str]] = None):
                         model=args.inference_model or args.model
                     )
                 )
-                v = [[response.result, None]]
+                v = [[response.result,None]]
             else:
                 v = chat_llm.stream_chat_oai(
                     conversations=loaded_conversations, delta_mode=True
@@ -980,13 +972,11 @@ def main(input_args: Optional[List[str]] = None):
 
             try:
                 with Live(
-                    Panel("", title="Response",
-                          border_style="green", expand=False),
+                    Panel("", title="Response", border_style="green", expand=False),
                     refresh_per_second=4,
                     auto_refresh=True,
                     vertical_overflow="visible",
-                    console=Console(force_terminal=True,
-                                    color_system="auto", height=None)
+                    console=Console(force_terminal=True, color_system="auto", height=None)
                 ) as live:
                     for res in v:
                         markdown_content += res[0]
@@ -1008,13 +998,13 @@ def main(input_args: Optional[List[str]] = None):
                             )
                         )
                     live.update(
-                        Panel(
-                            Markdown(markdown_content),
-                            title="Response",
-                            border_style="green",
-                            expand=False,
-                        )
-                    )
+                            Panel(
+                                Markdown(markdown_content),
+                                title="Response",
+                                border_style="green",
+                                expand=False,
+                            )
+                        )        
             except Exception as e:
                 request_queue.add_request(
                     args.request_id,
@@ -1029,7 +1019,7 @@ def main(input_args: Optional[List[str]] = None):
                         value=StreamValue(value=[""]), status=RequestOption.COMPLETED
                     ),
                 )
-
+            
             chat_history["ask_conversation"].append(
                 {"role": "assistant", "content": assistant_response}
             )
@@ -1049,8 +1039,7 @@ def main(input_args: Optional[List[str]] = None):
         a2i = Anything2Images(llm=llm, args=args)
         html = a2i.to_html(args.urls)
         output_path = os.path.join(
-            args.output, f"{os.path.splitext(
-                os.path.basename(args.urls))[0]}.html"
+            args.output, f"{os.path.splitext(os.path.basename(args.urls))[0]}.html"
         )
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html)
