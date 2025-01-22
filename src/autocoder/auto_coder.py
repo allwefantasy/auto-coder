@@ -792,7 +792,7 @@ def main(input_args: Optional[List[str]] = None):
                     pre_conversations.append(
                         {
                             "role": "user",
-                            "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：\n <files>\n{file_content}</files>",
+                            "content": f"请阅读下面的代码和文档：\n\n <files>\n{file_content}\n</files>",
                         },
                     )
                     pre_conversations.append(
@@ -819,7 +819,7 @@ def main(input_args: Optional[List[str]] = None):
                 pre_conversations.append(
                     {
                         "role": "user",
-                        "content": f"下面是一些文档和源码，如果用户的问题和他们相关，请参考他们：\n <files>{s}</files>",
+                        "content": f"请阅读下面的代码和文档：\n\n <files>\n{s}\n</files>",
                     }
                 )
                 pre_conversations.append(
@@ -836,12 +836,10 @@ def main(input_args: Optional[List[str]] = None):
                 def chat_with_human_as_model(
                     source_codes, pre_conversations, last_conversation
                 ):
-                    """
-                    <files>
-                    {% if source_codes %}
+                    """                    
+                    {% if source_codes %}                    
                     {{ source_codes }}
-                    {% endif %}
-                    </files>
+                    {% endif %}                    
 
                     {% if pre_conversations %}
                     下面是我们之间的历史对话，假设我是A，你是B。
@@ -853,7 +851,7 @@ def main(input_args: Optional[List[str]] = None):
                     {% endif %}
 
 
-                    参考上面的文件以及对话，回答用户的问题。
+                    参考上面的文件以及历史对话，回答用户的问题。
                     用户的问题: {{ last_conversation.content }}
                     """
 
