@@ -48,7 +48,7 @@ from autocoder.agent.auto_guess_query import AutoGuessQuery
 from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest
 import byzerllm
 from byzerllm.utils import format_str_jinja2
-from autocoder.common.memory_manager import load_from_memory_file 
+from autocoder.common.memory_manager import get_global_memory_file_paths 
 
 
 class SymbolItem(BaseModel):
@@ -1658,6 +1658,9 @@ def commit(query: str):
                 return_paths=True
             )
 
+            if conf.get("enable_global_memory", "true") in ["true", "True",True]:
+                yaml_config["urls"] += get_global_memory_file_paths()
+
             # 临时保存yaml文件，然后读取yaml文件，转换为args
             temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
             try:
@@ -1741,11 +1744,14 @@ def coding(query: str):
             converted_value = convert_config_value(key, value)
             if converted_value is not None:
                 yaml_config[key] = converted_value
-
+        
         yaml_config["urls"] = current_files + get_llm_friendly_package_docs(
             return_paths=True
         )
 
+        if conf.get("enable_global_memory", "true") in ["true", "True",True]:
+            yaml_config["urls"] += get_global_memory_file_paths()
+        
         # handle image
         v = Image.convert_image_paths_from(query)
         yaml_config["query"] = v
@@ -1855,6 +1861,9 @@ def chat(query: str):
     current_files = memory["current_files"]["files"] + get_llm_friendly_package_docs(
         return_paths=True
     )
+
+    if conf.get("enable_global_memory", "true") in ["true", "True",True]:
+        current_files += get_global_memory_file_paths()
 
     yaml_config["urls"] = current_files
 
