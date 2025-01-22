@@ -1,7 +1,7 @@
 import os
 import json
 import time
-from typing import List, Dict, Optional,Any
+from typing import List, Dict, Optional, Any
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -73,10 +73,18 @@ def load_from_memory_file() -> List[MemoryEntry]:
     
     return entries
 
-def get_global_memory_file_paths() -> str:
-    """Get global memory and format it as file blocks"""
+def get_global_memory_file_paths() -> List[str]:
+    """Get global memory and generate temporary files in ~/.auto-coder/memory/.tmp
+    
+    Returns:
+        List[str]: List of file paths for the generated temporary files
+    """
     entries = load_from_memory_file()
-    memory_blocks = []
+    memory_dir = os.path.join(os.path.expanduser("~"), ".auto-coder", "memory")
+    tmp_dir = os.path.join(memory_dir, ".tmp")
+    os.makedirs(tmp_dir, exist_ok=True)
+    
+    file_paths = []
     
     for entry in entries:
         # Find assistant responses
@@ -88,9 +96,17 @@ def get_global_memory_file_paths() -> str:
         if assistant_contents:
             timestamp_str = str(int(entry.timestamp.timestamp()))
             content = "\n".join(assistant_contents)
-            memory_blocks.append(
-                f"##File: memory/{timestamp_str}\n{content}"
-            )
+            file_path = os.path.join(tmp_dir, f"memory/{timestamp_str}.txt")
+            
+            # Create parent directory if it doesn't exist
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            
+            # Only write file if it doesn't exist
+            if not os.path.exists(file_path):
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(content)
+            
+            file_paths.append(file_path)
     
-    return "\n\n".join(memory_blocks)
+    return file_paths
 
