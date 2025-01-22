@@ -73,7 +73,7 @@ def load_from_memory_file() -> List[MemoryEntry]:
     
     return entries
 
-def get_global_memory() -> str:
+def get_global_memory_file_paths() -> str:
     """Get global memory and format it as file blocks"""
     entries = load_from_memory_file()
     memory_blocks = []
