@@ -73,3 +73,24 @@ def load_from_memory_file() -> List[MemoryEntry]:
     
     return entries
 
+def get_global_memory() -> str:
+    """Get global memory and format it as file blocks"""
+    entries = load_from_memory_file()
+    memory_blocks = []
+    
+    for entry in entries:
+        # Find assistant responses
+        assistant_contents = [
+            item.content for item in entry.conversation 
+            if item.role == "assistant"
+        ]
+        
+        if assistant_contents:
+            timestamp_str = str(int(entry.timestamp.timestamp()))
+            content = "\n".join(assistant_contents)
+            memory_blocks.append(
+                f"##File: memory/{timestamp_str}\n{content}"
+            )
+    
+    return "\n\n".join(memory_blocks)
+
