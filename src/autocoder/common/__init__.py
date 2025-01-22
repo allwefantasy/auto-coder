@@ -348,7 +348,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     data_cells_max_num: Optional[int] = 2000
     generate_times_same_model: Optional[int] = 1
 
-    action: Optional[str] = None
+    action: List[str] = []
 
     class Config:
         protected_namespaces = ()

@@ -1794,7 +1794,7 @@ def coding(query: str):
 
             yaml_config[
                 "context"
-            ] += f"下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码。\n\n<history>\n"
+            ] += f"下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码: \n\n<history>\n"
             for conv in conversations:
                 if conv["role"] == "user":
                     yaml_config["context"] += f"用户: {conv['content']}\n"
@@ -1864,13 +1864,19 @@ def chat(query: str):
     if is_new:
         query = query.replace("/new", "", 1).strip()
 
+    yaml_config["action"] = []    
+
     if "/mcp " in query:
-        yaml_config["action"] = "mcp"
+        yaml_config["action"].append("mcp")
         query = query.replace("/mcp ", "", 1).strip()
 
     if "/rag " in query:
-        yaml_config["action"] = "rag"
+        yaml_config["action"].append("rag")
         query = query.replace("/rag ", "", 1).strip()
+
+    if "/copy" in query:
+        yaml_config["action"].append("copy")
+        query = query.replace("/copy", "", 1).strip()    
 
     is_review = query.strip().startswith("/review")
     if is_review:

@@ -40,6 +40,7 @@ from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.live import Live
 from autocoder.auto_coder_lang import get_message
+from autocoder.common.memory_manager import save_to_memory_file
 
 console = Console()
 
@@ -827,7 +828,7 @@ def main(input_args: Optional[List[str]] = None):
                 source_count += 1
 
             loaded_conversations = pre_conversations + \
-                chat_history["ask_conversation"]
+                chat_history["ask_conversation"]              
 
             if args.human_as_model:
                 console = Console()
@@ -940,9 +941,13 @@ def main(input_args: Optional[List[str]] = None):
                     ),
                 )
 
+                if "save" in args.action:
+                    save_to_memory_file(ask_conversation=chat_history["ask_conversation"],
+                                        query=args.query,
+                                        response=result)
                 return {}
 
-            if args.action == "rag":
+            if "rag" in args.action:
                 args.enable_rag_search = True
                 args.enable_rag_context = False
                 rag = RAGFactory.get_rag(llm=chat_llm, args=args, path="")
@@ -950,7 +955,7 @@ def main(input_args: Optional[List[str]] = None):
                     conversations=[{"role": "user", "content": args.query}])[0]                                                
                 v = ([item, None] for item in response)
                 
-            elif args.action == "mcp": 
+            elif "mcp" in args.action: 
                 from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest                               
                 mcp_server = get_mcp_server()
                 response = mcp_server.send_request(
@@ -1025,6 +1030,18 @@ def main(input_args: Optional[List[str]] = None):
             with open(memory_file, "w") as f:
                 json.dump(chat_history, f, ensure_ascii=False)
 
+            if "copy" in args.action:
+                #copy assistant_response to clipboard
+                import pyperclip
+                try:
+                    pyperclip.copy(assistant_response)    
+                except:
+                    print("pyperclip not installed or clipboard is not supported, instruction will not be copied to clipboard.")
+
+            if "save" in args.action:
+                save_to_memory_file(ask_conversation=chat_history["ask_conversation"],
+                                    query=args.query,
+                                    response=assistant_response)    
             return
 
         else:
