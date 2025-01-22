@@ -96,7 +96,7 @@ def get_global_memory_file_paths() -> List[str]:
         if assistant_contents:
             timestamp_str = str(int(entry.timestamp.timestamp()))
             content = "\n".join(assistant_contents)
-            file_path = os.path.join(tmp_dir, f"memory/{timestamp_str}.txt")
+            file_path = os.path.join(tmp_dir, os.path.join("memory",f"{timestamp_str}.txt"))
             
             # Create parent directory if it doesn't exist
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
