@@ -48,6 +48,7 @@ from autocoder.agent.auto_guess_query import AutoGuessQuery
 from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest
 import byzerllm
 from byzerllm.utils import format_str_jinja2
+from autocoder.common.memory_manager import load_from_memory_file 
 
 
 class SymbolItem(BaseModel):
@@ -1876,7 +1877,11 @@ def chat(query: str):
 
     if "/copy" in query:
         yaml_config["action"].append("copy")
-        query = query.replace("/copy", "", 1).strip()    
+        query = query.replace("/copy", "", 1).strip()   
+
+    if "/save" in query:
+        yaml_config["action"].append("save")
+        query = query.replace("/save", "", 1).strip()        
 
     is_review = query.strip().startswith("/review")
     if is_review:

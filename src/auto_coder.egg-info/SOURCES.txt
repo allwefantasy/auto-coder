@@ -60,6 +60,7 @@ src/autocoder/common/llm_rerank.py
 src/autocoder/common/mcp_hub.py
 src/autocoder/common/mcp_server.py
 src/autocoder/common/mcp_tools.py
+src/autocoder/common/memory_manager.py
 src/autocoder/common/recall_validation.py
 src/autocoder/common/screenshots.py
 src/autocoder/common/search.py

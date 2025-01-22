@@ -1,12 +1,12 @@
 import os
 import json
 import time
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional,Any
 from pydantic import BaseModel
 from datetime import datetime
 
 class MemoryItem(BaseModel):
-    content: str
+    content: Any
     role: str
 
 class MemoryEntry(BaseModel):

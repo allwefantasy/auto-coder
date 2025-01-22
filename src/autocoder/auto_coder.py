@@ -945,6 +945,7 @@ def main(input_args: Optional[List[str]] = None):
                     save_to_memory_file(ask_conversation=chat_history["ask_conversation"],
                                         query=args.query,
                                         response=result)
+                    print("Saved to your memory")
                 return {}
 
             if "rag" in args.action:
@@ -1041,7 +1042,8 @@ def main(input_args: Optional[List[str]] = None):
             if "save" in args.action:
                 save_to_memory_file(ask_conversation=chat_history["ask_conversation"],
                                     query=args.query,
-                                    response=assistant_response)    
+                                    response=assistant_response)  
+                print("Saved to your memory")                      
             return
 
         else:
