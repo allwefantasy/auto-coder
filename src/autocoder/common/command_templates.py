@@ -30,7 +30,7 @@ def init_command_template(source_dir:str):
     project_type: py
 
     ## The model you want to drive AutoCoder to run
-    model: gpt3_5_chat
+    model: deepseek_chat
 
 
     ## Enable the index building which can help you find the related files by your query
@@ -38,7 +38,7 @@ def init_command_template(source_dir:str):
     skip_build_index: false
     ## The model to build index for the project (Optional)
     ## 用于为项目构建索引的模型（可选）
-    index_model: haiku_chat
+    index_model: deepseek_chat
 
     ## the filter level to find the related files
     ## 0: only find the files with the file name
@@ -192,8 +192,8 @@ def base_enable_index()->str:
     skip_build_index: false
     anti_quota_limit: 0
     index_filter_level: 1
-    index_filter_workers: 4
-    index_build_workers: 4
+    index_filter_workers: 100
+    index_build_workers: 100
     '''
 
 @byzerllm.prompt()

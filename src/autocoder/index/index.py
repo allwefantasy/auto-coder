@@ -29,29 +29,12 @@ from autocoder.utils.queue_communicate import (
     CommunicateEvent,
     CommunicateEventType,
 )
-
-
-class IndexItem(pydantic.BaseModel):
-    module_name: str
-    symbols: str
-    last_modified: float
-    md5: str  # 新增文件内容的MD5哈希值字段
-
-
-class TargetFile(pydantic.BaseModel):
-    file_path: str
-    reason: str = pydantic.Field(
-        ..., description="The reason why the file is the target file"
-    )
-
-
-class VerifyFileRelevance(pydantic.BaseModel):
-    relevant_score: int
-    reason: str
-
-
-class FileList(pydantic.BaseModel):
-    file_list: List[TargetFile]
+from autocoder.index.types import (
+    IndexItem,
+    TargetFile,
+    VerifyFileRelevance,
+    FileList,
+)
 
 
 class IndexManager:
@@ -97,7 +80,7 @@ class IndexManager:
         ```json
         {
             "relevant_score": 0-10,
-            "reason": "这是相关的原因..."
+            "reason": "这是相关的原因（不超过10个中文字符）..."
         }
         ```
         """
@@ -119,12 +102,12 @@ class IndexManager:
         {
             "file_list": [
                 {
-                    "file_path": "path/to/file.py",
-                    "reason": "The reason why the file is the target file"
+                    "file_path": "path/to/file1.py",
+                    "reason": "这是被选择的原因（不超过10个中文字符）"
                 },
                 {
-                    "file_path": "path/to/file.py",
-                    "reason": "The reason why the file is the target file"
+                    "file_path": "path/to/file2.py",
+                    "reason": "这是被选择的原因（不超过10个中文字符）"
                 }
             ]
         }
@@ -211,17 +194,19 @@ class IndexManager:
         if current_chunk:
             chunks.append("\n".join(current_chunk))
         return chunks
+    
+    def should_skip(self, file_path: str):
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext in [".md", ".html", ".txt", ".doc", ".pdf"]:
+            return True
+        return False
 
     def build_index_for_single_source(self, source: SourceCode):
         file_path = source.module_name
         if not os.path.exists(file_path):
             return None
 
-        ext = os.path.splitext(file_path)[1].lower()
-        if ext in [".md", ".html", ".txt", ".doc", ".pdf"]:
-            return None
-
-        if source.source_code.strip() == "":
+        if self.should_skip(file_path):
             return None
 
         md5 = hashlib.md5(source.source_code.encode("utf-8")).hexdigest()
@@ -290,6 +275,13 @@ class IndexManager:
 
             wait_to_build_files = []
             for source in self.sources:
+                file_path = source.module_name
+                if not os.path.exists(file_path):
+                    continue
+
+                if self.should_skip(file_path):
+                    continue
+
                 source_code = source.source_code
                 if self.args.auto_merge == "strict_diff":
                     v = source.source_code.splitlines()
@@ -297,7 +289,7 @@ class IndexManager:
                     for line in v:
                         new_v.append(line[line.find(":"):])
                     source_code = "\n".join(new_v)
-
+                
                 md5 = hashlib.md5(source_code.encode("utf-8")).hexdigest()
                 if (
                     source.module_name not in index_data
@@ -453,6 +445,7 @@ class IndexManager:
             nonlocal completed_threads
             result = self._get_target_files_by_query.with_llm(
                 self.llm).with_return_type(FileList).run(chunk, query)
+            print(result)
             if result is not None:
                 with lock:
                     all_results.extend(result.file_list)
@@ -477,18 +470,23 @@ class IndexManager:
         return all_results, total_threads, completed_threads
 
     def get_target_files_by_query(self, query: str) -> FileList:
+        '''
+        根据用户查询过滤文件。
+        1. 必选，根据文件名和路径，以及文件用途说明，过滤出相关文件。
+        2. index_filter_level>=1，根据文件名和路径，文件说明以及符号列表过滤出相关文件。
+        '''
         all_results: List[TargetFile] = []
+        if self.args.index_filter_level == 0:
+            def w():
+                return self._get_meta_str(
+                    skip_symbols=False,
+                    max_chunk_size=-1,
+                    includes=[SymbolType.USAGE],
+                )
 
-        def w():
-            return self._get_meta_str(
-                skip_symbols=False,
-                max_chunk_size=-1,
-                includes=[SymbolType.USAGE],
-            )
-
-        temp_result, total_threads, completed_threads = self._query_index_with_thread(
-            query, w)
-        all_results.extend(temp_result)
+            temp_result, total_threads, completed_threads = self._query_index_with_thread(
+                query, w)
+            all_results.extend(temp_result)
 
         if self.args.index_filter_level >= 1:
 
@@ -524,12 +522,12 @@ class IndexManager:
         {
             "file_list": [
                 {
-                    "file_path": "path/to/file.py",
-                    "reason": "The reason why the file is the target file"
+                    "file_path": "path/to/file1.py",
+                    "reason": "这是被选择的原因（不超过10个中文字符）"
                 },
                 {
-                    "file_path": "path/to/file.py",
-                    "reason": "The reason why the file is the target file"
+                    "file_path": "path/to/file2.py",
+                    "reason": "这是被选择的原因（不超过10个中文字符）"
                 }
             ]
         }
@@ -699,76 +697,77 @@ def build_index_and_filter_files(
 
             # Phase 5: Relevance verification
             logger.info("Phase 5: Performing relevance verification...")
-            phase_start = time.monotonic()
-            verified_files = {}
-            temp_files = list(final_files.values())
-            verification_results = []
-            
-            def print_verification_results(results):
-                from rich.table import Table
-                from rich.console import Console
+            if args.index_filter_enable_relevance_verification:
+                phase_start = time.monotonic()
+                verified_files = {}
+                temp_files = list(final_files.values())
+                verification_results = []
                 
-                console = Console()
-                table = Table(title="File Relevance Verification Results", show_header=True, header_style="bold magenta")
-                table.add_column("File Path", style="cyan", no_wrap=True)
-                table.add_column("Score", justify="right", style="green")
-                table.add_column("Status", style="yellow")
-                table.add_column("Reason/Error")
-                
-                for file_path, score, status, reason in results:
-                    table.add_row(
-                        file_path,
-                        str(score) if score is not None else "N/A",
-                        status,
-                        reason
-                    )
-                
-                console.print(table)
+                def print_verification_results(results):
+                    from rich.table import Table
+                    from rich.console import Console
+                    
+                    console = Console()
+                    table = Table(title="File Relevance Verification Results", show_header=True, header_style="bold magenta")
+                    table.add_column("File Path", style="cyan", no_wrap=True)
+                    table.add_column("Score", justify="right", style="green")
+                    table.add_column("Status", style="yellow")
+                    table.add_column("Reason/Error")
+                    
+                    for file_path, score, status, reason in results:
+                        table.add_row(
+                            file_path,
+                            str(score) if score is not None else "N/A",
+                            status,
+                            reason
+                        )
+                    
+                    console.print(table)
 
-            def verify_single_file(file: TargetFile):
-                for source in sources:
-                    if source.module_name == file.file_path:
-                        file_content = source.source_code
-                        try:
-                            result = index_manager.verify_file_relevance.with_llm(llm).with_return_type(VerifyFileRelevance).run(
-                                file_content=file_content,
-                                query=args.query
-                            )
-                            if result.relevant_score >= args.verify_file_relevance_score:
+                def verify_single_file(file: TargetFile):
+                    for source in sources:
+                        if source.module_name == file.file_path:
+                            file_content = source.source_code
+                            try:
+                                result = index_manager.verify_file_relevance.with_llm(llm).with_return_type(VerifyFileRelevance).run(
+                                    file_content=file_content,
+                                    query=args.query
+                                )
+                                if result.relevant_score >= args.verify_file_relevance_score:
+                                    verified_files[file.file_path] = TargetFile(
+                                        file_path=file.file_path,
+                                        reason=f"Score:{result.relevant_score}, {result.reason}"
+                                    )
+                                    return file.file_path, result.relevant_score, "PASS", result.reason
+                                else:
+                                    return file.file_path, result.relevant_score, "FAIL", result.reason
+                            except Exception as e:
+                                error_msg = str(e)
                                 verified_files[file.file_path] = TargetFile(
                                     file_path=file.file_path,
-                                    reason=f"Score:{result.relevant_score}, {result.reason}"
+                                    reason=f"Verification failed: {error_msg}"
                                 )
-                                return file.file_path, result.relevant_score, "PASS", result.reason
-                            else:
-                                return file.file_path, result.relevant_score, "FAIL", result.reason
-                        except Exception as e:
-                            error_msg = str(e)
-                            verified_files[file.file_path] = TargetFile(
-                                file_path=file.file_path,
-                                reason=f"Verification failed: {error_msg}"
-                            )
-                            return file.file_path, None, "ERROR", error_msg
-                return None
+                                return file.file_path, None, "ERROR", error_msg
+                    return None
 
-            with ThreadPoolExecutor(max_workers=args.index_filter_workers) as executor:
-                futures = [executor.submit(verify_single_file, file)
-                           for file in temp_files]
-                for future in as_completed(futures):
-                    result = future.result()
-                    if result:
-                        verification_results.append(result)
-                        time.sleep(args.anti_quota_limit)
+                with ThreadPoolExecutor(max_workers=args.index_filter_workers) as executor:
+                    futures = [executor.submit(verify_single_file, file)
+                            for file in temp_files]
+                    for future in as_completed(futures):
+                        result = future.result()
+                        if result:
+                            verification_results.append(result)
+                            time.sleep(args.anti_quota_limit)
 
-            # Print verification results in a table
-            print_verification_results(verification_results)
-            
-            stats["verified_files"] = len(verified_files)
-            phase_end = time.monotonic()
-            stats["timings"]["relevance_verification"] = phase_end - phase_start
+                # Print verification results in a table
+                print_verification_results(verification_results)
+                
+                stats["verified_files"] = len(verified_files)
+                phase_end = time.monotonic()
+                stats["timings"]["relevance_verification"] = phase_end - phase_start
 
-            # Keep all files, not just verified ones
-            final_files = verified_files
+                # Keep all files, not just verified ones
+                final_files = verified_files
 
     def display_table_and_get_selections(data):
         from prompt_toolkit.shortcuts import checkboxlist_dialog

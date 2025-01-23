@@ -1,4 +1,5 @@
-from autocoder.index.index import IndexManager, TargetFile
+from autocoder.index.index import IndexManager
+from autocoder.index.types import TargetFile
 from autocoder.suffixproject import SuffixProject
 from autocoder.tsproject import TSProject
 from autocoder.pyproject import PyProject

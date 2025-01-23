@@ -262,8 +262,10 @@ class AutoCoderArgs(pydantic.BaseModel):
     index_model_max_length: Optional[int] = 0
     index_model_max_input_length: Optional[int] = 0
     index_model_anti_quota_limit: Optional[int] = 0
+    
 
     index_filter_level: Optional[int] = 0
+    index_filter_enable_relevance_verification: Optional[bool] = True
     index_filter_workers: Optional[int] = 1
     index_filter_file_num: Optional[int] = -1
     index_build_workers: Optional[int] = 1
@@ -349,7 +351,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     generate_times_same_model: Optional[int] = 1
 
     action: List[str] = []
-    enable_global_memory: Optional[bool] = True
+    enable_global_memory: Optional[bool] = True    
 
     class Config:
         protected_namespaces = ()
