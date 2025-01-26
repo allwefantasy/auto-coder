@@ -188,6 +188,8 @@ class CodeAutoGenerate:
 
         conversations_list = []
         results = []
+        input_tokens_count = 0
+        generated_tokens_count = 0
         if not self.args.human_as_model:
             with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
                 futures = []
@@ -195,26 +197,38 @@ class CodeAutoGenerate:
                     for _ in range(self.generate_times_same_model):
                         futures.append(executor.submit(
                             chat_with_continue, llm=llm, conversations=conversations, llm_config=llm_config))
-                results = [future.result() for future in futures]
+                temp_results = [future.result() for future in futures]
+                for result in temp_results:
+                    results.append(result.content)
+                    input_tokens_count += result.input_tokens_count
+                    generated_tokens_count += result.generated_tokens_count
+            
             for result in results:
                 conversations_list.append(
                     conversations + [{"role": "assistant", "content": result}])
         else:            
             for _ in range(self.args.human_model_num):
-                single_result = chat_with_continue(llm=self.llms[0], conversations=conversations, llm_config=llm_config)
-                results.append(single_result)
-                conversations_list.append(conversations + [{"role": "assistant", "content": single_result}])
-
+                single_result = chat_with_continue(llm=self.llms[0], conversations=conversations, llm_config=llm_config)                
+                results.append(single_result.content)
+                input_tokens_count += single_result.input_tokens_count
+                generated_tokens_count += single_result.generated_tokens_count
+                conversations_list.append(conversations + [{"role": "assistant", "content": single_result.content}])
+        
+        statistics = {
+            "input_tokens_count": input_tokens_count,
+            "generated_tokens_count": generated_tokens_count
+        }        
+    
         if self.args.request_id and not self.args.skip_events:
             queue_communicate.send_event_no_wait(
                 request_id=self.args.request_id,
                 event=CommunicateEvent(
                     event_type=CommunicateEventType.CODE_GENERATE_END.value,
-                    data="",
+                    data=json.dumps(statistics, ensure_ascii=False),
                 ),
             )
 
-        return CodeGenerateResult(contents=results, conversations=conversations_list)
+        return CodeGenerateResult(contents=results, conversations=conversations_list, metadata=statistics)
 
     def multi_round_run(
         self, query: str, source_content: str, max_steps: int = 10
