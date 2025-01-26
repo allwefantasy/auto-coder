@@ -68,6 +68,13 @@ def parse_arguments():
         action="store_true",
         help="Enter the auto-coder.chat without initializing the system",
     )
+
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="standard",
+        help="The mode of the auto-coder.chat, standard: standard mode, pro: pro mode",
+    )
     return parser.parse_args()
 
 
@@ -279,88 +286,94 @@ def initialize_system():
         print_status(get_message("init_complete"), "success")
 
     init_project()
-    # Check if Ray is running
-    print_status(get_message("checking_ray"), "")
-    ray_status = subprocess.run(
-        ["ray", "status"], capture_output=True, text=True)
-    if ray_status.returncode != 0:
-        print_status(get_message("ray_not_running"), "warning")
-        try:
-            subprocess.run(["ray", "start", "--head"], check=True)
-            print_status(get_message("ray_start_success"), "success")
-        except subprocess.CalledProcessError:
-            print_status(get_message("ray_start_fail"), "error")
-            return
-    else:
-        print_status(get_message("ray_running"), "success")
 
-    # Check if deepseek_chat model is available
-    print_status(get_message("checking_model"), "")
-    try:
-        result = subprocess.run(
-            ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        if result.returncode == 0:
-            print_status(get_message("model_available"), "success")
-            init_project()
-            print_status(get_message("init_complete_final"), "success")
-            return
-    except subprocess.TimeoutExpired:
-        print_status(get_message("model_timeout"), "error")
-    except subprocess.CalledProcessError:
-        print_status(get_message("model_error"), "error")
-
-    # If deepseek_chat is not available
-    print_status(get_message("model_not_available"), "warning")
-    api_key = prompt(HTML(f"<b>{get_message('enter_api_key')} </b>"))
-
-    print_status(get_message("deploying_model").format("Deepseek官方"), "")
-    deploy_cmd = [
-        "byzerllm",
-        "deploy",
-        "--pretrained_model_type",
-        "saas/openai",
-        "--cpus_per_worker",
-        "0.001",
-        "--gpus_per_worker",
-        "0",
-        "--worker_concurrency",
-        "1000",
-        "--num_workers",
-        "1",
-        "--infer_params",
-        f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
-        "--model",
-        "deepseek_chat",
-    ]
-
-    try:
-        subprocess.run(deploy_cmd, check=True)
-        print_status(get_message("deploy_complete"), "success")
-    except subprocess.CalledProcessError:
-        print_status(get_message("deploy_fail"), "error")
+    if ARGS.mode == "standard":
+        
         return
 
-    # Validate the deployment
-    print_status(get_message("validating_deploy"), "")
-    try:
-        validation_result = subprocess.run(
-            ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=True,
-        )
-        print_status(get_message("validation_success"), "success")
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-        print_status(get_message("validation_fail"), "error")
-        print_status(get_message("manual_start"), "warning")
-        print_status("easy-byzerllm chat deepseek_chat 你好", "")
+    if ARGS.mode == "pro":
+        # Check if Ray is running
+        print_status(get_message("checking_ray"), "")
+        ray_status = subprocess.run(
+            ["ray", "status"], capture_output=True, text=True)
+        if ray_status.returncode != 0:
+            print_status(get_message("ray_not_running"), "warning")
+            try:
+                subprocess.run(["ray", "start", "--head"], check=True)
+                print_status(get_message("ray_start_success"), "success")
+            except subprocess.CalledProcessError:
+                print_status(get_message("ray_start_fail"), "error")
+                return
+        else:
+            print_status(get_message("ray_running"), "success")
 
-    print_status(get_message("init_complete_final"), "success")
+        # Check if deepseek_chat model is available
+        print_status(get_message("checking_model"), "")
+        try:
+            result = subprocess.run(
+                ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if result.returncode == 0:
+                print_status(get_message("model_available"), "success")
+                init_project()
+                print_status(get_message("init_complete_final"), "success")
+                return
+        except subprocess.TimeoutExpired:
+            print_status(get_message("model_timeout"), "error")
+        except subprocess.CalledProcessError:
+            print_status(get_message("model_error"), "error")
+
+        # If deepseek_chat is not available
+        print_status(get_message("model_not_available"), "warning")
+        api_key = prompt(HTML(f"<b>{get_message('enter_api_key')} </b>"))
+
+        print_status(get_message("deploying_model").format("Deepseek官方"), "")
+        deploy_cmd = [
+            "byzerllm",
+            "deploy",
+            "--pretrained_model_type",
+            "saas/openai",
+            "--cpus_per_worker",
+            "0.001",
+            "--gpus_per_worker",
+            "0",
+            "--worker_concurrency",
+            "1000",
+            "--num_workers",
+            "1",
+            "--infer_params",
+            f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
+            "--model",
+            "deepseek_chat",
+        ]
+
+        try:
+            subprocess.run(deploy_cmd, check=True)
+            print_status(get_message("deploy_complete"), "success")
+        except subprocess.CalledProcessError:
+            print_status(get_message("deploy_fail"), "error")
+            return
+
+        # Validate the deployment
+        print_status(get_message("validating_deploy"), "")
+        try:
+            validation_result = subprocess.run(
+                ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=True,
+            )
+            print_status(get_message("validation_success"), "success")
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            print_status(get_message("validation_fail"), "error")
+            print_status(get_message("manual_start"), "warning")
+            print_status("easy-byzerllm chat deepseek_chat 你好", "")
+
+        print_status(get_message("init_complete_final"), "success")
 
 
 def convert_yaml_config_to_str(yaml_config):
