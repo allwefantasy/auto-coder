@@ -84,6 +84,7 @@ src/autocoder/index/__init__.py
 src/autocoder/index/for_command.py
 src/autocoder/index/index.py
 src/autocoder/index/symbols_utils.py
+src/autocoder/index/types.py
 src/autocoder/pyproject/__init__.py
 src/autocoder/rag/__init__.py
 src/autocoder/rag/api_server.py

@@ -445,7 +445,7 @@ class IndexManager:
             nonlocal completed_threads
             result = self._get_target_files_by_query.with_llm(
                 self.llm).with_return_type(FileList).run(chunk, query)
-            print(result)
+            
             if result is not None:
                 with lock:
                     all_results.extend(result.file_list)

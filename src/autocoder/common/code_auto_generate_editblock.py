@@ -433,8 +433,18 @@ class CodeAutoGenerateEditBlock:
             for _ in range(self.args.human_model_num):
                 v = self.llms[0].chat_oai(
                     conversations=conversations, llm_config=llm_config)
-                results.append(v[0].output)
-                conversations_list.append(conversations + [{"role": "assistant", "content": v[0].output}])
+                
+                single_result = v[0].output
+                metadata = v[0].metadata
+                temp_conversations = conversations + [{"role": "assistant", "content": single_result}]
+                while(metadata.get("finish_reason","stop") == "length"):
+                    v = self.llms[0].chat_oai(
+                        conversations=temp_conversations, llm_config={**llm_config,"gen.response_prefix": True})
+                    metadata = v[0].metadata
+                    single_result += v[0].output
+                
+                results.append(single_result)
+                conversations_list.append(conversations + [{"role": "assistant", "content": single_result}])
 
         if self.args.request_id and not self.args.skip_events:
             _ = queue_communicate.send_event(
