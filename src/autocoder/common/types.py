@@ -12,6 +12,7 @@ class StepNum(pydantic.BaseModel):
 class CodeGenerateResult(pydantic.BaseModel):
     contents:List[str]
     conversations:List[List[Dict[str, Any]]]
+    metadata:Dict[str, Any] = {}
 
 class MergeCodeWithoutEffect(pydantic.BaseModel):
     success_blocks: List[Tuple[str, str]]

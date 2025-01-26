@@ -116,7 +116,7 @@ class ActionTSProject(BaseAction):
                 generate_result = generate.single_round_run(
                     query=args.query, source_content=content
                 )
-            logger.info(f"Code generation completed in {time.time() - start_time:.2f} seconds")    
+            logger.info(f"Code generation completed in {time.time() - start_time:.2f} seconds, input_tokens_count: {generate_result.metadata.get('input_tokens_count', 0)}, generated_tokens_count: {generate_result.metadata.get('generated_tokens_count', 0)}")    
             merge_result = None
             if args.execute and args.auto_merge:
                 logger.info("Auto merge the code...")
@@ -200,7 +200,7 @@ class ActionPyScriptProject(BaseAction):
                     query=args.query, source_content=content
                 )
 
-            logger.info(f"Code generation completed in {time.time() - start_time:.2f} seconds")    
+            logger.info(f"Code generation completed in {time.time() - start_time:.2f} seconds, input_tokens_count: {generate_result.metadata.get('input_tokens_count', 0)}, generated_tokens_count: {generate_result.metadata.get('generated_tokens_count', 0)}")    
             merge_result = None
             if args.execute and args.auto_merge:
                 logger.info("Auto merge the code...")
@@ -302,7 +302,7 @@ class ActionPyProject(BaseAction):
                 generate_result = generate.single_round_run(
                     query=args.query, source_content=content
                 )
-            logger.info(f"Code generation completed in {time.time() - start_time:.2f} seconds")   
+            logger.info(f"Code generation completed in {time.time() - start_time:.2f} seconds, input_tokens_count: {generate_result.metadata.get('input_tokens_count', 0)}, generated_tokens_count: {generate_result.metadata.get('generated_tokens_count', 0)}")    
             merge_result = None
             if args.execute and args.auto_merge:
                 logger.info("Auto merge the code...")
@@ -396,7 +396,7 @@ class ActionSuffixProject(BaseAction):
                     query=args.query, source_content=content
                 )
               
-        logger.info(f"Code generation completed in {time.time() - start_time:.2f} seconds")
+        logger.info(f"Code generation completed in {time.time() - start_time:.2f} seconds, input_tokens_count: {generate_result.metadata.get('input_tokens_count', 0)}, generated_tokens_count: {generate_result.metadata.get('generated_tokens_count', 0)}")
         merge_result = None
         if args.execute and args.auto_merge:
             logger.info("Auto merge the code...")
