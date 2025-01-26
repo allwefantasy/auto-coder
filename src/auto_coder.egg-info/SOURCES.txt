@@ -68,6 +68,7 @@ src/autocoder/common/search_replace.py
 src/autocoder/common/sys_prompt.py
 src/autocoder/common/text.py
 src/autocoder/common/types.py
+src/autocoder/common/utils_code_auto_generate.py
 src/autocoder/common/mcp_servers/__init__.py
 src/autocoder/common/mcp_servers/mcp_server_perplexity.py
 src/autocoder/data/tokenizer.json

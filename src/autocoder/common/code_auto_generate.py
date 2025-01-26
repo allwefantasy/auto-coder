@@ -6,6 +6,7 @@ from autocoder.utils.queue_communicate import queue_communicate, CommunicateEven
 from autocoder.common import sys_prompt
 from concurrent.futures import ThreadPoolExecutor
 from autocoder.common.types import CodeGenerateResult
+from autocoder.common.utils_code_auto_generate import chat_with_continue
 
 
 class CodeAutoGenerate:
@@ -193,17 +194,16 @@ class CodeAutoGenerate:
                 for llm in self.llms:
                     for _ in range(self.generate_times_same_model):
                         futures.append(executor.submit(
-                            llm.chat_oai, conversations=conversations, llm_config=llm_config))
-                results = [future.result()[0].output for future in futures]
+                            chat_with_continue, llm=llm, conversations=conversations, llm_config=llm_config))
+                results = [future.result() for future in futures]
             for result in results:
                 conversations_list.append(
                     conversations + [{"role": "assistant", "content": result}])
         else:            
             for _ in range(self.args.human_model_num):
-                v = self.llms[0].chat_oai(
-                    conversations=conversations, llm_config=llm_config)
-                results.append(v[0].output)
-                conversations_list.append(conversations + [{"role": "assistant", "content": v[0].output}])
+                single_result = chat_with_continue(llm=self.llms[0], conversations=conversations, llm_config=llm_config)
+                results.append(single_result)
+                conversations_list.append(conversations + [{"role": "assistant", "content": single_result}])
 
         if self.args.request_id and not self.args.skip_events:
             queue_communicate.send_event_no_wait(

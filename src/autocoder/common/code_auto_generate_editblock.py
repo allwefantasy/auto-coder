@@ -10,6 +10,7 @@ from autocoder.utils.queue_communicate import (
 )
 import json
 from concurrent.futures import ThreadPoolExecutor
+from autocoder.common.utils_code_auto_generate import chat_with_continue
 
 
 class CodeAutoGenerateEditBlock:
@@ -424,25 +425,14 @@ class CodeAutoGenerateEditBlock:
                 for llm in self.llms:
                     for _ in range(self.generate_times_same_model):
                         futures.append(executor.submit(
-                            llm.chat_oai, conversations=conversations, llm_config=llm_config))
-                results = [future.result()[0].output for future in futures]
+                            chat_with_continue,llm=llm, conversations=conversations, llm_config=llm_config))
+                results = [future.result() for future in futures]
             for result in results:
                 conversations_list.append(
                     conversations + [{"role": "assistant", "content": result}])
         else:            
             for _ in range(self.args.human_model_num):
-                v = self.llms[0].chat_oai(
-                    conversations=conversations, llm_config=llm_config)
-                
-                single_result = v[0].output
-                metadata = v[0].metadata
-                temp_conversations = conversations + [{"role": "assistant", "content": single_result}]
-                while(metadata.get("finish_reason","stop") == "length"):
-                    v = self.llms[0].chat_oai(
-                        conversations=temp_conversations, llm_config={**llm_config,"gen.response_prefix": True})
-                    metadata = v[0].metadata
-                    single_result += v[0].output
-                
+                single_result = chat_with_continue(llm=self.llms[0], conversations=conversations, llm_config=llm_config)                
                 results.append(single_result)
                 conversations_list.append(conversations + [{"role": "assistant", "content": single_result}])
 
