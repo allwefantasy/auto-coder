@@ -32,7 +32,7 @@ def chat_with_continue(llm: ByzerLLM, conversations: List[dict], llm_config: dic
         final_result.generated_tokens_count += metadata.get("generated_tokens_count", 0)
         count += 1
     
-    if count >= 2:
-        logger.info(f"The code generation is exceed the max length, continue to generate the code {count -1 } times")
+    # if count >= 2:
+    #   logger.info(f"The code generation is exceed the max length, continue to generate the code {count -1 } times")
     final_result.content = single_result    
     return final_result
