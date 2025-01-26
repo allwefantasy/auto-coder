@@ -23,8 +23,7 @@ def chat_with_continue(llm: ByzerLLM, conversations: List[dict], llm_config: dic
         [{"role": "assistant", "content": single_result}]
     
     count = 1
-    while (metadata.get("finish_reason", "stop") == "length" and count < 6):
-        logger.info(f"The code generation is exceed the max length, continue to generate the code... {count}")
+    while (metadata.get("finish_reason", "stop") == "length" and count < 6):        
         v = llm.chat_oai(
             conversations=temp_conversations, llm_config={**llm_config, "gen.response_prefix": True})
         metadata = v[0].metadata
@@ -33,5 +32,7 @@ def chat_with_continue(llm: ByzerLLM, conversations: List[dict], llm_config: dic
         final_result.generated_tokens_count += metadata.get("generated_tokens_count", 0)
         count += 1
     
+    if count >= 2:
+        logger.info(f"The code generation is exceed the max length, continue to generate the code {count -1 } times")
     final_result.content = single_result    
     return final_result
