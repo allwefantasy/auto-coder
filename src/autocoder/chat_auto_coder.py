@@ -288,7 +288,23 @@ def initialize_system():
     init_project()
 
     if ARGS.mode == "standard":
+        # Setup deepseek api key
+        api_key_dir = os.path.expanduser("~/.auto-coder/keys")
+        api_key_file = os.path.join(api_key_dir, "api.deepseek.com")
         
+        if not os.path.exists(api_key_file):
+            print_status(get_message("model_not_available"), "warning")
+            api_key = prompt(HTML(f"<b>{get_message('enter_api_key')} </b>"))
+            
+            # Create directory if it doesn't exist
+            os.makedirs(api_key_dir, exist_ok=True)
+            
+            # Save the API key
+            with open(api_key_file, "w") as f:
+                f.write(api_key)
+            
+            print_status("API key saved successfully.", "success")
+            
         return
 
     if ARGS.mode == "pro":
