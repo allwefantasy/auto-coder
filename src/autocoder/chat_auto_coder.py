@@ -185,6 +185,7 @@ def show_help():
     print(
         f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
     print(f"  \033[94m/lib\033[0m - \033[92m{get_message('lib_desc')}\033[0m")
+    print(f"  \033[94m/models\033[0m - \033[92m管理模型配置\033[0m")
     print(
         f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
     print()
