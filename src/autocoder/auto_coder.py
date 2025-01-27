@@ -502,6 +502,12 @@ def main(input_args: Optional[List[str]] = None):
                 model.add_event_callback(
                     EventName.AFTER_CALL_MODEL, token_counter_interceptor
                 )
+        if args.mode == "lite":
+            from autocoder import models
+            loaded_models = models.load_models()
+            ##TODO
+            
+        
         if args.mode == "pro":
             llm.setup_template(model=args.model, template="auto")
             llm.setup_default_model_name(args.model)
