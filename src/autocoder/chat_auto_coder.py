@@ -49,7 +49,7 @@ from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRe
 import byzerllm
 from byzerllm.utils import format_str_jinja2
 from autocoder.common.memory_manager import get_global_memory_file_paths 
-from autocoder.models import load_models, save_models
+from autocoder import models
 
 
 class SymbolItem(BaseModel):
@@ -2126,7 +2126,7 @@ def manage_models(query: str):
       /models /remove <name> - Remove model by name
     """
     console = Console()
-    models_data = load_models()
+    models_data = models.load_models()
     args = query.strip().split()
 
     if not args:
@@ -2137,9 +2137,8 @@ def manage_models(query: str):
 
     if subcmd == "/list":
         # Merge default models with custom models
-        merged = {}
-        from autocoder.models import default_models_list
-        for m in (default_models_list + models_data):
+        merged = {}        
+        for m in (models.default_models_list + models_data):
             merged[m["name"]] = m
         final_list = list(merged.values())
 
@@ -2170,32 +2169,11 @@ def manage_models(query: str):
             # Simplified: /models /add <name> <api_key>
             name, api_key = args[1], args[2]
             
-            result = update_model_with_api_key(name, api_key)
+            result = models.update_model_with_api_key(name, api_key)
             if result:
                 console.print(f"[green]Added/Updated model '{name}' successfully.[/green]")
             else:
                 console.print(f"[red]Failed to add model '{name}'. Model not found in defaults.[/red]")
-
-        elif len(args) >= 6:
-            # Legacy: /models /add <name> <model_type> <model_name> <base_url> <api_key_path> [desc...]
-            name, model_type, model_name, base_url, api_key_path = args[1:6]
-            description = " ".join(args[6:]) if len(args) > 6 else ""
-
-            if any(m["name"] == name for m in models_data):
-                console.print(f"[yellow]Model '{name}' already exists.[/yellow]")
-                return
-
-            new_model = {
-                "name": name,
-                "model_type": model_type,
-                "model_name": model_name,
-                "base_url": base_url,
-                "api_key_path": api_key_path,
-                "description": description
-            }
-            models_data.append(new_model)
-            save_models(models_data)
-            console.print(f"[green]Added model: {name}[/green]")
         else:
             console.print("[red]Usage: /models /add <name> <api_key> or\n/models /add <name> <model_type> <model_name> <base_url> <api_key_path> [description][/red]")
 

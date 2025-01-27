@@ -66,3 +66,76 @@ def save_models(models: List[Dict]) -> None:
     with open(MODELS_JSON, 'w', encoding='utf-8') as f:
         json.dump(models, f, indent=2, ensure_ascii=False)
 
+
+def process_api_key_path(base_url: str) -> str:
+    """
+    从 base_url 中提取 host 部分并处理特殊字符
+    例如: https://api.example.com:8080/v1 -> api.example.com_8080
+    """
+    if not base_url:
+        return ""
+    
+    parsed = urlparse(base_url)
+    host = parsed.netloc
+    
+    # 将冒号替换为下划线
+    host = host.replace(":", "_")
+    
+    return host
+
+def update_model_with_api_key(name: str, api_key: str) -> Dict:
+    """
+    根据模型名称查找并更新模型的 api_key_path。
+    如果找到模型，会根据其 base_url 处理 api_key_path。
+    
+    Args:
+        name: 模型名称
+        api_key: API密钥
+        
+    Returns:
+        Dict: 更新后的模型信息，如果未找到则返回None
+    """
+    models = load_models()
+    
+    # 在现有模型中查找
+    found_model = None
+    for model in models:
+        if model["name"] == name:
+            found_model = model
+            break
+            
+    if not found_model:
+        for model in default_models_list:
+            if model["name"] == name:
+                found_model = model.copy()
+                break
+                
+    if not found_model:
+        return None
+        
+    # 从 base_url 中提取并处理 host
+    api_key_path = process_api_key_path(found_model["base_url"])
+    if api_key_path:
+        found_model["api_key_path"] = api_key_path
+        
+        # 保存 API 密钥
+        api_key_dir = os.path.expanduser("~/.auto-coder/keys")
+        os.makedirs(api_key_dir, exist_ok=True)
+        api_key_file = os.path.join(api_key_dir, api_key_path)
+        with open(api_key_file, "w") as f:
+            f.write(api_key)
+        
+        # 如果是新模型，添加到模型列表中
+        if all(model["name"] != name for model in models):
+            models.append(found_model)
+        else:
+            # 更新现有模型
+            for i, model in enumerate(models):
+                if model["name"] == name:
+                    models[i] = found_model
+                    break
+        
+        save_models(models)
+    
+    return found_model
+
