@@ -504,9 +504,188 @@ def main(input_args: Optional[List[str]] = None):
                 )
         if args.mode == "lite":
             from autocoder import models
-            loaded_models = models.load_models()
-            ##TODO
+            loaded_models = models.load_models()            
             
+            # Set up default models based on configuration
+            if args.code_model:
+                if "," in args.code_model:
+                    # Multiple code models specified
+                    model_names = args.code_model.split(",")
+                    models = []
+                    for _, model_name in enumerate(model_names):
+                        code_model = byzerllm.SimpleByzerLLM(default_model_name=model_name.strip())
+                        code_model.deploy(
+                            model_path="",
+                            pretrained_model_type="saas/openai",
+                            udf_name=model_name.strip(),
+                            infer_params={
+                                "saas.base_url": "https://api.deepseek.com/v1",
+                                "saas.api_key": api_key,
+                                "saas.model": "deepseek-chat"
+                            }
+                        )
+                        models.append(code_model)
+                    llm.setup_sub_client("code_model", models)
+                else:
+                    # Single code model
+                    code_model = byzerllm.SimpleByzerLLM(default_model_name=args.code_model)
+                    code_model.deploy(
+                        model_path="",
+                        pretrained_model_type="saas/openai",
+                        udf_name=args.code_model,
+                        infer_params={
+                            "saas.base_url": "https://api.deepseek.com/v1",
+                            "saas.api_key": api_key,
+                            "saas.model": "deepseek-chat"
+                        }
+                    )
+                    llm.setup_sub_client("code_model", code_model)
+
+            if args.generate_rerank_model:
+                if "," in args.generate_rerank_model:
+                    # Multiple rerank models specified
+                    model_names = args.generate_rerank_model.split(",")
+                    models = []
+                    for _, model_name in enumerate(model_names):
+                        rerank_model = byzerllm.SimpleByzerLLM(default_model_name=model_name.strip())
+                        rerank_model.deploy(
+                            model_path="",
+                            pretrained_model_type="saas/openai",
+                            udf_name=model_name.strip(),
+                            infer_params={
+                                "saas.base_url": "https://api.deepseek.com/v1",
+                                "saas.api_key": api_key,
+                                "saas.model": "deepseek-reasoner"
+                            }
+                        )
+                        models.append(rerank_model)
+                    llm.setup_sub_client("generate_rerank_model", models)
+                else:
+                    # Single rerank model
+                    rerank_model = byzerllm.SimpleByzerLLM(default_model_name=args.generate_rerank_model)
+                    rerank_model.deploy(
+                        model_path="",
+                        pretrained_model_type="saas/openai",
+                        udf_name=args.generate_rerank_model,
+                        infer_params={
+                            "saas.base_url": "https://api.deepseek.com/v1",
+                            "saas.api_key": api_key,
+                            "saas.model": "deepseek-reasoner"
+                        }
+                    )
+                    llm.setup_sub_client("generate_rerank_model", rerank_model)
+
+            if args.inference_model:
+                inference_model = byzerllm.SimpleByzerLLM(default_model_name=args.inference_model)
+                inference_model.deploy(
+                    model_path="",
+                    pretrained_model_type="saas/openai",
+                    udf_name=args.inference_model,
+                    infer_params={
+                        "saas.base_url": "https://api.deepseek.com/v1",
+                        "saas.api_key": api_key,
+                        "saas.model": "deepseek-chat"
+                    }
+                )
+                llm.setup_sub_client("inference_model", inference_model)
+            
+            if args.vl_model:
+                vl_model = byzerllm.SimpleByzerLLM(default_model_name=args.vl_model)
+                vl_model.deploy(
+                    model_path="",
+                    pretrained_model_type="saas/openai",
+                    udf_name=args.vl_model,
+                    infer_params={
+                        "saas.base_url": "https://api.deepseek.com/v1",
+                        "saas.api_key": api_key,
+                        "saas.model": "deepseek-chat"
+                    }
+                )
+                llm.setup_sub_client("vl_model", vl_model)
+
+            if args.sd_model:
+                sd_model = byzerllm.SimpleByzerLLM(default_model_name=args.sd_model)
+                sd_model.deploy(
+                    model_path="",
+                    pretrained_model_type="saas/openai",
+                    udf_name=args.sd_model,
+                    infer_params={
+                        "saas.base_url": "https://api.deepseek.com/v1",
+                        "saas.api_key": api_key,
+                        "saas.model": "deepseek-chat"
+                    }
+                )
+                llm.setup_sub_client("sd_model", sd_model)
+
+            if args.text2voice_model:
+                text2voice_model = byzerllm.SimpleByzerLLM(default_model_name=args.text2voice_model)
+                text2voice_model.deploy(
+                    model_path="",
+                    pretrained_model_type="saas/openai",
+                    udf_name=args.text2voice_model,
+                    infer_params={
+                        "saas.base_url": "https://api.deepseek.com/v1",
+                        "saas.api_key": api_key,
+                        "saas.model": "deepseek-chat"
+                    }
+                )
+                llm.setup_sub_client("text2voice_model", text2voice_model)
+
+            if args.voice2text_model:
+                voice2text_model = byzerllm.SimpleByzerLLM(default_model_name=args.voice2text_model)
+                voice2text_model.deploy(
+                    model_path="",
+                    pretrained_model_type="saas/openai",
+                    udf_name=args.voice2text_model,
+                    infer_params={
+                        "saas.base_url": "https://api.deepseek.com/v1",
+                        "saas.api_key": api_key,
+                        "saas.model": "deepseek-chat"
+                    }
+                )
+                llm.setup_sub_client("voice2text_model", voice2text_model)
+
+            if args.planner_model:
+                planner_model = byzerllm.SimpleByzerLLM(default_model_name=args.planner_model)
+                planner_model.deploy(
+                    model_path="",
+                    pretrained_model_type="saas/openai",
+                    udf_name=args.planner_model,
+                    infer_params={
+                        "saas.base_url": "https://api.deepseek.com/v1",
+                        "saas.api_key": api_key,
+                        "saas.model": "deepseek-chat"
+                    }
+                )
+                llm.setup_sub_client("planner_model", planner_model)
+
+            if args.designer_model:
+                designer_model = byzerllm.SimpleByzerLLM(default_model_name=args.designer_model)
+                designer_model.deploy(
+                    model_path="",
+                    pretrained_model_type="saas/openai",
+                    udf_name=args.designer_model,
+                    infer_params={
+                        "saas.base_url": "https://api.deepseek.com/v1",
+                        "saas.api_key": api_key,
+                        "saas.model": "deepseek-reasoner"
+                    }
+                )
+                llm.setup_sub_client("designer_model", designer_model)
+
+            if args.emb_model:
+                emb_model = byzerllm.SimpleByzerLLM(default_model_name=args.emb_model)
+                emb_model.deploy(
+                    model_path="",
+                    pretrained_model_type="saas/openai",
+                    udf_name=args.emb_model,
+                    infer_params={
+                        "saas.base_url": "https://api.deepseek.com/v1",
+                        "saas.api_key": api_key,
+                        "saas.model": "deepseek-chat"
+                    }
+                )
+                llm.setup_sub_client("emb_model", emb_model)
         
         if args.mode == "pro":
             llm.setup_template(model=args.model, template="auto")
