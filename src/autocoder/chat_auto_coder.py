@@ -2118,7 +2118,7 @@ def generate_shell_command(input_text):
         os.remove(execute_file)
 
 def manage_models(params, query: str):
-    """
+    """    
     Handle /models subcommands:
       /models /list - List all models (default + custom)
       /models /add <name> <api_key> - Add model with simplified params
@@ -2126,6 +2126,11 @@ def manage_models(params, query: str):
       /models /remove <name> - Remove model by name
     """
     console = Console()
+    
+    if params.mode != "lite":
+        console.print(f"[red]{get_message('models_lite_only')}[/red]")
+        return
+        
     models_data = models.load_models()
     args = query.strip().split()
 

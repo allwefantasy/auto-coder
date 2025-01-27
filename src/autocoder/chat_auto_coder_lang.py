@@ -78,7 +78,8 @@ MESSAGES = {
         "models_add_model_removed": "Removed model: {name}",
         "models_unknown_subcmd": "Unknown subcommand: {subcmd}",
         "models_title": "All Models (内置 + models.json)",
-        "models_no_models": "No models found."
+        "models_no_models": "No models found.",
+        "models_lite_only": "The /models command is only available in lite mode"
     },
     "zh": {
         "initializing": "🚀 正在初始化系统...",
@@ -157,7 +158,8 @@ MESSAGES = {
         "models_add_model_removed": "已移除模型: {name}",
         "models_unknown_subcmd": "未知的子命令: {subcmd}",
         "models_title": "所有模型 (内置 + models.json)",
-        "models_no_models": "未找到任何模型。"
+        "models_no_models": "未找到任何模型。",
+        "models_lite_only": "/models 命令仅在 lite 模式下可用"
     }
 }
 
