@@ -2117,8 +2117,89 @@ def generate_shell_command(input_text):
     finally:
         os.remove(execute_file)
 
+from autocoder.models import load_models, save_models
+
 def manage_models(query: str):
-    pass
+    """
+    Handle /models subcommands:
+      /models /list
+      /models /add <name> <model_type> <model_name> <base_url> <api_key_path> [description...]
+      /models /remove <name>
+    Example:
+      /models /add my-model saas/openai my-model-123 https://api.openai.com/v1 api.openai.com "My private model"
+    """
+    console = Console()
+    models_data = load_models()
+    args = query.strip().split()
+
+    if not args:
+        console.print("Usage: /models /list|/add|/remove ...")
+        return
+
+    subcmd = args[0]
+
+    if subcmd == "/list":
+        if models_data:
+            table = Table(title="Registered Models")
+            table.add_column("Name", style="cyan")
+            table.add_column("Model Type", style="green")
+            table.add_column("Model Name", style="magenta") 
+            table.add_column("Base URL", style="yellow")
+            table.add_column("API Key Path", style="blue")
+            table.add_column("Description", style="white")
+            for m in models_data:
+                table.add_row(
+                    m.get("name", ""),
+                    m.get("model_type", ""),
+                    m.get("model_name", ""),
+                    m.get("base_url", ""),
+                    m.get("api_key_path", ""),
+                    m.get("description", "")
+                )
+            console.print(table)
+        else:
+            console.print("[yellow]No models found.[/yellow]")
+
+    elif subcmd == "/add":
+        # e.g. /models /add <name> <model_type> <model_name> <base_url> <api_key_path> <description...>
+        if len(args) < 6:
+            console.print("[red]Usage: /models /add <name> <model_type> <model_name> <base_url> <api_key_path> [description][/red]")
+            return
+        name, model_type, model_name, base_url, api_key_path = args[1:6]
+        description = " ".join(args[6:]) if len(args) > 6 else ""
+
+        # Check duplication
+        if any(m for m in models_data if m["name"] == name):
+            console.print(f"[yellow]Model '{name}' already exists.[/yellow]")
+            return
+
+        new_model = {
+            "name": name,
+            "model_type": model_type,
+            "model_name": model_name,
+            "base_url": base_url,
+            "api_key_path": api_key_path,
+            "description": description
+        }
+        models_data.append(new_model)
+        save_models(models_data)
+        console.print(f"[green]Added model: {name}[/green]")
+
+    elif subcmd == "/remove":
+        # e.g. /models /remove <name>
+        if len(args) < 2:
+            console.print("[red]Usage: /models /remove <name>[/red]")
+            return
+        name = args[1]
+        filtered_models = [m for m in models_data if m["name"] != name]
+        if len(filtered_models) == len(models_data):
+            console.print(f"[yellow]Model '{name}' not found.[/yellow]")
+            return
+        save_models(filtered_models)
+        console.print(f"[green]Removed model: {name}[/green]")
+
+    else:
+        console.print(f"[yellow]Unknown subcommand: {subcmd}[/yellow]")
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
