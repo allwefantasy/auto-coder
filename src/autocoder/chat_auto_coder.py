@@ -2170,22 +2170,11 @@ def manage_models(query: str):
             # Simplified: /models /add <name> <api_key>
             name, api_key = args[1], args[2]
             
-            # Check duplication
-            if any(m["name"] == name for m in models_data):
-                console.print(f"[yellow]Model '{name}' already exists.[/yellow]")
-                return
-
-            new_model = {
-                "name": name,
-                "model_type": "saas/openai",
-                "model_name": name,
-                "base_url": "https://api.openai.com/v1",
-                "api_key_path": api_key,
-                "description": f"Created with simplified add command"
-            }
-            models_data.append(new_model)
-            save_models(models_data)
-            console.print(f"[green]Added model '{name}' with default settings.[/green]")
+            result = update_model_with_api_key(name, api_key)
+            if result:
+                console.print(f"[green]Added/Updated model '{name}' successfully.[/green]")
+            else:
+                console.print(f"[red]Failed to add model '{name}'. Model not found in defaults.[/red]")
 
         elif len(args) >= 6:
             # Legacy: /models /add <name> <model_type> <model_name> <base_url> <api_key_path> [desc...]
