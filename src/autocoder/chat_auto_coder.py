@@ -2111,8 +2111,16 @@ def manage_models(params, query: str):
             table.add_column("Model Name", style="magenta")             
             table.add_column("Description", style="white")
             for m in models_data:
+                # Check if api_key_path exists and file exists
+                api_key_path = m.get("api_key_path", "")
+                name = m.get("name", "")
+                if api_key_path:
+                    api_key_file = os.path.expanduser(f"~/.auto-coder/keys/{api_key_path}")
+                    if os.path.exists(api_key_file):
+                        name = f"{name}*"
+                
                 table.add_row(
-                    m.get("name", ""),
+                    name,
                     m.get("model_type", ""),
                     m.get("model_name", ""),                    
                     m.get("description", "")
