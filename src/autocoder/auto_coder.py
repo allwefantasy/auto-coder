@@ -41,6 +41,7 @@ from rich.markdown import Markdown
 from rich.live import Live
 from autocoder.auto_coder_lang import get_message
 from autocoder.common.memory_manager import save_to_memory_file
+from autocoder import models as models_module
 
 console = Console()
 
@@ -340,10 +341,7 @@ def main(input_args: Optional[List[str]] = None):
             llm.setup_sub_client("chat_model", chat_llm)
             llm.setup_sub_client("generate_rerank_model", generate_rerank_llm)
 
-        if args.product_mode == "lite":
-            from autocoder import models
-            loaded_models = models.load_models()            
-            
+        if args.product_mode == "lite":                                    
             # Set up default models based on configuration
             if args.code_model:
                 if "," in args.code_model:
@@ -352,7 +350,7 @@ def main(input_args: Optional[List[str]] = None):
                     models = []
                     for _, model_name in enumerate(model_names):
                         model_name = model_name.strip()
-                        model_info = loaded_models[model_name]
+                        model_info = models_module.get_model_by_name(model_name)
                         code_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                         code_model.deploy(
                             model_path="",
@@ -368,7 +366,7 @@ def main(input_args: Optional[List[str]] = None):
                     llm.setup_sub_client("code_model", models)
                 else:
                     # Single code model
-                    model_info = loaded_models[args.code_model]
+                    model_info = models_module.get_model_by_name(args.code_model)
                     model_name = args.code_model
                     code_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                     code_model.deploy(
@@ -389,7 +387,7 @@ def main(input_args: Optional[List[str]] = None):
                     model_names = args.generate_rerank_model.split(",")
                     models = []
                     for _, model_name in enumerate(model_names):
-                        model_info = loaded_models[model_name]                        
+                        model_info = models_module.get_model_by_name(model_name)                        
                         rerank_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                         rerank_model.deploy(
                             model_path="",
@@ -405,7 +403,7 @@ def main(input_args: Optional[List[str]] = None):
                     llm.setup_sub_client("generate_rerank_model", models)
                 else:
                     # Single rerank model
-                    model_info = loaded_models[args.generate_rerank_model]
+                    model_info = models_module.get_model_by_name(args.generate_rerank_model)
                     model_name = args.generate_rerank_model
                     rerank_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                     rerank_model.deploy(
@@ -421,7 +419,7 @@ def main(input_args: Optional[List[str]] = None):
                     llm.setup_sub_client("generate_rerank_model", rerank_model)
             
             if args.inference_model:
-                model_info = loaded_models[args.inference_model]
+                model_info = models_module.get_model_by_name(args.inference_model)
                 model_name = args.inference_model
                 inference_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                 inference_model.deploy(
@@ -599,13 +597,10 @@ def main(input_args: Optional[List[str]] = None):
                 model.add_event_callback(
                     EventName.AFTER_CALL_MODEL, token_counter_interceptor
                 )
-        if args.product_mode == "lite":
-            from autocoder import models
-            loaded_models = models.load_models()   
-
+        if args.product_mode == "lite":             
             if args.chat_model:
-                model_info = loaded_models[args.chat_model]
-                model_name = args.chat_model
+                model_name = args.chat_model.strip()
+                model_info = models_module.get_model_by_name(model_name)                
                 chat_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                 chat_model.deploy(
                     model_path="",
@@ -620,8 +615,8 @@ def main(input_args: Optional[List[str]] = None):
                 llm.setup_sub_client("chat_model", chat_model)
             
             if args.vl_model:   
-                model_info = loaded_models[args.vl_model]
-                model_name = args.vl_model
+                model_name = args.vl_model.strip()
+                model_info = models_module.get_model_by_name(model_name)                
                 vl_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                 vl_model.deploy(
                     model_path="",
@@ -636,8 +631,8 @@ def main(input_args: Optional[List[str]] = None):
                 llm.setup_sub_client("vl_model", vl_model)
 
             if args.sd_model:
-                model_info = loaded_models[args.sd_model]
-                model_name = args.sd_model
+                model_name = args.sd_model.strip()
+                model_info = models_module.get_model_by_name(model_name)
                 sd_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                 sd_model.deploy(
                     model_path="",
@@ -652,8 +647,8 @@ def main(input_args: Optional[List[str]] = None):
                 llm.setup_sub_client("sd_model", sd_model)
 
             if args.text2voice_model:
-                model_info = loaded_models[args.text2voice_model]
-                model_name = args.text2voice_model
+                model_name = args.text2voice_model.strip()
+                model_info = models_module.get_model_by_name(model_name)
                 text2voice_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                 text2voice_model.deploy(
                     model_path="",
@@ -668,8 +663,8 @@ def main(input_args: Optional[List[str]] = None):
                 llm.setup_sub_client("text2voice_model", text2voice_model)
 
             if args.voice2text_model:
-                model_info = loaded_models[args.voice2text_model]
-                model_name = args.voice2text_model
+                model_name = args.voice2text_model.strip()
+                model_info = models_module.get_model_by_name(model_name)
                 voice2text_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                 voice2text_model.deploy(
                     model_path="",
@@ -684,8 +679,8 @@ def main(input_args: Optional[List[str]] = None):
                 llm.setup_sub_client("voice2text_model", voice2text_model)
 
             if args.planner_model:
-                model_info = loaded_models[args.planner_model]
-                model_name = args.planner_model
+                model_name = args.planner_model.strip()
+                model_info = models_module.get_model_by_name(model_name)
                 planner_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                 planner_model.deploy(
                     model_path="",
@@ -700,8 +695,8 @@ def main(input_args: Optional[List[str]] = None):
                 llm.setup_sub_client("planner_model", planner_model)
 
             if args.designer_model:
-                model_info = loaded_models[args.designer_model]
-                model_name = args.designer_model
+                model_name = args.designer_model.strip()
+                model_info = models_module.get_model_by_name(model_name)
                 designer_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                 designer_model.deploy(
                     model_path="",
@@ -716,8 +711,8 @@ def main(input_args: Optional[List[str]] = None):
                 llm.setup_sub_client("designer_model", designer_model)
 
             if args.emb_model:
-                model_info = loaded_models[args.emb_model]
-                model_name = args.emb_model
+                model_name = args.emb_model.strip()
+                model_info = models_module.get_model_by_name(model_name)
                 emb_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                 emb_model.deploy(
                     model_path="",
@@ -1072,7 +1067,7 @@ def main(input_args: Optional[List[str]] = None):
             )
 
             if llm.get_sub_client("chat_model"):
-                chat_llm = llm.get_sub_client("chat_model")
+                chat_llm = llm.get_sub_client("chat_model")                
             else:
                 chat_llm = llm
 
@@ -1239,7 +1234,7 @@ def main(input_args: Optional[List[str]] = None):
                                         response=result)
                     print("Saved to your memory")
                 return {}
-
+                        
             if "rag" in args.action:
                 args.enable_rag_search = True
                 args.enable_rag_context = False
@@ -1258,10 +1253,10 @@ def main(input_args: Optional[List[str]] = None):
                     )
                 )
                 v = [[response.result,None]]
-            else:
+            else:                
                 v = chat_llm.stream_chat_oai(
                     conversations=loaded_conversations, delta_mode=True
-                )
+                )                
 
             assistant_response = ""
             markdown_content = ""
@@ -1302,6 +1297,7 @@ def main(input_args: Optional[List[str]] = None):
                             )
                         )        
             except Exception as e:
+                ##MARK                
                 request_queue.add_request(
                     args.request_id,
                     RequestValue(

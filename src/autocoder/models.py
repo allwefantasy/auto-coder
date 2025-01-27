@@ -1,13 +1,14 @@
 import os
 import json
 from typing import List, Dict
+from urllib.parse import urlparse
 
 MODELS_JSON = os.path.expanduser("~/.auto-coder/keys/models.json")
 
 # Default built-in models
 default_models_list = [
     {
-        "name": "deepseek-reasoner",
+        "name": "deepseek_r1_chat",
         "description": "DeepSeek Reasoner is for design/review",
         "model_name": "deepseek-reasoner",
         "model_type": "saas/openai",
@@ -15,7 +16,7 @@ default_models_list = [
         "api_key_path": "api.deepseek.com"
     },    
     {
-        "name": "deepseek-chat",
+        "name": "deepsee_chat",
         "description": "DeepSeek Chat is for coding",
         "model_name": "deepseek-chat",
         "model_type": "saas/openai",
@@ -85,6 +86,16 @@ def process_api_key_path(base_url: str) -> str:
     host = host.replace(":", "_")
     
     return host
+
+def get_model_by_name(name: str) -> Dict:
+    """
+    根据模型名称查找模型
+    """
+    models = load_models()
+    v = [m for m in models if m["name"] == name.strip()]
+    if len(v) == 0:
+        raise Exception(f"Model {name} not found")
+    return v[0]
 
 def update_model_with_api_key(name: str, api_key: str) -> Dict:
     """

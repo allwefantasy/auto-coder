@@ -50,6 +50,7 @@ import byzerllm
 from byzerllm.utils import format_str_jinja2
 from autocoder.common.memory_manager import get_global_memory_file_paths 
 from autocoder import models
+import shlex
 
 
 class SymbolItem(BaseModel):
@@ -2144,14 +2145,9 @@ def manage_models(params, query: str):
             console.print(f"[red]{get_message('models_add_usage')}[/red]")
 
     elif subcmd == "/add_model":
-        # Parse key=value pairs: /models /add_model name=abc base_url=http://xx ...
-        args = query.strip().split(" ")
-        if len(args) != 2:
-            console.print(f"[red]{get_message('models_add_model_params')}[/red]")
-            return
-
+        # Parse key=value pairs: /models /add_model name=abc base_url=http://xx ...       
         # Collect key=value pairs
-        kv_pairs = args[0].split(" ")
+        kv_pairs = shlex.split(query)
         data_dict = {}
         for pair in kv_pairs:
             if '=' not in pair:
