@@ -31,6 +31,7 @@ COMMANDS = {
     },
     "/models": {
         "/add": "",
+        "/add_model": "",
         "/remove": "",
         "/list": ""        
     }

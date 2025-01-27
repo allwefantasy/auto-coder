@@ -185,7 +185,7 @@ def show_help():
     print(
         f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
     print(f"  \033[94m/lib\033[0m - \033[92m{get_message('lib_desc')}\033[0m")
-    print(f"  \033[94m/models\033[0m - \033[92m管理模型配置\033[0m")
+    print(f"  \033[94m/models\033[0m - \033[92m{get_message('models_desc')}\033[0m")
     print(
         f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
     print()
@@ -869,6 +869,14 @@ class CommandCompleter(Completer):
                             )
             elif words[0] == "/mcp":
                 new_text = text[len("/mcp"):]
+                parser = CommandTextParser(new_text, words[0])
+                parser.lib()
+                current_word = parser.current_word()
+                for command in parser.get_sub_commands():
+                    if command.startswith(current_word):
+                        yield Completion(command, start_position=-len(current_word))
+            elif words[0] == "/models":
+                new_text = text[len("/models"):]
                 parser = CommandTextParser(new_text, words[0])
                 parser.lib()
                 current_word = parser.current_word()
@@ -2078,13 +2086,15 @@ def manage_models(params, query: str):
     subcmd = ""
     if "/list" in query:
         subcmd = "/list"
+        query = query.replace("/list", "", 1).strip()
 
     if "/add" in query:
         subcmd = "/add"
+        query = query.replace("/add", "", 1).strip()
     
     if "/remove" in query:
         subcmd = "/remove"
-    
+        query = query.replace("/remove", "", 1).strip()
     if not subcmd:
         console.print(get_message("models_usage"))
         return    
@@ -2094,17 +2104,13 @@ def manage_models(params, query: str):
             table = Table(title=get_message("models_title"))
             table.add_column("Name", style="cyan")
             table.add_column("Model Type", style="green")
-            table.add_column("Model Name", style="magenta") 
-            table.add_column("Base URL", style="yellow")
-            table.add_column("API Key Path", style="blue")
+            table.add_column("Model Name", style="magenta")             
             table.add_column("Description", style="white")
             for m in models_data:
                 table.add_row(
                     m.get("name", ""),
                     m.get("model_type", ""),
-                    m.get("model_name", ""),
-                    m.get("base_url", ""),
-                    m.get("api_key_path", ""),
+                    m.get("model_name", ""),                    
                     m.get("description", "")
                 )
             console.print(table)
@@ -2113,9 +2119,10 @@ def manage_models(params, query: str):
 
     elif subcmd == "/add":
         # Support both simplified and legacy formats
-        if len(args) == 3:
+        args = query.strip().split(" ")        
+        if len(args) == 2:
             # Simplified: /models /add <name> <api_key>
-            name, api_key = args[1], args[2]            
+            name, api_key = args[0], args[1]            
             result = models.update_model_with_api_key(name, api_key)
             if result:
                 console.print(f"[green]{get_message('models_added').format(name=name)}[/green]")
@@ -2126,7 +2133,8 @@ def manage_models(params, query: str):
 
     elif subcmd == "/add_model":
         # Parse key=value pairs: /models /add_model name=abc base_url=http://xx ...
-        if len(args) == 1:
+        args = query.strip().split(" ")
+        if len(args) != 2:
             console.print(f"[red]{get_message('models_add_model_params')}[/red]")
             return
 
@@ -2161,19 +2169,20 @@ def manage_models(params, query: str):
         }
 
         models_data.append(final_model)
-        save_models(models_data)
+        models.save_models(models_data)
         console.print(f"[green]{get_message('models_add_model_success').format(name=data_dict['name'])}[/green]")
 
     elif subcmd == "/remove":
-        if len(args) < 2:
+        args = query.strip().split(" ")
+        if len(args) < 1:
             console.print(f"[red]{get_message('models_add_usage')}[/red]")
             return
-        name = args[1]
+        name = args[0]
         filtered_models = [m for m in models_data if m["name"] != name]
         if len(filtered_models) == len(models_data):
             console.print(f"[yellow]{get_message('models_add_model_remove').format(name=name)}[/yellow]")
             return
-        save_models(filtered_models)
+        models.save_models(filtered_models)
         console.print(f"[green]{get_message('models_add_model_removed').format(name=name)}[/green]")
 
     else:
@@ -2628,6 +2637,13 @@ def main():
             elif user_input.startswith("/list_files"):
                 list_files()
 
+            elif user_input.startswith("/models"):
+                query = user_input[len("/models"):].strip()
+                if not query:
+                    print("Please enter your query.")
+                else:
+                    manage_models(ARGS,query)    
+
             elif user_input.startswith("/mode"):
                 conf = user_input[len("/mode"):].strip()
                 if not conf:
@@ -2706,14 +2722,7 @@ def main():
                     result = eval(code)
                     print(f"Debug result: {result}")
                 except Exception as e:
-                    print(f"Debug error: {str(e)}")
-
-            elif user_input.startswith("/models"):
-                query = user_input[len("/models"):].strip()
-                if not query:
-                    print("Please enter your query.")
-                else:
-                    manage_models(ARGS,query)
+                    print(f"Debug error: {str(e)}")            
 
             # elif user_input.startswith("/shell"):
             else:
