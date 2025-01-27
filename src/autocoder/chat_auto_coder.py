@@ -2130,7 +2130,7 @@ def manage_models(query: str):
     args = query.strip().split()
 
     if not args:
-        console.print("Usage: /models /list|/add|/add_model|/remove ...")
+        console.print(get_message("models_usage"))
         return
 
     subcmd = args[0]
@@ -2143,7 +2143,7 @@ def manage_models(query: str):
         final_list = list(merged.values())
 
         if final_list:
-            table = Table(title="All Models (内置 + models.json)")
+            table = Table(title=get_message("models_title"))
             table.add_column("Name", style="cyan")
             table.add_column("Model Type", style="green")
             table.add_column("Model Name", style="magenta") 
@@ -2161,7 +2161,7 @@ def manage_models(query: str):
                 )
             console.print(table)
         else:
-            console.print("[yellow]No models found.[/yellow]")
+            console.print(f"[yellow]{get_message('models_no_models')}[/yellow]")
 
     elif subcmd == "/add":
         # Support both simplified and legacy formats
@@ -2170,16 +2170,16 @@ def manage_models(query: str):
             name, api_key = args[1], args[2]            
             result = models.update_model_with_api_key(name, api_key)
             if result:
-                console.print(f"[green]Added/Updated model '{name}' successfully.[/green]")
+                console.print(f"[green]{get_message('models_added').format(name=name)}[/green]")
             else:
-                console.print(f"[red]Failed to add model '{name}'. Model not found in defaults.[/red]")
+                console.print(f"[red]{get_message('models_add_failed').format(name=name)}[/red]")
         else:
-            console.print("[red]Usage: /models /add <name> <api_key> or\n/models /add <name> <model_type> <model_name> <base_url> <api_key_path> [description][/red]")
+            console.print(f"[red]{get_message('models_add_usage')}[/red]")
 
     elif subcmd == "/add_model":
         # Parse key=value pairs: /models /add_model name=abc base_url=http://xx ...
         if len(args) == 1:
-            console.print("[red]Please provide parameters in key=value format[/red]")
+            console.print(f"[red]{get_message('models_add_model_params')}[/red]")
             return
 
         # Collect key=value pairs
@@ -2194,12 +2194,12 @@ def manage_models(query: str):
 
         # Name is required
         if "name" not in data_dict:
-            console.print("[red]'name' parameter is required[/red]")
+            console.print(f"[red]{get_message('models_add_model_name_required')}[/red]")
             return
 
         # Check duplication
         if any(m["name"] == data_dict["name"] for m in models_data):
-            console.print(f"[yellow]Model '{data_dict['name']}' already exists.[/yellow]")
+            console.print(f"[yellow]{get_message('models_add_model_exists').format(name=data_dict['name'])}[/yellow]")
             return
 
         # Create model with defaults
@@ -2214,22 +2214,22 @@ def manage_models(query: str):
 
         models_data.append(final_model)
         save_models(models_data)
-        console.print(f"[green]Successfully added custom model: {data_dict['name']}[/green]")
+        console.print(f"[green]{get_message('models_add_model_success').format(name=data_dict['name'])}[/green]")
 
     elif subcmd == "/remove":
         if len(args) < 2:
-            console.print("[red]Usage: /models /remove <name>[/red]")
+            console.print(f"[red]{get_message('models_add_usage')}[/red]")
             return
         name = args[1]
         filtered_models = [m for m in models_data if m["name"] != name]
         if len(filtered_models) == len(models_data):
-            console.print(f"[yellow]Model '{name}' not found.[/yellow]")
+            console.print(f"[yellow]{get_message('models_add_model_remove').format(name=name)}[/yellow]")
             return
         save_models(filtered_models)
-        console.print(f"[green]Removed model: {name}[/green]")
+        console.print(f"[green]{get_message('models_add_model_removed').format(name=name)}[/green]")
 
     else:
-        console.print(f"[yellow]Unknown subcommand: {subcmd}[/yellow]")
+        console.print(f"[yellow]{get_message('models_unknown_subcmd').format(subcmd=subcmd)}[/yellow]")
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names

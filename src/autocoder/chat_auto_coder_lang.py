@@ -66,6 +66,19 @@ MESSAGES = {
         "exit_desc": "Exit the program",
         "design_desc": "Generate SVG image based on the provided description",
         "commit_desc": "Auto generate yaml file and commit changes based on user's manual changes",
+        "models_usage": "Usage: /models /list|/add|/add_model|/remove ...",
+        "models_added": "Added/Updated model '{name}' successfully.",
+        "models_add_failed": "Failed to add model '{name}'. Model not found in defaults.",
+        "models_add_usage": "Usage: /models /add <name> <api_key> or\n/models /add <name> <model_type> <model_name> <base_url> <api_key_path> [description]",
+        "models_add_model_params": "Please provide parameters in key=value format",
+        "models_add_model_name_required": "'name' parameter is required",
+        "models_add_model_exists": "Model '{name}' already exists.",
+        "models_add_model_success": "Successfully added custom model: {name}",
+        "models_add_model_remove": "Model '{name}' not found.",
+        "models_add_model_removed": "Removed model: {name}",
+        "models_unknown_subcmd": "Unknown subcommand: {subcmd}",
+        "models_title": "All Models (内置 + models.json)",
+        "models_no_models": "No models found."
     },
     "zh": {
         "initializing": "🚀 正在初始化系统...",
@@ -132,7 +145,19 @@ MESSAGES = {
         "exit_desc": "退出程序",
         "design_desc": "根据需求设计SVG图片",
         "commit_desc": "根据用户人工修改的代码自动生成yaml文件并提交更改",
-
+        "models_usage": "用法: /models /list|/add|/add_model|/remove ...",
+        "models_added": "成功添加/更新模型 '{name}'。",
+        "models_add_failed": "添加模型 '{name}' 失败。在默认模型中未找到该模型。",
+        "models_add_usage": "用法: /models /add <name> <api_key> 或\n/models /add <name> <model_type> <model_name> <base_url> <api_key_path> [description]",
+        "models_add_model_params": "请提供 key=value 格式的参数",
+        "models_add_model_name_required": "缺少必需的 'name' 参数",
+        "models_add_model_exists": "模型 '{name}' 已存在。",
+        "models_add_model_success": "成功添加自定义模型: {name}",
+        "models_add_model_remove": "找不到模型 '{name}'。",
+        "models_add_model_removed": "已移除模型: {name}",
+        "models_unknown_subcmd": "未知的子命令: {subcmd}",
+        "models_title": "所有模型 (内置 + models.json)",
+        "models_no_models": "未找到任何模型。"
     }
 }
 
