@@ -71,11 +71,15 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "--mode",
+        "--product_mode",
         type=str,
         default="pro",
         help="The mode of the auto-coder.chat, lite/pro default is pro",
     )
+
+    parser.add_argument("--lite", action="store_true", help="Lite mode")
+    parser.add_argument("--pro", action="store_true", help="Pro mode")
+
     return parser.parse_args()
 
 
@@ -144,9 +148,6 @@ def show_help():
     )
     print(
         f"  \033[94m/coding\033[0m \033[93m<query>\033[0m - \033[92m{get_message('coding_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/design\033[0m \033[93m<query>\033[0m - \033[92m{get_message('design_desc')}\033[0m"
     )
     print(
         f"  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92m{get_message('ask_desc')}\033[0m"
@@ -289,7 +290,7 @@ def initialize_system(args):
 
     init_project()
 
-    if args.mode == "lite":
+    if args.product_mode == "lite":
         # Setup deepseek api key
         api_key_dir = os.path.expanduser("~/.auto-coder/keys")
         api_key_file = os.path.join(api_key_dir, "api.deepseek.com")
@@ -307,7 +308,7 @@ def initialize_system(args):
             
             print_status(f"API key saved successfully: {api_key_file}", "success")                    
 
-    if args.mode == "pro":
+    if args.product_mode == "pro":
         # Check if Ray is running
         print_status(get_message("checking_ray"), "")
         ray_status = subprocess.run(
@@ -532,66 +533,6 @@ def configure(conf: str, skip_print=False):
         save_memory()
         if not skip_print:
             print(f"\033[92mSet {key} to {value}\033[0m")
-
-
-def show_help():
-    print(f"\033[1m{get_message('supported_commands')}\033[0m")
-    print()
-    print(
-        f"  \033[94m{get_message('commands')}\033[0m - \033[93m{get_message('description')}\033[0m"
-    )
-    print(
-        f"  \033[94m/add_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92m{get_message('add_files_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/remove_files\033[0m \033[93m<file1>,<file2> ...\033[0m - \033[92m{get_message('remove_files_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92m{get_message('chat_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/coding\033[0m \033[93m<query>\033[0m - \033[92m{get_message('coding_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92m{get_message('ask_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/summon\033[0m \033[93m<query>\033[0m - \033[92m{get_message('summon_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/revert\033[0m - \033[92m{get_message('revert_desc')}\033[0m")
-    print(
-        f"  \033[94m/commit\033[0m - \033[92m{get_message('commit_desc')}\033[0m")
-    print(
-        f"  \033[94m/conf\033[0m \033[93m<key>:<value>\033[0m  - \033[92m{get_message('conf_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/index/query\033[0m \033[93m<args>\033[0m - \033[92m{get_message('index_query_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/index/build\033[0m - \033[92m{get_message('index_build_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/list_files\033[0m - \033[92m{get_message('list_files_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/help\033[0m - \033[92m{get_message('help_desc')}\033[0m")
-    print(
-        f"  \033[94m/exclude_dirs\033[0m \033[93m<dir1>,<dir2> ...\033[0m - \033[92m{get_message('exclude_dirs_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/shell\033[0m \033[93m<command>\033[0m - \033[92m{get_message('shell_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/voice_input\033[0m - \033[92m{get_message('voice_input_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
-    print(f"  \033[94m/lib\033[0m - \033[92m{get_message('lib_desc')}\033[0m")
-    print(
-        f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
-    print()
-
 
 # word_completer = WordCompleter(commands)
 
@@ -2125,29 +2066,30 @@ def manage_models(params, query: str):
       /models /add_model name=xxx base_url=xxx ... - Add model with custom params
       /models /remove <name> - Remove model by name
     """
+    print("manage_models", params, query)
     console = Console()
     
-    if params.mode != "lite":
+    if params.product_mode != "lite":
         console.print(f"[red]{get_message('models_lite_only')}[/red]")
         return
         
     models_data = models.load_models()
-    args = query.strip().split()
+    subcmd = ""
+    if "/list" in query:
+        subcmd = "/list"
 
-    if not args:
+    if "/add" in query:
+        subcmd = "/add"
+    
+    if "/remove" in query:
+        subcmd = "/remove"
+    
+    if not subcmd:
         console.print(get_message("models_usage"))
-        return
+        return    
 
-    subcmd = args[0]
-
-    if subcmd == "/list":
-        # Merge default models with custom models
-        merged = {}        
-        for m in (models.default_models_list + models_data):
-            merged[m["name"]] = m
-        final_list = list(merged.values())
-
-        if final_list:
+    if subcmd == "/list":                    
+        if models_data:
             table = Table(title=get_message("models_title"))
             table.add_column("Name", style="cyan")
             table.add_column("Model Type", style="green")
@@ -2155,7 +2097,7 @@ def manage_models(params, query: str):
             table.add_column("Base URL", style="yellow")
             table.add_column("API Key Path", style="blue")
             table.add_column("Description", style="white")
-            for m in final_list:
+            for m in models_data:
                 table.add_row(
                     m.get("name", ""),
                     m.get("model_type", ""),
@@ -2519,13 +2461,19 @@ def lib_command(args: List[str]):
 
 def main():
     ARGS = parse_arguments()
+    
+    if ARGS.lite:
+        ARGS.product_mode = "lite"
+    
+    if ARGS.pro:
+        ARGS.product_mode = "pro" 
 
     if not ARGS.quick:
         initialize_system(ARGS)    
     
     load_memory()
-
-    configure(f"mode:{ARGS.mode}")
+    
+    configure(f"product_mode:{ARGS.product_mode}")
 
     MODES = {
         "normal": "normal",
@@ -2583,6 +2531,8 @@ def main():
             memory["mode"] = "normal"
         mode = memory["mode"]
         human_as_model = memory["conf"].get("human_as_model", "false")
+        if mode not in MODES:
+            mode = "normal"
         return f" Mode: {MODES[mode]} (ctl+k) | Human as Model: {human_as_model} (ctl+n or /conf human_as_model:true/false)"
 
     session = PromptSession(

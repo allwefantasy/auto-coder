@@ -352,7 +352,7 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     action: List[str] = []
     enable_global_memory: Optional[bool] = True  
-    mode: Optional[str] = "lite"
+    product_mode: Optional[str] = "lite"
 
     class Config:
         protected_namespaces = ()

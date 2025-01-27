@@ -29,6 +29,11 @@ COMMANDS = {
         "/refresh": "",
         "/get": "",
     },
+    "/models": {
+        "/add": "",
+        "/remove": "",
+        "/list": ""        
+    }
 }
 
 

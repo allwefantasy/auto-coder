@@ -249,7 +249,7 @@ def main(input_args: Optional[List[str]] = None):
         return
 
     if args.model:
-        if args.mode == "pro":
+        if args.product_mode == "pro":
             home = os.path.expanduser("~")
             auto_coder_dir = os.path.join(home, ".auto-coder")
             libs_dir = os.path.join(auto_coder_dir, "storage", "libs")
@@ -278,7 +278,7 @@ def main(input_args: Optional[List[str]] = None):
                 byzerllm.connect_cluster(address=args.ray_address)
 
             llm = byzerllm.ByzerLLM(verbose=args.print_request)
-        if args.mode == "lite":
+        if args.product_mode == "lite":
             llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_chat")
             api_key_dir = os.path.expanduser("~/.auto-coder/keys")
             api_key_file = os.path.join(api_key_dir, "api.deepseek.com")
@@ -340,7 +340,7 @@ def main(input_args: Optional[List[str]] = None):
             llm.setup_sub_client("chat_model", chat_llm)
             llm.setup_sub_client("generate_rerank_model", generate_rerank_llm)
 
-        if args.mode == "lite":
+        if args.product_mode == "lite":
             from autocoder import models
             loaded_models = models.load_models()            
             
@@ -437,7 +437,7 @@ def main(input_args: Optional[List[str]] = None):
                 llm.setup_sub_client("inference_model", inference_model)        
 
 
-        if args.mode == "pro":
+        if args.product_mode == "pro":
             if args.code_model:
                 if "," in args.code_model:
                     # Multiple code models specified
@@ -599,7 +599,7 @@ def main(input_args: Optional[List[str]] = None):
                 model.add_event_callback(
                     EventName.AFTER_CALL_MODEL, token_counter_interceptor
                 )
-        if args.mode == "lite":
+        if args.product_mode == "lite":
             from autocoder import models
             loaded_models = models.load_models()   
 
@@ -731,7 +731,7 @@ def main(input_args: Optional[List[str]] = None):
                 )
                 llm.setup_sub_client("emb_model", emb_model)
         
-        if args.mode == "pro":
+        if args.product_mode == "pro":
             llm.setup_template(model=args.model, template="auto")
             llm.setup_default_model_name(args.model)
 
