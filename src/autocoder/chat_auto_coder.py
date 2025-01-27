@@ -49,6 +49,7 @@ from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRe
 import byzerllm
 from byzerllm.utils import format_str_jinja2
 from autocoder.common.memory_manager import get_global_memory_file_paths 
+from autocoder.models import models
 
 
 class SymbolItem(BaseModel):
@@ -72,8 +73,8 @@ def parse_arguments():
     parser.add_argument(
         "--mode",
         type=str,
-        default="standard",
-        help="The mode of the auto-coder.chat, standard: standard mode, pro: pro mode",
+        default="pro",
+        help="The mode of the auto-coder.chat, lite/pro default is pro",
     )
     return parser.parse_args()
 
@@ -122,6 +123,7 @@ commands = [
     "/lib",
     "/design",
     "/mcp",
+    "/models",
 ]
 
 
@@ -241,7 +243,7 @@ def configure_project_type():
     return project_type
 
 
-def initialize_system():
+def initialize_system(args):
     print(f"\n\033[1;34m{get_message('initializing')}\033[0m")
 
     def print_status(message, status):
@@ -287,7 +289,7 @@ def initialize_system():
 
     init_project()
 
-    if ARGS.mode == "standard":
+    if args.mode == "lite":
         # Setup deepseek api key
         api_key_dir = os.path.expanduser("~/.auto-coder/keys")
         api_key_file = os.path.join(api_key_dir, "api.deepseek.com")
@@ -303,11 +305,9 @@ def initialize_system():
             with open(api_key_file, "w") as f:
                 f.write(api_key)
             
-            print_status("API key saved successfully.", "success")
-            
-        return
+            print_status(f"API key saved successfully: {api_key_file}", "success")                    
 
-    if ARGS.mode == "pro":
+    if args.mode == "pro":
         # Check if Ray is running
         print_status(get_message("checking_ray"), "")
         ray_status = subprocess.run(
@@ -2117,6 +2117,8 @@ def generate_shell_command(input_text):
     finally:
         os.remove(execute_file)
 
+def manage_models(query: str):
+    pass
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
@@ -2403,9 +2405,11 @@ def main():
     ARGS = parse_arguments()
 
     if not ARGS.quick:
-        initialize_system()
-
+        initialize_system(ARGS)    
+    
     load_memory()
+
+    configure(f"mode:{ARGS.mode}")
 
     MODES = {
         "normal": "normal",
@@ -2636,6 +2640,13 @@ def main():
                     print(f"Debug result: {result}")
                 except Exception as e:
                     print(f"Debug error: {str(e)}")
+
+            elif user_input.startswith("/models"):
+                query = user_input[len("/models"):].strip()
+                if not query:
+                    print("Please enter your query.")
+                else:
+                    manage_models(query)
 
             # elif user_input.startswith("/shell"):
             else:

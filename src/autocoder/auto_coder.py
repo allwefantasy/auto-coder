@@ -249,72 +249,135 @@ def main(input_args: Optional[List[str]] = None):
         return
 
     if args.model:
+        if args.mode == "pro":
+            home = os.path.expanduser("~")
+            auto_coder_dir = os.path.join(home, ".auto-coder")
+            libs_dir = os.path.join(auto_coder_dir, "storage", "libs")
+            code_search_path = None
+            if os.path.exists(libs_dir):
+                retrieval_libs_dir = os.path.join(
+                    libs_dir, get_latest_byzer_retrieval_lib(libs_dir)
+                )
+                if os.path.exists(retrieval_libs_dir):
+                    code_search_path = [retrieval_libs_dir]
 
-        home = os.path.expanduser("~")
-        auto_coder_dir = os.path.join(home, ".auto-coder")
-        libs_dir = os.path.join(auto_coder_dir, "storage", "libs")
-        code_search_path = None
-        if os.path.exists(libs_dir):
-            retrieval_libs_dir = os.path.join(
-                libs_dir, get_latest_byzer_retrieval_lib(libs_dir)
+            try:
+                init_options = {}
+                if raw_args.doc_command == "serve":
+                    init_options["log_to_driver"] = True
+
+                byzerllm.connect_cluster(
+                    address=args.ray_address,
+                    code_search_path=code_search_path,
+                    init_options=init_options,
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Detecting error when connecting to ray cluster: {e}, try to connect to ray cluster without storage support."
+                )
+                byzerllm.connect_cluster(address=args.ray_address)
+
+            llm = byzerllm.ByzerLLM(verbose=args.print_request)
+        if args.mode == "lite":
+            llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_chat")
+            api_key_dir = os.path.expanduser("~/.auto-coder/keys")
+            api_key_file = os.path.join(api_key_dir, "api.deepseek.com")
+            
+            if not os.path.exists(api_key_file):                
+                raise Exception(f"API key file not found: {api_key_file}")
+            
+            with open(api_key_file, "r") as f:
+                api_key = f.read()
+            
+            llm.deploy(
+                model_path="",
+                pretrained_model_type="saas/openai",
+                udf_name="deepseek_chat",
+                infer_params={
+                    "saas.base_url": "https://api.deepseek.com/v1",
+                    "saas.api_key": api_key,
+                    "saas.model": "deepseek-chat"
+                }
             )
-            if os.path.exists(retrieval_libs_dir):
-                code_search_path = [retrieval_libs_dir]
-
-        try:
-            init_options = {}
-            if raw_args.doc_command == "serve":
-                init_options["log_to_driver"] = True
-
-            byzerllm.connect_cluster(
-                address=args.ray_address,
-                code_search_path=code_search_path,
-                init_options=init_options,
+            
+            code_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_chat")
+            code_llm.deploy(
+                model_path="",
+                pretrained_model_type="saas/openai",
+                udf_name="deepseek_chat",
+                infer_params={
+                    "saas.base_url": "https://api.deepseek.com/v1",
+                    "saas.api_key": api_key,
+                    "saas.model": "deepseek-chat"
+                }
             )
-        except Exception as e:
-            logger.warning(
-                f"Detecting error when connecting to ray cluster: {e}, try to connect to ray cluster without storage support."
+
+            chat_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_r1_chat")
+            chat_llm.deploy(
+                model_path="",
+                pretrained_model_type="saas/openai",
+                udf_name="deepseek_r1_chat",
+                infer_params={
+                    "saas.base_url": "https://api.deepseek.com/v1",
+                    "saas.api_key": api_key,
+                    "saas.model": "deepseek-reasoner"
+                }
             )
-            byzerllm.connect_cluster(address=args.ray_address)
 
-        llm = byzerllm.ByzerLLM(verbose=args.print_request)
+            generate_rerank_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_r1_chat")
+            generate_rerank_llm.deploy(
+                model_path="",
+                pretrained_model_type="saas/openai",
+                udf_name="deepseek_r1_chat",
+                infer_params={
+                    "saas.base_url": "https://api.deepseek.com/v1",
+                    "saas.api_key": api_key,
+                    "saas.model": "deepseek-reasoner"
+                }
+            )
 
-        if args.code_model:
-            if "," in args.code_model:
-                # Multiple code models specified
-                model_names = args.code_model.split(",")
-                models = []
-                for _, model_name in enumerate(model_names):
+            llm.setup_sub_client("code_model", code_llm)
+            llm.setup_sub_client("chat_model", chat_llm)
+            llm.setup_sub_client("generate_rerank_model", generate_rerank_llm)
+
+        if args.mode == "pro":
+            if args.code_model:
+                if "," in args.code_model:
+                    # Multiple code models specified
+                    model_names = args.code_model.split(",")
+                    models = []
+                    for _, model_name in enumerate(model_names):
+                        code_model = byzerllm.ByzerLLM()
+                        code_model.setup_default_model_name(model_name.strip())
+                        models.append(code_model)
+                    llm.setup_sub_client("code_model", models)
+                else:
+                    # Single code model
                     code_model = byzerllm.ByzerLLM()
-                    code_model.setup_default_model_name(model_name.strip())
-                    models.append(code_model)
-                llm.setup_sub_client("code_model", models)
-            else:
-                # Single code model
-                code_model = byzerllm.ByzerLLM()
-                code_model.setup_default_model_name(args.code_model)
-                llm.setup_sub_client("code_model", code_model)
+                    code_model.setup_default_model_name(args.code_model)
+                    llm.setup_sub_client("code_model", code_model)
 
-        if args.generate_rerank_model:
-            if "," in args.generate_rerank_model:
-                # Multiple rerank models specified
-                model_names = args.generate_rerank_model.split(",")
-                models = []
-                for _, model_name in enumerate(model_names):
+            if args.generate_rerank_model:
+                if "," in args.generate_rerank_model:
+                    # Multiple rerank models specified
+                    model_names = args.generate_rerank_model.split(",")
+                    models = []
+                    for _, model_name in enumerate(model_names):
+                        rerank_model = byzerllm.ByzerLLM()
+                        rerank_model.setup_default_model_name(model_name.strip())
+                        models.append(rerank_model)
+                    llm.setup_sub_client("generate_rerank_model", models)
+                else:
+                    # Single rerank model
                     rerank_model = byzerllm.ByzerLLM()
-                    rerank_model.setup_default_model_name(model_name.strip())
-                    models.append(rerank_model)
-                llm.setup_sub_client("generate_rerank_model", models)
-            else:
-                # Single rerank model
-                rerank_model = byzerllm.ByzerLLM()
-                rerank_model.setup_default_model_name(args.generate_rerank_model)
-                llm.setup_sub_client("generate_rerank_model", rerank_model)
+                    rerank_model.setup_default_model_name(args.generate_rerank_model)
+                    llm.setup_sub_client("generate_rerank_model", rerank_model)
 
-        if args.inference_model:
-            inference_model = byzerllm.ByzerLLM()
-            inference_model.setup_default_model_name(args.inference_model)
-            llm.setup_sub_client("inference_model", inference_model)
+            if args.inference_model:
+                inference_model = byzerllm.ByzerLLM()
+                inference_model.setup_default_model_name(args.inference_model)
+                llm.setup_sub_client("inference_model", inference_model)        
+            
 
         if args.human_as_model:
 
@@ -430,7 +493,7 @@ def main(input_args: Optional[List[str]] = None):
                         EventName.BEFORE_CALL_MODEL, intercept_callback
                     )
         # llm.add_event_callback(EventName.AFTER_CALL_MODEL, token_counter_interceptor)
-
+        
         code_models = llm.get_sub_client("code_model")
         if code_models:
             if not isinstance(code_models, list):
@@ -439,81 +502,81 @@ def main(input_args: Optional[List[str]] = None):
                 model.add_event_callback(
                     EventName.AFTER_CALL_MODEL, token_counter_interceptor
                 )
+        if args.mode == "pro":
+            llm.setup_template(model=args.model, template="auto")
+            llm.setup_default_model_name(args.model)
 
-        llm.setup_template(model=args.model, template="auto")
-        llm.setup_default_model_name(args.model)
-
-        llm.setup_max_output_length(args.model, args.model_max_length)
-        llm.setup_max_input_length(args.model, args.model_max_input_length)
-        llm.setup_extra_generation_params(
-            args.model, {"max_length": args.model_max_length}
-        )
-
-        if args.chat_model:
-            chat_model = byzerllm.ByzerLLM()
-            chat_model.setup_default_model_name(args.chat_model)
-            llm.setup_sub_client("chat_model", chat_model)
-
-        if args.vl_model:
-            vl_model = byzerllm.ByzerLLM()
-            vl_model.setup_default_model_name(args.vl_model)
-            vl_model.setup_template(model=args.vl_model, template="auto")
-            llm.setup_sub_client("vl_model", vl_model)
-
-        if args.sd_model:
-            sd_model = byzerllm.ByzerLLM()
-            sd_model.setup_default_model_name(args.sd_model)
-            sd_model.setup_template(model=args.sd_model, template="auto")
-            llm.setup_sub_client("sd_model", sd_model)
-
-        if args.text2voice_model:
-            text2voice_model = byzerllm.ByzerLLM()
-            text2voice_model.setup_default_model_name(args.text2voice_model)
-            text2voice_model.setup_template(
-                model=args.text2voice_model, template="auto"
+            llm.setup_max_output_length(args.model, args.model_max_length)
+            llm.setup_max_input_length(args.model, args.model_max_input_length)
+            llm.setup_extra_generation_params(
+                args.model, {"max_length": args.model_max_length}
             )
-            llm.setup_sub_client("text2voice_model", text2voice_model)
 
-        if args.voice2text_model:
-            voice2text_model = byzerllm.ByzerLLM()
-            voice2text_model.setup_default_model_name(args.voice2text_model)
-            voice2text_model.setup_template(
-                model=args.voice2text_model, template="auto"
-            )
-            llm.setup_sub_client("voice2text_model", voice2text_model)
+            if args.chat_model:
+                chat_model = byzerllm.ByzerLLM()
+                chat_model.setup_default_model_name(args.chat_model)
+                llm.setup_sub_client("chat_model", chat_model)
 
-        if args.index_model:
-            index_model = byzerllm.ByzerLLM()
-            index_model.setup_default_model_name(args.index_model)
-            index_model.setup_max_output_length(
-                args.index_model, args.index_model_max_length or args.model_max_length
-            )
-            index_model.setup_max_input_length(
-                args.index_model,
-                args.index_model_max_input_length or args.model_max_input_length,
-            )
-            index_model.setup_extra_generation_params(
-                args.index_model,
-                {"max_length": args.index_model_max_length or args.model_max_length},
-            )
-            llm.setup_sub_client("index_model", index_model)
+            if args.vl_model:
+                vl_model = byzerllm.ByzerLLM()
+                vl_model.setup_default_model_name(args.vl_model)
+                vl_model.setup_template(model=args.vl_model, template="auto")
+                llm.setup_sub_client("vl_model", vl_model)
 
-        if args.emb_model:
-            llm.setup_default_emb_model_name(args.emb_model)
-            emb_model = byzerllm.ByzerLLM()
-            emb_model.setup_default_emb_model_name(args.emb_model)
-            # emb_model.setup_template(model=args.emb_model, template="auto")
-            llm.setup_sub_client("emb_model", emb_model)
+            if args.sd_model:
+                sd_model = byzerllm.ByzerLLM()
+                sd_model.setup_default_model_name(args.sd_model)
+                sd_model.setup_template(model=args.sd_model, template="auto")
+                llm.setup_sub_client("sd_model", sd_model)
 
-        if args.planner_model:
-            planner_model = byzerllm.ByzerLLM()
-            planner_model.setup_default_model_name(args.planner_model)
-            llm.setup_sub_client("planner_model", planner_model)
+            if args.text2voice_model:
+                text2voice_model = byzerllm.ByzerLLM()
+                text2voice_model.setup_default_model_name(args.text2voice_model)
+                text2voice_model.setup_template(
+                    model=args.text2voice_model, template="auto"
+                )
+                llm.setup_sub_client("text2voice_model", text2voice_model)
 
-        if args.designer_model:
-            designer_model = byzerllm.ByzerLLM()
-            designer_model.setup_default_model_name(args.designer_model)
-            llm.setup_sub_client("designer_model", designer_model)
+            if args.voice2text_model:
+                voice2text_model = byzerllm.ByzerLLM()
+                voice2text_model.setup_default_model_name(args.voice2text_model)
+                voice2text_model.setup_template(
+                    model=args.voice2text_model, template="auto"
+                )
+                llm.setup_sub_client("voice2text_model", voice2text_model)
+
+            if args.index_model:
+                index_model = byzerllm.ByzerLLM()
+                index_model.setup_default_model_name(args.index_model)
+                index_model.setup_max_output_length(
+                    args.index_model, args.index_model_max_length or args.model_max_length
+                )
+                index_model.setup_max_input_length(
+                    args.index_model,
+                    args.index_model_max_input_length or args.model_max_input_length,
+                )
+                index_model.setup_extra_generation_params(
+                    args.index_model,
+                    {"max_length": args.index_model_max_length or args.model_max_length},
+                )
+                llm.setup_sub_client("index_model", index_model)
+
+            if args.emb_model:
+                llm.setup_default_emb_model_name(args.emb_model)
+                emb_model = byzerllm.ByzerLLM()
+                emb_model.setup_default_emb_model_name(args.emb_model)
+                # emb_model.setup_template(model=args.emb_model, template="auto")
+                llm.setup_sub_client("emb_model", emb_model)
+
+            if args.planner_model:
+                planner_model = byzerllm.ByzerLLM()
+                planner_model.setup_default_model_name(args.planner_model)
+                llm.setup_sub_client("planner_model", planner_model)
+
+            if args.designer_model:
+                designer_model = byzerllm.ByzerLLM()
+                designer_model.setup_default_model_name(args.designer_model)
+                llm.setup_sub_client("designer_model", designer_model)
 
     else:
         llm = None
