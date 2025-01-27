@@ -2117,7 +2117,7 @@ def generate_shell_command(input_text):
     finally:
         os.remove(execute_file)
 
-def manage_models(query: str):
+def manage_models(params, query: str):
     """
     Handle /models subcommands:
       /models /list - List all models (default + custom)
@@ -2757,7 +2757,7 @@ def main():
                 if not query:
                     print("Please enter your query.")
                 else:
-                    manage_models(query)
+                    manage_models(ARGS,query)
 
             # elif user_input.startswith("/shell"):
             else:
