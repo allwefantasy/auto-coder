@@ -49,7 +49,7 @@ from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRe
 import byzerllm
 from byzerllm.utils import format_str_jinja2
 from autocoder.common.memory_manager import get_global_memory_file_paths 
-from autocoder.models import models
+from autocoder.models import load_models, save_models
 
 
 class SymbolItem(BaseModel):
@@ -2116,8 +2116,6 @@ def generate_shell_command(input_text):
         return shell_script
     finally:
         os.remove(execute_file)
-
-from autocoder.models import load_models, save_models
 
 def manage_models(query: str):
     """
