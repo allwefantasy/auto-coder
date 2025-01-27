@@ -1297,7 +1297,12 @@ def main(input_args: Optional[List[str]] = None):
                             )
                         )        
             except Exception as e:
-                ##MARK                
+                ##MARK
+                console.print(Panel(
+                    f"Error: {str(e)}",  
+                    title="Error",
+                    border_style="red"
+                ))
                 request_queue.add_request(
                     args.request_id,
                     RequestValue(
