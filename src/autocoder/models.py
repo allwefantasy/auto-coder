@@ -114,13 +114,7 @@ def update_model_with_api_key(name: str, api_key: str) -> Dict:
         if model["name"] == name:
             found_model = model
             break
-            
-    if not found_model:
-        for model in default_models_list:
-            if model["name"] == name:
-                found_model = model.copy()
-                break
-                
+                    
     if not found_model:
         return None
         

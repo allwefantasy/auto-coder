@@ -2167,8 +2167,7 @@ def manage_models(query: str):
         # Support both simplified and legacy formats
         if len(args) == 3:
             # Simplified: /models /add <name> <api_key>
-            name, api_key = args[1], args[2]
-            
+            name, api_key = args[1], args[2]            
             result = models.update_model_with_api_key(name, api_key)
             if result:
                 console.print(f"[green]Added/Updated model '{name}' successfully.[/green]")
