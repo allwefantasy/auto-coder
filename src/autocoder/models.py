@@ -42,21 +42,32 @@ default_models_list = [
 
 def load_models() -> List[Dict]:
     """
-    Load models from ~/.auto-coder/keys/models.json
-    If file doesn't exist, create it with default_models_list
+    Load models from ~/.auto-coder/keys/models.json and merge with default_models_list.
+    Models are merged and deduplicated based on their name field.
+    If file doesn't exist or is invalid, use default_models_list.
     """
     os.makedirs(os.path.dirname(MODELS_JSON), exist_ok=True)
-    if not os.path.exists(MODELS_JSON):
-        save_models(default_models_list)
-        return default_models_list
     
-    with open(MODELS_JSON, 'r', encoding='utf-8') as f:
+    # Start with default models
+    models_dict = {model["name"]: model for model in default_models_list}
+    
+    # If JSON file exists, read and merge with defaults
+    if os.path.exists(MODELS_JSON):
         try:
-            return json.load(f)
+            with open(MODELS_JSON, 'r', encoding='utf-8') as f:
+                custom_models = json.load(f)
+                # Custom models will override defaults with same name
+                for model in custom_models:
+                    models_dict[model["name"]] = model
         except json.JSONDecodeError:
-            # If JSON is invalid, reset to defaults
+            # If JSON is invalid, just use defaults
             save_models(default_models_list)
-            return default_models_list
+    else:
+        # If file doesn't exist, create it with defaults
+        save_models(default_models_list)
+    
+    # Convert merged dictionary back to list
+    return list(models_dict.values())
 
 def save_models(models: List[Dict]) -> None:
     """
