@@ -2087,7 +2087,11 @@ def manage_models(params, query: str):
     if "/list" in query:
         subcmd = "/list"
         query = query.replace("/list", "", 1).strip()
-
+    
+    if "/add_model" in query:
+        subcmd = "/add_model"
+        query = query.replace("/add_model", "", 1).strip()
+    
     if "/add" in query:
         subcmd = "/add"
         query = query.replace("/add", "", 1).strip()
@@ -2139,7 +2143,7 @@ def manage_models(params, query: str):
             return
 
         # Collect key=value pairs
-        kv_pairs = args[1:]
+        kv_pairs = args[0].split(" ")
         data_dict = {}
         for pair in kv_pairs:
             if '=' not in pair:

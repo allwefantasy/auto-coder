@@ -23,20 +23,12 @@ default_models_list = [
         "api_key_path": "api.deepseek.com"
     },
     {
-        "name":"sonnet-3.5",
-        "description": "Sonnet 3.5 is for code generation",
-        "model_name": "claude-3-5-sonnet-20240620",
-        "model_type": "saas/claude",
-        "base_url": "",
-        "api_key_path": "api.anthropic.com"
-    },
-    {
-        "name":"o1-mini",
+        "name":"o1",
         "description": "o1 is for design/review",
         "model_name": "o1-2024-12-17",
         "model_type": "saas/openai",
         "base_url": "https://api.openai.com/v1",
-        "api_key_path": "api.openai.com"
+        "api_key_path": ""
     }
 ]
 
