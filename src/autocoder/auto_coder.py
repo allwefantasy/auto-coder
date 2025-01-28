@@ -358,7 +358,7 @@ def main(input_args: Optional[List[str]] = None):
                             udf_name=model_name,
                             infer_params={
                                 "saas.base_url": model_info["base_url"],
-                                "saas.api_key": model_info["api_key_path"],
+                                "saas.api_key": model_info["api_key"],
                                 "saas.model": model_info["model_name"]
                             }
                         )
@@ -375,7 +375,7 @@ def main(input_args: Optional[List[str]] = None):
                         udf_name=model_name,
                         infer_params={
                             "saas.base_url": model_info["base_url"],
-                            "saas.api_key": model_info["api_key_path"],
+                            "saas.api_key": model_info["api_key"],
                             "saas.model": model_info["model_name"]
                         }
                     )
@@ -395,7 +395,7 @@ def main(input_args: Optional[List[str]] = None):
                             udf_name=model_name,
                             infer_params={
                                 "saas.base_url": model_info["base_url"],
-                                "saas.api_key": model_info["api_key_path"],
+                                "saas.api_key": model_info["api_key"],
                                 "saas.model": model_info["model_name"]
                             }
                         )
@@ -412,7 +412,7 @@ def main(input_args: Optional[List[str]] = None):
                         udf_name=model_name,
                         infer_params={
                             "saas.base_url": model_info["base_url"],
-                            "saas.api_key": model_info["api_key_path"],
+                            "saas.api_key": model_info["api_key"],
                             "saas.model": model_info["model_name"]
                         }
                     )
@@ -428,7 +428,7 @@ def main(input_args: Optional[List[str]] = None):
                     udf_name=model_name,
                     infer_params={
                         "saas.base_url": model_info["base_url"],
-                        "saas.api_key": model_info["api_key_path"],
+                        "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"]
                     }
                 )
@@ -608,7 +608,7 @@ def main(input_args: Optional[List[str]] = None):
                     udf_name=model_name,
                     infer_params={
                         "saas.base_url": model_info["base_url"],
-                        "saas.api_key": model_info["api_key_path"],
+                        "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"]
                     }
                 )
@@ -624,7 +624,7 @@ def main(input_args: Optional[List[str]] = None):
                     udf_name=model_name,
                     infer_params={
                         "saas.base_url": model_info["base_url"],
-                        "saas.api_key": model_info["api_key_path"],
+                        "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"]
                     }
                 )
@@ -640,7 +640,7 @@ def main(input_args: Optional[List[str]] = None):
                     udf_name=model_name,
                     infer_params={
                         "saas.base_url": model_info["base_url"],
-                        "saas.api_key": model_info["api_key_path"],
+                        "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"]
                     }
                 )
@@ -656,7 +656,7 @@ def main(input_args: Optional[List[str]] = None):
                     udf_name=model_name,
                     infer_params={
                         "saas.base_url": model_info["base_url"],
-                        "saas.api_key": model_info["api_key_path"],
+                        "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"]
                     }
                 )
@@ -672,7 +672,7 @@ def main(input_args: Optional[List[str]] = None):
                     udf_name=model_name,
                     infer_params={
                         "saas.base_url": model_info["base_url"],
-                        "saas.api_key": model_info["api_key_path"],
+                        "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"]
                     }
                 )
@@ -688,7 +688,7 @@ def main(input_args: Optional[List[str]] = None):
                     udf_name=model_name,
                     infer_params={
                         "saas.base_url": model_info["base_url"],
-                        "saas.api_key": model_info["api_key_path"],
+                        "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"]
                     }
                 )
@@ -704,7 +704,7 @@ def main(input_args: Optional[List[str]] = None):
                     udf_name=model_name,
                     infer_params={
                         "saas.base_url": model_info["base_url"],
-                        "saas.api_key": model_info["api_key_path"],
+                        "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"]
                     }
                 )
@@ -720,7 +720,7 @@ def main(input_args: Optional[List[str]] = None):
                     udf_name=model_name,
                     infer_params={
                         "saas.base_url": model_info["base_url"],
-                        "saas.api_key": model_info["api_key_path"],
+                        "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"]
                     }
                 )

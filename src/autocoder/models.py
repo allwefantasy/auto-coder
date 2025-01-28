@@ -16,7 +16,7 @@ default_models_list = [
         "api_key_path": "api.deepseek.com"
     },    
     {
-        "name": "deepsee_chat",
+        "name": "deepseek_chat",
         "description": "DeepSeek Chat is for coding",
         "model_name": "deepseek-chat",
         "model_type": "saas/openai",
@@ -60,7 +60,15 @@ def load_models() -> List[Dict]:
         save_models(default_models_list)
     
     # Convert merged dictionary back to list
-    return list(models_dict.values())
+    target_models = list(models_dict.values())
+    api_key_dir = os.path.expanduser("~/.auto-coder/keys")
+    for model in target_models:    
+        if model.get("api_key_path",""):           
+            api_key_file = os.path.join(api_key_dir, model["api_key_path"])
+            if os.path.exists(api_key_file):
+                with open(api_key_file, "r") as f:
+                    model["api_key"] = f.read()
+    return target_models
 
 def save_models(models: List[Dict]) -> None:
     """
@@ -93,6 +101,7 @@ def get_model_by_name(name: str) -> Dict:
     """
     models = load_models()
     v = [m for m in models if m["name"] == name.strip()]
+    
     if len(v) == 0:
         raise Exception(f"Model {name} not found")
     return v[0]
