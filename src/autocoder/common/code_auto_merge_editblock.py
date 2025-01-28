@@ -20,7 +20,7 @@ import json
 from typing import Union, List, Tuple
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
 from autocoder.common.code_modification_ranker import CodeModificationRanker
-
+from autocoder.common import files as FileUtils
 
 class PathAndCode(pydantic.BaseModel):
     path: str
@@ -235,9 +235,7 @@ class CodeAutoMergeEditBlock:
                 file_content_mapping[file_path] = update
             else:
                 if file_path not in file_content_mapping:
-                    with open(file_path, "r") as f:
-                        temp = f.read()
-                        file_content_mapping[file_path] = temp
+                    file_content_mapping[file_path] = FileUtils.read_file(file_path)
                 existing_content = file_content_mapping[file_path]
 
                 # First try exact match
@@ -290,9 +288,7 @@ class CodeAutoMergeEditBlock:
                 changes_made = True
             else:
                 if file_path not in file_content_mapping:
-                    with open(file_path, "r") as f:
-                        temp = f.read()
-                        file_content_mapping[file_path] = temp
+                    file_content_mapping[file_path] = FileUtils.read_file(file_path)
                 existing_content = file_content_mapping[file_path]
                 new_content = (
                     existing_content.replace(head, update, 1)

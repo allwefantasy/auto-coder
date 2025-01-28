@@ -9,6 +9,7 @@ from loguru import logger
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
 from autocoder.common.code_modification_ranker import CodeModificationRanker
 import hashlib
+from autocoder.common import files as FileUtils
 
 class PathAndCode(pydantic.BaseModel):
     path: str
@@ -135,8 +136,7 @@ class CodeAutoMerge:
                 file_content_mapping[file_path] = block.content
             else:
                 if file_path not in file_content_mapping:
-                    with open(file_path, "r") as f:
-                        file_content_mapping[file_path] = f.read()
+                    file_content_mapping[file_path] = FileUtils.read_file(file_path)
                 if file_content_mapping[file_path] != block.content:
                     file_content_mapping[file_path] = block.content
                 else:
@@ -150,7 +150,7 @@ class CodeAutoMerge:
     def _merge_code(self, content: str,force_skip_git:bool=False):        
         total = 0
         
-        file_content = open(self.args.file).read()
+        file_content = FileUtils.read_file(self.args.file)
         md5 = hashlib.md5(file_content.encode('utf-8')).hexdigest()
         # get the file name 
         file_name = os.path.basename(self.args.file)

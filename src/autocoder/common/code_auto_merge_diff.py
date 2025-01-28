@@ -17,6 +17,7 @@ from autocoder.common.search_replace import (
 )
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
 from autocoder.common.code_modification_ranker import CodeModificationRanker
+from autocoder.common import files as FileUtils
 
 class PathAndCode(pydantic.BaseModel):
     path: str
@@ -438,8 +439,7 @@ class CodeAutoMergeDiff:
         errors = []
         for path, hunk in uniq:
             full_path = self.abs_root_path(path)
-            with open(full_path) as f:
-                content = f.read()
+            content = FileUtils.read_file(full_path)
 
             original, _ = hunk_to_before_after(hunk)
 
@@ -488,8 +488,7 @@ class CodeAutoMergeDiff:
                 continue
                 
             if full_path not in file_content_mapping:
-                with open(full_path, "r") as f:
-                    file_content_mapping[full_path] = f.read()
+                file_content_mapping[full_path] = FileUtils.read_file(full_path)
             
             content = file_content_mapping[full_path]
             new_content = do_replace(full_path, content, hunk)

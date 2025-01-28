@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 from rich.console import Console
 import json
 from autocoder.utils.queue_communicate import queue_communicate, CommunicateEvent, CommunicateEventType
+from autocoder.common import files as FileUtils
 
 
 class RegPattern(BaseModel):
@@ -107,8 +108,7 @@ class TSProject:
         return open(self.target_file, "r").read()
 
     def read_file_content(self, file_path):
-        with open(file_path, "r") as file:
-            return file.read()
+        return FileUtils.read_file(file_path)        
 
     def is_likely_useful_file(self, file_path):
         # Ignore common build output, dependency and configuration directories

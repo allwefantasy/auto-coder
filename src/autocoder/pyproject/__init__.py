@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from rich.console import Console
 import json
 from autocoder.utils.queue_communicate import queue_communicate, CommunicateEvent, CommunicateEventType
-
+from autocoder.common import files as FileUtils
 
 class RegPattern(BaseModel):
     pattern: str = Field(
@@ -35,9 +35,8 @@ class Level1PyProject:
 
     def get_imports_from_script(self, file_path):
         script = ""
-        with open(file_path, "r") as file:
-            script = file.read()
-            tree = ast.parse(script, filename=file_path)
+        script = FileUtils.read_file(file_path)
+        tree = ast.parse(script, filename=file_path)
 
         imports = [
             node
@@ -61,8 +60,7 @@ class Level1PyProject:
     def fetch_source_code(self, import_name):
         spec = importlib.util.find_spec(import_name)
         if spec and spec.origin:
-            with open(spec.origin, "r") as file:
-                return file.read()
+            return FileUtils.read_file(spec.origin)
         return None
 
     @byzerllm.prompt(render="jinja")
@@ -188,8 +186,7 @@ class PyProject:
                     result.append(f"{line_number}:{line}")
             return "\n".join(result)
 
-        with open(file_path, "r") as file:
-            return file.read()
+        return FileUtils.read_file(file_path)
 
     def convert_to_source_code(self, file_path):
         module_name = file_path

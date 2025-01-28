@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from rich.console import Console
 import json
 from autocoder.utils.queue_communicate import queue_communicate, CommunicateEvent, CommunicateEventType
-
+from autocoder.common import files as FileUtils
 
 class RegPattern(BaseModel):
     pattern: str = Field(
@@ -120,8 +120,7 @@ class SuffixProject:
         return any([file_path.endswith(suffix) for suffix in self.suffixs])
 
     def read_file_content(self, file_path):
-        with open(file_path, "r") as file:
-            return file.read()
+        return FileUtils.read_file(file_path)
 
     def convert_to_source_code(self, file_path):
         module_name = file_path

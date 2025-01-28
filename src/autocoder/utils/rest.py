@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from loguru import logger
 import os
 from pathlib import Path
+from autocoder.common import files as FileUtils
 
 class HttpDoc:
     def __init__(self, args, llm: byzerllm.ByzerLLM,urls:Optional[List[str]]=None):
@@ -112,7 +113,7 @@ class HttpDoc:
                         return temp_documents
                     
                     if ext not in exts.keys():                                                
-                        main_content = open(file_path, "r").read()
+                        main_content = FileUtils.read_file(file_path)
                         source_code = SourceCode(module_name=file_path, source_code=main_content)
                         source_codes.append(source_code)                                   
                     else:
@@ -135,7 +136,7 @@ class HttpDoc:
 
                 except ImportError as e:
                     logger.warning(f"Failed to import llama_index. Please install it using 'pip install llama_index' {e}")
-                    main_content = open(url, "r").read()
+                    main_content = FileUtils.read_file(url)
                     source_code = SourceCode(module_name=url, source_code=main_content)
                     source_codes.append(source_code)                                                
             else:
