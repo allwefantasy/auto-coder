@@ -42,6 +42,7 @@ from rich.live import Live
 from autocoder.auto_coder_lang import get_message
 from autocoder.common.memory_manager import save_to_memory_file
 from autocoder import models as models_module
+from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 
 console = Console()
 
@@ -1257,64 +1258,11 @@ def main(input_args: Optional[List[str]] = None):
                 v = chat_llm.stream_chat_oai(
                     conversations=loaded_conversations, delta_mode=True
                 )                
-
-            assistant_response = ""
-            markdown_content = ""
-
-            try:
-                with Live(
-                    Panel("", title="Response", border_style="green", expand=False),
-                    refresh_per_second=4,
-                    auto_refresh=True,
-                    vertical_overflow="visible",
-                    console=Console(force_terminal=True, color_system="auto", height=None)
-                ) as live:
-                    for res in v:
-                        markdown_content += res[0]
-                        assistant_response += res[0]
-                        if args.request_id:
-                            request_queue.add_request(
-                                args.request_id,
-                                RequestValue(
-                                    value=StreamValue(value=[res[0]]),
-                                    status=RequestOption.RUNNING,
-                                ),
-                            )
-                        live.update(
-                            Panel(
-                                Markdown(markdown_content),
-                                title="Response",
-                                border_style="green",
-                                expand=False,
-                            )
-                        )
-                    live.update(
-                            Panel(
-                                Markdown(markdown_content),
-                                title="Response",
-                                border_style="green",
-                                expand=False,
-                            )
-                        )        
-            except Exception as e:
-                ##MARK
-                console.print(Panel(
-                    f"Error: {str(e)}",  
-                    title="Error",
-                    border_style="red"
-                ))
-                request_queue.add_request(
-                    args.request_id,
-                    RequestValue(
-                        value=StreamValue(value=[str(e)]), status=RequestOption.FAILED
-                    ),
-                )
-            finally:
-                request_queue.add_request(
-                    args.request_id,
-                    RequestValue(
-                        value=StreamValue(value=[""]), status=RequestOption.COMPLETED
-                    ),
+            
+            assistant_response, last_meta = stream_out(
+                    v, 
+                    request_id=args.request_id,                    
+                    console=console
                 )
             
             chat_history["ask_conversation"].append(

@@ -2476,6 +2476,9 @@ def lib_command(args: List[str]):
     else:
         console.print(f"Unknown subcommand: {subcommand}")
 
+def agent(query: str):
+    console.print(f"Agent query: {query}")
+
 
 def main():
     ARGS = parse_arguments()
@@ -2650,14 +2653,20 @@ def main():
                 if not query:
                     print("Please enter your query.")
                 else:
-                    manage_models(ARGS,query)    
+                    manage_models(ARGS,query) 
+            elif user_input.startswith("/agent"):
+                query = user_input[len("/agent"):].strip()
+                if not query:
+                    print("Please enter your query.")
+                else:
+                    agent(query)
 
             elif user_input.startswith("/mode"):
                 conf = user_input[len("/mode"):].strip()
                 if not conf:
                     print(memory["mode"])
                 else:
-                    memory["mode"] = conf
+                    memory["mode"] = conf                    
 
             elif user_input.startswith("/conf"):
                 conf = user_input[len("/conf"):].strip()

@@ -46,7 +46,7 @@ tokenizers
 
 # camelot-py
 # llama_index
-byzerllm[saas]>=0.1.148
+byzerllm[saas]>=0.1.149
 patch
 diff_match_patch
 GitPython
@@ -55,6 +55,8 @@ anthropic
 google-generativeai
 protobuf
 azure-cognitiveservices-speech
+real_agent
+
 python-docx
 docx2txt
 pdf2image
