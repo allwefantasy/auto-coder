@@ -6,7 +6,7 @@ from typing import Generator, List, Dict, Any, Optional, Tuple
 from autocoder.utils.request_queue import RequestValue, RequestOption, StreamValue
 from autocoder.utils.request_queue import request_queue
 
-MAX_HISTORY_LINES = 20  # 最大保留历史行数
+MAX_HISTORY_LINES = 40  # 最大保留历史行数
 
 def stream_out(
     stream_generator: Generator[Tuple[str, Dict[str, Any]], None, None],
@@ -74,7 +74,7 @@ def stream_out(
                         Markdown(display_content),
                         title="Response",
                         border_style="green",
-                        height=min(25, live.console.height - 4)
+                        height=min(50, live.console.height - 4)
                     )
                 )
             

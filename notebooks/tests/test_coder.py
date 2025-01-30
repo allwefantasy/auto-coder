@@ -1,22 +1,17 @@
 import os
-from autocoder.agent.coder import Coder
-import byzerllm
-import asyncio
+from openai import OpenAI
 
-# 初始化 LLM
-llm = byzerllm.ByzerLLM.from_default_model(model="deepseek_chat")
+client = OpenAI(
+    # 若没有配置环境变量，请用百炼API Key将下行替换为：api_key="sk-xxx",
+    api_key="", # 如何获取API Key：https://help.aliyun.com/zh/model-studio/developer-reference/get-api-key
+    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+)
 
-# 创建 Coder 实例
-coder = Coder(llm)
-
-# 定义测试项目路径
-test_project_path = os.path.join(os.getcwd(), "test_react_project")
-
-
-# 定义测试任务
-test_task = """
-创建一个使用 React + TypeScript + Tailwind CSS 的项目
-"""
-
-
-asyncio.run(coder.start_task(test_task))
+completion = client.chat.completions.create(
+    model="deepseek-r1", 
+    messages=[
+        {'role': 'system', 'content': 'You are a helpful assistant.'},
+        {'role': 'user', 'content': '你是谁？'}
+        ]
+)
+print(completion.choices[0].message.content)

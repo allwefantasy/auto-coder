@@ -51,7 +51,7 @@ from byzerllm.utils import format_str_jinja2
 from autocoder.common.memory_manager import get_global_memory_file_paths 
 from autocoder import models
 import shlex
-
+from autocoder.utils.llms import get_single_llm
 
 class SymbolItem(BaseModel):
     symbol_name: str
@@ -1589,18 +1589,7 @@ def code_next(query: str):
     )
 
 
-def get_single_llm(model_names: str):
-    if "," in model_names:
-        # Multiple code models specified
-        model_names = model_names.split(",")
-        for _, model_name in enumerate(model_names):
-            return byzerllm.ByzerLLM.from_default_model(model_name)
-    else:
-        # Single code model
-        return byzerllm.ByzerLLM.from_default_model(model_names)
-
-
-def commit(query: str):
+def commit(query: str, product_mode: str):
     def prepare_commit_yaml():
         auto_coder_main(["next", "chat_action"])
 
@@ -1652,7 +1641,7 @@ def commit(query: str):
                 if os.path.exists(temp_yaml):
                     os.remove(temp_yaml)
 
-            llm = get_single_llm(args.code_model or args.model)
+            llm = get_single_llm(args.code_model or args.model, product_mode)
             uncommitted_changes = git_utils.get_uncommitted_changes(".")
             commit_message = git_utils.generate_commit_message.with_llm(llm).run(
                 uncommitted_changes
@@ -1672,6 +1661,8 @@ def commit(query: str):
             )
             git_utils.print_commit_info(commit_result=commit_result)
         except Exception as e:
+            import traceback
+            traceback.print_exc()            
             print(f"Failed to commit: {e}")
             if execute_file:
                 os.remove(execute_file)
@@ -2173,7 +2164,8 @@ def manage_models(params, query: str):
             "model_name": data_dict.get("model_name", data_dict["name"]),
             "base_url": data_dict.get("base_url", "https://api.openai.com/v1"),
             "api_key_path": data_dict.get("api_key_path", "api.openai.com"),
-            "description": data_dict.get("description", "")
+            "description": data_dict.get("description", ""),
+            "is_reasoning": data_dict.get("is_reasoning", "false") in ["true", "True", "TRUE", "1"]
         }
 
         models_data.append(final_model)
@@ -2476,9 +2468,6 @@ def lib_command(args: List[str]):
     else:
         console.print(f"Unknown subcommand: {subcommand}")
 
-def agent(query: str):
-    console.print(f"Agent query: {query}")
-
 
 def main():
     ARGS = parse_arguments()
@@ -2654,12 +2643,6 @@ def main():
                     print("Please enter your query.")
                 else:
                     manage_models(ARGS,query) 
-            elif user_input.startswith("/agent"):
-                query = user_input[len("/agent"):].strip()
-                if not query:
-                    print("Please enter your query.")
-                else:
-                    agent(query)
 
             elif user_input.startswith("/mode"):
                 conf = user_input[len("/mode"):].strip()
@@ -2678,7 +2661,7 @@ def main():
                 revert()
             elif user_input.startswith("/commit"):
                 query = user_input[len("/commit"):].strip()
-                commit(query)
+                commit(query,product_mode=ARGS.product_mode)
             elif user_input.startswith("/help"):
                 show_help()
             elif user_input.startswith("/exclude_dirs"):

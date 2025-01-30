@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.228
+Version: 0.1.229
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -26,7 +26,7 @@ Requires-Dist: tabulate
 Requires-Dist: jupyter_client
 Requires-Dist: prompt-toolkit
 Requires-Dist: tokenizers
-Requires-Dist: byzerllm[saas]>=0.1.149
+Requires-Dist: byzerllm[saas]>=0.1.150
 Requires-Dist: patch
 Requires-Dist: diff_match_patch
 Requires-Dist: GitPython
@@ -35,6 +35,7 @@ Requires-Dist: anthropic
 Requires-Dist: google-generativeai
 Requires-Dist: protobuf
 Requires-Dist: azure-cognitiveservices-speech
+Requires-Dist: real_agent
 Requires-Dist: python-docx
 Requires-Dist: docx2txt
 Requires-Dist: pdf2image

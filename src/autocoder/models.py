@@ -13,7 +13,8 @@ default_models_list = [
         "model_name": "deepseek-reasoner",
         "model_type": "saas/openai",
         "base_url": "https://api.deepseek.com/v1",
-        "api_key_path": "api.deepseek.com"
+        "api_key_path": "api.deepseek.com",
+        "is_reasoning": True
     },    
     {
         "name": "deepseek_chat",
@@ -21,7 +22,8 @@ default_models_list = [
         "model_name": "deepseek-chat",
         "model_type": "saas/openai",
         "base_url": "https://api.deepseek.com/v1",
-        "api_key_path": "api.deepseek.com"
+        "api_key_path": "api.deepseek.com",
+        "is_reasoning": False
     },
     {
         "name":"o1",
@@ -29,7 +31,8 @@ default_models_list = [
         "model_name": "o1-2024-12-17",
         "model_type": "saas/openai",
         "base_url": "https://api.openai.com/v1",
-        "api_key_path": ""
+        "api_key_path": "",
+        "is_reasoning": True
     }
 ]
 
@@ -51,9 +54,12 @@ def load_models() -> List[Dict]:
                 custom_models = json.load(f)
                 # Custom models will override defaults with same name
                 for model in custom_models:
+                    model["is_reasoning"] = model.get("is_reasoning", False)
                     models_dict[model["name"]] = model
+
         except json.JSONDecodeError:
             # If JSON is invalid, just use defaults
+            print("JSON is invalid, using defaults")
             save_models(default_models_list)
     else:
         # If file doesn't exist, create it with defaults
@@ -123,7 +129,7 @@ def update_model_with_api_key(name: str, api_key: str) -> Dict:
     # 在现有模型中查找
     found_model = None
     for model in models:
-        if model["name"] == name:
+        if model["name"] == name.strip():
             found_model = model
             break
                     
@@ -140,7 +146,7 @@ def update_model_with_api_key(name: str, api_key: str) -> Dict:
         os.makedirs(api_key_dir, exist_ok=True)
         api_key_file = os.path.join(api_key_dir, api_key_path)
         with open(api_key_file, "w") as f:
-            f.write(api_key)
+            f.write(api_key.strip())
         
         # 如果是新模型，添加到模型列表中
         if all(model["name"] != name for model in models):

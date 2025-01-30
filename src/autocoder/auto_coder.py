@@ -298,7 +298,8 @@ def main(input_args: Optional[List[str]] = None):
                 infer_params={
                     "saas.base_url": "https://api.deepseek.com/v1",
                     "saas.api_key": api_key,
-                    "saas.model": "deepseek-chat"
+                    "saas.model": "deepseek-chat",
+                    "saas.is_reasoning": False
                 }
             )
             
@@ -310,7 +311,8 @@ def main(input_args: Optional[List[str]] = None):
                 infer_params={
                     "saas.base_url": "https://api.deepseek.com/v1",
                     "saas.api_key": api_key,
-                    "saas.model": "deepseek-chat"
+                    "saas.model": "deepseek-chat",
+                    "saas.is_reasoning": False
                 }
             )
 
@@ -322,7 +324,8 @@ def main(input_args: Optional[List[str]] = None):
                 infer_params={
                     "saas.base_url": "https://api.deepseek.com/v1",
                     "saas.api_key": api_key,
-                    "saas.model": "deepseek-reasoner"
+                    "saas.model": "deepseek-reasoner",
+                    "saas.is_reasoning": True
                 }
             )
 
@@ -334,7 +337,8 @@ def main(input_args: Optional[List[str]] = None):
                 infer_params={
                     "saas.base_url": "https://api.deepseek.com/v1",
                     "saas.api_key": api_key,
-                    "saas.model": "deepseek-reasoner"
+                    "saas.model": "deepseek-reasoner",
+                    "saas.is_reasoning": True
                 }
             )
 
@@ -360,7 +364,8 @@ def main(input_args: Optional[List[str]] = None):
                             infer_params={
                                 "saas.base_url": model_info["base_url"],
                                 "saas.api_key": model_info["api_key"],
-                                "saas.model": model_info["model_name"]
+                                "saas.model": model_info["model_name"],
+                                "saas.is_reasoning": model_info["is_reasoning"]
                             }
                         )
                         models.append(code_model)
@@ -377,7 +382,8 @@ def main(input_args: Optional[List[str]] = None):
                         infer_params={
                             "saas.base_url": model_info["base_url"],
                             "saas.api_key": model_info["api_key"],
-                            "saas.model": model_info["model_name"]
+                            "saas.model": model_info["model_name"],
+                            "saas.is_reasoning": model_info["is_reasoning"]
                         }
                     )
                     llm.setup_sub_client("code_model", code_model)
@@ -397,7 +403,8 @@ def main(input_args: Optional[List[str]] = None):
                             infer_params={
                                 "saas.base_url": model_info["base_url"],
                                 "saas.api_key": model_info["api_key"],
-                                "saas.model": model_info["model_name"]
+                                "saas.model": model_info["model_name"],
+                                "saas.is_reasoning": model_info["is_reasoning"]
                             }
                         )
                         models.append(rerank_model)
@@ -414,7 +421,8 @@ def main(input_args: Optional[List[str]] = None):
                         infer_params={
                             "saas.base_url": model_info["base_url"],
                             "saas.api_key": model_info["api_key"],
-                            "saas.model": model_info["model_name"]
+                            "saas.model": model_info["model_name"],
+                            "saas.is_reasoning": model_info["is_reasoning"]
                         }
                     )
                     llm.setup_sub_client("generate_rerank_model", rerank_model)
@@ -430,7 +438,8 @@ def main(input_args: Optional[List[str]] = None):
                     infer_params={
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
-                        "saas.model": model_info["model_name"]
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
                     }
                 )
                 llm.setup_sub_client("inference_model", inference_model)        
@@ -610,7 +619,8 @@ def main(input_args: Optional[List[str]] = None):
                     infer_params={
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
-                        "saas.model": model_info["model_name"]
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
                     }
                 )
                 llm.setup_sub_client("chat_model", chat_model)
@@ -626,7 +636,8 @@ def main(input_args: Optional[List[str]] = None):
                     infer_params={
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
-                        "saas.model": model_info["model_name"]
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
                     }
                 )
                 llm.setup_sub_client("vl_model", vl_model)
@@ -642,7 +653,8 @@ def main(input_args: Optional[List[str]] = None):
                     infer_params={
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
-                        "saas.model": model_info["model_name"]
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
                     }
                 )
                 llm.setup_sub_client("sd_model", sd_model)
@@ -658,7 +670,8 @@ def main(input_args: Optional[List[str]] = None):
                     infer_params={
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
-                        "saas.model": model_info["model_name"]
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
                     }
                 )
                 llm.setup_sub_client("text2voice_model", text2voice_model)
@@ -674,7 +687,8 @@ def main(input_args: Optional[List[str]] = None):
                     infer_params={
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
-                        "saas.model": model_info["model_name"]
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
                     }
                 )
                 llm.setup_sub_client("voice2text_model", voice2text_model)
@@ -690,7 +704,8 @@ def main(input_args: Optional[List[str]] = None):
                     infer_params={
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
-                        "saas.model": model_info["model_name"]
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
                     }
                 )
                 llm.setup_sub_client("planner_model", planner_model)
@@ -706,7 +721,8 @@ def main(input_args: Optional[List[str]] = None):
                     infer_params={
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
-                        "saas.model": model_info["model_name"]
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
                     }
                 )
                 llm.setup_sub_client("designer_model", designer_model)
@@ -722,7 +738,8 @@ def main(input_args: Optional[List[str]] = None):
                     infer_params={
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
-                        "saas.model": model_info["model_name"]
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
                     }
                 )
                 llm.setup_sub_client("emb_model", emb_model)
