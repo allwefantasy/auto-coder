@@ -54,9 +54,14 @@ class ActionTSProject(BaseAction):
 
         source_code = pp.output()
         if self.llm:
+            if args.in_code_apply:
+                old_query = args.query
+                args.query = args.context + "\n\n" + args.query
             source_code = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
             )
+            if args.in_code_apply:
+                args.query = old_query
 
         if args.image_file:
             if args.image_mode == "iterative":
@@ -256,11 +261,17 @@ class ActionPyProject(BaseAction):
         pp = PyProject(args=self.args, llm=self.llm)
         self.pp = pp
         pp.run(packages=args.py_packages.split(",") if args.py_packages else [])            
-        source_code = pp.output()
+        source_code = pp.output()                
+
         if self.llm:
+            old_query = args.query
+            if args.in_code_apply:
+                args.query = args.context + "\n\n" + args.query
             source_code = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
             )
+            if args.in_code_apply:
+                args.query = old_query
 
         self.process_content(source_code)
         return True
@@ -355,9 +366,14 @@ class ActionSuffixProject(BaseAction):
         pp.run()
         source_code = pp.output()
         if self.llm:
+            if args.in_code_apply:
+                old_query = args.query
+                args.query = args.context + "\n\n" + args.query
             source_code = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
             )
+            if args.in_code_apply:
+                args.query = old_query
         self.process_content(source_code)
 
     def process_content(self, content: str):

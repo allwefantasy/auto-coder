@@ -1742,7 +1742,8 @@ def coding(query: str):
             == "true",
         }
 
-        yaml_config["context"] = ""
+        yaml_config["context"] = ""        
+        yaml_config["in_code_apply"] = is_apply
 
         for key, value in conf.items():
             converted_value = convert_config_value(key, value)

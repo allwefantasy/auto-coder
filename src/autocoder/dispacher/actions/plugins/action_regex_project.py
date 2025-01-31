@@ -36,9 +36,14 @@ class ActionRegexProject:
         pp.run()
         source_code = pp.output()
         if self.llm:
+            if args.in_code_apply:
+                old_query = args.query
+                args.query = args.context + "\n\n" + args.query
             source_code = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
             )
+            if args.in_code_apply:
+                args.query = old_query
         self.process_content(source_code)
 
     def process_content(self, content: str):
