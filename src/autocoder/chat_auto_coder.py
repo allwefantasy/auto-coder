@@ -52,6 +52,7 @@ from autocoder.common.memory_manager import get_global_memory_file_paths
 from autocoder import models
 import shlex
 from autocoder.utils.llms import get_single_llm
+import pkg_resources
 
 class SymbolItem(BaseModel):
     symbol_name: str
@@ -2478,6 +2479,17 @@ def lib_command(args: List[str]):
 
 
 def main():
+    from autocoder.rag.variable_holder import VariableHolder
+    from tokenizers import Tokenizer    
+    try:
+        tokenizer_path = pkg_resources.resource_filename(
+            "autocoder", "data/tokenizer.json"
+        )
+        VariableHolder.TOKENIZER_PATH = tokenizer_path
+        VariableHolder.TOKENIZER_MODEL = Tokenizer.from_file(tokenizer_path)
+    except FileNotFoundError:
+        tokenizer_path = None
+        
     ARGS = parse_arguments()
     
     if ARGS.lite:

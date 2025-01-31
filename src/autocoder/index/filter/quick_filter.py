@@ -6,11 +6,10 @@ import time
 from autocoder.index.index import IndexManager
 from autocoder.index.types import (
     IndexItem,
-    TargetFile,
-    VerifyFileRelevance,
-    FileList,
+    TargetFile,    
     FileNumberList
 )
+from autocoder.rag.token_counter import count_tokens
 from loguru import logger
 
 
@@ -70,8 +69,24 @@ class QuickFilter():
         if not self.args.skip_filter_index and self.args.index_filter_model:
             start_time = time.monotonic()
             index_items = self.index_manager.read_index()
-            file_number_list = self.quick_filter_files.with_llm(
-                self.index_manager.index_filter_llm).with_return_type(FileNumberList).run(index_items, self.args.query)
+
+            prompt_str = self.quick_filter_files.prompt(index_items,query)
+
+            print(prompt_str)
+            
+            tokens_len = count_tokens(prompt_str)
+            
+            if tokens_len > 55*1024:
+                logger.warning(f"Quick filter prompt is too long, tokens_len: {tokens_len}/{55*1024} fallback to normal filter")
+                return final_files
+            
+            try:
+                file_number_list = self.quick_filter_files.with_llm(
+                    self.index_manager.index_filter_llm).with_return_type(FileNumberList).run(index_items, self.args.query)
+            except Exception as e:
+                logger.error(f"Quick filter failed, error: {str(e)} fallback to normal filter")
+                return final_files
+            
             if file_number_list:
                 for file_number in file_number_list.file_list:
                     final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
