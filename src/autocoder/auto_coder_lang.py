@@ -16,6 +16,14 @@ MESSAGES = {
             "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
             "Use '/break' to exit this mode. If you have issues with copy-paste, use '/clear' to clean and paste again."
         ),
+        "phase1_processing_sources": "Phase 1: Processing REST/RAG/Search sources...",
+        "phase2_building_index": "Phase 2: Building index for all files...",
+        "phase6_file_selection": "Phase 6: Processing file selection and limits...",
+        "phase7_preparing_output": "Phase 7: Preparing final output...",
+        "phase1_processing_sources": "阶段 1: 正在处理 REST/RAG/Search 源...",
+        "phase2_building_index": "阶段 2: 正在为所有文件构建索引...",
+        "phase6_file_selection": "阶段 6: 正在处理文件选择和限制...",
+        "phase7_preparing_output": "阶段 7: 正在准备最终输出...",
         "chat_human_as_model_instructions": (
             "Chat is now in Human as Model mode.\n"
             "The question has been copied to your clipboard.\n"

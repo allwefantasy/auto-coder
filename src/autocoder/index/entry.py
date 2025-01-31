@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-from loguru import logger
+from autocoder.common.printer import Printer
 from autocoder.utils.queue_communicate import (
     queue_communicate,
     CommunicateEvent,
@@ -58,7 +58,8 @@ def build_index_and_filter_files(
     final_files: Dict[str, TargetFile] = {}
 
     # Phase 1: Process REST/RAG/Search sources
-    logger.info("Phase 1: Processing REST/RAG/Search sources...")
+    printer = Printer()
+    printer.print_in_terminal("phase1_processing_sources")
     phase_start = time.monotonic()
     for source in sources:
         if source.tag in ["REST", "RAG", "SEARCH"]:
@@ -79,7 +80,7 @@ def build_index_and_filter_files(
                 )
             )
 
-        logger.info("Phase 2: Building index for all files...")
+        printer.print_in_terminal("phase2_building_index")
         phase_start = time.monotonic()
         index_manager = IndexManager(llm=llm, sources=sources, args=args)
         index_data = index_manager.build_index()
@@ -186,7 +187,7 @@ def build_index_and_filter_files(
         console.print(panel)
 
     # Phase 6: File selection and limitation
-    logger.info("Phase 6: Processing file selection and limits...")
+    printer.print_in_terminal("phase6_file_selection")
     phase_start = time.monotonic()
 
     if args.index_filter_file_num > 0:
@@ -217,7 +218,7 @@ def build_index_and_filter_files(
     stats["timings"]["file_selection"] = phase_end - phase_start
 
     # Phase 7: Display results and prepare output
-    logger.info("Phase 7: Preparing final output...")
+    printer.print_in_terminal("phase7_preparing_output")
     phase_start = time.monotonic()    
     try:
         print_selected(
@@ -298,7 +299,7 @@ def build_index_and_filter_files(
 • Total time: {total_time:.2f}s
 ====================================
 """
-    logger.info(summary)
+    printer.print_str_in_terminal(summary)
 
     if args.request_id and not args.skip_events:
         queue_communicate.send_event(
