@@ -1,8 +1,11 @@
 from rich.console import Console
-
+from typing import Optional
 class Printer:
-    def __init__(self):
-        self.console = Console()
+    def __init__(self,console:Optional[Console]=None):
+        if console is None:
+            self.console = Console()
+        else:
+            self.console = console
 
     def print_in_terminal(self, content: str, style: str = None):
         """Print content to terminal with optional rich styling
