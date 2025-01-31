@@ -1,4 +1,5 @@
 import pydantic
+from .printer import Printer
 import ast
 import sys
 import subprocess
