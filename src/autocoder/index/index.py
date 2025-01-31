@@ -471,8 +471,10 @@ class IndexManager:
                     all_results.extend(result.file_list)
                     completed_threads += 1
             else:
-                logger.warning(
-                    f"Fail to find target files for chunk. This is caused by the model response not being in JSON format or the JSON being empty."
+                self.printer.print_in_terminal(
+                    "index_related_files_fail",
+                    style="yellow",
+                    chunk_count="unknown"
                 )
             time.sleep(self.args.anti_quota_limit)
 

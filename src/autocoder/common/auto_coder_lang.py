@@ -21,7 +21,8 @@ MESSAGES = {
         "building_index_progress": "⏳ 正在构建索引: {{ counter }}/{{ num_files }}...",
         "index_source_dir_mismatch": "⚠️ 源目录不匹配 (文件路径: {{ file_path }}, 源目录: {{ source_dir }})",
         "index_related_files_fail": "⚠️ 无法为块 {{ chunk_count }} 找到相关文件",
-        "index_threads_completed": "✅ 已完成 {{ completed_threads }}/{{ total_threads }} 个线程"
+        "index_threads_completed": "✅ 已完成 {{ completed_threads }}/{{ total_threads }} 个线程",
+        "index_related_files_fail": "⚠️ 无法为块 {{ chunk_count }} 找到相关文件"
     }
 }
 
