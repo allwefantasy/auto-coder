@@ -66,15 +66,13 @@ class QuickFilter():
 
     def filter(self, index_items: List[IndexItem], query: str) -> Dict[str, TargetFile]:
         final_files: Dict[str, TargetFile] = {}
-        if not self.args.skip_filter_index and self.args.index_filter_model:
+        if not self.args.skip_filter_index and self.index_manager.llm.get_sub_client("index_filter_model"):
             start_time = time.monotonic()
             index_items = self.index_manager.read_index()
 
-            prompt_str = self.quick_filter_files.prompt(index_items,query)
-
-            print(prompt_str)
+            prompt_str = self.quick_filter_files.prompt(index_items,query)            
             
-            tokens_len = count_tokens(prompt_str)
+            tokens_len = count_tokens(prompt_str)            
             
             if tokens_len > 55*1024:
                 logger.warning(f"Quick filter prompt is too long, tokens_len: {tokens_len}/{55*1024} fallback to normal filter")
