@@ -42,6 +42,7 @@ from rich.live import Live
 from autocoder.auto_coder_lang import get_message
 from autocoder.common.memory_manager import save_to_memory_file
 from autocoder import models as models_module
+from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 
 console = Console()
@@ -1272,8 +1273,7 @@ def main(input_args: Optional[List[str]] = None):
                     )
                 )
                 v = [[response.result,None]]
-            else:
-                from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
+            else:                
                 v = stream_chat_with_continue(
                     llm=chat_llm,
                     conversations=loaded_conversations,
