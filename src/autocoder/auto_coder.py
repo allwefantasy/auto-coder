@@ -1144,7 +1144,7 @@ def main(input_args: Optional[List[str]] = None):
                 chat_llm = llm
 
             source_count = 0
-            pre_conversations = []
+            pre_conversations = []            
             context_content = args.context if args.context else ""
             if args.context:                
                 try:
@@ -1177,20 +1177,11 @@ def main(input_args: Optional[List[str]] = None):
             else:
                 pp = SuffixProject(args=args, llm=llm, file_filter=None)
             pp.run()
-            sources = pp.sources
-            
-            if args.context:
-                old_query = args.query
-                args.query = context_content + "\n\n" + args.query
-                print(args.query)
+            sources = pp.sources                       
 
             s = build_index_and_filter_files(
-                llm=llm, args=args, sources=sources)
+                llm=llm, args=args, sources=sources)                        
             
-            if args.context:
-                args.query = old_query
-                
-
             if s:
                 pre_conversations.append(
                     {
