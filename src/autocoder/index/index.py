@@ -37,6 +37,9 @@ from autocoder.index.types import (
     FileNumberList
 )
 
+from autocoder.index.filter.quick_filter import QuickFilter
+from autocoder.index.filter.normal_filter import NormalFilter
+
 
 class IndexManager:
     def __init__(
@@ -69,44 +72,7 @@ class IndexManager:
         if not os.path.exists(self.index_dir):
             os.makedirs(self.index_dir)
 
-    @byzerllm.prompt()
-    def quick_filter_files(self,file_meta_list:List[IndexItem],query:str) -> str:
-        '''
-        当用户提一个需求的时候，我们需要找到相关的文件，然后阅读这些文件，并且修改其中部分文件。
-        现在，给定下面的索引文件：
-
-        <index>
-        {{ content }}
-        </index>
-
-        索引文件包含文件序号(##[]括起来的部分)，文件路径，文件符号信息等。
-        下面是用户的查询需求：
-        
-        <query>
-        {{ query }}
-        </query>
-
-        请根据用户的需求，找到相关的文件，并给出文件序号列表。请返回如下json格式：
-
-        ```json
-        {
-            "file_list": [
-                file_index1,
-                file_index2,
-                ...
-            ]
-        }
-        ```
-        '''
-        file_meta_str = "\n".join([f"##[{index}]{item.module_name}\n{item.symbols}" for index,item in enumerate(file_meta_list)])
-        context = {
-            "content": file_meta_str,
-            "query": query
-        }
-        return context
-        
-
-
+    
     @byzerllm.prompt()
     def verify_file_relevance(self, file_content: str, query: str) -> str:
         """
@@ -625,9 +591,12 @@ def build_index_and_filter_files(
         "timings": {
             "process_tagged_sources": 0.0,
             "build_index": 0.0,
-            "level1_filter": 0.0,
-            "level2_filter": 0.0,
-            "relevance_verification": 0.0,
+            "quick_filter": 0.0,
+            "normal_filter": {
+                "level1_filter": 0.0,
+                "level2_filter": 0.0,
+                "relevance_verification": 0.0,
+            },
             "file_selection": 0.0,
             "prepare_output": 0.0,
             "total": 0.0
@@ -683,152 +652,13 @@ def build_index_and_filter_files(
                 )
             )
 
-        if not args.skip_filter_index and args.index_filter_model:
-            start_time = time.monotonic()
-            index_items = index_manager.read_index()
-            file_number_list = index_manager.quick_filter_files.with_llm(index_manager.index_filter_llm).with_return_type(FileNumberList).run(index_items,args.query)            
-            if file_number_list:
-                for file_number in file_number_list.file_list:
-                    final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
-                        file_path=sources[file_number].module_name,
-                        reason="Quick Filter"
-                    )
-            end_time = time.monotonic()
-            
-            logger.info(f"quick filter files: {end_time - start_time}")
-            for file in final_files:
-                logger.info(f"collected file: {file}")
-            return final_files
-
-        if not args.skip_filter_index:
-            if args.request_id and not args.skip_events:
-                queue_communicate.send_event(
-                    request_id=args.request_id,
-                    event=CommunicateEvent(
-                        event_type=CommunicateEventType.CODE_INDEX_FILTER_START.value,
-                        data=json.dumps({})
-                    )
-                )
-            # Phase 3: Level 1 filtering - Query-based
-            logger.info(
-                "Phase 3: Performing Level 1 filtering (query-based)...")
-
-            phase_start = time.monotonic()
-            target_files = index_manager.get_target_files_by_query(args.query)
-
-            if target_files:
-                for file in target_files.file_list:
-                    file_path = file.file_path.strip()
-                    final_files[get_file_path(file_path)] = file
-                stats["level1_filtered"] = len(target_files.file_list)
-            phase_end = time.monotonic()
-            stats["timings"]["level1_filter"] = phase_end - phase_start
-
-            # Phase 4: Level 2 filtering - Related files
-            if target_files is not None and args.index_filter_level >= 2:
-                logger.info(
-                    "Phase 4: Performing Level 2 filtering (related files)...")
-                if args.request_id and not args.skip_events:
-                    queue_communicate.send_event(
-                        request_id=args.request_id,
-                        event=CommunicateEvent(
-                            event_type=CommunicateEventType.CODE_INDEX_FILTER_START.value,
-                            data=json.dumps({})
-                        )
-                    )
-                phase_start = time.monotonic()
-                related_files = index_manager.get_related_files(
-                    [file.file_path for file in target_files.file_list]
-                )
-                if related_files is not None:
-                    for file in related_files.file_list:
-                        file_path = file.file_path.strip()
-                        final_files[get_file_path(file_path)] = file
-                    stats["level2_filtered"] = len(related_files.file_list)
-                phase_end = time.monotonic()
-                stats["timings"]["level2_filter"] = phase_end - phase_start
-
-            if not final_files:
-                logger.warning("No related files found, using all files")
-                for source in sources:
-                    final_files[get_file_path(source.module_name)] = TargetFile(
-                        file_path=source.module_name,
-                        reason="No related files found, use all files",
-                    )
-
-            # Phase 5: Relevance verification
-            logger.info("Phase 5: Performing relevance verification...")
-            if args.index_filter_enable_relevance_verification:
-                phase_start = time.monotonic()
-                verified_files = {}
-                temp_files = list(final_files.values())
-                verification_results = []
-                
-                def print_verification_results(results):
-                    from rich.table import Table
-                    from rich.console import Console
-                    
-                    console = Console()
-                    table = Table(title="File Relevance Verification Results", show_header=True, header_style="bold magenta")
-                    table.add_column("File Path", style="cyan", no_wrap=True)
-                    table.add_column("Score", justify="right", style="green")
-                    table.add_column("Status", style="yellow")
-                    table.add_column("Reason/Error")
-                    
-                    for file_path, score, status, reason in results:
-                        table.add_row(
-                            file_path,
-                            str(score) if score is not None else "N/A",
-                            status,
-                            reason
-                        )
-                    
-                    console.print(table)
-
-                def verify_single_file(file: TargetFile):
-                    for source in sources:
-                        if source.module_name == file.file_path:
-                            file_content = source.source_code
-                            try:
-                                result = index_manager.verify_file_relevance.with_llm(llm).with_return_type(VerifyFileRelevance).run(
-                                    file_content=file_content,
-                                    query=args.query
-                                )
-                                if result.relevant_score >= args.verify_file_relevance_score:
-                                    verified_files[file.file_path] = TargetFile(
-                                        file_path=file.file_path,
-                                        reason=f"Score:{result.relevant_score}, {result.reason}"
-                                    )
-                                    return file.file_path, result.relevant_score, "PASS", result.reason
-                                else:
-                                    return file.file_path, result.relevant_score, "FAIL", result.reason
-                            except Exception as e:
-                                error_msg = str(e)
-                                verified_files[file.file_path] = TargetFile(
-                                    file_path=file.file_path,
-                                    reason=f"Verification failed: {error_msg}"
-                                )
-                                return file.file_path, None, "ERROR", error_msg
-                    return None
-
-                with ThreadPoolExecutor(max_workers=args.index_filter_workers) as executor:
-                    futures = [executor.submit(verify_single_file, file)
-                            for file in temp_files]
-                    for future in as_completed(futures):
-                        result = future.result()
-                        if result:
-                            verification_results.append(result)
-                            time.sleep(args.anti_quota_limit)
-
-                # Print verification results in a table
-                print_verification_results(verification_results)
-                
-                stats["verified_files"] = len(verified_files)
-                phase_end = time.monotonic()
-                stats["timings"]["relevance_verification"] = phase_end - phase_start
-
-                # Keep all files, not just verified ones
-                final_files = verified_files
+        quick_filter = QuickFilter(index_manager,stats,sources)
+        final_files = quick_filter.filter(index_manager.read_index(),args.query)
+        
+        if not final_files:
+            normal_filter = NormalFilter(index_manager,stats,sources)
+            final_files = normal_filter.filter(index_manager.read_index(),args.query)
+        
 
     def display_table_and_get_selections(data):
         from prompt_toolkit.shortcuts import checkboxlist_dialog
