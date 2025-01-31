@@ -15,7 +15,8 @@ import threading
 import byzerllm
 import hashlib
 
-from loguru import logger
+from autocoder.common.printer import Printer
+from autocoder.common.auto_coder_lang import get_message
 from autocoder.index.types import (
     IndexItem,
     TargetFile,
@@ -48,6 +49,7 @@ class IndexManager:
         self.max_input_length = (
             args.index_model_max_input_length or args.model_max_input_length
         )
+        self.printer = Printer()
 
         # 如果索引目录不存在,则创建它
         if not os.path.exists(self.index_dir):
@@ -206,8 +208,12 @@ class IndexManager:
             start_time = time.monotonic()
             source_code = source.source_code
             if len(source.source_code) > self.max_input_length:
-                logger.warning(
-                    f"Warning[Build Index]: The length of source code({source.module_name}) is too long ({len(source.source_code)}) > model_max_input_length({self.max_input_length}), splitting into chunks..."
+                self.printer.print_in_terminal(
+                    get_message("index_file_too_large"),
+                    style="yellow",
+                    file_path=source.module_name,
+                    file_size=len(source.source_code),
+                    max_length=self.max_input_length
                 )
                 chunks = self.split_text_into_chunks(
                     source_code, self.max_input_length - 1000
@@ -224,12 +230,21 @@ class IndexManager:
                     self.index_llm).run(source.module_name, source_code)
                 time.sleep(self.anti_quota_limit)
 
-            logger.info(
-                f"Parse and update index for {file_path} md5: {md5} took {time.monotonic() - start_time:.2f}s"
+            self.printer.print_in_terminal(
+                get_message("index_update_success"),
+                style="green",
+                file_path=file_path,
+                md5=md5,
+                duration=time.monotonic() - start_time
             )
 
         except Exception as e:
-            logger.warning(f"Error: {e}")
+            self.printer.print_in_terminal(
+                get_message("index_build_error"),
+                style="red",
+                file_path=file_path,
+                error=str(e)
+            )
             return None
 
         return {
@@ -255,8 +270,11 @@ class IndexManager:
 
         for item in index_data.keys():
             if not item.startswith(self.source_dir):
-                logger.warning(
-                    error_message(source_dir=self.source_dir, file_path=item)
+                self.printer.print_in_terminal(
+                    get_message("index_source_dir_mismatch"),
+                    style="yellow",
+                    source_dir=self.source_dir,
+                    file_path=item
                 )
                 break
 
@@ -291,8 +309,12 @@ class IndexManager:
             counter = 0
             num_files = len(wait_to_build_files)
             total_files = len(self.sources)
-            logger.info(
-                f"Total Files: {total_files}, Need to Build Index: {num_files}")
+            self.printer.print_in_terminal(
+                get_message("index_build_summary"),
+                style="bold blue",
+                total_files=total_files,
+                num_files=num_files
+            )
 
             futures = [
                 executor.submit(self.build_index_for_single_source, source)
@@ -302,7 +324,12 @@ class IndexManager:
                 result = future.result()
                 if result is not None:
                     counter += 1
-                    logger.info(f"Building Index:{counter}/{num_files}...")
+                    self.printer.print_in_terminal(
+                        get_message("building_index_progress"),
+                        style="blue",
+                        counter=counter,
+                        num_files=num_files
+                    )
                     module_name = result["module_name"]
                     index_data[module_name] = result
                     updated_sources.append(module_name)
@@ -404,8 +431,10 @@ class IndexManager:
                 with lock:
                     all_results.extend(result.file_list)
             else:
-                logger.warning(
-                    f"Fail to find related files for chunk {chunk_count}. This may be caused by the model limit or the query not being suitable for the files."
+                self.printer.print_in_terminal(
+                    get_message("index_related_files_fail"),
+                    style="yellow",
+                    chunk_count=chunk_count
                 )
             time.sleep(self.args.anti_quota_limit)
 
@@ -457,7 +486,12 @@ class IndexManager:
             for future in as_completed(futures):
                 future.result()
 
-        logger.info(f"Completed {completed_threads}/{total_threads} threads")
+        self.printer.print_in_terminal(
+            get_message("index_threads_completed"),
+            style="green",
+            completed_threads=completed_threads,
+            total_threads=total_threads
+        )
         return all_results, total_threads, completed_threads
 
     def get_target_files_by_query(self, query: str) -> FileList:
