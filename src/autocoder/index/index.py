@@ -682,22 +682,25 @@ def build_index_and_filter_files(
                     })
                 )
             )
+from .filter.quick_filter import QuickFilter
 
-        if not args.skip_filter_index and args.index_filter_model:
-            start_time = time.monotonic()
-            index_items = index_manager.read_index()
-            file_number_list = index_manager.quick_filter_files.with_llm(index_manager.index_filter_llm).with_return_type(FileNumberList).run(index_items,args.query)            
-            if file_number_list:
-                for file_number in file_number_list.file_list:
-                    final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
-                        file_path=sources[file_number].module_name,
-                        reason="Quick Filter"
-                    )
-            end_time = time.monotonic()
-            
-            logger.info(f"quick filter files: {end_time - start_time}")
-            for file in final_files:
-                logger.info(f"collected file: {file}")
+# Initialize QuickFilter
+quick_filter = QuickFilter(index_manager)
+
+# Perform quick filtering
+if not args.skip_filter_index and args.index_filter_model:
+    file_number_list = quick_filter.quick_filter_files(index_manager.read_index(), args.query)
+    
+    if file_number_list:
+        for file_number in file_number_list.file_list:
+            final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
+                file_path=sources[file_number].module_name,
+                reason="Quick Filter"
+            )
+    
+    for file in final_files:
+        logger.info(f"Collected file: {file}")
+    return final_files
             return final_files
 
         if not args.skip_filter_index:
