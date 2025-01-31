@@ -1272,10 +1272,13 @@ def main(input_args: Optional[List[str]] = None):
                     )
                 )
                 v = [[response.result,None]]
-            else:                
-                v = chat_llm.stream_chat_oai(
-                    conversations=loaded_conversations, delta_mode=True
-                )                
+            else:
+                from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
+                v = stream_chat_with_continue(
+                    llm=chat_llm,
+                    conversations=loaded_conversations,
+                    llm_config={}
+                )              
             
             assistant_response, last_meta = stream_out(
                     v, 
