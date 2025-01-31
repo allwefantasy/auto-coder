@@ -10,7 +10,8 @@ MESSAGES = {
         "building_index_progress": "⏳ Building Index: {{ counter }}/{{ num_files }}...",
         "index_source_dir_mismatch": "⚠️ Source directory mismatch (file_path: {{ file_path }}, source_dir: {{ source_dir }})",
         "index_related_files_fail": "⚠️ Failed to find related files for chunk {{ chunk_count }}",
-        "index_threads_completed": "✅ Completed {{ completed_threads }}/{{ total_threads }} threads"
+        "index_threads_completed": "✅ Completed {{ completed_threads }}/{{ total_threads }} threads",
+        "index_related_files_fail": "⚠️ Failed to find related files for chunk {{ chunk_count }}"
     },
     "zh": {
         "initializing": "🚀 正在初始化系统...",
