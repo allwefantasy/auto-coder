@@ -197,10 +197,9 @@ def configure_project_type():
     from prompt_toolkit.lexers import PygmentsLexer
     from pygments.lexers.markup import MarkdownLexer
     from prompt_toolkit.formatted_text import HTML
+    from prompt_toolkit.shortcuts import print_formatted_text
     from prompt_toolkit.styles import Style
-    from autocoder.common.printer import Printer
-
-    printer = Printer()
+    from html import escape
 
     style = Style.from_dict(
         {
@@ -211,14 +210,25 @@ def configure_project_type():
         }
     )
 
-    printer.print_str_in_terminal(f"\n=== {get_message('project_type_config')} ===\n", style="bold bright_yellow")
-    printer.print_in_terminal("project_type_supports", style="cyan")
-    printer.print_in_terminal("language_suffixes", style="cyan")
-    printer.print_in_terminal("predefined_types", style="cyan")
-    printer.print_in_terminal("mixed_projects", style="cyan")
-    printer.print_in_terminal("examples", style="cyan")
+    def print_info(text):
+        print_formatted_text(HTML(f"<info>{escape(text)}</info>"), style=style)
 
-    printer.print_in_terminal("default_type", style="yellow")
+    def print_warning(text):
+        print_formatted_text(
+            HTML(f"<warning>{escape(text)}</warning>"), style=style)
+
+    def print_header(text):
+        print_formatted_text(
+            HTML(f"<header>{escape(text)}</header>"), style=style)
+
+    print_header(f"\n=== {get_message('project_type_config')} ===\n")
+    print_info(get_message("project_type_supports"))
+    print_info(get_message("language_suffixes"))
+    print_info(get_message("predefined_types"))
+    print_info(get_message("mixed_projects"))
+    print_info(get_message("examples"))
+
+    print_warning(f"{get_message('default_type')}\n")
 
     project_type = prompt(
         get_message("enter_project_type"), default="py", style=style
@@ -227,12 +237,12 @@ def configure_project_type():
     if project_type:
         configure(f"project_type:{project_type}", skip_print=True)
         configure("skip_build_index:false", skip_print=True)
-        printer.print_in_terminal("project_type_set", style="cyan", project_type=project_type)
+        print_info(f"\n{get_message('project_type_set')} {project_type}")
     else:
-        printer.print_in_terminal("using_default_type", style="cyan")
+        print_info(f"\n{get_message('using_default_type')}")
 
-    printer.print_in_terminal("change_setting_later", style="yellow")
-    printer.print_str_in_terminal("/conf project_type:<new_type>\n", style="yellow")
+    print_warning(f"\n{get_message('change_setting_later')}:")
+    print_warning("/conf project_type:<new_type>\n")
 
     return project_type
 
