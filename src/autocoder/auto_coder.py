@@ -281,6 +281,22 @@ def main(input_args: Optional[List[str]] = None):
                 byzerllm.connect_cluster(address=args.ray_address)
 
             llm = byzerllm.ByzerLLM(verbose=args.print_request)
+
+            code_model = byzerllm.ByzerLLM()
+            code_model.setup_default_model_name("deepseek_chat")
+            llm.setup_sub_client("code_model", code_model)
+
+            index_filter_model = byzerllm.ByzerLLM()
+            index_filter_model.setup_default_model_name("deepseek_r1_chat")
+            llm.setup_sub_client("index_filter_model", index_filter_model)
+
+            generate_rerank_model = byzerllm.ByzerLLM()
+            generate_rerank_model.setup_default_model_name("deepseek_r1_chat")
+            llm.setup_sub_client("generate_rerank_model", generate_rerank_model)
+
+            chat_model = byzerllm.ByzerLLM()
+            chat_model.setup_default_model_name("deepseek_r1_chat")
+            llm.setup_sub_client("chat_model", chat_model)
         
         if args.product_mode == "lite":
             llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_chat")
@@ -344,9 +360,23 @@ def main(input_args: Optional[List[str]] = None):
                 }
             )
 
+            index_filter_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_r1_chat")
+            index_filter_llm.deploy(
+                model_path="",
+                pretrained_model_type="saas/openai",
+                udf_name="deepseek_r1_chat",
+                infer_params={
+                    "saas.base_url": "https://api.deepseek.com/v1",
+                    "saas.api_key": api_key,
+                    "saas.model": "deepseek-reasoner",
+                    "saas.is_reasoning": True
+                }
+            )
+
             llm.setup_sub_client("code_model", code_llm)
             llm.setup_sub_client("chat_model", chat_llm)
             llm.setup_sub_client("generate_rerank_model", generate_rerank_llm)
+            llm.setup_sub_client("index_filter_model", index_filter_llm)
 
         if args.product_mode == "lite":                                    
             # Set up default models based on configuration
@@ -444,7 +474,7 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.is_reasoning": model_info["is_reasoning"]
                     }
                 )
-                llm.setup_sub_client("inference_model", inference_model) 
+                llm.setup_sub_client("inference_model", inference_model)                 
 
             if args.index_filter_model:
                 model_info = models_module.get_model_by_name(args.index_filter_model)

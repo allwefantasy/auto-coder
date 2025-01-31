@@ -376,6 +376,33 @@ def initialize_system(args):
         except subprocess.CalledProcessError:
             print_status(get_message("deploy_fail"), "error")
             return
+        
+
+        deploy_cmd = [
+            "byzerllm",
+            "deploy",
+            "--pretrained_model_type",
+            "saas/reasoning_openai",
+            "--cpus_per_worker",
+            "0.001",
+            "--gpus_per_worker",
+            "0",
+            "--worker_concurrency",
+            "1000",
+            "--num_workers",
+            "1",
+            "--infer_params",
+            f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-reasoner",
+            "--model",
+            "deepseek_r1_chat",
+        ]
+
+        try:
+            subprocess.run(deploy_cmd, check=True)
+            print_status(get_message("deploy_complete"), "success")
+        except subprocess.CalledProcessError:
+            print_status(get_message("deploy_fail"), "error")
+            return
 
         # Validate the deployment
         print_status(get_message("validating_deploy"), "")
