@@ -38,7 +38,7 @@ class ActionRegexProject:
         if self.llm:
             if args.in_code_apply:
                 old_query = args.query
-                args.query = args.context + "\n\n" + args.query
+                args.query = (args.context or "") + "\n\n" + args.query
             source_code = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
             )

@@ -56,7 +56,7 @@ class ActionTSProject(BaseAction):
         if self.llm:
             if args.in_code_apply:
                 old_query = args.query
-                args.query = args.context + "\n\n" + args.query
+                args.query = (args.context or "") + "\n\n" + args.query
             source_code = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
             )
@@ -266,7 +266,7 @@ class ActionPyProject(BaseAction):
         if self.llm:
             old_query = args.query
             if args.in_code_apply:
-                args.query = args.context + "\n\n" + args.query
+                args.query = (args.context or "") + "\n\n" + args.query
             source_code = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
             )
@@ -368,7 +368,7 @@ class ActionSuffixProject(BaseAction):
         if self.llm:
             if args.in_code_apply:
                 old_query = args.query
-                args.query = args.context + "\n\n" + args.query
+                args.query = (args.context or "") + "\n\n" + args.query
             source_code = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
             )
