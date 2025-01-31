@@ -280,6 +280,7 @@ def main(input_args: Optional[List[str]] = None):
                 byzerllm.connect_cluster(address=args.ray_address)
 
             llm = byzerllm.ByzerLLM(verbose=args.print_request)
+        
         if args.product_mode == "lite":
             llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_chat")
             api_key_dir = os.path.expanduser("~/.auto-coder/keys")

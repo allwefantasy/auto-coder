@@ -39,7 +39,7 @@ def stream_out(
             console=console
         ) as live:
             for res in stream_generator:
-                last_meta = res[1]
+                last_meta = res[1]                
                 content = res[0]
                 assistant_response += content
                 

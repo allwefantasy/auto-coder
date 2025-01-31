@@ -127,6 +127,7 @@ src/autocoder/utils/__init__.py
 src/autocoder/utils/_markitdown.py
 src/autocoder/utils/conversation_store.py
 src/autocoder/utils/llm_client_interceptors.py
+src/autocoder/utils/llms.py
 src/autocoder/utils/log_capture.py
 src/autocoder/utils/multi_turn.py
 src/autocoder/utils/operate_config_api.py
@@ -138,6 +139,7 @@ src/autocoder/utils/rest.py
 src/autocoder/utils/tests.py
 src/autocoder/utils/auto_coder_utils/__init__.py
 src/autocoder/utils/auto_coder_utils/chat_stream_out.py
+src/autocoder/utils/chat_auto_coder_utils/__init__.py
 tests/test_action_regex_project.py
 tests/test_chat_auto_coder.py
 tests/test_code_auto_merge_editblock.py

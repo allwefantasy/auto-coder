@@ -1316,6 +1316,9 @@ def ask(query: str):
     if "code_model" in conf:
         yaml_config["code_model"] = conf["code_model"]
 
+    if "product_mode" in conf:
+        yaml_config["product_mode"] = conf["product_mode"]
+
     yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
@@ -1589,7 +1592,9 @@ def code_next(query: str):
     )
 
 
-def commit(query: str, product_mode: str):
+def commit(query: str):
+    conf = memory.get("conf", {})
+    product_mode = conf.get("product_mode", "lite")
     def prepare_commit_yaml():
         auto_coder_main(["next", "chat_action"])
 
@@ -1939,6 +1944,9 @@ def summon(query: str):
 
     if "model" in conf:
         yaml_config["model"] = conf["model"]
+
+    if "product_mode" in conf:
+        yaml_config["product_mode"] = conf["product_mode"]
 
     yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
@@ -2661,7 +2669,7 @@ def main():
                 revert()
             elif user_input.startswith("/commit"):
                 query = user_input[len("/commit"):].strip()
-                commit(query,product_mode=ARGS.product_mode)
+                commit(query)
             elif user_input.startswith("/help"):
                 show_help()
             elif user_input.startswith("/exclude_dirs"):

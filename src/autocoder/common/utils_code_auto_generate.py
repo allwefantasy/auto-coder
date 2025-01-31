@@ -1,4 +1,4 @@
-from byzerllm import ByzerLLM
+from byzerllm import ByzerLLM,SimpleByzerLLM
 from typing import List,Any,Union
 from pydantic import BaseModel
 from loguru import logger
@@ -8,7 +8,7 @@ class ChatWithContinueResult(BaseModel):
     generated_tokens_count: int
     
 
-def chat_with_continue(llm: ByzerLLM, conversations: List[dict], llm_config: dict) -> ChatWithContinueResult:
+def chat_with_continue(llm: Union[ByzerLLM,SimpleByzerLLM], conversations: List[dict], llm_config: dict) -> ChatWithContinueResult:
     final_result = ChatWithContinueResult(content="", input_tokens_count=0, generated_tokens_count=0)
     v = llm.chat_oai(
         conversations=conversations, llm_config=llm_config)
