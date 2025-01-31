@@ -34,6 +34,7 @@ from autocoder.index.types import (
     TargetFile,
     VerifyFileRelevance,
     FileList,
+    FileNumberList
 )
 
 
@@ -53,6 +54,11 @@ class IndexManager:
         else:
             self.index_llm = llm
 
+        if llm and (s := llm.get_sub_client("index_filter_model")):
+            self.index_filter_llm = s
+        else:
+            self.index_filter_llm = llm
+
         self.llm = llm
         self.args = args
         self.max_input_length = (
@@ -62,6 +68,44 @@ class IndexManager:
         # 如果索引目录不存在,则创建它
         if not os.path.exists(self.index_dir):
             os.makedirs(self.index_dir)
+
+    @byzerllm.prompt()
+    def quick_filter_files(self,file_meta_list:List[IndexItem],query:str) -> str:
+        '''
+        当用户提一个需求的时候，我们需要找到相关的文件，然后阅读这些文件，并且修改其中部分文件。
+        现在，给定下面的索引文件：
+
+        <index>
+        {{ content }}
+        </index>
+
+        索引文件包含文件序号(##[]括起来的部分)，文件路径，文件符号信息等。
+        下面是用户的查询需求：
+        
+        <query>
+        {{ query }}
+        </query>
+
+        请根据用户的需求，找到相关的文件，并给出文件序号列表。请返回如下json格式：
+
+        ```json
+        {
+            "file_list": [
+                file_index1,
+                file_index2,
+                ...
+            ]
+        }
+        ```
+        '''
+        file_meta_str = "\n".join([f"##[{index}]{item.module_name}\n{item.symbols}" for index,item in enumerate(file_meta_list)])
+        context = {
+            "content": file_meta_str,
+            "query": query
+        }
+        return context
+        
+
 
     @byzerllm.prompt()
     def verify_file_relevance(self, file_content: str, query: str) -> str:
@@ -607,7 +651,7 @@ def build_index_and_filter_files(
             )
     phase_end = time.monotonic()
     stats["timings"]["process_tagged_sources"] = phase_end - phase_start
-
+    
     if not args.skip_build_index and llm:
         # Phase 2: Build index
         if args.request_id and not args.skip_events:
@@ -638,6 +682,23 @@ def build_index_and_filter_files(
                     })
                 )
             )
+
+        if not args.skip_filter_index and args.index_filter_model:
+            start_time = time.monotonic()
+            index_items = index_manager.read_index()
+            file_number_list = index_manager.quick_filter_files.with_llm(index_manager.index_filter_llm).with_return_type(FileNumberList).run(index_items,args.query)            
+            if file_number_list:
+                for file_number in file_number_list.file_list:
+                    final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
+                        file_path=sources[file_number].module_name,
+                        reason="Quick Filter"
+                    )
+            end_time = time.monotonic()
+            
+            logger.info(f"quick filter files: {end_time - start_time}")
+            for file in final_files:
+                logger.info(f"collected file: {file}")
+            return final_files
 
         if not args.skip_filter_index:
             if args.request_id and not args.skip_events:

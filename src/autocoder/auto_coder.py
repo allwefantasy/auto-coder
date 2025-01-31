@@ -444,7 +444,24 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.is_reasoning": model_info["is_reasoning"]
                     }
                 )
-                llm.setup_sub_client("inference_model", inference_model)        
+                llm.setup_sub_client("inference_model", inference_model) 
+
+            if args.index_filter_model:
+                model_info = models_module.get_model_by_name(args.index_filter_model)
+                model_name = args.index_filter_model
+                index_filter_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
+                index_filter_model.deploy(
+                    model_path="",
+                    pretrained_model_type=model_info["model_type"],
+                    udf_name=model_name,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
+                    }
+                )
+                llm.setup_sub_client("index_filter_model", index_filter_model)            
 
 
         if args.product_mode == "pro":
@@ -483,7 +500,12 @@ def main(input_args: Optional[List[str]] = None):
             if args.inference_model:
                 inference_model = byzerllm.ByzerLLM()
                 inference_model.setup_default_model_name(args.inference_model)
-                llm.setup_sub_client("inference_model", inference_model)        
+                llm.setup_sub_client("inference_model", inference_model)   
+
+            if args.index_filter_model:
+                index_filter_model = byzerllm.ByzerLLM()
+                index_filter_model.setup_default_model_name(args.index_filter_model)
+                llm.setup_sub_client("index_filter_model", index_filter_model)
             
 
         if args.human_as_model:

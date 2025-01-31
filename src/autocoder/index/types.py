@@ -22,3 +22,6 @@ class VerifyFileRelevance(pydantic.BaseModel):
 
 class FileList(pydantic.BaseModel):
     file_list: List[TargetFile]
+
+class FileNumberList(pydantic.BaseModel):
+    file_list: List[int]    
