@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 
-from autocoder.common.printer import Printer
+from loguru import logger
 from autocoder.utils.queue_communicate import (
     queue_communicate,
     CommunicateEvent,
@@ -58,7 +58,7 @@ def build_index_and_filter_files(
     final_files: Dict[str, TargetFile] = {}
 
     # Phase 1: Process REST/RAG/Search sources
-    Printer().print_str_in_terminal("Phase 1: Processing REST/RAG/Search sources...")
+    logger.info("Phase 1: Processing REST/RAG/Search sources...")
     phase_start = time.monotonic()
     for source in sources:
         if source.tag in ["REST", "RAG", "SEARCH"]:
@@ -79,7 +79,7 @@ def build_index_and_filter_files(
                 )
             )
 
-        Printer().print_str_in_terminal("Phase 2: Building index for all files...")
+        logger.info("Phase 2: Building index for all files...")
         phase_start = time.monotonic()
         index_manager = IndexManager(llm=llm, sources=sources, args=args)
         index_data = index_manager.build_index()
@@ -186,11 +186,11 @@ def build_index_and_filter_files(
         console.print(panel)
 
     # Phase 6: File selection and limitation
-    Printer().print_str_in_terminal("Phase 6: Processing file selection and limits...")
+    logger.info("Phase 6: Processing file selection and limits...")
     phase_start = time.monotonic()
 
     if args.index_filter_file_num > 0:
-        Printer().print_str_in_terminal(
+        logger.info(
             f"Limiting files from {len(final_files)} to {args.index_filter_file_num}")
 
     if args.skip_confirm:
@@ -202,9 +202,8 @@ def build_index_and_filter_files(
             (file.file_path, file.reason) for file in final_files.values()
         ]
         if not target_files_data:
-            Printer().print_str_in_terminal(
-                "No target files found, you may need to rewrite the query and try again.",
-                style="bold yellow"
+            logger.warning(
+                "No target files found, you may need to rewrite the query and try again."
             )
             final_filenames = []
         else:
@@ -218,7 +217,7 @@ def build_index_and_filter_files(
     stats["timings"]["file_selection"] = phase_end - phase_start
 
     # Phase 7: Display results and prepare output
-    Printer().print_str_in_terminal("Phase 7: Preparing final output...")
+    logger.info("Phase 7: Preparing final output...")
     phase_start = time.monotonic()    
     try:
         print_selected(
@@ -229,9 +228,8 @@ def build_index_and_filter_files(
             ]
         )
     except Exception as e:
-        Printer().print_str_in_terminal(
-            "Failed to display selected files in terminal mode. Falling back to simple print.",
-            style="bold yellow"
+        logger.warning(
+            "Failed to display selected files in terminal mode. Falling back to simple print."
         )
         print("Target Files Selected:")
         for file in final_filenames:
@@ -300,7 +298,7 @@ def build_index_and_filter_files(
 • Total time: {total_time:.2f}s
 ====================================
 """
-    Printer().print_str_in_terminal(summary)
+    logger.info(summary)
 
     if args.request_id and not args.skip_events:
         queue_communicate.send_event(
