@@ -1,8 +1,7 @@
 import locale
 
 MESSAGES = {
-    "en": {
-        "initializing": "🚀 Initializing system...",
+    "en": {    
         "index_file_too_large": "⚠️ File {{ file_path }} is too large ({{ file_size }} > {{ max_length }}), splitting into chunks...",
         "index_update_success": "✅ Successfully updated index for {{ file_path }} (md5: {{ md5 }}) in {{ duration:.2f }}s",
         "index_build_error": "❌ Error building index for {{ file_path }}: {{ error }}",
@@ -13,8 +12,7 @@ MESSAGES = {
         "index_threads_completed": "✅ Completed {{ completed_threads }}/{{ total_threads }} threads",
         "index_related_files_fail": "⚠️ Failed to find related files for chunk {{ chunk_count }}"
     },
-    "zh": {
-        "initializing": "🚀 正在初始化系统...",
+    "zh": {        
         "index_file_too_large": "⚠️ 文件 {{ file_path }} 过大 ({{ file_size }} > {{ max_length }}), 正在分块处理...",
         "index_update_success": "✅ 成功更新 {{ file_path }} 的索引 (md5: {{ md5 }}), 耗时 {{ duration:.2f }} 秒",
         "index_build_error": "❌ 构建 {{ file_path }} 索引时出错: {{ error }}",

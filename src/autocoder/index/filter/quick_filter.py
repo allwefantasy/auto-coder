@@ -55,7 +55,9 @@ class QuickFilter():
         }
         ```
 
-        特别注意,如果用户的query里 @文件 或者 @@符号，那么被@的文件或者@@的符号必须要返回，并且查看他们依赖的文件是否相关。        
+        特别注意
+        1. 如果用户的query里 @文件 或者 @@符号，那么被@的文件或者@@的符号必须要返回，并且查看他们依赖的文件是否相关。        
+        2. 如果 query 里是一段历史对话，那么对话里的内容提及的文件路径必须要返回。
         '''
         file_meta_str = "\n".join([f"##[{index}]{item.module_name}\n{item.symbols}" for index,item in enumerate(file_meta_list)])
         context = {

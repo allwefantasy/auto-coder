@@ -1145,19 +1145,24 @@ def main(input_args: Optional[List[str]] = None):
 
             source_count = 0
             pre_conversations = []
-            if args.context:
-                context = json.loads(args.context)
-                if "file_content" in context:
-                    file_content = context["file_content"]
-                    pre_conversations.append(
-                        {
-                            "role": "user",
-                            "content": f"请阅读下面的代码和文档：\n\n <files>\n{file_content}\n</files>",
-                        },
-                    )
-                    pre_conversations.append(
-                        {"role": "assistant", "content": "read"})
-                    source_count += 1
+            context_content = args.context if args.context else ""
+            if args.context:                
+                try:
+                    context = json.loads(args.context)
+                    if "file_content" in context:
+                        context_content = context["file_content"]
+                except:
+                    pass                     
+
+                pre_conversations.append(
+                    {
+                        "role": "user",
+                        "content": f"请阅读下面的代码和文档：\n\n <files>\n{context_content}\n</files>",
+                    },
+                )
+                pre_conversations.append(
+                    {"role": "assistant", "content": "read"})
+                source_count += 1
 
             from autocoder.index.index import IndexManager
             from autocoder.index.entry import build_index_and_filter_files
@@ -1173,9 +1178,19 @@ def main(input_args: Optional[List[str]] = None):
                 pp = SuffixProject(args=args, llm=llm, file_filter=None)
             pp.run()
             sources = pp.sources
+            
+            if args.context:
+                old_query = args.query
+                args.query = context_content + "\n\n" + args.query
+                print(args.query)
 
             s = build_index_and_filter_files(
                 llm=llm, args=args, sources=sources)
+            
+            if args.context:
+                args.query = old_query
+                
+
             if s:
                 pre_conversations.append(
                     {
