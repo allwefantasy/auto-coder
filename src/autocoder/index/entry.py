@@ -133,19 +133,48 @@ def build_index_and_filter_files(
 
         return [file for file in result] if result else []
 
+    def shorten_path(path: str, keep_levels: int = 3) -> str:
+        """
+        优化长路径显示，保留最后指定层级
+        示例：/a/b/c/d/e/f.py -> .../c/d/e/f.py
+        """
+        parts = path.split(os.sep)
+        if len(parts) > keep_levels:
+            return ".../" + os.sep.join(parts[-keep_levels:])
+        return path
+
     def print_selected(data):
         console = Console()
+        
+        # 获取终端宽度
+        console_width = console.width
 
         table = Table(
             title="Files Used as Context",
             show_header=True,
             header_style="bold magenta",
+            # 设置表格最大宽度为终端宽度（留 10 字符边距）
+            width=min(console_width - 10, 120),
+            expand=True
         )
-        table.add_column("File Path", style="cyan", no_wrap=True)
-        table.add_column("Reason", style="green")
+        
+        # 优化列配置
+        table.add_column("File Path", 
+                        style="cyan", 
+                        width=int((console_width - 10) * 0.6),  # 分配 60% 宽度给文件路径
+                        overflow="fold",  # 自动折叠过长的路径
+                        no_wrap=False)  # 允许换行
+        
+        table.add_column("Reason", 
+                        style="green", 
+                        width=int((console_width - 10) * 0.4),  # 分配 40% 宽度给原因
+                        no_wrap=False)
 
+        # 添加处理过的文件路径
         for file, reason in data:
-            table.add_row(file, reason)
+            # 路径截取优化：保留最后 3 级路径
+            processed_path = shorten_path(file, keep_levels=3)
+            table.add_row(processed_path, reason)
 
         panel = Panel(
             table,
