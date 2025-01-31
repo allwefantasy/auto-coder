@@ -58,11 +58,6 @@ def stream_chat_with_continue(
     Yields:
         StreamChatWithContinueResult: 包含当前生成的内容和元数据的结果对象
     """
-    final_result = {
-        "content": "",
-        "input_tokens_count": 0,
-        "generated_tokens_count": 0
-    }
     
     count = 0
     temp_conversations = conversations
@@ -75,29 +70,24 @@ def stream_chat_with_continue(
         )
         
         current_content = ""
+        current_metadata = None
         for res in stream_generator:
             content = res[0]
-            current_content += content
-            
-            # 更新最终结果
-            final_result["content"] += content
-            metadata = getattr(stream_generator, 'metadata', {})
-            final_result["input_tokens_count"] += metadata.get("input_tokens_count", 0)
-            final_result["generated_tokens_count"] += metadata.get("generated_tokens_count", 0)
+            current_content += content                    
+            current_metadata = res[1]            
             
             # Yield 当前的 StreamChatWithContinueResult
             yield StreamChatWithContinueResult(
-                content=final_result["content"],
-                input_tokens_count=final_result["input_tokens_count"],
-                generated_tokens_count=final_result["generated_tokens_count"]
+                content=content,
+                input_tokens_count=current_metadata.input_tokens_count,
+                generated_tokens_count=current_metadata.generated_tokens_count
             )
         
         # 更新对话历史
         temp_conversations.append({"role": "assistant", "content": current_content})
         
         # 检查是否需要继续生成
-        metadata = getattr(stream_generator, 'metadata', {})
-        if metadata.get("finish_reason", "stop") != "length" or count >= 5:
+        if current_metadata.finish_reason != "length" or count >= 5:
             break
         
         count += 1
