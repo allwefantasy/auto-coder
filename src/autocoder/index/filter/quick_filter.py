@@ -56,7 +56,9 @@ class QuickFilter():
         }
         ```
 
-        特别注意,如果用户的query里 @文件 或者 @@符号，那么被@的文件或者@@的符号必须要返回，并且查看他们依赖的文件是否相关。        
+        特别注意:
+        1. 如果用户的query里有 @文件 或者 @@符号，那么被@的文件或者@@的符号必须返回。
+        2. 查看这些文件依赖的文件是否相关，并将它们也包括在结果中。
         '''
         file_meta_str = "\n".join([f"##[{index}]{item.module_name}\n{item.symbols}" for index,item in enumerate(file_meta_list)])
         context = {
@@ -71,7 +73,7 @@ class QuickFilter():
             start_time = time.monotonic()
             index_items = self.index_manager.read_index()
             file_number_list = self.quick_filter_files.with_llm(
-                self.index_manager.index_filter_llm).with_return_type(FileNumberList).run(index_items, self.args.query)
+                self.index_manager.index_filter_llm).with_return_type(FileNumberList).run(index_items, query)
             if file_number_list:
                 for file_number in file_number_list.file_list:
                     final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
