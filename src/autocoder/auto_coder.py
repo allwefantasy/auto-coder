@@ -69,8 +69,7 @@ def load_include_files(config, base_path, max_depth=10, current_depth=0):
             include_files = [include_files]
 
         for include_file in include_files:
-            abs_include_path = resolve_include_path(base_path, include_file)
-            logger.info(f"Loading include file: {abs_include_path}")
+            abs_include_path = resolve_include_path(base_path, include_file)            
             with open(abs_include_path, "r") as f:
                 include_config = yaml.safe_load(f)
                 if not include_config:
