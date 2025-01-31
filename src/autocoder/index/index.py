@@ -209,7 +209,7 @@ class IndexManager:
             source_code = source.source_code
             if len(source.source_code) > self.max_input_length:
                 self.printer.print_in_terminal(
-                    get_message("index_file_too_large"),
+                    "index_file_too_large",
                     style="yellow",
                     file_path=source.module_name,
                     file_size=len(source.source_code),
@@ -231,7 +231,7 @@ class IndexManager:
                 time.sleep(self.anti_quota_limit)
 
             self.printer.print_in_terminal(
-                get_message("index_update_success"),
+                "index_update_success",
                 style="green",
                 file_path=file_path,
                 md5=md5,
@@ -240,7 +240,7 @@ class IndexManager:
 
         except Exception as e:
             self.printer.print_in_terminal(
-                get_message("index_build_error"),
+                "index_build_error",
                 style="red",
                 file_path=file_path,
                 error=str(e)
@@ -271,7 +271,7 @@ class IndexManager:
         for item in index_data.keys():
             if not item.startswith(self.source_dir):
                 self.printer.print_in_terminal(
-                    get_message("index_source_dir_mismatch"),
+                    "index_source_dir_mismatch",
                     style="yellow",
                     source_dir=self.source_dir,
                     file_path=item
@@ -310,7 +310,7 @@ class IndexManager:
             num_files = len(wait_to_build_files)
             total_files = len(self.sources)
             self.printer.print_in_terminal(
-                get_message("index_build_summary"),
+                "index_build_summary",
                 style="bold blue",
                 total_files=total_files,
                 num_files=num_files
@@ -325,7 +325,7 @@ class IndexManager:
                 if result is not None:
                     counter += 1
                     self.printer.print_in_terminal(
-                        get_message("building_index_progress"),
+                        "building_index_progress",
                         style="blue",
                         counter=counter,
                         num_files=num_files
@@ -432,7 +432,7 @@ class IndexManager:
                     all_results.extend(result.file_list)
             else:
                 self.printer.print_in_terminal(
-                    get_message("index_related_files_fail"),
+                    "index_related_files_fail",
                     style="yellow",
                     chunk_count=chunk_count
                 )
@@ -487,7 +487,7 @@ class IndexManager:
                 future.result()
 
         self.printer.print_in_terminal(
-            get_message("index_threads_completed"),
+            "index_threads_completed",
             style="green",
             completed_threads=completed_threads,
             total_threads=total_threads
