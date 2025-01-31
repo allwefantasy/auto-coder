@@ -1129,7 +1129,8 @@ def main(input_args: Optional[List[str]] = None):
                         {"role": "assistant", "content": "read"})
                     source_count += 1
 
-            from autocoder.index.index import IndexManager, build_index_and_filter_files
+            from autocoder.index.index import IndexManager
+            from autocoder.index.entry import build_index_and_filter_files
             from autocoder.pyproject import PyProject
             from autocoder.tsproject import TSProject
             from autocoder.suffixproject import SuffixProject
