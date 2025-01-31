@@ -39,7 +39,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.live import Live
-from autocoder.auto_coder_lang import get_message
+from autocoder.common.auto_coder_lang import get_message
 from autocoder.common.memory_manager import save_to_memory_file
 from autocoder import models as models_module
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
@@ -243,10 +243,7 @@ def main(input_args: Optional[List[str]] = None):
                 new_file = os.path.join(
                     actions_dir, f"{new_seq}_{raw_args.name}.yml")
                 with open(new_file, "w") as f:
-                    f.write(content)
-
-        print(f"Successfully created new action file: {new_file}")
-
+                    f.write(content)        
         # open_yaml_file_in_editor(new_file)
         return
 
