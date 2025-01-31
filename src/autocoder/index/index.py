@@ -239,6 +239,8 @@ class IndexManager:
             )
 
         except Exception as e:
+            # import traceback
+            # traceback.print_exc()
             self.printer.print_in_terminal(
                 "index_build_error",
                 style="red",
