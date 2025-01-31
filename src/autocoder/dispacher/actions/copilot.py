@@ -9,7 +9,7 @@ from autocoder.common.JupyterClient import JupyterNotebook
 from autocoder.common.ShellClient import ShellClient
 from autocoder.suffixproject import SuffixProject
 from autocoder.common.search import Search, SearchEngine
-from autocoder.index.index import build_index_and_filter_files
+from autocoder.index.entry import build_index_and_filter_files
 from autocoder.common.image_to_page import ImageToPage, ImageToPageDirectly
 from typing import Optional, Dict, Any, List
 import byzerllm

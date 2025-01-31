@@ -260,9 +260,11 @@ def build_index_and_filter_files(
 
 === Time Breakdown ===
 • Index build: {stats['timings'].get('build_index', 0):.2f}s
-• Level 1 filter: {stats['timings'].get('level1_filter', 0):.2f}s
-• Level 2 filter: {stats['timings'].get('level2_filter', 0):.2f}s
-• Relevance check: {stats['timings'].get('relevance_verification', 0):.2f}s
+• Quick filter: {stats['timings'].get('quick_filter', 0):.2f}s
+• Normal filter: {stats['timings'].get('normal_filter', 0):.2f}s
+    - Level 1 filter: {stats['timings'].get('level1_filter', 0):.2f}s
+    - Level 2 filter: {stats['timings'].get('level2_filter', 0):.2f}s
+    - Relevance check: {stats['timings'].get('relevance_verification', 0):.2f}s
 • File selection: {stats['timings'].get('file_selection', 0):.2f}s
 • Total time: {total_time:.2f}s
 ====================================

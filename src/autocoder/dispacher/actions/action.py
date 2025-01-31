@@ -9,7 +9,7 @@ from autocoder.common.buildin_tokenizer import BuildinTokenizer
 from autocoder.pyproject import PyProject, Level1PyProject
 from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
-from autocoder.index.index import build_index_and_filter_files
+from autocoder.index.entry import build_index_and_filter_files
 from autocoder.common.code_auto_merge import CodeAutoMerge
 from autocoder.common.code_auto_merge_diff import CodeAutoMergeDiff
 from autocoder.common.code_auto_merge_strict_diff import CodeAutoMergeStrictDiff
