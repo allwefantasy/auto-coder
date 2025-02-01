@@ -25,9 +25,10 @@ from autocoder.common.image_to_page import ImageToPage, ImageToPageDirectly
 from autocoder.utils.conversation_store import store_code_model_conversation
 from loguru import logger
 import time
+from autocoder.common.printer import Printer
 
 
-class BaseAction:
+class BaseAction:    
     def _get_content_length(self, content: str) -> int:
         try:
             tokenizer = BuildinTokenizer()
@@ -43,6 +44,7 @@ class ActionTSProject(BaseAction):
         self.args = args
         self.llm = llm
         self.pp = None
+        self.printer = Printer()
 
     def run(self):
         args = self.args
@@ -96,7 +98,7 @@ class ActionTSProject(BaseAction):
                     f"Content(send to model) is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}"
                 )                
 
-        if args.execute:            
+        if args.execute:             
             logger.info("Auto generate the code...")
             start_time = time.time()
             if args.auto_merge == "diff":
