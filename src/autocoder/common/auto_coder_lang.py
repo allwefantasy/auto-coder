@@ -65,12 +65,10 @@ MESSAGES = {
             "系统正在等待您的输入。完成后，在新行输入'EOF'提交。\n"
             "使用'/break'退出此模式。如果复制粘贴有问题，使用'/clear'清理并重新粘贴。"
         ),
-
         "phase1_processing_sources": "阶段 1: 正在处理 REST/RAG/Search 源...",
         "phase2_building_index": "阶段 2: 正在为所有文件构建索引...",
         "phase6_file_selection": "阶段 6: 正在处理文件选择和限制...",
         "phase7_preparing_output": "阶段 7: 正在准备最终输出...",
-
         "chat_human_as_model_instructions": (
             "\n============= Chat 处于 Human as Model 模式 =============\n"
             "问题已复制到剪贴板\n"
@@ -78,6 +76,10 @@ MESSAGES = {
             "或者使用 /conf human_as_model:false 关闭该模式直接在终端获得答案。"
             "将获得答案黏贴到下面的输入框，换行后，使用 '/break' 退出，'/clear' 清屏，'/eof' 提交。"
         ),
+        "code_generation_start": "正在自动生成代码...",
+        "code_generation_complete": "代码生成完成，耗时 {duration:.2f} 秒，输入token数: {input_tokens}，输出token数: {output_tokens}",
+        "code_merge_start": "正在自动合并代码...",
+        "code_execution_warning": "发送给模型的内容长度为 {content_length} tokens（您可能收集了太多文件），超过了最大输入长度 {max_length}"
     }
 }
 
