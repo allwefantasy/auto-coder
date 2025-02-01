@@ -2092,11 +2092,11 @@ def manage_models(params, query: str):
       /models /add_model name=xxx base_url=xxx ... - Add model with custom params
       /models /remove <name> - Remove model by name
     """
-    print("manage_models", params, query)
+    printer = Printer()
     console = Console()
     
     if params.product_mode != "lite":
-        console.print(f"[red]{get_message('models_lite_only')}[/red]")
+        printer.print_in_terminal("models_lite_only", style="red")
         return
         
     models_data = models.load_models()
@@ -2116,13 +2116,14 @@ def manage_models(params, query: str):
     if "/remove" in query:
         subcmd = "/remove"
         query = query.replace("/remove", "", 1).strip()
+
     if not subcmd:
-        console.print(get_message("models_usage"))
+        printer.print_in_terminal("models_usage")
         return    
 
     if subcmd == "/list":                    
         if models_data:
-            table = Table(title=get_message("models_title"))
+            table = Table(title=printer.get_message_from_key("models_title"))
             table.add_column("Name", style="cyan")
             table.add_column("Model Type", style="green")
             table.add_column("Model Name", style="magenta")             
@@ -2135,6 +2136,7 @@ def manage_models(params, query: str):
                     api_key_file = os.path.expanduser(f"~/.auto-coder/keys/{api_key_path}")
                     if os.path.exists(api_key_file):
                         name = f"{name}*"
+                        printer.print_in_terminal("models_api_key_exists", path=api_key_file)
                 
                 table.add_row(
                     name,
@@ -2144,7 +2146,7 @@ def manage_models(params, query: str):
                 )
             console.print(table)
         else:
-            console.print(f"[yellow]{get_message('models_no_models')}[/yellow]")
+            printer.print_in_terminal("models_no_models", style="yellow")
 
     elif subcmd == "/add":
         # Support both simplified and legacy formats
@@ -2154,11 +2156,11 @@ def manage_models(params, query: str):
             name, api_key = args[0], args[1]            
             result = models.update_model_with_api_key(name, api_key)
             if result:
-                console.print(f"[green]{get_message('models_added').format(name=name)}[/green]")
+                printer.print_in_terminal("models_added", style="green", name=name)
             else:
-                console.print(f"[red]{get_message('models_add_failed').format(name=name)}[/red]")
+                printer.print_in_terminal("models_add_failed", style="red", name=name)
         else:
-            console.print(f"[red]{get_message('models_add_usage')}[/red]")
+            printer.print_in_terminal("models_add_usage", style="red")
 
     elif subcmd == "/add_model":
         # Parse key=value pairs: /models /add_model name=abc base_url=http://xx ...       
@@ -2167,19 +2169,19 @@ def manage_models(params, query: str):
         data_dict = {}
         for pair in kv_pairs:
             if '=' not in pair:
-                console.print(f"[red]Invalid parameter: {pair}, should be key=value[/red]")
+                printer.print_in_terminal("models_add_model_params", style="red")
                 continue
             k, v = pair.split('=', 1)
             data_dict[k.strip()] = v.strip()
 
         # Name is required
         if "name" not in data_dict:
-            console.print(f"[red]{get_message('models_add_model_name_required')}[/red]")
+            printer.print_in_terminal("models_add_model_name_required", style="red")
             return
 
         # Check duplication
         if any(m["name"] == data_dict["name"] for m in models_data):
-            console.print(f"[yellow]{get_message('models_add_model_exists').format(name=data_dict['name'])}[/yellow]")
+            printer.print_in_terminal("models_add_model_exists", style="yellow", name=data_dict["name"])
             return
 
         # Create model with defaults
@@ -2195,23 +2197,23 @@ def manage_models(params, query: str):
 
         models_data.append(final_model)
         models.save_models(models_data)
-        console.print(f"[green]{get_message('models_add_model_success').format(name=data_dict['name'])}[/green]")
+        printer.print_in_terminal("models_add_model_success", style="green", name=data_dict["name"])
 
     elif subcmd == "/remove":
         args = query.strip().split(" ")
         if len(args) < 1:
-            console.print(f"[red]{get_message('models_add_usage')}[/red]")
+            printer.print_in_terminal("models_add_usage", style="red")
             return
         name = args[0]
         filtered_models = [m for m in models_data if m["name"] != name]
         if len(filtered_models) == len(models_data):
-            console.print(f"[yellow]{get_message('models_add_model_remove').format(name=name)}[/yellow]")
+            printer.print_in_terminal("models_add_model_remove", style="yellow", name=name)
             return
         models.save_models(filtered_models)
-        console.print(f"[green]{get_message('models_add_model_removed').format(name=name)}[/green]")
+        printer.print_in_terminal("models_add_model_removed", style="green", name=name)
 
     else:
-        console.print(f"[yellow]{get_message('models_unknown_subcmd').format(subcmd=subcmd)}[/yellow]")
+        printer.print_in_terminal("models_unknown_subcmd", style="yellow", subcmd=subcmd)
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
