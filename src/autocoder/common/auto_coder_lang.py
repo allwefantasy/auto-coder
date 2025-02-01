@@ -37,9 +37,9 @@ MESSAGES = {
             "Paste the answer to the input box below, use '/break' to exit, '/clear' to clear the screen, '/eof' to submit."
         ),
         "code_generation_start": "Auto generate the code...",
-        "code_generation_complete": "Code generation completed in {duration:.2f} seconds, input_tokens_count: {input_tokens}, generated_tokens_count: {output_tokens}",
+        "code_generation_complete": "Code generation completed in {{ duration }} seconds, input_tokens_count: {{ input_tokens }}, generated_tokens_count: {{ output_tokens }}",
         "code_merge_start": "Auto merge the code...",
-        "code_execution_warning": "Content(send to model) is {content_length} tokens (you may collect too much files), which is larger than the maximum input length {max_length}"
+        "code_execution_warning": "Content(send to model) is {{ content_length }} tokens (you may collect too much files), which is larger than the maximum input length {{ max_length }}"
     },
     "zh": {
         "index_file_too_large": "⚠️ 文件 {{ file_path }} 过大 ({{ file_size }} > {{ max_length }}), 正在分块处理...",
@@ -77,9 +77,9 @@ MESSAGES = {
             "将获得答案黏贴到下面的输入框，换行后，使用 '/break' 退出，'/clear' 清屏，'/eof' 提交。"
         ),
         "code_generation_start": "正在自动生成代码...",
-        "code_generation_complete": "代码生成完成，耗时 {duration:.2f} 秒，输入token数: {input_tokens}，输出token数: {output_tokens}",
+        "code_generation_complete": "代码生成完成，耗时 {{ duration }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}",
         "code_merge_start": "正在自动合并代码...",
-        "code_execution_warning": "发送给模型的内容长度为 {content_length} tokens（您可能收集了太多文件），超过了最大输入长度 {max_length}"
+        "code_execution_warning": "发送给模型的内容长度为 {{ content_length }} tokens（您可能收集了太多文件），超过了最大输入长度 {{ max_length }}"
     }
 }
 
