@@ -346,8 +346,7 @@ class CodeAutoMergeEditBlock:
                     ),
                 )
                 return
-
-            s = f"Found {len(unmerged_blocks)} unmerged blocks, the changes will not be applied. Please review them manually then try again."
+            
             self.printer.print_in_terminal("unmerged_blocks_warning", num_blocks=len(unmerged_blocks))
             self._print_unmerged_blocks(unmerged_blocks)
             return
@@ -408,10 +407,10 @@ class CodeAutoMergeEditBlock:
                     )
                     git_utils.print_commit_info(commit_result=commit_result)
                 except Exception as e:
-                self.printer.print_str_in_terminal(
-                    self.git_require_msg(source_dir=self.args.source_dir, error=str(e)),
-                    style="red"
-                )
+                    self.printer.print_str_in_terminal(
+                        self.git_require_msg(source_dir=self.args.source_dir, error=str(e)),
+                        style="red"
+                    )
             self.printer.print_in_terminal("merge_success", 
                                          num_files=len(file_content_mapping.keys()),
                                          num_changes=len(changes_to_make),
