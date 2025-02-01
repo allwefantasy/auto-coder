@@ -142,6 +142,7 @@ src/autocoder/utils/request_event_queue.py
 src/autocoder/utils/request_queue.py
 src/autocoder/utils/rest.py
 src/autocoder/utils/tests.py
+src/autocoder/utils/types.py
 src/autocoder/utils/auto_coder_utils/__init__.py
 src/autocoder/utils/auto_coder_utils/chat_stream_out.py
 src/autocoder/utils/chat_auto_coder_utils/__init__.py
