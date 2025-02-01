@@ -2132,8 +2132,7 @@ def manage_models(params, query: str):
     if subcmd == "/list":                    
         if models_data:
             table = Table(title=printer.get_message_from_key("models_title"))
-            table.add_column("Name", style="cyan")
-            table.add_column("Model Type", style="green")
+            table.add_column("Name", style="cyan")            
             table.add_column("Model Name", style="magenta")             
             table.add_column("Description", style="white")
             for m in models_data:
@@ -2143,12 +2142,10 @@ def manage_models(params, query: str):
                 if api_key_path:
                     api_key_file = os.path.expanduser(f"~/.auto-coder/keys/{api_key_path}")
                     if os.path.exists(api_key_file):
-                        name = f"{name}*"
-                        printer.print_in_terminal("models_api_key_exists", path=api_key_file)
+                        name = f"{name}*"                        
                 
                 table.add_row(
-                    name,
-                    m.get("model_type", ""),
+                    name,                    
                     m.get("model_name", ""),                    
                     m.get("description", "")
                 )
