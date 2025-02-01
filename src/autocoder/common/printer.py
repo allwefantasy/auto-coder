@@ -1,5 +1,7 @@
 from rich.console import Console
-from typing import Optional
+from rich.panel import Panel
+from rich.text import Text
+from typing import Optional,Dict,Any
 from byzerllm.utils import format_str_jinja2
 from autocoder.common.auto_coder_lang import get_message
 from autocoder.chat_auto_coder_lang import get_message as get_chat_message
@@ -33,4 +35,8 @@ class Printer:
             else:
                 self.console.print(content)
         except Exception as e:
-            print(content)        
+            print(content)   
+
+    def print_panel(self, content: str, text_options:Dict[str,Any], panel_options:Dict[str,Any]):
+        panel = Panel(Text(content, **text_options), **panel_options)
+        self.console.print(panel)             
