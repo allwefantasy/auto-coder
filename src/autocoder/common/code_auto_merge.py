@@ -1,24 +1,26 @@
 
 import os
 from byzerllm.utils.client import code_utils
-from autocoder.common import AutoCoderArgs,git_utils
-from typing import List,Union,Tuple
+from autocoder.common import AutoCoderArgs, git_utils
+from typing import List, Union, Tuple
 import pydantic
 import byzerllm
-from loguru import logger
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
 from autocoder.common.code_modification_ranker import CodeModificationRanker
 import hashlib
 from autocoder.common import files as FileUtils
+from autocoder.common.printer import Printer
+from autocoder.common.auto_coder_lang import get_message
 
 class PathAndCode(pydantic.BaseModel):
     path: str
     content: str
 
 class CodeAutoMerge:
-    def __init__(self, llm:byzerllm.ByzerLLM,args:AutoCoderArgs):
+    def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs):
         self.llm = llm
-        self.args = args  
+        self.args = args
+        self.printer = Printer()
 
 
     def parse_whole_text_v2(self,text: str) -> List[PathAndCode]:
@@ -159,8 +161,9 @@ class CodeAutoMerge:
             try:
                 git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
             except Exception as e:            
-                logger.error(self.git_require_msg(source_dir=self.args.source_dir,error=str(e)))
-                return            
+                self.printer.print_in_terminal("git_init_required", 
+                    source_dir=self.args.source_dir, error=str(e))
+                return
 
         codes = self.parse_whole_text_v2(content)
         for block in codes:
@@ -168,11 +171,11 @@ class CodeAutoMerge:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
             with open(file_path, "w") as f:
-                logger.info(f"Upsert path: {file_path}")
+                self.printer.print_in_terminal("upsert_file", file_path=file_path)
                 total += 1
                 f.write(block.content)
 
-        logger.info(f"Merged {total} files into the project.")
+        self.printer.print_in_terminal("files_merged", total=total)
         if not force_skip_git:
             commit_result = git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}")
             git_utils.print_commit_info(commit_result=commit_result)

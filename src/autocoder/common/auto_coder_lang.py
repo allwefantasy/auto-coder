@@ -100,14 +100,20 @@ MESSAGES = {
         "unmerged_file_path": "File: {file_path}",
         "unmerged_search_block": "Search Block({similarity}):",
         "unmerged_replace_block": "Replace Block:",
-        "unmerged_blocks_total": "Total unmerged blocks: {num_blocks}"
+        "unmerged_blocks_total": "Total unmerged blocks: {num_blocks}",
+        "git_init_required": "⚠️ auto_merge 仅适用于 git 仓库。\n\n请尝试在源目录中使用 git init：\n\n```shell\ncd {{ source_dir }}\ngit init .\n```\n\n然后再次运行 auto-coder。\n错误: {{ error }}",
+        "upsert_file": "✅ 更新文件: {{ file_path }}",
+        "files_merged": "✅ 成功合并了 {{ total }} 个文件到项目中。"
     },
     "zh": {
         "unmerged_blocks_title": "未合并的代码块",
         "unmerged_file_path": "文件: {file_path}",
         "unmerged_search_block": "搜索块({similarity}):",
         "unmerged_replace_block": "替换块:",
-        "unmerged_blocks_total": "未合并的代码块总数: {num_blocks}"
+        "unmerged_blocks_total": "未合并的代码块总数: {num_blocks}",
+        "git_init_required": "⚠️ auto_merge 仅适用于 git 仓库。\n\n请尝试在源目录中使用 git init：\n\n```shell\ncd {{ source_dir }}\ngit init .\n```\n\n然后再次运行 auto-coder。\n错误: {{ error }}",
+        "upsert_file": "✅ 更新文件: {{ file_path }}",
+        "files_merged": "✅ 成功合并了 {{ total }} 个文件到项目中。"
     }
 }
 
