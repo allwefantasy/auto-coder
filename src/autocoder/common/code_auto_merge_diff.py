@@ -4,7 +4,7 @@ from autocoder.common import AutoCoderArgs,git_utils
 from typing import List,Union,Tuple
 import pydantic
 import byzerllm
-from autocoder.common.printer import Printer
+from loguru import logger
 import hashlib
 from pathlib import Path
 from itertools import groupby
@@ -514,15 +514,13 @@ class CodeAutoMergeDiff:
             try:
                 git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
             except Exception as e:            
-                printer = Printer()
-        printer.print_in_terminal("git_require_msg", source_dir=self.args.source_dir, error=str(e))
+                logger.error(self.git_require_msg(source_dir=self.args.source_dir,error=str(e)))
                 return            
        
         edits = self.get_edits(content)        
         self.apply_edits(edits)
 
-        printer = Printer()
-        printer.print_in_terminal("merged_files_info", total=total)
+        logger.info(f"Merged {total} files into the project.")
         if not force_skip_git:
             commit_result = git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}")
             git_utils.print_commit_info(commit_result=commit_result)
