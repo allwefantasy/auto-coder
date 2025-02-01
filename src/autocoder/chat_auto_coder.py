@@ -1031,6 +1031,7 @@ def add_files(args: List[str]):
     groups_info = memory["current_files"]["groups_info"]
 
     console = Console()
+    printer = Printer()
 
     if not args:
         printer.print_in_terminal("add_files_no_args", style="red")
