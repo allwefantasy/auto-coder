@@ -53,6 +53,7 @@ from autocoder import models
 import shlex
 from autocoder.utils.llms import get_single_llm
 import pkg_resources
+from autocoder.common.printer import Printer
 
 class SymbolItem(BaseModel):
     symbol_name: str
