@@ -101,10 +101,13 @@ def build_index_and_filter_files(
             )
         
         #MARK
+        printer.print_in_terminal("phase2_building_index", style="blue")
         quick_filter = QuickFilter(index_manager,stats,sources)
+        printer.print_in_terminal("quick_filter_start", style="blue")
         final_files = quick_filter.filter(index_manager.read_index(),args.query)
         
         if not final_files:
+            printer.print_in_terminal("normal_filter_start", style="blue")
             normal_filter = NormalFilter(index_manager,stats,sources)
             final_files = normal_filter.filter(index_manager.read_index(),args.query)
         

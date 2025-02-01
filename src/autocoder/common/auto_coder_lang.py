@@ -39,7 +39,9 @@ MESSAGES = {
         "code_generation_start": "Auto generate the code...",
         "code_generation_complete": "Code generation completed in {{ duration }} seconds, input_tokens_count: {{ input_tokens }}, generated_tokens_count: {{ output_tokens }}",
         "code_merge_start": "Auto merge the code...",
-        "code_execution_warning": "Content(send to model) is {{ content_length }} tokens (you may collect too much files), which is larger than the maximum input length {{ max_length }}"
+        "code_execution_warning": "Content(send to model) is {{ content_length }} tokens (you may collect too much files), which is larger than the maximum input length {{ max_length }}",
+        "quick_filter_start": "Starting quick filter...",
+        "normal_filter_start": "Starting normal filter..."
     },
     "zh": {
         "index_file_too_large": "⚠️ 文件 {{ file_path }} 过大 ({{ file_size }} > {{ max_length }}), 正在分块处理...",
@@ -79,7 +81,9 @@ MESSAGES = {
         "code_generation_start": "正在自动生成代码...",
         "code_generation_complete": "代码生成完成，耗时 {{ duration }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}",
         "code_merge_start": "正在自动合并代码...",
-        "code_execution_warning": "发送给模型的内容长度为 {{ content_length }} tokens（您可能收集了太多文件），超过了最大输入长度 {{ max_length }}"
+        "code_execution_warning": "发送给模型的内容长度为 {{ content_length }} tokens（您可能收集了太多文件），超过了最大输入长度 {{ max_length }}",
+        "quick_filter_start": "开始快速过滤...",
+        "normal_filter_start": "开始正常过滤..."
     }
 }
 
