@@ -12,26 +12,26 @@ class Printer:
         else:
             self.console = console
 
-    def get_message_from_key(self, key: str):
+    def get_message_from_key(self, msg_key: str):
         try:
-            return get_message(key)
+            return get_message(msg_key)
         except Exception as e:
-            return get_chat_message(key)
+            return get_chat_message(msg_key)
 
-    def get_message_from_key_with_format(self, key: str, **kwargs):
+    def get_message_from_key_with_format(self, msg_key: str, **kwargs):
         try:
-            return format_str_jinja2(self.get_message_from_key(key), **kwargs)
+            return format_str_jinja2(self.get_message_from_key(msg_key), **kwargs)
         except Exception as e:
-            return format_str_jinja2(self.get_chat_message_from_key(key), **kwargs)
+            return format_str_jinja2(self.get_chat_message_from_key(msg_key), **kwargs)
 
-    def print_in_terminal(self, key: str, style: str = None,**kwargs):     
+    def print_in_terminal(self, msg_key: str, style: str = None,**kwargs):     
         try:
             if style:
-                self.console.print(format_str_jinja2(self.get_message_from_key(key),**kwargs), style=style)
+                self.console.print(format_str_jinja2(self.get_message_from_key(msg_key),**kwargs), style=style)
             else:
-                self.console.print(format_str_jinja2(self.get_message_from_key(key),**kwargs))
+                self.console.print(format_str_jinja2(self.get_message_from_key(msg_key),**kwargs))
         except Exception as e:
-            print(self.get_message_from_key(key))
+            print(self.get_message_from_key(msg_key))
 
     
     def print_str_in_terminal(self, content: str, style: str = None):     
