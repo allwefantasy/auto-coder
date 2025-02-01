@@ -44,7 +44,7 @@ from autocoder.common.memory_manager import save_to_memory_file
 from autocoder import models as models_module
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
-
+from autocoder.common.printer import Printer
 console = Console()
 
 
@@ -1307,6 +1307,7 @@ def main(input_args: Optional[List[str]] = None):
                     save_to_memory_file(ask_conversation=chat_history["ask_conversation"],
                                         query=args.query,
                                         response=result)
+                    printer = Printer()
                     printer.print_in_terminal("memory_save_success")
                 return {}
                         
