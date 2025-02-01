@@ -95,7 +95,19 @@ MESSAGES = {
         "unmerged_blocks_warning": "⚠️ 发现 {{ num_blocks }} 个未合并的代码块，更改将不会被应用。请手动检查后重试。",
         "pylint_file_check_failed": "⚠️ {{ file_path }} 的 Pylint 检查失败。更改未应用。错误: {{ error_message }}",
         "merge_success": "✅ 成功合并了 {{ num_files }} 个文件中的更改 {{ num_changes }}/{{ total_blocks }} 个代码块。",
-        "no_changes_made": "⚠️ 未对任何文件进行更改。"
+        "no_changes_made": "⚠️ 未对任何文件进行更改。",
+        "unmerged_blocks_title": "Unmerged Blocks",
+        "unmerged_file_path": "File: {file_path}",
+        "unmerged_search_block": "Search Block({similarity}):",
+        "unmerged_replace_block": "Replace Block:",
+        "unmerged_blocks_total": "Total unmerged blocks: {num_blocks}"
+    },
+    "zh": {
+        "unmerged_blocks_title": "未合并的代码块",
+        "unmerged_file_path": "文件: {file_path}",
+        "unmerged_search_block": "搜索块({similarity}):",
+        "unmerged_replace_block": "替换块:",
+        "unmerged_blocks_total": "未合并的代码块总数: {num_blocks}"
     }
 }
 

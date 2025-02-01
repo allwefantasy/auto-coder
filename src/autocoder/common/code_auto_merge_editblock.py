@@ -419,18 +419,19 @@ class CodeAutoMergeEditBlock:
             self.printer.print_in_terminal("no_changes_made")
 
     def _print_unmerged_blocks(self, unmerged_blocks: List[tuple]):
-        console = Console()
-        console.print("\n[bold red]Unmerged Blocks:[/bold red]")
+        self.printer.print_in_terminal("unmerged_blocks_title", style="bold red")
         for file_path, head, update, similarity in unmerged_blocks:
-            console.print(f"\n[bold blue]File:[/bold blue] {file_path}")
-            console.print(
-                f"\n[bold green]Search Block({similarity}):[/bold green]")
+            self.printer.print_str_in_terminal(
+                f"\n{self.printer.get_message_from_key('unmerged_file_path').format(file_path=file_path)}",
+                style="bold blue"
+            )
+            self.printer.print_str_in_terminal(
+                f"\n{self.printer.get_message_from_key('unmerged_search_block').format(similarity=similarity)}",
+                style="bold green"
+            )
             syntax = Syntax(head, "python", theme="monokai", line_numbers=True)
-            console.print(Panel(syntax, expand=False))
-            console.print("\n[bold yellow]Replace Block:[/bold yellow]")
-            syntax = Syntax(update, "python", theme="monokai",
-                            line_numbers=True)
-            console.print(Panel(syntax, expand=False))
-        console.print(
-            f"\n[bold red]Total unmerged blocks: {len(unmerged_blocks)}[/bold red]"
-        )
+            self.printer.console.print(Panel(syntax, expand=False))
+            self.printer.print_in_terminal("unmerged_replace_block", style="bold yellow")
+            syntax = Syntax(update, "python", theme="monokai", line_numbers=True)
+            self.printer.console.print(Panel(syntax, expand=False))
+        self.printer.print_in_terminal("unmerged_blocks_total", num_blocks=len(unmerged_blocks), style="bold red")
