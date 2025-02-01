@@ -9,7 +9,7 @@ from autocoder.utils.queue_communicate import (
 )
 import pydantic
 import byzerllm
-from loguru import logger
+
 import hashlib
 import subprocess
 import tempfile
@@ -64,12 +64,12 @@ class CodeAutoMergeEditBlock:
             os.unlink(temp_file_path)
             if result.returncode != 0:
                 error_message = result.stdout.strip() or result.stderr.strip()
-                logger.warning(f"Pylint check failed: {error_message}")
+                self.printer.print_in_terminal("pylint_check_failed", error_message=error_message)
                 return False, error_message
             return True, ""
         except subprocess.CalledProcessError as e:
             error_message = f"Error running pylint: {str(e)}"
-            logger.error(error_message)
+            self.printer.print_in_terminal("pylint_error", error_message=error_message)
             os.unlink(temp_file_path)
             return False, error_message
 
@@ -348,7 +348,7 @@ class CodeAutoMergeEditBlock:
                 return
 
             s = f"Found {len(unmerged_blocks)} unmerged blocks, the changes will not be applied. Please review them manually then try again."
-            logger.warning(s)
+            self.printer.print_in_terminal("unmerged_blocks_warning", num_blocks=len(unmerged_blocks))
             self._print_unmerged_blocks(unmerged_blocks)
             return
 
@@ -357,9 +357,9 @@ class CodeAutoMergeEditBlock:
             if file_path.endswith(".py"):
                 pylint_passed, error_message = self.run_pylint(new_content)
                 if not pylint_passed:
-                    logger.warning(
-                        f"Pylint check failed for {file_path}. Changes not applied. Error: {error_message}"
-                    )
+                    self.printer.print_in_terminal("pylint_file_check_failed", 
+                                                  file_path=file_path, 
+                                                  error_message=error_message)
 
         if changes_made and not force_skip_git:
             try:
@@ -367,9 +367,9 @@ class CodeAutoMergeEditBlock:
                     self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}"
                 )
             except Exception as e:
-                logger.error(
-                    self.git_require_msg(
-                        source_dir=self.args.source_dir, error=str(e))
+                self.printer.print_str_in_terminal(
+                    self.git_require_msg(source_dir=self.args.source_dir, error=str(e)),
+                    style="red"
                 )
                 return
         # Now, apply the changes
@@ -408,16 +408,16 @@ class CodeAutoMergeEditBlock:
                     )
                     git_utils.print_commit_info(commit_result=commit_result)
                 except Exception as e:
-                    logger.error(
-                        self.git_require_msg(
-                            source_dir=self.args.source_dir, error=str(e)
-                        )
-                    )
-            logger.info(
-                f"Merged changes in {len(file_content_mapping.keys())} files {len(changes_to_make)}/{len(codes)} blocks."
-            )
+                self.printer.print_str_in_terminal(
+                    self.git_require_msg(source_dir=self.args.source_dir, error=str(e)),
+                    style="red"
+                )
+            self.printer.print_in_terminal("merge_success", 
+                                         num_files=len(file_content_mapping.keys()),
+                                         num_changes=len(changes_to_make),
+                                         total_blocks=len(codes))
         else:
-            logger.warning("No changes were made to any files.")
+            self.printer.print_in_terminal("no_changes_made")
 
     def _print_unmerged_blocks(self, unmerged_blocks: List[tuple]):
         console = Console()

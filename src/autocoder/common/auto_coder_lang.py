@@ -41,7 +41,13 @@ MESSAGES = {
         "code_merge_start": "Auto merge the code...",
         "code_execution_warning": "Content(send to model) is {{ content_length }} tokens (you may collect too much files), which is larger than the maximum input length {{ max_length }}",
         "quick_filter_start": "Starting filter context(quick_filter)...",
-        "normal_filter_start": "Starting filter context(normal_filter)..."
+        "normal_filter_start": "Starting filter context(normal_filter)...",
+        "pylint_check_failed": "⚠️ Pylint check failed: {{ error_message }}",
+        "pylint_error": "❌ Error running pylint: {{ error_message }}",
+        "unmerged_blocks_warning": "⚠️ Found {{ num_blocks }} unmerged blocks, the changes will not be applied. Please review them manually then try again.",
+        "pylint_file_check_failed": "⚠️ Pylint check failed for {{ file_path }}. Changes not applied. Error: {{ error_message }}",
+        "merge_success": "✅ Merged changes in {{ num_files }} files {{ num_changes }}/{{ total_blocks }} blocks.",
+        "no_changes_made": "⚠️ No changes were made to any files."
     },
     "zh": {
         "index_file_too_large": "⚠️ 文件 {{ file_path }} 过大 ({{ file_size }} > {{ max_length }}), 正在分块处理...",
@@ -83,7 +89,13 @@ MESSAGES = {
         "code_merge_start": "正在自动合并代码...",
         "code_execution_warning": "发送给模型的内容长度为 {{ content_length }} tokens（您可能收集了太多文件），超过了最大输入长度 {{ max_length }}",
         "quick_filter_start": "开始查找上下文(quick_filter)...",
-        "normal_filter_start": "开始查找上下文(normal_filter)..."
+        "normal_filter_start": "开始查找上下文(normal_filter)...",
+        "pylint_check_failed": "⚠️ Pylint 检查失败: {{ error_message }}",
+        "pylint_error": "❌ 运行 Pylint 时出错: {{ error_message }}",
+        "unmerged_blocks_warning": "⚠️ 发现 {{ num_blocks }} 个未合并的代码块，更改将不会被应用。请手动检查后重试。",
+        "pylint_file_check_failed": "⚠️ {{ file_path }} 的 Pylint 检查失败。更改未应用。错误: {{ error_message }}",
+        "merge_success": "✅ 成功合并了 {{ num_files }} 个文件中的更改 {{ num_changes }}/{{ total_blocks }} 个代码块。",
+        "no_changes_made": "⚠️ 未对任何文件进行更改。"
     }
 }
 
