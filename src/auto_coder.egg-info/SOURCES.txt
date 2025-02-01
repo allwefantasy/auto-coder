@@ -9,7 +9,6 @@ src/auto_coder.egg-info/requires.txt
 src/auto_coder.egg-info/top_level.txt
 src/autocoder/__init__.py
 src/autocoder/auto_coder.py
-src/autocoder/auto_coder_lang.py
 src/autocoder/auto_coder_rag.py
 src/autocoder/auto_coder_rag_client_mcp.py
 src/autocoder/auto_coder_rag_mcp.py
@@ -37,6 +36,7 @@ src/autocoder/common/__init__.py
 src/autocoder/common/anything2images.py
 src/autocoder/common/anything2img.py
 src/autocoder/common/audio.py
+src/autocoder/common/auto_coder_lang.py
 src/autocoder/common/buildin_tokenizer.py
 src/autocoder/common/chunk_validation.py
 src/autocoder/common/cleaner.py
@@ -63,6 +63,7 @@ src/autocoder/common/mcp_hub.py
 src/autocoder/common/mcp_server.py
 src/autocoder/common/mcp_tools.py
 src/autocoder/common/memory_manager.py
+src/autocoder/common/printer.py
 src/autocoder/common/recall_validation.py
 src/autocoder/common/screenshots.py
 src/autocoder/common/search.py

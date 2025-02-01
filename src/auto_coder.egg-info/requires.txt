@@ -29,7 +29,6 @@ real_agent
 python-docx
 docx2txt
 pdf2image
-Spire.Doc
 docx2pdf
 pyperclip
 colorama

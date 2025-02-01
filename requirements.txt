@@ -46,7 +46,7 @@ tokenizers
 
 # camelot-py
 # llama_index
-byzerllm[saas]>=0.1.151
+byzerllm[saas]>=0.1.152
 patch
 diff_match_patch
 GitPython
@@ -60,7 +60,7 @@ real_agent
 python-docx
 docx2txt
 pdf2image
-Spire.Doc
+# Spire.Doc
 docx2pdf
 pyperclip
 colorama

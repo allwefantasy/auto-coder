@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: auto-coder
-Version: 0.1.233
+Version: 0.1.235
 Summary: AutoCoder: AutoCoder
 Author: allwefantasy
 Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
@@ -39,7 +39,6 @@ Requires-Dist: real_agent
 Requires-Dist: python-docx
 Requires-Dist: docx2txt
 Requires-Dist: pdf2image
-Requires-Dist: Spire.Doc
 Requires-Dist: docx2pdf
 Requires-Dist: pyperclip
 Requires-Dist: colorama
