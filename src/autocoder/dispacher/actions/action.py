@@ -452,19 +452,3 @@ class ActionSuffixProject(BaseAction):
             with open(args.target_file, "w") as file:
                 file.write(content)
 
-
-from autocoder.common.printer import Printer
-from autocoder.common.auto_coder_lang import get_message
-
-class Action:
-    def __init__(self):
-        self.printer = Printer()
-
-    def log_info(self, key: str, **kwargs):
-        """Log information using the Printer class and auto_coder_lang messages"""
-        self.printer.print_in_terminal(key, **kwargs)
-
-    # Example usage:
-    def example_method(self):
-        # Instead of logger.info("index_update_success", file_path=file_path, md5=md5, duration=duration)
-        self.log_info("index_update_success", file_path="example.txt", md5="abc123", duration=0.5)
