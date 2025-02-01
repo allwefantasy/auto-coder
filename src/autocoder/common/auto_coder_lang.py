@@ -12,6 +12,8 @@ MESSAGES = {
         "index_related_files_fail": "⚠️ Failed to find related files for chunk {{ chunk_count }}",
         "index_threads_completed": "✅ Completed {{ completed_threads }}/{{ total_threads }} threads",
         "index_related_files_fail": "⚠️ Failed to find related files for chunk {{ chunk_count }}",
+        "index_file_removed": "🗑️ Removed non-existent file index: {{ file_path }}",
+        "index_file_saved": "💾 Saved index file, updated {{ updated_files }} files, removed {{ removed_files }} files",
         "human_as_model_instructions": (
             "You are now in Human as Model mode. The content has been copied to your clipboard.\n"
             "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
@@ -71,6 +73,8 @@ MESSAGES = {
         "index_related_files_fail": "⚠️ 无法为块 {{ chunk_count }} 找到相关文件",
         "index_threads_completed": "✅ 已完成 {{ completed_threads }}/{{ total_threads }} 个线程",
         "index_related_files_fail": "⚠️ 无法为块 {{ chunk_count }} 找到相关文件",
+        "index_file_removed": "🗑️ 已移除不存在的文件索引：{{ file_path }}",
+        "index_file_saved": "💾 已保存索引文件，更新了 {{ updated_files }} 个文件，移除了 {{ removed_files }} 个文件",
         "human_as_model_instructions": (
             "您现在处于人类作为模型模式。内容已复制到您的剪贴板。\n"
             "系统正在等待您的输入。完成后，在新行输入'EOF'提交。\n"

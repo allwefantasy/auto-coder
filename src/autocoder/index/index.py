@@ -263,22 +263,26 @@ class IndexManager:
         else:
             index_data = {}
 
-        @byzerllm.prompt()
-        def error_message(source_dir: str, file_path: str):
-            """
-            The source_dir is different from the path in index file (e.g. file_path:{{ file_path }} source_dir:{{ source_dir }}).
-            You may need to replace the prefix with the source_dir in the index file or Just delete the index file to rebuild it.
-            """
-
-        for item in index_data.keys():
-            if not item.startswith(self.source_dir):
+        # 清理已不存在的文件索引
+        keys_to_remove = []
+        for file_path in index_data:
+            if not os.path.exists(file_path):
+                keys_to_remove.append(file_path)
+        
+        # 清理路径前缀不符合当前 source_dir 的文件
+        for file_path in index_data:
+            if not os.path.abspath(file_path).startswith(os.path.abspath(self.source_dir)):
+                keys_to_remove.append(file_path)
+        
+        # 删除无效条目并记录日志
+        for key in set(keys_to_remove):
+            if key in index_data:
+                del index_data[key]
                 self.printer.print_in_terminal(
-                    "index_source_dir_mismatch",
+                    "index_file_removed", 
                     style="yellow",
-                    source_dir=self.source_dir,
-                    file_path=item
+                    file_path=key
                 )
-                break
 
         updated_sources = []
 
@@ -336,9 +340,16 @@ class IndexManager:
                     index_data[module_name] = result
                     updated_sources.append(module_name)
 
-        if updated_sources:
+        # 如果 updated_sources 或 keys_to_remove 有值，则保存索引文件
+        if updated_sources or keys_to_remove:
             with open(self.index_file, "w") as file:
                 json.dump(index_data, file, ensure_ascii=False, indent=2)
+            self.printer.print_in_terminal(
+                "index_file_saved",
+                style="green",
+                updated_files=len(updated_sources),
+                removed_files=len(keys_to_remove)
+            )
 
         return index_data
 
