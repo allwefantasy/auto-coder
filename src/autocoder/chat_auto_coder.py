@@ -2132,22 +2132,23 @@ def manage_models(params, query: str):
     if subcmd == "/list":                    
         if models_data:
             table = Table(title=printer.get_message_from_key("models_title"))
-            table.add_column("Name", style="cyan", width=30)            
-            table.add_column("Model Name", style="magenta", width=30)             
+            table.add_column("Name", style="cyan", width=50)            
+            table.add_column("Model Name", style="magenta", width=50)             
             table.add_column("Description", style="white", width=50)
+            table.add_column("API Key", style="yellow", width=20)
             for m in models_data:
-                # Check if api_key_path exists and file exists
-                api_key_path = m.get("api_key_path", "")
                 name = m.get("name", "")
+                api_key_path = m.get("api_key_path", "")
+                api_key_status = ""
                 if api_key_path:
                     api_key_file = os.path.expanduser(f"~/.auto-coder/keys/{api_key_path}")
-                    if os.path.exists(api_key_file):
-                        name = f"{name}*"                        
-            
+                    api_key_status = "✅" if os.path.exists(api_key_file) else "❌"
+                
                 table.add_row(
-                    name,                    
-                    m.get("model_name", ""),                    
-                    m.get("description", "")
+                    name,
+                    m.get("model_name", ""),
+                    m.get("description", ""),
+                    api_key_status
                 )
             console.print(table)
         else:
