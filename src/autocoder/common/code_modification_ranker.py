@@ -3,7 +3,7 @@ from typing import List,Union
 from autocoder.common import AutoCoderArgs
 from autocoder.common.types import CodeGenerateResult
 from pydantic import BaseModel
-from loguru import logger
+from autocoder.common.printer import Printer
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import traceback
 
@@ -17,6 +17,7 @@ class CodeModificationRanker:
         self.llms = self.llm.get_sub_client("generate_rerank_model") or [self.llm]
         if not isinstance(self.llms, list):
             self.llms = [self.llms]
+        self.printer = Printer()
     
     @byzerllm.prompt()
     def _rank_modifications(self, s:CodeGenerateResult) -> str:
@@ -57,10 +58,10 @@ class CodeModificationRanker:
         
         # 如果只有一个候选，直接返回
         if len(generate_result.contents) == 1:
-            logger.info("Only 1 candidate, skip ranking")
+            self.printer.print_in_terminal("ranking_skip", style="blue")
             return generate_result
             
-        logger.info(f"Start ranking {len(generate_result.contents)} candidates")
+        self.printer.print_in_terminal("ranking_start", style="blue", count=len(generate_result.contents))
         generate_times = self.args.generate_times_same_model
         total_tasks = len(self.llms) * generate_times
         try:
@@ -84,12 +85,13 @@ class CodeModificationRanker:
                         v = future.result()
                         results.append(v.rank_result)
                     except Exception as e:
-                        logger.warning(f"Ranking request failed: {str(e)}")
-                        logger.debug(traceback.format_exc())
+                        self.printer.print_in_terminal("ranking_failed_request", style="yellow", error=str(e))
+                        if self.args.debug:
+                            print(traceback.format_exc())
                         continue
                 
                 if not results:
-                    raise Exception("All ranking requests failed")
+                    raise Exception(self.printer.get_message_from_key("ranking_all_failed"))
                 
                 # Calculate scores for each candidate
                 candidate_scores = defaultdict(float)
@@ -106,15 +108,23 @@ class CodeModificationRanker:
                 elapsed = time.time() - start_time
                 # Format scores for logging
                 score_details = ", ".join([f"candidate {i}: {candidate_scores[i]:.2f}" for i in sorted_candidates])
-                logger.info(f"Ranking completed in {elapsed:.2f}s, total voters: {total_tasks}, best candidate index: {sorted_candidates[0]}, scores: {score_details}")
+                self.printer.print_in_terminal(
+                    "ranking_complete", 
+                    style="green",
+                    elapsed=f"{elapsed:.2f}",
+                    total_tasks=total_tasks,
+                    best_candidate=sorted_candidates[0],
+                    scores=score_details
+                )
                 
                 rerank_contents = [generate_result.contents[i] for i in sorted_candidates]
                 rerank_conversations = [generate_result.conversations[i] for i in sorted_candidates]
                 return CodeGenerateResult(contents=rerank_contents,conversations=rerank_conversations)
                 
         except Exception as e:
-            logger.error(f"Ranking process failed: {str(e)}")
-            logger.debug(traceback.format_exc())
+            self.printer.print_in_terminal("ranking_process_failed", style="red", error=str(e))
+            if self.args.debug:
+                print(traceback.format_exc())
             elapsed = time.time() - start_time
-            logger.warning(f"Ranking failed in {elapsed:.2f}s, using original order")
+            self.printer.print_in_terminal("ranking_failed", style="yellow", elapsed=f"{elapsed:.2f}")
             return generate_result

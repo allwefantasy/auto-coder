@@ -50,7 +50,14 @@ MESSAGES = {
         "no_changes_made": "⚠️ No changes were made to any files.",
         "files_merged": "✅ Merged {{ total }} files into the project.",
         "merge_failed": "❌ Merge file {{ path }} failed: {{ error }}",
-        "files_merged_total": "✅ Merged {{ total }} files into the project."
+        "files_merged_total": "✅ Merged {{ total }} files into the project.",
+        "ranking_skip": "Only 1 candidate, skip ranking",
+        "ranking_start": "Start ranking {{ count }} candidates",
+        "ranking_failed_request": "Ranking request failed: {{ error }}",
+        "ranking_all_failed": "All ranking requests failed",
+        "ranking_complete": "Ranking completed in {{ elapsed }}s, total voters: {{ total_tasks }}, best candidate index: {{ best_candidate }}, scores: {{ scores }}",
+        "ranking_process_failed": "Ranking process failed: {{ error }}",
+        "ranking_failed": "Ranking failed in {{ elapsed }}s, using original order"
     },
     "zh": {
         "index_file_too_large": "⚠️ 文件 {{ file_path }} 过大 ({{ file_size }} > {{ max_length }}), 正在分块处理...",
@@ -108,7 +115,14 @@ MESSAGES = {
         "upsert_file": "✅ 更新文件: {{ file_path }}",
         "files_merged": "✅ 成功合并了 {{ total }} 个文件到项目中。",
         "merge_failed": "❌ 合并文件 {{ path }} 失败: {{ error }}",
-        "files_merged_total": "✅ 合并了 {{ total }} 个文件到项目中。"
+        "files_merged_total": "✅ 合并了 {{ total }} 个文件到项目中。",
+        "ranking_skip": "只有1个候选项，跳过排序",
+        "ranking_start": "开始对 {{ count }} 个候选项进行排序",
+        "ranking_failed_request": "排序请求失败: {{ error }}",
+        "ranking_all_failed": "所有排序请求都失败",
+        "ranking_complete": "排序完成，耗时 {{ elapsed }} 秒，总投票数: {{ total_tasks }}，最佳候选索引: {{ best_candidate }}，得分: {{ scores }}",
+        "ranking_process_failed": "排序过程失败: {{ error }}",
+        "ranking_failed": "排序失败，耗时 {{ elapsed }} 秒，使用原始顺序"
     }    
 }
 
