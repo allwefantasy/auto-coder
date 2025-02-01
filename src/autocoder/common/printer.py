@@ -18,6 +18,12 @@ class Printer:
         except Exception as e:
             return get_chat_message(key)
 
+    def get_message_from_key_with_format(self, key: str, **kwargs):
+        try:
+            return format_str_jinja2(self.get_message_from_key(key), **kwargs)
+        except Exception as e:
+            return format_str_jinja2(self.get_chat_message_from_key(key), **kwargs)
+
     def print_in_terminal(self, key: str, style: str = None,**kwargs):     
         try:
             if style:
@@ -39,4 +45,5 @@ class Printer:
 
     def print_panel(self, content: str, text_options:Dict[str,Any], panel_options:Dict[str,Any]):
         panel = Panel(Text(content, **text_options), **panel_options)
-        self.console.print(panel)             
+        self.console.print(panel)    
+                 
