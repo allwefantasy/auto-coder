@@ -129,7 +129,9 @@ class CodeModificationRanker:
                     elapsed=f"{elapsed:.2f}",
                     total_tasks=total_tasks,
                     best_candidate=sorted_candidates[0],
-                    scores=score_details
+                    scores=score_details,
+                    input_tokens=input_tokens_count,
+                    output_tokens=generated_tokens_count
                 )
 
                 rerank_contents = [generate_result.contents[i]

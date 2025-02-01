@@ -55,7 +55,7 @@ MESSAGES = {
         "ranking_start": "Start ranking {{ count }} candidates",
         "ranking_failed_request": "Ranking request failed: {{ error }}",
         "ranking_all_failed": "All ranking requests failed",
-        "ranking_complete": "Ranking completed in {{ elapsed }}s, total voters: {{ total_tasks }}, best candidate index: {{ best_candidate }}, scores: {{ scores }}",
+        "ranking_complete": "Ranking completed in {{ elapsed }}s, total voters: {{ total_tasks }}, best candidate index: {{ best_candidate }}, scores: {{ scores }}, input_tokens: {{ input_tokens }}, output_tokens: {{ output_tokens }}",
         "ranking_process_failed": "Ranking process failed: {{ error }}",
         "ranking_failed": "Ranking failed in {{ elapsed }}s, using original order"
     },
@@ -120,7 +120,7 @@ MESSAGES = {
         "ranking_start": "开始对 {{ count }} 个候选项进行排序",
         "ranking_failed_request": "排序请求失败: {{ error }}",
         "ranking_all_failed": "所有排序请求都失败",
-        "ranking_complete": "排序完成，耗时 {{ elapsed }} 秒，总投票数: {{ total_tasks }}，最佳候选索引: {{ best_candidate }}，得分: {{ scores }}",
+        "ranking_complete": "排序完成，耗时 {{ elapsed }} 秒，总投票数: {{ total_tasks }}，最佳候选索引: {{ best_candidate }}，得分: {{ scores }}，输入token数: {{ input_tokens }}，输出token数: {{ output_tokens }}",
         "ranking_process_failed": "排序过程失败: {{ error }}",
         "ranking_failed": "排序失败，耗时 {{ elapsed }} 秒，使用原始顺序"
     }    
