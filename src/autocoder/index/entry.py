@@ -22,6 +22,7 @@ from autocoder.index.types import (
 from autocoder.index.filter.quick_filter import QuickFilter
 from autocoder.index.filter.normal_filter import NormalFilter
 from autocoder.index.index import IndexManager
+from loguru import logger
 
 def build_index_and_filter_files(
     llm, args: AutoCoderArgs, sources: List[SourceCode]
@@ -101,9 +102,8 @@ def build_index_and_filter_files(
             )
         
         #MARK
-        printer.print_in_terminal("phase2_building_index", style="blue")
-        quick_filter = QuickFilter(index_manager,stats,sources)
         printer.print_in_terminal("quick_filter_start", style="blue")
+        quick_filter = QuickFilter(index_manager,stats,sources)        
         final_files = quick_filter.filter(index_manager.read_index(),args.query)
         
         if not final_files:
