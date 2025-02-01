@@ -35,7 +35,11 @@ MESSAGES = {
             "Please use Web version model to get the answer.\n"
             "Or use /conf human_as_model:false to close this mode and get the answer in terminal directly."
             "Paste the answer to the input box below, use '/break' to exit, '/clear' to clear the screen, '/eof' to submit."
-        )
+        ),
+        "code_generation_start": "Auto generate the code...",
+        "code_generation_complete": "Code generation completed in {duration:.2f} seconds, input_tokens_count: {input_tokens}, generated_tokens_count: {output_tokens}",
+        "code_merge_start": "Auto merge the code...",
+        "code_execution_warning": "Content(send to model) is {content_length} tokens (you may collect too much files), which is larger than the maximum input length {max_length}"
     },
     "zh": {
         "index_file_too_large": "⚠️ 文件 {{ file_path }} 过大 ({{ file_size }} > {{ max_length }}), 正在分块处理...",
