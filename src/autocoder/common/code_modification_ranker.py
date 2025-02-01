@@ -44,12 +44,13 @@ class CodeModificationRanker:
 
         ```json
         {
-            "rank_result": [id1, id2, id3]  // id 为 edit_block 的 id,按质量从高到低排序
+            "rank_result": [id1, id2, id3] 
         }
         ```
 
-        注意：        
-        1. 只输出前面要求的 Json 格式就好，不要输出其他内容，Json 需要使用 ```json ```包裹        
+        注意：   
+        1. id 为 edit_block 的 id,按质量从高到低排序，并且 id 必须是数字        
+        2. 只输出前面要求的 Json 格式就好，不要输出其他内容，Json 需要使用 ```json ```包裹                
         '''
 
     def rank_modifications(self, generate_result: CodeGenerateResult) -> CodeGenerateResult:
@@ -142,9 +143,7 @@ class CodeModificationRanker:
 
         except Exception as e:
             self.printer.print_in_terminal(
-                "ranking_process_failed", style="red", error=str(e))
-            if self.args.debug:
-                print(traceback.format_exc())
+                "ranking_process_failed", style="red", error=str(e))            
             elapsed = time.time() - start_time
             self.printer.print_in_terminal(
                 "ranking_failed", style="yellow", elapsed=f"{elapsed:.2f}")
