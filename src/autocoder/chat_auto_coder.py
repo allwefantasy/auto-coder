@@ -1415,6 +1415,7 @@ def convert_yaml_to_config(yaml_file: str):
 def mcp(query: str):
     query = query.strip()
     mcp_server = get_mcp_server()
+    printer = Printer()
 
     # Handle remove command
     if query.startswith("/remove"):
@@ -1422,29 +1423,29 @@ def mcp(query: str):
         response = mcp_server.send_request(
             McpRemoveRequest(server_name=server_name))
         if response.error:
-            print(f"Error removing MCP server: {response.error}")
+            printer.print_in_terminal("mcp_remove_error", style="red", error=response.error)
         else:
-            print(f"Successfully removed MCP server: {response.result}")
+            printer.print_in_terminal("mcp_remove_success", style="green", result=response.result)
         return
 
     # Handle list command
     if query.startswith("/list_running"):
         response = mcp_server.send_request(McpListRunningRequest())
         if response.error:
-            print(f"Error listing running MCP servers: {response.error}")
+            printer.print_in_terminal("mcp_list_running_error", style="red", error=response.error)
         else:
-            print("Running MCP servers:")
-            print(response.result)
+            printer.print_in_terminal("mcp_list_running_title")
+            printer.print_str_in_terminal(response.result)
         return
 
     # Handle list command
     if query.startswith("/list"):
         response = mcp_server.send_request(McpListRequest())
         if response.error:
-            print(f"Error listing builtin MCP servers: {response.error}")
+            printer.print_in_terminal("mcp_list_builtin_error", style="red", error=response.error)
         else:
-            print("Available builtin MCP servers:")
-            print(response.result)
+            printer.print_in_terminal("mcp_list_builtin_title")
+            printer.print_str_in_terminal(response.result)
         return
 
     # Handle refresh command
@@ -1452,9 +1453,9 @@ def mcp(query: str):
         server_name = query.replace("/refresh", "", 1).strip()    
         response = mcp_server.send_request(McpRefreshRequest(name=server_name or None))
         if response.error:
-            print(f"Error refreshing MCP servers: {response.error}")
+            printer.print_in_terminal("mcp_refresh_error", style="red", error=response.error)
         else:
-            print("Successfully refreshed MCP servers")
+            printer.print_in_terminal("mcp_refresh_success", style="green")
         return
 
     # Handle add command
@@ -1464,9 +1465,9 @@ def mcp(query: str):
         response = mcp_server.send_request(request)
 
         if response.error:
-            print(f"Error installing MCP server: {response.error}")
+            printer.print_in_terminal("mcp_install_error", style="red", error=response.error)
         else:
-            print(f"Successfully installed MCP server: {response.result}")
+            printer.print_in_terminal("mcp_install_success", style="green", result=response.result)
         return
 
     # Handle default query
@@ -1502,13 +1503,16 @@ def mcp(query: str):
             model=args.inference_model or args.model
         )
     )
-    console = Console()
+
     if response.error:
-        console.print(Panel(
+        printer.print_panel(
             f"Error from MCP server: {response.error}",
-            title="Error",
-            border_style="red"
-        ))
+            text_options={"justify": "left"},
+            panel_options={
+                "title": printer.get_message_from_key("mcp_error_title"),
+                "border_style": "red"
+            }
+        )
     else:
         # Save conversation
         mcp_dir = os.path.join(".auto-coder", "mcp", "conversations")
@@ -1517,17 +1521,20 @@ def mcp(query: str):
         file_path = os.path.join(mcp_dir, f"{timestamp}.md")
         
         # Format response as markdown
-        markdown_content = f"# MCP Response\n\n{response.result}"
+        markdown_content = f"# {printer.get_message_from_key('mcp_response_title')}\n\n{response.result}"
         
         # Save to file
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(markdown_content)
             
         # Print with markdown formatting
-        console.print(Panel(
-            Markdown(markdown_content),            
-            border_style="green"
-        ))
+        printer.print_panel(
+            Markdown(markdown_content),
+            text_options={"justify": "left"},
+            panel_options={
+                "border_style": "green"
+            }
+        )
 
 
 def code_next(query: str):
