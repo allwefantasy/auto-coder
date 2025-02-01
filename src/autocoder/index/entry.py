@@ -303,38 +303,7 @@ def build_index_and_filter_files(
 • Total time: {total_time:.2f}s
 ====================================
 """
-    # 使用更美观的格式展示统计信息
-    console = Console()
-    
-    # 创建面板
-    summary_panel = Panel(
-        Text(
-            "=== Indexing and Filtering Summary ===\n"
-            f"• [bold cyan]Total files scanned:[/] {stats['total_files']}\n"
-            f"• [bold cyan]Files indexed:[/] {stats['indexed_files']}\n"
-            f"• [bold cyan]Files filtered:[/]\n"
-            f"  - [dim]Level 1 (query-based):[/] {stats['level1_filtered']}\n"
-            f"  - [dim]Level 2 (related files):[/] {stats['level2_filtered']}\n"
-            f"  - [dim]Relevance verified:[/] {stats.get('verified_files', 0)}\n"
-            f"• [bold green]Final files selected:[/] {stats['final_files']}\n\n"
-            "=== Time Breakdown ===\n"
-            f"• [dim]Index build:[/] {stats['timings'].get('build_index', 0):.2f}s\n"
-            f"• [dim]Quick filter:[/] {stats['timings'].get('quick_filter', 0):.2f}s\n"
-            f"• [dim]Normal filter:[/]\n"
-            f"    - [dim]Level 1 filter:[/] {stats['timings']['normal_filter'].get('level1_filter', 0):.2f}s\n"
-            f"    - [dim]Level 2 filter:[/] {stats['timings']['normal_filter'].get('level2_filter', 0):.2f}s\n"
-            f"    - [dim]Relevance check:[/] {stats['timings']['normal_filter'].get('relevance_verification', 0):.2f}s\n"
-            f"• [dim]File selection:[/] {stats['timings'].get('file_selection', 0):.2f}s\n"
-            f"• [bold]Total time:[/] {total_time:.2f}s",
-            justify="left"
-        ),
-        title="[bold]Indexing and Filtering Report[/]",
-        border_style="blue",
-        padding=(1, 2),
-        width=min(console.width - 10, 100)
-    )
-    
-    console.print(summary_panel)
+    printer.print_str_in_terminal(summary)
 
     if args.request_id and not args.skip_events:
         queue_communicate.send_event(
