@@ -85,7 +85,10 @@ MESSAGES = {
         "config_value_empty": "Error: Value cannot be empty. Use 'key:value'.",
         "config_set_success": "Set {{key}} to {{value}}",
         "config_delete_success": "Deleted configuration: {{key}}",
-        "config_not_found": "Configuration not found: {{key}}"
+        "config_not_found": "Configuration not found: {{key}}",
+        "add_files_matched": "All specified files are already in the current session or no matches found.",
+        "add_files_added_files": "Added Files",
+        "add_files_no_args": "Please provide arguments for the /add_files command."
     },
     "zh": {
         "initializing": "🚀 正在初始化系统...",
@@ -171,7 +174,10 @@ MESSAGES = {
         "config_value_empty": "错误：值不能为空。请使用 'key:value'。",
         "config_set_success": "已设置 {{key}} 为 {{value}}",
         "config_delete_success": "已删除配置：{{key}}",
-        "config_not_found": "未找到配置：{{key}}"
+        "config_not_found": "未找到配置：{{key}}",
+        "add_files_matched": "所有指定的文件都已在当前会话中或未找到匹配项。",
+        "add_files_added_files": "已添加的文件",
+        "add_files_no_args": "请为 /add_files 命令提供参数。"
     }
 }
 

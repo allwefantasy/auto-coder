@@ -1033,13 +1033,7 @@ def add_files(args: List[str]):
     console = Console()
 
     if not args:
-        console.print(
-            Panel(
-                "Please provide arguments for the /add_files command.",
-                title="Error",
-                border_style="red",
-            )
-        )
+        printer.print_in_terminal("add_files_no_args", style="red")
         return
 
     if args[0] == "/refresh":
@@ -1253,7 +1247,7 @@ def add_files(args: List[str]):
         if files_to_add:
             memory["current_files"]["files"].extend(files_to_add)
             table = Table(
-                title="Added Files",
+                title=get_message("add_files_added_files"),
                 show_header=True,
                 header_style="bold magenta",
                 show_lines=True,  # 这会在每行之间添加分割线
@@ -1268,13 +1262,7 @@ def add_files(args: List[str]):
                 )
             console.print(Panel(table, border_style="green"))
         else:
-            console.print(
-                Panel(
-                    "All specified files are already in the current session or no matches found.",
-                    title="No Files Added",
-                    border_style="yellow",
-                )
-            )
+            printer.print_in_terminal("add_files_matched", style="yellow")
 
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
