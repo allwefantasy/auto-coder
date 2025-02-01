@@ -172,6 +172,7 @@ class ActionPyScriptProject(BaseAction):
     ) -> None:
         self.args = args
         self.llm = llm
+        self.printer = Printer()
 
     def run(self) -> bool:
         args = self.args
@@ -368,6 +369,7 @@ class ActionSuffixProject(BaseAction):
         self.args = args
         self.llm = llm
         self.pp = None
+        self.printer = Printer()
 
     def run(self):
         args = self.args
