@@ -80,7 +80,12 @@ MESSAGES = {
         "models_unknown_subcmd": "Unknown subcommand: {subcmd}",
         "models_title": "All Models (内置 + models.json)",
         "models_no_models": "No models found.",
-        "models_lite_only": "The /models command is only available in lite mode"
+        "models_lite_only": "The /models command is only available in lite mode",
+        "config_invalid_format": "Error: Invalid configuration format. Use 'key:value' or '/drop key'.",
+        "config_value_empty": "Error: Value cannot be empty. Use 'key:value'.",
+        "config_set_success": "Set {key} to {value}",
+        "config_delete_success": "Deleted configuration: {key}",
+        "config_not_found": "Configuration not found: {key}"
     },
     "zh": {
         "initializing": "🚀 正在初始化系统...",
@@ -161,7 +166,12 @@ MESSAGES = {
         "models_unknown_subcmd": "未知的子命令: {subcmd}",
         "models_title": "所有模型 (内置 + models.json)",
         "models_no_models": "未找到任何模型。",
-        "models_lite_only": "/models 命令仅在 lite 模式下可用"
+        "models_lite_only": "/models 命令仅在 lite 模式下可用",
+        "config_invalid_format": "错误：配置格式无效。请使用 'key:value' 或 '/drop key'。",
+        "config_value_empty": "错误：值不能为空。请使用 'key:value'。",
+        "config_set_success": "已设置 {key} 为 {value}",
+        "config_delete_success": "已删除配置：{key}",
+        "config_not_found": "未找到配置：{key}"
     }
 }
 

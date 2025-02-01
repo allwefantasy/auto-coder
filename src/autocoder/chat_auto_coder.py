@@ -537,32 +537,31 @@ def redirect_stdout():
 
 
 def configure(conf: str, skip_print=False):
+    printer = Printer()
     parts = conf.split(None, 1)
     if len(parts) == 2 and parts[0] in ["/drop", "/unset", "/remove"]:
         key = parts[1].strip()
         if key in memory["conf"]:
             del memory["conf"][key]
             save_memory()
-            print(f"\033[92mDeleted configuration: {key}\033[0m")
+            printer.print_in_terminal("config_delete_success", style="green", key=key)
         else:
-            print(f"\033[93mConfiguration not found: {key}\033[0m")
+            printer.print_in_terminal("config_not_found", style="yellow", key=key)
     else:
         parts = conf.split(":", 1)
         if len(parts) != 2:
-            print(
-                "\033[91mError: Invalid configuration format. Use 'key:value' or '/drop key'.\033[0m"
-            )
+            printer.print_in_terminal("config_invalid_format", style="red")
             return
         key, value = parts
         key = key.strip()
         value = value.strip()
         if not value:
-            print("\033[91mError: Value cannot be empty. Use 'key:value'.\033[0m")
+            printer.print_in_terminal("config_value_empty", style="red")
             return
         memory["conf"][key] = value
         save_memory()
         if not skip_print:
-            print(f"\033[92mSet {key} to {value}\033[0m")
+            printer.print_in_terminal("config_set_success", style="green", key=key, value=value)
 
 # word_completer = WordCompleter(commands)
 
