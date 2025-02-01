@@ -2,6 +2,7 @@ import locale
 
 MESSAGES = {
     "en": {
+        "memory_save_success": "✅ Saved to your memory",
         "index_file_too_large": "⚠️ File {{ file_path }} is too large ({{ file_size }} > {{ max_length }}), splitting into chunks...",
         "index_update_success": "✅ Successfully updated index for {{ file_path }} (md5: {{ md5 }}) in {{ duration }}s",
         "index_build_error": "❌ Error building index for {{ file_path }}: {{ error }}",
@@ -60,6 +61,7 @@ MESSAGES = {
         "ranking_failed": "Ranking failed in {{ elapsed }}s, using original order"
     },
     "zh": {
+        "memory_save_success": "✅ 已保存到您的记忆中",
         "index_file_too_large": "⚠️ 文件 {{ file_path }} 过大 ({{ file_size }} > {{ max_length }}), 正在分块处理...",
         "index_update_success": "✅ 成功更新 {{ file_path }} 的索引 (md5: {{ md5 }}), 耗时 {{ duration }} 秒",
         "index_build_error": "❌ 构建 {{ file_path }} 索引时出错: {{ error }}",

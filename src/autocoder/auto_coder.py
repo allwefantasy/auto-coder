@@ -1307,7 +1307,7 @@ def main(input_args: Optional[List[str]] = None):
                     save_to_memory_file(ask_conversation=chat_history["ask_conversation"],
                                         query=args.query,
                                         response=result)
-                    print("Saved to your memory")
+                    printer.print_in_terminal("memory_save_success")
                 return {}
                         
             if "rag" in args.action:
