@@ -21,6 +21,7 @@ from typing import Union, List, Tuple
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
 from autocoder.common.code_modification_ranker import CodeModificationRanker
 from autocoder.common import files as FileUtils
+from autocoder.common.printer import Printer
 
 class PathAndCode(pydantic.BaseModel):
     path: str
@@ -39,6 +40,7 @@ class CodeAutoMergeEditBlock:
         self.args = args
         self.fence_0 = fence_0
         self.fence_1 = fence_1
+        self.printer = Printer()
 
     def run_pylint(self, code: str) -> tuple[bool, str]:
         with tempfile.NamedTemporaryFile(
