@@ -11,6 +11,8 @@ from autocoder.utils.queue_communicate import (
 import json
 from concurrent.futures import ThreadPoolExecutor
 from autocoder.common.utils_code_auto_generate import chat_with_continue
+from autocoder.common.printer import Printer
+from autocoder.common.auto_coder_lang import get_lang
 
 
 class CodeAutoGenerateEditBlock:
@@ -28,9 +30,11 @@ class CodeAutoGenerateEditBlock:
         self.fence_0 = fence_0
         self.fence_1 = fence_1
         self.generate_times_same_model = args.generate_times_same_model
+        self.printer = Printer()
         if not self.llm:
+            self.printer.print(get_lang("Please provide a valid model instance to use for code generation."))
             raise ValueError(
-                "Please provide a valid model instance to use for code generation."
+                get_lang("Please provide a valid model instance to use for code generation.")
             )
         self.llms = self.llm.get_sub_client("code_model") or [self.llm]
         if not isinstance(self.llms, list):
