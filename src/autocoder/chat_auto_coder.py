@@ -1270,16 +1270,13 @@ def add_files(args: List[str]):
 
 
 def remove_files(file_names: List[str]):
-    console = Console()
     project_root = os.getcwd()
+    printer = Printer()
 
     if "/all" in file_names:
         memory["current_files"]["files"] = []
         memory["current_files"]["current_groups"] = []
-        console.print(
-            Panel("Removed all files.",
-                  title="Files Removed", border_style="green")
-        )
+        printer.print_in_terminal("remove_files_all", style="green")
     else:
         removed_files = []
         for file in memory["current_files"]["files"]:
@@ -1292,20 +1289,23 @@ def remove_files(file_names: List[str]):
 
         if removed_files:
             table = Table(
-                title="Removed Files", show_header=True, header_style="bold magenta"
+                title=printer.get_message_from_key("remove_files_removed"), 
+                show_header=True, 
+                header_style="bold magenta"
             )
             table.add_column("File", style="green")
             for f in removed_files:
                 table.add_row(os.path.relpath(f, project_root))
-            console.print(Panel(table, border_style="green"))
-        else:
-            console.print(
-                Panel(
-                    "No files were removed.",
-                    title="No Files Removed",
-                    border_style="yellow",
-                )
+            printer.print_panel(
+                table,
+                text_options={"justify": "left"},
+                panel_options={
+                    "title": printer.get_message_from_key("files_removed"), 
+                    "border_style": "green"
+                }
             )
+        else:
+            printer.print_in_terminal("remove_files_none", style="yellow")
 
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
