@@ -419,18 +419,28 @@ class CodeAutoMergeEditBlock:
             self.printer.print_in_terminal("no_changes_made")
 
     def _print_unmerged_blocks(self, unmerged_blocks: List[tuple]):
-        console = Console()
-        console.print("\n[bold red]Unmerged Blocks:[/bold red]")
+        # Print header
+        self.printer.print_in_terminal("unmerged_blocks_header")
+        
+        # Print each block
         for file_path, head, update, similarity in unmerged_blocks:
-            console.print(f"\n[bold blue]File:[/bold blue] {file_path}")
-            console.print(
-                f"\n[bold green]Search Block({similarity}):[/bold green]")
-            syntax = Syntax(head, "python", theme="monokai", line_numbers=True)
-            console.print(Panel(syntax, expand=False))
-            console.print("\n[bold yellow]Replace Block:[/bold yellow]")
-            syntax = Syntax(update, "python", theme="monokai",
-                            line_numbers=True)
-            console.print(Panel(syntax, expand=False))
-        console.print(
-            f"\n[bold red]Total unmerged blocks: {len(unmerged_blocks)}[/bold red]"
-        )
+            self.printer.print_in_terminal("unmerged_block_file", file_path=file_path)
+            self.printer.print_in_terminal("unmerged_block_search_header", similarity=similarity)
+            
+            # Print search block
+            self.printer.print_panel(
+                content=head,
+                text_options={"style": "python", "theme": "monokai", "line_numbers": True},
+                panel_options={"expand": False}
+            )
+            
+            # Print replace block
+            self.printer.print_in_terminal("unmerged_block_replace_header")
+            self.printer.print_panel(
+                content=update,
+                text_options={"style": "python", "theme": "monokai", "line_numbers": True},
+                panel_options={"expand": False}
+            )
+        
+        # Print footer with total count
+        self.printer.print_in_terminal("unmerged_blocks_footer", num_blocks=len(unmerged_blocks))
