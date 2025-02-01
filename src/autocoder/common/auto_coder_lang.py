@@ -47,7 +47,10 @@ MESSAGES = {
         "unmerged_blocks_warning": "⚠️ Found {{ num_blocks }} unmerged blocks, the changes will not be applied. Please review them manually then try again.",
         "pylint_file_check_failed": "⚠️ Pylint check failed for {{ file_path }}. Changes not applied. Error: {{ error_message }}",
         "merge_success": "✅ Merged changes in {{ num_files }} files {{ num_changes }}/{{ total_blocks }} blocks.",
-        "no_changes_made": "⚠️ No changes were made to any files."
+        "no_changes_made": "⚠️ No changes were made to any files.",
+        "files_merged": "✅ Merged {{ total }} files into the project.",
+        "merge_failed": "❌ Merge file {{ path }} failed: {{ error }}",
+        "files_merged_total": "✅ Merged {{ total }} files into the project."
     },
     "zh": {
         "index_file_too_large": "⚠️ 文件 {{ file_path }} 过大 ({{ file_size }} > {{ max_length }}), 正在分块处理...",
@@ -106,17 +109,7 @@ MESSAGES = {
         "files_merged": "✅ 成功合并了 {{ total }} 个文件到项目中。",
         "merge_failed": "❌ 合并文件 {{ path }} 失败: {{ error }}",
         "files_merged_total": "✅ 合并了 {{ total }} 个文件到项目中。"
-    },
-    "zh": {
-        "unmerged_blocks_title": "未合并的代码块",
-        "unmerged_file_path": "文件: {file_path}",
-        "unmerged_search_block": "搜索块({similarity}):",
-        "unmerged_replace_block": "替换块:",
-        "unmerged_blocks_total": "未合并的代码块总数: {num_blocks}",
-        "git_init_required": "⚠️ auto_merge 仅适用于 git 仓库。\n\n请尝试在源目录中使用 git init：\n\n```shell\ncd {{ source_dir }}\ngit init .\n```\n\n然后再次运行 auto-coder。\n错误: {{ error }}",
-        "upsert_file": "✅ 更新文件: {{ file_path }}",
-        "files_merged": "✅ 成功合并了 {{ total }} 个文件到项目中。"
-    }
+    }    
 }
 
 
