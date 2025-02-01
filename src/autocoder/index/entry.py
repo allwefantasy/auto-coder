@@ -283,7 +283,7 @@ def build_index_and_filter_files(
 
     # Print final statistics in a more structured way
     summary = f"""
-=== Indexing and Filtering Summary ===
+=== File Stat ===    
 • Total files scanned: {stats['total_files']}
 • Files indexed: {stats['indexed_files']}
 • Files filtered:
@@ -292,7 +292,7 @@ def build_index_and_filter_files(
   - Relevance verified: {stats.get('verified_files', 0)}
 • Final files selected: {stats['final_files']}
 
-=== Time Breakdown ===
+=== Time Stat ===
 • Index build: {stats['timings'].get('build_index', 0):.2f}s
 • Quick filter: {stats['timings'].get('quick_filter', 0):.2f}s
 • Normal filter: 
@@ -301,7 +301,7 @@ def build_index_and_filter_files(
     - Relevance check: {stats['timings']["normal_filter"].get('relevance_verification', 0):.2f}s
 • File selection: {stats['timings'].get('file_selection', 0):.2f}s
 • Total time: {total_time:.2f}s
-====================================
+
 """
     printer.print_panel(
         summary,
