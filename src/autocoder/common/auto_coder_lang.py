@@ -128,3 +128,20 @@ def get_system_language():
 def get_message(key):
     lang = get_system_language()
     return MESSAGES.get(lang, MESSAGES['en']).get(key, MESSAGES['en'][key])
+
+def get_message(key):
+    messages = {
+        "git_require_msg": {
+            "en": "Auto merge only works for git repositories.\n\nTry to use git init in the source directory:\n\n```shell\ncd {source_dir}\ngit init .\n```\n\nThen try to run auto-coder again.\nError: {error}",
+            "zh": "自动合并仅适用于git仓库。\n\n请尝试在源目录中初始化git：\n\n```shell\ncd {source_dir}\ngit init .\n```\n\n然后再次运行auto-coder。\n错误：{error}"
+        },
+        "merged_files_info": {
+            "en": "Merged {total} files into the project.",
+            "zh": "已将 {total} 个文件合并到项目中。"
+        },
+        "patch_apply_failed": {
+            "en": "Failed to apply patch to {path}: {error}",
+            "zh": "无法将补丁应用到 {path}：{error}"
+        }
+    }
+    return messages.get(key, {})

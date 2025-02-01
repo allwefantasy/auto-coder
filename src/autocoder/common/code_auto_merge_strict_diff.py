@@ -5,7 +5,7 @@ from autocoder.common import AutoCoderArgs, git_utils
 from typing import List,Tuple
 import pydantic
 import byzerllm
-from loguru import logger
+from autocoder.common.printer import Printer
 import hashlib
 from pathlib import Path
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
@@ -192,7 +192,8 @@ class CodeAutoMergeStrictDiff:
                 else:
                     failed_blocks.append((full_path, content))
             except Exception as e:
-                logger.warning(f"Failed to apply patch to {full_path}: {str(e)}")
+                printer = Printer()
+                printer.print_in_terminal("patch_apply_failed", path=full_path, error=str(e))
                 failed_blocks.append((full_path, content))
                 
         return MergeCodeWithoutEffect(
@@ -212,7 +213,8 @@ class CodeAutoMergeStrictDiff:
             try:
                 git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
             except Exception as e:            
-                logger.error(self.git_require_msg(source_dir=self.args.source_dir, error=str(e)))
+                printer = Printer()
+            printer.print_in_terminal("git_require_msg", source_dir=self.args.source_dir, error=str(e))
                 return            
        
         diff_blocks = self.parse_diff_block(content)
@@ -230,7 +232,8 @@ class CodeAutoMergeStrictDiff:
             if not success:
                 raise Exception("Error applying diff to file: " + path)
                             
-        logger.info(f"Merged {total} files into the project.")
+        printer = Printer()
+        printer.print_in_terminal("merged_files_info", total=total)
         if not force_skip_git:
             commit_result = git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}")
             git_utils.print_commit_info(commit_result=commit_result)
