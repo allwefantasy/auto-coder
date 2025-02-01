@@ -1288,22 +1288,18 @@ def remove_files(file_names: List[str]):
             memory["current_files"]["files"].remove(file)
 
         if removed_files:
-            table = Table(
-                title=printer.get_message_from_key("remove_files_removed"), 
+            table = Table(                
                 show_header=True, 
                 header_style="bold magenta"
             )
             table.add_column("File", style="green")
             for f in removed_files:
                 table.add_row(os.path.relpath(f, project_root))
-            printer.print_panel(
-                table,
-                text_options={"justify": "left"},
-                panel_options={
-                    "title": printer.get_message_from_key("files_removed"), 
-                    "border_style": "green"
-                }
-            )
+
+            console = Console()
+            console.print(
+                Panel(table, border_style="green",
+                      title=printer.get_message_from_key("files_removed")))            
         else:
             printer.print_in_terminal("remove_files_none", style="yellow")
 
