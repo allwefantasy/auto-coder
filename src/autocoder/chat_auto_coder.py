@@ -2130,25 +2130,25 @@ def manage_models(params, query: str):
         return    
 
     if subcmd == "/list":                    
-            if models_data:
-                table = Table(title=printer.get_message_from_key("models_title"))
-                table.add_column("Name", style="cyan", width=30)            
-                table.add_column("Model Name", style="magenta", width=30)             
-                table.add_column("Description", style="white", width=50)
-                for m in models_data:
-                    # Check if api_key_path exists and file exists
-                    api_key_path = m.get("api_key_path", "")
-                    name = m.get("name", "")
-                    if api_key_path:
-                        api_key_file = os.path.expanduser(f"~/.auto-coder/keys/{api_key_path}")
-                        if os.path.exists(api_key_file):
-                            name = f"{name}*"                        
-                
-                    table.add_row(
-                        name,                    
-                        m.get("model_name", ""),                    
-                        m.get("description", "")
-                    )
+        if models_data:
+            table = Table(title=printer.get_message_from_key("models_title"))
+            table.add_column("Name", style="cyan", width=30)            
+            table.add_column("Model Name", style="magenta", width=30)             
+            table.add_column("Description", style="white", width=50)
+            for m in models_data:
+                # Check if api_key_path exists and file exists
+                api_key_path = m.get("api_key_path", "")
+                name = m.get("name", "")
+                if api_key_path:
+                    api_key_file = os.path.expanduser(f"~/.auto-coder/keys/{api_key_path}")
+                    if os.path.exists(api_key_file):
+                        name = f"{name}*"                        
+            
+                table.add_row(
+                    name,                    
+                    m.get("model_name", ""),                    
+                    m.get("description", "")
+                )
             console.print(table)
         else:
             printer.print_in_terminal("models_no_models", style="yellow")
