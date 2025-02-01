@@ -99,7 +99,8 @@ def build_index_and_filter_files(
                     })
                 )
             )
-
+        
+        #MARK
         quick_filter = QuickFilter(index_manager,stats,sources)
         final_files = quick_filter.filter(index_manager.read_index(),args.query)
         
