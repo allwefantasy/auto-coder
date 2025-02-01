@@ -267,12 +267,7 @@ class IndexManager:
         keys_to_remove = []
         for file_path in index_data:
             if not os.path.exists(file_path):
-                keys_to_remove.append(file_path)
-        
-        # 清理路径前缀不符合当前 source_dir 的文件
-        for file_path in index_data:
-            if not os.path.abspath(file_path).startswith(os.path.abspath(self.source_dir)):
-                keys_to_remove.append(file_path)
+                keys_to_remove.append(file_path)                
         
         # 删除无效条目并记录日志
         for key in set(keys_to_remove):
