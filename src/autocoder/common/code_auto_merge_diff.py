@@ -4,7 +4,7 @@ from autocoder.common import AutoCoderArgs,git_utils
 from typing import List,Union,Tuple
 import pydantic
 import byzerllm
-from loguru import logger
+from autocoder.common.printer import Printer
 import hashlib
 from pathlib import Path
 from itertools import groupby
@@ -361,7 +361,8 @@ other_hunks_applied = (
 class CodeAutoMergeDiff:
     def __init__(self, llm:byzerllm.ByzerLLM,args:AutoCoderArgs):
         self.llm = llm
-        self.args = args  
+        self.args = args
+        self.printer = Printer()
 
     def get_edits(self,content:str):        
         # might raise ValueError for malformed ORIG/UPD blocks
@@ -514,13 +515,13 @@ class CodeAutoMergeDiff:
             try:
                 git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
             except Exception as e:            
-                logger.error(self.git_require_msg(source_dir=self.args.source_dir,error=str(e)))
+                self.printer.print_in_terminal("git_init_required", style="red", source_dir=self.args.source_dir, error=str(e))
                 return            
        
         edits = self.get_edits(content)        
         self.apply_edits(edits)
 
-        logger.info(f"Merged {total} files into the project.")
+        self.printer.print_in_terminal("files_merged_total", total=total)
         if not force_skip_git:
             commit_result = git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}")
             git_utils.print_commit_info(commit_result=commit_result)
