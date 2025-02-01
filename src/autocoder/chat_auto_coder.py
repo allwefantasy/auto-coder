@@ -2127,10 +2127,14 @@ def manage_models(params, query: str):
 
     if subcmd == "/list":                    
         if models_data:
-            table = Table(title=printer.get_message_from_key("models_title"))
-            table.add_column("Name", style="cyan", width=30)            
-            table.add_column("Model Name", style="magenta", width=30)             
-            table.add_column("Description", style="white", width=50)
+            table = Table(
+                title=printer.get_message_from_key("models_title"),
+                expand=True,
+                show_lines=True
+            )
+            table.add_column("Name", style="cyan", width=40, no_wrap=False)
+            table.add_column("Model Name", style="magenta", width=30, overflow="fold")
+            table.add_column("Description", style="white", width=50, overflow="fold")
             for m in models_data:
                 # Check if api_key_path exists and file exists
                 api_key_path = m.get("api_key_path", "")
