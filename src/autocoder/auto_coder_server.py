@@ -662,3 +662,47 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+from autocoder.common.printer import Printer
+from rich.console import Console
+from rich.table import Table
+import os
+
+def remove_files(file_names, memory, completer):
+    printer = Printer()
+    console = Console()
+    project_root = os.getcwd()
+
+    if not file_names:
+        printer.print_in_terminal("remove_files_no_args", style="red")
+        return
+
+    if "/all" in file_names:
+        memory["current_files"]["files"] = []
+        memory["current_files"]["current_groups"] = []
+        printer.print_in_terminal("remove_files_all", style="green")
+    else:
+        removed_files = []
+        for file in memory["current_files"]["files"]:
+            if os.path.basename(file) in file_names:
+                removed_files.append(file)
+            elif file in file_names:
+                removed_files.append(file)
+        for file in removed_files:
+            memory["current_files"]["files"].remove(file)
+
+        if removed_files:
+            table = Table(
+                title=printer.get_message_from_key("remove_files_removed"), 
+                show_header=True, 
+                header_style="bold magenta"
+            )
+            table.add_column("File", style="green")
+            for f in removed_files:
+                table.add_row(os.path.relpath(f, project_root))
+            console.print(table)
+        else:
+            printer.print_in_terminal("remove_files_no_files", style="yellow")
+
+    completer.update_current_files(memory["current_files"]["files"])
+    return memory
