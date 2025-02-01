@@ -89,11 +89,7 @@ MESSAGES = {
         "config_not_found": "Configuration not found: {{key}}",
         "add_files_matched": "All specified files are already in the current session or no matches found.",
         "add_files_added_files": "Added Files",
-        "add_files_no_args": "Please provide arguments for the /add_files command.",
-        "remove_files_no_files": "No files were removed.",
-        "remove_files_all": "Removed all files.",
-        "remove_files_removed": "Removed Files",
-        "remove_files_no_args": "Please provide arguments for the /remove_files command."
+        "add_files_no_args": "Please provide arguments for the /add_files command."
     },
     "zh": {
         "initializing": "🚀 正在初始化系统...",
@@ -183,11 +179,7 @@ MESSAGES = {
         "config_not_found": "未找到配置：{{key}}",
         "add_files_matched": "所有指定的文件都已在当前会话中或未找到匹配项。",
         "add_files_added_files": "已添加的文件",
-        "add_files_no_args": "请为 /add_files 命令提供参数。",
-        "remove_files_no_files": "没有符合条件的文件被移除。",
-        "remove_files_all": "已移除所有文件。",
-        "remove_files_removed": "已移除的文件",
-        "remove_files_no_args": "请为 /remove_files 命令提供参数。"
+        "add_files_no_args": "请为 /add_files 命令提供参数。"
     }
 }
 
