@@ -1361,7 +1361,8 @@ def main(input_args: Optional[List[str]] = None):
                 save_to_memory_file(ask_conversation=chat_history["ask_conversation"],
                                     query=args.query,
                                     response=assistant_response)  
-                print("Saved to your memory")                      
+                printer = Printer()
+                printer.print_in_terminal("memory_save_success")                      
             return
 
         else:

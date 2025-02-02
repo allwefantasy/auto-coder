@@ -60,7 +60,8 @@ MESSAGES = {
         "ranking_all_failed": "All ranking requests failed",
         "ranking_complete": "Ranking completed in {{ elapsed }}s, total voters: {{ total_tasks }}, best candidate index: {{ best_candidate }}, scores: {{ scores }}, input_tokens: {{ input_tokens }}, output_tokens: {{ output_tokens }}",
         "ranking_process_failed": "Ranking process failed: {{ error }}",
-        "ranking_failed": "Ranking failed in {{ elapsed }}s, using original order"
+        "ranking_failed": "Ranking failed in {{ elapsed }}s, using original order",
+        "begin_index_source_code": "🚀 Begin to index source code in {{ source_dir }}"
     },
     "zh": {
         "memory_save_success": "✅ 已保存到您的记忆中",
@@ -108,6 +109,7 @@ MESSAGES = {
         "normal_filter_start": "开始查找上下文(normal_filter)...",
         "pylint_check_failed": "⚠️ Pylint 检查失败: {{ error_message }}",
         "pylint_error": "❌ 运行 Pylint 时出错: {{ error_message }}",
+        "begin_index_source_code": "🚀 开始为 {{ source_dir }} 中的源代码建立索引",
         "unmerged_blocks_warning": "⚠️ 发现 {{ num_blocks }} 个未合并的代码块，更改将不会被应用。请手动检查后重试。",
         "pylint_file_check_failed": "⚠️ {{ file_path }} 的 Pylint 检查失败。更改未应用。错误: {{ error_message }}",
         "merge_success": "✅ 成功合并了 {{ num_files }} 个文件中的更改 {{ num_changes }}/{{ total_blocks }} 个代码块。",

@@ -5,7 +5,7 @@ from autocoder.tsproject import TSProject
 from autocoder.pyproject import PyProject
 import tabulate
 import textwrap
-from loguru import logger
+from autocoder.common.printer import Printer
 import os
 from autocoder.utils.request_queue import (
     request_queue,
@@ -35,7 +35,8 @@ def wrap_text_in_table(data, max_width=60):
 def index_command(args, llm):
     source_dir = os.path.abspath(args.source_dir)
     args.source_dir = source_dir
-    logger.info(f"Beging to index source code in {source_dir}")
+    printer = Printer()
+    printer.print_in_terminal("begin_index_source_code", style="bold green", source_dir=source_dir)
     if args.project_type == "ts":
         pp = TSProject(args=args, llm=llm)
     elif args.project_type == "py":
