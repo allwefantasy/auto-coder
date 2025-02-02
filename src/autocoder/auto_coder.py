@@ -1342,14 +1342,7 @@ def main(input_args: Optional[List[str]] = None):
                     console=console
                 )
 
-            #MARK
-            if last_meta:
-                printer = Printer()
-                printer.print_in_terminal("code_generation_complete", 
-                    duration=last_meta.get("duration", 0),
-                    input_tokens=last_meta.get("input_tokens_count", 0),
-                    output_tokens=last_meta.get("generated_tokens_count", 0)
-                )
+            #MARK    
             
             chat_history["ask_conversation"].append(
                 {"role": "assistant", "content": assistant_response}
