@@ -54,6 +54,7 @@ import shlex
 from autocoder.utils.llms import get_single_llm
 import pkg_resources
 from autocoder.common.printer import Printer
+from byzerllm.utils.langutil import run_in_thread,run_in_thread_with_cancel
 
 class SymbolItem(BaseModel):
     symbol_name: str
@@ -1306,7 +1307,7 @@ def remove_files(file_names: List[str]):
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
 
-
+@run_in_thread()
 def ask(query: str):
     conf = memory.get("conf", {})
     yaml_config = {
@@ -1356,7 +1357,6 @@ def get_llm_friendly_package_docs(
     docs = []
 
     if not os.path.exists(llm_friendly_packages_dir):
-        print("llm_friendly_packages directory not found.")
         return docs
 
     libs = list(memory.get("libs", {}).keys())
@@ -1407,7 +1407,7 @@ def convert_yaml_to_config(yaml_file: str):
                 setattr(args, key, value)
     return args
 
-
+@run_in_thread()
 def mcp(query: str):
     query = query.strip()
     mcp_server = get_mcp_server()
@@ -1533,6 +1533,7 @@ def mcp(query: str):
         )
 
 
+@run_in_thread()
 def code_next(query: str):
     conf = memory.get("conf", {})
     yaml_config = {
@@ -1612,6 +1613,7 @@ def code_next(query: str):
     )
 
 
+@run_in_thread()
 def commit(query: str):
     conf = memory.get("conf", {})
     product_mode = conf.get("product_mode", "lite")
@@ -1693,6 +1695,7 @@ def commit(query: str):
                 os.remove(execute_file)
 
 
+@run_in_thread()
 def coding(query: str):
     console = Console()
     is_apply = query.strip().startswith("/apply")
@@ -1842,6 +1845,7 @@ def code_review(query: str) -> str:
     """
 
 
+@run_in_thread()
 def chat(query: str):
     conf = memory.get("conf", {})
 
@@ -1929,6 +1933,7 @@ def chat(query: str):
         os.remove(execute_file)
 
 
+@run_in_thread()
 def summon(query: str):
     conf = memory.get("conf", {})
     current_files = memory["current_files"]["files"]
@@ -1985,6 +1990,7 @@ def summon(query: str):
         os.remove(execute_file)
 
 
+@run_in_thread()
 def design(query: str):
 
     conf = memory.get("conf", {})
@@ -2062,6 +2068,7 @@ def voice_input():
         os.remove(execute_file)
 
 
+@run_in_thread()
 def generate_shell_command(input_text):
     conf = memory.get("conf", {})
     yaml_config = {
@@ -2234,7 +2241,7 @@ def exclude_dirs(dir_names: List[str]):
     save_memory()
     completer.refresh_files()
 
-
+@run_in_thread()
 def index_build():
     conf = memory.get("conf", {})
     yaml_config = {
@@ -2260,6 +2267,7 @@ def index_build():
         os.remove(yaml_file)
 
 
+@run_in_thread()
 def index_query(query: str):
     conf = memory.get("conf", {})
     yaml_config = {
@@ -2309,6 +2317,7 @@ def list_files():
         )
 
 
+@run_in_thread()
 def execute_shell_command(command: str):
     console = Console()
     try:
