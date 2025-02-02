@@ -5,6 +5,7 @@ from typing import Optional,Dict,Any
 from byzerllm.utils import format_str_jinja2
 from autocoder.common.auto_coder_lang import get_message
 from autocoder.chat_auto_coder_lang import get_message as get_chat_message
+
 class Printer:
     def __init__(self,console:Optional[Console]=None):
         if console is None:

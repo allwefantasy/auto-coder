@@ -1341,6 +1341,8 @@ def main(input_args: Optional[List[str]] = None):
                     request_id=args.request_id,                    
                     console=console
                 )
+
+            #MARK    
             
             chat_history["ask_conversation"].append(
                 {"role": "assistant", "content": assistant_response}
