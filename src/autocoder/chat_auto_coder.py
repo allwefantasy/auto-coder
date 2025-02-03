@@ -2168,6 +2168,11 @@ def manage_models(params, query: str):
     if "/add" in query:
         subcmd = "/add"
         query = query.replace("/add", "", 1).strip()
+
+    # alias to /add
+    if "/activate" in query:
+        subcmd = "/add"
+        query = query.replace("/activate", "", 1).strip()    
     
     if "/remove" in query:
         subcmd = "/remove"
