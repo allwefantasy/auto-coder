@@ -2,8 +2,7 @@ import locale
 
 MESSAGES = {
     "en": {
-        "new_session_started": "New session started. Previous chat history has been archived.",
-    "en": {
+        "new_session_started": "New session started. Previous chat history has been archived.",    
         "memory_save_success": "✅ Saved to your memory",
         "index_file_too_large": "⚠️ File {{ file_path }} is too large ({{ file_size }} > {{ max_length }}), splitting into chunks...",
         "index_update_success": "✅ Successfully updated index for {{ file_path }} (md5: {{ md5 }}) in {{ duration }}s",

@@ -67,17 +67,19 @@ def stream_chat_with_continue(
         )
         
         current_content = ""        
+        metadata = {}
         for res in stream_generator:
             content = res[0]
             current_content += content 
             if current_metadata is None:
                 current_metadata = res[1]            
             else:
-                current_metadata.generated_tokens_count += res[1].generated_tokens_count
-                current_metadata.input_tokens_count += res[1].input_tokens_count
+                metadata[count] = res[1]                
                 current_metadata.finish_reason = res[1].finish_reason                
             
             # Yield 当前的 StreamChatWithContinueResult
+            current_metadata.generated_tokens_count = sum([v.generated_tokens_count for _, v in metadata.items()])
+            current_metadata.input_tokens_count = sum([v.input_tokens_count for _, v in metadata.items()])            
             yield (content,current_metadata)
         
         # 更新对话历史

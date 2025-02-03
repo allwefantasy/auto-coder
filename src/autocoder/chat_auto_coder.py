@@ -2411,10 +2411,7 @@ def execute_shell_command(command: str):
         if process.returncode != 0:
             console.print(
                 f"[bold red]Command failed with return code {process.returncode}[/bold red]"
-            )
-        else:
-            console.print(
-                "[bold green]Command completed successfully[/bold green]")
+            )        
 
     except FileNotFoundError:
         console.print(
