@@ -1342,7 +1342,25 @@ def main(input_args: Optional[List[str]] = None):
                     console=console
                 )
 
-            #MARK    
+            #MARK
+            
+            # 计算耗时
+            import time
+            start_time = time.time()
+            
+            assistant_response, last_meta = stream_out(
+                    v, 
+                    request_id=args.request_id,                    
+                    console=console
+                )
+            
+            # 打印耗时和token统计
+            elapsed_time = time.time() - start_time
+            printer = Printer()
+            printer.print_in_terminal("stream_out_stats", 
+                                   elapsed_time=elapsed_time,
+                                   input_tokens=last_meta.input_tokens_count,
+                                   output_tokens=last_meta.generated_tokens_count)
             
             chat_history["ask_conversation"].append(
                 {"role": "assistant", "content": assistant_response}

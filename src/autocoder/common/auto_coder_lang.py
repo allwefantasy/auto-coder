@@ -130,7 +130,11 @@ MESSAGES = {
         "ranking_all_failed": "所有排序请求都失败",
         "ranking_complete": "排序完成，耗时 {{ elapsed }} 秒，总投票数: {{ total_tasks }}，最佳候选索引: {{ best_candidate }}，得分: {{ scores }}，输入token数: {{ input_tokens }}，输出token数: {{ output_tokens }}",
         "ranking_process_failed": "排序过程失败: {{ error }}",
-        "ranking_failed": "排序失败，耗时 {{ elapsed }} 秒，使用原始顺序"
+        "ranking_failed": "排序失败，耗时 {{ elapsed }} 秒，使用原始顺序",
+        "stream_out_stats": "耗时 {{ elapsed_time }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}"
+    },
+    "en": {
+        "stream_out_stats": "Elapsed time {{ elapsed_time }} seconds, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}"
     }    
 }
 
