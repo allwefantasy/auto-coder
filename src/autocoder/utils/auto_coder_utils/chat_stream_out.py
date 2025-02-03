@@ -41,10 +41,17 @@ def stream_out(
             for res in stream_generator:
                 last_meta = res[1]                
                 content = res[0]
+                reasoning_content = last_meta.reasoning_content
+
+                if reasoning_content == "" and content == "":
+                    continue
+            
                 assistant_response += content
+
+                display_delta = reasoning_content if reasoning_content else content
                 
                 # 处理所有行
-                parts = (current_line + content).split("\n")
+                parts = (current_line + display_delta).split("\n")
                 
                 # 最后一部分是未完成的新行
                 if len(parts) > 1:

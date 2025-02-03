@@ -57,7 +57,7 @@ def stream_chat_with_continue(
     count = 0
     temp_conversations = conversations
     current_metadata = None
-    
+    metadatas = {}
     while True:
         # 使用流式接口获取生成内容
         stream_generator = llm.stream_chat_oai(
@@ -67,19 +67,20 @@ def stream_chat_with_continue(
         )
         
         current_content = ""        
-        metadata = {}
+        
         for res in stream_generator:
             content = res[0]
             current_content += content 
             if current_metadata is None:
                 current_metadata = res[1]            
             else:
-                metadata[count] = res[1]                
-                current_metadata.finish_reason = res[1].finish_reason                
+                metadatas[count] = res[1]                
+                current_metadata.finish_reason = res[1].finish_reason     
+                current_metadata.reasoning_content = res[1].reasoning_content           
             
             # Yield 当前的 StreamChatWithContinueResult
-            current_metadata.generated_tokens_count = sum([v.generated_tokens_count for _, v in metadata.items()])
-            current_metadata.input_tokens_count = sum([v.input_tokens_count for _, v in metadata.items()])            
+            current_metadata.generated_tokens_count = sum([v.generated_tokens_count for _, v in metadatas.items()])
+            current_metadata.input_tokens_count = sum([v.input_tokens_count for _, v in metadatas.items()])            
             yield (content,current_metadata)
         
         # 更新对话历史
