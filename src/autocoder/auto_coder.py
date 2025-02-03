@@ -1112,7 +1112,7 @@ def main(input_args: Optional[List[str]] = None):
                     json.dump(chat_history, f, ensure_ascii=False)
                 console.print(
                     Panel(
-                        "New session started. Previous chat history has been archived.",
+                        get_message("new_session_started"),
                         title="Session Status",
                         expand=False,
                         border_style="green",

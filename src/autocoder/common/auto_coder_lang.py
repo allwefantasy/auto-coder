@@ -2,6 +2,8 @@ import locale
 
 MESSAGES = {
     "en": {
+        "new_session_started": "New session started. Previous chat history has been archived.",
+    "en": {
         "memory_save_success": "✅ Saved to your memory",
         "index_file_too_large": "⚠️ File {{ file_path }} is too large ({{ file_size }} > {{ max_length }}), splitting into chunks...",
         "index_update_success": "✅ Successfully updated index for {{ file_path }} (md5: {{ md5 }}) in {{ duration }}s",
@@ -66,6 +68,7 @@ MESSAGES = {
         "upsert_file": "✅ Updated file: {{ file_path }}",        
     },
     "zh": {
+        "new_session_started": "新会话已开始。之前的聊天历史已存档。",
         "memory_save_success": "✅ 已保存到您的记忆中",
         "index_file_too_large": "⚠️ 文件 {{ file_path }} 过大 ({{ file_size }} > {{ max_length }}), 正在分块处理...",
         "index_update_success": "✅ 成功更新 {{ file_path }} 的索引 (md5: {{ md5 }}), 耗时 {{ duration }} 秒",
