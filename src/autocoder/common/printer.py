@@ -46,5 +46,5 @@ class Printer:
 
     def print_panel(self, content: str, text_options:Dict[str,Any], panel_options:Dict[str,Any]):
         panel = Panel(Text(content, **text_options), **panel_options)
-        self.console.print(panel)    
-                 
+        self.console.print(panel)                  
+        

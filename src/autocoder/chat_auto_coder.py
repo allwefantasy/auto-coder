@@ -1002,6 +1002,51 @@ def load_memory():
     completer.update_current_files(memory["current_files"]["files"])
 
 
+def print_conf(content:Dict[str,Any]):        
+        """Display configuration dictionary in a Rich table format with enhanced visual styling.
+        
+        Args:
+            conf (Dict[str, Any]): Configuration dictionary to display
+        """
+        console = Console()
+        
+        # Create a styled table with rounded borders
+        table = Table(
+            show_header=True,
+            header_style="bold magenta",
+            title=get_message("conf_title"),
+            title_style="bold blue",
+            border_style="blue",
+            show_lines=True            
+        )
+        
+        # Add columns with explicit width and alignment
+        table.add_column(get_message("conf_key"), style="cyan", justify="right", width=30, no_wrap=False)
+        table.add_column(get_message("conf_value"), style="green", justify="left", width=50, no_wrap=False)
+        
+        # Sort keys for consistent display
+        for key in sorted(content.keys()):
+            value = content[key]
+            # Format value based on type
+            if isinstance(value, (dict, list)):
+                formatted_value = Text(json.dumps(value, indent=2), style="yellow")
+            elif isinstance(value, bool):
+                formatted_value = Text(str(value), style="bright_green" if value else "red")
+            elif isinstance(value, (int, float)):
+                formatted_value = Text(str(value), style="bright_cyan")
+            else:
+                formatted_value = Text(str(value), style="green")
+                
+            table.add_row(str(key), formatted_value)
+        
+        # Add padding and print with a panel
+        console.print(Panel(
+            table,
+            padding=(1, 2),
+            subtitle=f"[italic]{get_message('conf_subtitle')}[/italic]",
+            border_style="blue"
+        ))
+
 def revert():
     last_yaml_file = get_last_yaml_file("actions")
     if last_yaml_file:
@@ -2141,7 +2186,7 @@ def manage_models(params, query: str):
             )
             table.add_column("Name", style="cyan", width=40, no_wrap=False)
             table.add_column("Model Name", style="magenta", width=30, overflow="fold")
-            table.add_column("Description", style="white", width=50, overflow="fold")
+            table.add_column("Base URL", style="white", width=50, overflow="fold")
             for m in models_data:
                 # Check if api_key_path exists and file exists
                 api_key_path = m.get("api_key_path", "")
@@ -2154,7 +2199,7 @@ def manage_models(params, query: str):
                 table.add_row(
                     name,                    
                     m.get("model_name", ""),                    
-                    m.get("description", "")
+                    m.get("base_url", "")
                 )
             console.print(table)
         else:
@@ -2705,7 +2750,7 @@ def main():
             elif user_input.startswith("/conf"):
                 conf = user_input[len("/conf"):].strip()
                 if not conf:
-                    print(memory["conf"])
+                    print_conf(memory["conf"])
                 else:
                     configure(conf)
             elif user_input.startswith("/revert"):

@@ -61,7 +61,9 @@ MESSAGES = {
         "ranking_complete": "Ranking completed in {{ elapsed }}s, total voters: {{ total_tasks }}, best candidate index: {{ best_candidate }}, scores: {{ scores }}, input_tokens: {{ input_tokens }}, output_tokens: {{ output_tokens }}",
         "ranking_process_failed": "Ranking process failed: {{ error }}",
         "ranking_failed": "Ranking failed in {{ elapsed }}s, using original order",
-        "begin_index_source_code": "🚀 Begin to index source code in {{ source_dir }}"
+        "begin_index_source_code": "🚀 Begin to index source code in {{ source_dir }}",
+        "stream_out_stats": "Elapsed time {{ elapsed_time }} seconds, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}",
+        "upsert_file": "✅ Updated file: {{ file_path }}",        
     },
     "zh": {
         "memory_save_success": "✅ 已保存到您的记忆中",
@@ -132,10 +134,7 @@ MESSAGES = {
         "ranking_process_failed": "排序过程失败: {{ error }}",
         "ranking_failed": "排序失败，耗时 {{ elapsed }} 秒，使用原始顺序",
         "stream_out_stats": "耗时 {{ elapsed_time }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}"
-    },
-    "en": {
-        "stream_out_stats": "Elapsed time {{ elapsed_time }} seconds, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}"
-    }    
+    },    
 }
 
 

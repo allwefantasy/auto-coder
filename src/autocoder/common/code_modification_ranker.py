@@ -99,9 +99,7 @@ class CodeModificationRanker:
                         results.append(v.rank_result)
                     except Exception as e:
                         self.printer.print_in_terminal(
-                            "ranking_failed_request", style="yellow", error=str(e))
-                        if self.args.debug:
-                            print(traceback.format_exc())
+                            "ranking_failed_request", style="yellow", error=str(e))                        
                         continue
 
                 if not results:
