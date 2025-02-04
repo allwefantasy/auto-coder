@@ -63,8 +63,8 @@ if __name__ == "__main__":
     )
 
     # 打印最终汇总数据
-    print("\n=== 任务最终报告 ===")
-    for i, (content, meta) in enumerate(results):
-        print(f"🔭 流 #{i + 1} 最终输出:")
-        print(f"{'-' * 40}\n{content}\n")
-        print(f"元数据: {meta or '无'}\n{'-' * 40}\n")
+    # print("\n=== 任务最终报告 ===")
+    # for i, (content, meta) in enumerate(results):
+    #     print(f"🔭 流 #{i + 1} 最终输出:")
+    #     print(f"{'-' * 40}\n{content}\n")
+    #     print(f"元数据: {meta or '无'}\n{'-' * 40}\n")

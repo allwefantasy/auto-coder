@@ -44,48 +44,78 @@ class StreamController:
         return panel
 
     def prepare_layout(self, count: int):
-        """准备动态布局结构"""        
+        """准备动态布局结构"""
         self.stream_count = count
         
-        if self.layout_type == "vertical":
-            split_panels = Layout()
-            for i in range(count):
-                child_panel = self._create_stream_panel(i)
-                # 显式传递子面板尺寸
-                split_panels.split_column(child_panel, size=child_panel.size)
-        else:
-            split_panels = Layout()
-            for i in range(count):
-                child_panel = self._create_stream_panel(i)
-                # 显式传递子面板尺寸
-                split_panels.split_row(child_panel, size=child_panel.size)
+        # 创建一个主布局容器
+        streams_layout = Layout(name="streams")
         
+        # 创建所有流的布局
+        stream_layouts = []
+        for i in range(count):
+            stream_layout = Layout(name=f"stream-{i}")
+            panel = self._create_stream_panel(i)
+            stream_layout.update(panel)
+            stream_layouts.append(stream_layout)
+        
+        # 将所有流添加到主布局
+        if stream_layouts:
+            streams_layout.update(stream_layouts[0])
+            for i in range(1, len(stream_layouts)):
+                if self.layout_type == "vertical":
+                    streams_layout.split_column(stream_layouts[i])
+                elif self.layout_type == "horizontal":
+                    streams_layout.split_row(stream_layouts[i])
+                else:
+                    streams_layout.split_column(stream_layouts[i])
+        
+        # header 与 streams 布局分开
         self.layout.split(
             Layout(name="header", size=1),
-            split_panels
+            streams_layout
         )
 
     def update_panel(self, idx: int, content: str, final: bool = False):
         """线程安全的面板更新方法"""
         with self.lock:
+            # 计算安全高度
+            safe_height = min(50, self.console.height // 2 - 4)
+            
             if final:
                 new_panel = Panel(
                     Markdown(content),
                     title=f"Final Stream {idx+1}",
-                    border_style="blue"
+                    border_style="blue",
+                    height=safe_height
                 )
             else:
                 new_panel = Panel(
                     Markdown(content),
                     title=f"Stream {idx+1}",
                     border_style="green",
-                    height=min(50, self.console.height // 2 - 4)
+                    height=safe_height
                 )
 
             panel_name = f"stream-{idx}"
-            if panel_name in self.layout:
-                layout = self.layout[panel_name]
-                layout.update(new_panel)
+            streams_layout = self.layout["streams"]
+            
+            # 递归查找目标布局
+            def find_layout(layout, name):
+                if layout.name == name:
+                    return layout
+                for child in layout.children:
+                    result = find_layout(child, name)
+                    if result:
+                        return result
+                return None
+            
+            # 查找并更新目标布局
+            target_layout = find_layout(streams_layout, panel_name)
+            if target_layout:
+                target_layout.update(new_panel)
+            else:
+                import logging
+                logging.warning(f"未找到布局 {panel_name}，无法更新面板。")
 
 def stream_worker(
     idx: int,
@@ -105,7 +135,7 @@ def stream_worker(
             last_meta = meta
             
             assistant_response += content
-            display_delta = meta.get("reasoning_content", "") or content
+            display_delta = meta.reasoning_content or content
 
             parts = (current_line + display_delta).split("\n")
             if len(parts) > 1:
@@ -175,18 +205,24 @@ def multi_stream_out(
     # 确保使用统一的console实例
     if console is None:
         console = Console(force_terminal=True, color_system="auto", height=24)
+    
+    # 初始化控制器
     controller = StreamController(layout_type, console=console)
-    controller.prepare_layout(len(stream_generators))
+    stream_count = len(stream_generators)
+    controller.prepare_layout(stream_count)
     
     # 启动工作线程
-    results = [None] * len(stream_generators)
+    results = [None] * stream_count
     threads = []
-    for idx, gen in enumerate(stream_generators):
+    
+    # 创建工作线程
+    def worker_target(idx: int, gen: Generator[Tuple[str, Dict[str, Any]], None, None]):
         req_id = request_ids[idx] if request_ids and idx < len(request_ids) else None
-        t = Thread(
-            target=lambda i, g: results.__setitem__(i, stream_worker(i, g, controller, req_id)),
-            args=(idx, gen)
-        )
+        results[idx] = stream_worker(idx, gen, controller, req_id)
+    
+    # 启动所有工作线程
+    for idx, gen in enumerate(stream_generators):
+        t = Thread(target=worker_target, args=(idx, gen))
         t.start()
         threads.append(t)
     
@@ -221,7 +257,9 @@ def multi_stream_out(
         controller.running = False
         for t in threads:
             t.join()
-            
+
+    # 确保最后一次刷新
+    (console or controller.console).print(controller.layout)        
     return results
 
 def stream_out(
