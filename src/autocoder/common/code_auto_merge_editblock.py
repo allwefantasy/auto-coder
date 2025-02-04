@@ -422,11 +422,11 @@ class CodeAutoMergeEditBlock:
         self.printer.print_in_terminal("unmerged_blocks_title", style="bold red")
         for file_path, head, update, similarity in unmerged_blocks:
             self.printer.print_str_in_terminal(
-                f"\n{self.printer.get_message_from_key('unmerged_file_path').format(file_path=file_path)}",
+                f"\n{self.printer.get_message_from_key_with_format('unmerged_file_path',file_path=file_path)}",
                 style="bold blue"
             )
             self.printer.print_str_in_terminal(
-                f"\n{self.printer.get_message_from_key('unmerged_search_block').format(similarity=similarity)}",
+                f"\n{self.printer.get_message_from_key_with_format('unmerged_search_block',similarity=similarity)}",
                 style="bold green"
             )
             syntax = Syntax(head, "python", theme="monokai", line_numbers=True)

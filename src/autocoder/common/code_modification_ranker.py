@@ -66,8 +66,8 @@ class CodeModificationRanker:
 
         self.printer.print_in_terminal(
             "ranking_start", style="blue", count=len(generate_result.contents))
-        generate_times = self.args.generate_times_same_model
-        total_tasks = len(self.llms) * generate_times
+        rank_times = self.args.rank_times_same_model
+        total_tasks = len(self.llms) * rank_times
 
         query = self._rank_modifications.prompt(generate_result)
         input_tokens_count = 0
@@ -78,7 +78,7 @@ class CodeModificationRanker:
                 # Submit tasks for each model and generate_times
                 futures = []
                 for llm in self.llms:
-                    for _ in range(generate_times):
+                    for _ in range(rank_times):
                         futures.append(
                             executor.submit(
                                 chat_with_continue,

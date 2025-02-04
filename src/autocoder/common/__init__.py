@@ -350,6 +350,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     skip_events: Optional[bool] = False
     data_cells_max_num: Optional[int] = 2000
     generate_times_same_model: Optional[int] = 1
+    rank_times_same_model: Optional[int] = 1
 
     action: List[str] = []
     enable_global_memory: Optional[bool] = True  
