@@ -29,13 +29,9 @@ def slow_stream() -> Generator[Tuple[str, Dict[str, Any]], None, None]:
         ("⚠️ 检测到异常重力波动！\n", SingleOutputMeta(input_tokens_count=4, generated_tokens_count=4, reasoning_content="检测异常", finish_reason="")),
         ("✅ 系统就绪，可安全着陆\n", SingleOutputMeta(input_tokens_count=5, generated_tokens_count=5, reasoning_content="准备着陆", finish_reason=""))
     ]
-    for idx, text in enumerate(phases):
-        time.sleep(1.2)  # 较慢的间隔
-        meta = {
-            "progress": f"{20 * (idx + 1)}%",
-            "priority": "high" if idx == 3 else "normal"
-        }
-        yield text, meta
+    for (text, meta) in phases:
+        time.sleep(1.2)  # 较慢的间隔        
+        yield text, meta    
 
 
 def fast_stream() -> Generator[Tuple[str, Dict[str, Any]], None, None]:
@@ -47,9 +43,8 @@ def fast_stream() -> Generator[Tuple[str, Dict[str, Any]], None, None]:
         ("🎯 计算最优着陆坐标\n", SingleOutputMeta(input_tokens_count=9, generated_tokens_count=9, reasoning_content="计算坐标", finish_reason="")),
         ("🛬 启动自动着陆程序\n", SingleOutputMeta(input_tokens_count=10, generated_tokens_count=10, reasoning_content="启动着陆", finish_reason=""))
     ]
-    for step in steps:
-        time.sleep(0.3)  # 更快的刷新
-        meta = {"source": "nav-system", "version": "2.3.1"}
+    for (step, meta) in steps:
+        time.sleep(0.3)  # 更快的刷新        
         yield step, meta
 
 
