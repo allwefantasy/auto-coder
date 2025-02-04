@@ -23,11 +23,11 @@ from byzerllm.utils.types import SingleOutputMeta
 def slow_stream() -> Generator[Tuple[str, Dict[str, Any]], None, None]:
     """慢速流（1秒/块）"""
     phases = [
-        ("🚀 正在初始化空间站连接...\n", SingleOutputMeta()),
-        ("📡 接收深空传感器数据（进度 30%）...\n", SingleOutputMeta()),
-        ("🧪 分析外星样本化学成分...\n", SingleOutputMeta()),
-        ("⚠️ 检测到异常重力波动！\n", SingleOutputMeta()),
-        ("✅ 系统就绪，可安全着陆\n", SingleOutputMeta())
+        "🚀 正在初始化空间站连接...\n",
+        "📡 接收深空传感器数据（进度 30%）...\n",
+        "🧪 分析外星样本化学成分...\n",
+        "⚠️ 检测到异常重力波动！\n",
+        "✅ 系统就绪，可安全着陆\n"
     ]
     for idx, text in enumerate(phases):
         time.sleep(1.2)  # 较慢的间隔
