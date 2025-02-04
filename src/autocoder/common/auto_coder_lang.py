@@ -1,7 +1,7 @@
 import locale
 
 MESSAGES = {
-    "en": {
+"en": {
         "new_session_started": "New session started. Previous chat history has been archived.",    
         "memory_save_success": "✅ Saved to your memory",
         "index_file_too_large": "⚠️ File {{ file_path }} is too large ({{ file_size }} > {{ max_length }}), splitting into chunks...",
@@ -69,7 +69,8 @@ MESSAGES = {
         "unmerged_file_path": "File: {file_path}",
         "unmerged_search_block": "Search Block({similarity}):",
         "unmerged_replace_block": "Replace Block:",
-        "unmerged_blocks_total": "Total unmerged blocks: {num_blocks}", 
+        "unmerged_blocks_total": "Total unmerged blocks: {num_blocks}",
+        "git_init_required": "⚠️ auto_merge only applies to git repositories.\n\nPlease try using git init in the source directory:\n\n```shell\ncd {{ source_dir }}\ngit init.\n```\n\nThen run auto - coder again.\nError: {{ error }}"
     },
     "zh": {
         "new_session_started": "新会话已开始。之前的聊天历史已存档。",
@@ -128,7 +129,7 @@ MESSAGES = {
         "unmerged_search_block": "Search Block({similarity}):",
         "unmerged_replace_block": "Replace Block:",
         "unmerged_blocks_total": "未合并代码块数量: {num_blocks}",
-        "git_init_required": "⚠️ auto_merge 仅适用于 git 仓库。\n\n请尝试在源目录中使用 git init：\n\n```shell\ncd {{ source_dir }}\ngit init .\n```\n\n然后再次运行 auto-coder。\n错误: {{ error }}",
+        "git_init_required": "⚠️ auto_merge 仅适用于 git 仓库。\n\n请尝试在源目录中使用 git init：\n\n```shell\ncd {{ source_dir }}\ngit init.\n```\n\n然后再次运行 auto-coder。\n错误: {{ error }}",
         "upsert_file": "✅ 更新文件: {{ file_path }}",
         "files_merged": "✅ 成功合并了 {{ total }} 个文件到项目中。",
         "merge_failed": "❌ 合并文件 {{ path }} 失败: {{ error }}",
@@ -141,7 +142,7 @@ MESSAGES = {
         "ranking_process_failed": "排序过程失败: {{ error }}",
         "ranking_failed": "排序失败，耗时 {{ elapsed }} 秒，使用原始顺序",
         "stream_out_stats": "耗时 {{ elapsed_time }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}"
-    },    
+    },
 }
 
 
