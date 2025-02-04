@@ -26,14 +26,17 @@ class StreamController:
 
     def _create_stream_panel(self, idx: int) -> Layout:
         """创建流面板布局"""
-        panel = Layout(name=f"stream-{idx}", size="auto")
-        # 设置默认高度和有效性校验
+        # 计算安全高度
         current_height = self.console.height or 24  # 默认24行防止获取失败
         safe_height = max(min(50, current_height // 2 - 4), 5)  # 限制最小高度为5行
+        
+        # 使用整数设置 Layout 的 size
+        panel = Layout(name=f"stream-{idx}", size=safe_height)
+        
         panel.update(
             Panel(
-                "", 
-                title=f"Stream {idx+1}", 
+                Markdown(""),
+                title=f"Stream {idx + 1}",
                 border_style="green",
                 height=safe_height  # 确保数值有效
             )
@@ -47,11 +50,15 @@ class StreamController:
         if self.layout_type == "vertical":
             split_panels = Layout()
             for i in range(count):
-                split_panels.split_column(self._create_stream_panel(i))
+                child_panel = self._create_stream_panel(i)
+                # 显式传递子面板尺寸
+                split_panels.split_column(child_panel, size=child_panel.size)
         else:
             split_panels = Layout()
             for i in range(count):
-                split_panels.split_row(self._create_stream_panel(i))
+                child_panel = self._create_stream_panel(i)
+                # 显式传递子面板尺寸
+                split_panels.split_row(child_panel, size=child_panel.size)
         
         self.layout.split(
             Layout(name="header", size=1),
