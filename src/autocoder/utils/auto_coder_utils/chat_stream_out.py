@@ -27,14 +27,29 @@ class StreamController:
     def _create_stream_panel(self, idx: int) -> Layout:
         """创建流面板布局"""
         panel = Layout(name=f"stream-{idx}", size="auto")
-        panel.update(
-            Panel(
-                "", 
-                title=f"Stream {idx+1}", 
-                border_style="green",
-                height=min(50, self.console.height // 2 - 4)
-            )
-        )
+            try:
+                height_value = min(50, self.console.height // 2 - 4)
+                if not isinstance(height_value, int):
+                    raise TypeError("Calculated height is not an integer.")
+                panel.update(
+                    Panel(
+                        "", 
+                        title=f"Stream {idx+1}", 
+                        border_style="green",
+                        height=height_value
+                    )
+                )
+            except TypeError as e:
+                print(f"Error setting panel height: {e}")
+                # 这里可以选择设置一个默认高度，比如：
+                panel.update(
+                    Panel(
+                        "", 
+                        title=f"Stream {idx+1}", 
+                        border_style="green",
+                        height=20
+                    )
+                )
         return panel
 
     def prepare_layout(self, count: int):
@@ -65,12 +80,25 @@ class StreamController:
                     border_style="blue"
                 )
             else:
-                new_panel = Panel(
-                    Markdown(content),
-                    title=f"Stream {idx+1}",
-                    border_style="green",
-                    height=min(50, self.console.height // 2 - 4)
-                )
+                try:
+                    height_value = min(50, self.console.height // 2 - 4)
+                    if not isinstance(height_value, int):
+                        raise TypeError("Calculated height is not an integer.")
+                    new_panel = Panel(
+                        Markdown(content),
+                        title=f"Stream {idx+1}",
+                        border_style="green",
+                        height=height_value
+                    )
+                except TypeError as e:
+                    print(f"Error setting panel height: {e}")
+                    # 这里可以选择设置一个默认高度，比如：
+                    new_panel = Panel(
+                        Markdown(content),
+                        title=f"Stream {idx+1}",
+                        border_style="green",
+                        height=20
+                    )
 
             panel_name = f"stream-{idx}"
             if panel_name in self.layout:
