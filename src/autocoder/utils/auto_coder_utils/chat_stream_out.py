@@ -14,8 +14,8 @@ MAX_HISTORY_LINES = 40  # 最大保留历史行数
 LAYOUT_TYPES = Literal["vertical", "horizontal"]
 
 class StreamController:
-    def __init__(self, layout_type: LAYOUT_TYPES = "vertical"):
-        self.console = Console(force_terminal=True, color_system="auto", height=None)
+    def __init__(self, layout_type: LAYOUT_TYPES = "vertical", console: Optional[Console] = None):
+        self.console = console or Console(force_terminal=True, color_system="auto", height=24)  # 设置默认高度
         self.layout = Layout()
         self.queue = Queue()
         self.lock = Lock()
@@ -27,12 +27,15 @@ class StreamController:
     def _create_stream_panel(self, idx: int) -> Layout:
         """创建流面板布局"""
         panel = Layout(name=f"stream-{idx}", size="auto")
+        # 设置默认高度和有效性校验
+        current_height = self.console.height or 24  # 默认24行防止获取失败
+        safe_height = max(min(50, current_height // 2 - 4), 5)  # 限制最小高度为5行
         panel.update(
             Panel(
                 "", 
                 title=f"Stream {idx+1}", 
                 border_style="green",
-                height=min(50, self.console.height // 2 - 4)
+                height=safe_height  # 确保数值有效
             )
         )
         return panel
@@ -162,7 +165,10 @@ def multi_stream_out(
     Returns:
         List[Tuple[str, Dict]]: 各流的处理结果
     """
-    controller = StreamController(layout_type)
+    # 确保使用统一的console实例
+    if console is None:
+        console = Console(force_terminal=True, color_system="auto", height=24)
+    controller = StreamController(layout_type, console=console)
     controller.prepare_layout(len(stream_generators))
     
     # 启动工作线程
