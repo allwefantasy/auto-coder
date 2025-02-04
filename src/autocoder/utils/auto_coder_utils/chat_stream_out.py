@@ -11,256 +11,132 @@ from autocoder.utils.request_queue import request_queue
 import time
 
 MAX_HISTORY_LINES = 40  # 最大保留历史行数
-LAYOUT_TYPES = Literal["vertical", "horizontal"]
 
-class StreamController:
-    def __init__(self, layout_type: LAYOUT_TYPES = "vertical", console: Optional[Console] = None):
-        self.console = console or Console(force_terminal=True, color_system="auto", height=24)  # 设置默认高度
-        self.layout = Layout()
-        self.queue = Queue()
+class StreamRenderer:
+    def __init__(self, title: str):
+        self.title = title
+        self.content = ""
         self.lock = Lock()
-        self.running = True
-        self.workers = []
-        self.layout_type = layout_type
-        self.stream_count = 0
-
-    def _create_stream_panel(self, idx: int) -> Layout:
-        """创建流面板布局"""
-        # 计算安全高度
-        current_height = self.console.height or 24  # 默认24行防止获取失败
-        safe_height = max(min(50, current_height // 2 - 4), 5)  # 限制最小高度为5行
+        self.is_complete = False
         
-        # 使用整数设置 Layout 的 size
-        panel = Layout(name=f"stream-{idx}", size=safe_height)
-        
-        panel.update(
-            Panel(
-                Markdown(""),
-                title=f"Stream {idx + 1}",
-                border_style="green",
-                height=safe_height  # 确保数值有效
-            )
-        )
-        return panel
-
-    def prepare_layout(self, count: int):
-        """准备动态布局结构"""
-        self.stream_count = count
-        
-        # 创建一个主布局容器
-        streams_layout = Layout(name="streams")
-        
-        # 创建所有流的布局
-        stream_layouts = []
-        for i in range(count):
-            stream_layout = Layout(name=f"stream-{i}")
-            panel = self._create_stream_panel(i)
-            stream_layout.update(panel)
-            stream_layouts.append(stream_layout)
-        
-        # 将所有流添加到主布局
-        if stream_layouts:
-            streams_layout.update(stream_layouts[0])
-            for i in range(1, len(stream_layouts)):
-                if self.layout_type == "vertical":
-                    streams_layout.split_column(stream_layouts[i])
-                elif self.layout_type == "horizontal":
-                    streams_layout.split_row(stream_layouts[i])
-                else:
-                    streams_layout.split_column(stream_layouts[i])
-        
-        # header 与 streams 布局分开
-        self.layout.split(
-            Layout(name="header", size=1),
-            streams_layout
-        )
-
-    def update_panel(self, idx: int, content: str, final: bool = False):
-        """线程安全的面板更新方法"""
+    def update(self, content: str):
         with self.lock:
-            # 计算安全高度
-            safe_height = min(50, self.console.height // 2 - 4)
+            self.content += content
             
-            if final:
-                new_panel = Panel(
-                    Markdown(content),
-                    title=f"Final Stream {idx+1}",
-                    border_style="blue",
-                    height=safe_height
-                )
-            else:
-                new_panel = Panel(
-                    Markdown(content),
-                    title=f"Stream {idx+1}",
-                    border_style="green",
-                    height=safe_height
-                )
+    def get_content(self) -> str:
+        with self.lock:
+            return self.content
+            
+    def complete(self):
+        with self.lock:
+            self.is_complete = True
 
-            panel_name = f"stream-{idx}"
-            streams_layout = self.layout["streams"]
+class MultiStreamRenderer:
+    def __init__(self, stream_titles: List[str], layout: str = "horizontal", console: Optional[Console] = None):
+        """
+        Initialize multi-stream renderer
+        
+        Args:
+            stream_titles: List of titles for each stream
+            layout: "horizontal" or "vertical"
+            console: Rich console instance
+        """
+        if console is None:
+            console = Console(force_terminal=True, color_system="auto")
             
-            # 递归查找目标布局
-            def find_layout(layout, name):
-                if layout.name == name:
-                    return layout
-                for child in layout.children:
-                    result = find_layout(child, name)
-                    if result:
-                        return result
-                return None
+        self.console = console
+        self.layout_type = layout
+        self.streams = [StreamRenderer(title) for title in stream_titles]
+        self.layout = Layout()
+        
+        # Create named layouts for each stream
+        self.stream_layouts = [Layout(name=f"stream{i}") for i in range(len(stream_titles))]
+        
+        # Configure layout
+        if layout == "horizontal":
+            self.layout.split_row(*self.stream_layouts)
+        else:
+            self.layout.split_column(*self.stream_layouts)
             
-            # 查找并更新目标布局
-            target_layout = find_layout(streams_layout, panel_name)
-            if target_layout:
-                target_layout.update(new_panel)
-            else:
-                import logging
-                logging.warning(f"未找到布局 {panel_name}，无法更新面板。")
+    def _process_stream(self, 
+                       stream_idx: int, 
+                       stream_generator: Generator[Tuple[str, Dict[str, Any]], None, None]):
+        """Process a single stream in a separate thread"""
+        stream = self.streams[stream_idx]
+        try:
+            for content, meta in stream_generator:
+                if content:
+                    stream.update(content)
+        finally:
+            stream.complete()
 
-def stream_worker(
-    idx: int,
-    generator: Generator[Tuple[str, Dict[str, Any]], None, None],
-    controller: StreamController,
-    request_id: Optional[str] = None
-) -> Tuple[str, Optional[Dict[str, Any]]]:
-    """单个流处理工作线程"""
-    lines_buffer = []
-    current_line = ""
-    assistant_response = ""
-    last_meta = None
-    
-    try:
-        for res in generator:
-            content, meta = res
-            last_meta = meta
+    def render_streams(self, 
+                      stream_generators: List[Generator[Tuple[str, Dict[str, Any]], None, None]]) -> List[str]:
+        """
+        Render multiple streams simultaneously
+        
+        Args:
+            stream_generators: List of stream generators to render
             
-            assistant_response += content
-            display_delta = meta.reasoning_content or content
-
-            parts = (current_line + display_delta).split("\n")
-            if len(parts) > 1:
-                lines_buffer.extend(parts[:-1])
-                if len(lines_buffer) > MAX_HISTORY_LINES:
-                    del lines_buffer[0:len(lines_buffer) - MAX_HISTORY_LINES]
+        Returns:
+            List of final content from each stream
+        """
+        assert len(stream_generators) == len(self.streams), "Number of generators must match number of streams"
+        
+        # Start processing threads
+        threads = []
+        for i, generator in enumerate(stream_generators):
+            thread = Thread(target=self._process_stream, args=(i, generator))
+            thread.daemon = True
+            thread.start()
+            threads.append(thread)
             
-            current_line = parts[-1]
-            display_content = "\n".join(lines_buffer[-MAX_HISTORY_LINES:] + [current_line])
+        try:
+            with Live(self.layout, console=self.console, refresh_per_second=10) as live:
+                while any(not stream.is_complete for stream in self.streams):
+                    # Update all panels
+                    for i, stream in enumerate(self.streams):
+                        panel = Panel(
+                            Markdown(stream.get_content() or "Waiting..."),
+                            title=stream.title,
+                            border_style="green" if not stream.is_complete else "blue"
+                        )
+                        
+                        # Update appropriate layout section
+                        self.stream_layouts[i].update(panel)
+                        
+                    time.sleep(0.1)  # Prevent excessive CPU usage
+                    
+        except KeyboardInterrupt:
+            print("\nStopping streams...")
             
-            controller.queue.put((idx, display_content, False))
+        # Wait for all threads to complete
+        for thread in threads:
+            thread.join()
             
-            if request_id and request_queue:
-                request_queue.add_request(
-                    request_id,
-                    RequestValue(
-                        value=StreamValue(value=[content]),
-                        status=RequestOption.RUNNING,
-                    ),
-                )
-
-        if current_line:
-            lines_buffer.append(current_line)
-        controller.queue.put((idx, assistant_response, True))
-        return assistant_response, last_meta
-    
-    except Exception as e:
-        error_content = f"Error: {str(e)}"
-        controller.queue.put((idx, error_content, True))
-        if request_id and request_queue:
-            request_queue.add_request(
-                request_id,
-                RequestValue(
-                    value=StreamValue(value=[str(e)]), 
-                    status=RequestOption.FAILED
-                ),
-            )
-        return assistant_response, last_meta
-    finally:
-        if request_id and request_queue:
-            request_queue.add_request(
-                request_id,
-                RequestValue(
-                    value=StreamValue(value=[""]), 
-                    status=RequestOption.COMPLETED
-                ),
-            )
+        return [stream.get_content() for stream in self.streams]
 
 def multi_stream_out(
     stream_generators: List[Generator[Tuple[str, Dict[str, Any]], None, None]],
-    request_ids: Optional[List[str]] = None,
-    console: Optional[Console] = None,
-    layout_type: LAYOUT_TYPES = "vertical"
-) -> List[Tuple[str, Optional[Dict[str, Any]]]]:
+    titles: List[str],
+    layout: str = "horizontal",
+    console: Optional[Console] = None
+) -> List[str]:
     """
-    多流并行输出处理器
+    Render multiple streams with Rich
     
     Args:
-        stream_generators: 流处理器列表
-        request_ids: 对应请求ID列表
-        console: Rich Console对象
-        layout_type: 布局类型 vertical/horizontal
+        stream_generators: List of stream generators
+        titles: List of titles for each stream
+        layout: "horizontal" or "vertical"
+        console: Optional Rich console instance
         
     Returns:
-        List[Tuple[str, Dict]]: 各流的处理结果
+        List of final content from each stream
     """
-    # 确保使用统一的console实例
-    if console is None:
-        console = Console(force_terminal=True, color_system="auto", height=24)
-    
-    # 初始化控制器
-    controller = StreamController(layout_type, console=console)
-    stream_count = len(stream_generators)
-    controller.prepare_layout(stream_count)
-    
-    # 启动工作线程
-    results = [None] * stream_count
-    threads = []
-    
-    # 创建工作线程
-    def worker_target(idx: int, gen: Generator[Tuple[str, Dict[str, Any]], None, None]):
-        req_id = request_ids[idx] if request_ids and idx < len(request_ids) else None
-        results[idx] = stream_worker(idx, gen, controller, req_id)
-    
-    # 启动所有工作线程
-    for idx, gen in enumerate(stream_generators):
-        t = Thread(target=worker_target, args=(idx, gen))
-        t.start()
-        threads.append(t)
-    
-    # 主渲染线程
-    try:
-        with Live(
-            controller.layout, 
-            console=console or controller.console,
-            refresh_per_second=10,
-            screen=True
-        ) as live:
-            while controller.running:
-                updated = False
-                try:
-                    while True:  # 处理队列中的所有更新
-                        idx, content, final = controller.queue.get_nowait()
-                        controller.update_panel(idx, content, final)
-                        updated = True
-                except Empty:
-                    pass
-                
-                if updated:
-                    live.refresh()
-                
-                # 检查线程是否全部完成
-                if all(not t.is_alive() for t in threads):
-                    break
-                
-                time.sleep(0.1)
-                
-    finally:
-        controller.running = False
-        for t in threads:
-            t.join()
+    renderer = MultiStreamRenderer(titles, layout, console)
+    return renderer.render_streams(stream_generators)
 
-    # 确保最后一次刷新
-    (console or controller.console).print(controller.layout)        
-    return results
 
 def stream_out(
     stream_generator: Generator[Tuple[str, Dict[str, Any]], None, None],

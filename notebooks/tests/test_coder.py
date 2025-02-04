@@ -16,7 +16,7 @@
 # print(completion.choices[0].message.content)
 import time
 from typing import Generator, Tuple, Dict, Any
-from autocoder.utils.auto_coder_utils.chat_stream_out import multi_stream_out
+from autocoder.utils.auto_coder_utils.multi_stream_out_v2 import multi_stream_out
 from byzerllm.utils.types import SingleOutputMeta
 
 
@@ -59,7 +59,8 @@ if __name__ == "__main__":
     print("\n=== 🪐 深空着陆系统状态监控 ===")
     results = multi_stream_out(
         stream_generators=streams,
-        layout_type="vertical",  # 尝试改为 horizontal 查看横向布局
+        titles=["慢速流监控", "快速流监控"],
+        layout="horizontal",  # 尝试改为 horizontal 查看横向布局
     )
 
     # 打印最终汇总数据
