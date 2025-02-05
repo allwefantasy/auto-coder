@@ -295,6 +295,7 @@ def main(input_args: Optional[List[str]] = None):
             llm.setup_sub_client("chat_model", chat_model)
         
         if args.product_mode == "lite":
+                        
             llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_chat")
             api_key_dir = os.path.expanduser("~/.auto-coder/keys")
             api_key_file = os.path.join(api_key_dir, "api.deepseek.com")
