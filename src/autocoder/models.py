@@ -73,7 +73,7 @@ def load_models() -> List[Dict]:
             api_key_file = os.path.join(api_key_dir, model["api_key_path"])
             if os.path.exists(api_key_file):
                 with open(api_key_file, "r") as f:
-                    model["api_key"] = f.read()
+                    model["api_key"] = f.read()                   
     return target_models
 
 def save_models(models: List[Dict]) -> None:
@@ -135,9 +135,8 @@ def update_model_with_api_key(name: str, api_key: str) -> Dict:
                     
     if not found_model:
         return None
-        
-    # 从 base_url 中提取并处理 host
-    api_key_path = process_api_key_path(found_model["base_url"])
+            
+    api_key_path = name
     if api_key_path:
         found_model["api_key_path"] = api_key_path
         

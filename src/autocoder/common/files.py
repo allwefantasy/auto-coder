@@ -1,4 +1,5 @@
 from autocoder.common.auto_coder_lang import get_message_with_format
+from typing import List, Dict, Union
 
 def read_file(file_path):
     """Read a file with automatic encoding detection.
