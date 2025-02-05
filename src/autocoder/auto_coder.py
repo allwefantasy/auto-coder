@@ -295,8 +295,8 @@ def main(input_args: Optional[List[str]] = None):
             llm.setup_sub_client("chat_model", chat_model)
         
         if args.product_mode == "lite":
-                        
-            llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_chat")
+            default_model = args.model or "deepseek_chat"            
+            llm = byzerllm.SimpleByzerLLM(default_model_name=default_model)
             api_key_dir = os.path.expanduser("~/.auto-coder/keys")
             api_key_file = os.path.join(api_key_dir, "api.deepseek.com")
             
@@ -309,7 +309,7 @@ def main(input_args: Optional[List[str]] = None):
             llm.deploy(
                 model_path="",
                 pretrained_model_type="saas/openai",
-                udf_name="deepseek_chat",
+                udf_name=default_model,
                 infer_params={
                     "saas.base_url": "https://api.deepseek.com/v1",
                     "saas.api_key": api_key,
@@ -318,11 +318,11 @@ def main(input_args: Optional[List[str]] = None):
                 }
             )
             
-            code_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_chat")
+            code_llm = byzerllm.SimpleByzerLLM(default_model)
             code_llm.deploy(
                 model_path="",
                 pretrained_model_type="saas/openai",
-                udf_name="deepseek_chat",
+                udf_name=default_model,
                 infer_params={
                     "saas.base_url": "https://api.deepseek.com/v1",
                     "saas.api_key": api_key,
