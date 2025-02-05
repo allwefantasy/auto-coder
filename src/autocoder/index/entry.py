@@ -100,13 +100,12 @@ def build_index_and_filter_files(
                     })
                 )
             )
-        
-        #MARK
+                
         printer.print_in_terminal("quick_filter_start", style="blue")
         quick_filter = QuickFilter(index_manager,stats,sources)        
         final_files = quick_filter.filter(index_manager.read_index(),args.query)
         
-        if not final_files:
+        if not args.skip_filter_index and not index_manager.llm.get_sub_client("index_filter_model"):
             printer.print_in_terminal("normal_filter_start", style="blue")
             normal_filter = NormalFilter(index_manager,stats,sources)
             final_files = normal_filter.filter(index_manager.read_index(),args.query)
