@@ -31,19 +31,26 @@ def read_file(file_path):
 
 
 
-def save_file(file_path: str, content: str) -> None:
+def save_file(file_path: str, content: Union[str, List[str]]) -> None:
     """Save content to a file using UTF-8 encoding.
     
     Args:
         file_path (str): Path to the file to write
-        content (str): Content to write to the file
+        content (Union[str, List[str]]): Content to write to the file. 
+            Can be a string or list of strings (will be joined with newlines)
         
     Raises:
         IOError: If the file cannot be written
+        TypeError: If content is neither str nor List[str]
     """
     try:
         with open(file_path, 'w', encoding='utf-8') as f:
-            f.write(content)
+            if isinstance(content, str):
+                f.write(content)
+            elif isinstance(content, list):
+                f.write('\n'.join(content))
+            else:
+                raise TypeError("Content must be either str or List[str]")
     except IOError as e:
         raise IOError(get_message_with_format("file_write_error",
             file_path=file_path,
