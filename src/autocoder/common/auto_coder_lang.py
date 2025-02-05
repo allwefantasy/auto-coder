@@ -1,4 +1,5 @@
 import locale
+from byzerllm.utils import format_str_jinja2
 
 MESSAGES = {
 "en": {
@@ -156,3 +157,6 @@ def get_system_language():
 def get_message(key):
     lang = get_system_language()
     return MESSAGES.get(lang, MESSAGES['en']).get(key, MESSAGES['en'][key])
+
+def get_message_with_format(msg_key: str, **kwargs):
+    return format_str_jinja2(get_message(msg_key), **kwargs)
