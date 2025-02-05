@@ -278,8 +278,11 @@ def main(input_args: Optional[List[str]] = None):
 
             llm = byzerllm.ByzerLLM(verbose=args.print_request)
 
+            # code_model,index_filter_model,generate_rerank_model,chat_model
+            # 这四个模型如果用户没有设置，就会使用默认的
+
             code_model = byzerllm.ByzerLLM()
-            code_model.setup_default_model_name("deepseek_chat")
+            code_model.setup_default_model_name(args.model)
             llm.setup_sub_client("code_model", code_model)
 
             index_filter_model = byzerllm.ByzerLLM()
@@ -295,7 +298,7 @@ def main(input_args: Optional[List[str]] = None):
             llm.setup_sub_client("chat_model", chat_model)
         
         if args.product_mode == "lite":
-            default_model = args.model or "deepseek_chat"            
+            default_model = args.model
             llm = byzerllm.SimpleByzerLLM(default_model_name=default_model)
             api_key_dir = os.path.expanduser("~/.auto-coder/keys")
             api_key_file = os.path.join(api_key_dir, "api.deepseek.com")
@@ -369,7 +372,8 @@ def main(input_args: Optional[List[str]] = None):
                     "saas.is_reasoning": True
                 }
             )
-
+            
+            # 这四个模型如果用户没有设置，就会使用默认的
             llm.setup_sub_client("code_model", code_llm)
             llm.setup_sub_client("chat_model", chat_llm)
             llm.setup_sub_client("generate_rerank_model", generate_rerank_llm)
