@@ -692,6 +692,23 @@ def main(input_args: Optional[List[str]] = None):
                 )
                 llm.setup_sub_client("vl_model", vl_model)
 
+            if args.index_model:   
+                model_name = args.index_model.strip()
+                model_info = models_module.get_model_by_name(model_name)                
+                index_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
+                index_model.deploy(
+                    model_path="",
+                    pretrained_model_type="saas/openai",
+                    udf_name=model_name,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
+                    }
+                )
+                llm.setup_sub_client("index_model", index_model)    
+
             if args.sd_model:
                 model_name = args.sd_model.strip()
                 model_info = models_module.get_model_by_name(model_name)

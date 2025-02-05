@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from typing import List,Dict,Type,Optional
+from typing import List,Dict,Union,Optional
 from autocoder.common import SourceCode
 import byzerllm
 from bs4 import BeautifulSoup
@@ -10,7 +10,7 @@ from pathlib import Path
 from autocoder.common import files as FileUtils
 
 class HttpDoc:
-    def __init__(self, args, llm: byzerllm.ByzerLLM,urls:Optional[List[str]]=None):
+    def __init__(self, args, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],urls:Optional[List[str]]=None):
         self.args = args
         urls_from_args = self.args.urls
         if urls_from_args:
