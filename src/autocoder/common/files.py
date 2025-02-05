@@ -24,3 +24,20 @@ def read_file(file_path):
             continue
             
     raise ValueError(f"无法解码文件: {file_path}。尝试的编码: {', '.join(encodings)}")
+
+
+def save_file(file_path: str, content: str) -> None:
+    """Save content to a file using UTF-8 encoding.
+    
+    Args:
+        file_path (str): Path to the file to write
+        content (str): Content to write to the file
+        
+    Raises:
+        IOError: If the file cannot be written
+    """
+    try:
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+    except IOError as e:
+        raise IOError(f"无法写入文件: {file_path}. 错误: {str(e)}")
