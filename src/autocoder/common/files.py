@@ -1,3 +1,5 @@
+from autocoder.common.auto_coder_lang import get_message_with_format
+
 def read_file(file_path):
     """Read a file with automatic encoding detection.
     
@@ -23,8 +25,12 @@ def read_file(file_path):
         except UnicodeDecodeError:
             continue
             
-    raise ValueError(f"无法解码文件: {file_path}。尝试的编码: {', '.join(encodings)}")
+    raise ValueError(get_message_with_format("file_decode_error", 
+        file_path=file_path, 
+        encodings=", ".join(encodings)))
 
+
+from autocoder.common.auto_coder_lang import get_message_with_format
 
 def save_file(file_path: str, content: str) -> None:
     """Save content to a file using UTF-8 encoding.
@@ -40,4 +46,6 @@ def save_file(file_path: str, content: str) -> None:
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(content)
     except IOError as e:
-        raise IOError(f"无法写入文件: {file_path}. 错误: {str(e)}")
+        raise IOError(get_message_with_format("file_write_error",
+            file_path=file_path,
+            error=str(e)))
