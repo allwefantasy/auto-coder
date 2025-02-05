@@ -8,6 +8,13 @@ from loguru import logger
 import os
 from pathlib import Path
 from autocoder.common import files as FileUtils
+import traceback
+from autocoder.rag.loaders import (
+    extract_text_from_pdf,
+    extract_text_from_docx,
+    extract_text_from_ppt,
+    extract_text_from_excel
+)
 
 class HttpDoc:
     def __init__(self, args, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],urls:Optional[List[str]]=None):
@@ -55,92 +62,56 @@ class HttpDoc:
         except UnicodeDecodeError:
             return True   
 
-    def get_file_extractor(self):        
-        try:
-            from llama_index.core.readers.base import BaseReader
-            from fsspec import AbstractFileSystem
-            from llama_index.core.schema import Document
-            from llama_index.core.readers.file.base import get_default_fs
-            from llama_index.readers.file import (
-                DocxReader,
-                EpubReader,
-                HWPReader,
-                ImageReader,
-                IPYNBReader,
-                MarkdownReader,
-                MboxReader,
-                PandasCSVReader,
-                PDFReader,
-                PptxReader,
-                VideoAudioReader,
-            )  # pants: no-infer-dep                                
-        except ImportError as e:
-            raise ImportError(f"`llama-index-readers-file` package not found. {e}")
 
-        default_file_reader_cls: Dict[str, BaseReader] = {
-            ".hwp": HWPReader(),
-            ".pdf": PDFReader(return_full_document=True),
-            ".docx": DocxReader(),
-            ".pptx": PptxReader(),
-            ".ppt": PptxReader(),
-            ".pptm": PptxReader(),
-            # ".jpg": ImageReader(),
-            # ".png": ImageReader(),
-            # ".jpeg": ImageReader(),
-            # ".mp3": VideoAudioReader(),
-            # ".mp4": VideoAudioReader(),
-            ".xlsx": PandasCSVReader(),
-            ".xls": PandasCSVReader(),
-            ".csv": PandasCSVReader(),
-            ".epub": EpubReader(),            
-            ".mbox": MboxReader(),
-            ".ipynb": IPYNBReader(),            
         }
         return default_file_reader_cls
 
+    def _process_local_file(self, file_path: str) -> List[SourceCode]:
+        """统一处理本地文件，返回标准化的 SourceCode 列表"""
+        results = []
+        try:
+            ext = os.path.splitext(file_path)[1].lower()
+            
+            if self.is_binary_file(file_path):
+                logger.warning(f"Skipping binary file: {file_path}")
+                return results
+
+            # 分发到不同 loader
+            if ext == '.pdf':
+                content = extract_text_from_pdf(file_path)
+                results.append(SourceCode(file_path, content))
+            elif ext == '.docx':
+                content = extract_text_from_docx(file_path)
+                results.append(SourceCode(file_path, content))
+            elif ext in ('.pptx', '.ppt'):
+                for slide_id, slide_content in extract_text_from_ppt(file_path):
+                    results.append(SourceCode(f"{file_path}#{slide_id}", slide_content))
+            elif ext in ('.xlsx', '.xls'):
+                for sheet_name, sheet_content in extract_text_from_excel(file_path):
+                    results.append(SourceCode(f"{file_path}#{sheet_name}", sheet_content))
+            else:
+                content = FileUtils.read_file(file_path)
+                results.append(SourceCode(file_path, content))
+
+        except Exception as e:
+            logger.error(f"Failed to process {file_path}: {str(e)}")
+            traceback.print_exc()
+        
+        return results
+
     def crawl_urls(self) -> List[SourceCode]:
-        source_codes = []        
+        source_codes = []
         for url in self.urls:
-            if not url.startswith("http://") and not url.startswith("https://"):
+            if not url.startswith(("http://", "https://")):
                 try:
-                 from llama_index.core import SimpleDirectoryReader
-                 exts = self.get_file_extractor()
-                 documents = []   
-
-                 def process_single_file(file_path: str,skip_binary_file_test:bool=False): 
-                    temp_documents = []
-                    ext = os.path.splitext(file_path)[1].lower()                    
-                    if  not skip_binary_file_test and self.is_binary_file(file_path):
-                        logger.warning(f"Skipping binary file: {file_path}")
-                        return temp_documents
-                    
-                    if ext not in exts.keys():                                                
-                        main_content = FileUtils.read_file(file_path)
-                        source_code = SourceCode(module_name=file_path, source_code=main_content)
-                        source_codes.append(source_code)                                   
+                    if os.path.isdir(url):
+                        for root, _, files in os.walk(url, followlinks=True):
+                            for file in files:
+                                source_codes.extend(self._process_local_file(os.path.join(root, file)))
                     else:
-                        temp_documents = SimpleDirectoryReader(input_files=[url],file_extractor=exts).load_data()  
-                    return temp_documents                                    
-
-                 if os.path.isdir(url):
-                    for root, dirs, files in os.walk(url,followlinks=True):
-                        dirs[:] = [d for d in dirs if d not in ['.git',"node_modules"]]  # Exclude .git directory
-                        for file in files:
-                            file_path = os.path.join(root, file)                            
-                            documents.extend(process_single_file(file_path))
-                    
-                 else:                    
-                    documents.extend(process_single_file(url,skip_binary_file_test=True))
-                    
-                 for document in documents:
-                    source_code = SourceCode(module_name=document.metadata["file_path"], source_code=document.get_content())
-                    source_codes.append(source_code)
-
-                except ImportError as e:
-                    logger.warning(f"Failed to import llama_index. Please install it using 'pip install llama_index' {e}")
-                    main_content = FileUtils.read_file(url)
-                    source_code = SourceCode(module_name=url, source_code=main_content)
-                    source_codes.append(source_code)                                                
+                        source_codes.extend(self._process_local_file(url))
+                except Exception as e:
+                    logger.error(f"Error accessing path {url}: {str(e)}")
             else:
                 if self.args.urls_use_model:
                     from autocoder.common.screenshots import gen_screenshots
