@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Tuple, Optional
+from typing import Generator, List, Dict, Any, Tuple, Optional
 import os
 import yaml
 import byzerllm
@@ -9,15 +9,6 @@ from rich.panel import Panel
 from prompt_toolkit import prompt
 from prompt_toolkit.formatted_text import FormattedText
 from autocoder.common.printer import Printer
-
-
-class ReviewResult(pydantic.BaseModel):
-    """代码审查的结果"""
-    issues: List[str] = pydantic.Field(description="发现的问题列表")
-    suggestions: List[str] = pydantic.Field(description="改进建议列表")
-    severity: str = pydantic.Field(description="严重程度：low, medium, high")
-    affected_files: List[str] = pydantic.Field(description="受影响的文件列表")
-    summary: str = pydantic.Field(description="总体评价")
 
 
 def load_yaml_config(yaml_file: str) -> Dict:
@@ -52,7 +43,7 @@ class AutoReviewCommit:
         self.skip_diff = skip_diff
 
     @byzerllm.prompt()
-    def review(self, querie_with_urls_and_diffs: List[Tuple[str, List[str], str]]) -> str:
+    def review(self, querie_with_urls_and_diffs: List[Tuple[str, List[str], str]]) -> Generator[str,None,None]:
         """
         对提交的代码变更进行审查，提供改进建议。
 
@@ -106,21 +97,7 @@ class AutoReviewCommit:
         3. severity: 问题的严重程度(low/medium/high)
         4. affected_files: 受影响的文件列表
         5. summary: 总体评价
-
-        示例返回：
-        {
-            "issues": [
-                "函数 process_data 缺少参数类型注解",
-                "未对用户输入进行验证"
-            ],
-            "suggestions": [
-                "添加 Python 类型提示以提高代码可维护性",
-                "在处理用户输入前增加参数验证"
-            ],
-            "severity": "medium",
-            "affected_files": ["src/process.py"],
-            "summary": "代码整体结构清晰，但需要加强类型检查和输入验证"
-        }
+       
 
         注意：
         1. 评审意见应该具体且可操作，而不是泛泛而谈
@@ -150,9 +127,9 @@ class AutoReviewCommit:
 
         # 获取最新的action文件列表
         action_files = sorted(action_files, key=get_seq)
-        action_files.reverse()
+        action_files.reverse()        
 
-        action_file = action_files[-1]
+        action_file = action_files[0]
 
         querie_with_urls_and_diffs = []
         repo = git.Repo(self.project_dir)
@@ -198,7 +175,7 @@ class AutoReviewCommit:
         return querie_with_urls_and_diffs
     
 
-    def review_commit(self) -> Optional[ReviewResult]:
+    def review_commit(self) -> Generator[str,None,None]:
         """
         审查最新的代码提交
 
@@ -214,8 +191,7 @@ class AutoReviewCommit:
 
         # 调用LLM进行代码审查
         try:
-            result = self.review(commits)
-            return ReviewResult(**result)
+            return self.review.with_llm(self.llm).run(commits)            
         except Exception as e:
             printer = Printer()
             printer.print_in_terminal("code_review_error", style="red", error=str(e))
