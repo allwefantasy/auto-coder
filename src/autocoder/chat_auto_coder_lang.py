@@ -241,3 +241,25 @@ def get_message(key):
 
 def get_message_with_format(msg_key: str, **kwargs):
     return format_str_jinja2(get_message(msg_key), **kwargs)
+
+def get_message_with_format(message_key: str, params: dict = None) -> str:
+    """
+    根据 message_key 获取格式化后的消息
+    """
+    messages = {
+        "model_not_found": {
+            "zh": "模型 {model_name} 未找到",
+            "en": "Model {model_name} not found"
+        }
+    }
+    
+    if message_key not in messages:
+        return f"Unknown message key: {message_key}"
+        
+    # 默认使用英文
+    msg_template = messages[message_key].get("en", "")
+    
+    # 如果有参数，进行格式化
+    if params:
+        return msg_template.format(**params)
+    return msg_template
