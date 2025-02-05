@@ -280,6 +280,8 @@ def main(input_args: Optional[List[str]] = None):
 
             # code_model,index_filter_model,generate_rerank_model,chat_model
             # 这四个模型如果用户没有设置，就会使用默认的
+            # 如果用户随便填写 deepseek 官方key,就会导致 Authentic(No User) 的错误
+            # 或者 Insuffient Balance 之类的错误
 
             code_model = byzerllm.ByzerLLM()
             code_model.setup_default_model_name(args.model)
