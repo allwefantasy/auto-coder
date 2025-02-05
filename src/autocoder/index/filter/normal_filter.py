@@ -125,7 +125,7 @@ class NormalFilter():
                         if source.module_name == file.file_path:
                             file_content = source.source_code
                             try:
-                                result = self.index_manager.verify_file_relevance.with_llm(llm).with_return_type(VerifyFileRelevance).run(
+                                result = self.index_manager.verify_file_relevance.with_llm(self.index_manager.llm).with_return_type(VerifyFileRelevance).run(
                                     file_content=file_content,
                                     query=self.args.query
                                 )
