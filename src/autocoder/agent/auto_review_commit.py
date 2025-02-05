@@ -175,7 +175,7 @@ class AutoReviewCommit:
         return querie_with_urls_and_diffs
     
 
-    def review_commit(self, query: Optional[str] = None) -> Generator[str,None,None]:
+    def review_commit(self,query: str, conversations: List[Dict]) -> Generator[str,None,None]:
         """
         审查最新的代码提交
 
@@ -193,11 +193,12 @@ class AutoReviewCommit:
         try:
             # 获取 prompt 内容            
             query = self.review.prompt(commits, query)
-            # 构造对话消息
-            conversations = [{"role": "user", "content": query}]
+            new_conversations = conversations.copy()[0:-1]
+            new_conversations.append({"role": "user", "content": query})
+            # 构造对话消息            
             v = stream_chat_with_continue(
                     llm=self.llm,
-                    conversations=conversations,
+                    conversations=new_conversations,
                     llm_config={}
             )
             return v

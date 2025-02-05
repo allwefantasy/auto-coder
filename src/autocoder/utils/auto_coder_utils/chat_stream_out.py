@@ -234,6 +234,8 @@ def stream_out(
             title="Error",
             border_style="red"
         ))
+        # import traceback
+        # traceback.print_exc()
         
         if request_id and request_queue:
             request_queue.add_request(
