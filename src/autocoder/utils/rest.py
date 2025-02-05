@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 from typing import List,Dict,Union,Optional
 from autocoder.common import SourceCode
 import byzerllm
-from bs4 import BeautifulSoup
 from loguru import logger
 import os
 from pathlib import Path
@@ -48,50 +47,30 @@ class HttpDoc:
         {{ html }}
                 
         输出的内容请以 "<MARKER></MARKER> 标签对包裹。
-        """
-
-    def is_binary_file(self,filepath):            
-        try:
-            with open(filepath, 'rb') as file:
-                chunk = file.read(1024*8)  # Read first 1024 bytes
-                if b'\x00' in chunk:  # Binary files often contain null bytes
-                    return True
-                # Attempt to decode as UTF-8 (or any encoding you expect your text files to be in)
-                chunk.decode('utf-8')
-                return False
-        except UnicodeDecodeError:
-            return True   
-
-
-        }
-        return default_file_reader_cls
+        """    
 
     def _process_local_file(self, file_path: str) -> List[SourceCode]:
         """统一处理本地文件，返回标准化的 SourceCode 列表"""
         results = []
         try:
             ext = os.path.splitext(file_path)[1].lower()
-            
-            if self.is_binary_file(file_path):
-                logger.warning(f"Skipping binary file: {file_path}")
-                return results
-
+                        
             # 分发到不同 loader
             if ext == '.pdf':
                 content = extract_text_from_pdf(file_path)
-                results.append(SourceCode(file_path, content))
+                results.append(SourceCode(module_name=file_path, source_code=content))
             elif ext == '.docx':
                 content = extract_text_from_docx(file_path)
-                results.append(SourceCode(file_path, content))
+                results.append(SourceCode(module_name=file_path, source_code=content))
             elif ext in ('.pptx', '.ppt'):
                 for slide_id, slide_content in extract_text_from_ppt(file_path):
-                    results.append(SourceCode(f"{file_path}#{slide_id}", slide_content))
+                    results.append(SourceCode(module_name=f"{file_path}#{slide_id}", source_code=slide_content))
             elif ext in ('.xlsx', '.xls'):
                 for sheet_name, sheet_content in extract_text_from_excel(file_path):
-                    results.append(SourceCode(f"{file_path}#{sheet_name}", sheet_content))
+                    results.append(SourceCode(module_name=f"{file_path}#{sheet_name}", source_code=sheet_content))
             else:
                 content = FileUtils.read_file(file_path)
-                results.append(SourceCode(file_path, content))
+                results.append(SourceCode(module_name=file_path, source_code=content))
 
         except Exception as e:
             logger.error(f"Failed to process {file_path}: {str(e)}")
