@@ -34,7 +34,7 @@ class NormalFilter():
         self.sources = sources
 
     def filter(self, index_items: List[IndexItem], query: str) -> Dict[str, TargetFile]:
-        print("===>"+self.index_manager.llm.default_model_name)
+        
         final_files: Dict[str, TargetFile] = {}
         if not self.args.skip_filter_index:
             if self.args.request_id and not self.args.skip_events:
