@@ -77,6 +77,7 @@ class AutoReviewCommit:
            - 实现逻辑：算法和数据结构的选择是否合适
            
         2. 潜在问题检查
+           - 常见错误：是否存在空指针，数组越界，类型转换，未声明变量,typo等低级错误
            - 安全性：是否存在安全隐患
            - 性能：是否有性能问题
            - 并发：是否有并发安全问题
@@ -90,7 +91,7 @@ class AutoReviewCommit:
            - 复用性：是否有重复代码
 
         返回格式说明：
-        返回 markdown 文档，包含一下内容：
+        返回 markdown 格式，包含以下内容：
         1. issues: 发现的具体问题列表
         2. suggestions: 对应的改进建议列表
         3. severity: 问题的严重程度(low/medium/high)
@@ -99,7 +100,9 @@ class AutoReviewCommit:
 
         {% if query %}
         用户额外reivew 需求：
+        <user_review_requirement>
         {{ query }}
+        </user_review_requirement>
         {% endif %}
 
         注意：
