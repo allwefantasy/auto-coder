@@ -1605,8 +1605,8 @@ def code_next(query: str):
         if os.path.exists(temp_yaml):
             os.remove(temp_yaml)
 
-    llm = byzerllm.ByzerLLM.from_default_model(
-        args.inference_model or args.model)
+    product_mode = conf.get("product_mode", "lite")
+    llm = get_single_llm(args.chat_model or args.model, product_mode=product_mode)
 
     auto_guesser = AutoGuessQuery(
         llm=llm, project_dir=os.getcwd(), skip_diff=True)
