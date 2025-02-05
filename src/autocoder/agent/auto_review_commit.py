@@ -26,7 +26,8 @@ class AutoReviewCommit:
     def __init__(self, llm: byzerllm.ByzerLLM,
                  project_dir: str,
                  skip_diff: bool = False,
-                 file_size_limit: int = 100):
+                 file_size_limit: int = 100,
+                 console: Optional[Console] = None):
         """
         初始化 AutoReviewCommit
 
@@ -191,7 +192,17 @@ class AutoReviewCommit:
 
         # 调用LLM进行代码审查
         try:
-            return self.review.with_llm(self.llm).run(commits)            
+            # 获取 prompt 内容
+            query = self.review.prompt(commits)
+            # 构造对话消息
+            conversations = [{"role": "user", "content": query}]
+            # 使用 stream_out 进行输出
+            from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
+            content, meta = stream_out(
+                self.llm.chat_with_raw_stream(conversations),
+                console=self.console
+            )
+            return content
         except Exception as e:
             printer = Printer()
             printer.print_in_terminal("code_review_error", style="red", error=str(e))
