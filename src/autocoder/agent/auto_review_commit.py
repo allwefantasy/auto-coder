@@ -182,10 +182,10 @@ class AutoReviewCommit:
         Returns:
             Optional[ReviewResult]: 审查结果，如果出错则返回None
         """
+        printer = Printer()
         # 获取最新的提交信息
         commits = self.parse_history_tasks()
-        if not commits:
-            printer = Printer()
+        if not commits:            
             printer.print_in_terminal("no_latest_commit", style="red")
             return None
 
@@ -202,7 +202,6 @@ class AutoReviewCommit:
                     llm_config={}
             )
             return v
-        except Exception as e:
-            printer = Printer()
+        except Exception as e:            
             printer.print_in_terminal("code_review_error", style="red", error=str(e))
             return None
