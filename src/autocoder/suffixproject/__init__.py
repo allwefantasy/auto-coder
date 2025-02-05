@@ -35,11 +35,26 @@ class SuffixProject:
         self.git_url = args.git_url
         self.target_file = args.target_file
         self.project_type = args.project_type
-        self.suffixs = [
-            f".{suffix.strip()}" if not suffix.startswith(".") else suffix.strip()
-            for suffix in self.project_type.split(",")
-            if suffix.strip() != ""
-        ]
+        self.suffixs = self._parse_project_type_suffixs(self.project_type)
+
+    def _parse_project_type_suffixs(self, project_type: str) -> List[str]:
+        """Parse project type string into list of file suffixes.
+        
+        Args:
+            project_type: Comma-separated string of file suffixes
+            
+        Returns:
+            List of normalized file suffixes, each starting with '.'
+        """
+        suffixs = []
+        for suffix in project_type.split(","):
+            suffix = suffix.strip()
+            if not suffix:
+                continue
+            if not suffix.startswith("."):
+                suffix = f".{suffix}"
+            suffixs.append(suffix)
+        return suffixs
         self.file_filter = file_filter
         self.sources = []
         self.llm = llm
