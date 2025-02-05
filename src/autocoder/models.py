@@ -36,6 +36,22 @@ default_models_list = [
     }
 ]
 
+def process_api_key_path(base_url: str) -> str:
+    """
+    从 base_url 中提取 host 部分并处理特殊字符
+    例如: https://api.example.com:8080/v1 -> api.example.com_8080
+    """
+    if not base_url:
+        return ""
+    
+    parsed = urlparse(base_url)
+    host = parsed.netloc
+    
+    # 将冒号替换为下划线
+    host = host.replace(":", "_")
+    
+    return host
+
 def load_models() -> List[Dict]:
     """
     Load models from ~/.auto-coder/keys/models.json and merge with default_models_list.
@@ -84,22 +100,6 @@ def save_models(models: List[Dict]) -> None:
     with open(MODELS_JSON, 'w', encoding='utf-8') as f:
         json.dump(models, f, indent=2, ensure_ascii=False)
 
-
-def process_api_key_path(base_url: str) -> str:
-    """
-    从 base_url 中提取 host 部分并处理特殊字符
-    例如: https://api.example.com:8080/v1 -> api.example.com_8080
-    """
-    if not base_url:
-        return ""
-    
-    parsed = urlparse(base_url)
-    host = parsed.netloc
-    
-    # 将冒号替换为下划线
-    host = host.replace(":", "_")
-    
-    return host
 
 def get_model_by_name(name: str) -> Dict:
     """
