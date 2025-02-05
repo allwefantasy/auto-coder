@@ -2,6 +2,7 @@ import os
 import json
 from typing import List, Dict
 from urllib.parse import urlparse
+from autocoder.common.auto_coder_lang import get_message_with_format
 
 MODELS_JSON = os.path.expanduser("~/.auto-coder/keys/models.json")
 
@@ -109,7 +110,7 @@ def get_model_by_name(name: str) -> Dict:
     v = [m for m in models if m["name"] == name.strip()]
     
     if len(v) == 0:
-        raise Exception(f"Model {name} not found")
+        raise Exception(get_message_with_format("model_not_found", {"name": name}))
     return v[0]
 
 def update_model_with_api_key(name: str, api_key: str) -> Dict:

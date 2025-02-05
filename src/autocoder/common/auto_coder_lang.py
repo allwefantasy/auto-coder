@@ -164,3 +164,8 @@ def get_message(key):
 
 def get_message_with_format(msg_key: str, **kwargs):
     return format_str_jinja2(get_message(msg_key), **kwargs)
+
+    "model_not_found": {
+        "zh": "未找到模型 {name}",
+        "en": "Model {name} not found"
+    },
