@@ -2,7 +2,8 @@ import locale
 from byzerllm.utils import format_str_jinja2
 
 MESSAGES = {
-"en": {
+    "en": {
+        "model_not_found": "Model {{model_name}} not found",
         "new_session_started": "New session started. Previous chat history has been archived.",    
         "memory_save_success": "✅ Saved to your memory",
         "file_decode_error": "Failed to decode file: {{file_path}}. Tried encodings: {{encodings}}",
@@ -76,6 +77,7 @@ MESSAGES = {
         "git_init_required": "⚠️ auto_merge only applies to git repositories.\n\nPlease try using git init in the source directory:\n\n```shell\ncd {{ source_dir }}\ngit init.\n```\n\nThen run auto - coder again.\nError: {{ error }}"
     },
     "zh": {
+        "model_not_found": "未找到模型: {{model_name}}",
         "new_session_started": "新会话已开始。之前的聊天历史已存档。",
         "memory_save_success": "✅ 已保存到您的记忆中",
         "file_decode_error": "无法解码文件: {{file_path}}。尝试的编码: {{encodings}}",
