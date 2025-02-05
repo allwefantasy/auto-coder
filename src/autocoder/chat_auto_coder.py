@@ -2194,14 +2194,13 @@ def manage_models(params, query: str):
             table.add_column("Base URL", style="white", width=50, overflow="fold")
             for m in models_data:
                 # Check if api_key_path exists and file exists
-                is_api_key_set = "api_key" in m                
+                is_api_key_set = "api_key" in m  
+                name = m.get("name", "")              
                 if is_api_key_set:
                     api_key = m.get("api_key", "").strip()                    
-                    if not api_key:
-                        #MARK
-                        print("")                    
+                    if not api_key:                                                
+                        printer.print_in_terminal("models_api_key_empty", style="yellow", name=name)                                           
                     name = f"{name} *"
-
                 
                 table.add_row(
                     name,                    

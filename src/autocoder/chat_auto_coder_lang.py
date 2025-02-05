@@ -111,7 +111,8 @@ MESSAGES = {
         "remove_files_all": "Removed all files.",
         "remove_files_removed": "Removed Files",
         "remove_files_none": "No files were removed.",
-        "files_removed": "Files Removed"
+        "files_removed": "Files Removed",
+        "models_api_key_empty": "Warning : {{name}} API key is empty. Please set a valid API key.",
     },
     "zh": {
         "mcp_remove_error": "移除 MCP 服务器时出错：{error}",
@@ -222,7 +223,8 @@ MESSAGES = {
         "remove_files_all": "已移除所有文件。",
         "remove_files_removed": "已移除的文件",
         "remove_files_none": "没有文件被移除。",
-        "files_removed": "移除的文件"
+        "files_removed": "移除的文件",
+        "models_api_key_empty": "警告:  {{name}}  API key 为空。请设置一个有效的 API key。",
     }
 }
 

@@ -132,7 +132,7 @@ MESSAGES = {
         "merge_success": "✅ 成功合并了 {{ num_files }} 个文件中的更改 {{ num_changes }}/{{ total_blocks }} 个代码块。",
         "no_changes_made": "⚠️ 未对任何文件进行更改。",
         "unmerged_blocks_title": "未合并代码块",
-        "unmerged_file_path": "文件: {file_path}",
+        "unmerged_file_path": "文件: {{file_path}}",
         "unmerged_search_block": "Search Block({{similarity}}):",
         "unmerged_replace_block": "Replace Block:",
         "unmerged_blocks_total": "未合并代码块数量: {{num_blocks}}",
