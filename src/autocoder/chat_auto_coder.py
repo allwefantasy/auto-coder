@@ -2700,6 +2700,8 @@ def main():
             if "mode" not in memory:
                 memory["mode"] = "normal"
 
+            #MARK    
+
             if (
                 memory["mode"] == "auto_detect"
                 and user_input
