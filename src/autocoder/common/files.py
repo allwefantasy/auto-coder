@@ -30,7 +30,6 @@ def read_file(file_path):
         encodings=", ".join(encodings)))
 
 
-from autocoder.common.auto_coder_lang import get_message_with_format
 
 def save_file(file_path: str, content: str) -> None:
     """Save content to a file using UTF-8 encoding.
