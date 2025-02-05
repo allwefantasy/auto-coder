@@ -1937,14 +1937,18 @@ def chat(query: str):
     if "/save" in query:
         yaml_config["action"].append("save")
         query = query.replace("/save", "", 1).strip()        
-
-    is_review = query.strip().startswith("/review")
-    if is_review:
-        query = query.replace("/review", "", 1).strip()
-        if "prompt_review" in conf:
-            query = format_str_jinja2(conf["prompt_review"], query=query)
-        else:
-            query = code_review.prompt(query)
+    
+    if "/review" in query and "/commit" in query:
+        yaml_config["action"].append("review_commit")
+        query = query.replace("/review", "", 1).replace("/commit", "", 1).strip()
+    else:    
+        is_review = query.strip().startswith("/review")
+        if is_review:
+            query = query.replace("/review", "", 1).strip()
+            if "prompt_review" in conf:
+                query = format_str_jinja2(conf["prompt_review"], query=query)
+            else:
+                query = code_review.prompt(query)
 
     is_no_context = query.strip().startswith("/no_context")
     if is_no_context:

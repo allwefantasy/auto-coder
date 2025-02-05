@@ -1,14 +1,14 @@
-from typing import Generator, List, Dict, Any, Tuple, Optional
+from typing import Generator, List, Dict, Union, Tuple, Optional
 import os
 import yaml
 import byzerllm
 import pydantic
 import git
 from rich.console import Console
-from rich.panel import Panel
-from prompt_toolkit import prompt
-from prompt_toolkit.formatted_text import FormattedText
+from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common.printer import Printer
+from autocoder.common import AutoCoderArgs
+from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
 
 
 def load_yaml_config(yaml_file: str) -> Dict:
@@ -23,10 +23,9 @@ def load_yaml_config(yaml_file: str) -> Dict:
 
 
 class AutoReviewCommit:
-    def __init__(self, llm: byzerllm.ByzerLLM,
-                 project_dir: str,
-                 skip_diff: bool = False,
-                 file_size_limit: int = 100,
+    def __init__(self, llm: Union[byzerllm.ByzerLLM,byzerllm.SimpleByzerLLM],
+                 args:AutoCoderArgs,                 
+                 skip_diff: bool = False,                 
                  console: Optional[Console] = None):
         """
         初始化 AutoReviewCommit
@@ -34,17 +33,16 @@ class AutoReviewCommit:
         Args:
             llm: ByzerLLM 实例，用于代码审查
             project_dir: 项目根目录
-            skip_diff: 是否跳过获取 diff 信息
-            file_size_limit: 最多分析多少历史任务
+            skip_diff: 是否跳过获取 diff 信息            
         """
-        self.project_dir = project_dir
-        self.actions_dir = os.path.join(project_dir, "actions")
-        self.llm = llm
-        self.file_size_limit = file_size_limit
+        self.project_dir = args.source_dir
+        self.actions_dir = os.path.join(args.source_dir, "actions")
+        self.llm = llm        
         self.skip_diff = skip_diff
+        self.console = console or Console()
 
     @byzerllm.prompt()
-    def review(self, querie_with_urls_and_diffs: List[Tuple[str, List[str], str]]) -> Generator[str,None,None]:
+    def review(self, querie_with_urls_and_diffs: List[Tuple[str, List[str], str]], query: str) -> Generator[str,None,None]:
         """
         对提交的代码变更进行审查，提供改进建议。
 
@@ -92,19 +90,23 @@ class AutoReviewCommit:
            - 复用性：是否有重复代码
 
         返回格式说明：
-        返回一个ReviewResult对象，包含：
+        返回 markdown 文档，包含一下内容：
         1. issues: 发现的具体问题列表
         2. suggestions: 对应的改进建议列表
         3. severity: 问题的严重程度(low/medium/high)
         4. affected_files: 受影响的文件列表
         5. summary: 总体评价
-       
+
+        {% if query %}
+        用户额外reivew 需求：
+        {{ query }}
+        {% endif %}
 
         注意：
         1. 评审意见应该具体且可操作，而不是泛泛而谈
         2. 对于每个问题都应该提供明确的改进建议
         3. 严重程度的判断要考虑问题对系统的潜在影响
-        4. 建议应该符合项目的技术栈和开发规范
+        4. 建议应该符合项目的技术栈和开发规范        
         """
         pass
 
@@ -176,7 +178,7 @@ class AutoReviewCommit:
         return querie_with_urls_and_diffs
     
 
-    def review_commit(self) -> Generator[str,None,None]:
+    def review_commit(self, query: Optional[str] = None) -> Generator[str,None,None]:
         """
         审查最新的代码提交
 
@@ -192,17 +194,16 @@ class AutoReviewCommit:
 
         # 调用LLM进行代码审查
         try:
-            # 获取 prompt 内容
-            query = self.review.prompt(commits)
+            # 获取 prompt 内容            
+            query = self.review.prompt(commits, query)
             # 构造对话消息
             conversations = [{"role": "user", "content": query}]
-            # 使用 stream_out 进行输出
-            from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
-            content, meta = stream_out(
-                self.llm.chat_with_raw_stream(conversations),
-                console=self.console
+            v = stream_chat_with_continue(
+                    llm=self.llm,
+                    conversations=conversations,
+                    llm_config={}
             )
-            return content
+            return v
         except Exception as e:
             printer = Printer()
             printer.print_in_terminal("code_review_error", style="red", error=str(e))
