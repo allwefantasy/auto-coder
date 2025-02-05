@@ -44,15 +44,9 @@ class AutoReviewCommit:
     @byzerllm.prompt()
     def review(self, querie_with_urls_and_diffs: List[Tuple[str, List[str], str]], query: str) -> Generator[str,None,None]:
         """
-        对提交的代码变更进行审查，提供改进建议。
+        如果前面我们对话提供了文档，请参考上面的文档对提交的代码变更进行审查，提供改进建议。
 
-        输入数据格式：
-        querie_with_urls_and_diffs 包含最新一次提交的信息，由以下部分组成：
-        1. query: 任务需求描述
-        2. urls: 修改的文件路径列表
-        3. diff: Git diff信息，展示具体的代码修改
-
-        示例数据：
+        下面包含最新一次提交的信息：        
         <commit>
         {% for query,urls,diff in querie_with_urls_and_diffs %}
         ## 任务需求
@@ -99,7 +93,7 @@ class AutoReviewCommit:
         5. summary: 总体评价
 
         {% if query %}
-        用户额外reivew 需求：
+        用户额外 review 需求：
         <user_review_requirement>
         {{ query }}
         </user_review_requirement>
