@@ -2700,7 +2700,10 @@ def main():
             if "mode" not in memory:
                 memory["mode"] = "normal"
 
-            #MARK    
+            # 处理 user_input 的空格
+            user_input = user_input.lstrip()  # 去掉左侧空格
+            if user_input.startswith('/'):
+                user_input = user_input.strip()  # 如果以/开头,去掉所有空格
 
             if (
                 memory["mode"] == "auto_detect"
