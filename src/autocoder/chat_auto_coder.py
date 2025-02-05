@@ -2194,13 +2194,15 @@ def manage_models(params, query: str):
             table.add_column("Base URL", style="white", width=50, overflow="fold")
             for m in models_data:
                 # Check if api_key_path exists and file exists
-                api_key_path = m.get("api_key_path", "")
-                name = m.get("name", "")
-                if api_key_path:
-                    api_key_file = os.path.expanduser(f"~/.auto-coder/keys/{api_key_path}")
-                    if os.path.exists(api_key_file):
-                        name = f"{name}*"                        
-            
+                is_api_key_set = "api_key" in m                
+                if is_api_key_set:
+                    api_key = m.get("api_key", "").strip()                    
+                    if not api_key:
+                        #MARK
+                        print("")                    
+                    name = f"{name} *"
+
+                
                 table.add_row(
                     name,                    
                     m.get("model_name", ""),                    
@@ -2701,9 +2703,9 @@ def main():
                 memory["mode"] = "normal"
 
             # 处理 user_input 的空格
-            user_input = user_input.lstrip()  # 去掉左侧空格
-            if user_input.startswith('/'):
-                user_input = user_input.strip()  # 如果以/开头,去掉所有空格
+            temp_user_input = user_input.lstrip()  # 去掉左侧空格
+            if temp_user_input.startswith('/'):
+                user_input = temp_user_input
 
             if (
                 memory["mode"] == "auto_detect"
