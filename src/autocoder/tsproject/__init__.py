@@ -1,5 +1,5 @@
 from autocoder.common import SourceCode, AutoCoderArgs
-from autocoder import common as FileUtils
+from autocoder import common as CommonUtils
 from autocoder.utils.rest import HttpDoc
 import os
 from typing import Optional, Generator, List, Dict, Any
@@ -164,7 +164,7 @@ class TSProject:
             logger.warning(f"Failed to read file: {file_path}. Error: {str(e)}")
             return None
 
-        if not FileUtils.has_sufficient_content(source_code, min_line_count=1):
+        if not CommonUtils.has_sufficient_content(source_code, min_line_count=1):
             return None
 
         return SourceCode(module_name=module_name, source_code=source_code)

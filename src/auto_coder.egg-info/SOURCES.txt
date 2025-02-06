@@ -24,6 +24,7 @@ src/autocoder/agent/__init__.py
 src/autocoder/agent/auto_demand_organizer.py
 src/autocoder/agent/auto_filegroup.py
 src/autocoder/agent/auto_guess_query.py
+src/autocoder/agent/auto_review_commit.py
 src/autocoder/agent/auto_tool.py
 src/autocoder/agent/coder.py
 src/autocoder/agent/designer.py

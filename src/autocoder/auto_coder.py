@@ -276,7 +276,7 @@ def main(input_args: Optional[List[str]] = None):
                 )
                 byzerllm.connect_cluster(address=args.ray_address)
 
-            llm = byzerllm.ByzerLLM(verbose=args.print_request)
+            llm = byzerllm.ByzerLLM(verbose=args.print_request)            
 
             # code_model,index_filter_model,generate_rerank_model,chat_model
             # 这四个模型如果用户没有设置，就会使用默认的
@@ -300,86 +300,66 @@ def main(input_args: Optional[List[str]] = None):
             llm.setup_sub_client("chat_model", chat_model)
         
         if args.product_mode == "lite":
-            default_model = args.model
+            default_model = args.model        
+            model_info = models_module.get_model_by_name(default_model)                
             llm = byzerllm.SimpleByzerLLM(default_model_name=default_model)
-            api_key_dir = os.path.expanduser("~/.auto-coder/keys")
-            api_key_file = os.path.join(api_key_dir, "api.deepseek.com")
-            
-            if not os.path.exists(api_key_file):                
-                raise Exception(f"API key file not found: {api_key_file}")
-            
-            with open(api_key_file, "r") as f:
-                api_key = f.read()
-            
             llm.deploy(
                 model_path="",
-                pretrained_model_type="saas/openai",
-                udf_name=default_model,
+                pretrained_model_type=model_info["model_type"],
+                udf_name=args.model,
                 infer_params={
-                    "saas.base_url": "https://api.deepseek.com/v1",
-                    "saas.api_key": api_key,
-                    "saas.model": "deepseek-chat",
-                    "saas.is_reasoning": False
+                    "saas.base_url": model_info["base_url"],
+                    "saas.api_key": model_info["api_key"],
+                    "saas.model": model_info["model_name"],
+                    "saas.is_reasoning": model_info["is_reasoning"]
                 }
-            )
-            
-            code_llm = byzerllm.SimpleByzerLLM(default_model)
-            code_llm.deploy(
-                model_path="",
-                pretrained_model_type="saas/openai",
-                udf_name=default_model,
-                infer_params={
-                    "saas.base_url": "https://api.deepseek.com/v1",
-                    "saas.api_key": api_key,
-                    "saas.model": "deepseek-chat",
-                    "saas.is_reasoning": False
-                }
-            )
+            )                
+                        
+            if models_module.check_model_exists("deepseek_r1_chat"):
+                r1_model_info = models_module.get_model_by_name("deepseek_r1_chat")  
+                api_key = r1_model_info["api_key"]
+                chat_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_r1_chat")
+                chat_llm.deploy(
+                    model_path="",
+                    pretrained_model_type="saas/openai",
+                    udf_name="deepseek_r1_chat",
+                    infer_params={
+                        "saas.base_url": "https://api.deepseek.com/v1",
+                        "saas.api_key": api_key,
+                        "saas.model": "deepseek-reasoner",
+                        "saas.is_reasoning": True
+                    }
+                )
 
-            chat_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_r1_chat")
-            chat_llm.deploy(
-                model_path="",
-                pretrained_model_type="saas/openai",
-                udf_name="deepseek_r1_chat",
-                infer_params={
-                    "saas.base_url": "https://api.deepseek.com/v1",
-                    "saas.api_key": api_key,
-                    "saas.model": "deepseek-reasoner",
-                    "saas.is_reasoning": True
-                }
-            )
+                generate_rerank_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_r1_chat")
+                generate_rerank_llm.deploy(
+                    model_path="",
+                    pretrained_model_type="saas/openai",
+                    udf_name="deepseek_r1_chat",
+                    infer_params={
+                        "saas.base_url": "https://api.deepseek.com/v1",
+                        "saas.api_key": api_key,
+                        "saas.model": "deepseek-reasoner",
+                        "saas.is_reasoning": True
+                    }
+                )
 
-            generate_rerank_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_r1_chat")
-            generate_rerank_llm.deploy(
-                model_path="",
-                pretrained_model_type="saas/openai",
-                udf_name="deepseek_r1_chat",
-                infer_params={
-                    "saas.base_url": "https://api.deepseek.com/v1",
-                    "saas.api_key": api_key,
-                    "saas.model": "deepseek-reasoner",
-                    "saas.is_reasoning": True
-                }
-            )
-
-            index_filter_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_r1_chat")
-            index_filter_llm.deploy(
-                model_path="",
-                pretrained_model_type="saas/openai",
-                udf_name="deepseek_r1_chat",
-                infer_params={
-                    "saas.base_url": "https://api.deepseek.com/v1",
-                    "saas.api_key": api_key,
-                    "saas.model": "deepseek-reasoner",
-                    "saas.is_reasoning": True
-                }
-            )
-            
-            # 这四个模型如果用户没有设置，就会使用默认的
-            llm.setup_sub_client("code_model", code_llm)
-            llm.setup_sub_client("chat_model", chat_llm)
-            llm.setup_sub_client("generate_rerank_model", generate_rerank_llm)
-            llm.setup_sub_client("index_filter_model", index_filter_llm)
+                index_filter_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_r1_chat")
+                index_filter_llm.deploy(
+                    model_path="",
+                    pretrained_model_type="saas/openai",
+                    udf_name="deepseek_r1_chat",
+                    infer_params={
+                        "saas.base_url": "https://api.deepseek.com/v1",
+                        "saas.api_key": api_key,
+                        "saas.model": "deepseek-reasoner",
+                        "saas.is_reasoning": True
+                    }
+                )
+                                                
+                llm.setup_sub_client("chat_model", chat_llm)
+                llm.setup_sub_client("generate_rerank_model", generate_rerank_llm)
+                llm.setup_sub_client("index_filter_model", index_filter_llm)
 
         if args.product_mode == "lite":                                    
             # Set up default models based on configuration
@@ -1367,12 +1347,16 @@ def main(input_args: Optional[List[str]] = None):
                     llm_config={}
                 )              
 
-                
+
+            model_name = getattr(chat_llm, 'default_model_name', None)
+            if not model_name:
+                model_name = "unknown(without default model name)"    
             
             assistant_response, last_meta = stream_out(
                     v, 
                     request_id=args.request_id,                    
-                    console=console
+                    console=console,
+                    model_name=model_name
                 )
                                                                        
             # 打印耗时和token统计            

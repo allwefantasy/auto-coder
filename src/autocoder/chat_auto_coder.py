@@ -1714,6 +1714,7 @@ def commit(query: str):
                     os.remove(temp_yaml)
 
             llm = get_single_llm(args.code_model or args.model, product_mode)
+            #MARK
             uncommitted_changes = git_utils.get_uncommitted_changes(".")
             commit_message = git_utils.generate_commit_message.with_llm(llm).run(
                 uncommitted_changes
@@ -2706,9 +2707,10 @@ def main():
                 memory["mode"] = "normal"
 
             # 处理 user_input 的空格
-            temp_user_input = user_input.lstrip()  # 去掉左侧空格
-            if temp_user_input.startswith('/'):
-                user_input = temp_user_input
+            if user_input:
+                temp_user_input = user_input.lstrip()  # 去掉左侧空格
+                if temp_user_input.startswith('/'):
+                    user_input = temp_user_input
 
             if (
                 memory["mode"] == "auto_detect"

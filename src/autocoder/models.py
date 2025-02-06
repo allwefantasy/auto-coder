@@ -113,6 +113,14 @@ def get_model_by_name(name: str) -> Dict:
         raise Exception(get_message_with_format("model_not_found", model_name=name))
     return v[0]
 
+
+def check_model_exists(name: str) -> bool:
+    """
+    检查模型是否存在
+    """
+    models = load_models()
+    return any(m["name"] == name.strip() for m in models)
+
 def update_model_with_api_key(name: str, api_key: str) -> Dict:
     """
     根据模型名称查找并更新模型的 api_key_path。

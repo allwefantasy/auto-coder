@@ -141,7 +141,8 @@ def multi_stream_out(
 def stream_out(
     stream_generator: Generator[Tuple[str, Dict[str, Any]], None, None],
     request_id: Optional[str] = None,    
-    console: Optional[Console] = None
+    console: Optional[Console] = None,
+    model_name: Optional[str] = None
 ) -> Tuple[str, Optional[Dict[str, Any]]]:
     """
     处理流式输出事件并在终端中展示
@@ -164,7 +165,7 @@ def stream_out(
     
     try:
         with Live(
-            Panel("", title="Response", border_style="green"),
+            Panel("", title=f"Response[ {model_name} ]", border_style="green"),
             refresh_per_second=4,
             console=console
         ) as live:
@@ -209,7 +210,7 @@ def stream_out(
                 live.update(
                     Panel(
                         Markdown(display_content),
-                        title="Response",
+                        title=f"Response[ {model_name} ]",
                         border_style="green",
                         height=min(50, live.console.height - 4)
                     )
@@ -223,7 +224,7 @@ def stream_out(
             live.update(
                 Panel(
                     Markdown(assistant_response),
-                    title="Final Response",
+                    title=f"Final Response[ {model_name} ]",
                     border_style="blue"
                 )
             )
@@ -231,7 +232,7 @@ def stream_out(
     except Exception as e:
         console.print(Panel(
             f"Error: {str(e)}",  
-            title="Error",
+            title=f"Error[ {model_name} ]",
             border_style="red"
         ))
         # import traceback

@@ -60,7 +60,7 @@ class NormalFilter():
             phase_end = time.monotonic()
             self.stats["timings"]["normal_filter"]["level1_filter"] = phase_end - phase_start
 
-            # Phase 4: Level 2 filtering - Related files
+            # Phase 4: Level 2 filtering - Related files                        
             if target_files is not None and self.args.index_filter_level >= 2:
                 logger.info(
                     "Phase 4: Performing Level 2 filtering (related files)...")
@@ -84,13 +84,14 @@ class NormalFilter():
                 phase_end = time.monotonic()
                 self.stats["timings"]["normal_filter"]["level2_filter"] = phase_end - phase_start
 
-            if not final_files:
-                logger.warning("No related files found, using all files")
-                for source in self.sources:
-                    final_files[get_file_path(source.module_name)] = TargetFile(
-                        file_path=source.module_name,
-                        reason="No related files found, use all files",
-                    )
+            # if not final_files:
+            #     logger.warning("No related files found, using all files")
+            #     for source in self.sources:
+            #         final_files[get_file_path(source.module_name)] = TargetFile(
+            #             file_path=source.module_name,
+            #             reason="No related files found, use all files",
+            #         )
+
 
             # Phase 5: Relevance verification
             logger.info("Phase 5: Performing relevance verification...")

@@ -7,6 +7,7 @@ from autocoder.common import sys_prompt
 from concurrent.futures import ThreadPoolExecutor
 from autocoder.common.types import CodeGenerateResult
 from autocoder.common.utils_code_auto_generate import chat_with_continue
+import json
 
 
 class CodeAutoGenerate:

@@ -195,7 +195,7 @@ class IndexManager:
             return True
         return False
 
-    def build_index_for_single_source(self, source: SourceCode):
+    def build_index_for_single_source(self, source: SourceCode):        
         file_path = source.module_name
         if not os.path.exists(file_path):
             return None
@@ -204,6 +204,10 @@ class IndexManager:
             return None
 
         md5 = hashlib.md5(source.source_code.encode("utf-8")).hexdigest()
+
+        model_name = getattr(self.index_llm, 'default_model_name', None)
+        if not model_name:
+            model_name = "unknown(without default model name)"
 
         try:
             start_time = time.monotonic()
@@ -230,13 +234,14 @@ class IndexManager:
                 symbols = self.get_all_file_symbols.with_llm(
                     self.index_llm).run(source.module_name, source_code)
                 time.sleep(self.anti_quota_limit)
-
+            
             self.printer.print_in_terminal(
                 "index_update_success",
                 style="green",
                 file_path=file_path,
                 md5=md5,
-                duration=time.monotonic() - start_time
+                duration=time.monotonic() - start_time,
+                model_name=model_name
             )
 
         except Exception as e:
@@ -246,7 +251,8 @@ class IndexManager:
                 "index_build_error",
                 style="red",
                 file_path=file_path,
-                error=str(e)
+                error=str(e),
+                model_name=model_name
             )
             return None
 
@@ -464,7 +470,7 @@ class IndexManager:
             {file.file_path: file for file in all_results}.values())
         return FileList(file_list=all_results)
 
-    def _query_index_with_thread(self, query, func):
+    def _query_index_with_thread(self, query, func):        
         all_results = []
         lock = threading.Lock()
         completed_threads = 0
