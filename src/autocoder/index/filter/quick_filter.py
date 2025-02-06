@@ -14,6 +14,8 @@ from autocoder.index.types import (
 )
 from autocoder.rag.token_counter import count_tokens
 from autocoder.common.printer import Printer
+from concurrent.futures import ThreadPoolExecutor
+import threading
 
 
 def get_file_path(file_path):
@@ -29,13 +31,11 @@ class QuickFilter():
         self.stats = stats
         self.sources = sources
         self.printer = Printer()
-        self.max_tokens = 55*1024
+        self.max_tokens = 22*1024
 
 
     def big_filter(self, index_items: List[IndexItem],) -> Dict[str, TargetFile]:
-        from concurrent.futures import ThreadPoolExecutor
-        import threading
-
+        
         final_files: Dict[str, TargetFile] = {}
         final_files_lock = threading.Lock()
         chunk_size = self.max_tokens // 2
@@ -59,6 +59,15 @@ class QuickFilter():
             
         if current_chunk:
             chunks.append(current_chunk)
+        
+        tokens_len = count_tokens(self.quick_filter_files.prompt(index_items, self.args.query))
+        self.printer.print_in_terminal(
+                "quick_filter_too_long",
+                style="yellow",
+                tokens_len=tokens_len,
+                max_tokens=self.max_tokens,
+                split_size=len(chunks)
+            )    
 
         def process_chunk(chunk_index: int, chunk: List[IndexItem]) -> None:
             try:
@@ -168,14 +177,7 @@ class QuickFilter():
             tokens_len=tokens_len
         )
         
-        if tokens_len > self.max_tokens:
-            self.printer.print_in_terminal(
-                "quick_filter_too_long",
-                style="yellow",
-                tokens_len=tokens_len,
-                max_tokens=self.max_tokens
-            )
-            # Continue with big_filter method instead of returning empty result
+        if tokens_len > self.max_tokens:                        
             return self.big_filter(index_items)
         
         try:
@@ -201,7 +203,7 @@ class QuickFilter():
             )                
             # 解析结果
             file_number_list = to_model(full_response, FileNumberList)
-
+            end_time = time.monotonic()            
             # 打印 token 统计信息
             self.printer.print_in_terminal(
                 "quick_filter_stats", 
@@ -212,7 +214,11 @@ class QuickFilter():
             )
             
         except Exception as e:
-            self.printer.print_error(self.printer.get_message_from_key_with_format("quick_filter_failed", error=str(e)))
+            self.printer.print_in_terminal(
+                "quick_filter_failed",
+                style="red",
+                error=str(e)
+            )
             return final_files
         
         if file_number_list:
