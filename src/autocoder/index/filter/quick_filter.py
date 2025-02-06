@@ -128,7 +128,7 @@ class QuickFilter():
                 for file_number in file_number_list.file_list:
                     final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
                         file_path=index_items[file_number].module_name,
-                        reason="Quick Filter"
+                        reason=self.printer.get_message_from_key("quick_filter_reason")
                     )
             end_time = time.monotonic()            
             self.stats["timings"]["quick_filter"] = end_time - start_time            

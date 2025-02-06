@@ -82,7 +82,8 @@ MESSAGES = {
         "unmerged_search_block": "Search Block({{similarity}}):",
         "unmerged_replace_block": "Replace Block:",
         "unmerged_blocks_total": "Total unmerged blocks: {{num_blocks}}",
-        "git_init_required": "⚠️ auto_merge only applies to git repositories.\n\nPlease try using git init in the source directory:\n\n```shell\ncd {{ source_dir }}\ngit init.\n```\n\nThen run auto - coder again.\nError: {{ error }}"
+        "git_init_required": "⚠️ auto_merge only applies to git repositories.\n\nPlease try using git init in the source directory:\n\n```shell\ncd {{ source_dir }}\ngit init.\n```\n\nThen run auto - coder again.\nError: {{ error }}",
+    "quick_filter_reason": "Quick Filter"
     },
     "zh": {
         "model_not_found": "未找到模型: {{model_name}}",
@@ -149,7 +150,8 @@ MESSAGES = {
         "unmerged_search_block": "Search Block({{similarity}}):",
         "unmerged_replace_block": "Replace Block:",
         "unmerged_blocks_total": "未合并代码块数量: {{num_blocks}}",
-        "git_init_required": "⚠️ auto_merge 仅适用于 git 仓库。\n\n请尝试在源目录中使用 git init：\n\n```shell\ncd {{ source_dir }}\ngit init.\n```\n\n然后再次运行 auto-coder。\n错误: {{ error }}",
+    "git_init_required": "⚠️ auto_merge 仅适用于 git 仓库。\n\n请尝试在源目录中使用 git init:\n\n```shell\ncd {{ source_dir }}\ngit init.\n```\n\n然后再次运行 auto-coder。\n错误: {{ error }}",
+    "quick_filter_reason": "快速过滤"
         "upsert_file": "✅ 更新文件: {{ file_path }}",
         "files_merged": "✅ 成功合并了 {{ total }} 个文件到项目中。",
         "merge_failed": "❌ 合并文件 {{ path }} 失败: {{ error }}",
