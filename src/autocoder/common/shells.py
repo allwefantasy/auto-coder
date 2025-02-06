@@ -3,10 +3,67 @@ import sys
 import os
 import locale
 import subprocess
+import platform
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from rich.live import Live
+
+def get_terminal_name() -> str:
+    """
+    获取当前终端名称(自动适配 Windows/Linux/Mac)
+    返回终端名称如: cmd.exe, bash, zsh 等
+    """
+    if sys.platform == 'win32':
+        return _get_windows_terminal_name()
+    else:
+        return _get_unix_terminal_name()
+
+def _get_windows_terminal_name() -> str:
+    """Windows 系统终端检测"""
+    # 检查是否在 PowerShell
+    if 'POWERSHELL_DISTRIBUTION_CHANNEL' in os.environ:
+        return 'powershell'
+    
+    # 检查是否在 Git Bash
+    if 'MINGW' in platform.system():
+        return 'git-bash'
+    
+    # 默认返回 cmd.exe
+    return 'cmd.exe'
+
+def _get_unix_terminal_name() -> str:
+    """Linux/Mac 系统终端检测"""
+    # 从环境变量获取终端名称
+    term = os.environ.get('TERM')
+    shell = os.environ.get('SHELL', '')
+    
+    # 检查是否在 VS Code 终端
+    if 'VSCODE_GIT_IPC_HANDLE' in os.environ:
+        return 'vscode-terminal'
+    
+    # 如果是 Mac 的 Terminal.app
+    if sys.platform == 'darwin' and 'Apple_Terminal' in os.environ.get('TERM_PROGRAM', ''):
+        return 'terminal.app'
+    
+    # 从 shell 路径获取终端名称
+    if shell:
+        shell_name = os.path.basename(shell)
+        if shell_name in ['bash', 'zsh', 'fish']:
+            return shell_name
+    
+    # 从 TERM 环境变量判断
+    if term:
+        if 'xterm' in term:
+            return 'xterm'
+        elif 'rxvt' in term:
+            return 'rxvt'
+        elif 'screen' in term:
+            return 'screen'
+        elif 'tmux' in term:
+            return 'tmux'
+    
+    return 'unknown'
 
 def get_terminal_encoding() -> str:
     """
