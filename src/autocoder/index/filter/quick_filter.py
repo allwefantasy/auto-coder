@@ -14,6 +14,7 @@ from autocoder.index.types import (
 )
 from autocoder.rag.token_counter import count_tokens
 from loguru import logger
+from autocoder.common.printer import Printer
 
 
 def get_file_path(file_path):
@@ -28,6 +29,7 @@ class QuickFilter():
         self.args = index_manager.args
         self.stats = stats
         self.sources = sources
+        self.printer = Printer()
 
     @byzerllm.prompt()
     def quick_filter_files(self,file_meta_list:List[IndexItem],query:str) -> str:
@@ -72,6 +74,7 @@ class QuickFilter():
 
     def filter(self, index_items: List[IndexItem], query: str) -> Dict[str, TargetFile]:
         final_files: Dict[str, TargetFile] = {}
+        
         if not self.args.skip_filter_index and self.args.index_filter_model:
             start_time = time.monotonic()
             index_items = self.index_manager.read_index()
@@ -103,7 +106,7 @@ class QuickFilter():
                 full_response, _ = stream_out(
                     stream_generator,
                     model_name=model_name,
-                    title=get_message_with_format("quick_filter_title", model_name=model_name)
+                    title=self.printer.get_message_from_key_with_format("quick_filter_title", model_name=model_name)
                 )
                 
                 # 解析结果

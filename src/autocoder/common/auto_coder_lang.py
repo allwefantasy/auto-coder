@@ -75,7 +75,7 @@ MESSAGES = {
         "stream_out_stats": "Elapsed time {{ elapsed_time }} seconds, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}",
         "upsert_file": "✅ Updated file: {{ file_path }}",  
         "unmerged_blocks_title": "Unmerged Blocks",
-        "quick_filter_title": "Quick Filter [{{model_name}}]",
+        "quick_filter_title": "{{ model_name }} is analyzing how to filter context...",
         "unmerged_file_path": "File: {{file_path}}",
         "unmerged_search_block": "Search Block({{similarity}}):",
         "unmerged_replace_block": "Replace Block:",
@@ -160,7 +160,7 @@ MESSAGES = {
         "ranking_process_failed": "排序过程失败: {{ error }}",
         "ranking_failed": "排序失败，耗时 {{ elapsed }} 秒，使用原始顺序",
         "stream_out_stats": "耗时 {{ elapsed_time }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}",
-        "quick_filter_title": "快速过滤 [{{model_name}}]"
+        "quick_filter_title": "{{ model_name }} 正在分析如何筛选上下文..."
     },
 }
 
