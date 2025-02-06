@@ -84,12 +84,13 @@ class QuickFilter():
             
             tokens_len = count_tokens(prompt_str)            
             
-            if tokens_len > 55*1024:
+            max_tokens = 55*1024
+            if tokens_len > max_tokens:
                 self.printer.print_in_terminal(
                 "quick_filter_too_long",
                 style="yellow",
                 tokens_len=tokens_len,
-                max_tokens=55*1024
+                max_tokens=max_tokens
             )
                 return final_files
             
