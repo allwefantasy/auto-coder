@@ -31,34 +31,30 @@ class QuickFilter():
         self.stats = stats
         self.sources = sources
         self.printer = Printer()
-        self.max_tokens = 22*1024
+        self.max_tokens = self.args.index_filter_model_max_input_length
 
 
     def big_filter(self, index_items: List[IndexItem],) -> Dict[str, TargetFile]:
         
         final_files: Dict[str, TargetFile] = {}
         final_files_lock = threading.Lock()
-        chunk_size = self.max_tokens // 2
+        
         chunks = []
         current_chunk = []
-        current_size = 0
-        
+                
         # 将 index_items 切分成多个 chunks,第一个chunk尽可能接近max_tokens
         for item in index_items:
             # 使用 quick_filter_files.prompt 生成文本再统计
             temp_chunk = current_chunk + [item]
             prompt_text = self.quick_filter_files.prompt(temp_chunk, self.args.query)
-            temp_size = count_tokens(prompt_text)
-            
+            temp_size = count_tokens(prompt_text)            
             # 如果当前chunk为空,或者添加item后不超过max_tokens,就添加到当前chunk
             if not current_chunk or temp_size <= self.max_tokens:
-                current_chunk.append(item)
-                current_size = temp_size
+                current_chunk.append(item)                
             else:
                 # 当前chunk已满,创建新chunk
                 chunks.append(current_chunk)
-                current_chunk = [item]
-                current_size = count_tokens(self.quick_filter_files.prompt(current_chunk, self.args.query))
+                current_chunk = [item]                
             
         if current_chunk:
             chunks.append(current_chunk)

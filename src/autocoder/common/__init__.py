@@ -260,6 +260,7 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     index_model: Optional[str] = ""
     index_filter_model: Optional[str] = ""
+    index_filter_model_max_input_length: Optional[int] = 50*1024
     index_model_max_length: Optional[int] = 0
     index_model_max_input_length: Optional[int] = 0
     index_model_anti_quota_limit: Optional[int] = 0
