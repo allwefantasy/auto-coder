@@ -142,7 +142,8 @@ def stream_out(
     stream_generator: Generator[Tuple[str, Dict[str, Any]], None, None],
     request_id: Optional[str] = None,    
     console: Optional[Console] = None,
-    model_name: Optional[str] = None
+    model_name: Optional[str] = None,
+    title: Optional[str] = None
 ) -> Tuple[str, Optional[Dict[str, Any]]]:
     """
     处理流式输出事件并在终端中展示
@@ -151,7 +152,8 @@ def stream_out(
         stream_generator: 生成流式输出的生成器
         request_id: 请求ID,用于更新请求队列        
         console: Rich Console对象
-        
+        model_name: 模型名称
+        title: 面板标题，如果没有提供则使用默认值
     Returns:
         Tuple[str, Dict[str, Any]]: 返回完整的响应内容和最后的元数据
     """
@@ -164,8 +166,9 @@ def stream_out(
     last_meta = None
     
     try:
+        panel_title = title if title is not None else f"Response[ {model_name} ]"
         with Live(
-            Panel("", title=f"Response[ {model_name} ]", border_style="green"),
+            Panel("", title=panel_title, border_style="green"),
             refresh_per_second=4,
             console=console
         ) as live:
@@ -210,7 +213,7 @@ def stream_out(
                 live.update(
                     Panel(
                         Markdown(display_content),
-                        title=f"Response[ {model_name} ]",
+                        title=panel_title,
                         border_style="green",
                         height=min(50, live.console.height - 4)
                     )
@@ -224,7 +227,7 @@ def stream_out(
             live.update(
                 Panel(
                     Markdown(assistant_response),
-                    title=f"Final Response[ {model_name} ]",
+                    title=f"Final {panel_title}",
                     border_style="blue"
                 )
             )
