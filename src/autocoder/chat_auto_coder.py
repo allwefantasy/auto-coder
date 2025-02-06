@@ -2385,64 +2385,8 @@ def list_files():
 
 @run_in_raw_thread()
 def execute_shell_command(command: str):
-    console = Console()
-    try:
-        # Use shell=True to support shell mode
-        process = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            universal_newlines=True,
-            shell=True,
-        )
-
-        output = []
-        with Live(console=console, refresh_per_second=4) as live:
-            while True:
-                output_line = process.stdout.readline()
-                error_line = process.stderr.readline()
-
-                if output_line:
-                    output.append(output_line.strip())
-                    live.update(
-                        Panel(
-                            Text("\n".join(output[-20:])),
-                            title="Shell Output",
-                            border_style="green",
-                        )
-                    )
-                if error_line:
-                    output.append(f"ERROR: {error_line.strip()}")
-                    live.update(
-                        Panel(
-                            Text("\n".join(output[-20:])),
-                            title="Shell Output",
-                            border_style="red",
-                        )
-                    )
-
-                if (
-                    output_line == ""
-                    and error_line == ""
-                    and process.poll() is not None
-                ):
-                    break
-
-        if process.returncode != 0:
-            console.print(
-                f"[bold red]Command failed with return code {process.returncode}[/bold red]"
-            )        
-
-    except FileNotFoundError:
-        console.print(
-            f"[bold red]Command not found:[/bold red] [yellow]{command}[/yellow]"
-        )
-    except subprocess.SubprocessError as e:
-        console.print(
-            f"[bold red]Error executing command:[/bold red] [yellow]{str(e)}[/yellow]"
-        )
+    from autocoder.common.shells import execute_shell_command as shell_exec
+    shell_exec(command)
 
 
 def lib_command(args: List[str]):
