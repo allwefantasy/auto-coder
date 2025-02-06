@@ -615,7 +615,7 @@ def print_commit_info(commit_result: CommitResult):
 
     table.add_row("Commit Hash", commit_result.commit_hash)
     table.add_row("Commit Message", commit_result.commit_message)
-    table.add_row("Changed Files", "\n".join(commit_result.changed_files))
+    table.add_row("Changed Files", "\n".join(commit_result.changed_files) if commit_result.changed_files else "No files changed")
 
     console.print(
         Panel(table, expand=False, border_style="green", title="Git Commit Summary")
