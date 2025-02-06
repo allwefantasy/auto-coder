@@ -1348,7 +1348,8 @@ def main(input_args: Optional[List[str]] = None):
                     v, 
                     request_id=args.request_id,                    
                     console=console,
-                    model_name=model_name
+                    model_name=model_name,
+                    args=args
                 )
                                                                        
             # 打印耗时和token统计            

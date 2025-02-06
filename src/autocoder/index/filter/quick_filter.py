@@ -84,7 +84,8 @@ class QuickFilter():
                     full_response, _ = stream_out(
                         stream_generator,
                         model_name=model_name,
-                        title=self.printer.get_message_from_key_with_format("quick_filter_title", model_name=model_name)
+                        title=self.printer.get_message_from_key_with_format("quick_filter_title", model_name=model_name),
+                        args=self.args
                     )
                     file_number_list = to_model(full_response, FileNumberList)
                 else:
@@ -197,7 +198,8 @@ class QuickFilter():
             full_response, last_meta = stream_out(
                 stream_generator,
                 model_name=model_name,
-                title=self.printer.get_message_from_key_with_format("quick_filter_title", model_name=model_name)
+                title=self.printer.get_message_from_key_with_format("quick_filter_title", model_name=model_name),
+                args=self.args
             )                
             # 解析结果
             file_number_list = to_model(full_response, FileNumberList)

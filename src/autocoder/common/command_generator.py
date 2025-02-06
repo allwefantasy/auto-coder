@@ -54,9 +54,9 @@ def generate_shell_script(user_input: str, llm: byzerllm.ByzerLLM) -> str:
     result, _ = stream_out(
         llm.stream_chat_oai(conversations=conversations, delta_mode=True),
         model_name=llm.default_model_name,
-        title=title
+        title=title        
     )
     
     # 提取代码块
-    code = code_utils.extract_code(result)[0][1]
+    code = code_utils.extract_code(result)[-1][1]
     return code

@@ -5,7 +5,6 @@ import byzerllm
 import pydantic
 import git
 from rich.console import Console
-from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common.printer import Printer
 from autocoder.common import AutoCoderArgs
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue

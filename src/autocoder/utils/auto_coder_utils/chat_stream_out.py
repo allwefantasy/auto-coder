@@ -251,7 +251,7 @@ def stream_out(
                     title=f"Final {panel_title}",
                     border_style="blue"
                 )
-            )
+            )            
             
     except Exception as e:
         console.print(Panel(
