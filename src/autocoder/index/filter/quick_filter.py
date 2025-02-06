@@ -43,19 +43,22 @@ class QuickFilter():
         current_chunk = []
         current_size = 0
         
-        # 将 index_items 切分成多个 chunks
+        # 将 index_items 切分成多个 chunks,第一个chunk尽可能接近max_tokens
         for item in index_items:
             # 使用 quick_filter_files.prompt 生成文本再统计
             temp_chunk = current_chunk + [item]
             prompt_text = self.quick_filter_files.prompt(temp_chunk, self.args.query)
-            item_tokens = count_tokens(prompt_text)
+            temp_size = count_tokens(prompt_text)
             
-            if current_size + item_tokens > chunk_size and current_chunk:
+            # 如果当前chunk为空,或者添加item后不超过max_tokens,就添加到当前chunk
+            if not current_chunk or temp_size <= self.max_tokens:
+                current_chunk.append(item)
+                current_size = temp_size
+            else:
+                # 当前chunk已满,创建新chunk
                 chunks.append(current_chunk)
-                current_chunk = []
-                current_size = 0
-            current_chunk.append(item)
-            current_size = count_tokens(self.quick_filter_files.prompt(current_chunk, self.args.query))
+                current_chunk = [item]
+                current_size = count_tokens(self.quick_filter_files.prompt(current_chunk, self.args.query))
             
         if current_chunk:
             chunks.append(current_chunk)
