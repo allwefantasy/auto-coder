@@ -1,8 +1,6 @@
 import byzerllm
 from byzerllm.utils.client import code_utils
 from autocoder.common import detect_env
-
-
 from autocoder.common import shells
 
 @byzerllm.prompt()
@@ -19,12 +17,7 @@ def _generate_shell_script(user_input: str) -> str:
     {%- endif %}
     {%- if env_info.virtualenv %}
     虚拟环境: {{ env_info.virtualenv }}
-    {%- endif %}
-    {%- if env_info.has_bash %}
-    支持Bash
-    {%- else %}
-    不支持Bash
-    {%- endif %}
+    {%- endif %}    
 
     根据用户的输入以及当前的操作系统和Shell类型生成合适的 shell 脚本。
 
@@ -38,12 +31,11 @@ def _generate_shell_script(user_input: str) -> str:
     # 你的 shell 脚本内容
     ```
     """
-    env_info = detect_env()
-    # 获取当前shell类型和编码
-    env_info["shell_type"] = shells.get_terminal_name()
-    env_info["shell_encoding"] = shells.get_terminal_encoding()
+    env_info = detect_env()    
     return {
-        "env_info": env_info
+        "env_info": env_info,
+        "shell_type": shells.get_terminal_name(),
+        "shell_encoding": shells.get_terminal_encoding()
     }
 
 
