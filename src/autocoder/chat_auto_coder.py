@@ -1712,21 +1712,21 @@ def commit(query: str):
             finally:
                 if os.path.exists(temp_yaml):
                     os.remove(temp_yaml)
-
-            llm = get_single_llm(args.code_model or args.model, product_mode)
+            
+            target_model = args.code_model or args.model
+            llm = get_single_llm(target_model, product_mode)
             printer = Printer()
-            printer.print_in_terminal("commit_generating", style="yellow")
+            printer.print_in_terminal("commit_generating", style="yellow", model_name=target_model)
             try:
                 uncommitted_changes = git_utils.get_uncommitted_changes(".")
                 commit_message = git_utils.generate_commit_message.with_llm(llm).run(
                     uncommitted_changes
                 )
-                printer.print_in_terminal("commit_message", style="green")
-                printer.print_str_in_terminal(commit_message)
+                printer.print_in_terminal("commit_message", style="green", model_name=target_model, message=commit_message)                
                 memory["conversation"].append(
                     {"role": "user", "content": commit_message})
             except Exception as e:
-                printer.print_in_terminal("commit_failed", style="red", error=str(e))
+                printer.print_in_terminal("commit_failed", style="red", error=str(e), model_name=target_model)
                 return
             yaml_config["query"] = commit_message
             yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
