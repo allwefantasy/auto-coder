@@ -69,6 +69,7 @@ src/autocoder/common/recall_validation.py
 src/autocoder/common/screenshots.py
 src/autocoder/common/search.py
 src/autocoder/common/search_replace.py
+src/autocoder/common/shells.py
 src/autocoder/common/sys_prompt.py
 src/autocoder/common/text.py
 src/autocoder/common/types.py

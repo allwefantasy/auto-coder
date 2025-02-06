@@ -10,6 +10,7 @@ from autocoder.utils.request_queue import RequestValue, RequestOption, StreamVal
 from autocoder.utils.request_queue import request_queue
 import time
 from byzerllm.utils.types import SingleOutputMeta
+from autocoder.common import AutoCoderArgs
 
 MAX_HISTORY_LINES = 40  # 最大保留历史行数
 
@@ -144,7 +145,8 @@ def stream_out(
     request_id: Optional[str] = None,    
     console: Optional[Console] = None,
     model_name: Optional[str] = None,
-    title: Optional[str] = None
+    title: Optional[str] = None,
+    args: Optional[AutoCoderArgs] = None
 ) -> Tuple[str, Optional[SingleOutputMeta]]:
     """
     处理流式输出事件并在终端中展示
@@ -155,17 +157,22 @@ def stream_out(
         console: Rich Console对象
         model_name: 模型名称
         title: 面板标题，如果没有提供则使用默认值
+        args: AutoCoderArgs对象
     Returns:
-        Tuple[str, Dict[str, Any]]: 返回完整的响应内容和最后的元数据
+        Tuple[str, Dict[SingleOutputMeta]]: 返回完整的响应内容和最后的元数据
     """
     if console is None:
         console = Console(force_terminal=True, color_system="auto", height=None)
-        
+    
+    keep_reasoning_content = True
+    if args:
+        keep_reasoning_content = args.keep_reasoning_content            
+
     lines_buffer = []  # 存储历史行
     current_line = ""  # 当前行
     assistant_response = ""
     last_meta = None
-    panel_title = title if title is not None else f"Response[ {model_name} ]"
+    panel_title = title if title is not None else f"Response[ {model_name} ]"    
     try:        
         with Live(
             Panel("", title=panel_title, border_style="green"),
@@ -179,8 +186,19 @@ def stream_out(
 
                 if reasoning_content == "" and content == "":
                     continue
-            
-                assistant_response += content
+                
+                if keep_reasoning_content:
+                    if reasoning_content != "":
+                        if assistant_response == "":
+                            assistant_response += f"<thinking>{reasoning_content}"
+                        else:
+                            assistant_response += reasoning_content
+
+                    if content != "":
+                        assistant_response += f"</thinking>{content}"
+                
+                if not keep_reasoning_content:
+                    assistant_response += content
 
                 display_delta = reasoning_content if reasoning_content else content
                 

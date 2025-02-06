@@ -357,6 +357,8 @@ class AutoCoderArgs(pydantic.BaseModel):
     enable_global_memory: Optional[bool] = True  
     product_mode: Optional[str] = "lite"
 
+    keep_reasoning_content: Optional[bool] = True
+
     in_code_apply: bool = False
 
     class Config:
