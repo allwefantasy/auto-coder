@@ -77,8 +77,7 @@ class CodeModificationRanker:
             with ThreadPoolExecutor(max_workers=total_tasks) as executor:
                 # Submit tasks for each model and generate_times
                 futures = []
-                for llm in self.llms:
-                    #MARK
+                for llm in self.llms:                    
                     for _ in range(rank_times):
                         model_name = getattr(llm, 'default_model_name', None)
                         if not model_name:
