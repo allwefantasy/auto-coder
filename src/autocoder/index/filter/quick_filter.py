@@ -74,69 +74,67 @@ class QuickFilter():
         return context    
 
     def filter(self, index_items: List[IndexItem], query: str) -> Dict[str, TargetFile]:
-        final_files: Dict[str, TargetFile] = {}
+        final_files: Dict[str, TargetFile] = {}                
+        start_time = time.monotonic()
+        index_items = self.index_manager.read_index()
+
+        prompt_str = self.quick_filter_files.prompt(index_items,query)            
         
-        if not self.args.skip_filter_index and self.args.index_filter_model:
-            start_time = time.monotonic()
-            index_items = self.index_manager.read_index()
-
-            prompt_str = self.quick_filter_files.prompt(index_items,query)            
+        tokens_len = count_tokens(prompt_str)            
+        
+        max_tokens = 55*1024
+        if tokens_len > max_tokens:
+            self.printer.print_in_terminal(
+            "quick_filter_too_long",
+            style="yellow",
+            tokens_len=tokens_len,
+            max_tokens=max_tokens
+        )
+            return final_files
+        
+        try:
+            model_name = getattr(self.index_manager.index_filter_llm, 'default_model_name', None)
+            if not model_name:
+                model_name = "unknown(without default model name)"
             
-            tokens_len = count_tokens(prompt_str)            
+            # 渲染 Prompt 模板
+            query = self.quick_filter_files.prompt(index_items, self.args.query)
             
-            max_tokens = 55*1024
-            if tokens_len > max_tokens:
-                self.printer.print_in_terminal(
-                "quick_filter_too_long",
-                style="yellow",
-                tokens_len=tokens_len,
-                max_tokens=max_tokens
+            # 使用流式输出处理
+            stream_generator = stream_chat_with_continue(
+                self.index_manager.index_filter_llm,
+                [{"role": "user", "content": query}],
+                {}
             )
-                return final_files
             
-            try:
-                model_name = getattr(self.index_manager.index_filter_llm, 'default_model_name', None)
-                if not model_name:
-                    model_name = "unknown(without default model name)"
-                
-                # 渲染 Prompt 模板
-                query = self.quick_filter_files.prompt(index_items, self.args.query)
-                
-                # 使用流式输出处理
-                stream_generator = stream_chat_with_continue(
-                    self.index_manager.index_filter_llm,
-                    [{"role": "user", "content": query}],
-                    {}
-                )
-                
-                # 获取完整响应
-                full_response, last_meta = stream_out(
-                    stream_generator,
-                    model_name=model_name,
-                    title=self.printer.get_message_from_key_with_format("quick_filter_title", model_name=model_name)
-                )                
-                # 解析结果
-                file_number_list = to_model(full_response, FileNumberList)
+            # 获取完整响应
+            full_response, last_meta = stream_out(
+                stream_generator,
+                model_name=model_name,
+                title=self.printer.get_message_from_key_with_format("quick_filter_title", model_name=model_name)
+            )                
+            # 解析结果
+            file_number_list = to_model(full_response, FileNumberList)
 
-                # 打印 token 统计信息
-                self.printer.print_in_terminal(
-                    "quick_filter_stats", 
-                    style="blue",
-                    elapsed_time=f"{end_time - start_time:.2f}",
-                    input_tokens=last_meta.input_tokens_count,
-                    output_tokens=last_meta.generated_tokens_count
-                )
-                
-            except Exception as e:
-                self.printer.print_error(self.printer.get_message_from_key_with_format("quick_filter_failed", error=str(e)))
-                return final_files
+            # 打印 token 统计信息
+            self.printer.print_in_terminal(
+                "quick_filter_stats", 
+                style="blue",
+                elapsed_time=f"{end_time - start_time:.2f}",
+                input_tokens=last_meta.input_tokens_count,
+                output_tokens=last_meta.generated_tokens_count
+            )
             
-            if file_number_list:
-                for file_number in file_number_list.file_list:
-                    final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
-                        file_path=index_items[file_number].module_name,
-                        reason=self.printer.get_message_from_key("quick_filter_reason")
-                    )
-            end_time = time.monotonic()            
-            self.stats["timings"]["quick_filter"] = end_time - start_time            
+        except Exception as e:
+            self.printer.print_error(self.printer.get_message_from_key_with_format("quick_filter_failed", error=str(e)))
+            return final_files
+        
+        if file_number_list:
+            for file_number in file_number_list.file_list:
+                final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
+                    file_path=index_items[file_number].module_name,
+                    reason=self.printer.get_message_from_key("quick_filter_reason")
+                )
+        end_time = time.monotonic()            
+        self.stats["timings"]["quick_filter"] = end_time - start_time            
         return final_files
