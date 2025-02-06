@@ -262,7 +262,9 @@ def get_uncommitted_changes(repo_path: str) -> str:
 def generate_commit_message(changes_report: str) -> str:
     '''
     我是一个Git提交信息生成助手。我们的目标是通过一些变更报告，倒推用户的需求，将需求作为commit message。
-    commit message 需要简洁，不要超过100个字符。
+    commit message 需要简洁,包含两部分：
+    1. 这个commit 背后的需求是什么
+    2. 为了完成这个需求做了哪些事情
 
     下面是一些示例：
     <examples>
