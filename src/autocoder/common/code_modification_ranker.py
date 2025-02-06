@@ -78,8 +78,7 @@ class CodeModificationRanker:
                 # Submit tasks for each model and generate_times
                 futures = []
                 for llm in self.llms:                    
-                    model_name = getattr(llm, 'default_model_name', None)
-                    
+                    model_name = getattr(llm, 'default_model_name', None)                    
                     if not model_name:
                         model_name = "unknown(without default model name)"
                     self.printer.print_in_terminal(
