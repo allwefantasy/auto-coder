@@ -84,7 +84,7 @@ class QuickFilter():
             tokens_len = count_tokens(prompt_str)            
             
             if tokens_len > 55*1024:
-                logger.warning(f"Quick filter prompt is too long, tokens_len: {tokens_len}/{55*1024} fallback to normal filter")
+                logger.warning(f"Quick filter prompt is too long, tokens_len: {tokens_len}/{55*1024}")
                 return final_files
             
             try:
