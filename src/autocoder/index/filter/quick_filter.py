@@ -30,6 +30,7 @@ class QuickFilter():
         self.stats = stats
         self.sources = sources
         self.printer = Printer()
+        self.printer = Printer()
 
     @byzerllm.prompt()
     def quick_filter_files(self,file_meta_list:List[IndexItem],query:str) -> str:
@@ -84,7 +85,12 @@ class QuickFilter():
             tokens_len = count_tokens(prompt_str)            
             
             if tokens_len > 55*1024:
-                logger.warning(f"Quick filter prompt is too long, tokens_len: {tokens_len}/{55*1024}")
+                self.printer.print_in_terminal(
+                "quick_filter_too_long",
+                style="yellow",
+                tokens_len=tokens_len,
+                max_tokens=55*1024
+            )
                 return final_files
             
             try:
