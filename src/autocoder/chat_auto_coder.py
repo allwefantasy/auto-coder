@@ -2667,8 +2667,9 @@ def main():
                 if temp_user_input.startswith('/'):
                     user_input = temp_user_input
 
-            if (                
-                user_input
+            if (  
+                memory["mode"] == "auto_detect" 
+                and user_input
                 and not user_input.startswith("/")
             ):
                 shell_script = generate_shell_command(user_input)
