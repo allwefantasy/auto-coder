@@ -111,9 +111,14 @@ class QuickFilter():
                 # 解析结果
                 file_number_list = to_model(full_response, FileNumberList)
 
-                # last_meta.input_tokens_count
-                # last_meta.generated_tokens_count
-                #MARK
+                # 打印 token 统计信息
+                self.printer.print_in_terminal(
+                    "stream_out_stats", 
+                    style="blue",
+                    elapsed_time=f"{end_time - start_time:.2f}",
+                    input_tokens=last_meta.input_tokens_count,
+                    output_tokens=last_meta.generated_tokens_count
+                )
                 
             except Exception as e:
                 self.printer.print_error(self.printer.get_message_from_key_with_format("quick_filter_failed", error=str(e)))
