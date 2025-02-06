@@ -1,4 +1,7 @@
-from typing import List, Union,Dict,Any
+from typing import List, Union, Dict, Any
+from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
+from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
+from byzerllm.utils.str2model import to_model
 from autocoder.index.types import IndexItem
 from autocoder.common import AutoCoderArgs,SourceCode
 import byzerllm
@@ -82,8 +85,30 @@ class QuickFilter():
                 return final_files
             
             try:
-                file_number_list = self.quick_filter_files.with_llm(
-                    self.index_manager.index_filter_llm).with_return_type(FileNumberList).run(index_items, self.args.query)
+                model_name = getattr(self.index_manager.index_filter_llm, 'default_model_name', None)
+                if not model_name:
+                    model_name = "unknown(without default model name)"
+                
+                # 渲染 Prompt 模板
+                query = self.quick_filter_files.prompt(index_items, self.args.query)
+                
+                # 使用流式输出处理
+                stream_generator = stream_chat_with_continue(
+                    self.index_manager.index_filter_llm,
+                    [{"role": "user", "content": query}],
+                    {}
+                )
+                
+                # 获取完整响应
+                full_response, _ = stream_out(
+                    stream_generator,
+                    model_name=model_name,
+                    title=f"Quick Filter [{model_name}]"
+                )
+                
+                # 解析结果
+                file_number_list = to_model(full_response, FileNumberList)
+                
             except Exception as e:
                 logger.error(f"Quick filter failed, error: {str(e)} fallback to normal filter")
                 return final_files
