@@ -1002,15 +1002,7 @@ def main(input_args: Optional[List[str]] = None):
         elif raw_args.agent_command == "generate_command":
             from autocoder.common.command_generator import generate_shell_script
 
-            console = Console()
-
-            console.print(
-                Panel(
-                    f"Generating shell script from user input {args.query}...",
-                    title="Command Generator",
-                    border_style="green",
-                )
-            )
+            console = Console()            
 
             shell_script = generate_shell_script(args.query, llm)
 

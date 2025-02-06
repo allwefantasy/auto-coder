@@ -12,8 +12,8 @@ def _generate_shell_script(user_input: str) -> str:
 
     操作系统: {{ env_info.os_name }} {{ env_info.os_version }}
     Python版本: {{ env_info.python_version }}
-    Shell类型: {{ env_info.shell_type }}
-    Shell编码: {{ env_info.shell_encoding }}
+    终端类型: {{ env_info.shell_type }}
+    终端编码: {{ env_info.shell_encoding }}
     {%- if env_info.conda_env %}
     Conda环境: {{ env_info.conda_env }}
     {%- endif %}
@@ -21,7 +21,7 @@ def _generate_shell_script(user_input: str) -> str:
     虚拟环境: {{ env_info.virtualenv }}
     {%- endif %}    
 
-    根据用户的输入以及当前的操作系统和Shell类型生成合适的 shell 脚本。
+    根据用户的输入以及当前的操作系统和Shell类型生成合适的 shell 脚本，注意只能生成一个shell脚本，不要生成多个。
 
     用户输入: {{ user_input }}
 

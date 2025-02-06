@@ -2673,7 +2673,7 @@ def main():
                 and not user_input.startswith("/")
             ):
                 shell_script = generate_shell_command(user_input)
-                if confirm("Do you want to execute this script?"):
+                if confirm(get_message("confirm_execute")):
                     execute_shell_command(shell_script)
                 else:
                     continue
