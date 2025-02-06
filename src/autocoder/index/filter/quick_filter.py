@@ -13,7 +13,7 @@ from autocoder.index.types import (
     FileNumberList
 )
 from autocoder.rag.token_counter import count_tokens
-from loguru import logger
+from 
 from autocoder.common.printer import Printer
 
 
@@ -30,7 +30,88 @@ class QuickFilter():
         self.stats = stats
         self.sources = sources
         self.printer = Printer()
-        self.printer = Printer()
+        self.max_tokens = 55*1024
+
+
+    def big_filter(self, index_items: List[IndexItem],) -> Dict[str, TargetFile]:
+        final_files: Dict[str, TargetFile] = {}
+        chunk_size = self.max_tokens // 2
+        chunks = []
+        current_chunk = []
+        current_size = 0
+        
+        # 将 index_items 切分成多个 chunks
+        for item in index_items:
+            # 使用 quick_filter_files.prompt 生成文本再统计
+            temp_chunk = current_chunk + [item]
+            prompt_text = self.quick_filter_files.prompt(temp_chunk, self.args.query)
+            item_tokens = count_tokens(prompt_text)
+            
+            if current_size + item_tokens > chunk_size and current_chunk:
+                chunks.append(current_chunk)
+                current_chunk = []
+                current_size = 0
+            current_chunk.append(item)
+            current_size = count_tokens(self.quick_filter_files.prompt(current_chunk, self.args.query))
+            
+        if current_chunk:
+            chunks.append(current_chunk)
+
+        # 处理第一个 chunk,使用流式输出
+        if chunks:
+            try:
+                model_name = getattr(self.index_manager.index_filter_llm, 'default_model_name', None)
+                if not model_name:
+                    model_name = "unknown(without default model name)"
+                
+                # 处理第一个 chunk 使用流式输出
+                stream_generator = stream_chat_with_continue(
+                    self.index_manager.index_filter_llm,
+                    [{"role": "user", "content": self.quick_filter_files.prompt(chunks[0], self.args.query)}],
+                    {}
+                )
+                full_response, _ = stream_out(
+                    stream_generator,
+                    model_name=model_name,
+                    title=self.printer.get_message_from_key_with_format("quick_filter_title", model_name=model_name)
+                )
+                file_number_list = to_model(full_response, FileNumberList)
+                
+                # 添加结果从第一个 chunk
+                if file_number_list:
+                    for file_number in file_number_list.file_list:
+                        file_path = get_file_path(chunks[0][file_number].module_name)
+                        final_files[file_path] = TargetFile(
+                            file_path=chunks[0][file_number].module_name,
+                            reason=self.printer.get_message_from_key("quick_filter_reason")
+                        )
+
+                # 处理剩余的 chunks,直接使用 with_llm().with_return_type().run()
+                for chunk in chunks[1:]:
+                    try:
+                        result = self.quick_filter_files.with_llm(self.index_manager.index_filter_llm).with_return_type(FileNumberList).run(chunk, self.args.query)
+                        if result:
+                            for file_number in result.file_list:
+                                file_path = get_file_path(chunk[file_number].module_name)
+                                final_files[file_path] = TargetFile(
+                                    file_path=chunk[file_number].module_name,
+                                    reason=self.printer.get_message_from_key("quick_filter_reason")
+                                )
+                    except Exception as e:
+                        self.printer.print_in_terminal(
+                            "quick_filter_failed",
+                            style="red",
+                            error=str(e)
+                        )
+                        
+            except Exception as e:
+                self.printer.print_in_terminal(
+                    "quick_filter_failed",
+                    style="red",
+                    error=str(e)
+                )
+                
+        return final_files    
 
     @byzerllm.prompt()
     def quick_filter_files(self,file_meta_list:List[IndexItem],query:str) -> str:
@@ -82,13 +163,12 @@ class QuickFilter():
         
         tokens_len = count_tokens(prompt_str)            
         
-        max_tokens = 55*1024
-        if tokens_len > max_tokens:
+        if tokens_len > self.max_tokens:
             self.printer.print_in_terminal(
             "quick_filter_too_long",
             style="yellow",
             tokens_len=tokens_len,
-            max_tokens=max_tokens
+            max_tokens=self.max_tokens
         )
             return final_files
         
