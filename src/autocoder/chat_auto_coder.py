@@ -2667,9 +2667,8 @@ def main():
                 if temp_user_input.startswith('/'):
                     user_input = temp_user_input
 
-            if (
-                memory["mode"] == "auto_detect"
-                and user_input
+            if (                
+                user_input
                 and not user_input.startswith("/")
             ):
                 shell_script = generate_shell_command(user_input)
@@ -2794,8 +2793,8 @@ def main():
                 command = user_input
                 if user_input.startswith("/shell"):
                     command = user_input[len("/shell"):].strip()
-                if not command:
-                    print("Please enter a shell command to execute.")
+                    if not command:
+                        print("Please enter a shell command to execute.")
                 else:
                     execute_shell_command(command)
 
