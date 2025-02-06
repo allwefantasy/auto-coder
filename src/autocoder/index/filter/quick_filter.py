@@ -13,7 +13,6 @@ from autocoder.index.types import (
     FileNumberList
 )
 from autocoder.rag.token_counter import count_tokens
-from 
 from autocoder.common.printer import Printer
 
 
