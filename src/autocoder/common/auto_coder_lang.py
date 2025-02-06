@@ -74,7 +74,8 @@ MESSAGES = {
         "begin_index_source_code": "🚀 Begin to index source code in {{ source_dir }}",
         "stream_out_stats": "Elapsed time {{ elapsed_time }} seconds, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}",
         "upsert_file": "✅ Updated file: {{ file_path }}",  
-        "unmerged_blocks_title": "Unmerged Blocks",                     
+        "unmerged_blocks_title": "Unmerged Blocks",
+        "quick_filter_title": "Quick Filter [{{model_name}}]",
         "unmerged_file_path": "File: {{file_path}}",
         "unmerged_search_block": "Search Block({{similarity}}):",
         "unmerged_replace_block": "Replace Block:",
@@ -158,7 +159,8 @@ MESSAGES = {
         "ranking_complete": "排序完成，耗时 {{ elapsed }} 秒，总投票数: {{ total_tasks }}，最佳候选索引: {{ best_candidate }}，得分: {{ scores }}，输入token数: {{ input_tokens }}，输出token数: {{ output_tokens }}",
         "ranking_process_failed": "排序过程失败: {{ error }}",
         "ranking_failed": "排序失败，耗时 {{ elapsed }} 秒，使用原始顺序",
-        "stream_out_stats": "耗时 {{ elapsed_time }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}"
+        "stream_out_stats": "耗时 {{ elapsed_time }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}",
+        "quick_filter_title": "快速过滤 [{{model_name}}]"
     },
 }
 

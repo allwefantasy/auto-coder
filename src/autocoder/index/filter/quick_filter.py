@@ -103,7 +103,7 @@ class QuickFilter():
                 full_response, _ = stream_out(
                     stream_generator,
                     model_name=model_name,
-                    title=f"Quick Filter [{model_name}]"
+                    title=get_message_with_format("quick_filter_title", model_name=model_name)
                 )
                 
                 # 解析结果
