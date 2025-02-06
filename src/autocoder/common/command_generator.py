@@ -1,5 +1,6 @@
 import byzerllm
 from byzerllm.utils.client import code_utils
+from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common import detect_env
 from autocoder.common import shells
 
@@ -40,6 +41,19 @@ def _generate_shell_script(user_input: str) -> str:
 
 
 def generate_shell_script(user_input: str, llm: byzerllm.ByzerLLM) -> str:
-    result = _generate_shell_script.with_llm(llm).run(user_input=user_input)
+    # 获取 prompt 内容
+    prompt = _generate_shell_script.prompt(user_input=user_input)
+    
+    # 构造对话上下文
+    conversations = [{"role": "user", "content": prompt}]
+    
+    # 使用 stream_out 进行输出
+    result, _ = stream_out(
+        llm.stream_chat_oai(conversations=conversations, delta_mode=True),
+        model_name=llm.default_model_name,
+        title="Generating Shell Script"
+    )
+    
+    # 提取代码块
     code = code_utils.extract_code(result)[0][1]
     return code
