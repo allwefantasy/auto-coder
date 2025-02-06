@@ -1,5 +1,4 @@
 from typing import List, Union, Dict, Any
-from concurrent.futures import ThreadPoolExecutor
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
 from byzerllm.utils.str2model import to_model
@@ -87,35 +86,23 @@ class QuickFilter():
                             reason=self.printer.get_message_from_key("quick_filter_reason")
                         )
 
-                # 使用线程池处理剩余的 chunks
-                def process_chunk(chunk):
+                # 处理剩余的 chunks,直接使用 with_llm().with_return_type().run()
+                for chunk in chunks[1:]:
                     try:
                         result = self.quick_filter_files.with_llm(self.index_manager.index_filter_llm).with_return_type(FileNumberList).run(chunk, self.args.query)
                         if result:
-                            chunk_files = {}
                             for file_number in result.file_list:
                                 file_path = get_file_path(chunk[file_number].module_name)
-                                chunk_files[file_path] = TargetFile(
+                                final_files[file_path] = TargetFile(
                                     file_path=chunk[file_number].module_name,
                                     reason=self.printer.get_message_from_key("quick_filter_reason")
                                 )
-                            return chunk_files
                     except Exception as e:
                         self.printer.print_in_terminal(
                             "quick_filter_failed",
                             style="red",
                             error=str(e)
                         )
-                        return {}
-
-                # 使用线程池并发处理剩余的 chunks
-                with ThreadPoolExecutor() as executor:
-                    chunk_results = list(executor.map(process_chunk, chunks[1:]))
-
-                # 合并所有结果
-                for chunk_result in chunk_results:
-                    if chunk_result:
-                        final_files.update(chunk_result)
                         
             except Exception as e:
                 self.printer.print_in_terminal(
