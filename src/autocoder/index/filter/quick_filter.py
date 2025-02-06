@@ -113,7 +113,7 @@ class QuickFilter():
                 file_number_list = to_model(full_response, FileNumberList)
                 
             except Exception as e:
-                logger.error(f"Quick filter failed, error: {str(e)} fallback to normal filter")
+                self.printer.print_error(self.printer.get_message_from_key_with_format("quick_filter_failed", error=str(e)))
                 return final_files
             
             if file_number_list:
