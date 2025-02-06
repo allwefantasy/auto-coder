@@ -113,7 +113,7 @@ class QuickFilter():
 
                 # 打印 token 统计信息
                 self.printer.print_in_terminal(
-                    "stream_out_stats", 
+                    "quick_filter_stats", 
                     style="blue",
                     elapsed_time=f"{end_time - start_time:.2f}",
                     input_tokens=last_meta.input_tokens_count,
