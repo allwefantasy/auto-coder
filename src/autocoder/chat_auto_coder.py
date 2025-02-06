@@ -1717,17 +1717,19 @@ def commit(query: str):
             llm = get_single_llm(target_model, product_mode)
             printer = Printer()
             printer.print_in_terminal("commit_generating", style="yellow", model_name=target_model)
+            commit_message = ""
+            
             try:
                 uncommitted_changes = git_utils.get_uncommitted_changes(".")
                 commit_message = git_utils.generate_commit_message.with_llm(llm).run(
                     uncommitted_changes
-                )
-                printer.print_in_terminal("commit_message", style="green", model_name=target_model, message=commit_message)                
+                )                
                 memory["conversation"].append(
                     {"role": "user", "content": commit_message})
             except Exception as e:
                 printer.print_in_terminal("commit_failed", style="red", error=str(e), model_name=target_model)
                 return
+            
             yaml_config["query"] = commit_message
             yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
             with open(os.path.join(execute_file), "w") as f:
@@ -1740,6 +1742,8 @@ def commit(query: str):
                 ".", f"auto_coder_{file_name}_{md5}"
             )
             git_utils.print_commit_info(commit_result=commit_result)
+            if commit_message:
+                printer.print_in_terminal("commit_message", style="green", model_name=target_model, message=commit_message)                
         except Exception as e:
             import traceback
             traceback.print_exc()            
