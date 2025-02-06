@@ -162,8 +162,7 @@ class QuickFilter():
 
     def filter(self, index_items: List[IndexItem], query: str) -> Dict[str, TargetFile]:
         final_files: Dict[str, TargetFile] = {}                
-        start_time = time.monotonic()
-        index_items = self.index_manager.read_index()
+        start_time = time.monotonic()        
 
         prompt_str = self.quick_filter_files.prompt(index_items,query)            
         
