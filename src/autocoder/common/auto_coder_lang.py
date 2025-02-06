@@ -4,6 +4,7 @@ from byzerllm.utils import format_str_jinja2
 MESSAGES = {
     "en": {
         "model_not_found": "Model {{model_name}} not found",
+        "generating_shell_script": "Generating Shell Script",
         "new_session_started": "New session started. Previous chat history has been archived.",    
         "memory_save_success": "✅ Saved to your memory",
         "file_decode_error": "Failed to decode file: {{file_path}}. Tried encodings: {{encodings}}",
@@ -89,6 +90,7 @@ MESSAGES = {
     },
     "zh": {
         "model_not_found": "未找到模型: {{model_name}}",
+        "generating_shell_script": "正在生成 Shell 脚本",
         "new_session_started": "新会话已开始。之前的聊天历史已存档。",
         "memory_save_success": "✅ 已保存到您的记忆中",
         "file_decode_error": "无法解码文件: {{file_path}}。尝试的编码: {{encodings}}",

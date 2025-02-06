@@ -3,6 +3,7 @@ from byzerllm.utils.client import code_utils
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common import detect_env
 from autocoder.common import shells
+from autocoder.common.printer import Printer
 
 @byzerllm.prompt()
 def _generate_shell_script(user_input: str) -> str:
@@ -48,10 +49,12 @@ def generate_shell_script(user_input: str, llm: byzerllm.ByzerLLM) -> str:
     conversations = [{"role": "user", "content": prompt}]
     
     # 使用 stream_out 进行输出
+    printer = Printer()
+    title = printer.get_message_from_key("generating_shell_script")
     result, _ = stream_out(
         llm.stream_chat_oai(conversations=conversations, delta_mode=True),
         model_name=llm.default_model_name,
-        title="Generating Shell Script"
+        title=title
     )
     
     # 提取代码块
