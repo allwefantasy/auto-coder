@@ -80,6 +80,11 @@ class CodeModificationRanker:
                 for llm in self.llms:
                     #MARK
                     for _ in range(rank_times):
+                        model_name = getattr(llm, 'default_model_name', None)
+                        if not model_name:
+                            model_name = "unknown(without default model name)"
+                        self.printer.print_in_terminal(
+                            "ranking_start", style="blue", count=len(generate_result.contents), model_name=model_name)
                         futures.append(
                             executor.submit(
                                 chat_with_continue,
