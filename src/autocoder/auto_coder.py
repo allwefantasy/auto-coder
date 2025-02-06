@@ -1339,7 +1339,7 @@ def main(input_args: Optional[List[str]] = None):
             elif "review_commit" in args.action:
                 from autocoder.agent.auto_review_commit import AutoReviewCommit
                 reviewer = AutoReviewCommit(llm=chat_llm, args=args)
-                v = reviewer.review_commit(args.query)
+                v = reviewer.review_commit(query=args.query,conversations=loaded_conversations)
             else:                
                 v = stream_chat_with_continue(
                     llm=chat_llm,

@@ -164,9 +164,8 @@ def stream_out(
     current_line = ""  # 当前行
     assistant_response = ""
     last_meta = None
-    
-    try:
-        panel_title = title if title is not None else f"Response[ {model_name} ]"
+    panel_title = title if title is not None else f"Response[ {model_name} ]"
+    try:        
         with Live(
             Panel("", title=panel_title, border_style="green"),
             refresh_per_second=4,
@@ -235,7 +234,7 @@ def stream_out(
     except Exception as e:
         console.print(Panel(
             f"Error: {str(e)}",  
-            title=f"Error[ {model_name} ]",
+            title=f"Error[ {panel_title} ]",
             border_style="red"
         ))
         # import traceback
