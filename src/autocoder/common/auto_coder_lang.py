@@ -84,7 +84,8 @@ MESSAGES = {
         "unmerged_blocks_total": "Total unmerged blocks: {{num_blocks}}",
         "git_init_required": "⚠️ auto_merge only applies to git repositories.\n\nPlease try using git init in the source directory:\n\n```shell\ncd {{ source_dir }}\ngit init.\n```\n\nThen run auto - coder again.\nError: {{ error }}",
         "quick_filter_reason": "Auto get(quick_filter mode)",
-        "quick_filter_too_long": "⚠️ index file is too large ({{ tokens_len }}/{{ max_tokens }}). Please use '/conf /drop index_filter_model' to fallback to normal_filter mode."
+        "quick_filter_too_long": "⚠️ index file is too large ({{ tokens_len }}/{{ max_tokens }}). The query will be split into multiple chunks.",
+        "quick_filter_tokens_len": "📊 Current index size: {{ tokens_len }} tokens"
     },
     "zh": {
         "model_not_found": "未找到模型: {{model_name}}",
@@ -153,7 +154,8 @@ MESSAGES = {
         "unmerged_blocks_total": "未合并代码块数量: {{num_blocks}}",
         "git_init_required": "⚠️ auto_merge 仅适用于 git 仓库。\n\n请尝试在源目录中使用 git init:\n\n```shell\ncd {{ source_dir }}\ngit init.\n```\n\n然后再次运行 auto-coder。\n错误: {{ error }}",
         "quick_filter_reason": "自动获取(quick_filter模式)",
-        "quick_filter_too_long": "⚠️ 索引文件过大 ({{ tokens_len }}/{{ max_tokens }})。请使用 '/conf /drop index_filter_model' 回退到 normal_filter 模式。",
+        "quick_filter_too_long": "⚠️ 索引文件过大 ({{ tokens_len }}/{{ max_tokens }})。查询将被分成多个部分执行。",
+        "quick_filter_tokens_len": "📊 当前索引大小: {{ tokens_len }} tokens",
         "upsert_file": "✅ 更新文件: {{ file_path }}",
         "files_merged": "✅ 成功合并了 {{ total }} 个文件到项目中。",
         "merge_failed": "❌ 合并文件 {{ path }} 失败: {{ error }}",

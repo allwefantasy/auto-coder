@@ -162,14 +162,22 @@ class QuickFilter():
         
         tokens_len = count_tokens(prompt_str)            
         
+        # Print current index size
+        self.printer.print_in_terminal(
+            "quick_filter_tokens_len",
+            style="blue",
+            tokens_len=tokens_len
+        )
+        
         if tokens_len > self.max_tokens:
             self.printer.print_in_terminal(
-            "quick_filter_too_long",
-            style="yellow",
-            tokens_len=tokens_len,
-            max_tokens=self.max_tokens
-        )
-            return final_files
+                "quick_filter_too_long",
+                style="yellow",
+                tokens_len=tokens_len,
+                max_tokens=self.max_tokens
+            )
+            # Continue with big_filter method instead of returning empty result
+            return self.big_filter(index_items)
         
         try:
             model_name = getattr(self.index_manager.index_filter_llm, 'default_model_name', None)
