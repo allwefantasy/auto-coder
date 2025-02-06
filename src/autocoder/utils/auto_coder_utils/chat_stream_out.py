@@ -9,6 +9,7 @@ from typing import Generator, List, Dict, Any, Optional, Tuple, Literal
 from autocoder.utils.request_queue import RequestValue, RequestOption, StreamValue
 from autocoder.utils.request_queue import request_queue
 import time
+from byzerllm.utils.types import SingleOutputMeta
 
 MAX_HISTORY_LINES = 40  # 最大保留历史行数
 
@@ -144,7 +145,7 @@ def stream_out(
     console: Optional[Console] = None,
     model_name: Optional[str] = None,
     title: Optional[str] = None
-) -> Tuple[str, Optional[Dict[str, Any]]]:
+) -> Tuple[str, Optional[SingleOutputMeta]]:
     """
     处理流式输出事件并在终端中展示
     

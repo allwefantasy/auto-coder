@@ -103,14 +103,17 @@ class QuickFilter():
                 )
                 
                 # 获取完整响应
-                full_response, _ = stream_out(
+                full_response, last_meta = stream_out(
                     stream_generator,
                     model_name=model_name,
                     title=self.printer.get_message_from_key_with_format("quick_filter_title", model_name=model_name)
-                )
-                
+                )                
                 # 解析结果
                 file_number_list = to_model(full_response, FileNumberList)
+
+                # last_meta.input_tokens_count
+                # last_meta.generated_tokens_count
+                #MARK
                 
             except Exception as e:
                 self.printer.print_error(self.printer.get_message_from_key_with_format("quick_filter_failed", error=str(e)))
