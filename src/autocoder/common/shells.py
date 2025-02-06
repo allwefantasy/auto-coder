@@ -6,7 +6,7 @@ from rich.panel import Panel
 from rich.text import Text
 from rich.live import Live
 
-def execute_shell_command(command: str, encoding: str = None):
+def execute_shell_command(command: str):
     """
     Execute a shell command with cross-platform encoding support.
     
@@ -16,12 +16,11 @@ def execute_shell_command(command: str, encoding: str = None):
     """
     console = Console()
     try:
-        # Determine encoding based on platform if not specified
-        if encoding is None:
-            if sys.platform == 'win32':
-                encoding = 'gbk'  # Windows default encoding
-            else:
-                encoding = 'utf-8'  # Linux/macOS encoding
+        # Determine encoding based on platform if not specified        
+        if sys.platform == 'win32':
+            encoding = 'gbk'  # Windows default encoding
+        else:
+            encoding = 'utf-8'  # Linux/macOS encoding
 
         # Start subprocess
         process = subprocess.Popen(
