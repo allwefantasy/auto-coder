@@ -1714,13 +1714,20 @@ def commit(query: str):
                     os.remove(temp_yaml)
 
             llm = get_single_llm(args.code_model or args.model, product_mode)
-            #MARK
-            uncommitted_changes = git_utils.get_uncommitted_changes(".")
-            commit_message = git_utils.generate_commit_message.with_llm(llm).run(
-                uncommitted_changes
-            )
-            memory["conversation"].append(
-                {"role": "user", "content": commit_message})
+            printer = Printer()
+            printer.print_in_terminal("commit_generating", style="yellow")
+            try:
+                uncommitted_changes = git_utils.get_uncommitted_changes(".")
+                commit_message = git_utils.generate_commit_message.with_llm(llm).run(
+                    uncommitted_changes
+                )
+                printer.print_in_terminal("commit_message", style="green")
+                printer.print_str_in_terminal(commit_message)
+                memory["conversation"].append(
+                    {"role": "user", "content": commit_message})
+            except Exception as e:
+                printer.print_in_terminal("commit_failed", style="red", error=str(e))
+                return
             yaml_config["query"] = commit_message
             yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
             with open(os.path.join(execute_file), "w") as f:
