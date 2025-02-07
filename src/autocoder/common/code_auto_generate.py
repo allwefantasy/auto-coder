@@ -8,6 +8,8 @@ from concurrent.futures import ThreadPoolExecutor
 from autocoder.common.types import CodeGenerateResult
 from autocoder.common.utils_code_auto_generate import chat_with_continue
 import json
+from autocoder.common.printer import Printer
+from autocoder.rag.token_counter import count_tokens
 
 
 class CodeAutoGenerate:
@@ -191,6 +193,14 @@ class CodeAutoGenerate:
         results = []
         input_tokens_count = 0
         generated_tokens_count = 0
+
+        printer = Printer()
+        estimated_input_tokens = count_tokens(json.dumps(conversations, ensure_ascii=False))
+        printer.print_in_terminal("estimated_input_tokens_in_generate", style="yellow",
+                                  estimated_input_tokens_in_generate=estimated_input_tokens,
+                                  generate_mode="wholefile"
+                                  )
+
         if not self.args.human_as_model:
             with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
                 futures = []

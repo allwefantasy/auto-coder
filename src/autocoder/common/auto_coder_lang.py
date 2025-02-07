@@ -86,7 +86,8 @@ MESSAGES = {
         "git_init_required": "⚠️ auto_merge only applies to git repositories.\n\nPlease try using git init in the source directory:\n\n```shell\ncd {{ source_dir }}\ngit init.\n```\n\nThen run auto - coder again.\nError: {{ error }}",
         "quick_filter_reason": "Auto get(quick_filter mode)",
         "quick_filter_too_long": "⚠️ index file is too large ({{ tokens_len }}/{{ max_tokens }}). The query will be split into {{ split_size }} chunks.",
-        "quick_filter_tokens_len": "📊 Current index size: {{ tokens_len }} tokens"
+        "quick_filter_tokens_len": "📊 Current index size: {{ tokens_len }} tokens",
+        "estimated_input_tokens_in_generate": "Estimated input tokens in generate ({{ generate_mode }}): {{ estimated_input_tokens_in_generate }}",
     },
     "zh": {
         "model_not_found": "未找到模型: {{model_name}}",
@@ -173,6 +174,7 @@ MESSAGES = {
         "quick_filter_stats": "Quick filter completed in {{ elapsed_time }} seconds, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}",
         "quick_filter_title": "{{ model_name }} 正在分析如何筛选上下文...",
         "quick_filter_failed": "❌ 快速过滤器失败: {{ error }}. ",
+        "estimated_input_tokens_in_generate": "生成代码({{ generate_mode }})预计输入token数: {{ estimated_input_tokens_in_generate }}",
     },
 }
 

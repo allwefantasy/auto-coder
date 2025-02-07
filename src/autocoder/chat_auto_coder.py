@@ -2796,8 +2796,8 @@ def main():
                     command = user_input[len("/shell"):].strip()
                     if not command:
                         print("Please enter a shell command to execute.")
-                else:
-                    execute_shell_command(command)
+                    else:
+                        execute_shell_command(command)
 
         except KeyboardInterrupt:
             continue

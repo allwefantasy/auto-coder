@@ -11,6 +11,8 @@ from autocoder.utils.queue_communicate import (
 import json
 from concurrent.futures import ThreadPoolExecutor
 from autocoder.common.utils_code_auto_generate import chat_with_continue
+from autocoder.common.printer import Printer
+from autocoder.rag.token_counter import count_tokens
 
 
 class CodeAutoGenerateEditBlock:
@@ -421,35 +423,47 @@ class CodeAutoGenerateEditBlock:
         results = []
         input_tokens_count = 0
         generated_tokens_count = 0
+
+        printer = Printer()
+        estimated_input_tokens = count_tokens(
+            json.dumps(conversations, ensure_ascii=False))
+        printer.print_in_terminal("estimated_input_tokens_in_generate",
+                                  style="yellow",
+                                  estimated_input_tokens_in_generate=estimated_input_tokens,
+                                  generate_mode="editblock"
+                                  )
+
         if not self.args.human_as_model:
             with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
                 futures = []
                 for llm in self.llms:
                     for _ in range(self.generate_times_same_model):
                         futures.append(executor.submit(
-                            chat_with_continue,llm=llm, conversations=conversations, llm_config=llm_config))
+                            chat_with_continue, llm=llm, conversations=conversations, llm_config=llm_config))
                 temp_results = [future.result() for future in futures]
                 for result in temp_results:
                     results.append(result.content)
                     input_tokens_count += result.input_tokens_count
                     generated_tokens_count += result.generated_tokens_count
-            
+
             for result in results:
                 conversations_list.append(
                     conversations + [{"role": "assistant", "content": result}])
-        else:            
+        else:
             for _ in range(self.args.human_model_num):
-                single_result = chat_with_continue(llm=self.llms[0], conversations=conversations, llm_config=llm_config)                
+                single_result = chat_with_continue(
+                    llm=self.llms[0], conversations=conversations, llm_config=llm_config)
                 results.append(single_result.content)
                 input_tokens_count += single_result.input_tokens_count
                 generated_tokens_count += single_result.generated_tokens_count
-                conversations_list.append(conversations + [{"role": "assistant", "content": single_result.content}])
-        
+                conversations_list.append(
+                    conversations + [{"role": "assistant", "content": single_result.content}])
+
         statistics = {
             "input_tokens_count": input_tokens_count,
             "generated_tokens_count": generated_tokens_count
-        }        
-    
+        }
+
         if self.args.request_id and not self.args.skip_events:
             _ = queue_communicate.send_event(
                 request_id=self.args.request_id,
