@@ -87,7 +87,7 @@ MESSAGES = {
         "quick_filter_reason": "Auto get(quick_filter mode)",
         "quick_filter_too_long": "⚠️ index file is too large ({{ tokens_len }}/{{ max_tokens }}). The query will be split into {{ split_size }} chunks.",
         "quick_filter_tokens_len": "📊 Current index size: {{ tokens_len }} tokens",
-        "estimated_input_tokens_in_generate": "Estimated input tokens in generate ({{ generate_mode }}): {{ estimated_input_tokens_in_generate }}",
+        "estimated_chat_input_tokens": "Estimated chat input tokens: {{ estimated_input_tokens_in_generate }}",
     },
     "zh": {
         "model_not_found": "未找到模型: {{model_name}}",
@@ -174,7 +174,7 @@ MESSAGES = {
         "quick_filter_stats": "Quick filter completed in {{ elapsed_time }} seconds, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}",
         "quick_filter_title": "{{ model_name }} 正在分析如何筛选上下文...",
         "quick_filter_failed": "❌ 快速过滤器失败: {{ error }}. ",
-        "estimated_input_tokens_in_generate": "生成代码({{ generate_mode }})预计输入token数: {{ estimated_input_tokens_in_generate }}",
+        "estimated_chat_input_tokens": "对话输入token预估为: {{ estimated_input_tokens_in_generate }}",
     },
 }
 

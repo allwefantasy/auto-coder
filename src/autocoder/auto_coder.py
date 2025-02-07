@@ -1337,10 +1337,9 @@ def main(input_args: Optional[List[str]] = None):
                 # 预估token数量
                 estimated_input_tokens = count_tokens(json.dumps(loaded_conversations, ensure_ascii=False))
                 printer = Printer()
-                printer.print_in_terminal("estimated_input_tokens_in_generate", style="yellow",
-                                      estimated_input_tokens_in_generate=estimated_input_tokens,
-                                      generate_mode="chat"
-                                      )
+                printer.print_in_terminal("estimated_chat_input_tokens", style="yellow",
+                                  estimated_input_tokens_in_generate=estimated_input_tokens
+                                  )
 
                 v = stream_chat_with_continue(
                     llm=chat_llm,
