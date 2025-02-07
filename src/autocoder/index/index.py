@@ -341,7 +341,11 @@ class IndexManager:
                     module_name = result["module_name"]
                     index_data[module_name] = result
                     updated_sources.append(module_name)
-
+                    if len(updated_sources) > 5:
+                        with open(self.index_file, "w") as file:
+                            json.dump(index_data, file, ensure_ascii=False, indent=2)
+                        updated_sources = []
+                        
         # 如果 updated_sources 或 keys_to_remove 有值，则保存索引文件
         if updated_sources or keys_to_remove:
             with open(self.index_file, "w") as file:
