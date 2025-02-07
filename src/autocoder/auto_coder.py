@@ -1333,6 +1333,14 @@ def main(input_args: Optional[List[str]] = None):
                 reviewer = AutoReviewCommit(llm=chat_llm, args=args)
                 v = reviewer.review_commit(query=args.query,conversations=loaded_conversations)
             else:                
+                # 预估token数量
+                estimated_input_tokens = count_tokens(json.dumps(loaded_conversations, ensure_ascii=False))
+                printer = Printer()
+                printer.print_in_terminal("estimated_input_tokens_in_generate", style="yellow",
+                                      estimated_input_tokens_in_generate=estimated_input_tokens,
+                                      generate_mode="chat"
+                                      )
+
                 v = stream_chat_with_continue(
                     llm=chat_llm,
                     conversations=loaded_conversations,
