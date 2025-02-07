@@ -45,6 +45,7 @@ from autocoder import models as models_module
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common.printer import Printer
+from autocoder.rag.token_counter import count_tokens
 console = Console()
 
 
