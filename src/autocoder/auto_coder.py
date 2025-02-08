@@ -1364,11 +1364,13 @@ def main(input_args: Optional[List[str]] = None):
             if last_meta:
                 elapsed_time = time.time() - start_time
                 printer = Printer()
+                speed = (last_meta.input_tokens_count + last_meta.generated_tokens_count) / elapsed_time
                 printer.print_in_terminal("stream_out_stats", 
                                     elapsed_time=elapsed_time,
                                     first_token_time=last_meta.first_token_time,
                                     input_tokens=last_meta.input_tokens_count,
-                                    output_tokens=last_meta.generated_tokens_count)
+                                    output_tokens=last_meta.generated_tokens_count,
+                                    speed=round(speed, 2))
             
             chat_history["ask_conversation"].append(
                 {"role": "assistant", "content": assistant_response}
