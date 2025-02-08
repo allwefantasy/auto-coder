@@ -1,5 +1,4 @@
 from rich.console import Console
-from autocoder.common.printer import Printer
 from rich.live import Live
 from rich.panel import Panel
 from rich.markdown import Markdown
@@ -183,8 +182,7 @@ def stream_out(
         ) as live:
             for res in stream_generator:
                 if global_cancel.requested:
-                    printer = Printer(console)
-                    printer.print_str_in_terminal("[Interrupted] Generation cancelled")
+                    console.print("[Interrupted] Generation cancelled")
                     break
                 last_meta = res[1]                
                 content = res[0]
