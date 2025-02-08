@@ -3,11 +3,31 @@ from rich.live import Live
 from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.layout import Layout
-from threading import Thread, Lock
+from threading import Thread, Lock, Event
 from queue import Queue, Empty
 from typing import Generator, List, Dict, Any, Optional, Tuple, Literal
 from autocoder.utils.request_queue import RequestValue, RequestOption, StreamValue
 from autocoder.utils.request_queue import request_queue
+
+class GlobalCancel:
+    def __init__(self):
+        self._flag = False
+        self._lock = Lock()
+    
+    @property
+    def requested(self):
+        with self._lock:
+            return self._flag
+    
+    def set(self):
+        with self._lock:
+            self._flag = True
+    
+    def reset(self):
+        with self._lock:
+            self._flag = False
+
+global_cancel = GlobalCancel()
 import time
 from byzerllm.utils.types import SingleOutputMeta
 from autocoder.common import AutoCoderArgs
@@ -66,9 +86,11 @@ class MultiStreamRenderer:
         """Process a single stream in a separate thread"""
         stream = self.streams[stream_idx]
         try:
-            for content, meta in stream_generator:
-                if content:
-                    stream.update(content)
+                for content, meta in stream_generator:
+                    if global_cancel.requested:
+                        break
+                    if content:
+                        stream.update(content)
         finally:
             stream.complete()
 
@@ -179,10 +201,16 @@ def stream_out(
             refresh_per_second=4,
             console=console
         ) as live:
-            for res in stream_generator:
-                last_meta = res[1]                
-                content = res[0]
-                reasoning_content = last_meta.reasoning_content
+            global_cancel.reset()  # 重置中断标记
+            try:
+                for res in stream_generator:
+                    if global_cancel.requested:
+                        console.print("[red]Generation cancelled by user[/red]")
+                        break
+                    
+                    last_meta = res[1]                
+                    content = res[0]
+                    reasoning_content = last_meta.reasoning_content
 
                 if reasoning_content == "" and content == "":
                     continue
