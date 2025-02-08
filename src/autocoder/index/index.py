@@ -317,6 +317,8 @@ class IndexManager:
                 ):
                     wait_to_build_files.append(source)
 
+            #MARK        
+
             counter = 0
             num_files = len(wait_to_build_files)
             total_files = len(self.sources)
