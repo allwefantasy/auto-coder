@@ -54,7 +54,7 @@ import shlex
 from autocoder.utils.llms import get_single_llm
 import pkg_resources
 from autocoder.common.printer import Printer
-from byzerllm.utils.langutil import run_in_thread,run_in_raw_thread
+from autocoder.utils.thread_utils import run_in_thread,run_in_raw_thread
 
 class SymbolItem(BaseModel):
     symbol_name: str

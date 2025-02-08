@@ -22,7 +22,7 @@ from autocoder.index.types import (
     TargetFile,
     FileList,
 )
-
+from autocoder.common.global_cancel import global_cancel
 class IndexManager:
     def __init__(
         self, llm: byzerllm.ByzerLLM, sources: List[SourceCode], args: AutoCoderArgs
@@ -195,7 +195,10 @@ class IndexManager:
             return True
         return False
 
-    def build_index_for_single_source(self, source: SourceCode):        
+    def build_index_for_single_source(self, source: SourceCode):   
+        if global_cancel.requested:
+            return None
+
         file_path = source.module_name
         if not os.path.exists(file_path):
             return None
@@ -329,6 +332,8 @@ class IndexManager:
                 for source in wait_to_build_files
             ]
             for future in as_completed(futures):
+                if global_cancel.requested:
+                    break
                 result = future.result()
                 if result is not None:
                     counter += 1
@@ -345,7 +350,7 @@ class IndexManager:
                         with open(self.index_file, "w") as file:
                             json.dump(index_data, file, ensure_ascii=False, indent=2)
                         updated_sources = []
-                        
+        
         # 如果 updated_sources 或 keys_to_remove 有值，则保存索引文件
         if updated_sources or keys_to_remove:
             with open(self.index_file, "w") as file:

@@ -184,7 +184,7 @@ def stream_out(
             for res in stream_generator:
                 if global_cancel.requested:
                     printer = Printer(console)
-                    printer.print_in_terminal("generation_cancelled")
+                    printer.print_in_terminal("generation_cancelled")                    
                     break
                 last_meta = res[1]                
                 content = res[0]
