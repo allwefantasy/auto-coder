@@ -317,7 +317,8 @@ class IndexManager:
                 ):
                     wait_to_build_files.append(source)
 
-            #MARK        
+            # Remove duplicates based on module_name
+            wait_to_build_files = list({source.module_name: source for source in wait_to_build_files}.values())
 
             counter = 0
             num_files = len(wait_to_build_files)
