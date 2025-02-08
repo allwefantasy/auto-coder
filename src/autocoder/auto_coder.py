@@ -1366,6 +1366,7 @@ def main(input_args: Optional[List[str]] = None):
                 printer = Printer()
                 printer.print_in_terminal("stream_out_stats", 
                                     elapsed_time=elapsed_time,
+                                    first_token_time=last_meta.first_token_time,
                                     input_tokens=last_meta.input_tokens_count,
                                     output_tokens=last_meta.generated_tokens_count)
             
