@@ -3,6 +3,7 @@ from byzerllm.utils import format_str_jinja2
 
 MESSAGES = {
     "en": {
+        "generation_cancelled": "[Interrupted] Generation cancelled",
         "model_not_found": "Model {{model_name}} not found",
         "generating_shell_script": "Generating Shell Script",
         "new_session_started": "New session started. Previous chat history has been archived.",    
@@ -91,6 +92,7 @@ MESSAGES = {
         "estimated_input_tokens_in_generate": "Estimated input tokens in generate ({{ generate_mode }}): {{ estimated_input_tokens }}",
     },
     "zh": {
+        "generation_cancelled": "[已中断] 生成已取消",
         "model_not_found": "未找到模型: {{model_name}}",
         "generating_shell_script": "正在生成 Shell 脚本",
         "new_session_started": "新会话已开始。之前的聊天历史已存档。",
