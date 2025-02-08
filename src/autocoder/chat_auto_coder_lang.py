@@ -117,6 +117,7 @@ MESSAGES = {
         "commit_message": "{{ model_name }} Generated commit message: {{ message }}",
         "commit_failed": "{{ model_name }} Failed to generate commit message: {{ error }}",
         "confirm_execute": "Do you want to execute this script?",
+        "official_doc": "Official Documentation: https://uelng8wukz.feishu.cn/wiki/NhPNwSRcWimKFIkQINIckloBncI",
     },
     "zh": {
         "commit_generating": "{{ model_name }} 正在生成提交信息...", 
@@ -232,7 +233,8 @@ MESSAGES = {
         "remove_files_none": "没有文件被移除。",
         "files_removed": "移除的文件",
         "models_api_key_empty": "警告:  {{name}}  API key 为空。请设置一个有效的 API key。",
-        "confirm_execute": "是否执行此脚本？",
+        "confirm_execute": "是否执行此脚本?",
+        "official_doc": "官方文档: https://uelng8wukz.feishu.cn/wiki/NhPNwSRcWimKFIkQINIckloBncI",
     }
 }
 
