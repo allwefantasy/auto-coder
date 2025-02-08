@@ -1,18 +1,38 @@
 import byzerllm
 from typing import Union,Optional
 
-def get_llm_names(llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM,str],target_model_type:Optional[str]=None):
-   if target_model_type is None:
-      return [llm.default_model_name for llm in [llm] if llm.default_model_name]
-   llms = llm.get_sub_client(target_model_type) 
-   if llms is None:
-      return [llm.default_model_name for llm in [llm] if llm.default_model_name]
-   elif isinstance(llms, list):
-       return [llm.default_model_name for llm in llms if llm.default_model_name]
-   elif isinstance(llms,str) and llms:
-      return llms.split(",")      
-   else:
-      return [llm.default_model_name for llm in [llms] if llm.default_model_name]
+def get_llm_names(llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM,str], target_model_type:Optional[str]=None) -> List[str]:
+    """Get model names for a given LLM client and target model type.
+    
+    Args:
+        llm: The LLM client instance or model name string
+        target_model_type: Optional model type filter (e.g. "code_model")
+    
+    Returns:
+        List of model names
+    
+    Example:
+        >>> get_llm_names(llm)  # Get default model name
+        ['deepseek_chat']
+    """
+    if isinstance(llm, str):
+        return [llm]
+        
+    if target_model_type is None:
+        return [llm.default_model_name] if llm.default_model_name else []
+        
+    llms = llm.get_sub_client(target_model_type)
+    if llms is None:
+        return [llm.default_model_name] if llm.default_model_name else []
+        
+    if isinstance(llms, list):
+        return [llm.default_model_name for llm in llms if llm and llm.default_model_name]
+    elif isinstance(llms, str):
+        return llms.split(",") if llms else []
+    elif isinstance(llms, (byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM)):
+        return [llms.default_model_name] if llms.default_model_name else []
+        
+    return []
 
 def get_single_llm(model_names: str, product_mode: str):
     from autocoder import models as models_module
