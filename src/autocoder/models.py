@@ -15,7 +15,9 @@ default_models_list = [
         "model_type": "saas/openai",
         "base_url": "https://api.deepseek.com/v1",
         "api_key_path": "api.deepseek.com",
-        "is_reasoning": True
+        "is_reasoning": True,
+        "price": 0.0,  # 单位:M/百万 tokens
+        "average_speed": 0.0  # 单位:秒/请求
     },    
     {
         "name": "deepseek_chat",
@@ -24,7 +26,9 @@ default_models_list = [
         "model_type": "saas/openai",
         "base_url": "https://api.deepseek.com/v1",
         "api_key_path": "api.deepseek.com",
-        "is_reasoning": False
+        "is_reasoning": False,
+        "price": 0.0,
+        "average_speed": 0.0
     },
     {
         "name":"o1",
@@ -33,7 +37,9 @@ default_models_list = [
         "model_type": "saas/openai",
         "base_url": "https://api.openai.com/v1",
         "api_key_path": "",
-        "is_reasoning": True
+        "is_reasoning": True,
+        "price": 0.0,
+        "average_speed": 0.0
     }
 ]
 
@@ -114,6 +120,54 @@ def get_model_by_name(name: str) -> Dict:
     return v[0]
 
 
+def update_model_price(name: str, price: float) -> bool:
+    """更新模型价格
+    
+    Args:
+        name: 模型名称
+        price: 价格(M/百万tokens)
+        
+    Returns:
+        bool: 是否更新成功
+    """
+    if price < 0:
+        raise ValueError("Price cannot be negative")
+        
+    models = load_models()
+    updated = False
+    for model in models:
+        if model["name"] == name:
+            model["price"] = float(price)
+            updated = True
+            break
+    if updated:
+        save_models(models)
+    return updated
+
+def update_model_speed(name: str, speed: float) -> bool:
+    """更新模型平均速度
+    
+    Args:
+        name: 模型名称
+        speed: 速度(秒/请求)
+        
+    Returns:
+        bool: 是否更新成功
+    """
+    if speed <= 0:
+        raise ValueError("Speed must be positive")
+        
+    models = load_models()
+    updated = False
+    for model in models:
+        if model["name"] == name:
+            model["average_speed"] = float(speed)
+            updated = True
+            break
+    if updated:
+        save_models(models)
+    return updated
+
 def check_model_exists(name: str) -> bool:
     """
     检查模型是否存在
@@ -124,14 +178,14 @@ def check_model_exists(name: str) -> bool:
 def update_model_with_api_key(name: str, api_key: str) -> Dict:
     """
     根据模型名称查找并更新模型的 api_key_path。
-    如果找到模型，会根据其 base_url 处理 api_key_path。
+    如果找到模型,会根据其 base_url 处理 api_key_path。
     
     Args:
         name: 模型名称
         api_key: API密钥
         
     Returns:
-        Dict: 更新后的模型信息，如果未找到则返回None
+        Dict: 更新后的模型信息,如果未找到则返回None
     """
     models = load_models()
     

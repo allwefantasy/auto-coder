@@ -2210,6 +2210,8 @@ def manage_models(params, query: str):
             table.add_column("Name", style="cyan", width=40, no_wrap=False)
             table.add_column("Model Name", style="magenta", width=30, overflow="fold")
             table.add_column("Base URL", style="white", width=50, overflow="fold")
+            table.add_column("Price (M)", style="magenta", width=15)
+            table.add_column("Speed (s/req)", style="blue", width=15)
             for m in models_data:
                 # Check if api_key_path exists and file exists
                 is_api_key_set = "api_key" in m  
@@ -2223,12 +2225,44 @@ def manage_models(params, query: str):
                 table.add_row(
                     name,                    
                     m.get("model_name", ""),                    
-                    m.get("base_url", "")
+                    m.get("base_url", ""),
+                    f"{m.get('price', 0.0):.2f}",
+                    f"{m.get('average_speed', 0.0):.3f}"
                 )
             console.print(table)
         else:
             printer.print_in_terminal("models_no_models", style="yellow")
 
+    elif subcmd == "/price":
+        args = query.strip().split()
+        if len(args) >= 2:
+            name = args[0]
+            try:
+                price = float(args[1])
+                if models.update_model_price(name, price):
+                    printer.print_in_terminal("models_price_updated", style="green", name=name, price=price)
+                else:
+                    printer.print_in_terminal("models_not_found", style="red", name=name)
+            except ValueError as e:
+                printer.print_in_terminal("models_invalid_price", style="red", error=str(e))
+        else:
+            printer.print_in_terminal("models_price_usage", style="red")
+
+    elif subcmd == "/speed":
+        args = query.strip().split()
+        if len(args) >= 2:
+            name = args[0]
+            try:
+                speed = float(args[1])
+                if models.update_model_speed(name, speed):
+                    printer.print_in_terminal("models_speed_updated", style="green", name=name, speed=speed)
+                else:
+                    printer.print_in_terminal("models_not_found", style="red", name=name)
+            except ValueError as e:
+                printer.print_in_terminal("models_invalid_speed", style="red", error=str(e))
+        else:
+            printer.print_in_terminal("models_speed_usage", style="red")
+            
     elif subcmd == "/add":
         # Support both simplified and legacy formats
         args = query.strip().split(" ")        
