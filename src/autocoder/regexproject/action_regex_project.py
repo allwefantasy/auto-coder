@@ -1,0 +1,1 @@
+        self.printer.print_in_terminal("code_generation_start")
