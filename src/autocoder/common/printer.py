@@ -32,7 +32,10 @@ class Printer:
             else:
                 self.console.print(format_str_jinja2(self.get_message_from_key(msg_key),**kwargs))
         except Exception as e:
-            print(self.get_message_from_key(msg_key))
+            try:
+                print(self.get_message_from_key(msg_key))
+            except Exception as e:
+                print(f"text key: {msg_key} not found")
 
     
     def print_str_in_terminal(self, content: str, style: str = None):     
