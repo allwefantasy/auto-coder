@@ -174,7 +174,9 @@ def stream_out(
     current_line = ""  # 当前行
     assistant_response = ""
     last_meta = None
-    panel_title = title if title is not None else f"Response[ {model_name} ]"    
+    panel_title = title if title is not None else f"Response[ {model_name} ]"  
+    first_token_time = 0.0
+    first_token_time_start = time.time()
     try:        
         with Live(
             Panel("", title=panel_title, border_style="green"),
@@ -193,6 +195,9 @@ def stream_out(
                 if reasoning_content == "" and content == "":
                     continue
                 
+                if first_token_time == 0.0:
+                    first_token_time = time.time() - first_token_time_start
+
                 if keep_reasoning_content:
                     # 处理思考内容
                     if reasoning_content:
@@ -286,5 +291,5 @@ def stream_out(
                     status=RequestOption.COMPLETED
                 ),
             )
-            
+    last_meta.first_token_time = first_token_time
     return assistant_response, last_meta
