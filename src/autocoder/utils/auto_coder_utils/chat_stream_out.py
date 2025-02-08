@@ -11,6 +11,7 @@ from autocoder.utils.request_queue import request_queue
 import time
 from byzerllm.utils.types import SingleOutputMeta
 from autocoder.common import AutoCoderArgs
+from autocoder.common.global_cancel import global_cancel
 
 MAX_HISTORY_LINES = 40  # 最大保留历史行数
 
@@ -180,6 +181,9 @@ def stream_out(
             console=console
         ) as live:
             for res in stream_generator:
+                if global_cancel.requested:
+                    console.print("[Interrupted] Generation cancelled")
+                    break
                 last_meta = res[1]                
                 content = res[0]
                 reasoning_content = last_meta.reasoning_content
