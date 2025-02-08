@@ -17,6 +17,8 @@ from autocoder.common.printer import Printer
 from concurrent.futures import ThreadPoolExecutor
 import threading
 
+from autocoder.utils.llms import get_llm_names
+
 
 def get_file_path(file_path):
     if file_path.startswith("##"):
@@ -70,9 +72,7 @@ class QuickFilter():
 
         def process_chunk(chunk_index: int, chunk: List[IndexItem]) -> None:
             try:
-                model_name = getattr(self.index_manager.index_filter_llm, 'default_model_name', None)
-                if not model_name:
-                    model_name = "unknown(without default model name)"
+                model_name = ",".join(get_llm_names(self.index_manager.index_filter_llm))
                 
                 if chunk_index == 0:
                     # 第一个chunk使用流式输出
@@ -180,9 +180,7 @@ class QuickFilter():
             return self.big_filter(index_items)
         
         try:
-            model_name = getattr(self.index_manager.index_filter_llm, 'default_model_name', None)
-            if not model_name:
-                model_name = "unknown(without default model name)"
+            model_name = ",".join(get_llm_names(self.index_manager.index_filter_llm))
             
             # 渲染 Prompt 模板
             query = self.quick_filter_files.prompt(index_items, self.args.query)

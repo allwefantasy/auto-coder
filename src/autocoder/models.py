@@ -2,7 +2,6 @@ import os
 import json
 from typing import List, Dict
 from urllib.parse import urlparse
-from autocoder.common.auto_coder_lang import get_message_with_format
 
 MODELS_JSON = os.path.expanduser("~/.auto-coder/keys/models.json")
 
@@ -115,6 +114,7 @@ def get_model_by_name(name: str) -> Dict:
     """
     根据模型名称查找模型
     """
+    from autocoder.common.auto_coder_lang import get_message_with_format
     models = load_models()
     v = [m for m in models if m["name"] == name.strip()]
     

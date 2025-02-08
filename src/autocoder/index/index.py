@@ -23,6 +23,7 @@ from autocoder.index.types import (
     FileList,
 )
 from autocoder.common.global_cancel import global_cancel
+from autocoder.utils.llms import get_llm_names
 class IndexManager:
     def __init__(
         self, llm: byzerllm.ByzerLLM, sources: List[SourceCode], args: AutoCoderArgs
@@ -208,9 +209,7 @@ class IndexManager:
 
         md5 = hashlib.md5(source.source_code.encode("utf-8")).hexdigest()
 
-        model_name = getattr(self.index_llm, 'default_model_name', None)
-        if not model_name:
-            model_name = "unknown(without default model name)"
+        model_name = ",".join(get_llm_names(self.index_llm))
 
         try:
             start_time = time.monotonic()

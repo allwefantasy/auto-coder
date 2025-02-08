@@ -6,6 +6,7 @@ from autocoder.common import git_utils, code_auto_execute
 from autocoder.utils.llm_client_interceptors import token_counter_interceptor
 from autocoder.db.store import Store
 
+from autocoder.utils.llms import get_llm_names
 from autocoder.utils.queue_communicate import (
     queue_communicate,
     CommunicateEvent,
@@ -1348,9 +1349,7 @@ def main(input_args: Optional[List[str]] = None):
                 )              
 
 
-            model_name = getattr(chat_llm, 'default_model_name', None)
-            if not model_name:
-                model_name = "unknown(without default model name)"    
+            model_name = ",".join(get_llm_names(chat_llm))
             
             assistant_response, last_meta = stream_out(
                     v, 

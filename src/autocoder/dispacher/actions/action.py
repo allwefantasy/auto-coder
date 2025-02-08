@@ -26,6 +26,7 @@ from autocoder.utils.conversation_store import store_code_model_conversation
 from loguru import logger
 import time
 from autocoder.common.printer import Printer
+from autocoder.utils.llms import get_llm_names
 
 
 class BaseAction:    
@@ -124,13 +125,15 @@ class ActionTSProject(BaseAction):
                     query=args.query, source_content=content
                 )
             elapsed_time = time.time() - start_time
-            speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
+            speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0            
+            model_names = get_llm_names(self.llm, "code_model")
             self.printer.print_in_terminal(
                 "code_generation_complete",
                 duration=elapsed_time,
                 input_tokens=generate_result.metadata.get('input_tokens_count', 0),
                 output_tokens=generate_result.metadata.get('generated_tokens_count', 0),
-                speed=round(speed, 2)
+                speed=round(speed, 2),
+                model_names=model_names.join(",")
             )
             merge_result = None
             if args.execute and args.auto_merge:
@@ -218,12 +221,14 @@ class ActionPyScriptProject(BaseAction):
 
             elapsed_time = time.time() - start_time
             speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
+            model_names = get_llm_names(self.llm, "code_model")
             self.printer.print_in_terminal(
                 "code_generation_complete",
                 duration=elapsed_time,
                 input_tokens=generate_result.metadata.get('input_tokens_count', 0),
                 output_tokens=generate_result.metadata.get('generated_tokens_count', 0),
-                speed=round(speed, 2)
+                speed=round(speed, 2),
+                model_names=model_names.join(",")
             )
             merge_result = None
             if args.execute and args.auto_merge:
@@ -343,12 +348,14 @@ class ActionPyProject(BaseAction):
                 )
             elapsed_time = time.time() - start_time
             speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
+            model_names = get_llm_names(self.llm, "code_model")
             self.printer.print_in_terminal(
                 "code_generation_complete",
                 duration=elapsed_time,
                 input_tokens=generate_result.metadata.get('input_tokens_count', 0),
                 output_tokens=generate_result.metadata.get('generated_tokens_count', 0),
-                speed=round(speed, 2)
+                speed=round(speed, 2),
+                model_names=model_names.join(",")
             )
             merge_result = None
             if args.execute and args.auto_merge:
@@ -451,12 +458,14 @@ class ActionSuffixProject(BaseAction):
               
         elapsed_time = time.time() - start_time
         speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
+        model_names = get_llm_names(self.llm, "code_model")
         self.printer.print_in_terminal(
             "code_generation_complete",
             duration=elapsed_time,
             input_tokens=generate_result.metadata.get('input_tokens_count', 0),
             output_tokens=generate_result.metadata.get('generated_tokens_count', 0),
-            speed=round(speed, 2)
+            speed=round(speed, 2),
+            model_names=model_names.join(",")
         )
         merge_result = None
         if args.execute and args.auto_merge:

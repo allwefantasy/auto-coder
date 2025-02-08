@@ -8,6 +8,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import traceback
 from autocoder.common.utils_code_auto_generate import chat_with_continue
 from byzerllm.utils.str2model import to_model
+
+from autocoder.utils.llms import get_llm_names
 class RankResult(BaseModel):
     rank_result: List[int]
 
@@ -78,9 +80,7 @@ class CodeModificationRanker:
                 # Submit tasks for each model and generate_times
                 futures = []
                 for llm in self.llms:                    
-                    model_name = getattr(llm, 'default_model_name', None)                    
-                    if not model_name:
-                        model_name = "unknown(without default model name)"
+                    model_name = ",".join(get_llm_names(llm))
                     self.printer.print_in_terminal(
                         "ranking_start", style="blue", count=len(generate_result.contents), model_name=model_name)
                     
