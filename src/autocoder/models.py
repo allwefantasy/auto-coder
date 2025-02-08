@@ -16,7 +16,8 @@ default_models_list = [
         "base_url": "https://api.deepseek.com/v1",
         "api_key_path": "api.deepseek.com",
         "is_reasoning": True,
-        "price": 0.0,  # 单位:M/百万 tokens
+        "input_price": 0.0,  # 单位:M/百万 input tokens
+        "output_price": 0.0,  # 单位:M/百万 output tokens
         "average_speed": 0.0  # 单位:秒/请求
     },    
     {
@@ -27,7 +28,8 @@ default_models_list = [
         "base_url": "https://api.deepseek.com/v1",
         "api_key_path": "api.deepseek.com",
         "is_reasoning": False,
-        "price": 0.0,
+        "input_price": 0.0,
+        "output_price": 0.0,
         "average_speed": 0.0
     },
     {
@@ -38,7 +40,8 @@ default_models_list = [
         "base_url": "https://api.openai.com/v1",
         "api_key_path": "",
         "is_reasoning": True,
-        "price": 0.0,
+        "input_price": 0.0,
+        "output_price": 0.0,
         "average_speed": 0.0
     }
 ]
@@ -120,12 +123,12 @@ def get_model_by_name(name: str) -> Dict:
     return v[0]
 
 
-def update_model_price(name: str, price: float) -> bool:
-    """更新模型价格
+def update_model_input_price(name: str, price: float) -> bool:
+    """更新模型输入价格
     
     Args:
         name: 模型名称
-        price: 价格(M/百万tokens)
+        price: 输入价格(M/百万input tokens)
         
     Returns:
         bool: 是否更新成功
@@ -137,7 +140,31 @@ def update_model_price(name: str, price: float) -> bool:
     updated = False
     for model in models:
         if model["name"] == name:
-            model["price"] = float(price)
+            model["input_price"] = float(price)
+            updated = True
+            break
+    if updated:
+        save_models(models)
+    return updated
+
+def update_model_output_price(name: str, price: float) -> bool:
+    """更新模型输出价格
+    
+    Args:
+        name: 模型名称
+        price: 输出价格(M/百万output tokens)
+        
+    Returns:
+        bool: 是否更新成功
+    """
+    if price < 0:
+        raise ValueError("Price cannot be negative")
+        
+    models = load_models()
+    updated = False
+    for model in models:
+        if model["name"] == name:
+            model["output_price"] = float(price)
             updated = True
             break
     if updated:
