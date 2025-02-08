@@ -317,7 +317,8 @@ class IndexManager:
                 ):
                     wait_to_build_files.append(source)
 
-            #MARK        
+            # 根据 module_name 对待构建文件进行排序
+            wait_to_build_files.sort(key=lambda x: x.module_name)
 
             counter = 0
             num_files = len(wait_to_build_files)
