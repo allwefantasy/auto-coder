@@ -316,7 +316,7 @@ def main(input_args: Optional[List[str]] = None):
         action="store_true",
         help="Whether to return responses without contexts. only works when pro plugin is installed",
     )
-        
+
     serve_parser.add_argument("--data_cells_max_num",
         type=int,
         default=2000,
@@ -466,6 +466,13 @@ def main(input_args: Optional[List[str]] = None):
     elif args.command == "serve":
         if not args.quick:
             initialize_system()
+
+        # Handle lite/pro flags
+        if args.lite:
+            args.product_mode = "lite"
+        elif args.pro:
+            args.product_mode = "pro"
+
         server_args = ServerArgs(
             **{
                 arg: getattr(args, arg)
@@ -480,6 +487,8 @@ def main(input_args: Optional[List[str]] = None):
                 if hasattr(args, arg)
             }
         )
+
+
         if auto_coder_args.enable_hybrid_index and args.product_mode == "lite":
             raise Exception("Hybrid index is not supported in lite mode")
 
@@ -497,11 +506,7 @@ def main(input_args: Optional[List[str]] = None):
                 logger.error("Please run 'byzerllm storage start' first")
                 return                        
         
-        # Handle lite/pro flags
-        if args.lite:
-            args.product_mode = "lite"
-        elif args.pro:
-            args.product_mode = "pro"
+        
 
         if args.product_mode == "pro":
             byzerllm.connect_cluster(address=args.ray_address)
@@ -716,6 +721,11 @@ def main(input_args: Optional[List[str]] = None):
         elif args.tool == "chunk":
             from .common.chunk_validation import validate_chunk
             from autocoder import models as models_module
+            
+            if args.lite:
+                args.product_mode = "lite"
+            elif args.pro:
+                args.product_mode = "pro"
 
             if args.product_mode == "pro":
                 llm = byzerllm.ByzerLLM.from_default_model(args.model)
