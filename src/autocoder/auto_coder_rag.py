@@ -329,6 +329,16 @@ def main(input_args: Optional[List[str]] = None):
         default="pro",
         help="The mode of the auto-coder.rag, lite/pro default is pro",
     )
+    serve_parser.add_argument(
+        "--lite",
+        action="store_true",
+        help="Run in lite mode (equivalent to --product_mode=lite)",
+    )
+    serve_parser.add_argument(
+        "--pro",
+        action="store_true",
+        help="Run in pro mode (equivalent to --product_mode=pro)",
+    )
 
     serve_parser.add_argument(
         "--recall_model",
@@ -385,6 +395,16 @@ def main(input_args: Optional[List[str]] = None):
         type=str,
         default="pro",
         help="The mode of the auto-coder.rag, lite/pro default is pro",
+    )
+    tools_parser.add_argument(
+        "--lite",
+        action="store_true",
+        help="Run in lite mode (equivalent to --product_mode=lite)",
+    )
+    tools_parser.add_argument(
+        "--pro",
+        action="store_true",
+        help="Run in pro mode (equivalent to --product_mode=pro)",
     )
 
     # Count tool
@@ -477,6 +497,12 @@ def main(input_args: Optional[List[str]] = None):
                 logger.error("Please run 'byzerllm storage start' first")
                 return                        
         
+        # Handle lite/pro flags
+        if args.lite:
+            args.product_mode = "lite"
+        elif args.pro:
+            args.product_mode = "pro"
+
         if args.product_mode == "pro":
             byzerllm.connect_cluster(address=args.ray_address)
             llm = byzerllm.ByzerLLM()
@@ -659,6 +685,12 @@ def main(input_args: Optional[List[str]] = None):
         elif args.tool == "recall":
             from .common.recall_validation import validate_recall
             from autocoder import models as models_module
+
+            # Handle lite/pro flags
+            if args.lite:
+                args.product_mode = "lite"
+            elif args.pro:
+                args.product_mode = "pro"
 
             if args.product_mode == "pro":
                 llm = byzerllm.ByzerLLM.from_default_model(args.model)
