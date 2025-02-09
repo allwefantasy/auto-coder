@@ -169,6 +169,10 @@ def stream_out(
     keep_reasoning_content = True
     if args:
         keep_reasoning_content = args.keep_reasoning_content            
+    
+    keep_only_reasoning_content = False
+    if args:
+        keep_only_reasoning_content = args.keep_only_reasoning_content
 
     lines_buffer = []  # 存储历史行
     current_line = ""  # 当前行
@@ -198,7 +202,7 @@ def stream_out(
                 if first_token_time == 0.0:
                     first_token_time = time.time() - first_token_time_start
 
-                if args.keep_only_reasoning_content:                    
+                if keep_only_reasoning_content:
                     assistant_response += reasoning_content
                 else:    
                     if keep_reasoning_content:
