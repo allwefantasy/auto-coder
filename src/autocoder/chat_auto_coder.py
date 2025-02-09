@@ -1715,7 +1715,7 @@ def commit(query: str):
                 if os.path.exists(temp_yaml):
                     os.remove(temp_yaml)
             
-            target_model = args.code_model or args.model
+            target_model = args.commit_model or args.model
             llm = get_single_llm(target_model, product_mode)
             printer = Printer()
             printer.print_in_terminal("commit_generating", style="yellow", model_name=target_model)

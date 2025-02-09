@@ -766,6 +766,23 @@ def main(input_args: Optional[List[str]] = None):
                 )
                 llm.setup_sub_client("planner_model", planner_model)
 
+            if args.commit_model:
+                model_name = args.commit_model.strip()
+                model_info = models_module.get_model_by_name(model_name)
+                commit_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
+                commit_model.deploy(
+                    model_path="",
+                    pretrained_model_type=model_info["model_type"],
+                    udf_name=model_name,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
+                    }
+                )
+                llm.setup_sub_client("commit_model", commit_model)    
+
             if args.designer_model:
                 model_name = args.designer_model.strip()
                 model_info = models_module.get_model_by_name(model_name)
@@ -875,6 +892,11 @@ def main(input_args: Optional[List[str]] = None):
                 designer_model = byzerllm.ByzerLLM()
                 designer_model.setup_default_model_name(args.designer_model)
                 llm.setup_sub_client("designer_model", designer_model)
+
+            if args.commit_model:
+                commit_model = byzerllm.ByzerLLM()
+                commit_model.setup_default_model_name(args.commit_model)
+                llm.setup_sub_client("commit_model", commit_model)
 
     else:
         llm = None
