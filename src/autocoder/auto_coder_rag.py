@@ -380,6 +380,12 @@ def main(input_args: Optional[List[str]] = None):
     # Tools command
     tools_parser = subparsers.add_parser("tools", help="Various tools")
     tools_subparsers = tools_parser.add_subparsers(dest="tool", help="Available tools")
+    tools_parser.add_argument(
+        "--product_mode",
+        type=str,
+        default="pro",
+        help="The mode of the auto-coder.rag, lite/pro default is pro",
+    )
 
     # Count tool
     count_parser = tools_subparsers.add_parser("count", help="Count tokens in a file")
@@ -652,16 +658,50 @@ def main(input_args: Optional[List[str]] = None):
             count_tokens(args.tokenizer_path, args.file)
         elif args.tool == "recall":
             from .common.recall_validation import validate_recall
+            from autocoder import models as models_module
 
-            llm = byzerllm.ByzerLLM.from_default_model(args.model)
+            if args.product_mode == "pro":
+                llm = byzerllm.ByzerLLM.from_default_model(args.model)
+            else:  # lite mode
+                model_info = models_module.get_model_by_name(args.model)
+                llm = byzerllm.SimpleByzerLLM(default_model_name=args.model)
+                llm.deploy(
+                    model_path="",
+                    pretrained_model_type=model_info["model_type"],
+                    udf_name=args.model,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
+                    }
+                )
 
             content = None if not args.content else [args.content]
             result = validate_recall(llm, content=content, query=args.query)
             print(f"Recall Validation Result:\n{result}")
+
         elif args.tool == "chunk":
             from .common.chunk_validation import validate_chunk
+            from autocoder import models as models_module
 
-            llm = byzerllm.ByzerLLM.from_default_model(args.model)
+            if args.product_mode == "pro":
+                llm = byzerllm.ByzerLLM.from_default_model(args.model)
+            else:  # lite mode
+                model_info = models_module.get_model_by_name(args.model)
+                llm = byzerllm.SimpleByzerLLM(default_model_name=args.model)
+                llm.deploy(
+                    model_path="",
+                    pretrained_model_type=model_info["model_type"],
+                    udf_name=args.model,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
+                    }
+                )
+
             content = None if not args.content else [args.content]
             result = validate_chunk(llm, content=content, query=args.query)
             print(f"Chunk Model Validation Result:\n{result}")
