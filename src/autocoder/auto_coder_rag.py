@@ -316,7 +316,7 @@ def main(input_args: Optional[List[str]] = None):
         action="store_true",
         help="Whether to return responses without contexts. only works when pro plugin is installed",
     )
-    serve_parser.add_argument(
+        
     serve_parser.add_argument("--data_cells_max_num",
         type=int,
         default=2000,
