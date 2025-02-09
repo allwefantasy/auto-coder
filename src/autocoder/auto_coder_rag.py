@@ -454,8 +454,10 @@ def main(input_args: Optional[List[str]] = None):
                 if hasattr(args, arg)
             }
         )
+        if auto_coder_args.enable_hybrid_index and args.product_mode == "lite":
+            raise Exception("Hybrid index is not supported in lite mode")
 
-        if auto_coder_args.enable_hybrid_index:
+        if auto_coder_args.enable_hybrid_index and args.product_mode == "pro":
             # 尝试连接storage
             try:
                 from byzerllm.apps.byzer_storage.simple_api import ByzerStorage
@@ -467,12 +469,10 @@ def main(input_args: Optional[List[str]] = None):
                     "When enable_hybrid_index is true, ByzerStorage must be started"
                 )
                 logger.error("Please run 'byzerllm storage start' first")
-                return
-        else:
-            if args.product_mode == "pro":
-                byzerllm.connect_cluster(address=args.ray_address)
+                return                        
         
         if args.product_mode == "pro":
+            byzerllm.connect_cluster(address=args.ray_address)
             llm = byzerllm.ByzerLLM()
             llm.setup_default_model_name(args.model)
 
