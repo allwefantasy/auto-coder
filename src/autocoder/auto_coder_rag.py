@@ -317,10 +317,17 @@ def main(input_args: Optional[List[str]] = None):
         help="Whether to return responses without contexts. only works when pro plugin is installed",
     )
     serve_parser.add_argument(
-        "--data_cells_max_num",
+    serve_parser.add_argument("--data_cells_max_num",
         type=int,
         default=2000,
         help="Maximum number of data cells to process",
+    )
+
+    serve_parser.add_argument(
+        "--product_mode",
+        type=str,
+        default="pro",
+        help="The mode of the auto-coder.rag, lite/pro default is pro",
     )
 
     serve_parser.add_argument(
@@ -462,34 +469,102 @@ def main(input_args: Optional[List[str]] = None):
                 logger.error("Please run 'byzerllm storage start' first")
                 return
         else:
-            byzerllm.connect_cluster(address=args.ray_address)
-        llm = byzerllm.ByzerLLM()
-        llm.setup_default_model_name(args.model)
+            if args.product_mode == "pro":
+                byzerllm.connect_cluster(address=args.ray_address)
+        
+        if args.product_mode == "pro":
+            llm = byzerllm.ByzerLLM()
+            llm.setup_default_model_name(args.model)
 
-        # Setup sub models if specified
-        if args.recall_model:
-            recall_model = byzerllm.ByzerLLM()
-            recall_model.setup_default_model_name(args.recall_model)
-            llm.setup_sub_client("recall_model", recall_model)
+            # Setup sub models if specified
+            if args.recall_model:
+                recall_model = byzerllm.ByzerLLM()
+                recall_model.setup_default_model_name(args.recall_model)
+                llm.setup_sub_client("recall_model", recall_model)
 
-        if args.chunk_model:
-            chunk_model = byzerllm.ByzerLLM()
-            chunk_model.setup_default_model_name(args.chunk_model)
-            llm.setup_sub_client("chunk_model", chunk_model)
+            if args.chunk_model:
+                chunk_model = byzerllm.ByzerLLM()
+                chunk_model.setup_default_model_name(args.chunk_model)
+                llm.setup_sub_client("chunk_model", chunk_model)
 
-        if args.qa_model:
-            qa_model = byzerllm.ByzerLLM()
-            qa_model.setup_default_model_name(args.qa_model)
-            llm.setup_sub_client("qa_model", qa_model)
+            if args.qa_model:
+                qa_model = byzerllm.ByzerLLM()
+                qa_model.setup_default_model_name(args.qa_model)
+                llm.setup_sub_client("qa_model", qa_model)
 
-        # 当启用hybrid_index时,检查必要的组件
-        if auto_coder_args.enable_hybrid_index:
-            if not llm.is_model_exist("emb"):
-                logger.error(
-                    "When enable_hybrid_index is true, an 'emb' model must be deployed"
+            # 当启用hybrid_index时,检查必要的组件
+            if auto_coder_args.enable_hybrid_index:
+                if not llm.is_model_exist("emb"):
+                    logger.error(
+                        "When enable_hybrid_index is true, an 'emb' model must be deployed"
+                    )
+                    return
+                llm.setup_default_emb_model_name("emb")
+
+        elif args.product_mode == "lite":
+            from autocoder import models as models_module
+            model_info = models_module.get_model_by_name(args.model)
+            llm = byzerllm.SimpleByzerLLM(default_model_name=args.model)
+            llm.deploy(
+                model_path="",
+                pretrained_model_type=model_info["model_type"],
+                udf_name=args.model,
+                infer_params={
+                    "saas.base_url": model_info["base_url"],
+                    "saas.api_key": model_info["api_key"],
+                    "saas.model": model_info["model_name"],
+                    "saas.is_reasoning": model_info["is_reasoning"]
+                }
+            )
+
+            # Setup sub models if specified
+            if args.recall_model:
+                model_info = models_module.get_model_by_name(args.recall_model)
+                recall_model = byzerllm.SimpleByzerLLM(default_model_name=args.recall_model)
+                recall_model.deploy(
+                    model_path="",
+                    pretrained_model_type=model_info["model_type"],
+                    udf_name=args.recall_model,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
+                    }
                 )
-                return
-            llm.setup_default_emb_model_name("emb")
+                llm.setup_sub_client("recall_model", recall_model)
+
+            if args.chunk_model:
+                model_info = models_module.get_model_by_name(args.chunk_model)
+                chunk_model = byzerllm.SimpleByzerLLM(default_model_name=args.chunk_model)
+                chunk_model.deploy(
+                    model_path="",
+                    pretrained_model_type=model_info["model_type"],
+                    udf_name=args.chunk_model,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
+                    }
+                )
+                llm.setup_sub_client("chunk_model", chunk_model)
+
+            if args.qa_model:
+                model_info = models_module.get_model_by_name(args.qa_model)
+                qa_model = byzerllm.SimpleByzerLLM(default_model_name=args.qa_model)
+                qa_model.deploy(
+                    model_path="",
+                    pretrained_model_type=model_info["model_type"],
+                    udf_name=args.qa_model,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"]
+                    }
+                )
+                llm.setup_sub_client("qa_model", qa_model)
 
         if server_args.doc_dir:
             auto_coder_args.rag_type = "simple"
