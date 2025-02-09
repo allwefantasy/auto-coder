@@ -57,6 +57,7 @@ src/autocoder/common/command_templates.py
 src/autocoder/common/const.py
 src/autocoder/common/files.py
 src/autocoder/common/git_utils.py
+src/autocoder/common/global_cancel.py
 src/autocoder/common/image_to_page.py
 src/autocoder/common/interpreter.py
 src/autocoder/common/llm_rerank.py
@@ -144,6 +145,7 @@ src/autocoder/utils/request_event_queue.py
 src/autocoder/utils/request_queue.py
 src/autocoder/utils/rest.py
 src/autocoder/utils/tests.py
+src/autocoder/utils/thread_utils.py
 src/autocoder/utils/types.py
 src/autocoder/utils/auto_coder_utils/__init__.py
 src/autocoder/utils/auto_coder_utils/chat_stream_out.py

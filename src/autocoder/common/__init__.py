@@ -359,6 +359,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     product_mode: Optional[str] = "lite"
 
     keep_reasoning_content: Optional[bool] = False
+    keep_only_reasoning_content: Optional[bool] = False
 
     in_code_apply: bool = False
 

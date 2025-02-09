@@ -198,21 +198,24 @@ def stream_out(
                 if first_token_time == 0.0:
                     first_token_time = time.time() - first_token_time_start
 
-                if keep_reasoning_content:
-                    # 处理思考内容
-                    if reasoning_content:
-                        if assistant_response == "":  # 首次遇到思考内容时添加开标签
-                            assistant_response = "<thinking>"
-                        assistant_response += reasoning_content
-                        
-                    # 处理正式内容
-                    if content:
-                        # 如果之前有思考内容,需要先关闭thinking标签
-                        if "</thinking>" not in assistant_response and "<thinking>" in assistant_response:
-                            assistant_response += "</thinking>"
+                if args.keep_only_reasoning_content:                    
+                    assistant_response += reasoning_content
+                else:    
+                    if keep_reasoning_content:
+                        # 处理思考内容
+                        if reasoning_content:
+                            if assistant_response == "":  # 首次遇到思考内容时添加开标签
+                                assistant_response = "<thinking>"
+                            assistant_response += reasoning_content
+                            
+                        # 处理正式内容
+                        if content:
+                            # 如果之前有思考内容,需要先关闭thinking标签
+                            if "</thinking>" not in assistant_response and "<thinking>" in assistant_response:
+                                assistant_response += "</thinking>"
+                            assistant_response += content
+                    else:
                         assistant_response += content
-                else:
-                    assistant_response += content
 
                 display_delta = reasoning_content if reasoning_content else content
                 
