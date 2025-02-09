@@ -91,9 +91,7 @@ class DocFilter:
                 def _run(conversations, docs):
                     submit_time_1 = time.time()
                     try:
-                        llm = ByzerLLM()
-                        llm.skip_nontext_check = True
-                        llm.setup_default_model_name(self.recall_llm.default_model_name)
+                        llm = self.recall_llm
 
                         v = (
                             _check_relevance_with_conversation.with_llm(

@@ -32,7 +32,10 @@ if platform.system() == "Windows":
     init()
 
 
-def initialize_system():
+def initialize_system(args):
+    if args.product_mode == "lite":
+        return
+
     print(f"\n\033[1;34m{get_message('initializing')}\033[0m")
 
     def print_status(message, status):
@@ -464,15 +467,15 @@ def main(input_args: Optional[List[str]] = None):
             benchmark_byzerllm(args.model, args.parallel, args.rounds, args.query)
 
     elif args.command == "serve":
-        if not args.quick:
-            initialize_system()
-
-        # Handle lite/pro flags
+         # Handle lite/pro flags
         if args.lite:
             args.product_mode = "lite"
         elif args.pro:
             args.product_mode = "pro"
 
+        if not args.quick:
+            initialize_system(args)
+       
         server_args = ServerArgs(
             **{
                 arg: getattr(args, arg)
@@ -511,12 +514,14 @@ def main(input_args: Optional[List[str]] = None):
         if args.product_mode == "pro":
             byzerllm.connect_cluster(address=args.ray_address)
             llm = byzerllm.ByzerLLM()
+            llm.skip_nontext_check = True
             llm.setup_default_model_name(args.model)
 
             # Setup sub models if specified
             if args.recall_model:
                 recall_model = byzerllm.ByzerLLM()
                 recall_model.setup_default_model_name(args.recall_model)
+                recall_model.skip_nontext_check = True
                 llm.setup_sub_client("recall_model", recall_model)
 
             if args.chunk_model:
@@ -527,6 +532,7 @@ def main(input_args: Optional[List[str]] = None):
             if args.qa_model:
                 qa_model = byzerllm.ByzerLLM()
                 qa_model.setup_default_model_name(args.qa_model)
+                qa_model.skip_nontext_check = True
                 llm.setup_sub_client("qa_model", qa_model)
 
             # 当启用hybrid_index时,检查必要的组件

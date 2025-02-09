@@ -52,11 +52,13 @@ class LongContextRAG:
     ) -> None:
         self.llm = llm
         self.args = args
-
-        self.index_model = byzerllm.ByzerLLM()
-        self.index_model.setup_default_model_name(
-            args.index_model or self.llm.default_model_name
-        )
+        if args.product_mode == "pro":
+            self.index_model = byzerllm.ByzerLLM()
+            self.index_model.setup_default_model_name(
+                args.index_model or self.llm.default_model_name
+            )
+        else:
+            self.index_model = self.llm
 
         self.path = path
         self.relevant_score = self.args.rag_doc_filter_relevance or 5

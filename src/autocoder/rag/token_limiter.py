@@ -224,9 +224,7 @@ class TokenLimiter:
                 for idx, line in enumerate(source_code_lines):
                     source_code_with_line_number += f"{idx+1} {line}\n"
                 
-                llm = ByzerLLM()
-                llm.skip_nontext_check = True
-                llm.setup_default_model_name(self.chunk_llm.default_model_name)
+                llm = self.chunk_llm
 
                 extracted_info = (
                     self.extract_relevance_range_from_docs_with_conversation.options(
