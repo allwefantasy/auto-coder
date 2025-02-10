@@ -3,7 +3,6 @@ from asyncio import Queue as AsyncQueue
 import threading
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
-import byzerllm
 from autocoder.common.mcp_hub import McpHub
 from autocoder.common.mcp_tools import McpExecutor
 from autocoder.common.mcp_hub import MCP_BUILD_IN_SERVERS
@@ -13,12 +12,13 @@ import time
 from pydantic import BaseModel
 import sys
 from loguru import logger
+from autocoder.utils.llms import get_single_llm
 
 @dataclass
 class McpRequest:
     query: str
     model: Optional[str] = None
-
+    product_mode: Optional[str] = None
 
 @dataclass
 class McpInstallRequest:
@@ -279,8 +279,7 @@ class McpServer:
                         await self._response_queue.put(McpResponse(result="", error=f"Failed to refresh MCP servers: {str(e)}"))
 
                 else:
-                    llm = byzerllm.ByzerLLM.from_default_model(
-                        model=request.model)
+                    llm = get_single_llm(request.model,product_mode=request.product_mode)
                     mcp_executor = McpExecutor(hub, llm)
                     conversations = [
                         {"role": "user", "content": request.query}]

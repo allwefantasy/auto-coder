@@ -194,7 +194,10 @@ def stream_out(
                     break
                 last_meta = res[1]                
                 content = res[0]
-                reasoning_content = last_meta.reasoning_content
+
+                reasoning_content = ""
+                if last_meta:
+                    reasoning_content = last_meta.reasoning_content
 
                 if reasoning_content == "" and content == "":
                     continue
@@ -298,5 +301,7 @@ def stream_out(
                     status=RequestOption.COMPLETED
                 ),
             )
-    last_meta.first_token_time = first_token_time
+
+    if last_meta:
+        last_meta.first_token_time = first_token_time
     return assistant_response, last_meta

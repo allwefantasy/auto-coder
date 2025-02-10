@@ -1539,11 +1539,12 @@ def mcp(query: str):
         if os.path.exists(temp_yaml):
             os.remove(temp_yaml)
 
-    mcp_server = get_mcp_server()
+    mcp_server = get_mcp_server()    
     response = mcp_server.send_request(
         McpRequest(
             query=query,
-            model=args.inference_model or args.model
+            model=args.inference_model or args.model,
+            product_mode=args.product_mode
         )
     )
 
@@ -1564,19 +1565,19 @@ def mcp(query: str):
         file_path = os.path.join(mcp_dir, f"{timestamp}.md")
         
         # Format response as markdown
-        markdown_content = f"# {printer.get_message_from_key('mcp_response_title')}\n\n{response.result}"
+        markdown_content = response.result
         
         # Save to file
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(markdown_content)
             
-        # Print with markdown formatting
-        printer.print_panel(
-            Markdown(markdown_content),
-            text_options={"justify": "left"},
-            panel_options={
-                "border_style": "green"
-            }
+        console = Console()
+        console.print(
+            Panel(
+                Markdown(markdown_content, justify="left"),
+                title=printer.get_message_from_key('mcp_response_title'),
+                border_style="green"
+            )
         )
 
 

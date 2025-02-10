@@ -1109,8 +1109,7 @@ def main(input_args: Optional[List[str]] = None):
             return
 
         elif raw_args.agent_command == "chat":
-            from autocoder.rag.rag_entry import RAGFactory
-
+            
             memory_dir = os.path.join(args.source_dir, ".auto-coder", "memory")
             os.makedirs(memory_dir, exist_ok=True)
             memory_file = os.path.join(memory_dir, "chat_history.json")
@@ -1335,6 +1334,7 @@ def main(input_args: Optional[List[str]] = None):
             start_time = time.time()    
                         
             if "rag" in args.action:
+                from autocoder.rag.rag_entry import RAGFactory
                 args.enable_rag_search = True
                 args.enable_rag_context = False
                 rag = RAGFactory.get_rag(llm=chat_llm, args=args, path="")
@@ -1348,7 +1348,8 @@ def main(input_args: Optional[List[str]] = None):
                 response = mcp_server.send_request(
                     McpRequest(
                         query=args.query,
-                        model=args.inference_model or args.model
+                        model=args.inference_model or args.model,
+                        product_mode=args.product_mode
                     )
                 )
                 v = [[response.result,None]]

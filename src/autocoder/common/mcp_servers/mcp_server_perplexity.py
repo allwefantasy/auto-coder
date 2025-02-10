@@ -55,7 +55,7 @@ async def handle_list_tools() -> list[types.Tool]:
                             # Commenting out larger models,which have higher risks of timing out,
                             # until Claude Desktop can handle long-running tasks effectively.
                             # "llama-3.1-sonar-large-128k-online",
-                            "llama-3.1-sonar-huge-128k-online",
+                            "sonar-reasoning-pro",
                         ],
                     },
                     "messages": {
