@@ -523,5 +523,5 @@ class CodeAutoMergeDiff:
 
         self.printer.print_in_terminal("files_merged_total", total=total)
         if not force_skip_git:
-            commit_result = git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}")
+            commit_result = git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}\n{self.args.query}")
             git_utils.print_commit_info(commit_result=commit_result)

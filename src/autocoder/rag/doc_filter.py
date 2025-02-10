@@ -148,7 +148,7 @@ class DocFilter:
                 )
                 if (
                     relevance
-                    and relevance.is_relevant
+                    # and relevance.is_relevant
                     and relevance.relevant_score >= self.relevant_score
                 ):
                     relevant_docs.append(

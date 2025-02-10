@@ -439,7 +439,7 @@ class LongContextRAG:
 
             logger.info(f"Query: {query} only_contexts: {only_contexts}")
             start_time = time.time()
-            relevant_docs: List[FilterDoc] = self._filter_docs(conversations)
+            relevant_docs: List[FilterDoc] = self._filter_docs(conversations)            
             filter_time = time.time() - start_time
 
             # Filter relevant_docs to only include those with is_relevant=True
