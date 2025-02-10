@@ -49,7 +49,7 @@ from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRe
 import byzerllm
 from byzerllm.utils import format_str_jinja2
 from autocoder.common.memory_manager import get_global_memory_file_paths 
-from autocoder import models
+from autocoder import models as models_module
 import shlex
 from autocoder.utils.llms import get_single_llm
 import pkg_resources
@@ -2173,7 +2173,7 @@ def manage_models(params, query: str):
         printer.print_in_terminal("models_lite_only", style="red")
         return
         
-    models_data = models.load_models()
+    models_data = models_module.load_models()
     subcmd = ""
     if "/list" in query:
         subcmd = "/list"
@@ -2241,7 +2241,7 @@ def manage_models(params, query: str):
             name = args[0]
             try:
                 price = float(args[1])
-                if models.update_model_input_price(name, price):
+                if models_module.update_model_input_price(name, price):
                     printer.print_in_terminal("models_input_price_updated", style="green", name=name, price=price)
                 else:
                     printer.print_in_terminal("models_not_found", style="red", name=name)
@@ -2256,7 +2256,7 @@ def manage_models(params, query: str):
             name = args[0]
             try:
                 price = float(args[1])
-                if models.update_model_output_price(name, price):
+                if models_module.update_model_output_price(name, price):
                     printer.print_in_terminal("models_output_price_updated", style="green", name=name, price=price)
                 else:
                     printer.print_in_terminal("models_not_found", style="red", name=name)
@@ -2271,7 +2271,7 @@ def manage_models(params, query: str):
             name = args[0]
             try:
                 speed = float(args[1])
-                if models.update_model_speed(name, speed):
+                if models_module.update_model_speed(name, speed):
                     printer.print_in_terminal("models_speed_updated", style="green", name=name, speed=speed)
                 else:
                     printer.print_in_terminal("models_not_found", style="red", name=name)
@@ -2286,7 +2286,7 @@ def manage_models(params, query: str):
         if len(args) == 2:
             # Simplified: /models /add <name> <api_key>
             name, api_key = args[0], args[1]            
-            result = models.update_model_with_api_key(name, api_key)
+            result = models_module.update_model_with_api_key(name, api_key)
             if result:
                 printer.print_in_terminal("models_added", style="green", name=name)
             else:
@@ -2328,7 +2328,7 @@ def manage_models(params, query: str):
         }
 
         models_data.append(final_model)
-        models.save_models(models_data)
+        models_module.save_models(models_data)
         printer.print_in_terminal("models_add_model_success", style="green", name=data_dict["name"])
 
     elif subcmd == "/remove":
@@ -2341,7 +2341,7 @@ def manage_models(params, query: str):
         if len(filtered_models) == len(models_data):
             printer.print_in_terminal("models_add_model_remove", style="yellow", name=name)
             return
-        models.save_models(filtered_models)
+        models_module.save_models(filtered_models)
         printer.print_in_terminal("models_add_model_removed", style="green", name=name)
 
     else:
