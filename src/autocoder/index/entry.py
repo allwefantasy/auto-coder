@@ -111,7 +111,8 @@ def build_index_and_filter_files(
             if quick_filter_result.has_error:                
                 raise KeyboardInterrupt(printer.get_message_from_key_with_format("quick_filter_failed",error=quick_filter_result.error_message))
 
-            final_files = quick_filter_result.files    
+            # Merge quick filter results into final_files
+            final_files.update(quick_filter_result.files)    
 
         
         if not args.skip_filter_index and not args.index_filter_model:
@@ -120,7 +121,8 @@ def build_index_and_filter_files(
                 model_name = "unknown(without default model name)" 
             printer.print_in_terminal("normal_filter_start", style="blue",model_name=model_name)
             normal_filter = NormalFilter(index_manager,stats,sources)
-            final_files = normal_filter.filter(index_manager.read_index(),args.query)
+            # Merge normal filter results into final_files
+            final_files.update(normal_filter.filter(index_manager.read_index(),args.query))
         
 
     def display_table_and_get_selections(data):
