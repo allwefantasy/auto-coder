@@ -43,10 +43,6 @@ class QuickFilter():
 
 
     def big_filter(self, index_items: List[IndexItem],) -> QuickFilterResult:
-        
-        final_files: Dict[str, TargetFile] = {}
-        final_files_lock = threading.Lock()
-        
         chunks = []
         current_chunk = []
                 
@@ -76,9 +72,10 @@ class QuickFilter():
                 split_size=len(chunks)
             )    
 
-        def process_chunk(chunk_index: int, chunk: List[IndexItem]) -> None:
+        def process_chunk(chunk_index: int, chunk: List[IndexItem]) -> QuickFilterResult:
             try:
                 model_name = ",".join(get_llm_names(self.index_manager.index_filter_llm))
+                files: Dict[str, TargetFile] = {}
                 
                 if chunk_index == 0:
                     # 第一个chunk使用流式输出
@@ -99,13 +96,16 @@ class QuickFilter():
                     file_number_list = self.quick_filter_files.with_llm(self.index_manager.index_filter_llm).with_return_type(FileNumberList).run(chunk, self.args.query)
                 
                 if file_number_list:
-                    with final_files_lock:
-                        for file_number in file_number_list.file_list:
-                            file_path = get_file_path(chunk[file_number].module_name)
-                            final_files[file_path] = TargetFile(
-                                file_path=chunk[file_number].module_name,
-                                reason=self.printer.get_message_from_key("quick_filter_reason")
-                            )
+                    for file_number in file_number_list.file_list:
+                        file_path = get_file_path(chunk[file_number].module_name)
+                        files[file_path] = TargetFile(
+                            file_path=chunk[file_number].module_name,
+                            reason=self.printer.get_message_from_key("quick_filter_reason")
+                        )
+                return QuickFilterResult(
+                    files=files,
+                    has_error=False
+                )
                             
             except Exception as e:
                 self.printer.print_in_terminal(
@@ -113,21 +113,40 @@ class QuickFilter():
                     style="red",
                     error=str(e)
                 )
+                return QuickFilterResult(
+                    files={},
+                    has_error=True,
+                    error_message=str(e)
+                )
 
+        results: List[QuickFilterResult] = []
         if chunks:
             with ThreadPoolExecutor() as executor:
-                # 提交所有chunks到线程池
+                # 提交所有chunks到线程池并收集结果
                 futures = [executor.submit(process_chunk, i, chunk) 
                           for i, chunk in enumerate(chunks)]
                 
-                # 等待所有任务完成
+                # 等待所有任务完成并收集结果
                 for future in futures:
-                    future.result()
-                
+                    results.append(future.result())
+        
+        # 合并所有结果
+        final_files: Dict[str, TargetFile] = {}
+        has_error = False
+        error_messages: List[str] = []
+        
+        for result in results:
+            if result.has_error:
+                has_error = True
+                if result.error_message:
+                    error_messages.append(result.error_message)
+            final_files.update(result.files)
+        
         return QuickFilterResult(
             files=final_files,
-            has_error=False
-        )    
+            has_error=has_error,
+            error_message="\n".join(error_messages) if error_messages else None
+        )
 
     @byzerllm.prompt()
     def quick_filter_files(self,file_meta_list:List[IndexItem],query:str) -> str:
