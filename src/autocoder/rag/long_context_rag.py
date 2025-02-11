@@ -449,20 +449,7 @@ class LongContextRAG:
 
             if highly_relevant_docs:
                 relevant_docs = highly_relevant_docs
-                logger.info(f"Found {len(relevant_docs)} highly relevant documents")
-            else:
-                if relevant_docs:
-                    prefix_chunk = FilterDoc(
-                        source_code=SourceCode(
-                            module_name="特殊说明",
-                            source_code="没有找到特别相关的内容，下面的内容是一些不是很相关的文档。在根据后续文档回答问题前，你需要和用户先提前说一下。",
-                        ),
-                        relevance=DocRelevance(False, 0),
-                    )
-                    relevant_docs.insert(0, prefix_chunk)
-                    logger.info(
-                        "No highly relevant documents found. Added a prefix chunk to indicate this."
-                    )
+                logger.info(f"Found {len(relevant_docs)} highly relevant documents")            
 
             logger.info(
                 f"Filter time: {filter_time:.2f} seconds with {len(relevant_docs)} docs"

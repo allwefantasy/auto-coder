@@ -64,7 +64,7 @@ class DocFilter:
             self.recall_llm = self.llm
         
         self.args = args
-        self.relevant_score = self.args.rag_doc_filter_relevance or 5
+        self.relevant_score = self.args.rag_doc_filter_relevance
         self.on_ray = on_ray
         self.path = path        
 
@@ -140,6 +140,7 @@ class DocFilter:
                     f"  - File: {doc.module_name}\n"
                     f"  - Relevance: {'Relevant' if relevance and relevance.is_relevant else 'Not Relevant'}\n"
                     f"  - Score: {relevance.relevant_score if relevance else 'N/A'}\n"
+                    f"  - Score Threshold: {self.relevant_score}\n"
                     f"  - Raw Response: {v}\n"
                     f"  - Timing:\n"
                     f"    * Total Duration: {task_timing.duration:.2f}s\n"
