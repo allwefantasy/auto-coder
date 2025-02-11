@@ -1,4 +1,5 @@
-from typing import List, Union, Dict, Any
+from typing import List, Union, Dict, Any, Optional
+from pydantic import BaseModel
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
 from byzerllm.utils.str2model import to_model
@@ -26,6 +27,11 @@ def get_file_path(file_path):
     return file_path
 
 
+class QuickFilterResult(BaseModel):
+    files: Dict[str, TargetFile]
+    has_error: bool
+    error_message: Optional[str] = None
+
 class QuickFilter():
     def __init__(self, index_manager: IndexManager,stats:Dict[str,Any],sources:List[SourceCode]):
         self.index_manager = index_manager
@@ -36,7 +42,7 @@ class QuickFilter():
         self.max_tokens = self.args.index_filter_model_max_input_length
 
 
-    def big_filter(self, index_items: List[IndexItem],) -> Dict[str, TargetFile]:
+    def big_filter(self, index_items: List[IndexItem],) -> QuickFilterResult:
         
         final_files: Dict[str, TargetFile] = {}
         final_files_lock = threading.Lock()
@@ -118,7 +124,10 @@ class QuickFilter():
                 for future in futures:
                     future.result()
                 
-        return final_files    
+        return QuickFilterResult(
+            files=final_files,
+            has_error=False
+        )    
 
     @byzerllm.prompt()
     def quick_filter_files(self,file_meta_list:List[IndexItem],query:str) -> str:
@@ -161,8 +170,8 @@ class QuickFilter():
         }
         return context    
 
-    def filter(self, index_items: List[IndexItem], query: str) -> Dict[str, TargetFile]:
-        final_files: Dict[str, TargetFile] = {}                
+    def filter(self, index_items: List[IndexItem], query: str) -> QuickFilterResult:
+        final_files: Dict[str, TargetFile] = {}
         start_time = time.monotonic()        
 
         prompt_str = self.quick_filter_files.prompt(index_items,query)            
@@ -217,7 +226,11 @@ class QuickFilter():
                 style="red",
                 error=str(e)
             )
-            return final_files
+            return QuickFilterResult(
+                files=final_files,
+                has_error=True,
+                error_message=str(e)
+            )
         
         if file_number_list:
             for file_number in file_number_list.file_list:
@@ -227,4 +240,7 @@ class QuickFilter():
                 )
         end_time = time.monotonic()            
         self.stats["timings"]["quick_filter"] = end_time - start_time            
-        return final_files
+        return QuickFilterResult(
+            files=final_files,
+            has_error=False
+        )    
