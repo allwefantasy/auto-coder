@@ -107,7 +107,12 @@ def build_index_and_filter_files(
                 model_name = "unknown(without default model name)"    
             printer.print_in_terminal("quick_filter_start", style="blue", model_name=model_name)
             quick_filter = QuickFilter(index_manager,stats,sources)        
-            final_files = quick_filter.filter(index_manager.read_index(),args.query)
+            quick_filter_result = quick_filter.filter(index_manager.read_index(),args.query)
+            if quick_filter_result.has_error:                
+                raise KeyboardInterrupt(printer.get_message_from_key_with_format("quick_filter_failed",error=quick_filter_result.error_message))
+
+            final_files = quick_filter_result.files    
+
         
         if not args.skip_filter_index and not args.index_filter_model:
             model_name = getattr(index_manager.llm, 'default_model_name', None)
