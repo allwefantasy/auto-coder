@@ -46,6 +46,9 @@ class QuickFilter():
         
         final_files: Dict[str, TargetFile] = {}
         final_files_lock = threading.Lock()
+        has_error = False
+        error_message = None
+        error_lock = threading.Lock()
         
         chunks = []
         current_chunk = []
@@ -113,6 +116,9 @@ class QuickFilter():
                     style="red",
                     error=str(e)
                 )
+                with error_lock:
+                    has_error = True
+                    error_message = str(e)
 
         if chunks:
             with ThreadPoolExecutor() as executor:
@@ -126,7 +132,8 @@ class QuickFilter():
                 
         return QuickFilterResult(
             files=final_files,
-            has_error=False
+            has_error=has_error,
+            error_message=error_message
         )    
 
     @byzerllm.prompt()
