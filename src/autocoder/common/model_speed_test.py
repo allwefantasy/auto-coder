@@ -91,11 +91,9 @@ def test_model_speed(model_name: str,
                     first_token_received = True
                     first_token_times.append(first_token_time)
             
-            end_time = time.time()
-            input_tokens_count = 0
+            end_time = time.time()            
             generated_tokens_count = 0
-            if last_meta:
-                input_tokens_count = last_meta.input_tokens_count
+            if last_meta:                
                 generated_tokens_count = last_meta.generated_tokens_count
             times.append(end_time - start_time)
             
