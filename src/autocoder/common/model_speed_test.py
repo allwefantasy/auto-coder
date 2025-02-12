@@ -190,7 +190,11 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
                           for args in test_args}
         
         # 收集结果
+        completed = 0
+        total = len(future_to_model)
         for future in future_to_model:
+            completed += 1
+            printer.print_in_terminal("models_testing_progress", style="yellow", completed=completed, total=total)
             model_name = future_to_model[future]
             printer.print_in_terminal("models_testing", style="yellow", name=model_name)
             

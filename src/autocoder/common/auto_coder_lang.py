@@ -7,6 +7,7 @@ MESSAGES = {
         "models_speed_test_results": "Model Speed Test Results",
         "models_testing": "Testing model: {{name}}...",
         "models_testing_start": "Starting speed test for all active models...",
+        "models_testing_progress": "Testing progress: {{ completed }}/{{ total }} models",
         "generation_cancelled": "[Interrupted] Generation cancelled",
         "model_not_found": "Model {{model_name}} not found",
         "generating_shell_script": "Generating Shell Script",
