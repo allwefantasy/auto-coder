@@ -11,6 +11,19 @@ import byzerllm
 import pkg_resources
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Tuple
+from pydantic import BaseModel
+
+class ModelSpeedTestResult(BaseModel):
+    model_name: str
+    tokens_per_second: float
+    first_token_time: float
+    input_tokens_count: float
+    generated_tokens_count: float
+    status: str
+    error: Optional[str] = None
+
+class SpeedTestResults(BaseModel):
+    results: List[ModelSpeedTestResult]
 
 byzerllm_content = ""
 try:
@@ -153,21 +166,6 @@ def test_model_speed_wrapper(args: Tuple[str, str, int, bool]) -> Tuple[str, Dic
     return (model_name, results)
 
 
-from pydantic import BaseModel
-from typing import List, Optional
-
-class ModelSpeedTestResult(BaseModel):
-    model_name: str
-    tokens_per_second: float
-    first_token_time: float
-    input_tokens_count: float
-    generated_tokens_count: float
-    status: str
-    error: Optional[str] = None
-
-class SpeedTestResults(BaseModel):
-    results: List[ModelSpeedTestResult]
-
 def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optional[int] = None, enable_long_context: bool = False) -> SpeedTestResults:
     """
     运行所有已激活模型的速度测试
@@ -225,8 +223,7 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
                         models_module.update_model_speed(model_name, results['tokens_per_second'])
                     except Exception:
                         pass
-                else:
-                    status = "✗"
+                else:                    
                     results_list.append((
                         0,
                         ModelSpeedTestResult(
@@ -235,7 +232,7 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
                             first_token_time=0,
                             input_tokens_count=0,
                             generated_tokens_count=0,
-                            status=status,
+                            status=f"✗ {results['error']}",
                             error=results['error']
                         )
                     ))
@@ -248,7 +245,7 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
                         first_token_time=0,
                         input_tokens_count=0,
                         generated_tokens_count=0,
-                        status="✗",
+                        status=f"✗ {str(e)}",
                         error=str(e)
                     )
                 ))
