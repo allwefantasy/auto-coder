@@ -269,3 +269,10 @@ def get_message(key):
 
 def get_message_with_format(msg_key: str, **kwargs):
     return format_str_jinja2(get_message(msg_key), **kwargs)
+
+MESSAGES = {
+    # ... 其他消息
+    "models_no_active": "No active models found.",
+    "models_testing": "Testing model: {{ name }}...",
+    "models_speed_test_results": "Model Speed Test Results",
+}

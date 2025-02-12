@@ -2199,6 +2199,13 @@ def manage_models(params, query: str):
 
     if not subcmd:
         printer.print_in_terminal("models_usage")
+    print("\nAvailable subcommands:")
+    print("  /list - List all models")
+    print("  /add <name> <api_key> - Add/activate a model")
+    print("  /add_model - Add a custom model with detailed parameters")
+    print("  /remove <name> - Remove a model")
+    print("  /speed <name> <speed> - Update model speed manually")
+    print("  /speed-test [rounds] - Test speed of all active models")
         return    
 
     if subcmd == "/list":                    
@@ -2281,6 +2288,16 @@ def manage_models(params, query: str):
         else:
             printer.print_in_terminal("models_speed_usage", style="red")
             
+    elif subcmd == "/speed-test":
+        from autocoder.common.model_speed_test import run_speed_test
+        test_rounds = 3  # 默认测试轮数
+        
+        # 解析可选的测试轮数参数
+        args = query.strip().split()
+        if args and args[0].isdigit():
+            test_rounds = int(args[0])
+            
+        run_speed_test(params.product_mode, test_rounds)
     elif subcmd == "/add":
         # Support both simplified and legacy formats
         args = query.strip().split(" ")        
