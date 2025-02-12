@@ -3,6 +3,9 @@ from byzerllm.utils import format_str_jinja2
 
 MESSAGES = {
     "en": {
+        "models_no_active": "No active models found",
+        "models_speed_test_results": "Model Speed Test Results",
+        "models_testing": "Testing model: {{name}}...",
         "generation_cancelled": "[Interrupted] Generation cancelled",
         "model_not_found": "Model {{model_name}} not found",
         "generating_shell_script": "Generating Shell Script",
@@ -92,6 +95,9 @@ MESSAGES = {
         "estimated_input_tokens_in_generate": "Estimated input tokens in generate ({{ generate_mode }}): {{ estimated_input_tokens }}",
     },
     "zh": {
+        "models_no_active": "未找到激活的模型",
+        "models_speed_test_results": "模型速度测试结果",
+        "models_testing": "正在测试模型: {{name}}...",
         "generation_cancelled": "[已中断] 生成已取消",
         "model_not_found": "未找到模型: {{model_name}}",
         "generating_shell_script": "正在生成 Shell 脚本",
