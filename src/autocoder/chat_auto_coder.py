@@ -2301,12 +2301,18 @@ def manage_models(params, query: str):
         from autocoder.common.model_speed_test import run_speed_test
         test_rounds = 3  # 默认测试轮数
         
+        enable_long_context = False
+        if "/long_context" in query:
+            enable_long_context = True
+            query = query.replace("/long_context", "", 1).strip()
+        
         # 解析可选的测试轮数参数
         args = query.strip().split()
         if args and args[0].isdigit():
             test_rounds = int(args[0])
             
-        run_speed_test(params.product_mode, test_rounds)
+        run_speed_test(params.product_mode, test_rounds,enable_long_context=enable_long_context)
+    
     elif subcmd == "/add":
         # Support both simplified and legacy formats
         args = query.strip().split(" ")        

@@ -121,7 +121,7 @@ def test_model_speed(model_name: str,
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Tuple
 
-def test_model_speed_wrapper(args: Tuple[str, str, int]) -> Tuple[str, Dict[str, Any]]:
+def test_model_speed_wrapper(args: Tuple[str, str, int, bool]) -> Tuple[str, Dict[str, Any]]:
     """
     包装测试函数以适应线程池调用
     
@@ -131,11 +131,11 @@ def test_model_speed_wrapper(args: Tuple[str, str, int]) -> Tuple[str, Dict[str,
     Returns:
         (model_name, test_results)的元组
     """
-    model_name, product_mode, test_rounds = args
-    results = test_model_speed(model_name, product_mode, test_rounds)
+    model_name, product_mode, test_rounds,enable_long_context = args
+    results = test_model_speed(model_name, product_mode, test_rounds,enable_long_context)
     return (model_name, results)
 
-def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optional[int] = None) -> None:
+def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optional[int] = None,enable_long_context: bool = False) -> None:
     """
     运行所有已激活模型的速度测试
     
@@ -172,7 +172,7 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
     table.add_column("Status", style="red", width=20)
     
     # 准备测试参数
-    test_args = [(model["name"], product_mode, test_rounds) for model in active_models]
+    test_args = [(model["name"], product_mode, test_rounds, enable_long_context) for model in active_models]
     
     # 存储结果用于排序
     results_list = []
@@ -208,13 +208,13 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
                     results_list.append((
                         0,
                         model_name,
-                        {"avg_time": 0, "min_time": 0, "max_time": 0, "first_token_time": 0}
+                        {"avg_time": 0, "min_time": 0, "max_time": 0, "first_token_time": 0, "status": status}
                     ))
             except Exception as e:
                 results_list.append((
                     0,
                     model_name,
-                    {"avg_time": 0, "min_time": 0, "max_time": 0, "first_token_time": 0}
+                    {"avg_time": 0, "min_time": 0, "max_time": 0, "first_token_time": 0, "status": f"✗ ({e})"}
                 ))
 
     # 按速度排序
@@ -240,7 +240,7 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
                 "-",
                 "-",
                 "-",
-                f"✗ (Error occurred)"
+                f"✗ (Error occurred) {results['status']}"
             )
     
     console.print(Panel(table, border_style="blue"))
