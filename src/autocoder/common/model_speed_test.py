@@ -9,6 +9,8 @@ from autocoder import models as models_module
 from autocoder.utils.llms import get_single_llm
 import byzerllm
 import pkg_resources
+from concurrent.futures import ThreadPoolExecutor
+from typing import Dict, List, Tuple
 
 byzerllm_content = ""
 try:
@@ -72,6 +74,7 @@ def test_model_speed(model_name: str,
 
         times = []
         first_token_times = []
+        tokens_per_seconds = []
         test_query = short_context_prompt.prompt()
         if enable_long_context:
             test_query = long_context_prompt.prompt()
@@ -96,11 +99,14 @@ def test_model_speed(model_name: str,
             generated_tokens_count = 0
             if last_meta:                
                 generated_tokens_count = last_meta.generated_tokens_count
+            
+            tokens_per_seconds.append(generated_tokens_count / (end_time - start_time))    
             times.append(end_time - start_time)
+            
             
         avg_time = sum(times) / len(times)
         return {
-            "tokens_per_second": generated_tokens_count / avg_time,
+            "tokens_per_second": sum(tokens_per_seconds) / len(tokens_per_seconds),
             "avg_time": avg_time,
             "min_time": min(times),
             "max_time": max(times),
@@ -118,9 +124,6 @@ def test_model_speed(model_name: str,
             "success": False,
             "error": str(e)
         }
-
-from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List, Tuple
 
 def test_model_speed_wrapper(args: Tuple[str, str, int, bool]) -> Tuple[str, Dict[str, Any]]:
     """
