@@ -33,7 +33,9 @@ COMMANDS = {
         "/add": "",
         "/add_model": "",
         "/remove": "",
-        "/list": ""        
+        "/list": "",
+        "/speed": "",
+        "/speed-test": ""        
     }
 }
 

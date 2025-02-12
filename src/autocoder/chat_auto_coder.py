@@ -2197,16 +2197,25 @@ def manage_models(params, query: str):
         subcmd = "/remove"
         query = query.replace("/remove", "", 1).strip()
 
+    if "/speed-test" in query:
+        subcmd = "/speed-test"
+        query = query.replace("/speed-test", "", 1).strip()
+            
+    if "/speed" in query:
+        subcmd = "/speed"
+        query = query.replace("/speed", "", 1).strip()
+    
+        
+
     if not subcmd:
         printer.print_in_terminal("models_usage")
-    print("\nAvailable subcommands:")
-    print("  /list - List all models")
-    print("  /add <name> <api_key> - Add/activate a model")
-    print("  /add_model - Add a custom model with detailed parameters")
-    print("  /remove <name> - Remove a model")
-    print("  /speed <name> <speed> - Update model speed manually")
-    print("  /speed-test [rounds] - Test speed of all active models")
-        return    
+        print("\nAvailable subcommands:")
+        print("  /list - List all models")
+        print("  /add <name> <api_key> - Add/activate a model")
+        print("  /add_model - Add a custom model with detailed parameters")
+        print("  /remove <name> - Remove a model")
+        print("  /speed <name> <speed> - Update model speed manually")
+        print("  /speed-test [rounds] - Test speed of all active models")           
 
     if subcmd == "/list":                    
         if models_data:
