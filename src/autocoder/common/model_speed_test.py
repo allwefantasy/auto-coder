@@ -7,8 +7,48 @@ from rich.panel import Panel
 from autocoder.common.printer import Printer
 from autocoder import models as models_module
 from autocoder.utils.llms import get_single_llm
+import byzerllm
 
-def test_model_speed(model_name: str, product_mode: str, test_rounds: int = 3) -> Dict[str, Any]:
+byzerllm_content = ""
+try:
+    byzerllm_conten_path = pkg_resources.resource_filename(
+        "autocoder", "data/byzerllm.md"
+    )
+    with open(byzerllm_conten_path, "r",encoding="utf-8") as f:
+        byzerllm_content = f.read()
+except FileNotFoundError:
+    pass
+
+@byzerllm.prompt()
+def long_context_prompt() -> str:
+    '''
+    下面是我们提供的一份文档：
+    <document>
+    {content}
+    </document>
+    
+    请根据上述文档，实现用户的需求：
+
+    <query>
+    我想开发一个翻译程序，使用prompt 函数实现。
+    </query>
+    '''
+    return {
+        "content": byzerllm_content
+    }
+
+@byzerllm.prompt()
+def short_context_prompt() -> str:
+    '''
+    Hello, can you help me test the response speed?
+    '''
+    return {}
+
+def test_model_speed(model_name: str, 
+                    product_mode: str, 
+                    test_rounds: int = 3,
+                    enable_long_context: bool = False
+                    ) -> Dict[str, Any]:
     """
     测试单个模型的速度
     
@@ -28,19 +68,23 @@ def test_model_speed(model_name: str, product_mode: str, test_rounds: int = 3) -
     """
     try:
         llm = get_single_llm(model_name, product_mode)
-        test_query = "Hello, can you help me test the response speed?"
+
         times = []
         first_token_times = []
+        test_query = short_context_prompt.prompt()
+        if enable_long_context:
+            test_query = long_context_prompt.prompt()
         
         for _ in range(test_rounds):
             start_time = time.time()
             first_token_received = False
             first_token_time = None
-            
-            for chunk in llm.stream_chat_oai([{
+            last_meta = None
+            for chunk,meta in llm.stream_chat_oai([{
                 "role": "user",
                 "content": test_query
             }]):
+                last_meta = meta                
                 current_time = time.time()
                 if not first_token_received:
                     first_token_time = current_time - start_time
@@ -48,6 +92,11 @@ def test_model_speed(model_name: str, product_mode: str, test_rounds: int = 3) -
                     first_token_times.append(first_token_time)
             
             end_time = time.time()
+            input_tokens_count = 0
+            generated_tokens_count = 0
+            if last_meta:
+                input_tokens_count = last_meta.input_tokens_count
+                generated_tokens_count = last_meta.generated_tokens_count
             times.append(end_time - start_time)
         
         return {
