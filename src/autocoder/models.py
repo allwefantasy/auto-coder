@@ -180,10 +180,7 @@ def update_model_speed(name: str, speed: float) -> bool:
         
     Returns:
         bool: 是否更新成功
-    """
-    if speed <= 0:
-        raise ValueError("Speed must be positive")
-        
+    """            
     models = load_models()
     updated = False
     for model in models:
