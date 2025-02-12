@@ -98,9 +98,11 @@ def test_model_speed(model_name: str,
                 input_tokens_count = last_meta.input_tokens_count
                 generated_tokens_count = last_meta.generated_tokens_count
             times.append(end_time - start_time)
-        
+            
+        avg_time = sum(times) / len(times)
         return {
-            "avg_time": sum(times) / len(times),
+            "tokens_per_second": generated_tokens_count / avg_time,
+            "avg_time": avg_time,
             "min_time": min(times),
             "max_time": max(times),
             "first_token_time": sum(first_token_times) / len(first_token_times),
@@ -109,6 +111,7 @@ def test_model_speed(model_name: str,
         }
     except Exception as e:
         return {
+            "tokens_per_second": 0,
             "avg_time": 0,
             "min_time": 0,
             "max_time": 0,
@@ -162,15 +165,19 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
         show_lines=True
     )
     
+    table.add_column("Tokens/s", style="green", width=15)
+    table.add_column("First Token(s)", style="magenta", width=15)
     table.add_column("Model", style="cyan", width=30)
     table.add_column("Avg Time(s)", style="green", width=15)
     table.add_column("Min Time(s)", style="blue", width=15)
-    table.add_column("Max Time(s)", style="yellow", width=15)
-    table.add_column("First Token(s)", style="magenta", width=15)
+    table.add_column("Max Time(s)", style="yellow", width=15)    
     table.add_column("Status", style="red", width=20)
     
     # 准备测试参数
     test_args = [(model["name"], product_mode, test_rounds) for model in active_models]
+    
+    # 存储结果用于排序
+    results_list = []
     
     # 使用线程池并发测试
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -190,35 +197,52 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
                 
                 if results["success"]:
                     status = "✓"
-                    table.add_row(
+                    results_list.append((
+                        results['tokens_per_second'],
                         model_name,
-                        f"{results['avg_time']:.2f}",
-                        f"{results['min_time']:.2f}",
-                        f"{results['max_time']:.2f}",
-                        f"{results['first_token_time']:.2f}",
-                        status
-                    )
+                        results
+                    ))
                     
                     # 更新模型的平均速度
                     models_module.update_model_speed(model_name, results['avg_time'])
                 else:
                     status = f"✗ ({results['error']})"
-                    table.add_row(
+                    results_list.append((
+                        0,
                         model_name,
-                        "-",
-                        "-",
-                        "-",
-                        "-",
-                        status
-                    )
+                        {"avg_time": 0, "min_time": 0, "max_time": 0, "first_token_time": 0}
+                    ))
             except Exception as e:
-                table.add_row(
+                results_list.append((
+                    0,
                     model_name,
-                    "-",
-                    "-",
-                    "-",
-                    "-",
-                    f"✗ (Thread error: {str(e)})"
-                )
+                    {"avg_time": 0, "min_time": 0, "max_time": 0, "first_token_time": 0}
+                ))
+
+    # 按速度排序
+    results_list.sort(key=lambda x: x[0], reverse=True)
+    
+    # 添加排序后的结果到表格
+    for tokens_per_second, model_name, results in results_list:
+        if tokens_per_second > 0:
+            table.add_row(
+                f"{tokens_per_second:.2f}",
+                f"{results['first_token_time']:.2f}",
+                model_name,
+                f"{results['avg_time']:.2f}",
+                f"{results['min_time']:.2f}",
+                f"{results['max_time']:.2f}",
+                "✓"
+            )
+        else:
+            table.add_row(
+                "-",
+                "-",
+                model_name,
+                "-",
+                "-",
+                "-",
+                f"✗ (Error occurred)"
+            )
     
     console.print(Panel(table, border_style="blue"))
