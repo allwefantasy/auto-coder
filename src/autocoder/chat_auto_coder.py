@@ -2229,12 +2229,12 @@ def manage_models(params, query: str):
                 expand=True,
                 show_lines=True
             )
-            table.add_column("Name", style="cyan", width=40, no_wrap=False)
-            table.add_column("Model Name", style="magenta", width=30, overflow="fold")
-            table.add_column("Base URL", style="white", width=50, overflow="fold")
-            table.add_column("Input Price (M)", style="magenta", width=15)
-            table.add_column("Output Price (M)", style="magenta", width=15)
-            table.add_column("Speed (s/req)", style="blue", width=15)
+            table.add_column("Name", style="cyan", width=30, overflow="fold", no_wrap=False)
+            table.add_column("Model Name", style="magenta", width=30, overflow="fold", no_wrap=False)
+            table.add_column("Base URL", style="white", width=40, overflow="fold", no_wrap=False)
+            table.add_column("Input Price (M)", style="magenta", width=15, overflow="fold", no_wrap=False)
+            table.add_column("Output Price (M)", style="magenta", width=15, overflow="fold", no_wrap=False)
+            table.add_column("Speed (s/req)", style="blue", width=15, overflow="fold", no_wrap=False)
             for m in models_data:
                 # Check if api_key_path exists and file exists
                 is_api_key_set = "api_key" in m  
