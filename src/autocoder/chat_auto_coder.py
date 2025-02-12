@@ -2200,6 +2200,11 @@ def manage_models(params, query: str):
     if "/speed-test" in query:
         subcmd = "/speed-test"
         query = query.replace("/speed-test", "", 1).strip()
+
+    if "/speed_test" in query:
+        subcmd = "/speed-test"
+        query = query.replace("/speed_test", "", 1).strip()    
+        
             
     if "/speed" in query:
         subcmd = "/speed"
@@ -2305,7 +2310,11 @@ def manage_models(params, query: str):
         if "/long_context" in query:
             enable_long_context = True
             query = query.replace("/long_context", "", 1).strip()
-        
+
+        if "/long-context" in query:
+            enable_long_context = True
+            query = query.replace("/long-context", "", 1).strip()
+
         # 解析可选的测试轮数参数
         args = query.strip().split()
         if args and args[0].isdigit():

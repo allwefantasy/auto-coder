@@ -75,15 +75,22 @@ def test_model_speed(model_name: str,
         times = []
         first_token_times = []
         tokens_per_seconds = []
+        input_tokens_counts = []
+        generated_tokens_counts = []
         test_query = short_context_prompt.prompt()
         if enable_long_context:
             test_query = long_context_prompt.prompt()
+
+        
+        
         
         for _ in range(test_rounds):
             start_time = time.time()
             first_token_received = False
             first_token_time = None
             last_meta = None
+            input_tokens_count = 0
+            generated_tokens_count = 0
             for chunk,meta in llm.stream_chat_oai([{
                 "role": "user",
                 "content": test_query
@@ -99,6 +106,9 @@ def test_model_speed(model_name: str,
             generated_tokens_count = 0
             if last_meta:                
                 generated_tokens_count = last_meta.generated_tokens_count
+                input_tokens_count = last_meta.input_tokens_count
+                generated_tokens_counts.append(generated_tokens_count)
+                input_tokens_counts.append(input_tokens_count)
             
             tokens_per_seconds.append(generated_tokens_count / (end_time - start_time))    
             times.append(end_time - start_time)
@@ -111,6 +121,8 @@ def test_model_speed(model_name: str,
             "min_time": min(times),
             "max_time": max(times),
             "first_token_time": sum(first_token_times) / len(first_token_times),
+            "input_tokens_count": sum(input_tokens_counts) / len(input_tokens_counts),
+            "generated_tokens_count": sum(generated_tokens_counts) / len(generated_tokens_counts),
             "success": True,
             "error": None
         }
@@ -121,6 +133,8 @@ def test_model_speed(model_name: str,
             "min_time": 0,
             "max_time": 0,
             "first_token_time": 0,
+            "input_tokens_count": 0,
+            "generated_tokens_count": 0,
             "success": False,
             "error": str(e)
         }
@@ -167,12 +181,11 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
         show_lines=True
     )
     
+    table.add_column("Model", style="cyan", width=30)
     table.add_column("Tokens/s", style="green", width=15)
     table.add_column("First Token(s)", style="magenta", width=15)
-    table.add_column("Model", style="cyan", width=30)
-    table.add_column("Avg Time(s)", style="green", width=15)
-    table.add_column("Min Time(s)", style="blue", width=15)
-    table.add_column("Max Time(s)", style="yellow", width=15)    
+    table.add_column("Input Tokens", style="magenta", width=15)
+    table.add_column("Generated Tokens", style="magenta", width=15)            
     table.add_column("Status", style="red", width=20)
     
     # 准备测试参数
@@ -208,21 +221,24 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
                         results['tokens_per_second'],
                         model_name,
                         results
-                    ))                    
-                    # 更新模型的平均速度
-                    models_module.update_model_speed(model_name, results['tokens_per_second'])
+                    ))                  
+                    try:  
+                        # 更新模型的平均速度
+                        models_module.update_model_speed(model_name, results['tokens_per_second'])
+                    except Exception as e:
+                        pass
                 else:
                     status = f"✗ ({results['error']})"
                     results_list.append((
                         0,
                         model_name,
-                        {"tokens_per_second":0,"avg_time": 0, "min_time": 0, "max_time": 0, "first_token_time": 0, "status": status}
+                        {"tokens_per_second":0,"avg_time": 0, "input_tokens_count":0, "generated_tokens_count":0, "min_time": 0, "max_time": 0, "first_token_time": 0, "status": status}
                     ))
             except Exception as e:
                 results_list.append((
                     0,
                     model_name,
-                    {"tokens_per_second":0,"avg_time": 0, "min_time": 0, "max_time": 0, "first_token_time": 0, "status": f"✗ ({str(e)})"}
+                    {"tokens_per_second":0,"avg_time": 0, "input_tokens_count":0, "generated_tokens_count":0, "min_time": 0, "max_time": 0, "first_token_time": 0, "status": f"✗ ({str(e)})"}
                 ))
 
     # 按速度排序
@@ -231,12 +247,11 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
     # 添加排序后的结果到表格
     for tokens_per_second, model_name, results in results_list:        
         table.add_row(
+            model_name,  
             f"{tokens_per_second:.2f}",
             f"{results['first_token_time']:.2f}",
-            model_name,
-            f"{results['avg_time']:.2f}",
-            f"{results['min_time']:.2f}",
-            f"{results['max_time']:.2f}",
+            f"{results['input_tokens_count']}",
+            f"{results['generated_tokens_count']}",            
             results['status']
         )        
     
