@@ -8,6 +8,7 @@ from autocoder.common.printer import Printer
 from autocoder import models as models_module
 from autocoder.utils.llms import get_single_llm
 import byzerllm
+import pkg_resources
 
 byzerllm_content = ""
 try:
@@ -240,7 +241,7 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
                 "-",
                 "-",
                 "-",
-                f"✗ (Error occurred) {results['status']}"
+                f"✗ (Error occurred)"
             )
     
     console.print(Panel(table, border_style="blue"))
