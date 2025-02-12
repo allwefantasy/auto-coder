@@ -27,7 +27,7 @@ def long_context_prompt() -> str:
     '''
     下面是我们提供的一份文档：
     <document>
-    {content}
+    {{ content }}
     </document>
     
     请根据上述文档，实现用户的需求：
@@ -79,22 +79,21 @@ def test_model_speed(model_name: str,
         generated_tokens_counts = []
         test_query = short_context_prompt.prompt()
         if enable_long_context:
-            test_query = long_context_prompt.prompt()
-
+            test_query = long_context_prompt.prompt()                
         
-        
-        
+        content = ""
         for _ in range(test_rounds):
             start_time = time.time()
             first_token_received = False
             first_token_time = None
             last_meta = None
             input_tokens_count = 0
-            generated_tokens_count = 0
-            for chunk,meta in llm.stream_chat_oai([{
+            generated_tokens_count = 0            
+            for chunk,meta in llm.stream_chat_oai(conversations=[{
                 "role": "user",
                 "content": test_query
-            }]):
+            }],delta_mode=True):
+                content += chunk
                 last_meta = meta                
                 current_time = time.time()
                 if not first_token_received:
