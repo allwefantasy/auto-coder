@@ -153,7 +153,22 @@ def test_model_speed_wrapper(args: Tuple[str, str, int, bool]) -> Tuple[str, Dic
     return (model_name, results)
 
 
-def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optional[int] = None,enable_long_context: bool = False) -> None:
+from pydantic import BaseModel
+from typing import List, Optional
+
+class ModelSpeedTestResult(BaseModel):
+    model_name: str
+    tokens_per_second: float
+    first_token_time: float
+    input_tokens_count: float
+    generated_tokens_count: float
+    status: str
+    error: Optional[str] = None
+
+class SpeedTestResults(BaseModel):
+    results: List[ModelSpeedTestResult]
+
+def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optional[int] = None, enable_long_context: bool = False) -> SpeedTestResults:
     """
     运行所有已激活模型的速度测试
     
@@ -161,32 +176,17 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
         product_mode: 产品模式 (lite/pro)
         test_rounds: 每个模型测试的轮数
         max_workers: 最大线程数,默认为None(ThreadPoolExecutor会自动设置)
-    """
-    printer = Printer()
-    console = Console()
+        enable_long_context: 是否启用长文本上下文测试
     
+    Returns:
+        SpeedTestResults: 包含所有模型测试结果的pydantic模型
+    """
     # 获取所有模型
     models_data = models_module.load_models()
     active_models = [m for m in models_data if "api_key" in m] if product_mode == "lite" else models_data
     
     if not active_models:
-        printer.print_in_terminal("models_no_active", style="yellow")
-        return
-        
-    # 创建结果表格
-    table = Table(
-        title=printer.get_message_from_key("models_speed_test_results"),
-        show_header=True,
-        header_style="bold magenta",
-        show_lines=True
-    )
-    
-    table.add_column("Model", style="cyan", width=30)
-    table.add_column("Tokens/s", style="green", width=15)
-    table.add_column("First Token(s)", style="magenta", width=15)
-    table.add_column("Input Tokens", style="magenta", width=15)
-    table.add_column("Generated Tokens", style="magenta", width=15)            
-    table.add_column("Status", style="red", width=20)
+        return SpeedTestResults(results=[])
     
     # 准备测试参数
     test_args = [(model["name"], product_mode, test_rounds, enable_long_context) for model in active_models]
@@ -196,66 +196,67 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
     
     # 使用线程池并发测试
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        printer.print_in_terminal("models_testing_start", style="yellow")
-        
         # 提交所有测试任务并获取future对象
         future_to_model = {executor.submit(test_model_speed_wrapper, args): args[0] 
                           for args in test_args}
         
         # 收集结果
-        completed = 0
-        total = len(future_to_model)
         for future in future_to_model:
-            completed += 1
-            printer.print_in_terminal("models_testing_progress", style="yellow", completed=completed, total=total)
             model_name = future_to_model[future]
-            printer.print_in_terminal("models_testing", style="yellow", name=model_name)
             
             try:
                 _, results = future.result()
                 
                 if results["success"]:
                     status = "✓"
-                    results['status'] = status
                     results_list.append((
                         results['tokens_per_second'],
-                        model_name,
-                        results
-                    ))                  
-                    try:  
+                        ModelSpeedTestResult(
+                            model_name=model_name,
+                            tokens_per_second=results['tokens_per_second'],
+                            first_token_time=results['first_token_time'],
+                            input_tokens_count=results['input_tokens_count'],
+                            generated_tokens_count=results['generated_tokens_count'],
+                            status=status
+                        )
+                    ))
+                    try:
                         # 更新模型的平均速度
                         models_module.update_model_speed(model_name, results['tokens_per_second'])
-                    except Exception as e:
+                    except Exception:
                         pass
                 else:
-                    status = f"✗ ({results['error']})"
+                    status = "✗"
                     results_list.append((
                         0,
-                        model_name,
-                        {"tokens_per_second":0,"avg_time": 0, "input_tokens_count":0, "generated_tokens_count":0, "min_time": 0, "max_time": 0, "first_token_time": 0, "status": status}
+                        ModelSpeedTestResult(
+                            model_name=model_name,
+                            tokens_per_second=0,
+                            first_token_time=0,
+                            input_tokens_count=0,
+                            generated_tokens_count=0,
+                            status=status,
+                            error=results['error']
+                        )
                     ))
             except Exception as e:
                 results_list.append((
                     0,
-                    model_name,
-                    {"tokens_per_second":0,"avg_time": 0, "input_tokens_count":0, "generated_tokens_count":0, "min_time": 0, "max_time": 0, "first_token_time": 0, "status": f"✗ ({str(e)})"}
+                    ModelSpeedTestResult(
+                        model_name=model_name,
+                        tokens_per_second=0,
+                        first_token_time=0,
+                        input_tokens_count=0,
+                        generated_tokens_count=0,
+                        status="✗",
+                        error=str(e)
+                    )
                 ))
 
     # 按速度排序
     results_list.sort(key=lambda x: x[0], reverse=True)
     
-    # 添加排序后的结果到表格
-    for tokens_per_second, model_name, results in results_list:        
-        table.add_row(
-            model_name,  
-            f"{tokens_per_second:.2f}",
-            f"{results['first_token_time']:.2f}",
-            f"{results['input_tokens_count']}",
-            f"{results['generated_tokens_count']}",            
-            results['status']
-        )        
-    
-    console.print(Panel(table, border_style="blue"))
+    return SpeedTestResults(results=[result[1] for result in results_list])
 
 def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_workers: Optional[int] = None,enable_long_context: bool = False) -> None:
     """
