@@ -2225,7 +2225,8 @@ def manage_models(params, query: str):
     if subcmd == "/list":                    
         if models_data:
             # Sort models by speed (average_speed)
-            sorted_models = sorted(models_data, key=lambda x: float(x.get('average_speed', float('inf'))))
+            sorted_models = sorted(models_data, key=lambda x: float(x.get('average_speed', 0)))
+            sorted_models.reverse()
             
             table = Table(
                 title=printer.get_message_from_key("models_title"),
@@ -2306,7 +2307,7 @@ def manage_models(params, query: str):
             printer.print_in_terminal("models_speed_usage", style="red")
             
     elif subcmd == "/speed-test":
-        from autocoder.common.model_speed_test import run_speed_test
+        from autocoder.common.model_speed_test import render_speed_test_in_terminal
         test_rounds = 3  # 默认测试轮数
         
         enable_long_context = False
@@ -2323,7 +2324,7 @@ def manage_models(params, query: str):
         if args and args[0].isdigit():
             test_rounds = int(args[0])
             
-        run_speed_test(params.product_mode, test_rounds,enable_long_context=enable_long_context)
+        render_speed_test_in_terminal(params.product_mode, test_rounds,enable_long_context=enable_long_context)
     
     elif subcmd == "/add":
         # Support both simplified and legacy formats
