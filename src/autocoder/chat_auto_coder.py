@@ -2224,6 +2224,9 @@ def manage_models(params, query: str):
 
     if subcmd == "/list":                    
         if models_data:
+            # Sort models by speed (average_speed)
+            sorted_models = sorted(models_data, key=lambda x: float(x.get('average_speed', float('inf'))))
+            
             table = Table(
                 title=printer.get_message_from_key("models_title"),
                 expand=True,
@@ -2235,7 +2238,7 @@ def manage_models(params, query: str):
             table.add_column("Input Price (M)", style="magenta", width=15, overflow="fold", no_wrap=False)
             table.add_column("Output Price (M)", style="magenta", width=15, overflow="fold", no_wrap=False)
             table.add_column("Speed (s/req)", style="blue", width=15, overflow="fold", no_wrap=False)
-            for m in models_data:
+            for m in sorted_models:
                 # Check if api_key_path exists and file exists
                 is_api_key_set = "api_key" in m  
                 name = m.get("name", "")              
