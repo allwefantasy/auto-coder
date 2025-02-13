@@ -19,8 +19,8 @@ class ModelSpeedTestResult(BaseModel):
     first_token_time: float
     input_tokens_count: float
     generated_tokens_count: float
-    input_price: float
-    output_price: float
+    input_tokens_cost: float
+    generated_tokens_cost: float
     status: str
     error: Optional[str] = None
 
@@ -94,6 +94,13 @@ def test_model_speed(model_name: str,
         tokens_per_seconds = []
         input_tokens_counts = []
         generated_tokens_counts = []
+        
+        input_tokens_costs = []
+        generated_tokens_costs = []
+
+        input_tokens_cost_per_m = model_info.get("input_price", 0.0) / 1000000
+        output_tokens_cost_per_m = model_info.get("output_price", 0.0) / 1000000
+
         test_query = short_context_prompt.prompt()
         if enable_long_context:
             test_query = long_context_prompt.prompt()                
@@ -105,7 +112,9 @@ def test_model_speed(model_name: str,
             first_token_time = None
             last_meta = None
             input_tokens_count = 0
-            generated_tokens_count = 0            
+            generated_tokens_count = 0 
+            input_tokens_cost = 0
+            generated_tokens_cost = 0           
             for chunk,meta in llm.stream_chat_oai(conversations=[{
                 "role": "user",
                 "content": test_query
@@ -123,6 +132,11 @@ def test_model_speed(model_name: str,
             if last_meta:                
                 generated_tokens_count = last_meta.generated_tokens_count
                 input_tokens_count = last_meta.input_tokens_count
+                input_tokens_cost = input_tokens_count * input_tokens_cost_per_m
+                generated_tokens_cost = generated_tokens_count * output_tokens_cost_per_m
+
+                input_tokens_costs.append(input_tokens_cost)
+                generated_tokens_costs.append(generated_tokens_cost)
                 generated_tokens_counts.append(generated_tokens_count)
                 input_tokens_counts.append(input_tokens_count)
             
@@ -141,8 +155,8 @@ def test_model_speed(model_name: str,
             "generated_tokens_count": sum(generated_tokens_counts) / len(generated_tokens_counts),
             "success": True,
             "error": None,
-            "input_price": model_info.get("input_price", 0.0),
-            "output_price": model_info.get("output_price", 0.0)
+            "input_tokens_cost": sum(input_tokens_costs) / len(input_tokens_costs),
+            "generated_tokens_cost": sum(generated_tokens_costs) / len(generated_tokens_costs)
         }
     except Exception as e:
         return {
@@ -155,8 +169,8 @@ def test_model_speed(model_name: str,
             "generated_tokens_count": 0,
             "success": False,
             "error": str(e),
-            "input_price": 0.0,
-            "output_price": 0.0
+            "input_tokens_cost": 0.0,
+            "generated_tokens_cost": 0.0
         }
 
 def test_model_speed_wrapper(args: Tuple[str, str, int, bool]) -> Tuple[str, Dict[str, Any]]:
@@ -224,8 +238,8 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
                             input_tokens_count=results['input_tokens_count'],
                             generated_tokens_count=results['generated_tokens_count'],
                             status=status,
-                            input_price=results['input_price'],
-                            output_price=results['output_price']
+                            input_tokens_cost=results['input_tokens_cost'],
+                            generated_tokens_cost=results['generated_tokens_cost'],                            
                         )
                     ))
                     try:
@@ -244,8 +258,8 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
                             generated_tokens_count=0,
                             status=f"✗ {results['error']}",
                             error=results['error'],
-                            input_price=0.0,
-                            output_price=0.0
+                            input_tokens_cost=0.0,
+                            generated_tokens_cost=0.0
                         )
                     ))
             except Exception as e:
@@ -259,8 +273,8 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
                         generated_tokens_count=0,
                         status=f"✗ {str(e)}",
                         error=str(e),
-                        input_price=0.0,
-                        output_price=0.0
+                        input_tokens_cost=0.0,
+                        generated_tokens_cost=0.0
                     )
                 ))
 
@@ -302,8 +316,8 @@ def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_w
     table.add_column("First Token(s)", style="magenta", width=15)
     table.add_column("Input Tokens", style="magenta", width=15)
     table.add_column("Generated Tokens", style="magenta", width=15)            
-    table.add_column("Input Price(M)", style="yellow", width=15)
-    table.add_column("Output Price(M)", style="yellow", width=15)
+    table.add_column("Input Tokens Cost", style="yellow", width=15)
+    table.add_column("Generated Tokens Cost", style="yellow", width=15)
     table.add_column("Status", style="red", width=20)
     
     # 准备测试参数
@@ -350,13 +364,13 @@ def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_w
                     results_list.append((
                         0,
                         model_name,
-                        {"tokens_per_second":0,"avg_time": 0, "input_tokens_count":0, "generated_tokens_count":0, "min_time": 0, "max_time": 0, "first_token_time": 0, "input_price": 0.0, "output_price": 0.0, "status": status}
+                        {"tokens_per_second":0,"avg_time": 0, "input_tokens_count":0, "generated_tokens_count":0, "min_time": 0, "max_time": 0, "first_token_time": 0, "input_tokens_cost": 0.0, "generated_tokens_cost": 0.0, "status": status}
                     ))
             except Exception as e:
                 results_list.append((
                     0,
                     model_name,
-                        {"tokens_per_second":0,"avg_time": 0, "input_tokens_count":0, "generated_tokens_count":0, "min_time": 0, "max_time": 0, "first_token_time": 0, "input_price": 0.0, "output_price": 0.0, "status": f"✗ ({str(e)})"}
+                        {"tokens_per_second":0,"avg_time": 0, "input_tokens_count":0, "generated_tokens_count":0, "min_time": 0, "max_time": 0, "first_token_time": 0, "input_tokens_cost": 0.0, "generated_tokens_cost": 0.0, "status": f"✗ ({str(e)})"}
                 ))
 
     # 按速度排序
@@ -370,8 +384,8 @@ def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_w
             f"{results['first_token_time']:.2f}",
             f"{results['input_tokens_count']}",
             f"{results['generated_tokens_count']}",
-            f"{results['input_price']:.4f}",
-            f"{results['output_price']:.4f}",            
+            f"{results['input_tokens_cost']:.4f}",
+            f"{results['generated_tokens_cost']:.4f}",            
             results['status']
         )        
     
