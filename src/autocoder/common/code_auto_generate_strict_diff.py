@@ -342,7 +342,7 @@ class CodeAutoGenerateStrictDiff:
                     results.append(result.content)
                     input_tokens_count += result.input_tokens_count
                     generated_tokens_count += result.generated_tokens_count
-                    model_info = llm_utils.get_model_info(model_name)
+                    model_info = llm_utils.get_model_info(model_name, self.args.product_mode)
                     input_cost = model_info.input_cost if model_info else 0
                     output_cost = model_info.output_cost if model_info else 0
                     input_tokens_cost += input_cost * result.input_tokens_count / 1000000
