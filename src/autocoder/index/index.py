@@ -212,7 +212,7 @@ class IndexManager:
                 "index_file_filtered",
                 style="yellow",
                 file_path=file_path,
-                model_name=getattr(self.index_llm, 'default_model_name', 'unknown')
+                model_name=",".join(get_llm_names(self.index_llm))
             )
             return True
             
