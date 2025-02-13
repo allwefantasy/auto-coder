@@ -362,6 +362,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     keep_only_reasoning_content: Optional[bool] = False
 
     in_code_apply: bool = False
+    model_filter_path: Optional[str] = None
 
     class Config:
         protected_namespaces = ()

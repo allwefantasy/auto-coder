@@ -3,21 +3,26 @@ import yaml
 from pathlib import Path
 from typing import Dict, List, Optional
 from loguru import logger
+from autocoder.common import AutoCoderArgs
+from autocoder.utils import llms as llm_utils
 
 
 class ModelPathFilter:
     def __init__(self,
                  model_name: str,
-                 config_path: str = "model_filters.yml",
+                 args: AutoCoderArgs,
                  default_forbidden: List[str] = None):
         """
         模型路径过滤器
         :param model_name: 当前使用的模型名称
-        :param config_path: 过滤规则配置文件路径
+        :param args: 自动编码器参数
         :param default_forbidden: 默认禁止路径规则
         """
         self.model_name = model_name
-        self.config_path = Path(config_path)
+        if args.model_filter_path:
+            self.config_path = Path(args.model_filter_path)
+        else:
+            self.config_path = Path(args.source_dir, ".model_filters.yml")
         self.default_forbidden = default_forbidden or []
         self._rules_cache: Dict[str, List[re.Pattern]] = {}
         self._load_rules()
@@ -28,7 +33,7 @@ class ModelPathFilter:
             logger.warning(f"Filter config {self.config_path} not found")
             return
 
-        with open(self.config_path, 'r') as f:
+        with open(self.config_path, 'r', encoding="utf-8") as f:
             config = yaml.safe_load(f)
 
         model_rules = config.get('model_filters', {}).get(self.model_name, {})
@@ -74,20 +79,20 @@ class ModelPathFilter:
     @classmethod
     def from_model_object(cls,
                          llm_obj,
-                         config_path: Optional[str] = None,
+                         args: AutoCoderArgs,
                          default_forbidden: Optional[List[str]] = None):
         """
         从LLM对象创建过滤器
         :param llm_obj: ByzerLLM实例或类似对象
-        :param config_path: 可选的自定义配置文件路径
+        :param args: 自动编码器参数
         :param default_forbidden: 默认禁止路径规则
         """
-        model_name = getattr(llm_obj, 'default_model_name', None)
+        model_name = ",".join(llm_utils.get_llm_names(llm_obj))
         if not model_name:
-            model_name = "unknown(without default model name)"
+            raise ValueError(f"{model_name} is not found")
 
         return cls(
             model_name=model_name,
-            config_path=config_path or "model_filters.yml",
+            args=args,
             default_forbidden=default_forbidden
         )
