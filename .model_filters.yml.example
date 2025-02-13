@@ -1,0 +1,22 @@
+# Example model filter configuration
+# This file defines which file paths are forbidden for specific models
+
+model_filters:
+  # Model-specific configurations
+  gpt-4:
+    forbidden_paths:
+      - ".*\.env$"              # Block all .env files
+      - ".*/secrets/.*"         # Block anything in secrets directory
+      - ".*/tests/.*\.py$"       # Block all Python files in tests directory
+  
+  gpt-3.5-turbo:
+    forbidden_paths:
+      - ".*/private/.*"         # Block anything in private directory
+      - ".*\.key$"              # Block all .key files
+      - ".*/config/.*\.json$"    # Block all JSON files in config directory
+
+# Default rules (applied to all models if no model-specific rules exist)
+default_forbidden:
+  - ".*/node_modules/.*"       # Block node_modules directory
+  - ".*/\.git/.*"               # Block .git directory
+  - ".*\.lock$"                 # Block all lock files
