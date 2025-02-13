@@ -2,7 +2,6 @@ import re
 import yaml
 from pathlib import Path
 from typing import Dict, List, Optional
-from loguru import logger
 from autocoder.common import AutoCoderArgs
 from autocoder.utils import llms as llm_utils
 
@@ -29,8 +28,7 @@ class ModelPathFilter:
 
     def _load_rules(self):
         """加载并编译正则规则"""
-        if not self.config_path.exists():
-            logger.warning(f"Filter config {self.config_path} not found")
+        if not self.config_path.exists():            
             return
 
         with open(self.config_path, 'r', encoding="utf-8") as f:
@@ -75,6 +73,10 @@ class ModelPathFilter:
         """重新加载规则配置"""
         self._rules_cache.clear()
         self._load_rules()
+
+    def has_rules(self):
+        """检查是否存在规则"""
+        return bool(self._rules_cache.get(self.model_name, []))
 
     @classmethod
     def from_model_object(cls,

@@ -168,12 +168,12 @@ class CodeAutoGenerate:
             model_filter = ModelPathFilter.from_model_object(llm, self.args)
             filtered_sources = []
             for source in source_code_list.sources:
-                if model_filter.is_accessible(source.path):
+                if model_filter.is_accessible(source.module_name):
                     filtered_sources.append(source)
                 else:
                     printer.print_in_terminal("index_file_filtered", 
                                                style="yellow",
-                                               file_path=source.path, 
+                                               file_path=source.module_name, 
                                                model_name=",".join(llm_utils.get_llm_names(llm)))
             
         source_code_list = SourceCodeList(filtered_sources)

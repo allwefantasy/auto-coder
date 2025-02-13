@@ -47,6 +47,8 @@ from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
+from autocoder.privacy.model_filter import ModelPathFilter
+
 console = Console()
 
 
@@ -947,6 +949,17 @@ def main(input_args: Optional[List[str]] = None):
             # )
             return
         elif raw_args.agent_command == "project_reader":
+                        
+            target_llm = llm.get_sub_client("planner_model")
+            if not target_llm:
+                target_llm = llm
+            model_filter = ModelPathFilter.from_model_object(target_llm, args)
+            if model_filter.has_rules():
+                printer = Printer()
+                msg = printer.get_message_from_key_with_format("model_has_access_restrictions",                                            
+                                           model_name=",".join(get_llm_names(target_llm)))
+                raise ValueError(msg)
+
             from autocoder.agent.project_reader import ProjectReader
 
             project_reader = ProjectReader(args, llm)
@@ -1196,18 +1209,17 @@ def main(input_args: Optional[List[str]] = None):
             pp.run()
             sources = pp.sources
             
-            # Apply model filter for chat_llm
-            from autocoder.privacy.model_filter import ModelPathFilter
+            # Apply model filter for chat_llm            
             model_filter = ModelPathFilter.from_model_object(chat_llm, args)
             filtered_sources = []
             printer = Printer()            
             for source in sources:
-                if model_filter.is_accessible(source.path):
+                if model_filter.is_accessible(source.module_name):
                     filtered_sources.append(source)
                 else:                    
                     printer.print_in_terminal("index_file_filtered", 
                                                style="yellow",
-                                               file_path=source.path, 
+                                               file_path=source.module_name, 
                                                model_name=",".join(get_llm_names(chat_llm)))
             
             s = build_index_and_filter_files(

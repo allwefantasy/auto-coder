@@ -3,7 +3,7 @@ from byzerllm.utils import format_str_jinja2
 
 MESSAGES = {
     "en": {
-        "index_file_filtered": "File {file_path} is filtered by model {model_name} restrictions",
+        "index_file_filtered": "File {{file_path}} is filtered by model {{model_name}} restrictions",
         "models_no_active": "No active models found",
         "models_speed_test_results": "Model Speed Test Results",
         "models_testing": "Testing model: {{name}}...",
@@ -12,7 +12,7 @@ MESSAGES = {
         "generation_cancelled": "[Interrupted] Generation cancelled",
         "model_not_found": "Model {{model_name}} not found",
         "generating_shell_script": "Generating Shell Script",
-        "new_session_started": "New session started. Previous chat history has been archived.",    
+        "new_session_started": "New session started. Previous chat history has been archived.",
         "memory_save_success": "✅ Saved to your memory",
         "file_decode_error": "Failed to decode file: {{file_path}}. Tried encodings: {{encodings}}",
         "file_write_error": "Failed to write file: {{file_path}}. Error: {{error}}",
@@ -82,7 +82,7 @@ MESSAGES = {
         "begin_index_source_code": "🚀 Begin to index source code in {{ source_dir }}",
         "stream_out_stats": "Model: {{ model_name }}, Total time: {{ elapsed_time }} seconds, First token time: {{ first_token_time }} seconds, Speed: {{ speed }} tokens/s, Input tokens: {{ input_tokens }}, Output tokens: {{ output_tokens }}, Input cost: {{ input_cost }}, Output cost: {{ output_cost }}",
         "quick_filter_stats": "{{ model_names }} 快速过滤器完成，耗时 {{ elapsed_time }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}, 输入成本: {{ input_cost }}, 输出成本: {{ output_cost }}",
-        "upsert_file": "✅ Updated file: {{ file_path }}",  
+        "upsert_file": "✅ Updated file: {{ file_path }}",
         "unmerged_blocks_title": "Unmerged Blocks",
         "quick_filter_title": "{{ model_name }} is analyzing how to filter context...",
         "quick_filter_failed": "❌ Quick filter failed: {{ error }}. ",
@@ -96,9 +96,10 @@ MESSAGES = {
         "quick_filter_tokens_len": "📊 Current index size: {{ tokens_len }} tokens",
         "estimated_chat_input_tokens": "Estimated chat input tokens: {{ estimated_input_tokens }}",
         "estimated_input_tokens_in_generate": "Estimated input tokens in generate ({{ generate_mode }}): {{ estimated_input_tokens }}",
+        "model_has_access_restrictions": "{{model_name}} has access restrictions, cannot use the current function",
     },
     "zh": {
-        "index_file_filtered": "文件 {file_path} 被模型 {model_name} 的访问限制过滤",
+        "index_file_filtered": "文件 {{file_path}} 被模型 {{model_name}} 的访问限制过滤",
         "models_no_active": "未找到激活的模型",
         "models_speed_test_results": "模型速度测试结果",
         "models_testing": "正在测试模型: {{name}}...",
@@ -190,8 +191,8 @@ MESSAGES = {
         "quick_filter_failed": "❌ 快速过滤器失败: {{ error }}. ",
         "estimated_chat_input_tokens": "对话输入token预估为: {{ estimated_input_tokens }}",
         "estimated_input_tokens_in_generate": "生成代码({{ generate_mode }})预计输入token数: {{ estimated_input_tokens_in_generate }}",
-    },
-}
+        "model_has_access_restrictions": "{{model_name}} 有访问限制，无法使用当前功能",
+    }}
 
 
 def get_system_language():
@@ -204,6 +205,7 @@ def get_system_language():
 def get_message(key):
     lang = get_system_language()
     return MESSAGES.get(lang, MESSAGES['en']).get(key, MESSAGES['en'][key])
+
 
 def get_message_with_format(msg_key: str, **kwargs):
     return format_str_jinja2(get_message(msg_key), **kwargs)
