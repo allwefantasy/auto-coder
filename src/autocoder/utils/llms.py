@@ -14,6 +14,27 @@ def get_llm_names(llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM,str],tar
    else:
       return [llm.default_model_name for llm in [llms] if llm.default_model_name]
 
+def get_model_info(model_names: str, product_mode: str):    
+    from autocoder import models as models_module
+    def get_model_by_name(model_name: str):
+        try:
+            return models_module.get_model_by_name(model_name)
+        except Exception as e:
+            return None
+    
+    if product_mode == "pro":
+        return None
+
+    if product_mode == "lite":
+        if "," in model_names:
+            # Multiple code models specified
+            model_names = model_names.split(",")
+            for _, model_name in enumerate(model_names):
+                return get_model_by_name(model_name)
+        else:
+            # Single code model
+            return get_model_by_name(model_names)
+
 def get_single_llm(model_names: str, product_mode: str):
     from autocoder import models as models_module
     if product_mode == "pro":
