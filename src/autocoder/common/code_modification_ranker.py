@@ -10,7 +10,6 @@ from autocoder.common.utils_code_auto_generate import chat_with_continue
 from byzerllm.utils.str2model import to_model
 from autocoder.utils.llms import get_llm_names, get_model_info
 
-from autocoder.utils.llms import get_llm_names
 class RankResult(BaseModel):
     rank_result: List[int]
 
@@ -120,7 +119,7 @@ class CodeModificationRanker:
                 total_input_cost = 0.0
                 total_output_cost = 0.0
 
-                for future in as_completed(futures):
+                for future, model_name in zip(futures, model_names):
                     try:
                         result = future.result()
                         input_tokens_count += result.input_tokens_count
@@ -128,8 +127,7 @@ class CodeModificationRanker:
                         v = to_model(result.content,RankResult)                        
                         results.append(v.rank_result)
 
-                        # 计算成本
-                        model_name = result.metadata.get("model", model_names[0] if model_names else "unknown")
+                        # 计算成本                        
                         info = model_info_map.get(model_name, {})
                         # 计算公式:token数 * 单价 / 1000000
                         total_input_cost += (result.input_tokens_count * info.get("input_cost", 0.0)) / 1000000
@@ -174,7 +172,8 @@ class CodeModificationRanker:
                     input_tokens=input_tokens_count,
                     output_tokens=generated_tokens_count,
                     input_cost=total_input_cost,
-                    output_cost=total_output_cost
+                    output_cost=total_output_cost,
+                    model_names=", ".join(model_names)
                 )
 
                 rerank_contents = [generate_result.contents[i]
