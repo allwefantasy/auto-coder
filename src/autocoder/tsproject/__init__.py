@@ -48,6 +48,7 @@ class TSProject:
             "actions",
             ".vscode",
             ".idea",
+            "venv",
         ]
 
     @byzerllm.prompt()

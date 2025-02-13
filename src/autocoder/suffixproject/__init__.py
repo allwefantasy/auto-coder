@@ -56,6 +56,7 @@ class SuffixProject:
             ".vscode",
             "actions",
             ".idea",
+            "venv",
         ]
 
     @byzerllm.prompt()

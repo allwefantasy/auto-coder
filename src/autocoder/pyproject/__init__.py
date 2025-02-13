@@ -116,6 +116,7 @@ class PyProject:
             "actions",
             ".vscode",
             ".idea",
+            "venv",
         ]
 
     @byzerllm.prompt()
