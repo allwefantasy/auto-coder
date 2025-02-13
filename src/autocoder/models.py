@@ -127,11 +127,23 @@ def update_model_input_price(name: str, price: float) -> bool:
     """更新模型输入价格
     
     Args:
-        name: 模型名称
-        price: 输入价格(M/百万input tokens)
+        name (str): 要更新的模型名称，必须与models.json中的记录匹配
+        price (float): 新的输入价格，单位：美元/百万tokens。必须大于等于0
         
     Returns:
-        bool: 是否更新成功
+        bool: 是否成功找到并更新了模型价格
+        
+    Raises:
+        ValueError: 如果price为负数时抛出
+        
+    Example:
+        >>> update_model_input_price("gpt-4", 3.0)
+        True
+        
+    Notes:
+        1. 价格设置后会立即生效并保存到models.json
+        2. 实际费用计算时会按实际使用量精确到小数点后6位
+        3. 设置价格为0表示该模型当前不可用
     """
     if price < 0:
         raise ValueError("Price cannot be negative")
@@ -151,11 +163,23 @@ def update_model_output_price(name: str, price: float) -> bool:
     """更新模型输出价格
     
     Args:
-        name: 模型名称
-        price: 输出价格(M/百万output tokens)
+        name (str): 要更新的模型名称，必须与models.json中的记录匹配
+        price (float): 新的输出价格，单位：美元/百万tokens。必须大于等于0
         
     Returns:
-        bool: 是否更新成功
+        bool: 是否成功找到并更新了模型价格
+        
+    Raises:
+        ValueError: 如果price为负数时抛出
+        
+    Example:
+        >>> update_model_output_price("gpt-4", 6.0)
+        True
+        
+    Notes:
+        1. 输出价格通常比输入价格高30%-50%
+        2. 对于按token计费的API，实际收费按(input_tokens * input_price + output_tokens * output_price)计算
+        3. 价格变更会影响所有依赖模型计费的功能（如成本预测、用量监控等）
     """
     if price < 0:
         raise ValueError("Price cannot be negative")
