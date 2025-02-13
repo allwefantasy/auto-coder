@@ -1389,11 +1389,24 @@ def main(input_args: Optional[List[str]] = None):
                 elapsed_time = time.time() - start_time
                 printer = Printer()
                 speed = last_meta.generated_tokens_count / elapsed_time
+                
+                # Get model info for pricing
+                model_info = get_model_info(model_name, args.product_mode)
+                input_price = model_info.get("input_price", 0.0) if model_info else 0.0
+                output_price = model_info.get("output_price", 0.0) if model_info else 0.0
+                
+                # Calculate costs
+                input_cost = (last_meta.input_tokens_count * input_price) / 1000000  # Convert to millions
+                output_cost = (last_meta.generated_tokens_count * output_price) / 1000000  # Convert to millions
+                
                 printer.print_in_terminal("stream_out_stats", 
+                                    model_name=model_name,
                                     elapsed_time=elapsed_time,
                                     first_token_time=last_meta.first_token_time,
                                     input_tokens=last_meta.input_tokens_count,
                                     output_tokens=last_meta.generated_tokens_count,
+                                    input_cost=round(input_cost, 4),
+                                    output_cost=round(output_cost, 4),
                                     speed=round(speed, 2))
             
             chat_history["ask_conversation"].append(

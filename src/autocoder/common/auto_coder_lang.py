@@ -182,7 +182,7 @@ MESSAGES = {
         "ranking_complete": "排序完成，耗时 {{ elapsed }} 秒，总投票数: {{ total_tasks }}，最佳候选索引: {{ best_candidate }}，得分: {{ scores }}，输入token数: {{ input_tokens }}，输出token数: {{ output_tokens }}",
         "ranking_process_failed": "排序过程失败: {{ error }}",
         "ranking_failed": "排序失败，耗时 {{ elapsed }} 秒，使用原始顺序",
-        "stream_out_stats": "总耗时 {{ elapsed_time }} 秒，首token时间: {{ first_token_time }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}, 速度: {{ speed }} tokens/秒",
+        "stream_out_stats": "模型: {{ model_name }},总耗时 {{ elapsed_time }} 秒,首token时间: {{ first_token_time }} 秒,输入token数: {{ input_tokens }}({{ input_cost }}$), 输出token数: {{ output_tokens }}({{ output_cost }}$), 速度: {{ speed }} tokens/秒",
         "quick_filter_stats": "Quick filter completed in {{ elapsed_time }} seconds, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}",
         "quick_filter_title": "{{ model_name }} 正在分析如何筛选上下文...",
         "quick_filter_failed": "❌ 快速过滤器失败: {{ error }}. ",
