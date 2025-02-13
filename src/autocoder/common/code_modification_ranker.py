@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import traceback
 from autocoder.common.utils_code_auto_generate import chat_with_continue
 from byzerllm.utils.str2model import to_model
+from autocoder.utils.llms import get_llm_names, get_model_info
 
 from autocoder.utils.llms import get_llm_names
 class RankResult(BaseModel):
@@ -97,6 +98,28 @@ class CodeModificationRanker:
 
                 # Collect all results
                 results = []
+                # 获取模型名称列表
+                model_names = []
+                for llm in self.llms:
+                    # 获取当前llm实例对应的模型名称
+                    names = get_llm_names(llm)  
+                    model_names.extend(names)
+
+                # 获取模型价格信息
+                model_info_map = {}
+                for name in model_names:
+                    # 第二个参数是产品模式,从args中获取
+                    info = get_model_info(name, self.args.product_mode)  
+                    if info:
+                        model_info_map[name] = {
+                            "input_cost": info.get("input_price", 0.0),  # 每百万tokens成本
+                            "output_cost": info.get("output_price", 0.0) # 每百万tokens成本 
+                        }
+
+                # 计算总成本
+                total_input_cost = 0.0
+                total_output_cost = 0.0
+
                 for future in as_completed(futures):
                     try:
                         result = future.result()
@@ -104,6 +127,14 @@ class CodeModificationRanker:
                         generated_tokens_count += result.generated_tokens_count
                         v = to_model(result.content,RankResult)                        
                         results.append(v.rank_result)
+
+                        # 计算成本
+                        model_name = result.metadata.get("model", model_names[0] if model_names else "unknown")
+                        info = model_info_map.get(model_name, {})
+                        # 计算公式:token数 * 单价 / 1000000
+                        total_input_cost += (result.input_tokens_count * info.get("input_cost", 0.0)) / 1000000
+                        total_output_cost += (result.generated_tokens_count * info.get("output_cost", 0.0)) / 1000000
+
                     except Exception as e:
                         self.printer.print_in_terminal(
                             "ranking_failed_request", style="yellow", error=str(e))                        
@@ -112,6 +143,10 @@ class CodeModificationRanker:
                 if not results:
                     raise Exception(
                         self.printer.get_message_from_key("ranking_all_failed"))
+
+                # 四舍五入到4位小数
+                total_input_cost = round(total_input_cost, 4)
+                total_output_cost = round(total_output_cost, 4)
 
                 # Calculate scores for each candidate
                 candidate_scores = defaultdict(float)
@@ -137,7 +172,9 @@ class CodeModificationRanker:
                     best_candidate=sorted_candidates[0],
                     scores=score_details,
                     input_tokens=input_tokens_count,
-                    output_tokens=generated_tokens_count
+                    output_tokens=generated_tokens_count,
+                    input_cost=total_input_cost,
+                    output_cost=total_output_cost
                 )
 
                 rerank_contents = [generate_result.contents[i]
