@@ -419,6 +419,7 @@ class IndexManager:
         if updated_sources or keys_to_remove:
             with open(self.index_file, "w") as file:
                 json.dump(index_data, file, ensure_ascii=False, indent=2)
+                
             self.printer.print_in_terminal(
                 "index_file_saved",
                 style="green",
