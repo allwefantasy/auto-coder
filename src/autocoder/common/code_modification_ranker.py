@@ -144,7 +144,12 @@ class CodeModificationRanker:
                                    for i in sorted_candidates]
                 rerank_conversations = [
                     generate_result.conversations[i] for i in sorted_candidates]
-                return CodeGenerateResult(contents=rerank_contents, conversations=rerank_conversations)
+                return CodeGenerateResult(
+                    contents=rerank_contents,
+                    conversations=rerank_conversations,
+                    input_tokens=input_tokens_count,
+                    generated_tokens=generated_tokens_count
+                )
 
         except Exception as e:
             self.printer.print_in_terminal(
