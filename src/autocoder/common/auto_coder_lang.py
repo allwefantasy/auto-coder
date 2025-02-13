@@ -21,7 +21,7 @@ MESSAGES = {
         "no_latest_commit": "Unable to get latest commit information",
         "code_review_error": "Code review process error: {{error}}",
         "index_file_too_large": "⚠️ File {{ file_path }} is too large ({{ file_size }} > {{ max_length }}), splitting into chunks...",
-        "index_update_success": "✅ {{ model_name }} Successfully updated index for {{ file_path }} (md5: {{ md5 }}) in {{ duration }}s",
+        "index_update_success": "✅ {{ model_name }} Successfully updated index for {{ file_path }} (md5: {{ md5 }}) in {{ duration }}s, input_tokens: {{ input_tokens }}, output_tokens: {{ output_tokens }}, input_cost: {{ input_cost }}, output_cost: {{ output_cost }}",
         "index_build_error": "❌ {{ model_name }} Error building index for {{ file_path }}: {{ error }}",
         "index_build_summary": "📊 Total Files: {{ total_files }}, Need to Build Index: {{ num_files }}",
         "building_index_progress": "⏳ Building Index: {{ counter }}/{{ num_files }}...",
@@ -30,7 +30,7 @@ MESSAGES = {
         "index_threads_completed": "✅ Completed {{ completed_threads }}/{{ total_threads }} threads",
         "index_related_files_fail": "⚠️ Failed to find related files for chunk {{ chunk_count }}",
         "index_file_removed": "🗑️ Removed non-existent file index: {{ file_path }}",
-        "index_file_saved": "💾 Saved index file, updated {{ updated_files }} files, removed {{ removed_files }} files",
+        "index_file_saved": "💾 Saved index file, updated {{ updated_files }} files, removed {{ removed_files }} files, input_tokens: {{ input_tokens }}, output_tokens: {{ output_tokens }}, input_cost: {{ input_cost }}, output_cost: {{ output_cost }}",
         "human_as_model_instructions": (
             "You are now in Human as Model mode. The content has been copied to your clipboard.\n"
             "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
@@ -114,7 +114,7 @@ MESSAGES = {
         "no_latest_commit": "无法获取最新的提交信息",
         "code_review_error": "代码审查过程出错: {{error}}",
         "index_file_too_large": "⚠️ 文件 {{ file_path }} 过大 ({{ file_size }} > {{ max_length }}), 正在分块处理...",
-        "index_update_success": "✅ {{ model_name }} 成功更新 {{ file_path }} 的索引 (md5: {{ md5 }}), 耗时 {{ duration }} 秒",
+        "index_update_success": "✅ {{ model_name }} 成功更新 {{ file_path }} 的索引 (md5: {{ md5 }}), 耗时 {{ duration }} 秒, 输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}, 输入成本: {{ input_cost }}, 输出成本: {{ output_cost }}",
         "index_build_error": "❌ {{ model_name }} 构建 {{ file_path }} 索引时出错: {{ error }}",
         "index_build_summary": "📊 总文件数: {{ total_files }}, 需要构建索引: {{ num_files }}",
         "building_index_progress": "⏳ 正在构建索引: {{ counter }}/{{ num_files }}...",
@@ -123,7 +123,7 @@ MESSAGES = {
         "index_threads_completed": "✅ 已完成 {{ completed_threads }}/{{ total_threads }} 个线程",
         "index_related_files_fail": "⚠️ 无法为块 {{ chunk_count }} 找到相关文件",
         "index_file_removed": "🗑️ 已移除不存在的文件索引：{{ file_path }}",
-        "index_file_saved": "💾 已保存索引文件，更新了 {{ updated_files }} 个文件，移除了 {{ removed_files }} 个文件",
+        "index_file_saved": "💾 已保存索引文件，更新了 {{ updated_files }} 个文件，移除了 {{ removed_files }} 个文件，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}, 输入成本: {{ input_cost }}, 输出成本: {{ output_cost }}",
         "human_as_model_instructions": (
             "您现在处于人类作为模型模式。内容已复制到您的剪贴板。\n"
             "系统正在等待您的输入。完成后，在新行输入'EOF'提交。\n"
