@@ -208,7 +208,20 @@ class QuickFilter():
             return self.big_filter(index_items)
         
         try:
-            model_name = ",".join(get_llm_names(self.index_manager.index_filter_llm))
+            # 获取模型名称
+            model_names = get_llm_names(self.index_manager.index_filter_llm)
+            model_name = ",".join(model_names)
+            
+            # 获取模型价格信息
+            model_info_map = {}
+            for name in model_names:
+                # 第二个参数是产品模式,从args中获取
+                info = get_model_info(name, self.args.product_mode)  
+                if info:
+                    model_info_map[name] = {
+                        "input_cost": info.get("input_price", 0.0),  # 每百万tokens成本
+                        "output_cost": info.get("output_price", 0.0) # 每百万tokens成本 
+                    }
             
             # 渲染 Prompt 模板
             query = self.quick_filter_files.prompt(index_items, self.args.query)
@@ -230,13 +243,30 @@ class QuickFilter():
             # 解析结果
             file_number_list = to_model(full_response, FileNumberList)
             end_time = time.monotonic()            
-            # 打印 token 统计信息
+            
+            # 计算总成本
+            total_input_cost = 0.0
+            total_output_cost = 0.0
+            
+            for name in model_names:
+                info = model_info_map.get(name, {})
+                # 计算公式:token数 * 单价 / 1000000
+                total_input_cost += (last_meta.input_tokens_count * info.get("input_cost", 0.0)) / 1000000
+                total_output_cost += (last_meta.generated_tokens_count * info.get("output_cost", 0.0)) / 1000000
+            
+            # 四舍五入到4位小数
+            total_input_cost = round(total_input_cost, 4)
+            total_output_cost = round(total_output_cost, 4)
+            
+            # 打印 token 统计信息和成本
             self.printer.print_in_terminal(
                 "quick_filter_stats", 
                 style="blue",
                 elapsed_time=f"{end_time - start_time:.2f}",
                 input_tokens=last_meta.input_tokens_count,
-                output_tokens=last_meta.generated_tokens_count
+                output_tokens=last_meta.generated_tokens_count,
+                input_cost=total_input_cost,
+                output_cost=total_output_cost
             )
             
         except Exception as e:
