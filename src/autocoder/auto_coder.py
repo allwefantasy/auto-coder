@@ -1194,7 +1194,9 @@ def main(input_args: Optional[List[str]] = None):
             else:
                 pp = SuffixProject(args=args, llm=llm, file_filter=None)
             pp.run()
-            sources = pp.sources                       
+            sources = pp.sources
+
+            ##MARK                       
 
             s = build_index_and_filter_files(
                 llm=llm, args=args, sources=sources)                        
