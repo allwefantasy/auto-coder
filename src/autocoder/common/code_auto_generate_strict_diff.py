@@ -9,6 +9,7 @@ import json
 from autocoder.common.utils_code_auto_generate import chat_with_continue
 from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
+from autocoder.utils import llms as llm_utils
 
 class CodeAutoGenerateStrictDiff:
     def __init__(
@@ -311,6 +312,9 @@ class CodeAutoGenerateStrictDiff:
         results = []
         input_tokens_count = 0
         generated_tokens_count = 0
+        input_tokens_cost = 0
+        generated_tokens_cost = 0
+        model_names = []
 
         printer = Printer()
         estimated_input_tokens = count_tokens(json.dumps(conversations, ensure_ascii=False))
@@ -324,6 +328,8 @@ class CodeAutoGenerateStrictDiff:
                 futures = []
                 for llm in self.llms:
                     for _ in range(self.generate_times_same_model):
+                        model_name = llm_utils.get_llm_names(llm)[0]
+                        model_names.append(model_name)
                         futures.append(executor.submit(
                             chat_with_continue, llm=llm, conversations=conversations, llm_config=llm_config))
                 temp_results = [future.result() for future in futures]
@@ -331,7 +337,11 @@ class CodeAutoGenerateStrictDiff:
                     results.append(result.content)
                     input_tokens_count += result.input_tokens_count
                     generated_tokens_count += result.generated_tokens_count
-            
+                    model_info = llm_utils.get_model_info(model_name)
+                    input_cost = model_info.input_cost if model_info else 0
+                    output_cost = model_info.output_cost if model_info else 0
+                    input_tokens_cost += input_cost * result.input_tokens_count / 1000000
+                    generated_tokens_cost += output_cost * result.generated_tokens_count / 1000000
             for result in results:
                 conversations_list.append(
                     conversations + [{"role": "assistant", "content": result}])
@@ -345,7 +355,9 @@ class CodeAutoGenerateStrictDiff:
         
         statistics = {
             "input_tokens_count": input_tokens_count,
-            "generated_tokens_count": generated_tokens_count
+            "generated_tokens_count": generated_tokens_count,
+            "input_tokens_cost": input_tokens_cost,
+            "generated_tokens_cost": generated_tokens_cost
         }        
     
         if self.args.request_id and not self.args.skip_events:

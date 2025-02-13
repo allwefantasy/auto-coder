@@ -79,7 +79,7 @@ MESSAGES = {
         "ranking_process_failed": "Ranking process failed: {{ error }}",
         "ranking_failed": "Ranking failed in {{ elapsed }}s, using original order",
         "begin_index_source_code": "🚀 Begin to index source code in {{ source_dir }}",
-        "stream_out_stats": "Elapsed time {{ elapsed_time }} seconds, first token time: {{ first_token_time }} seconds, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}, speed: {{ speed }} tokens/s",
+        "stream_out_stats": "Model {{ model_name }} completed in {{ elapsed_time }} seconds, input token count: {{ input_tokens }}({{ input_cost }}), output token count: {{ output_tokens }}({{ output_cost }}), speed: {{ speed }} tokens/s",
         "quick_filter_stats": "快速过滤器完成，耗时 {{ elapsed_time }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}",
         "upsert_file": "✅ Updated file: {{ file_path }}",  
         "unmerged_blocks_title": "Unmerged Blocks",
