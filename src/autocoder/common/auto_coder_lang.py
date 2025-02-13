@@ -3,6 +3,7 @@ from byzerllm.utils import format_str_jinja2
 
 MESSAGES = {
     "en": {
+        "index_file_filtered": "File {file_path} is filtered by model {model_name} restrictions",
         "models_no_active": "No active models found",
         "models_speed_test_results": "Model Speed Test Results",
         "models_testing": "Testing model: {{name}}...",
@@ -97,6 +98,7 @@ MESSAGES = {
         "estimated_input_tokens_in_generate": "Estimated input tokens in generate ({{ generate_mode }}): {{ estimated_input_tokens }}",
     },
     "zh": {
+        "index_file_filtered": "文件 {file_path} 被模型 {model_name} 的访问限制过滤",
         "models_no_active": "未找到激活的模型",
         "models_speed_test_results": "模型速度测试结果",
         "models_testing": "正在测试模型: {{name}}...",

@@ -9,6 +9,7 @@ from autocoder.index.symbols_utils import (
     SymbolType,
     symbols_info_to_str,
 )
+from autocoder.privacy.model_filter import ModelPathFilter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 
@@ -31,6 +32,9 @@ class IndexManager:
     ):
         self.sources = sources
         self.source_dir = args.source_dir
+        # Initialize model filter for index_llm and index_filter_llm
+        self.index_model_filter = None
+        self.index_filter_model_filter = None
         self.anti_quota_limit = (
             args.index_model_anti_quota_limit or args.anti_quota_limit
         )
@@ -47,6 +51,12 @@ class IndexManager:
             self.index_filter_llm = llm
 
         self.llm = llm
+        
+        # Initialize model filters
+        if self.index_llm:
+            self.index_model_filter = ModelPathFilter.from_model_object(self.index_llm, args)
+        if self.index_filter_llm:
+            self.index_filter_model_filter = ModelPathFilter.from_model_object(self.index_filter_llm, args)
         self.args = args
         self.max_input_length = (
             args.index_model_max_input_length or args.model_max_input_length
@@ -195,6 +205,17 @@ class IndexManager:
         ext = os.path.splitext(file_path)[1].lower()
         if ext in [".md", ".html", ".txt", ".doc", ".pdf"]:
             return True
+            
+        # Check model filter restrictions
+        if self.index_model_filter and not self.index_model_filter.is_accessible(file_path):
+            self.printer.print_in_terminal(
+                "index_file_filtered",
+                style="yellow",
+                file_path=file_path,
+                model_name=getattr(self.index_llm, 'default_model_name', 'unknown')
+            )
+            return True
+            
         return False
 
     def build_index_for_single_source(self, source: SourceCode):   
