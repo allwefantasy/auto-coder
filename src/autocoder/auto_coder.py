@@ -1196,10 +1196,21 @@ def main(input_args: Optional[List[str]] = None):
             pp.run()
             sources = pp.sources
 
-            ##MARK                       
-
+            ##MARK
+            # Apply model filter for chat_llm
+            from autocoder.privacy.model_filter import ModelPathFilter
+            model_filter = ModelPathFilter.from_model_object(chat_llm, args)
+            filtered_sources = []
+            for source in sources:
+                if model_filter.is_accessible(source.path):
+                    filtered_sources.append(source)
+                else:
+                    logger.warning(get_message_with_format("index_file_filtered", 
+                                                         file_path=source.path, 
+                                                         model_name=",".join(get_llm_names(chat_llm))))
+            
             s = build_index_and_filter_files(
-                llm=llm, args=args, sources=sources)                        
+                llm=llm, args=args, sources=filtered_sources)                        
             
             if s:
                 pre_conversations.append(
