@@ -4,8 +4,12 @@ from typing import Union,Optional
 def get_llm_names(llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM,str],target_model_type:Optional[str]=None):
    if target_model_type is None:
       return [llm.default_model_name for llm in [llm] if llm.default_model_name]
+   
    llms = llm.get_sub_client(target_model_type) 
+   
    if llms is None:
+      if isinstance(llm,list):
+         return [_llm.default_model_name for _llm in llm]
       return [llm.default_model_name for llm in [llm] if llm.default_model_name]
    elif isinstance(llms, list):
        return [llm.default_model_name for llm in llms if llm.default_model_name]

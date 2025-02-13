@@ -128,7 +128,7 @@ class ActionTSProject(BaseAction):
             speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
             input_tokens_cost = generate_result.metadata.get('input_tokens_cost', 0)
             generated_tokens_cost = generate_result.metadata.get('generated_tokens_cost', 0)
-            model_names = ",".join(get_llm_names(self.llm))
+            model_names = ",".join(get_llm_names(generate.llms))
             self.printer.print_in_terminal(
                 "code_generation_complete",
                 duration=elapsed_time,
@@ -225,7 +225,7 @@ class ActionPyScriptProject(BaseAction):
 
             elapsed_time = time.time() - start_time
             speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
-            model_names = ",".join(get_llm_names(self.llm))
+            model_names = ",".join(get_llm_names(generate.llms))
             input_tokens_cost = generate_result.metadata.get('input_tokens_cost', 0)
             generated_tokens_cost = generate_result.metadata.get('generated_tokens_cost', 0)
             self.printer.print_in_terminal(
@@ -350,7 +350,7 @@ class ActionPyProject(BaseAction):
                 )
             elapsed_time = time.time() - start_time
             speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
-            model_names = ",".join(get_llm_names(self.llm))
+            model_names = ",".join(get_llm_names(generate.llms))
             input_tokens_cost = generate_result.metadata.get('input_tokens_cost', 0)
             generated_tokens_cost = generate_result.metadata.get('generated_tokens_cost', 0)
             self.printer.print_in_terminal(
@@ -464,7 +464,7 @@ class ActionSuffixProject(BaseAction):
               
         elapsed_time = time.time() - start_time
         speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
-        model_names = ",".join(get_llm_names(self.llm))
+        model_names = ",".join(get_llm_names(generate.llms))
         input_tokens_cost = generate_result.metadata.get('input_tokens_cost', 0)
         generated_tokens_cost = generate_result.metadata.get('generated_tokens_cost', 0)
         self.printer.print_in_terminal(
