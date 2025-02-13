@@ -18,7 +18,7 @@ from autocoder.common.printer import Printer
 from concurrent.futures import ThreadPoolExecutor
 import threading
 
-from autocoder.utils.llms import get_llm_names
+from autocoder.utils.llms import get_llm_names,get_model_info
 
 
 def get_file_path(file_path):
@@ -266,7 +266,8 @@ class QuickFilter():
                 input_tokens=last_meta.input_tokens_count,
                 output_tokens=last_meta.generated_tokens_count,
                 input_cost=total_input_cost,
-                output_cost=total_output_cost
+                output_cost=total_output_cost,
+                model_names=model_name
             )
             
         except Exception as e:

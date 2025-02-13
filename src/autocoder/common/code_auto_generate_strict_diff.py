@@ -333,10 +333,12 @@ class CodeAutoGenerateStrictDiff:
                         model_name = None
                         if model_names_list:
                             model_name = model_names_list[0]                                                    
-                        model_names.append(model_name)
-
-                        futures.append(executor.submit(
-                            chat_with_continue, llm=llm, conversations=conversations, llm_config=llm_config))
+                        
+                        for _ in range(self.generate_times_same_model):
+                            model_names.append(model_name)
+                            futures.append(executor.submit(
+                                chat_with_continue, llm=llm, conversations=conversations, llm_config=llm_config))
+                            
                 temp_results = [future.result() for future in futures]
                 for result in temp_results:
                     results.append(result.content)
