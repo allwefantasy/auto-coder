@@ -312,6 +312,10 @@ class IndexManager:
             "symbols": symbols,
             "last_modified": os.path.getmtime(file_path),
             "md5": md5,
+            "input_tokens_count": total_input_tokens,
+            "generated_tokens_count": total_output_tokens,
+            "input_tokens_cost": total_input_cost,
+            "generated_tokens_cost": total_output_cost
         }
 
     def build_index(self):
@@ -338,6 +342,11 @@ class IndexManager:
                 )
 
         updated_sources = []
+
+        total_input_tokens = 0
+        total_output_tokens = 0
+        total_input_cost = 0.0
+        total_output_cost = 0.0
 
         with ThreadPoolExecutor(max_workers=self.args.index_build_workers) as executor:
 
@@ -395,6 +404,10 @@ class IndexManager:
                         num_files=num_files
                     )
                     module_name = result["module_name"]
+                    total_input_tokens += result["input_tokens_count"]
+                    total_output_tokens += result["generated_tokens_count"]
+                    total_input_cost += result["input_tokens_cost"]
+                    total_output_cost += result["generated_tokens_cost"]
                     index_data[module_name] = result
                     updated_sources.append(module_name)
                     if len(updated_sources) > 5:
@@ -410,7 +423,11 @@ class IndexManager:
                 "index_file_saved",
                 style="green",
                 updated_files=len(updated_sources),
-                removed_files=len(keys_to_remove)
+                removed_files=len(keys_to_remove),
+                input_tokens=total_input_tokens,
+                output_tokens=total_output_tokens,
+                input_cost=total_input_cost,
+                output_cost=total_output_cost
             )
 
         return index_data
