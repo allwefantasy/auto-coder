@@ -3,13 +3,13 @@
 
 model_filters:
   # Model-specific configurations
-  gpt-4:
+  doubao_v3_chat:
     forbidden_paths:
       - ".*\.env$"              # Block all .env files
       - ".*/secrets/.*"         # Block anything in secrets directory
       - ".*/tests/.*\.py$"       # Block all Python files in tests directory
   
-  gpt-3.5-turbo:
+  qwen_32b_chat:
     forbidden_paths:
       - ".*/private/.*"         # Block anything in private directory
       - ".*\.key$"              # Block all .key files
