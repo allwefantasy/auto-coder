@@ -17,6 +17,7 @@ import hashlib
 
 from autocoder.common.printer import Printer
 from autocoder.common.auto_coder_lang import get_message
+from autocoder.utils.llms import get_llm_names, get_model_info
 from autocoder.index.types import (
     IndexItem,
     TargetFile,
@@ -212,8 +213,29 @@ class IndexManager:
         model_name = ",".join(get_llm_names(self.index_llm))
 
         try:
+            # 获取模型名称列表
+            model_names = get_llm_names(self.index_llm)
+            model_name = ",".join(model_names)
+
+            # 获取模型价格信息
+            model_info_map = {}
+            for name in model_names:
+                info = get_model_info(name, self.args.product_mode)
+                if info:
+                    model_info_map[name] = {
+                        "input_price": info.get("input_price", 0.0),
+                        "output_price": info.get("output_price", 0.0)
+                    }
+
             start_time = time.monotonic()
             source_code = source.source_code
+            
+            # 统计token和成本
+            total_input_tokens = 0
+            total_output_tokens = 0
+            total_input_cost = 0.0
+            total_output_cost = 0.0
+            
             if len(source.source_code) > self.max_input_length:
                 self.printer.print_in_terminal(
                     "index_file_too_large",
@@ -227,15 +249,38 @@ class IndexManager:
                 )
                 symbols = []
                 for chunk in chunks:
+                    meta_holder = byzerllm.MetaHolder()
                     chunk_symbols = self.get_all_file_symbols.with_llm(
-                        self.index_llm).run(source.module_name, chunk)
+                        self.index_llm).with_meta(meta_holder).run(source.module_name, chunk)
                     time.sleep(self.anti_quota_limit)
                     symbols.append(chunk_symbols)
+                    
+                    if meta_holder.get_meta():
+                        meta_dict = meta_holder.get_meta()
+                        total_input_tokens += meta_dict.get("input_tokens_count", 0)
+                        total_output_tokens += meta_dict.get("generated_tokens_count", 0)
+                        
                 symbols = "\n".join(symbols)
             else:
+                meta_holder = byzerllm.MetaHolder()
                 symbols = self.get_all_file_symbols.with_llm(
-                    self.index_llm).run(source.module_name, source_code)
+                    self.index_llm).with_meta(meta_holder).run(source.module_name, source_code)
                 time.sleep(self.anti_quota_limit)
+                
+                if meta_holder.get_meta():
+                    meta_dict = meta_holder.get_meta()
+                    total_input_tokens += meta_dict.get("input_tokens_count", 0)
+                    total_output_tokens += meta_dict.get("generated_tokens_count", 0)
+            
+            # 计算总成本
+            for name in model_names:
+                info = model_info_map.get(name, {})
+                total_input_cost += (total_input_tokens * info.get("input_price", 0.0)) / 1000000
+                total_output_cost += (total_output_tokens * info.get("output_price", 0.0)) / 1000000
+            
+            # 四舍五入到4位小数
+            total_input_cost = round(total_input_cost, 4)
+            total_output_cost = round(total_output_cost, 4)
             
             self.printer.print_in_terminal(
                 "index_update_success",
@@ -243,7 +288,11 @@ class IndexManager:
                 file_path=file_path,
                 md5=md5,
                 duration=time.monotonic() - start_time,
-                model_name=model_name
+                model_name=model_name,
+                input_tokens=total_input_tokens,
+                output_tokens=total_output_tokens,
+                input_cost=total_input_cost,
+                output_cost=total_output_cost
             )
 
         except Exception as e:
