@@ -35,7 +35,9 @@ COMMANDS = {
         "/remove": "",
         "/list": "",
         "/speed": "",
-        "/speed-test": ""        
+        "/speed-test": "",
+        "/input_price": "",
+        "/output_price": "",       
     }
 }
 

@@ -2220,14 +2220,7 @@ def manage_models(params, query: str):
         
 
     if not subcmd:
-        printer.print_in_terminal("models_usage")
-        print("\nAvailable subcommands:")
-        print("  /list - List all models")
-        print("  /add <name> <api_key> - Add/activate a model")
-        print("  /add_model - Add a custom model with detailed parameters")
-        print("  /remove <name> - Remove a model")
-        print("  /speed <name> <speed> - Update model speed manually")
-        print("  /speed-test [rounds] - Test speed of all active models")           
+        printer.print_in_terminal("models_usage")        
 
     if subcmd == "/list":                    
         if models_data:
@@ -2315,7 +2308,7 @@ def manage_models(params, query: str):
             
     elif subcmd == "/speed-test":
         from autocoder.common.model_speed_test import render_speed_test_in_terminal
-        test_rounds = 3  # 默认测试轮数
+        test_rounds = 1  # 默认测试轮数
         
         enable_long_context = False
         if "/long_context" in query:
