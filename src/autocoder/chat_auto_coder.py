@@ -2203,8 +2203,15 @@ def manage_models(params, query: str):
 
     if "/speed_test" in query:
         subcmd = "/speed-test"
-        query = query.replace("/speed_test", "", 1).strip()    
-        
+        query = query.replace("/speed_test", "", 1).strip() 
+
+    if "input_price" in query:
+        subcmd = "/input_price"
+        query = query.replace("/input_price", "", 1).strip()
+
+    if "output_price" in query:
+        subcmd = "/output_price"
+        query = query.replace("/output_price", "", 1).strip()        
             
     if "/speed" in query:
         subcmd = "/speed"
