@@ -3,6 +3,16 @@ from byzerllm.utils import format_str_jinja2
 
 MESSAGES = {
     "en": {
+        "index_file_too_large": "⚠️ File {{ file_path }} is too large ({{ file_size }} > {{ max_length }}), splitting into chunks...",
+        "index_update_success": "✅ {{ model_name }} Successfully updated index for {{ file_path }} (md5: {{ md5 }}) in {{ duration }}s, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}, input cost: {{ input_cost }}, output cost: {{ output_cost }}",
+        "index_build_error": "❌ {{ model_name }} Error building index for {{ file_path }}: {{ error }}",
+        "index_build_summary": "📊 Total Files: {{ total_files }}, Need to Build Index: {{ num_files }}",
+        "building_index_progress": "⏳ Building Index: {{ counter }}/{{ num_files }}...",
+        "index_source_dir_mismatch": "⚠️ Source directory mismatch (file_path: {{ file_path }}, source_dir: {{ source_dir }})",
+        "index_related_files_fail": "⚠️ Failed to find related files for chunk {{ chunk_count }}",
+        "index_threads_completed": "✅ Completed {{ completed_threads }}/{{ total_threads }} threads",
+        "index_file_removed": "🗑️ Removed non-existent file index: {{ file_path }}",
+        "index_file_saved": "💾 Saved index file, updated {{ updated_files }} files, removed {{ removed_files }} files, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}, input cost: {{ input_cost }}, output cost: {{ output_cost }}",
         "models_no_active": "No active models found",
         "models_speed_test_results": "Model Speed Test Results",
         "models_testing": "Testing model: {{name}}...",
@@ -97,6 +107,16 @@ MESSAGES = {
         "estimated_input_tokens_in_generate": "Estimated input tokens in generate ({{ generate_mode }}): {{ estimated_input_tokens }}",
     },
     "zh": {
+        "index_file_too_large": "⚠️ 文件 {{ file_path }} 过大 ({{ file_size }} > {{ max_length }}), 正在分块处理...",
+        "index_update_success": "✅ {{ model_name }} 成功更新 {{ file_path }} 的索引 (md5: {{ md5 }}), 耗时 {{ duration }} 秒, 输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}, 输入成本: {{ input_cost }}, 输出成本: {{ output_cost }}",
+        "index_build_error": "❌ {{ model_name }} 构建 {{ file_path }} 索引时出错: {{ error }}",
+        "index_build_summary": "📊 总文件数: {{ total_files }}, 需要构建索引: {{ num_files }}",
+        "building_index_progress": "⏳ 正在构建索引: {{ counter }}/{{ num_files }}...",
+        "index_source_dir_mismatch": "⚠️ 源目录不匹配 (文件路径: {{ file_path }}, 源目录: {{ source_dir }})",
+        "index_related_files_fail": "⚠️ 无法为块 {{ chunk_count }} 找到相关文件",
+        "index_threads_completed": "✅ 已完成 {{ completed_threads }}/{{ total_threads }} 个线程",
+        "index_file_removed": "🗑️ 已移除不存在的文件索引:{{ file_path }}",
+        "index_file_saved": "💾 已保存索引文件,更新了 {{ updated_files }} 个文件,移除了 {{ removed_files }} 个文件, 输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}, 输入成本: {{ input_cost }}, 输出成本: {{ output_cost }}",
         "models_no_active": "未找到激活的模型",
         "models_speed_test_results": "模型速度测试结果",
         "models_testing": "正在测试模型: {{name}}...",
