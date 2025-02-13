@@ -11,6 +11,8 @@ import json
 from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
 from autocoder.utils import llms as llm_utils
+from autocoder.common import SourceCodeList
+from autocoder.privacy.model_filter import ModelPathFilter
 
 
 class CodeAutoGenerate:
@@ -156,9 +158,26 @@ class CodeAutoGenerate:
         }
 
     def single_round_run(
-        self, query: str, source_content: str
+        self, query: str, source_code_list: SourceCodeList
     ) -> Tuple[List[str], Dict[str, str]]:
         llm_config = {"human_as_model": self.args.human_as_model}
+
+        # Apply model filter for code_llm  
+        printer = Printer()      
+        for llm in self.llms:
+            model_filter = ModelPathFilter.from_model_object(llm, self.args)
+            filtered_sources = []
+            for source in source_code_list.sources:
+                if model_filter.is_accessible(source.path):
+                    filtered_sources.append(source)
+                else:
+                    printer.print_in_terminal("index_file_filtered", 
+                                               style="yellow",
+                                               file_path=source.path, 
+                                               model_name=",".join(llm_utils.get_llm_names(llm)))
+            
+        source_code_list = SourceCodeList(filtered_sources)
+        source_content = source_code_list.to_str()
 
         if self.args.request_id and not self.args.skip_events:
             queue_communicate.send_event_no_wait(
@@ -262,10 +281,11 @@ class CodeAutoGenerate:
         return CodeGenerateResult(contents=results, conversations=conversations_list, metadata=statistics)
 
     def multi_round_run(
-        self, query: str, source_content: str, max_steps: int = 10
+        self, query: str, source_code_list: SourceCodeList, max_steps: int = 10
     ) -> Tuple[List[str], List[Dict[str, str]]]:
         llm_config = {"human_as_model": self.args.human_as_model}
         result = []
+        source_content = source_code_list.to_str()
 
         if self.args.template == "common":
             init_prompt = self.multi_round_instruction.prompt(

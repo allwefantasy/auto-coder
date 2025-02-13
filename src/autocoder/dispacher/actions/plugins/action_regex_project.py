@@ -15,6 +15,7 @@ from autocoder.utils.conversation_store import store_code_model_conversation
 from autocoder.common.printer import Printer
 import time
 from autocoder.utils.llms import get_llm_names
+from autocoder.common import SourceCodeList
 from loguru import logger
 class ActionRegexProject:
     def __init__(
@@ -36,20 +37,21 @@ class ActionRegexProject:
         pp = RegexProject(args=args, llm=self.llm)
         self.pp = pp
         pp.run()
-        source_code = pp.output()
+        source_code_list = SourceCodeList(pp.sources)
         if self.llm:
             if args.in_code_apply:
                 old_query = args.query
                 args.query = (args.context or "") + "\n\n" + args.query
-            source_code = build_index_and_filter_files(
+            source_code_list = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
             )
             if args.in_code_apply:
                 args.query = old_query
-        self.process_content(source_code)
+        self.process_content(source_code_list)
 
-    def process_content(self, content: str):
+    def process_content(self, source_code_list: SourceCodeList):
         args = self.args
+        content = source_code_list.to_str()
 
         if args.execute and self.llm and not args.human_as_model:
             if len(content) > self.args.model_max_input_length:
@@ -78,11 +80,11 @@ class ActionRegexProject:
                 generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
             if self.args.enable_multi_round_generate:
                 generate_result = generate.multi_round_run(
-                    query=args.query, source_content=content
+                    query=args.query, source_code_list=source_code_list
                 )
             else:
                 generate_result = generate.single_round_run(
-                    query=args.query, source_content=content
+                    query=args.query, source_code_list=source_code_list
                 )
 
             elapsed_time = time.time() - start_time

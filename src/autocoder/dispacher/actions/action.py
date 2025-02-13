@@ -27,6 +27,8 @@ from loguru import logger
 import time
 from autocoder.common.printer import Printer
 from autocoder.utils.llms import get_llm_names
+from autocoder.privacy.model_filter import ModelPathFilter
+from autocoder.common import SourceCodeList
 
 
 class BaseAction:    
@@ -55,14 +57,15 @@ class ActionTSProject(BaseAction):
         self.pp = pp
         pp.run()
 
-        source_code = pp.output()
+        # source_code = pp.output()
+        source_code_list = SourceCodeList(pp.sources)
         if self.llm:
             if args.in_code_apply:
                 old_query = args.query
                 args.query = (args.context or "") + "\n\n" + args.query
-            source_code = build_index_and_filter_files(
+            source_code_list = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
-            )
+            )            
             if args.in_code_apply:
                 args.query = old_query
 
@@ -81,17 +84,21 @@ class ActionTSProject(BaseAction):
                 html_path=html_path,
                 max_iter=self.args.image_max_iter,
             )
-
+            html_code = ""
             with open(html_path, "r") as f:
                 html_code = f.read()
-                source_code = f"##File: {html_path}\n{html_code}\n\n" + source_code
+            
+            source_code_list.sources.append(SourceCode( 
+                module_name=html_path,
+                source_code=html_code,
+                tag="IMAGE"))            
 
-        self.process_content(source_code)
+        self.process_content(source_code_list)
         return True
 
-    def process_content(self, content: str):
+    def process_content(self, source_code_list: SourceCodeList):
         args = self.args
-
+        content = source_code_list.to_str()
         if args.execute and self.llm and not args.human_as_model:
             content_length = self._get_content_length(content)
             if content_length > self.args.model_max_input_length:
@@ -116,13 +123,14 @@ class ActionTSProject(BaseAction):
                 )
             else:
                 generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
+                        
             if self.args.enable_multi_round_generate:
                 generate_result = generate.multi_round_run(
-                    query=args.query, source_content=content
+                    query=args.query, source_code_list=source_code_list
                 )
             else:
                 generate_result = generate.single_round_run(
-                    query=args.query, source_content=content
+                    query=args.query, source_code_list=source_code_list
                 )
             elapsed_time = time.time() - start_time
             speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
@@ -191,11 +199,12 @@ class ActionPyScriptProject(BaseAction):
         pp = Level1PyProject(
             script_path=args.script_path, package_name=args.package_name
         )
-        content = pp.run()
-        self.process_content(content)
+        pp.run()
+        source_code_list = SourceCodeList(pp.sources)
+        self.process_content(source_code_list)
         return True
 
-    def process_content(self, content: str):
+    def process_content(self, source_code_list: SourceCodeList):
         args = self.args
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
@@ -216,11 +225,11 @@ class ActionPyScriptProject(BaseAction):
                 generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
             if self.args.enable_multi_round_generate:
                 generate_result = generate.multi_round_run(
-                    query=args.query, source_content=content
+                    query=args.query, source_code_list=source_code_list
                 )
             else:
                 generate_result = generate.single_round_run(
-                    query=args.query, source_content=content
+                    query=args.query, source_code_list=source_code_list
                 )
 
             elapsed_time = time.time() - start_time
@@ -293,24 +302,24 @@ class ActionPyProject(BaseAction):
         pp = PyProject(args=self.args, llm=self.llm)
         self.pp = pp
         pp.run(packages=args.py_packages.split(",") if args.py_packages else [])            
-        source_code = pp.output()                
+        source_code_list = SourceCodeList(pp.sources)                
 
         if self.llm:
             old_query = args.query
             if args.in_code_apply:
                 args.query = (args.context or "") + "\n\n" + args.query
-            source_code = build_index_and_filter_files(
+            source_code_list = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
             )
             if args.in_code_apply:
                 args.query = old_query
 
-        self.process_content(source_code)
+        self.process_content(source_code_list)
         return True
 
-    def process_content(self, content: str):
+    def process_content(self, source_code_list: SourceCodeList):
         args = self.args
-
+        content = source_code_list.to_str()
         if args.execute and self.llm and not args.human_as_model:
             content_length = self._get_content_length(content)
             if content_length > self.args.model_max_input_length:
@@ -342,11 +351,11 @@ class ActionPyProject(BaseAction):
 
             if self.args.enable_multi_round_generate:
                 generate_result = generate.multi_round_run(
-                    query=args.query, source_content=content
+                    query=args.query, source_code_list=source_code_list
                 )
             else:
                 generate_result = generate.single_round_run(
-                    query=args.query, source_content=content
+                    query=args.query, source_code_list=source_code_list
                 )
             elapsed_time = time.time() - start_time
             speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
@@ -414,20 +423,21 @@ class ActionSuffixProject(BaseAction):
         pp = SuffixProject(args=args, llm=self.llm)
         self.pp = pp
         pp.run()
-        source_code = pp.output()
+        source_code_list = SourceCodeList(pp.sources)
         if self.llm:
             if args.in_code_apply:
                 old_query = args.query
                 args.query = (args.context or "") + "\n\n" + args.query
-            source_code = build_index_and_filter_files(
+            source_code_list = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
             )
             if args.in_code_apply:
                 args.query = old_query
-        self.process_content(source_code)
+        self.process_content(source_code_list)
 
-    def process_content(self, content: str):
+    def process_content(self, source_code_list: SourceCodeList):
         args = self.args
+        content = source_code_list.to_str()
 
         if args.execute and self.llm and not args.human_as_model:
             content_length = self._get_content_length(content)
@@ -455,11 +465,11 @@ class ActionSuffixProject(BaseAction):
                 generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
             if self.args.enable_multi_round_generate:
                 generate_result = generate.multi_round_run(
-                    query=args.query, source_content=content
+                    query=args.query, source_code_list=source_code_list
                 )
             else:
                 generate_result = generate.single_round_run(
-                    query=args.query, source_content=content
+                    query=args.query, source_code_list=source_code_list
                 )
               
         elapsed_time = time.time() - start_time

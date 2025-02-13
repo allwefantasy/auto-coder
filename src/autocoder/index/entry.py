@@ -23,10 +23,11 @@ from autocoder.index.filter.quick_filter import QuickFilter
 from autocoder.index.filter.normal_filter import NormalFilter
 from autocoder.index.index import IndexManager
 from loguru import logger
+from autocoder.common import SourceCodeList
 
 def build_index_and_filter_files(
     llm, args: AutoCoderArgs, sources: List[SourceCode]
-) -> str:
+) -> SourceCodeList:
     # Initialize timing and statistics
     total_start_time = time.monotonic()
     stats = {
@@ -253,7 +254,8 @@ def build_index_and_filter_files(
         for file in final_filenames:
             print(f"{file} - {final_files[file].reason}")
 
-    source_code = ""
+    source_code = ""  
+    source_code_list = SourceCodeList(sources=[])
     depulicated_sources = set()
 
     for file in sources:
@@ -263,7 +265,7 @@ def build_index_and_filter_files(
             depulicated_sources.add(file.module_name)
             source_code += f"##File: {file.module_name}\n"
             source_code += f"{file.source_code}\n\n"
-
+            source_code_list.sources.append(file)
     if args.request_id and not args.skip_events:
         queue_communicate.send_event(
             request_id=args.request_id,
@@ -339,4 +341,4 @@ def build_index_and_filter_files(
             )
         )
 
-    return source_code
+    return source_code_list

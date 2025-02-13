@@ -14,7 +14,13 @@ class SourceCode(pydantic.BaseModel):
     tokens: int = -1
     metadata: Dict[str, Any] = {}
 
+class SourceCodeList():
+    def __init__(self, sources: List[SourceCode]):
+        self.sources = sources
 
+    def to_str(self):
+        return "\n".join([f"##File: {source.module_name}\n{source.source_code}\n" for source in self.sources])
+    
 class TranslateReadme(pydantic.BaseModel):
     filename: str = pydantic.Field(..., description="需要翻译的文件路径")
     content: str = pydantic.Field(..., description="翻译后的内容")
