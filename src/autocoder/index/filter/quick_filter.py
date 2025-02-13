@@ -90,9 +90,9 @@ class QuickFilter():
                     if info:
                         model_info_map[name] = {
                             # 每百万tokens成本
-                            "input_cost": info.get("input_price", 0.0),
+                            "input_price": info.get("input_price", 0.0),
                             # 每百万tokens成本
-                            "output_cost": info.get("output_price", 0.0)
+                            "output_price": info.get("output_price", 0.0)
                         }
 
                 if chunk_index == 0:
@@ -141,21 +141,27 @@ class QuickFilter():
                 else:
                     # 其他chunks直接使用with_llm
                     meta_holder = MetaHolder()
+                    start_time = time.monotonic()
                     file_number_list = self.quick_filter_files.with_llm(self.index_manager.index_filter_llm).with_meta(
                         meta_holder).with_return_type(FileNumberList).run(chunk, self.args.query)
+                    end_time = time.monotonic()
                     
-                    last_meta = meta_holder.meta
-                    total_input_cost = last_meta.input_tokens_count * model_info_map.get(model_name, {}).get("input_price", 0.0) / 1000000
-                    total_output_cost = last_meta.generated_tokens_count * model_info_map.get(model_name, {}).get("output_price", 0.0) / 1000000
+                    total_input_cost = 0.0
+                    total_output_cost = 0.0
+                    if meta_holder.get_meta():
+                        meta_dict = meta_holder.get_meta()                    
+                        total_input_cost = meta_dict.get("input_tokens_count", 0) * model_info_map.get(model_name, {}).get("input_price", 0.0) / 1000000
+                        total_output_cost = meta_dict.get("generated_tokens_count", 0) * model_info_map.get(model_name, {}).get("output_price", 0.0) / 1000000
                     
                     self.printer.print_in_terminal(
                         "quick_filter_stats",
                         style="blue",
-                        input_tokens=last_meta.input_tokens_count,
-                        output_tokens=last_meta.generated_tokens_count,
+                        input_tokens=meta_dict.get("input_tokens_count", 0),
+                        output_tokens=meta_dict.get("generated_tokens_count", 0),
                         input_cost=total_input_cost,
                         output_cost=total_output_cost,
-                        model_names=model_name
+                        model_names=model_name,
+                        elapsed_time=f"{end_time - start_time:.2f}"
                     )
 
                 if file_number_list:
@@ -286,9 +292,9 @@ class QuickFilter():
                 if info:
                     model_info_map[name] = {
                         # 每百万tokens成本
-                        "input_cost": info.get("input_price", 0.0),
+                        "input_price": info.get("input_price", 0.0),
                         # 每百万tokens成本
-                        "output_cost": info.get("output_price", 0.0)
+                        "output_price": info.get("output_price", 0.0)
                     }
 
             # 渲染 Prompt 模板
