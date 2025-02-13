@@ -420,6 +420,7 @@ class IndexManager:
             with open(self.index_file, "w") as file:
                 json.dump(index_data, file, ensure_ascii=False, indent=2)
                 
+            
             self.printer.print_in_terminal(
                 "index_file_saved",
                 style="green",
@@ -430,6 +431,7 @@ class IndexManager:
                 input_cost=total_input_cost,
                 output_cost=total_output_cost
             )
+
 
         return index_data
 
