@@ -256,11 +256,13 @@ def main(input_args: Optional[List[str]] = None):
             libs_dir = os.path.join(auto_coder_dir, "storage", "libs")
             code_search_path = None
             if os.path.exists(libs_dir):
-                retrieval_libs_dir = os.path.join(
-                    libs_dir, get_latest_byzer_retrieval_lib(libs_dir)
-                )
-                if os.path.exists(retrieval_libs_dir):
-                    code_search_path = [retrieval_libs_dir]
+                latest_retrieval_lib_dir = get_latest_byzer_retrieval_lib(libs_dir)
+                if latest_retrieval_lib_dir :
+                    retrieval_libs_dir = os.path.join(
+                        libs_dir, latest_retrieval_lib_dir
+                    )
+                    if os.path.exists(retrieval_libs_dir):
+                        code_search_path = [retrieval_libs_dir]
 
             try:
                 init_options = {}
