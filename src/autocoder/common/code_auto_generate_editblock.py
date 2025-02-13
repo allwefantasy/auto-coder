@@ -443,8 +443,13 @@ class CodeAutoGenerateEditBlock:
             with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
                 futures = []
                 for llm in self.llms:
-                    model_name = llm_utils.get_llm_names(llm)[0]
+                    
+                    model_names_list = llm_utils.get_llm_names(llm) 
+                    model_name = None
+                    if model_names_list:
+                        model_name = model_names_list[0]
                     model_names.append(model_name)
+
                     for _ in range(self.generate_times_same_model):
                         futures.append(executor.submit(
                             chat_with_continue, llm=llm, conversations=conversations, llm_config=llm_config))
