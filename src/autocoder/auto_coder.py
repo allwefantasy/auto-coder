@@ -1391,7 +1391,8 @@ def main(input_args: Optional[List[str]] = None):
                 speed = last_meta.generated_tokens_count / elapsed_time
                 
                 # Get model info for pricing
-                model_info = get_model_info(model_name, args.product_mode)
+                from autocoder.utils import llms as llm_utils
+                model_info = llm_utils.get_model_info(model_name, args.product_mode) or {}
                 input_price = model_info.get("input_price", 0.0) if model_info else 0.0
                 output_price = model_info.get("output_price", 0.0) if model_info else 0.0
                 

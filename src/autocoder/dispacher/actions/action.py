@@ -125,13 +125,17 @@ class ActionTSProject(BaseAction):
                     query=args.query, source_content=content
                 )
             elapsed_time = time.time() - start_time
-            speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0            
+            speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
+            input_tokens_cost = generate_result.metadata.get('input_tokens_cost', 0)
+            generated_tokens_cost = generate_result.metadata.get('generated_tokens_cost', 0)
             model_names = ",".join(get_llm_names(self.llm))
             self.printer.print_in_terminal(
                 "code_generation_complete",
                 duration=elapsed_time,
                 input_tokens=generate_result.metadata.get('input_tokens_count', 0),
                 output_tokens=generate_result.metadata.get('generated_tokens_count', 0),
+                input_cost=input_tokens_cost,
+                output_cost=generated_tokens_cost,
                 speed=round(speed, 2),
                 model_names=model_names
             )
@@ -222,11 +226,15 @@ class ActionPyScriptProject(BaseAction):
             elapsed_time = time.time() - start_time
             speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
             model_names = ",".join(get_llm_names(self.llm))
+            input_tokens_cost = generate_result.metadata.get('input_tokens_cost', 0)
+            generated_tokens_cost = generate_result.metadata.get('generated_tokens_cost', 0)
             self.printer.print_in_terminal(
                 "code_generation_complete",
                 duration=elapsed_time,
                 input_tokens=generate_result.metadata.get('input_tokens_count', 0),
                 output_tokens=generate_result.metadata.get('generated_tokens_count', 0),
+                input_cost=input_tokens_cost,
+                output_cost=generated_tokens_cost,
                 speed=round(speed, 2),
                 model_names=model_names
             )
@@ -264,13 +272,7 @@ class ActionPyScriptProject(BaseAction):
                     model=self.llm.default_model_name,
                 )
 
-            end_time = time.time()
-            self.printer.print_in_terminal(
-                "code_generation_complete",
-                duration=end_time - start_time,
-                input_tokens=generate_result.metadata.get('input_tokens_count', 0),
-                output_tokens=generate_result.metadata.get('generated_tokens_count', 0)
-            )
+            end_time = time.time()            
             with open(self.args.target_file, "w") as file:
                 file.write(content)
 
@@ -349,11 +351,15 @@ class ActionPyProject(BaseAction):
             elapsed_time = time.time() - start_time
             speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
             model_names = ",".join(get_llm_names(self.llm))
+            input_tokens_cost = generate_result.metadata.get('input_tokens_cost', 0)
+            generated_tokens_cost = generate_result.metadata.get('generated_tokens_cost', 0)
             self.printer.print_in_terminal(
                 "code_generation_complete",
                 duration=elapsed_time,
                 input_tokens=generate_result.metadata.get('input_tokens_count', 0),
                 output_tokens=generate_result.metadata.get('generated_tokens_count', 0),
+                input_cost=input_tokens_cost,
+                output_cost=generated_tokens_cost,
                 speed=round(speed, 2),
                 model_names=model_names
             )
@@ -459,11 +465,15 @@ class ActionSuffixProject(BaseAction):
         elapsed_time = time.time() - start_time
         speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
         model_names = ",".join(get_llm_names(self.llm))
+        input_tokens_cost = generate_result.metadata.get('input_tokens_cost', 0)
+        generated_tokens_cost = generate_result.metadata.get('generated_tokens_cost', 0)
         self.printer.print_in_terminal(
             "code_generation_complete",
             duration=elapsed_time,
             input_tokens=generate_result.metadata.get('input_tokens_count', 0),
             output_tokens=generate_result.metadata.get('generated_tokens_count', 0),
+            input_cost=input_tokens_cost,
+            output_cost=generated_tokens_cost,
             speed=round(speed, 2),
             model_names=model_names
         )
