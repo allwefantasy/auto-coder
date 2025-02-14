@@ -1005,64 +1005,7 @@ class CommandCompleter(Completer):
         self.symbol_list = get_symbol_list()
 
 
-from autocoder.common.smart_command_completer import SmartCommandCompleter, CompletionContext, CompletionItem
-
-def create_completer(current_files: List[str], project_root: str) -> SmartCommandCompleter:
-    """创建命令补全器"""
-    
-    # 获取所有文件信息
-    all_files = get_all_file_in_project()
-    all_file_names = get_all_file_names_in_project()
-    all_dir_names = get_all_dir_names_in_project()
-    
-    # 获取符号信息
-    symbol_list = []
-    index_file = os.path.join(".auto-coder", "index.json")
-    if os.path.exists(index_file):
-        with open(index_file, "r") as f:
-            index_data = json.load(f)
-            for item in index_data.values():
-                symbols_str = item["symbols"]
-                module_name = item["module_name"]
-                info = extract_symbols(symbols_str)
-                for name in info.classes:
-                    symbol_list.append({
-                        "symbol_name": name,
-                        "symbol_type": SymbolType.CLASSES,
-                        "file_name": module_name
-                    })
-                for name in info.functions:
-                    symbol_list.append({
-                        "symbol_name": name,
-                        "symbol_type": SymbolType.FUNCTIONS,
-                        "file_name": module_name
-                    })
-                for name in info.variables:
-                    symbol_list.append({
-                        "symbol_name": name,
-                        "symbol_type": SymbolType.VARIABLES,
-                        "file_name": module_name
-                    })
-                    
-    # 获取分组信息
-    groups = memory["current_files"].get("groups", {})
-    current_groups = memory["current_files"].get("current_groups", [])
-    
-    # 创建上下文
-    context = CompletionContext(
-        current_files=current_files,
-        project_root=project_root,
-        all_files=all_files,
-        all_file_names=all_file_names,
-        all_dir_names=all_dir_names,
-        symbols=symbol_list,
-        groups=groups,
-        current_groups=current_groups
-    )
-    
-    return SmartCommandCompleter(context)
-
-completer = create_completer([], os.getcwd())
+completer = CommandCompleter(commands)
 
 
 def save_memory():
@@ -1077,7 +1020,7 @@ def load_memory():
     if os.path.exists(memory_path):
         with open(memory_path, "r") as f:
             memory = json.load(f)
-    completer = create_completer(memory["current_files"]["files"], os.getcwd())
+    completer.update_current_files(memory["current_files"]["files"])
 
 
 def print_conf(content:Dict[str,Any]):        
@@ -1162,7 +1105,7 @@ def add_files(args: List[str]):
         return
 
     if args[0] == "/refresh":
-        completer = create_completer(memory["current_files"]["files"], os.getcwd())
+        completer.refresh_files()
         load_memory()
         console.print(
             Panel("Refreshed file list.",
