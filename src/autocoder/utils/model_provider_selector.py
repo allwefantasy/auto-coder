@@ -66,9 +66,9 @@ dialog_style = Style.from_dict({
             'button.focused':       'bg:#0078d4 #ffffff',
             'checkbox':             '#e6e6e6',
             'checkbox-selected':    '#0078d4',
-            'radio-selected':       '#0078d4',
+            'radio-selected':       'bg:#0078d4 #ffffff',
             'dialog frame.border':  '#0078d4',
-            'radio':                '#e6e6e6'
+            'radio':                'bg:ansiblack #ffffff'
         })
 
 class VolcanoEndpointValidator(Validator):
