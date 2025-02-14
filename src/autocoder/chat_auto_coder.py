@@ -312,7 +312,7 @@ def initialize_system(args):
                 configure(f"chat_model:{r1_model}", skip_print=True)
                 configure(f"generate_rerank_model:{r1_model}", skip_print=True)
                 configure(f"code_model:{v3_model}", skip_print=True)
-                configure(f"index_filter_model:{r1_model}", skip_print=True)            
+                configure(f"index_filter_model:{r1_model}", skip_print=True)           
 
     if args.product_mode == "pro":
         # Check if Ray is running
@@ -370,7 +370,7 @@ def initialize_system(args):
             "--infer_params",
             f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
             "--model",
-            "deepseek_chat",
+            "v3_chat",
         ]
 
         try:
@@ -397,7 +397,7 @@ def initialize_system(args):
             "--infer_params",
             f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-reasoner",
             "--model",
-            "deepseek_r1_chat",
+            "r1_chat",
         ]
 
         try:
@@ -411,7 +411,7 @@ def initialize_system(args):
         print_status(get_message("validating_deploy"), "")
         try:
             validation_result = subprocess.run(
-                ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
+                ["easy-byzerllm", "chat", "v3_chat", "你好"],
                 capture_output=True,
                 text=True,
                 timeout=30,
@@ -421,9 +421,17 @@ def initialize_system(args):
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
             print_status(get_message("validation_fail"), "error")
             print_status(get_message("manual_start"), "warning")
-            print_status("easy-byzerllm chat deepseek_chat 你好", "")
+            print_status("easy-byzerllm chat v3_chat 你好", "")
 
         print_status(get_message("init_complete_final"), "success")
+
+
+    if "model" not in memory["conf"] and "chat_model" not in memory["conf"]:
+        configure(f"model:v3_chat", skip_print=True)
+        configure(f"chat_model:r1_chat", skip_print=True)
+        configure(f"generate_rerank_model:r1_chat", skip_print=True)
+        configure(f"code_model:v3_chat", skip_print=True)
+        configure(f"index_filter_model:r1_chat", skip_print=True)    
 
 
 def convert_yaml_config_to_str(yaml_config):

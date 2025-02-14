@@ -30,7 +30,11 @@ def init_command_template(source_dir:str):
     project_type: py
 
     ## The model you want to drive AutoCoder to run
-    model: deepseek_chat
+    model: v3_chat
+    chat_model: r1_chat
+    generate_rerank_model: r1_chat
+    code_model: v3_chat
+    index_filter_model: r1_chat
 
 
     ## Enable the index building which can help you find the related files by your query
@@ -38,7 +42,7 @@ def init_command_template(source_dir:str):
     skip_build_index: false
     ## The model to build index for the project (Optional)
     ## 用于为项目构建索引的模型（可选）
-    index_model: deepseek_chat
+    index_model: v3_chat
 
     ## the filter level to find the related files
     ## 0: only find the files with the file name
@@ -170,7 +174,7 @@ def base_base(source_dir:str,project_type:str)->str:
     source_dir: {{ source_dir }}
     target_file: {{ target_file }}
 
-    model: deepseek_chat
+    model: v3_chat
     model_max_input_length: 100000
     model_max_input_length: 120000
     enable_multi_round_generate: false

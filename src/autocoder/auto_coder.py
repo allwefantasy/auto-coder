@@ -282,28 +282,7 @@ def main(input_args: Optional[List[str]] = None):
                 )
                 byzerllm.connect_cluster(address=args.ray_address)
 
-            llm = byzerllm.ByzerLLM(verbose=args.print_request)            
-
-            # code_model,index_filter_model,generate_rerank_model,chat_model
-            # 这四个模型如果用户没有设置，就会使用默认的
-            # 如果用户随便填写 deepseek 官方key,就会导致 Authentic(No User) 的错误
-            # 或者 Insuffient Balance 之类的错误
-
-            code_model = byzerllm.ByzerLLM()
-            code_model.setup_default_model_name(args.model)
-            llm.setup_sub_client("code_model", code_model)
-
-            index_filter_model = byzerllm.ByzerLLM()
-            index_filter_model.setup_default_model_name("deepseek_r1_chat")
-            llm.setup_sub_client("index_filter_model", index_filter_model)
-
-            generate_rerank_model = byzerllm.ByzerLLM()
-            generate_rerank_model.setup_default_model_name("deepseek_r1_chat")
-            llm.setup_sub_client("generate_rerank_model", generate_rerank_model)
-
-            chat_model = byzerllm.ByzerLLM()
-            chat_model.setup_default_model_name("deepseek_r1_chat")
-            llm.setup_sub_client("chat_model", chat_model)
+            llm = byzerllm.ByzerLLM(verbose=args.print_request)                        
         
         if args.product_mode == "lite":
             default_model = args.model        

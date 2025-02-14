@@ -62,13 +62,14 @@ dialog_style = Style.from_dict({
             'dialog frame.label':    'bg:#2b2b2b #ffffff',
             'dialog.body':          'bg:#2b2b2b #ffffff',
             'dialog shadow':        'bg:#1f1f1f',
-            'button':               'bg:#005fb8 #ffffff',
-            'button.focused':       'bg:#0078d4 #ffffff',
+            'button':               'bg:#2b2b2b #808080',
+            'button.focused':       'bg:#1e1e1e #ffd700 bold',
             'checkbox':             '#e6e6e6',
             'checkbox-selected':    '#0078d4',
             'radio-selected':       'bg:#0078d4 #ffffff',
             'dialog frame.border':  '#0078d4',
-            'radio':                'bg:ansiblack #ffffff'
+            'radio':                'bg:#2b2b2b #808080',
+            'radio.focused':        'bg:#1e1e1e #ffd700 bold'
         })
 
 class VolcanoEndpointValidator(Validator):
