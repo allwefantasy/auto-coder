@@ -6,6 +6,39 @@ from rich.text import Text
 from typing import Optional, Dict, Any
 from autocoder.common.printer import Printer
 import re
+from pydantic import BaseModel
+
+class ProviderInfo(BaseModel):
+    name: str
+    endpoint: str
+    r1_model: str
+    v3_model: str
+    api_key: str
+
+
+PROVIDER_INFO_LIST = [
+    ProviderInfo(
+        name="Volcano",
+        endpoint="https://ark.cn-beijing.volces.com/api/v3",   
+        r1_model="",
+        v3_model="",
+        api_key="",
+    ), 
+    ProviderInfo(
+        name="SiliconFlow",
+        endpoint="https://api.siliconflow.cn/v1",        
+        r1_model="Pro/deepseek-ai/DeepSeek-R1",
+        v3_model="Pro/deepseek-ai/DeepSeek-V3",
+        api_key="",
+    ),
+    ProviderInfo(
+        name="DeepSeek",
+        endpoint="https://api.deepseek.com/v1",
+        r1_model="deepseek-reasoner",
+        v3_model="deepseek-chat",
+        api_key="",
+    ),
+]
 
 class VolcanoEndpointValidator(Validator):
     def validate(self, document):
@@ -32,40 +65,20 @@ class ModelProviderSelector:
             text=self.printer.get_message_from_key("model_provider_select_text"),
             values=[
                 ("volcano", self.printer.get_message_from_key("model_provider_volcano")),
-                ("guiji", self.printer.get_message_from_key("model_provider_guiji")),
+                ("siliconflow", self.printer.get_message_from_key("model_provider_guiji")),
                 ("deepseek", self.printer.get_message_from_key("model_provider_deepseek"))
             ]
         ).run()
         
         if result is None:
             return None
-            
-        provider_info = {
-            "provider": result,
-            "base_url": "",
-            "api_key": ""
-        }
+        
+        provider_info = PROVIDER_INFO_LIST[result]        
         
         if result == "volcano":
-            # Get Volcano endpoint
-            endpoint = input_dialog(
-                title=self.printer.get_message_from_key("model_provider_volcano_endpoint_title"),
-                text=self.printer.get_message_from_key("model_provider_volcano_endpoint_text"),
-                validator=VolcanoEndpointValidator()
-            ).run()
-            
-            if endpoint is None:
-                return None
-                
-            provider_info["endpoint"] = endpoint
-            provider_info["base_url"] = f"https://{endpoint}.volcengineapi.com"
-            
-        elif result == "guiji":
-            provider_info["base_url"] = "https://api.guiji.ai"
-            
-        elif result == "deepseek":
-            provider_info["base_url"] = "https://api.deepseek.com/v1"
-            
+            ## 这里新增 R1/V3 推理点收集
+            pass                    
+        
         # Get API key for all providers
         api_key = input_dialog(
             title=self.printer.get_message_from_key("model_provider_api_key_title"),
@@ -76,7 +89,7 @@ class ModelProviderSelector:
         if api_key is None:
             return None
             
-        provider_info["api_key"] = api_key
+        provider_info.api_key = api_key
         
         self.printer.print_panel(
             self.printer.get_message_from_key("model_provider_selected"),
