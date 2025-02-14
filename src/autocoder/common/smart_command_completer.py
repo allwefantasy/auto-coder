@@ -1,1 +1,0 @@
-from autocoder.common.smart_command_completer import create_completer

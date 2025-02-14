@@ -1005,7 +1005,7 @@ class CommandCompleter(Completer):
         self.symbol_list = get_symbol_list()
 
 
-completer = create_completer("fuzzy", {"files": memory["current_files"]["files"]})
+completer = CommandCompleter(commands)
 
 
 def save_memory():
