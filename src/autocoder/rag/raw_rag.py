@@ -43,7 +43,7 @@ def process_query(context: str, query: str) -> str:
 
 class RawRAG:
     def __init__(
-        self, llm_model="deepseek_chat", emb_model="emb", storage_name="byzerai_store"
+        self, llm_model="v3_chat", emb_model="emb", storage_name="byzerai_store"
     ):
         self.storage = ByzerStorage(
             storage_name, "rag_database", "rag_table", emb_model=emb_model

@@ -75,6 +75,12 @@ def parse_arguments():
     )
 
     parser.add_argument(
+        "--skip_provider_selection",
+        action="store_true",
+        help="Skip the provider selection",
+    )
+
+    parser.add_argument(
         "--product_mode",
         type=str,
         default="pro",
@@ -252,7 +258,12 @@ def configure_project_type():
 
 
 def initialize_system(args):
+    from autocoder.utils.model_provider_selector import ModelProviderSelector
+    from autocoder import models as models_module
     print(f"\n\033[1;34m{get_message('initializing')}\033[0m")
+    
+    first_time = [False]
+    configure_success = [False]
 
     def print_status(message, status):
         if status == "success":
@@ -264,10 +275,9 @@ def initialize_system(args):
         else:
             print(f"  {message}")
 
-    def init_project():
-        first_time = False
+    def init_project():        
         if not os.path.exists(".auto-coder"):
-            first_time = True
+            first_time[0] = True
             print_status(get_message("not_initialized"), "warning")
             init_choice = input(
                 f"  {get_message('init_prompt')}").strip().lower()
@@ -290,148 +300,150 @@ def initialize_system(args):
             print_status(get_message("created_dir").format(
                 base_persist_dir), "success")
 
-        if first_time:
+        if first_time[0]:
             configure_project_type()
+            configure_success[0] = True
 
         print_status(get_message("init_complete"), "success")
 
     init_project()
 
-    if args.product_mode == "lite":        
-        from autocoder.utils.model_provider_selector import ModelProviderSelector
-        from autocoder import models as models_module
-        if not models_module.check_model_exists("v3_chat") or not models_module.check_model_exists("r1_chat"):
-            model_provider_selector = ModelProviderSelector()
-            model_provider_info = model_provider_selector.select_provider()
-            if model_provider_info is not None:
-                models_json_list = model_provider_selector.to_models_json(model_provider_info)
-                models_module.add_and_activate_models(models_json_list)
-                r1_model = models_json_list[0]['name']
-                v3_model = models_json_list[1]['name']            
-                configure(f"model:{v3_model}", skip_print=True)
-                configure(f"chat_model:{r1_model}", skip_print=True)
-                configure(f"generate_rerank_model:{r1_model}", skip_print=True)
-                configure(f"code_model:{v3_model}", skip_print=True)
-                configure(f"index_filter_model:{r1_model}", skip_print=True)           
+    if not args.skip_provider_selection and first_time[0]:
+        if args.product_mode == "lite":                    
+            ## 如果已经是配置过的项目，就无需再选择
+            if first_time[0]:
+                if not models_module.check_model_exists("v3_chat") or not models_module.check_model_exists("r1_chat"):
+                    model_provider_selector = ModelProviderSelector()
+                    model_provider_info = model_provider_selector.select_provider()
+                    if model_provider_info is not None:
+                        models_json_list = model_provider_selector.to_models_json(model_provider_info)
+                        models_module.add_and_activate_models(models_json_list)              
 
-    if args.product_mode == "pro":
-        # Check if Ray is running
-        print_status(get_message("checking_ray"), "")
-        ray_status = subprocess.run(
-            ["ray", "status"], capture_output=True, text=True)
-        if ray_status.returncode != 0:
-            print_status(get_message("ray_not_running"), "warning")
+        if args.product_mode == "pro":
+            # Check if Ray is running
+            print_status(get_message("checking_ray"), "")
+            ray_status = subprocess.run(
+                ["ray", "status"], capture_output=True, text=True)
+            if ray_status.returncode != 0:
+                print_status(get_message("ray_not_running"), "warning")
+                try:
+                    subprocess.run(["ray", "start", "--head"], check=True)
+                    print_status(get_message("ray_start_success"), "success")
+                except subprocess.CalledProcessError:
+                    print_status(get_message("ray_start_fail"), "error")
+                    return
+            else:
+                print_status(get_message("ray_running"), "success")
+
+            # Check if deepseek_chat model is available
+            print_status(get_message("checking_model"), "")
             try:
-                subprocess.run(["ray", "start", "--head"], check=True)
-                print_status(get_message("ray_start_success"), "success")
+                result = subprocess.run(
+                    ["easy-byzerllm", "chat", "v3_chat", "你好"],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                if result.returncode == 0:
+                    print_status(get_message("model_available"), "success")
+                    init_project()
+                    print_status(get_message("init_complete_final"), "success")
+                    return
+            except subprocess.TimeoutExpired:
+                print_status(get_message("model_timeout"), "error")
             except subprocess.CalledProcessError:
-                print_status(get_message("ray_start_fail"), "error")
+                print_status(get_message("model_error"), "error")
+
+            # If deepseek_chat is not available
+            print_status(get_message("model_not_available"), "warning")
+            api_key = prompt(HTML(f"<b>{get_message('enter_api_key')} </b>"))
+
+            print_status(get_message("deploying_model").format("Deepseek官方"), "")
+            deploy_cmd = [
+                "byzerllm",
+                "deploy",
+                "--pretrained_model_type",
+                "saas/openai",
+                "--cpus_per_worker",
+                "0.001",
+                "--gpus_per_worker",
+                "0",
+                "--worker_concurrency",
+                "1000",
+                "--num_workers",
+                "1",
+                "--infer_params",
+                f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
+                "--model",
+                "v3_chat",
+            ]
+
+            try:
+                subprocess.run(deploy_cmd, check=True)
+                print_status(get_message("deploy_complete"), "success")
+            except subprocess.CalledProcessError:
+                print_status(get_message("deploy_fail"), "error")
                 return
-        else:
-            print_status(get_message("ray_running"), "success")
+            
 
-        # Check if deepseek_chat model is available
-        print_status(get_message("checking_model"), "")
-        try:
-            result = subprocess.run(
-                ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            if result.returncode == 0:
-                print_status(get_message("model_available"), "success")
-                init_project()
-                print_status(get_message("init_complete_final"), "success")
+            deploy_cmd = [
+                "byzerllm",
+                "deploy",
+                "--pretrained_model_type",
+                "saas/reasoning_openai",
+                "--cpus_per_worker",
+                "0.001",
+                "--gpus_per_worker",
+                "0",
+                "--worker_concurrency",
+                "1000",
+                "--num_workers",
+                "1",
+                "--infer_params",
+                f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-reasoner",
+                "--model",
+                "r1_chat",
+            ]
+
+            try:
+                subprocess.run(deploy_cmd, check=True)
+                print_status(get_message("deploy_complete"), "success")
+            except subprocess.CalledProcessError:
+                print_status(get_message("deploy_fail"), "error")
                 return
-        except subprocess.TimeoutExpired:
-            print_status(get_message("model_timeout"), "error")
-        except subprocess.CalledProcessError:
-            print_status(get_message("model_error"), "error")
 
-        # If deepseek_chat is not available
-        print_status(get_message("model_not_available"), "warning")
-        api_key = prompt(HTML(f"<b>{get_message('enter_api_key')} </b>"))
+            # Validate the deployment
+            print_status(get_message("validating_deploy"), "")
+            try:
+                validation_result = subprocess.run(
+                    ["easy-byzerllm", "chat", "v3_chat", "你好"],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                    check=True,
+                )
+                print_status(get_message("validation_success"), "success")
+            except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+                print_status(get_message("validation_fail"), "error")
+                print_status(get_message("manual_start"), "warning")
+                print_status("easy-byzerllm chat v3_chat 你好", "")
 
-        print_status(get_message("deploying_model").format("Deepseek官方"), "")
-        deploy_cmd = [
-            "byzerllm",
-            "deploy",
-            "--pretrained_model_type",
-            "saas/openai",
-            "--cpus_per_worker",
-            "0.001",
-            "--gpus_per_worker",
-            "0",
-            "--worker_concurrency",
-            "1000",
-            "--num_workers",
-            "1",
-            "--infer_params",
-            f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
-            "--model",
-            "v3_chat",
-        ]
+            print_status(get_message("init_complete_final"), "success")  
+            configure_success[0] = True
 
-        try:
-            subprocess.run(deploy_cmd, check=True)
-            print_status(get_message("deploy_complete"), "success")
-        except subprocess.CalledProcessError:
-            print_status(get_message("deploy_fail"), "error")
-            return
-        
-
-        deploy_cmd = [
-            "byzerllm",
-            "deploy",
-            "--pretrained_model_type",
-            "saas/reasoning_openai",
-            "--cpus_per_worker",
-            "0.001",
-            "--gpus_per_worker",
-            "0",
-            "--worker_concurrency",
-            "1000",
-            "--num_workers",
-            "1",
-            "--infer_params",
-            f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-reasoner",
-            "--model",
-            "r1_chat",
-        ]
-
-        try:
-            subprocess.run(deploy_cmd, check=True)
-            print_status(get_message("deploy_complete"), "success")
-        except subprocess.CalledProcessError:
-            print_status(get_message("deploy_fail"), "error")
-            return
-
-        # Validate the deployment
-        print_status(get_message("validating_deploy"), "")
-        try:
-            validation_result = subprocess.run(
-                ["easy-byzerllm", "chat", "v3_chat", "你好"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-                check=True,
-            )
-            print_status(get_message("validation_success"), "success")
-        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
-            print_status(get_message("validation_fail"), "error")
-            print_status(get_message("manual_start"), "warning")
-            print_status("easy-byzerllm chat v3_chat 你好", "")
-
-        print_status(get_message("init_complete_final"), "success")
-
-
-    if "model" not in memory["conf"] and "chat_model" not in memory["conf"]:
+    if first_time[0] and args.product_mode == "pro" and configure_success[0]:
         configure(f"model:v3_chat", skip_print=True)
         configure(f"chat_model:r1_chat", skip_print=True)
         configure(f"generate_rerank_model:r1_chat", skip_print=True)
         configure(f"code_model:v3_chat", skip_print=True)
-        configure(f"index_filter_model:r1_chat", skip_print=True)    
+        configure(f"index_filter_model:r1_chat", skip_print=True)  
+
+    if first_time[0] and args.product_mode == "lite" and models_module.check_model_exists("v3_chat"):
+        configure(f"model:v3_chat", skip_print=True)
+        configure(f"chat_model:r1_chat", skip_print=True)
+        configure(f"generate_rerank_model:r1_chat", skip_print=True)
+        configure(f"code_model:v3_chat", skip_print=True)
+        configure(f"index_filter_model:r1_chat", skip_print=True)
 
 
 def convert_yaml_config_to_str(yaml_config):

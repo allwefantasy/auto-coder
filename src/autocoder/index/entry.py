@@ -70,7 +70,7 @@ def build_index_and_filter_files(
             )
     phase_end = time.monotonic()
     stats["timings"]["process_tagged_sources"] = phase_end - phase_start
-    
+        
     if not args.skip_build_index and llm:
         # Phase 2: Build index
         if args.request_id and not args.skip_events:

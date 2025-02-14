@@ -66,7 +66,7 @@ def initialize_system(args):
     print_status(get_message("checking_model"), "")
     try:
         result = subprocess.run(
-            ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
+            ["easy-byzerllm", "chat", "v3_chat", "你好"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -115,7 +115,7 @@ def initialize_system(args):
             "--infer_params",
             f"saas.base_url=https://api.deepseek.com/v1 saas.api_key={api_key} saas.model=deepseek-chat",
             "--model",
-            "deepseek_chat",
+            "v3_chat",
         ]
 
     try:
@@ -129,7 +129,7 @@ def initialize_system(args):
     print_status(get_message("validating_deploy"), "")
     try:
         validation_result = subprocess.run(
-            ["easy-byzerllm", "chat", "deepseek_chat", "你好"],
+            ["easy-byzerllm", "chat", "v3_chat", "你好"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -139,7 +139,7 @@ def initialize_system(args):
     except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
         print_status(get_message("validation_fail"), "error")
         print_status(get_message("manual_start"), "warning")
-        print_status("easy-byzerllm chat deepseek_chat 你好", "")
+        print_status("easy-byzerllm chat v3_chat 你好", "")
 
     print_status(get_message("init_complete_final"), "success")
 
@@ -168,7 +168,7 @@ def main(input_args: Optional[List[str]] = None):
     )
     build_index_parser.add_argument("--file", default="", help=desc["file"])
     build_index_parser.add_argument(
-        "--model", default="deepseek_chat", help=desc["model"]
+        "--model", default="v3_chat", help=desc["model"]
     )
     build_index_parser.add_argument(
         "--index_model", default="", help=desc["index_model"]
@@ -199,7 +199,7 @@ def main(input_args: Optional[List[str]] = None):
         "--quick", action="store_true", help="Skip system initialization"
     )
     serve_parser.add_argument("--file", default="", help=desc["file"])
-    serve_parser.add_argument("--model", default="deepseek_chat", help=desc["model"])
+    serve_parser.add_argument("--model", default="v3_chat", help=desc["model"])
     serve_parser.add_argument("--index_model", default="", help=desc["index_model"])
     serve_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
     serve_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
@@ -366,7 +366,7 @@ def main(input_args: Optional[List[str]] = None):
         "benchmark", help="Benchmark LLM client performance"
     )
     benchmark_parser.add_argument(
-        "--model", default="deepseek_chat", help="Model to benchmark"
+        "--model", default="v3_chat", help="Model to benchmark"
     )
     benchmark_parser.add_argument(
         "--parallel", type=int, default=10, help="Number of parallel requests"

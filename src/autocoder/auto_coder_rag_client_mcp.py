@@ -147,7 +147,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     parser = argparse.ArgumentParser(description="Auto Coder RAG Client MCP Server")
     parser.add_argument("--rag_url", required=True, help="RAG server URL")
     parser.add_argument("--rag_token", required=True, help="RAG server token")
-    parser.add_argument("--model", default="deepseek_chat", help=desc["model"])
+    parser.add_argument("--model", default="v3_chat", help=desc["model"])
     parser.add_argument("--rag_params_max_tokens", type=int, default=4096, help="Max tokens for RAG response")
     
     args = parser.parse_args(input_args)
