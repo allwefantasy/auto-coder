@@ -56,10 +56,47 @@ class ModelProviderSelector:
     def to_models_json(self, provider_info: ProviderInfo) -> List[Dict[str, Any]]:
         """
         Convert provider info to models.json format.
-        """
-        return {
+        Returns a list of model configurations matching the format in models.py default_models_list.
+        
+        Args:
+            provider_info: ProviderInfo object containing provider details
             
-        }
+        Returns:
+            List[Dict[str, Any]]: List of model configurations
+        """
+        models = []
+        
+        # Add R1 model (for reasoning/design/review)
+        if provider_info.r1_model:
+            models.append({
+                "name": f"{provider_info.name.lower()}_r1_chat",
+                "description": f"{provider_info.name} R1 is for design/review",
+                "model_name": provider_info.r1_model,
+                "model_type": "saas/openai",
+                "base_url": provider_info.endpoint,
+                "api_key_path": process_api_key_path(provider_info.endpoint),
+                "is_reasoning": True,
+                "input_price": 0.0,
+                "output_price": 0.0,
+                "average_speed": 0.0
+            })
+            
+        # Add V3 model (for coding)
+        if provider_info.v3_model:
+            models.append({
+                "name": f"{provider_info.name.lower()}_chat",
+                "description": f"{provider_info.name} Chat is for coding",
+                "model_name": provider_info.v3_model,
+                "model_type": "saas/openai",
+                "base_url": provider_info.endpoint,
+                "api_key_path": process_api_key_path(provider_info.endpoint),
+                "is_reasoning": False,
+                "input_price": 0.0,
+                "output_price": 0.0,
+                "average_speed": 0.0
+            })
+            
+        return models
         
     def select_provider(self) -> Optional[Dict[str, Any]]:
         """
