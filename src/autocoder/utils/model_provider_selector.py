@@ -1,9 +1,7 @@
 from prompt_toolkit.shortcuts import radiolist_dialog, input_dialog
 from prompt_toolkit.validation import Validator, ValidationError
 from rich.console import Console
-from rich.panel import Panel
-from rich.text import Text
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from autocoder.common.printer import Printer
 import re
 from pydantic import BaseModel
@@ -54,6 +52,14 @@ class ModelProviderSelector:
     def __init__(self):
         self.printer = Printer()
         self.console = Console()
+
+    def to_models_json(self, provider_info: ProviderInfo) -> List[Dict[str, Any]]:
+        """
+        Convert provider info to models.json format.
+        """
+        return {
+            
+        }
         
     def select_provider(self) -> Optional[Dict[str, Any]]:
         """

@@ -299,21 +299,13 @@ def initialize_system(args):
 
     if args.product_mode == "lite":
         # Setup deepseek api key
-        api_key_dir = os.path.expanduser("~/.auto-coder/keys")
-        api_key_file = os.path.join(api_key_dir, "api.deepseek.com")
-        
-        if not os.path.exists(api_key_file):
-            print_status(get_message("model_not_available"), "warning")
-            api_key = prompt(HTML(f"<b>{get_message('enter_api_key')} </b>"))
-            
-            # Create directory if it doesn't exist
-            os.makedirs(api_key_dir, exist_ok=True)
-            
-            # Save the API key
-            with open(api_key_file, "w") as f:
-                f.write(api_key)
-            
-            print_status(f"API key saved successfully: {api_key_file}", "success")                    
+        from autocoder.utils.model_provider_selector import ModelProviderSelector
+        model_provider_selector = ModelProviderSelector()
+        model_provider_info = model_provider_selector.select_provider()
+        if model_provider_info is not None:
+            models_json = model_provider_selector.to_models_json(model_provider_info)
+            with open(os.path.expanduser("~/.auto-coder/keys/models.json"), "w") as f:
+                json.dump(models_json, f, indent=4)
 
     if args.product_mode == "pro":
         # Check if Ray is running
