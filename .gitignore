@@ -55,3 +55,4 @@ output.png
 output.jpg
 output.svg
 notebooks/generated_image.png
+**/*.egg-info
