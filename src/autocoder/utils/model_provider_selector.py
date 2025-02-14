@@ -33,7 +33,7 @@ PROVIDER_INFO_LIST = [
         v3_output_price=4.0,
     ), 
     ProviderInfo(
-        name="siliconFlow",
+        name="siliconflow",
         endpoint="https://api.siliconflow.cn/v1",        
         r1_model="Pro/deepseek-ai/DeepSeek-R1",
         v3_model="Pro/deepseek-ai/DeepSeek-V3",
@@ -128,7 +128,7 @@ class ModelProviderSelector:
             text=self.printer.get_message_from_key("model_provider_select_text"),
             values=[
                 ("volcano", self.printer.get_message_from_key("model_provider_volcano")),
-                ("siliconflow", self.printer.get_message_from_key("model_provider_guiji")),
+                ("siliconflow", self.printer.get_message_from_key("model_provider_siliconflow")),
                 ("deepseek", self.printer.get_message_from_key("model_provider_deepseek"))
             ]
         ).run()
