@@ -1,5 +1,6 @@
 from prompt_toolkit.shortcuts import radiolist_dialog, input_dialog
 from prompt_toolkit.validation import Validator, ValidationError
+from prompt_toolkit.styles import Style
 from rich.console import Console
 from typing import Optional, Dict, Any, List
 from autocoder.common.printer import Printer
@@ -123,6 +124,20 @@ class ModelProviderSelector:
         Let user select a model provider and input necessary credentials.
         Returns a dictionary with provider info or None if cancelled.
         """
+        dialog_style = Style.from_dict({
+            'dialog':                'bg:#2b2b2b',
+            'dialog frame.label':    'bg:#2b2b2b #ffffff',
+            'dialog.body':          'bg:#2b2b2b #ffffff',
+            'dialog shadow':        'bg:#1f1f1f',
+            'button':               'bg:#005fb8 #ffffff',
+            'button.focused':       'bg:#0078d4 #ffffff',
+            'checkbox':             '#e6e6e6',
+            'checkbox-selected':    '#0078d4',
+            'radio-selected':       '#0078d4',
+            'dialog frame.border':  '#0078d4',
+            'radio':                '#e6e6e6'
+        })
+
         result = radiolist_dialog(
             title=self.printer.get_message_from_key("model_provider_select_title"),
             text=self.printer.get_message_from_key("model_provider_select_text"),
@@ -130,7 +145,8 @@ class ModelProviderSelector:
                 ("volcano", self.printer.get_message_from_key("model_provider_volcano")),
                 ("siliconflow", self.printer.get_message_from_key("model_provider_siliconflow")),
                 ("deepseek", self.printer.get_message_from_key("model_provider_deepseek"))
-            ]
+            ],
+            style=dialog_style
         ).run()
         
         if result is None:
