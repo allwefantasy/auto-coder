@@ -110,6 +110,20 @@ def save_models(models: List[Dict]) -> None:
         json.dump(models, f, indent=2, ensure_ascii=False)
 
 
+def add_and_activate_models(models: List[Dict]) -> None:
+    """
+    添加模型
+    """
+    exits_models = load_models()
+    for model in models:        
+        if model["name"] not in [m["name"] for m in exits_models]:
+            exits_models.append(model)
+    save_models(exits_models)
+
+    for model in models:
+        if "api_key" in model:
+            update_model_with_api_key(model["name"], model["api_key"])
+
 def get_model_by_name(name: str) -> Dict:
     """
     根据模型名称查找模型

@@ -98,6 +98,8 @@ src/autocoder/index/types.py
 src/autocoder/index/filter/__init__.py
 src/autocoder/index/filter/normal_filter.py
 src/autocoder/index/filter/quick_filter.py
+src/autocoder/privacy/__init__.py
+src/autocoder/privacy/model_filter.py
 src/autocoder/pyproject/__init__.py
 src/autocoder/rag/__init__.py
 src/autocoder/rag/api_server.py
@@ -139,6 +141,7 @@ src/autocoder/utils/conversation_store.py
 src/autocoder/utils/llm_client_interceptors.py
 src/autocoder/utils/llms.py
 src/autocoder/utils/log_capture.py
+src/autocoder/utils/model_provider_selector.py
 src/autocoder/utils/multi_turn.py
 src/autocoder/utils/operate_config_api.py
 src/autocoder/utils/print_table.py
@@ -157,5 +160,6 @@ tests/test_chat_auto_coder.py
 tests/test_code_auto_merge_editblock.py
 tests/test_command_completer.py
 tests/test_planner.py
+tests/test_privacy.py
 tests/test_queue_communicate.py
 tests/test_symbols_utils.py

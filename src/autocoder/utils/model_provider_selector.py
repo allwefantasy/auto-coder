@@ -6,35 +6,53 @@ from autocoder.common.printer import Printer
 import re
 from pydantic import BaseModel
 
+from autocoder.models import process_api_key_path
+
 class ProviderInfo(BaseModel):
     name: str
     endpoint: str
     r1_model: str
     v3_model: str
     api_key: str
+    r1_input_price: float
+    r1_output_price: float
+    v3_input_price: float
+    v3_output_price: float    
 
 
 PROVIDER_INFO_LIST = [
     ProviderInfo(
-        name="Volcano",
+        name="volcano",
         endpoint="https://ark.cn-beijing.volces.com/api/v3",   
         r1_model="",
         v3_model="",
         api_key="",
+        r1_input_price=2.0,
+        r1_output_price=8.0,
+        v3_input_price=1.0,
+        v3_output_price=4.0,
     ), 
     ProviderInfo(
-        name="SiliconFlow",
+        name="siliconFlow",
         endpoint="https://api.siliconflow.cn/v1",        
         r1_model="Pro/deepseek-ai/DeepSeek-R1",
         v3_model="Pro/deepseek-ai/DeepSeek-V3",
         api_key="",
+        r1_input_price=2.0,
+        r1_output_price=4.0,
+        v3_input_price=4.0,
+        v3_output_price=16.0,
     ),
     ProviderInfo(
-        name="DeepSeek",
+        name="deepseek",
         endpoint="https://api.deepseek.com/v1",
         r1_model="deepseek-reasoner",
         v3_model="deepseek-chat",
         api_key="",
+        r1_input_price=4.0,
+        r1_output_price=16.0,
+        v3_input_price=2.0,
+        v3_output_price=8.0,
     ),
 ]
 
@@ -69,30 +87,32 @@ class ModelProviderSelector:
         # Add R1 model (for reasoning/design/review)
         if provider_info.r1_model:
             models.append({
-                "name": f"{provider_info.name.lower()}_r1_chat",
+                "name": f"r1_chat",
                 "description": f"{provider_info.name} R1 is for design/review",
                 "model_name": provider_info.r1_model,
                 "model_type": "saas/openai",
                 "base_url": provider_info.endpoint,
-                "api_key_path": process_api_key_path(provider_info.endpoint),
+                "api_key": provider_info.api_key,
+                "api_key_path": f"r1_chat",
                 "is_reasoning": True,
-                "input_price": 0.0,
-                "output_price": 0.0,
+                "input_price": provider_info.r1_input_price,
+                "output_price": provider_info.r1_output_price,
                 "average_speed": 0.0
             })
             
         # Add V3 model (for coding)
         if provider_info.v3_model:
             models.append({
-                "name": f"{provider_info.name.lower()}_chat",
+                "name": f"v3_chat",
                 "description": f"{provider_info.name} Chat is for coding",
                 "model_name": provider_info.v3_model,
                 "model_type": "saas/openai",
                 "base_url": provider_info.endpoint,
-                "api_key_path": process_api_key_path(provider_info.endpoint),
+                "api_key": provider_info.api_key,
+                "api_key_path": f"v3_chat",
                 "is_reasoning": False,
-                "input_price": 0.0,
-                "output_price": 0.0,
+                "input_price": provider_info.v3_input_price,
+                "output_price": provider_info.v3_output_price,
                 "average_speed": 0.0
             })
             
@@ -115,8 +135,13 @@ class ModelProviderSelector:
         
         if result is None:
             return None
-        
-        provider_info = PROVIDER_INFO_LIST[result]        
+
+    
+        provider_info = None
+        for provider in PROVIDER_INFO_LIST:
+            if provider.name == result:
+                provider_info = provider
+                break
         
         if result == "volcano":
             # Get R1 endpoint

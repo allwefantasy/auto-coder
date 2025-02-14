@@ -297,15 +297,22 @@ def initialize_system(args):
 
     init_project()
 
-    if args.product_mode == "lite":
-        # Setup deepseek api key
+    if args.product_mode == "lite":        
         from autocoder.utils.model_provider_selector import ModelProviderSelector
-        model_provider_selector = ModelProviderSelector()
-        model_provider_info = model_provider_selector.select_provider()
-        if model_provider_info is not None:
-            models_json = model_provider_selector.to_models_json(model_provider_info)
-            with open(os.path.expanduser("~/.auto-coder/keys/models.json"), "w") as f:
-                json.dump(models_json, f, indent=4)
+        from autocoder import models as models_module
+        if not models_module.check_model_exists("v3_chat") or not models_module.check_model_exists("r1_chat"):
+            model_provider_selector = ModelProviderSelector()
+            model_provider_info = model_provider_selector.select_provider()
+            if model_provider_info is not None:
+                models_json_list = model_provider_selector.to_models_json(model_provider_info)
+                models_module.add_and_activate_models(models_json_list)
+                r1_model = models_json_list[0]['name']
+                v3_model = models_json_list[1]['name']            
+                configure(f"model:{v3_model}", skip_print=True)
+                configure(f"chat_model:{r1_model}", skip_print=True)
+                configure(f"generate_rerank_model:{r1_model}", skip_print=True)
+                configure(f"code_model:{v3_model}", skip_print=True)
+                configure(f"index_filter_model:{r1_model}", skip_print=True)            
 
     if args.product_mode == "pro":
         # Check if Ray is running

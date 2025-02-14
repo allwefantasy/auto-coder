@@ -319,53 +319,7 @@ def main(input_args: Optional[List[str]] = None):
                     "saas.model": model_info["model_name"],
                     "saas.is_reasoning": model_info["is_reasoning"]
                 }
-            )                
-                        
-            if models_module.check_model_exists("deepseek_r1_chat"):
-                r1_model_info = models_module.get_model_by_name("deepseek_r1_chat")  
-                api_key = r1_model_info["api_key"]
-                chat_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_r1_chat")
-                chat_llm.deploy(
-                    model_path="",
-                    pretrained_model_type="saas/openai",
-                    udf_name="deepseek_r1_chat",
-                    infer_params={
-                        "saas.base_url": "https://api.deepseek.com/v1",
-                        "saas.api_key": api_key,
-                        "saas.model": "deepseek-reasoner",
-                        "saas.is_reasoning": True
-                    }
-                )
-
-                generate_rerank_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_r1_chat")
-                generate_rerank_llm.deploy(
-                    model_path="",
-                    pretrained_model_type="saas/openai",
-                    udf_name="deepseek_r1_chat",
-                    infer_params={
-                        "saas.base_url": "https://api.deepseek.com/v1",
-                        "saas.api_key": api_key,
-                        "saas.model": "deepseek-reasoner",
-                        "saas.is_reasoning": True
-                    }
-                )
-
-                index_filter_llm = byzerllm.SimpleByzerLLM(default_model_name="deepseek_r1_chat")
-                index_filter_llm.deploy(
-                    model_path="",
-                    pretrained_model_type="saas/openai",
-                    udf_name="deepseek_r1_chat",
-                    infer_params={
-                        "saas.base_url": "https://api.deepseek.com/v1",
-                        "saas.api_key": api_key,
-                        "saas.model": "deepseek-reasoner",
-                        "saas.is_reasoning": True
-                    }
-                )
-                                                
-                llm.setup_sub_client("chat_model", chat_llm)
-                llm.setup_sub_client("generate_rerank_model", generate_rerank_llm)
-                llm.setup_sub_client("index_filter_model", index_filter_llm)
+            )                                                    
 
         if args.product_mode == "lite":                                    
             # Set up default models based on configuration
