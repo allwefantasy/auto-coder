@@ -18,10 +18,11 @@ class CodeModificationRanker:
     def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs):
         self.llm = llm
         self.args = args
-        self.llms = self.llm.get_sub_client(
-            "generate_rerank_model") or [self.llm]
+        self.llms = self.llm.get_sub_client("generate_rerank_model") or [self.llm]
+        
         if not isinstance(self.llms, list):
             self.llms = [self.llms]
+        
         self.printer = Printer()
 
     @byzerllm.prompt()
@@ -65,9 +66,7 @@ class CodeModificationRanker:
         if len(generate_result.contents) == 1:
             self.printer.print_in_terminal("ranking_skip", style="blue")
             return generate_result
-
-        self.printer.print_in_terminal(
-            "ranking_start", style="blue", count=len(generate_result.contents))
+        
         rank_times = self.args.rank_times_same_model
         total_tasks = len(self.llms) * rank_times
 
@@ -79,7 +78,7 @@ class CodeModificationRanker:
             with ThreadPoolExecutor(max_workers=total_tasks) as executor:
                 # Submit tasks for each model and generate_times
                 futures = []
-                for llm in self.llms:                    
+                for llm in self.llms:                                                          
                     model_name = ",".join(get_llm_names(llm))
                     self.printer.print_in_terminal(
                         "ranking_start", style="blue", count=len(generate_result.contents), model_name=model_name)
