@@ -188,22 +188,48 @@ class CommandAutoTuner:
         <command>
         <name>add_files</name>
         <description>添加文件到当前会话。支持通过模式匹配添加文件，支持 glob 语法，例如 *.py。可以使用相对路径或绝对路径。</description>
-        <parameters>
-        <parameter>
-        <name>/refresh</name>
-        <description>刷新文件列表。当文件系统发生变化时使用此命令更新补全列表。</description>
-        </parameter>
-        <parameter>
-        <name>/group</name>
-        <description>文件分组管理，用于组织和管理相关文件。支持以下子指令：
-        /add <组名> - 创建新组并将当前文件列表保存到该组
-        /drop <组名> - 删除指定组及其文件列表
-        /set <组名> - 设置组的描述信息，用于说明该组的用途
-        /list - 列出所有已定义的组及其文件
-        /reset - 重置当前活跃组，但保留文件列表
-        </description>
-        </parameter>
-        </parameters>
+        <usage>
+         该方法只有一个参数 args，args 是一个列表，列表的元素是字符串。会包含子指令，例如 
+         
+         add_files(args=["/refresh"]) 
+        
+         会刷新文件列表。下面是常见的子指令：
+
+         ## /refresh 刷新文件列表
+         刷新文件列表
+
+         ## /group 文件分组管理 
+
+         ### /add 
+         创建新组并将当前文件列表保存到该组。
+         使用例子：
+
+         /group /add my_group
+
+         ### /drop
+         删除指定组及其文件列表
+         使用例子：
+
+         /group /drop my_group
+
+         ### /set
+         设置组的描述信息，用于说明该组的用途
+         使用例子：
+
+         /group /set my_group "用于说明该组的用途"
+
+         ### /list
+         列出所有已定义的组及其文件
+         使用例子：
+
+         /group /list
+
+         ### /reset
+         重置当前活跃组，但保留文件列表
+         使用例子：         
+         /group /reset
+
+        </usage>        
         </command>
 
         <command>
