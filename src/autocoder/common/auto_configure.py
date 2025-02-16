@@ -15,6 +15,9 @@ class MemoryConfig(BaseModel):
     """
     memory: Dict[str, Any]
     save_memory_func: callable
+
+    class Config:
+        arbitrary_types_allowed = True
     
     def configure(self, conf: str, skip_print: bool = False) -> None:
         """
