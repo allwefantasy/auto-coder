@@ -3,6 +3,7 @@ from byzerllm.utils import format_str_jinja2
 
 MESSAGES = {
     "en": {
+        "auto_command_action_break": "Command {{command}} execution failed (got {{action}} result), no result can be obtained, please try again",
         "auto_command_break": "Auto command execution failed to execute command: {{command}}",
         "auto_command_executing": "\n\n============= Executing command: {{command}} =============\n\n",
         "model_provider_select_title": "Select Model Provider",
@@ -123,6 +124,7 @@ MESSAGES = {
         "command_execution_result": "{{action}} execution result"
     },
     "zh": {
+        "auto_command_action_break": "命令 {{command}} 执行失败（获取到了 {{action}} 的结果），无法获得任何结果,请重试",
         "auto_command_break": "自动命令执行失败: {{command}}",
         "auto_command_executing": "\n\n============= 正在执行指令: {{command}} =============\n\n",
         "model_provider_select_title": "选择模型供应商",

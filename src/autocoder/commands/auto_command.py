@@ -33,12 +33,6 @@ class CommandConversation(BaseModel):
     current_conversation: List[CommandMessage]
 
 
-def save_to_memory_file(query: str, response: str):
-    """Save command conversation to memory file using CommandConversation structure"""
-    memory_dir = os.path.join(".auto-coder", "memory")
-    os.makedirs(memory_dir, exist_ok=True)
-    file_path = os.path.join(memory_dir, "command_chat_history.json")
-
 def load_memory_file() -> CommandConversation:
     """Load command conversations from memory file"""
     memory_dir = os.path.join(".auto-coder", "memory")
@@ -51,6 +45,12 @@ def load_memory_file() -> CommandConversation:
                 return CommandConversation(history={}, current_conversation=[])
     return CommandConversation(history={}, current_conversation=[])
 
+
+def save_to_memory_file(query: str, response: str):
+    """Save command conversation to memory file using CommandConversation structure"""
+    memory_dir = os.path.join(".auto-coder", "memory")
+    os.makedirs(memory_dir, exist_ok=True)
+    file_path = os.path.join(memory_dir, "command_chat_history.json")
     # Create new message objects
     user_msg = CommandMessage(role="user", content=query)
     assistant_msg = CommandMessage(role="assistant", content=response)
@@ -144,12 +144,11 @@ class CommandAutoTuner:
         self.memory_config = memory_config
         self.command_config = command_config
         self.tools = AutoCommandTools(args=args, llm=self.llm)        
-
-    @byzerllm.prompt()
+    
     def get_conversations(self) -> List[CommandMessage]:
         """Get conversation history from memory file"""
         conversation = load_memory_file()
-        return [extended_msg.message for extended_msg in conversation.current_conversation]
+        return [extended_msg for extended_msg in conversation.current_conversation]
 
     def _analyze(self, request: AutoCommandRequest) -> str:
         """
@@ -171,7 +170,7 @@ class CommandAutoTuner:
         {% if conversation_history %}
         历史对话:
         {% for conv in conversation_history %}
-        {{ conv.role }}: {{ conv.content }}
+        ({{ conv.role }}): {{ conv.content }}
         {% endfor %}
         {% endif %}
 
@@ -214,7 +213,7 @@ class CommandAutoTuner:
         {{ result }}
         </function_result>
 
-        请分析命令执行结果，返回下一个函数。
+        请根据命令执行结果以及前面的对话，返回下一个函数。
         
         *** 非常非常重要的提示 ***
         1. 如果已经满足要求，则不要返回任何函数,确保 suggestions 为空。
@@ -281,10 +280,15 @@ class CommandAutoTuner:
                     if changes.success:
                         for file_path, change in changes.changes.items():
                             if change.before:
-                                content += f"## File: {file_path}[更改前]\n{change.before}\n\nFile:\n {file_path}\n\n[更改后]\n{change.after}\n\n"
+                                content += f"## File: {file_path}[更改前]\n{change.before}\n\nFile: {file_path}\n\n[更改后]\n{change.after}\n\n"
                 else:
                     # 其他的直接获取执行结果
                     content = last_result.content
+
+                if action != command:
+                    # command 和 action 不一致，则认为命令执行失败，退出
+                    printer.print_in_terminal("auto_command_action_break", style="yellow", command=command, action=action)
+                    break
 
                 # 打印执行结果
                 console = Console()                
