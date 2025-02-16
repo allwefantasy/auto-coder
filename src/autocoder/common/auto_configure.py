@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, Any, Optional, Union, Callable
+from typing import Dict, Any, Optional, Union, Callable, List
 from pydantic import BaseModel, Field, SkipValidation
 import byzerllm
 from byzerllm import ByzerLLM
@@ -57,9 +57,8 @@ class AutoConfigRequest(BaseModel):
 
 
 class AutoConfigResponse(BaseModel):
-    configs: Dict[str, Any] = Field(default_factory=dict)
-    reasoning: str = "No configuration changes"
-    call_configure: Optional[Dict[str, str]] = None
+    configs: List[Dict[str, Any]] = Field(default_factory=list)
+    reasoning: str = "No configuration changes"    
 
     @classmethod
     def from_str(cls, response_str: str) -> 'AutoConfigResponse':
@@ -152,12 +151,13 @@ class ConfigAutoTuner:
 
         ```json
         {
-            "configs": {
+            "configs": [{
                 "config": {
                     "auto_merge": "editblock",
                 },
                 "reasoning": "配置变更原因",            
-            }
+                }
+            ]
         }
         ```
         """
@@ -173,8 +173,9 @@ class ConfigAutoTuner:
             response = self._generate_config_str.with_llm(
                 self.llm).with_return_type(AutoConfigResponse).run(request)
             
-            for k, v in response.configs.items():
-                self.configure(f"{k}:{v}")
+            for config in response.configs:
+                for k, v in config["config"].items():
+                    self.configure(f"{k}:{v}")
             return response
         except Exception as e:
             logger.error(f"Auto config failed: {str(e)}")
