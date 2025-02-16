@@ -4,6 +4,7 @@ from byzerllm.utils import format_str_jinja2
 MESSAGES = {
     "en": {
         "auto_command_break": "Auto command execution failed to execute command: {{command}}",
+        "auto_command_executing": "Executing command: {{command}}",
         "model_provider_select_title": "Select Model Provider",
         "auto_config_analyzing": "Analyzing configuration...",
         "config_delete_success": "Successfully deleted configuration: {{key}}",
@@ -123,6 +124,7 @@ MESSAGES = {
     },
     "zh": {
         "auto_command_break": "自动命令执行失败: {{command}}",
+        "auto_command_executing": "正在执行命令: {{command}}",
         "model_provider_select_title": "选择模型供应商",
         "auto_config_analyzing": "正在分析配置...",
         "config_delete_success": "成功删除配置: {{key}}",

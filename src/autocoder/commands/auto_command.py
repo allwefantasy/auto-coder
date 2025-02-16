@@ -233,6 +233,14 @@ class CommandAutoTuner:
             # 执行命令
             command = response.suggestions[0].command
             parameters = response.suggestions[0].parameters
+            
+            # 打印正在执行的命令
+            self.printer.print_in_terminal(
+                "auto_command_executing", 
+                style="blue", 
+                command=command
+            )
+            
             self.execute_auto_command(command, parameters)            
             content = ""
             last_result = result_manager.get_last()
