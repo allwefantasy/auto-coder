@@ -231,11 +231,11 @@ class CommandAutoTuner:
         <description>配置管理命令</description>
         <parameters>
         <parameter>
-        <name>/drop <key></name>
+        <name>/drop key</name>
         <description>删除指定配置项</description>
         </parameter>
         <parameter>
-        <name><key>:<value></name>
+        <name>key:value</name>
         <description>设置配置项</description>
         </parameter>
         </parameters>
