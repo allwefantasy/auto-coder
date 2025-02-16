@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Union, Callable
 from autocoder.common.printer import Printer
 from pydantic import SkipValidation
 
+from autocoder.common.result_manager import ResultManager
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from byzerllm.utils.str2model import to_model
 
@@ -212,12 +213,16 @@ class CommandAutoTuner:
             query=request.user_input,
             response=response.model_dump_json(indent=2)
         )
-
-        # while True:
-        #     # 执行命令
-        #     self.execute_auto_command(response.suggestions[0].command, response.suggestions[0].parameters)            
-        #     conversations.append({"role": "user", "content": response.suggestions[0].reasoning})
-            
+        result_manager = ResultManager()
+        
+        while True:
+            # 执行命令
+            self.execute_auto_command(response.suggestions[0].command, response.suggestions[0].parameters)            
+            last_result = result_manager.get_last()
+            if last_result:
+                conversations.append({"role": "user", "content": last_result.content})
+            else:
+                break            
         
         return response        
     

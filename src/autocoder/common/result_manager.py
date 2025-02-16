@@ -10,6 +10,9 @@ class ResultItem(BaseModel):
     meta: Dict[str, Any] = Field(default_factory=dict, description="元数据信息")
     time: int = Field(default_factory=lambda: int(time.time()), description="记录时间戳")
 
+    class Config:
+        arbitrary_types_allowed = True
+
 class ResultManager:
     """结果管理器，用于维护一个追加写入的jsonl文件"""
     

@@ -48,6 +48,7 @@ from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
 from autocoder.privacy.model_filter import ModelPathFilter
+from autocoder.common.result_manager import ResultManager
 
 console = Console()
 
@@ -1268,6 +1269,9 @@ def main(input_args: Optional[List[str]] = None):
                 with open(args.target_file, "w") as f:
                     f.write(chat_content)
 
+                result_manager = ResultManager()
+                result_manager.append(content=result, meta={"query": args.query,"action": "chat"})
+
                 # Update chat history with user's response
                 chat_history["ask_conversation"].append(
                     {"role": "assistant", "content": result}
@@ -1342,7 +1346,10 @@ def main(input_args: Optional[List[str]] = None):
                     model_name=model_name,
                     args=args
                 )
-                                                                       
+
+            result_manager = ResultManager()
+            result_manager.append(content=assistant_response, meta={"query": args.query,"action": "chat"})                                                           
+            
             # 打印耗时和token统计            
             if last_meta:
                 elapsed_time = time.time() - start_time
