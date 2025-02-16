@@ -318,8 +318,9 @@ class CommandAutoTuner:
         <command>
         <name>add_files</name>
         <description>
-          添加文件到一个活跃区，活跃区当你使用 chat,coding 函数时，活跃区的文件会被他们使用。
+          添加文件到一个活跃区，活跃区当你使用 chat,coding 函数时，活跃区的文件一定会被他们使用。
           支持通过模式匹配添加文件，支持 glob 语法，例如 *.py。可以使用相对路径或绝对路径。
+          如果你检测到用户的coding执行结果，缺少必要的文件修改，可以尝试使用该函数先添加文件再执行coding。
         </description>
         <usage>
          该方法只有一个参数 args，args 是一个列表，列表的元素是字符串。会包含子指令，例如 
@@ -701,9 +702,17 @@ class CommandAutoTuner:
 
         *** 特别注意 ***
         
-        在使用本函数时，如果添加的模型用户在需求中没有提供像推理点名称，激活时的 api key，以及模型名称等时,
-        你需要先通过函数 ask_user 来获取,之后再执行 models 命令。
+        在使用本函数时，如果添加的模型用户在需求中没有提供像推理点名称，激活时的 api key，以及模型名称等,从而导致添加模型会发生不确定性，
+        你务必需要先通过函数 ask_user 来获取,之后得到完整信息再来执行 models 相关的操作。
 
+        比如用户说：帮我添加火山方舟的 R1 模型。你需要先问：火山方舟的 R1 模型推理点是什么？然后你再问：火山方舟的 API key 是什么？
+        收集到这两个信息后，你再执行：
+
+        models(query="/add_model name=ark_r1_chat base_url=https://ark.cn-beijing.volces.com/api/v3 model_name=<收集到的推理点名称> is_reasoning=true")
+
+        models(query="/activate ark_r1_chat <收集到的API key>")
+        
+        
         </usage>
         </command>
 
@@ -715,7 +724,7 @@ class CommandAutoTuner:
         返回值是 用户对你问题的回答。        
         </description>
         <usage>
-         该命令接受一个参数 question，为要询问的问题字符串。
+         该命令接受一个参数 question，为需要向用户询问的问题字符串。
          
          使用例子：
          ask_user(question="请输入火山引擎的 R1 模型推理点")

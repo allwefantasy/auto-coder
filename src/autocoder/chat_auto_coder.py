@@ -1895,7 +1895,8 @@ def manage_models(query: str):
 
     if not subcmd:
         printer.print_in_terminal("models_usage")        
-
+    
+    result_manager = ResultManager()
     if subcmd == "/list":                    
         if models_data:
             # Sort models by speed (average_speed)
@@ -1932,8 +1933,21 @@ def manage_models(query: str):
                     f"{m.get('average_speed', 0.0):.3f}"
                 )
             console.print(table)
+            result_manager.add_result(content=json.dumps(sorted_models,ensure_ascii=False),meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
+            
         else:
             printer.print_in_terminal("models_no_models", style="yellow")
+            result_manager.add_result(content="No models found",meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
 
     elif subcmd == "/input_price":
         args = query.strip().split()
@@ -1943,11 +1957,35 @@ def manage_models(query: str):
                 price = float(args[1])
                 if models_module.update_model_input_price(name, price):
                     printer.print_in_terminal("models_input_price_updated", style="green", name=name, price=price)
+                    result_manager.add_result(content=f"models_input_price_updated: {name} {price}",meta={
+                        "action": "models",
+                        "input": {
+                            "query": query
+                        }
+                    })
                 else:
                     printer.print_in_terminal("models_not_found", style="red", name=name)
+                    result_manager.add_result(content=f"models_not_found: {name}",meta={
+                        "action": "models",
+                        "input": {
+                            "query": query
+                        }
+                    })
             except ValueError as e:
+                result_manager.add_result(content=f"models_invalid_price: {str(e)}",meta={
+                    "action": "models",
+                    "input": {
+                        "query": query
+                    }
+                })
                 printer.print_in_terminal("models_invalid_price", style="red", error=str(e))
         else:
+            result_manager.add_result(content=printer.get_message_from_key("models_input_price_usage"),meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
             printer.print_in_terminal("models_input_price_usage", style="red")
             
     elif subcmd == "/output_price":
@@ -1958,11 +1996,35 @@ def manage_models(query: str):
                 price = float(args[1])
                 if models_module.update_model_output_price(name, price):
                     printer.print_in_terminal("models_output_price_updated", style="green", name=name, price=price)
+                    result_manager.add_result(content=f"models_output_price_updated: {name} {price}",meta={
+                        "action": "models",
+                        "input": {
+                            "query": query
+                        }
+                    })
                 else:
                     printer.print_in_terminal("models_not_found", style="red", name=name)
+                    result_manager.add_result(content=f"models_not_found: {name}",meta={
+                        "action": "models",
+                        "input": {
+                            "query": query
+                        }
+                    })
             except ValueError as e:
                 printer.print_in_terminal("models_invalid_price", style="red", error=str(e))
+                result_manager.add_result(content=f"models_invalid_price: {str(e)}",meta={
+                    "action": "models",
+                    "input": {
+                        "query": query
+                    }
+                })
         else:
+            result_manager.add_result(content=printer.get_message_from_key("models_output_price_usage"),meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
             printer.print_in_terminal("models_output_price_usage", style="red")
 
     elif subcmd == "/speed":
@@ -1973,11 +2035,35 @@ def manage_models(query: str):
                 speed = float(args[1])
                 if models_module.update_model_speed(name, speed):
                     printer.print_in_terminal("models_speed_updated", style="green", name=name, speed=speed)
+                    result_manager.add_result(content=f"models_speed_updated: {name} {speed}",meta={
+                        "action": "models",
+                        "input": {
+                            "query": query
+                        }
+                    })
                 else:
                     printer.print_in_terminal("models_not_found", style="red", name=name)
+                    result_manager.add_result(content=f"models_not_found: {name}",meta={
+                        "action": "models",
+                        "input": {
+                            "query": query
+                        }
+                    })
             except ValueError as e:
                 printer.print_in_terminal("models_invalid_speed", style="red", error=str(e))
+                result_manager.add_result(content=f"models_invalid_speed: {str(e)}",meta={
+                    "action": "models",
+                    "input": {
+                        "query": query
+                    }
+                })
         else:
+            result_manager.add_result(content=printer.get_message_from_key("models_speed_usage"),meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
             printer.print_in_terminal("models_speed_usage", style="red")
             
     elif subcmd == "/speed-test":
@@ -1999,6 +2085,13 @@ def manage_models(query: str):
             test_rounds = int(args[0])
             
         render_speed_test_in_terminal(product_mode, test_rounds,enable_long_context=enable_long_context)
+        ## 等待优化，获取明细数据
+        result_manager.add_result(content="models test success",meta={
+            "action": "models",
+            "input": {
+                "query": query
+            }
+        })
     
     elif subcmd == "/add":
         # Support both simplified and legacy formats
@@ -2008,11 +2101,24 @@ def manage_models(query: str):
             name, api_key = args[0], args[1]            
             result = models_module.update_model_with_api_key(name, api_key)
             if result:
+                result_manager.add_result(content=f"models_added: {name}",meta={
+                    "action": "models",
+                    "input": {
+                        "query": query
+                    }
+                })
                 printer.print_in_terminal("models_added", style="green", name=name)
             else:
+                result_manager.add_result(content=f"models_add_failed: {name}",meta={
                 printer.print_in_terminal("models_add_failed", style="red", name=name)
         else:
             printer.print_in_terminal("models_add_usage", style="red")
+            result_manager.add_result(content=printer.get_message_from_key("models_add_usage"),meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
 
     elif subcmd == "/add_model":
         # Parse key=value pairs: /models /add_model name=abc base_url=http://xx ...       
@@ -2050,22 +2156,51 @@ def manage_models(query: str):
         models_data.append(final_model)
         models_module.save_models(models_data)
         printer.print_in_terminal("models_add_model_success", style="green", name=data_dict["name"])
+        result_manager.add_result(content=f"models_add_model_success: {data_dict['name']}",meta={
+            "action": "models",
+            "input": {
+                "query": query
+            }
+        })
 
     elif subcmd == "/remove":
         args = query.strip().split(" ")
         if len(args) < 1:
             printer.print_in_terminal("models_add_usage", style="red")
+            result_manager.add_result(content=printer.get_message_from_key("models_add_usage"),meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
             return
         name = args[0]
         filtered_models = [m for m in models_data if m["name"] != name]
         if len(filtered_models) == len(models_data):
             printer.print_in_terminal("models_add_model_remove", style="yellow", name=name)
+            result_manager.add_result(content=printer.get_message_from_key("models_add_model_remove",name=name),meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
             return
         models_module.save_models(filtered_models)
         printer.print_in_terminal("models_add_model_removed", style="green", name=name)
-
+        result_manager.add_result(content=printer.get_message_from_key("models_add_model_removed",name=name),meta={ 
+            "action": "models",
+            "input": {
+                "query": query
+            }
+        })
     else:
         printer.print_in_terminal("models_unknown_subcmd", style="yellow", subcmd=subcmd)
+        result_manager.add_result(content=printer.get_message_from_key("models_unknown_subcmd",subcmd=subcmd),meta={ 
+            "action": "models",
+            "input": {
+                "query": query
+            }
+        })
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
