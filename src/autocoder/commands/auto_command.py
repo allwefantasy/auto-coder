@@ -80,8 +80,7 @@ class AutoCommandResponse(BaseModel):
 class AutoCommandRequest(BaseModel):
     user_input: str
     conversation_history: List[Dict[str, str]]
-    current_files: List[str]
-    available_commands: List[str]
+    current_files: List[str]    
 
 
 class MemoryConfig(BaseModel):
@@ -129,20 +128,25 @@ class CommandAutoTuner:
         根据用户输入和当前上下文，分析并推荐最合适的命令。
 
         用户输入: {{ user_input }}
+
+        {% if current_files %}
         当前文件列表: 
         {% for file in current_files %}
         - {{ file }}
         {% endfor %}
-
+        {% endif %}
+        
         可用命令列表:
         {% for cmd in available_commands %}
         - {{ cmd }}
         {% endfor %}
 
+        {% if conversation_history %}
         历史对话:
         {% for conv in conversation_history %}
         {{ conv.role }}: {{ conv.content }}
         {% endfor %}
+        {% endif %}
 
         请分析用户意图，一个命令执行序列，并给出推荐理由。
         返回格式必须是严格的JSON格式：
@@ -158,8 +162,14 @@ class CommandAutoTuner:
             ],
             "reasoning": "整体推理说明"
         }
-        ```
+        ```        
         """
+        return {
+            "user_input": request.user_input,
+            "current_files": request.current_files,
+            "conversation_history": request.conversation_history,
+            "available_commands": ""
+        }
 
     def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
         response = self._analyze.with_llm(self.llm).with_return_type(AutoCommandResponse).run(request)
@@ -168,6 +178,25 @@ class CommandAutoTuner:
             response=response.model_dump_json(indent=2)
         )
         return response
+    
+    @byzerllm.prompt()
+    def _command_readme(self) -> str:
+        '''
+        # 命令说明
+        <commands>
+        <command>
+        <name>命令名称</name>
+        <description>命令说明</description>
+        <parameters>
+        <parameter>
+        <name>参数名称</name>
+        <description>参数说明</description>
+        </parameter>
+        </parameters>
+        </command>
+        </commands>
+        '''
+
 
     def execute_auto_command(self, command: str, parameters: Dict[str, Any]) -> None:
         """
