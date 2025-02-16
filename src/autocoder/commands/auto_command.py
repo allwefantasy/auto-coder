@@ -235,243 +235,433 @@ class CommandAutoTuner:
         <command>
         <name>remove_files</name>
         <description>从当前会话中移除文件。可以指定多个文件，支持文件名或完整路径。</description>
-        <parameters>
-        <parameter>
-        <name>/all</name>
-        <description>移除所有当前会话中的文件，同时清空活跃组列表。</description>
-        </parameter>
-        <parameter>
-        <name>file_names</name>
-        <description>要移除的文件名列表，多个文件用逗号分隔。可以使用文件名或完整路径。</description>
-        </parameter>
-        </parameters>
+        <usage>
+         该方法接受一个参数 file_names，是一个列表，列表的元素是字符串。下面是常见的子指令：
+
+         ## /all 移除所有文件
+         移除所有当前会话中的文件，同时清空活跃组列表。
+         使用例子：
+
+         /remove_files /all
+
+         ## 移除指定文件
+         可以指定一个或多个文件，文件名之间用逗号分隔。
+         使用例子：
+
+         /remove_files file1.py,file2.py
+         /remove_files /path/to/file1.py,file2.py
+
+        </usage>
         </command>
 
         <command>
         <name>list_files</name>
         <description>列出当前会话中的所有文件，显示相对于项目根目录的路径。</description>
+        <usage>
+         该命令不需要任何参数，直接使用即可。
+         使用例子：
+
+         /list_files
+
+         输出示例：
+         Current Files
+         ├── src/main.py
+         ├── tests/test_main.py
+         └── README.md
+        </usage>
         </command>
 
         <command>
         <name>conf</name>
         <description>配置管理命令，用于设置和管理系统配置项。</description>
-        <parameters>
-        <parameter>
-        <name>/drop key</name>
-        <description>删除指定配置项。例如：/conf /drop model 删除模型配置。</description>
-        </parameter>
-        <parameter>
-        <name>key:value</name>
-        <description>设置配置项。支持以下关键配置：
-        - model: 设置默认使用的模型，例如：model:v3_chat
-        - chat_model: 设置聊天使用的模型
-        - code_model: 设置代码生成使用的模型
-        - auto_merge: 代码合并方式(editblock/diff/wholefile)
-        - editblock_similarity: 编辑块相似度阈值(0-1)
-        - skip_build_index: 是否跳过索引构建(true/false)
-        - skip_filter_index: 是否跳过索引过滤(true/false)
-        - human_as_model: 是否将人类作为模型(true/false)
-        </description>
-        </parameter>
-        </parameters>
+        <usage>
+         该命令支持两种操作模式：设置配置和删除配置。
+
+         ## 设置配置
+         使用 key:value 格式设置配置项
+         使用例子：
+
+         /conf model:v3_chat
+         /conf auto_merge:editblock
+         /conf skip_build_index:true
+
+         支持的主要配置项：
+         - model: 设置默认使用的模型
+         - chat_model: 设置聊天使用的模型
+         - code_model: 设置代码生成使用的模型
+         - auto_merge: 代码合并方式(editblock/diff/wholefile)
+         - editblock_similarity: 编辑块相似度阈值(0-1)
+         - skip_build_index: 是否跳过索引构建(true/false)
+         - skip_filter_index: 是否跳过索引过滤(true/false)
+         - human_as_model: 是否将人类作为模型(true/false)
+
+         ## 删除配置
+         使用 /drop 删除指定配置项
+         使用例子：
+
+         /conf /drop model
+         /conf /drop auto_merge
+
+         ## 查看当前配置
+         直接使用 /conf 命令不带参数
+         使用例子：
+
+         /conf
+        </usage>
         </command>
 
         <command>
         <name>revert</name>
         <description>撤销最后一次代码修改，恢复到修改前的状态。同时会删除对应的操作记录文件。</description>
+        <usage>
+         该命令不需要任何参数，直接使用即可。会撤销最近一次的代码修改操作。
+         使用例子：
+
+         /revert
+
+         注意：
+         - 只能撤销最后一次的修改
+         - 撤销后会同时删除对应的操作记录文件
+         - 如果没有可撤销的操作会提示错误
+        </usage>
         </command>
 
         <command>
         <name>commit</name>
         <description>提交代码更改到版本控制系统。系统会自动生成合适的提交信息，并创建提交记录。</description>
+        <usage>
+         该命令支持直接使用或带参数使用。
+
+         ## 直接提交
+         系统会自动分析变更并生成提交信息
+         使用例子：
+
+         /commit
+
+         ## 带说明提交
+         可以提供额外的说明信息
+         使用例子：
+
+         /commit 优化了性能并修复了内存泄漏问题
+
+         注意：
+         - 需要项目已经初始化了Git仓库
+         - 会自动检测未提交的变更
+         - 使用AI生成规范的提交信息
+        </usage>
         </command>
 
         <command>
         <name>help</name>
         <description>显示帮助信息。可以加上具体的查询内容获取特定帮助，例如：/help auto_merge</description>
+        <usage>
+         该命令支持两种使用方式：
+
+         ## 显示通用帮助
+         不带参数显示所有可用命令的概览
+         使用例子：
+
+         /help
+
+         ## 显示特定功能帮助
+         指定具体的功能或配置项获取详细说明
+         使用例子：
+
+         /help auto_merge
+         /help editblock_similarity
+         /help coding
+        </usage>
         </command>
 
         <command>
         <name>exclude_dirs</name>
         <description>设置要排除的目录，这些目录下的文件将不会被索引和处理。</description>
-        <parameters>
-        <parameter>
-        <name>dir_names</name>
-        <description>要排除的目录列表，多个目录用逗号分隔。例如：node_modules,dist,build</description>
-        </parameter>
-        </parameters>
+        <usage>
+         该命令接受一个或多个目录名，多个目录用逗号分隔。
+
+         ## 添加排除目录
+         使用例子：
+
+         /exclude_dirs node_modules,dist,build
+         /exclude_dirs .git
+
+         注意：
+         - 默认已排除：.git, node_modules, dist, build, __pycache__
+         - 排除的目录不会被索引和处理
+         - 支持相对路径和绝对路径
+         - 更改后需要重新构建索引才能生效
+        </usage>
         </command>
 
         <command>
         <name>ask</name>
         <description>向AI提问，获取关于代码或项目的解答。会考虑当前会话中的文件作为上下文。</description>
-        <parameters>
-        <parameter>
-        <name>query</name>
-        <description>问题内容。可以使用@文件名引用特定文件，使用@@符号引用函数或类。</description>
-        </parameter>
-        </parameters>
+        <usage>
+         该命令需要提供问题内容，支持多种引用方式。
+
+         ## 基础提问
+         直接提出问题
+         使用例子：
+
+         /ask 这个项目的主要功能是什么？
+
+         ## 引用特定文件
+         使用@语法引用文件
+         使用例子：
+
+         /ask @main.py 中的 process_data 函数是做什么的？
+
+         ## 引用特定符号
+         使用@@语法引用函数或类
+         使用例子：
+
+         /ask @@process_data 这个函数的参数类型是什么？
+
+         注意：
+         - 会自动分析当前会话中的文件作为上下文
+         - 支持多轮对话，保持上下文连贯
+         - 可以同时引用多个文件或符号
+        </usage>
         </command>
 
         <command>
         <name>chat</name>
         <description>进入聊天模式，与AI进行交互对话。支持多轮对话和上下文理解。</description>
-        <parameters>
-        <parameter>
-        <name>query</name>
-        <description>聊天内容。支持以下特殊语法：
-        - @文件名：引用特定文件
-        - @@符号：引用函数或类
-        - <img>图片路径</img>：引入图片内容
-        </description>
-        </parameter>
-        <parameter>
-        <name>/new</name>
-        <description>开启新的聊天会话，清除之前的对话历史。</description>
-        </parameter>
-        <parameter>
-        <name>/no_context</name>
-        <description>不使用当前的文件上下文进行对话。</description>
-        </parameter>
-        <parameter>
-        <name>/review</name>
-        <description>请求代码审查，会对指定代码进行全面检查。</description>
-        </parameter>
-        <parameter>
-        <name>/mcp</name>
-        <description>使用模型控制面板功能。</description>
-        </parameter>
-        <parameter>
-        <name>/rag</name>
-        <description>使用检索增强生成功能。</description>
-        </parameter>
-        <parameter>
-        <name>/copy</name>
-        <description>复制生成的内容。</description>
-        </parameter>
-        <parameter>
-        <name>/save</name>
-        <description>保存对话内容。</description>
-        </parameter>
-        </parameters>
+        <usage>
+         该命令支持多种交互方式和特殊功能。
+
+         ## 基础对话
+         直接输入对话内容
+         使用例子：
+
+         /chat 这个项目使用了什么技术栈？
+
+         ## 新会话
+         使用 /new 开启新对话
+         使用例子：
+
+         /chat /new 让我们讨论新的话题
+
+         ## 代码审查
+         使用 /review 请求代码审查
+         使用例子：
+
+         /chat /review @main.py
+
+         ## 特殊功能
+         - /no_context：不使用当前文件上下文
+         - /mcp：使用模型控制面板
+         - /rag：使用检索增强生成
+         - /copy：复制生成内容
+         - /save：保存对话内容
+
+         ## 引用语法
+         - @文件名：引用特定文件
+         - @@符号：引用函数或类
+         - <img>图片路径</img>：引入图片
+
+         使用例子：
+
+         /chat @utils.py 这个文件的主要功能是什么？
+         /chat @@process_data 这个函数的实现有什么问题？
+         /chat <img>screenshots/error.png</img> 这个错误如何解决？
+        </usage>
         </command>
 
         <command>
         <name>coding</name>
         <description>代码生成命令，用于生成、修改和重构代码。</description>
-        <parameters>
-        <parameter>
-        <name>query</name>
-        <description>代码生成需求描述。支持：
-        - @文件名：引用特定文件
-        - @@符号：引用函数或类
-        - <img>图片路径</img>：引入图片内容
-        </description>
-        </parameter>
-        <parameter>
-        <name>/apply</name>
-        <description>应用上次生成的代码，并保留相关上下文。</description>
-        </parameter>
-        <parameter>
-        <name>/next</name>
-        <description>预测下一步任务，系统会分析当前状态并建议后续开发步骤。</description>
-        </parameter>
-        </parameters>
+        <usage>
+         该命令支持多种代码生成和修改场景。
+
+         ## 基础代码生成
+         直接描述需求
+         使用例子：
+
+         /coding 创建一个处理用户登录的函数
+
+         ## 应用上次生成
+         使用 /apply 应用上次生成的代码
+         使用例子：
+
+         /coding /apply 在上次的基础上添加密码加密
+
+         ## 预测下一步
+         使用 /next 分析并建议后续步骤
+         使用例子：
+
+         /coding /next
+
+         ## 引用语法
+         - @文件名：引用特定文件
+         - @@符号：引用函数或类
+         - <img>图片路径</img>：引入图片
+
+         使用例子：
+
+         /coding @auth.py 添加JWT认证
+         /coding @@login 优化错误处理
+         /coding <img>design/flow.png</img> 实现这个流程图的功能
+
+         注意：
+         - 支持多文件联动修改
+         - 自动处理代码依赖关系
+         - 保持代码风格一致性
+         - 生成代码会进行自动测试
+        </usage>
         </command>
 
         <command>
         <name>design</name>
         <description>设计相关命令，用于生成各类设计资源。</description>
-        <parameters>
-        <parameter>
-        <name>query</name>
-        <description>设计需求描述，需要详细说明设计要求。</description>
-        </parameter>
-        <parameter>
-        <name>/svg</name>
-        <description>生成SVG格式的矢量图设计。</description>
-        </parameter>
-        <parameter>
-        <name>/sd</name>
-        <description>使用Stable Diffusion生成图片设计。</description>
-        </parameter>
-        <parameter>
-        <name>/logo</name>
-        <description>生成Logo设计，支持多种风格。</description>
-        </parameter>
-        </parameters>
+        <usage>
+         该命令支持多种设计资源的生成。
+
+         ## SVG设计
+         使用 /svg 生成矢量图
+         使用例子：
+
+         /design /svg 创建一个简洁的登录图标
+
+         ## 图片设计
+         使用 /sd 生成图片
+         使用例子：
+
+         /design /sd 生成一张科技风格的背景图
+
+         ## Logo设计
+         使用 /logo 生成标志
+         使用例子：
+
+         /design /logo 设计一个代表AI编程的logo
+
+         注意：
+         - 需要详细描述设计需求
+         - 可以指定具体的风格和要求
+         - 支持多种输出格式
+         - 可以进行反复调整
+        </usage>
         </command>
 
         <command>
         <name>summon</name>
         <description>调用AI工具，执行特定任务。会考虑当前会话中的文件作为上下文。</description>
-        <parameters>
-        <parameter>
-        <name>query</name>
-        <description>工具调用需求描述，需要明确指出要使用的工具和具体任务。</description>
-        </parameter>
-        </parameters>
+        <usage>
+         该命令用于调用特定的AI工具完成任务。
+
+         ## 基础调用
+         描述需要完成的任务
+         使用例子：
+
+         /summon 分析当前代码的性能瓶颈
+         /summon 生成项目的类图
+         /summon 检查代码中的安全漏洞
+
+         注意：
+         - 会自动选择最适合的AI工具
+         - 考虑当前会话文件作为上下文
+         - 可以组合多个工具协同工作
+         - 支持自定义工具链
+        </usage>
         </command>
 
         <command>
         <name>lib</name>
         <description>库管理命令，用于管理项目依赖和文档。</description>
-        <parameters>
-        <parameter>
-        <name>/add <库名></name>
-        <description>添加新库到项目。会自动获取相关文档。</description>
-        </parameter>
-        <parameter>
-        <name>/remove <库名></name>
-        <description>从项目中移除指定库及其文档。</description>
-        </parameter>
-        <parameter>
-        <name>/list</name>
-        <description>列出项目中所有已添加的库。</description>
-        </parameter>
-        <parameter>
-        <name>/set-proxy <代理地址></name>
-        <description>设置库文档下载的代理地址。</description>
-        </parameter>
-        <parameter>
-        <name>/refresh</name>
-        <description>刷新库文档，获取最新版本。</description>
-        </parameter>
-        <parameter>
-        <name>/get <包名></name>
-        <description>获取指定包的详细文档信息。</description>
-        </parameter>
-        </parameters>
+        <usage>
+         该命令用于管理项目的依赖库和相关文档。
+
+         ## 添加库
+         使用 /add 添加新库
+         使用例子：
+
+         /lib /add requests
+         /lib /add numpy,pandas
+
+         ## 移除库
+         使用 /remove 移除库
+         使用例子：
+
+         /lib /remove requests
+
+         ## 查看库列表
+         使用 /list 查看已添加的库
+         使用例子：
+
+         /lib /list
+
+         ## 设置代理
+         使用 /set-proxy 设置下载代理
+         使用例子：
+
+         /lib /set-proxy http://proxy.example.com:8080
+
+         ## 刷新文档
+         使用 /refresh 更新文档
+         使用例子：
+
+         /lib /refresh
+
+         ## 获取文档
+         使用 /get 获取特定包的文档
+         使用例子：
+
+         /lib /get requests
+
+         注意：
+         - 自动处理依赖关系
+         - 自动下载相关文档
+         - 支持版本管理
+         - 可以设置代理加速下载
+        </usage>
         </command>
 
         <command>
         <name>mcp</name>
         <description>模型控制面板命令，用于管理和控制AI模型。</description>
-        <parameters>
-        <parameter>
-        <name>/add <模型配置></name>
-        <description>添加新的AI模型。配置格式：name=模型名 base_url=地址 api_key=密钥</description>
-        </parameter>
-        <parameter>
-        <name>/remove <模型名></name>
-        <description>移除指定的AI模型。</description>
-        </parameter>
-        <parameter>
-        <name>/list</name>
-        <description>列出所有可用的AI模型。</description>
-        </parameter>
-        <parameter>
-        <name>/list_running</name>
-        <description>列出当前正在运行的AI模型。</description>
-        </parameter>
-        <parameter>
-        <name>/refresh <模型名></name>
-        <description>刷新指定模型的状态和配置。</description>
-        </parameter>
-        </parameters>
+        <usage>
+         该命令用于管理和控制AI模型的配置和运行。
+
+         ## 添加模型
+         使用 /add 添加新模型
+         使用例子：
+
+         /mcp /add name=gpt4 base_url=https://api.example.com api_key=xxx
+
+         ## 移除模型
+         使用 /remove 移除模型
+         使用例子：
+
+         /mcp /remove gpt4
+
+         ## 查看模型列表
+         使用 /list 查看所有可用模型
+         使用例子：
+
+         /mcp /list
+
+         ## 查看运行中的模型
+         使用 /list_running 查看正在运行的模型
+         使用例子：
+
+         /mcp /list_running
+
+         ## 刷新模型状态
+         使用 /refresh 刷新指定模型
+         使用例子：
+
+         /mcp /refresh gpt4
+
+         注意：
+         - 支持多种模型类型
+         - 自动管理模型生命周期
+         - 支持模型热切换
+         - 提供性能监控
+        </usage>
         </command>
 
         </commands>
+        '''
         '''
 
 
