@@ -13,21 +13,33 @@ from autocoder.common.printer import Printer
 logger = logging.getLogger(__name__)
 
 def save_to_memory_file(ask_conversation: List[Dict[str, Any]], query: str, response: str):
-    """Save conversation to memory file"""
+    """Save conversation to memory file in append mode"""
     memory_dir = os.path.join(".auto-coder", "memory")
     os.makedirs(memory_dir, exist_ok=True)
-    timestamp = str(int(time.time()))
-    file_path = os.path.join(memory_dir, f"{timestamp}.json")
+    file_path = os.path.join(memory_dir, "config_conversation.json")
     
     data = {
-        "timestamp": timestamp,
+        "timestamp": str(int(time.time())),
         "query": query,
         "response": response,
         "conversation": ask_conversation
     }
     
+    # If file exists, load existing data and append new entry
+    existing_data = []
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            try:
+                existing_data = json.load(f)
+                if not isinstance(existing_data, list):
+                    existing_data = [existing_data]
+            except json.JSONDecodeError:
+                existing_data = []
+    
+    existing_data.append(data)
+    
     with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        json.dump(existing_data, f, ensure_ascii=False, indent=2)
 
 class MemoryConfig(BaseModel):
     """
