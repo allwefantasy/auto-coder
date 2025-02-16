@@ -11,14 +11,6 @@ from rich.table import Table
 from rich.text import Text
 
 
-class CommitInfo(BaseModel):
-    commit_hash: str
-    author_name: str
-    author_email: str
-    commit_date: str
-    commit_message: str
-    changed_files: List[str]
-    
 class CommitResult(BaseModel):
     success: bool
     commit_message: Optional[str] = None
@@ -612,41 +604,6 @@ def generate_commit_message(changes_report: str) -> str:
 
     请输出commit message, 不要输出任何其他内容.
     '''
-
-def get_commit_info_by_hash(repo_path: str, commit_hash: str) -> Optional[CommitInfo]:
-    """
-    根据 commit hash 获取提交信息
-    
-    Args:
-        repo_path: Git仓库路径
-        commit_hash: 提交的hash值
-        
-    Returns:
-        CommitInfo: 包含提交信息的对象，如果找不到返回None
-    """
-    repo = get_repo(repo_path)
-    if repo is None:
-        return None
-        
-    try:
-        commit = repo.commit(commit_hash)
-        changed_files = []
-        if commit.parents:
-            changed_files = repo.git.diff(
-                commit.parents[0].hexsha, commit_hash, name_only=True
-            ).split("\n")
-        
-        return CommitInfo(
-            commit_hash=commit_hash,
-            author_name=commit.author.name,
-            author_email=commit.author.email,
-            commit_date=str(commit.authored_datetime),
-            commit_message=commit.message,
-            changed_files=[file for file in changed_files if file.strip()]
-        )
-    except GitCommandError as e:
-        logger.error(f"Error getting commit info: {e}")
-        return None
 
 def print_commit_info(commit_result: CommitResult):
     console = Console()
