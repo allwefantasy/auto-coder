@@ -25,33 +25,53 @@ class ConfigConversation(BaseModel):
     current_conversation: List[ConfigMessage]
 
 def save_to_memory_file(ask_conversation: List[Dict[str, Any]], query: str, response: str):
-    """Save conversation to memory file in append mode"""
+    """Save conversation to memory file using ConfigConversation structure"""
     memory_dir = os.path.join(".auto-coder", "memory")
     os.makedirs(memory_dir, exist_ok=True)
     file_path = os.path.join(memory_dir, "config_conversation.json")
     
-    data = {
-        "timestamp": str(int(time.time())),
-        "query": query,
-        "response": response,
-        "conversation": ask_conversation
-    }
+    # Create new message objects
+    user_msg = ConfigMessage(role="user", content=query)
+    assistant_msg = ConfigMessage(role="assistant", content=response)
     
-    # If file exists, load existing data and append new entry
-    existing_data = []
+    extended_user_msg = ExtenedConfigMessage(
+        message=user_msg,
+        timestamp=str(int(time.time()))
+    )
+    extended_assistant_msg = ExtenedConfigMessage(
+        message=assistant_msg,
+        timestamp=str(int(time.time()))
+    )
+    
+    # Load existing conversation or create new
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             try:
-                existing_data = json.load(f)
-                if not isinstance(existing_data, list):
-                    existing_data = [existing_data]
-            except json.JSONDecodeError:
-                existing_data = []
+                existing_conv = ConfigConversation.parse_raw(f.read())
+            except Exception:
+                existing_conv = ConfigConversation(
+                    history={},
+                    current_conversation=[]
+                )
+    else:
+        existing_conv = ConfigConversation(
+            history={},
+            current_conversation=[]
+        )
     
-    existing_data.append(data)
+    # Add messages to history and current conversation
+    user_id = str(uuid.uuid4())
+    assistant_id = str(uuid.uuid4())
     
+    existing_conv.history[user_id] = extended_user_msg
+    existing_conv.history[assistant_id] = extended_assistant_msg
+    
+    existing_conv.current_conversation.append(user_msg)
+    existing_conv.current_conversation.append(assistant_msg)
+    
+    # Save updated conversation
     with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(existing_data, f, ensure_ascii=False, indent=2)
+        f.write(existing_conv.json(indent=2))
 
 class MemoryConfig(BaseModel):
     """
@@ -217,13 +237,9 @@ class ConfigAutoTuner:
             response = self._generate_config_str.with_llm(
                 self.llm).with_return_type(AutoConfigResponse).run(request)
             
-            # Save conversation
-            conversation = [{"role": "user", "content": request.query}]
-            if response.reasoning:
-                conversation.append({"role": "assistant", "content": response.reasoning})
-            
+            # Save conversation using new structure
             save_to_memory_file(
-                ask_conversation=conversation,
+                ask_conversation=[{"role": "user", "content": request.query}],
                 query=request.query,
                 response=response.reasoning or "No configuration changes"
             )
