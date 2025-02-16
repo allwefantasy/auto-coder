@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Union
 from pydantic import BaseModel, Field
 import byzerllm
 from byzerllm import ByzerLLM
@@ -8,6 +8,43 @@ from byzerllm.utils.client import code_utils
 from autocoder.common.printer import Printer
 
 logger = logging.getLogger(__name__)
+
+class MemoryConfig(BaseModel):
+    """
+    A model to encapsulate memory configuration and operations.
+    """
+    memory: Dict[str, Any]
+    save_memory_func: callable
+    
+    def configure(self, conf: str, skip_print: bool = False) -> None:
+        """
+        Configure memory with the given key-value pair.
+        """
+        printer = Printer()
+        parts = conf.split(None, 1)
+        if len(parts) == 2 and parts[0] in ["/drop", "/unset", "/remove"]:
+            key = parts[1].strip()
+            if key in self.memory["conf"]:
+                del self.memory["conf"][key]
+                self.save_memory_func()
+                printer.print_in_terminal("config_delete_success", style="green", key=key)
+            else:
+                printer.print_in_terminal("config_not_found", style="yellow", key=key)
+        else:
+            parts = conf.split(":", 1)
+            if len(parts) != 2:
+                printer.print_in_terminal("config_invalid_format", style="red")
+                return
+            key, value = parts
+            key = key.strip()
+            value = value.strip()
+            if not value:
+                printer.print_in_terminal("config_value_empty", style="red")
+                return
+            self.memory["conf"][key] = value
+            self.save_memory_func()
+            if not skip_print:
+                printer.print_in_terminal("config_set_success", style="green", key=key, value=value)
 
 
 
@@ -49,36 +86,21 @@ class AutoConfigResponse(BaseModel):
 
 
 class ConfigAutoTuner:
-    def __init__(self, llm: ByzerLLM, memory: Dict[str, Any]):
+    def __init__(self, llm: ByzerLLM, memory_config: Union[Dict[str, Any], MemoryConfig]):
         self.llm = llm
-        self.memory = memory
-
-    def configure(self,conf: str, skip_print=False):
-        printer = Printer()
-        parts = conf.split(None, 1)
-        if len(parts) == 2 and parts[0] in ["/drop", "/unset", "/remove"]:
-            key = parts[1].strip()
-            if key in self.memory["conf"]:
-                del self.memory["conf"][key]
-                save_memory()
-                printer.print_in_terminal("config_delete_success", style="green", key=key)
-            else:
-                printer.print_in_terminal("config_not_found", style="yellow", key=key)
+        if isinstance(memory_config, dict):
+            self.memory_config = MemoryConfig(
+                memory=memory_config,
+                save_memory_func=lambda: save_memory()
+            )
         else:
-            parts = conf.split(":", 1)
-            if len(parts) != 2:
-                printer.print_in_terminal("config_invalid_format", style="red")
-                return
-            key, value = parts
-            key = key.strip()
-            value = value.strip()
-            if not value:
-                printer.print_in_terminal("config_value_empty", style="red")
-                return
-            self.memory["conf"][key] = value
-            save_memory()
-            if not skip_print:
-                printer.print_in_terminal("config_set_success", style="green", key=key, value=value)    
+            self.memory_config = memory_config
+
+    def configure(self, conf: str, skip_print: bool = False) -> None:
+        """
+        Delegate configuration to MemoryConfig instance.
+        """
+        self.memory_config.configure(conf, skip_print)
 
 
     @byzerllm.prompt()
