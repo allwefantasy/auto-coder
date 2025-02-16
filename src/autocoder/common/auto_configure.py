@@ -12,6 +12,18 @@ from autocoder.common.printer import Printer
 
 logger = logging.getLogger(__name__)
 
+class ConfigMessage(BaseModel):
+    role: str
+    content: str
+
+class ExtenedConfigMessage(ConfigMessage):
+    message: ConfigMessage
+    timestamp: str
+
+class ConfigConversation(BaseModel):
+    history: Dict[str, ExtenedConfigMessage]
+    current_conversation: List[ConfigMessage]
+
 def save_to_memory_file(ask_conversation: List[Dict[str, Any]], query: str, response: str):
     """Save conversation to memory file in append mode"""
     memory_dir = os.path.join(".auto-coder", "memory")
