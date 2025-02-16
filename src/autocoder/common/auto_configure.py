@@ -1,7 +1,7 @@
 import json
 import logging
-from typing import Dict, Any, Optional, Union
-from pydantic import BaseModel, Field
+from typing import Dict, Any, Optional, Union, Callable
+from pydantic import BaseModel, Field, SkipValidation
 import byzerllm
 from byzerllm import ByzerLLM
 from byzerllm.utils.client import code_utils
@@ -14,7 +14,7 @@ class MemoryConfig(BaseModel):
     A model to encapsulate memory configuration and operations.
     """
     memory: Dict[str, Any]
-    save_memory_func: callable
+    save_memory_func: SkipValidation[Callable]
 
     class Config:
         arbitrary_types_allowed = True
