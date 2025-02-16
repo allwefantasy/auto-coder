@@ -48,7 +48,10 @@ class ResultManager:
             f.write(result_item.model_dump_json() + "\n")
             
         return result_item
-
+    
+    def add_result(self, content: str, meta: Optional[Dict[str, Any]] = None) -> ResultItem:
+        return self.append(content, meta)
+        
     def get_last(self) -> Optional[ResultItem]:
         """
         获取最后一条记录

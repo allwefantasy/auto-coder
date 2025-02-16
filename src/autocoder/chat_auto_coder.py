@@ -2145,6 +2145,12 @@ def manage_models(query: str):
         # Check duplication
         if any(m["name"] == data_dict["name"] for m in models_data):
             printer.print_in_terminal("models_add_model_exists", style="yellow", name=data_dict["name"])
+            result_manager.add_result(content=printer.get_message_from_key("models_add_model_exists",name=data_dict["name"]),meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
             return
 
         # Create model with defaults
@@ -2466,7 +2472,7 @@ def lib_command(args: List[str]):
     else:
         console.print(f"Unknown subcommand: {subcommand}")
 
-
+@run_in_raw_thread()
 def auto_command(params,query: str):
     """处理/auto指令"""
     from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig

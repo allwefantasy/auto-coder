@@ -150,6 +150,7 @@ class CommandAutoTuner:
         conversation = load_memory_file()
         return [extended_msg for extended_msg in conversation.current_conversation]
 
+    @byzerllm.prompt()
     def _analyze(self, request: AutoCommandRequest) -> str:
         """
         根据用户输入和当前上下文，分析并推荐最合适的函数。
@@ -742,7 +743,8 @@ class CommandAutoTuner:
         <description>
         如果你对用户的问题有什么疑问，或者你想从用户收集一些额外信息，可以调用此方法。
         输入参数 question 是你对用户的提问。
-        返回值是 用户对你问题的回答。        
+        返回值是 用户对你问题的回答。    
+        ** 如果你的问题比较多，建议一次就问一个，然后根据用户回答再问下一个。 **
         </description>
         <usage>
          该命令接受一个参数 question，为需要向用户询问的问题字符串。

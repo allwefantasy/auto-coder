@@ -109,7 +109,7 @@ class AutoCommandTools:
         )
         console.print(answer_panel)
 
-        self.result_manager.add_result(content=answer, meta = {
+        self.result_manager.append(content=answer, meta = {
             "action": "ask_user",
             "input": {
                 "question": question
@@ -135,7 +135,7 @@ class AutoCommandTools:
         finally:
             interpreter.close()
         
-        self.result_manager.add_result(content=s, meta = {
+        self.result_manager.append(content=s, meta = {
             "action": "run_python_code",
             "input": {
                 "code": code
@@ -163,7 +163,7 @@ class AutoCommandTools:
         finally:
             interpreter.close()
         
-        self.result_manager.add_result(content=s, meta = {
+        self.result_manager.append(content=s, meta = {
             "action": "run_shell_code",
             "input": {
                 "script": script
@@ -177,7 +177,7 @@ class AutoCommandTools:
         你可以给出类名，函数名，以及文件的用途描述等信息，该工具会根据这些信息返回项目中相关的文件。
         """
         v = self.get_project_related_files(query)
-        self.result_manager.add_result(content=v, meta = {
+        self.result_manager.append(content=v, meta = {
             "action": "get_related_files_by_symbols",
             "input": {
                 "query": query
@@ -205,7 +205,7 @@ class AutoCommandTools:
         target_files = index_manager.get_target_files_by_query(query)
         file_list = target_files.file_list
         v =  ",".join([file.file_path for file in file_list])
-        self.result_manager.add_result(content=v, meta = {
+        self.result_manager.append(content=v, meta = {
             "action": "get_project_related_files",
             "input": {
                 "query": query
