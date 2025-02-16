@@ -635,7 +635,140 @@ class CommandAutoTuner:
         </usage>
         </command>
 
-        
+        <command>
+        <name>run_python</name>
+        <description>运行指定的Python代码。主要用于执行一些Python脚本或测试代码。</description>
+        <usage>
+         该命令接受一个参数 code，为要执行的Python代码字符串。
+         
+         使用例子：
+         
+         /run_python "print('Hello World')"
+         
+         注意：
+         - 代码将在项目根目录下执行
+         - 可以访问项目中的所有文件
+         - 输出结果会返回给用户
+        </usage>
+        </command>
+
+        <command>
+        <name>run_shell</name>
+        <description>运行指定的Shell脚本。主要用于编译、运行、测试等任务。</description>
+        <usage>
+         该命令接受一个参数 script，为要执行的Shell脚本字符串。
+         
+         使用例子：
+         
+         /run_shell "ls -l"
+         
+         注意：
+         - 脚本将在项目根目录下执行
+         - 禁止执行包含 rm 命令的脚本
+         - 输出结果会返回给用户
+        </usage>
+        </command>
+
+        <command>
+        <name>auto_run</name>
+        <description>根据任务描述自动拆解任务，生成执行步骤并执行。主要用于自动化编译、运行、测试等任务。</description>
+        <usage>
+         该命令接受两个参数：
+         - job: 任务描述字符串
+         - context: 上下文信息字符串（可选）
+         
+         使用例子：
+         
+         /auto_run "编译并运行测试" "项目使用Maven构建"
+         
+         注意：
+         - 工具会根据项目目录结构（如pom文件）自动识别项目类型
+         - 可以结合其他工具（如read_files）获取上下文信息
+        </usage>
+        </command>
+
+        <command>
+        <name>get_related_files</name>
+        <description>根据类名、函数名或文件用途描述，返回项目中相关的文件。</description>
+        <usage>
+         该命令接受一个参数 query，为要查询的符号或描述字符串。
+         
+         使用例子：
+         
+         /get_related_files "用户登录功能"
+         
+         注意：
+         - 返回值为逗号分隔的文件路径列表
+         - 只能返回已被索引的文件
+        </usage>
+        </command>
+
+        <command>
+        <name>get_project_map</name>
+        <description>返回项目中所有已被构建索引的文件及其信息，包括文件用途、导入的包、定义的类、函数、变量等。</description>
+        <usage>
+         该命令不需要参数。
+         
+         使用例子：
+         
+         /get_project_map
+         
+         注意：
+         - 返回值为JSON格式文本
+         - 只能返回已被索引的文件
+         - 尽量避免使用该工具，因为返回内容可能很大
+        </usage>
+        </command>
+
+        <command>
+        <name>read_files</name>
+        <description>读取指定文件的内容。支持文件名或绝对路径。</description>
+        <usage>
+         该命令接受一个参数 paths，为逗号分隔的文件路径列表。
+         
+         使用例子：
+         
+         /read_files "main.py,utils.py"
+         
+         注意：
+         - 支持文件名（匹配第一个找到的文件）或绝对路径
+         - 推荐只读取最相关的5-6个文件
+         - 返回值为文件内容
+        </usage>
+        </command>
+
+        <command>
+        <name>find_files_by_name</name>
+        <description>根据文件名中的关键字搜索文件。</description>
+        <usage>
+         该命令接受一个参数 keyword，为要搜索的关键字字符串。
+         
+         使用例子：
+         
+         /find_files_by_name "test"
+         
+         注意：
+         - 搜索不区分大小写
+         - 返回所有匹配的文件路径，逗号分隔
+        </usage>
+        </command>
+
+        <command>
+        <name>find_files_by_content</name>
+        <description>根据文件内容中的关键字搜索文件。</description>
+        <usage>
+         该命令接受一个参数 keyword，为要搜索的关键字字符串。
+         
+         使用例子：
+         
+         /find_files_by_content "TODO"
+         
+         注意：
+         - 搜索不区分大小写
+         - 如果结果过多，只返回前10个匹配项
+        </usage>
+        </command>
+
         </commands>        
         '''
 
