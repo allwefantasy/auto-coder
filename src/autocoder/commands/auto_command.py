@@ -222,7 +222,8 @@ class CommandAutoTuner:
             if last_result:
                 conversations.append({"role": "user", "content": last_result.content})
             else:
-                break            
+                    self.printer.print_in_terminal("auto_command_break", style="yellow")
+                    break            
         
         return response        
     
