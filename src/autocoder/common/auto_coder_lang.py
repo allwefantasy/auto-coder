@@ -111,6 +111,7 @@ MESSAGES = {
         "estimated_input_tokens_in_generate": "Estimated input tokens in generate ({{ generate_mode }}): {{ estimated_input_tokens }}",
         "model_has_access_restrictions": "{{model_name}} has access restrictions, cannot use the current function",
         "auto_command_not_found": "Auto command not found: {{command}}. Please check your input and try again.",
+        "auto_command_failed": "Auto command failed: {{error}}. Please check your input and try again.",
     },
     "zh": {
         "model_provider_select_title": "选择模型供应商",
@@ -220,6 +221,7 @@ MESSAGES = {
         "estimated_input_tokens_in_generate": "生成代码({{ generate_mode }})预计输入token数: {{ estimated_input_tokens_in_generate }}",
         "model_has_access_restrictions": "{{model_name}} 有访问限制，无法使用当前功能",
         "auto_command_not_found": "未找到自动命令: {{command}}。请检查您的输入并重试。",
+        "auto_command_failed": "自动命令执行失败: {{error}}。请检查您的输入并重试。",
     }}
 
 
