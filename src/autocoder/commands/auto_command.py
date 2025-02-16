@@ -1,8 +1,64 @@
+import json
+import os
+import time
 from pydantic import BaseModel, Field
 import byzerllm
 from typing import List, Dict, Any, Union, Callable
 from autocoder.common.printer import Printer
 from pydantic import SkipValidation
+
+class CommandMessage(BaseModel):
+    role: str
+    content: str
+
+class ExtendedCommandMessage(BaseModel):
+    message: CommandMessage
+    timestamp: str
+
+class CommandConversation(BaseModel):
+    history: Dict[str, ExtendedCommandMessage]
+    current_conversation: List[CommandMessage]
+
+def save_to_memory_file(query: str, response: str):
+    """Save command conversation to memory file using CommandConversation structure"""
+    memory_dir = os.path.join(".auto-coder", "memory")
+    os.makedirs(memory_dir, exist_ok=True)
+    file_path = os.path.join(memory_dir, "command_chat_history.json")
+    
+    # Create new message objects
+    user_msg = CommandMessage(role="user", content=query)
+    assistant_msg = CommandMessage(role="assistant", content=response)
+    
+    extended_user_msg = ExtendedCommandMessage(
+        message=user_msg,
+        timestamp=str(int(time.time()))
+    )
+    extended_assistant_msg = ExtendedCommandMessage(
+        message=assistant_msg,
+        timestamp=str(int(time.time()))
+    )
+    
+    # Load existing conversation or create new
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            try:
+                existing_conv = CommandConversation.model_validate_json(f.read())
+            except Exception:
+                existing_conv = CommandConversation(
+                    history={},
+                    current_conversation=[]
+                )
+    else:
+        existing_conv = CommandConversation(
+            history={},
+            current_conversation=[]
+        )
+
+    existing_conv.current_conversation.append(extended_user_msg)
+    existing_conv.current_conversation.append(extended_assistant_msg)        
+    # Save updated conversation
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(existing_conv.model_dump_json(indent=2))
 
 class CommandSuggestion(BaseModel):
     command: str
@@ -124,7 +180,20 @@ class CommandAutoTuner:
             if parameters:
                 command_map[command](**parameters)
             else:                
-                command_map[command]()            
+                command_map[command]()
+            
+            # Save the command conversation
+            save_to_memory_file(
+                query=f"Command: {command} Parameters: {json.dumps(parameters) if parameters else 'None'}",
+                response="Command executed successfully"
+            )
 
         except Exception as e:
-            self.printer.print_in_terminal("auto_command_failed", style="red", command=command, error=str(e))
+            error_msg = str(e)
+            self.printer.print_in_terminal("auto_command_failed", style="red", command=command, error=error_msg)
+            
+            # Save failed command execution
+            save_to_memory_file(
+                query=f"Command: {command} Parameters: {json.dumps(parameters) if parameters else 'None'}",
+                response=f"Command execution failed: {error_msg}"
+            )
