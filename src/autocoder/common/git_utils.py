@@ -11,6 +11,16 @@ from rich.table import Table
 from rich.text import Text
 
 
+class FileChange(BaseModel):
+    file_path: str
+    before: Optional[str] = None
+    after: Optional[str] = None
+
+class CommitChangesResult(BaseModel):
+    success: bool
+    changes: Dict[str, FileChange] = {}
+    error_message: Optional[str] = None
+
 class CommitResult(BaseModel):
     success: bool
     commit_message: Optional[str] = None
@@ -604,6 +614,74 @@ def generate_commit_message(changes_report: str) -> str:
 
     请输出commit message, 不要输出任何其他内容.
     '''
+
+def get_commit_by_message(repo_path: str, message: str) -> Optional[Commit]:
+    repo = get_repo(repo_path)
+    try:
+        commit_hash = repo.git.log("--all", f"--grep={message}", "--format=%H", "-n", "1")
+        if not commit_hash:
+            return None
+        return repo.commit(commit_hash.strip())
+    except GitCommandError as e:
+        logger.error(f"Error finding commit: {e}")
+        return None
+
+def get_changes_by_commit_message(repo_path: str, message: str) -> CommitChangesResult:
+    """
+    根据提交信息查找对应的变更内容
+    
+    Args:
+        repo_path: Git仓库路径
+        message: 提交信息
+        
+    Returns:
+        CommitChangesResult: 包含变更前后内容的字典，键为文件路径
+    """
+    try:
+        repo = get_repo(repo_path)
+        commit = get_commit_by_message(repo_path, message)
+        
+        if not commit:
+            return CommitChangesResult(success=False, error_message="Commit not found")
+
+        changes = {}
+        
+        # 比较当前commit与其父commit的差异
+        for diff_item in commit.parents[0].diff(commit):
+            file_path = diff_item.a_path if diff_item.a_path else diff_item.b_path
+            
+            # 获取变更前内容
+            before_content = None
+            try:
+                if diff_item.a_blob:
+                    before_content = repo.git.show(f"{commit.parents[0].hexsha}:{file_path}")
+            except GitCommandError:
+                pass  # 文件可能是新增的
+
+            # 获取变更后内容
+            after_content = None
+            try:
+                if diff_item.b_blob:
+                    after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
+            except GitCommandError:
+                pass  # 文件可能被删除
+
+            changes[file_path] = FileChange(
+                file_path=file_path,
+                before=before_content,
+                after=after_content
+            )
+
+        return CommitChangesResult(success=True, changes=changes)
+
+    except GitCommandError as e:
+        logger.error(f"Error retrieving changes: {e}")
+        return CommitChangesResult(success=False, error_message=str(e))
+    except IndexError:
+        return CommitChangesResult(success=False, error_message="Initial commit has no parent")
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        return CommitChangesResult(success=False, error_message=str(e))
 
 def print_commit_info(commit_result: CommitResult):
     console = Console()
