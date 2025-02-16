@@ -3,7 +3,7 @@ from byzerllm.utils import format_str_jinja2
 
 MESSAGES = {
     "en": {
-        "auto_command_break": "Auto command execution interrupted by user",
+        "auto_command_break": "Auto command execution failed to execute command: {{command}}",
         "model_provider_select_title": "Select Model Provider",
         "model_provider_select_text": "Please select your model provider:",
         "model_provider_volcano": "Volcano Engine",
@@ -115,7 +115,7 @@ MESSAGES = {
         "auto_command_failed": "Auto command failed: {{error}}. Please check your input and try again.",
     },
     "zh": {
-        "auto_command_break": "自动命令执行被用户中断",
+        "auto_command_break": "自动命令执行失败: {{command}}",
         "model_provider_select_title": "选择模型供应商",
         "model_provider_select_text": "请选择您的模型供应商：",
         "model_provider_volcano": "火山方舟",

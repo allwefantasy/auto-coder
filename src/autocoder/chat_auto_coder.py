@@ -22,6 +22,7 @@ from prompt_toolkit.completion import WordCompleter, Completer, Completion
 from prompt_toolkit.shortcuts import confirm
 from autocoder.common import AutoCoderArgs
 from pydantic import Field, BaseModel
+from autocoder.common.result_manager import ResultManager
 from autocoder.version import __version__
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.common.command_completer import CommandTextParser
@@ -1529,6 +1530,8 @@ def coding(query: str):
 
         yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
+        md5 = hashlib.md5(yaml_content.encode("utf-8")).hexdigest()
+
         execute_file = os.path.join("actions", latest_yaml_file)
         with open(os.path.join(execute_file), "w") as f:
             f.write(yaml_content)
@@ -1536,6 +1539,8 @@ def coding(query: str):
         def execute_chat():
             cmd = ["--file", execute_file]
             auto_coder_main(cmd)
+            result_manager = ResultManager()
+            result_manager.append(content="", meta={"query": query,"commit_message": f"auto_coder_{latest_yaml_file}_{md5}","action": "coding"})
 
         execute_chat()
     else:

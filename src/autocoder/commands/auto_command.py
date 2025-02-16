@@ -217,20 +217,42 @@ class CommandAutoTuner:
         
         while True:
             # 执行命令
-            self.execute_auto_command(response.suggestions[0].command, response.suggestions[0].parameters)            
+            command = response.suggestions[0].command
+            parameters = response.suggestions[0].parameters
+            self.execute_auto_command(command, parameters)            
             last_result = result_manager.get_last()
             if last_result:
+                if last_result.meta["action"] == "coding":
+                    # 如果上一步是 coding，则需要把上一步的更改前和更改后的内容作为上下文
+
                 conversations.append({"role": "user", "content": last_result.content})
+                title = printer.get_message_from_key("auto_command_analyzing")
+                result, _ = stream_out(
+                    self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
+                    model_name=self.llm.default_model_name,
+                    title=title        
+                )
+                conversations.append({"role": "assistant", "content": result})    
+                # 提取 JSON 并转换为 AutoCommandResponse            
+                response = to_model(result, AutoCommandResponse)         
+                
+                # 保存对话记录
+                save_to_memory_file(
+                    query=request.user_input,
+                    response=response.model_dump_json(indent=2)
+                )
+
             else:
-                    self.printer.print_in_terminal("auto_command_break", style="yellow")
-                    break            
+                self.printer.print_in_terminal("auto_command_break", style="yellow", command=command)
+                break            
         
         return response        
     
     @byzerllm.prompt()
     def _command_readme(self) -> str:
         '''
-        # 函数说明
+        你有如下函数可供使用：
+        
         <commands>
         
         <command>
@@ -431,37 +453,6 @@ class CommandAutoTuner:
          /exclude_dirs node_modules,dist,build
          /exclude_dirs .git
          
-        </usage>
-        </command>
-
-        <command>
-        <name>ask</name>
-        <description>向AI提问，获取关于代码或项目的解答。会考虑当前会话中的文件作为上下文。</description>
-        <usage>
-         该命令需要提供问题内容，支持多种引用方式。
-
-         ## 基础提问
-         直接提出问题
-         使用例子：
-
-         /ask 这个项目的主要功能是什么？
-
-         ## 引用特定文件
-         使用@语法引用文件
-         使用例子：
-
-         /ask @main.py 中的 process_data 函数是做什么的？
-
-         ## 引用特定符号
-         使用@@语法引用函数或类
-         使用例子：
-
-         /ask @@process_data 这个函数的参数类型是什么？
-
-         注意：
-         - 会自动分析当前会话中的文件作为上下文
-         - 支持多轮对话，保持上下文连贯
-         - 可以同时引用多个文件或符号
         </usage>
         </command>
 
