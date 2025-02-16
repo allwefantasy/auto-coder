@@ -86,15 +86,10 @@ class AutoConfigResponse(BaseModel):
 
 
 class ConfigAutoTuner:
-    def __init__(self, llm: ByzerLLM, memory_config: Union[Dict[str, Any], MemoryConfig]):
+    def __init__(self, llm: ByzerLLM, memory_config: MemoryConfig):
         self.llm = llm
-        if isinstance(memory_config, dict):
-            self.memory_config = MemoryConfig(
-                memory=memory_config,
-                save_memory_func=lambda: save_memory()
-            )
-        else:
-            self.memory_config = memory_config
+        self.memory_config = memory_config
+            
 
     def configure(self, conf: str, skip_print: bool = False) -> None:
         """
@@ -174,6 +169,9 @@ class ConfigAutoTuner:
         try:
             response = self._generate_config_str.with_llm(
                 self.llm).with_return_type(AutoConfigResponse).run(request)
+            
+            for k, v in response.configs.items():
+                self.configure(f"{k}:{v}")
             return response
         except Exception as e:
             logger.error(f"Auto config failed: {str(e)}")

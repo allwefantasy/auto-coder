@@ -2452,6 +2452,16 @@ def index_build():
         os.remove(yaml_file)
 
 
+def help(query: str):
+    from autocoder.common.auto_configure import ConfigAutoTuner,MemoryConfig,AutoConfigRequest
+    from autocoder.common.printer import Printer
+    printer = Printer()
+    product_mode = memory.get("product_mode", "lite")
+    llm = get_single_llm(memory.get("chat_model", "model"), product_mode=product_mode)
+    auto_config_tuner = ConfigAutoTuner(llm, MemoryConfig(memory, save_memory))
+    response = auto_config_tuner.tune(AutoConfigRequest(query=query, current_conf=memory.get("conf", {})))
+    print(response)
+
 @run_in_raw_thread()
 def index_query(query: str):
     conf = memory.get("conf", {})
@@ -2846,7 +2856,12 @@ def main():
                 query = user_input[len("/commit"):].strip()
                 commit(query)
             elif user_input.startswith("/help"):
-                show_help()
+                query = user_input[len("/help"):].strip()
+                if not query:
+                    show_help()
+                else:
+                    help(query)
+                    
             elif user_input.startswith("/exclude_dirs"):
                 dir_names = user_input[len(
                     "/exclude_dirs"):].strip().split(",")
