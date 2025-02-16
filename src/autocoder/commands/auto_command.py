@@ -10,6 +10,7 @@ from pydantic import SkipValidation
 from autocoder.common.result_manager import ResultManager
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from byzerllm.utils.str2model import to_model
+from autocoder.common import git_utils
 
 
 class CommandMessage(BaseModel):
@@ -223,9 +224,16 @@ class CommandAutoTuner:
             last_result = result_manager.get_last()
             if last_result:
                 if last_result.meta["action"] == "coding":
+                    content = ""
                     # 如果上一步是 coding，则需要把上一步的更改前和更改后的内容作为上下文
+                    changes = git_utils.get_changes_by_commit_message("", last_result.meta["commit_message"])
+                    if changes.success:
+                        for file_path, change in changes.changes.items():
+                            if change.before:
+                                content += f"## File:\n {file_path}[更改前]\n{change.before}\n\nFile:\n {file_path}\n\n[更改后]\n{change.after}\n\n"
 
-                conversations.append({"role": "user", "content": last_result.content})
+
+                conversations.append({"role": "user", "content": content})
                 title = printer.get_message_from_key("auto_command_analyzing")
                 result, _ = stream_out(
                     self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
@@ -234,8 +242,9 @@ class CommandAutoTuner:
                 )
                 conversations.append({"role": "assistant", "content": result})    
                 # 提取 JSON 并转换为 AutoCommandResponse            
-                response = to_model(result, AutoCommandResponse)         
-                
+                response = to_model(result, AutoCommandResponse)  
+                if not response or  not response.suggestions:
+                    break                
                 # 保存对话记录
                 save_to_memory_file(
                     query=request.user_input,
@@ -390,32 +399,7 @@ class CommandAutoTuner:
          - 如果没有可撤销的操作会提示错误
         </usage>
         </command>
-
-        <command>
-        <name>commit</name>
-        <description>提交代码更改到版本控制系统。系统会自动生成合适的提交信息，并创建提交记录。</description>
-        <usage>
-         该命令支持直接使用或带参数使用。
-
-         ## 直接提交
-         系统会自动分析变更并生成提交信息
-         使用例子：
-
-         /commit
-
-         ## 带说明提交
-         可以提供额外的说明信息
-         使用例子：
-
-         /commit 优化了性能并修复了内存泄漏问题
-
-         注意：
-         - 需要项目已经初始化了Git仓库
-         - 会自动检测未提交的变更
-         - 使用AI生成规范的提交信息
-        </usage>
-        </command>
-
+        
         <command>
         <name>help</name>
         <description>显示帮助信息。可以加上具体的查询内容获取特定帮助，例如：/help auto_merge</description>
@@ -482,7 +466,7 @@ class CommandAutoTuner:
 
          ## 特殊功能
          - /no_context：不使用当前文件上下文
-         - /mcp：使用模型控制面板
+         - /mcp：获取 MCP 服务内容
          - /rag：使用检索增强生成
          - /copy：复制生成内容
          - /save：保存对话内容
@@ -540,60 +524,6 @@ class CommandAutoTuner:
          - 自动处理代码依赖关系
          - 保持代码风格一致性
          - 生成代码会进行自动测试
-        </usage>
-        </command>
-
-        <command>
-        <name>design</name>
-        <description>设计相关命令，用于生成各类设计资源。</description>
-        <usage>
-         该命令支持多种设计资源的生成。
-
-         ## SVG设计
-         使用 /svg 生成矢量图
-         使用例子：
-
-         /design /svg 创建一个简洁的登录图标
-
-         ## 图片设计
-         使用 /sd 生成图片
-         使用例子：
-
-         /design /sd 生成一张科技风格的背景图
-
-         ## Logo设计
-         使用 /logo 生成标志
-         使用例子：
-
-         /design /logo 设计一个代表AI编程的logo
-
-         注意：
-         - 需要详细描述设计需求
-         - 可以指定具体的风格和要求
-         - 支持多种输出格式
-         - 可以进行反复调整
-        </usage>
-        </command>
-
-        <command>
-        <name>summon</name>
-        <description>调用AI工具，执行特定任务。会考虑当前会话中的文件作为上下文。</description>
-        <usage>
-         该命令用于调用特定的AI工具完成任务。
-
-         ## 基础调用
-         描述需要完成的任务
-         使用例子：
-
-         /summon 分析当前代码的性能瓶颈
-         /summon 生成项目的类图
-         /summon 检查代码中的安全漏洞
-
-         注意：
-         - 会自动选择最适合的AI工具
-         - 考虑当前会话文件作为上下文
-         - 可以组合多个工具协同工作
-         - 支持自定义工具链
         </usage>
         </command>
 

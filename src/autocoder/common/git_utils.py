@@ -1,7 +1,7 @@
 import os
 from git import Repo, GitCommandError
 from loguru import logger
-from typing import List, Optional
+from typing import List, Optional, Dict
 from pydantic import BaseModel
 import byzerllm
 from rich.console import Console
@@ -615,7 +615,7 @@ def generate_commit_message(changes_report: str) -> str:
     请输出commit message, 不要输出任何其他内容.
     '''
 
-def get_commit_by_message(repo_path: str, message: str) -> Optional[Commit]:
+def get_commit_by_message(repo_path: str, message: str):
     repo = get_repo(repo_path)
     try:
         commit_hash = repo.git.log("--all", f"--grep={message}", "--format=%H", "-n", "1")
@@ -638,7 +638,10 @@ def get_changes_by_commit_message(repo_path: str, message: str) -> CommitChanges
         CommitChangesResult: 包含变更前后内容的字典，键为文件路径
     """
     try:
-        repo = get_repo(repo_path)
+        if repo_path:
+            repo = get_repo(repo_path)
+        else:
+            repo = get_repo(os.getcwd())
         commit = get_commit_by_message(repo_path, message)
         
         if not commit:
