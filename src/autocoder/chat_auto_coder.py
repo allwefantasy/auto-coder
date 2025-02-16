@@ -2110,6 +2110,11 @@ def manage_models(query: str):
                 printer.print_in_terminal("models_added", style="green", name=name)
             else:
                 result_manager.add_result(content=f"models_add_failed: {name}",meta={
+                    "action": "models",
+                    "input": {
+                        "query": query
+                    }
+                })
                 printer.print_in_terminal("models_add_failed", style="red", name=name)
         else:
             printer.print_in_terminal("models_add_usage", style="red")
