@@ -2694,29 +2694,43 @@ def auto_command(query: str, memory: dict):
     
     # 显示建议
     console = Console()
-    table = Table(title="Recommended Commands")
-    table.add_column("Command", style="cyan")
-    table.add_column("Parameters", style="magenta")
-    table.add_column("Confidence", style="green")
+    table = Table(title="Recommended Commands", show_header=True, header_style="bold magenta", show_lines=True)
+    table.add_column("Command", style="cyan", width=20)
+    table.add_column("Parameters", style="magenta", width=40)
+    table.add_column("Confidence", style="green", width=10)
+    table.add_column("Reasoning", style="blue", width=50)
     
     for suggestion in response.suggestions:
-        params = "\n".join([f"{k}:{v}" for k,v in suggestion.parameters.items()])
+        params = "\n".join([f"{k}: {v}" for k,v in suggestion.parameters.items()]) if suggestion.parameters else "None"
         table.add_row(
             suggestion.command, 
             params,
-            f"{suggestion.confidence*100:.1f}%"
+            f"{suggestion.confidence*100:.1f}%",
+            suggestion.reasoning
         )
     
     console.print(Panel(
         Markdown(response.reasoning),
         title="Reasoning",
-        border_style="blue"
+        border_style="blue",
+        padding=(1, 2)
     ))
-    console.print(table)
+    
+    console.print(Panel(
+        table,
+        title="Command Suggestions",
+        border_style="green",
+        padding=(1, 2)
+    ))
     
     # 执行最高置信度的命令
     if response.suggestions:
         best = response.suggestions[0]
+        console.print(Panel(
+            f"Executing command: [bold]{best.command}[/bold] with parameters: {best.parameters}",
+            title="Executing Command",
+            border_style="yellow"
+        ))
         tuner.execute_auto_command(best.command, best.parameters)
 
 def main():

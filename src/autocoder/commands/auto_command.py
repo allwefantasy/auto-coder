@@ -134,3 +134,119 @@ class CommandAutoTuner:
             return
         
         
+from typing import List, Dict, Any
+from pydantic import BaseModel, Field
+from autocoder.common.printer import Printer
+from autocoder.utils.llms import get_single_llm
+
+class CommandSuggestion(BaseModel):
+    command: str = Field(..., description="建议的命令")
+    parameters: Dict[str, Any] = Field(default_factory=dict, description="命令参数")
+    confidence: float = Field(..., description="置信度")
+    reasoning: str = Field(..., description="推荐理由")
+
+class AutoCommandRequest(BaseModel):
+    user_input: str = Field(..., description="用户输入")
+    conversation_history: List[Dict[str, Any]] = Field(default_factory=list, description="对话历史")
+    current_files: List[str] = Field(default_factory=list, description="当前文件列表")
+    available_commands: List[str] = Field(default_factory=list, description="可用命令列表")
+
+class AutoCommandResponse(BaseModel):
+    suggestions: List[CommandSuggestion] = Field(default_factory=list, description="建议列表")
+    reasoning: str = Field("No suggestions", description="整体推理说明")
+
+class CommandAutoTuner:
+    def __init__(self, llm):
+        self.llm = llm
+        self.printer = Printer()
+
+    @byzerllm.prompt()
+    def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
+        """
+        根据用户输入和当前上下文，分析并推荐最合适的命令。
+
+        用户输入: {{ user_input }}
+        当前文件列表: 
+        {% for file in current_files %}
+        - {{ file }}
+        {% endfor %}
+
+        可用命令列表:
+        {% for cmd in available_commands %}
+        - {{ cmd }}
+        {% endfor %}
+
+        历史对话:
+        {% for conv in conversation_history %}
+        {{ conv.role }}: {{ conv.content }}
+        {% endfor %}
+
+        请分析用户意图，推荐1-3个最合适的命令，并给出推荐理由。
+        返回格式必须是严格的JSON格式：
+        ```json
+        {
+            "suggestions": [
+                {
+                    "command": "命令名称",
+                    "parameters": {},
+                    "confidence": 0.9,
+                    "reasoning": "推荐理由"
+                }
+            ],
+            "reasoning": "整体推理说明"
+        }
+        ```
+        """
+
+    def execute_auto_command(self, command: str, parameters: Dict[str, Any]) -> None:
+        """
+        执行自动生成的命令
+        """
+        from autocoder.chat_auto_coder import (
+            add_files, remove_files, list_files, configure,
+            revert, commit, help, exclude_dirs, ask, chat,
+            coding, design, summon, lib_command, mcp
+        )
+
+        command_map = {
+            "add_files": add_files,
+            "remove_files": remove_files,
+            "list_files": list_files,
+            "conf": configure,
+            "revert": revert,
+            "commit": commit,
+            "help": help,
+            "exclude_dirs": exclude_dirs,
+            "ask": ask,
+            "chat": chat,
+            "coding": coding,
+            "design": design,
+            "summon": summon,
+            "lib": lib_command,
+            "mcp": mcp
+        }
+
+        if command not in command_map:
+            self.printer.print_in_terminal("auto_command_not_found", style="red", command=command)
+            return
+
+        try:
+            # 将参数字典转换为命令所需的格式
+            if parameters:
+                args = []
+                for k, v in parameters.items():
+                    if isinstance(v, bool):
+                        if v:
+                            args.append(f"--{k}")
+                    else:
+                        args.append(f"--{k}")
+                        args.append(str(v))
+            else:
+                args = []
+
+            # 执行命令
+            command_map[command](args)
+            self.printer.print_in_terminal("auto_command_success", style="green", command=command)
+
+        except Exception as e:
+            self.printer.print_in_terminal("auto_command_failed", style="red", command=command, error=str(e))
