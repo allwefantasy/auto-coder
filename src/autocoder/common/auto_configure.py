@@ -1,5 +1,8 @@
 import json
 import logging
+import os
+import time
+import uuid
 from typing import Dict, Any, Optional, Union, Callable, List
 from pydantic import BaseModel, Field, SkipValidation
 import byzerllm
@@ -8,6 +11,23 @@ from byzerllm.utils.client import code_utils
 from autocoder.common.printer import Printer
 
 logger = logging.getLogger(__name__)
+
+def save_to_memory_file(ask_conversation: List[Dict[str, Any]], query: str, response: str):
+    """Save conversation to memory file"""
+    memory_dir = os.path.join(".auto-coder", "memory")
+    os.makedirs(memory_dir, exist_ok=True)
+    timestamp = str(int(time.time()))
+    file_path = os.path.join(memory_dir, f"{timestamp}.json")
+    
+    data = {
+        "timestamp": timestamp,
+        "query": query,
+        "response": response,
+        "conversation": ask_conversation
+    }
+    
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 class MemoryConfig(BaseModel):
     """
@@ -172,6 +192,17 @@ class ConfigAutoTuner:
         try:
             response = self._generate_config_str.with_llm(
                 self.llm).with_return_type(AutoConfigResponse).run(request)
+            
+            # Save conversation
+            conversation = [{"role": "user", "content": request.query}]
+            if response.reasoning:
+                conversation.append({"role": "assistant", "content": response.reasoning})
+            
+            save_to_memory_file(
+                ask_conversation=conversation,
+                query=request.query,
+                response=response.reasoning or "No configuration changes"
+            )
             
             for config in response.configs:
                 for k, v in config["config"].items():
