@@ -170,25 +170,37 @@ class CommandAutoTuner:
         </os_info>
         
         我们的目标是根据用户输入和当前上下文，组合多个函数来完成用户的需求。
-
-        用户需求: {{ user_input }}
-
+        
         {% if current_files %}
         当前文件列表: 
+        <current_files>
         {% for file in current_files %}
         - {{ file }}
         {% endfor %}
+        </current_files>
         {% endif %}
         
         可用函数列表:
         {{ available_commands }}
 
+        当前用户的配置选项如下:
+        <current_conf>
+        {{ current_conf }}
+        </current_conf>
+
         {% if conversation_history %}
         历史对话:
+        <conversation_history>
         {% for conv in conversation_history %}
         ({{ conv.role }}): {{ conv.content }}
         {% endfor %}
+        </conversation_history>
         {% endif %}
+
+        用户需求: 
+        <user_input>
+        {{ user_input }}
+        </user_input>
 
         请分析用户意图，返回一个命令并给出推荐理由。
         返回格式必须是严格的JSON格式：
@@ -508,13 +520,23 @@ class CommandAutoTuner:
         
         ## skip_build_index: 是否跳过索引构建
         是否自动构建索引。推荐设置为 false。注意，如果该值设置为 true, 那么 skip_filter_index 设置不会生效。
-        
+
+        ## enable_global_memory: 是否开启全局记忆
+        是否开启全局记忆。
+
+        ## rank_times_same_model: 相同模型重排序次数
+        默认值为1. 如果 generate_times_same_model 参数设置大于1，那么 coding 函数会自动对多份代码进行重排序。
+        rank_times_same_model 表示重拍的次数，次数越多，选择到最好的代码的可能性越高，但是也会显著增加消耗的token和时间。
+        建议保持默认，要修改也建议不要超过3。
+                
         比如你想开启索引，则可以执行：
 
         help(query="开启索引")
 
-        其中 query 参数为 "开启索引"                                                                              
-                                        
+        其中 query 参数为 "开启索引" 
+
+        ** 特别注意，这些配置参数会影响 coding,chat 的执行效果或者结果 根据返回调用该函数做合理的配置**
+
         </usage>
         </command>
 

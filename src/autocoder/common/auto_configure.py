@@ -152,6 +152,11 @@ class ConfigAutoTuner:
         
         ## skip_build_index: 是否跳过索引构建
         是否自动构建索引。推荐设置为 false。注意，如果该值设置为 true, 那么 skip_filter_index 设置不会生效。
+
+        ## rank_times_same_model: 相同模型重排序次数
+        默认值为1. 如果 generate_times_same_model 参数设置大于1，那么 coding 函数会自动对多份代码进行重排序。
+        rank_times_same_model 表示重拍的次数，次数越多，选择到最好的代码的可能性越高，但是也会显著增加消耗的token和时间。
+        建议保持默认，要修改也建议不要超过3。
         """
 
     def command_readme(self) -> str:
