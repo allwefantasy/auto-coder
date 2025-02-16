@@ -3,6 +3,7 @@ from byzerllm.utils import format_str_jinja2
 
 MESSAGES = {
     "en": {
+        "auto_command_analyzing": "Analyzing Command Request",
         "mcp_remove_error": "Error removing MCP server: {error}",
         "mcp_remove_success": "Successfully removed MCP server: {result}",
         "mcp_list_running_error": "Error listing running MCP servers: {error}",
@@ -128,6 +129,7 @@ MESSAGES = {
         "official_doc": "Official Documentation: https://uelng8wukz.feishu.cn/wiki/NhPNwSRcWimKFIkQINIckloBncI",
     },
     "zh": {
+        "auto_command_analyzing": "正在分析命令请求",
         "commit_generating": "{{ model_name }} 正在生成提交信息...",
         "commit_message": "{{ model_name }} 生成的提交信息: {{ message }}",
         "commit_failed": "{{ model_name }} 生成提交信息失败: {{ error }}",

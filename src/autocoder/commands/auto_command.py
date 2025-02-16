@@ -166,13 +166,34 @@ class CommandAutoTuner:
             "conversation_history": [],
             "available_commands": self._command_readme.prompt()
         }
-
-    def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
-        response = self._analyze.with_llm(self.llm).with_return_type(AutoCommandResponse).run(request)
-        save_to_memory_file(
-            query=request.user_input,
-            response=response.model_dump_json(indent=2)
-        )
+def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
+    # 获取 prompt 内容
+    prompt = self._analyze.prompt(request)
+    
+    # 构造对话上下文
+    conversations = [{"role": "user", "content": prompt}]
+    
+    # 使用 stream_out 进行输出
+    printer = Printer()
+    title = printer.get_message_from_key("auto_command_analyzing")
+    result, _ = stream_out(
+        self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
+        model_name=self.llm.default_model_name,
+        title=title        
+    )
+    
+    # 提取 JSON 并转换为 AutoCommandResponse
+    from byzerllm.utils.client import code_utils
+    json_str = code_utils.extract_code(result)[-1][1]
+    response = AutoCommandResponse.model_validate_json(json_str)
+    
+    # 保存对话记录
+    save_to_memory_file(
+        query=request.user_input,
+        response=response.model_dump_json(indent=2)
+    )
+    
+    return response
         return response
     
     @byzerllm.prompt()
