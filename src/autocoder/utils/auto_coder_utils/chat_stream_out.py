@@ -267,12 +267,13 @@ def stream_out(
                 lines_buffer.append(current_line)
             
             # 最终显示结果
+            final_display_content = assistant_response
             if display_func:
-                display_content = display_func(display_content)
-                
+                final_display_content = display_func(assistant_response)
+
             live.update(
                 Panel(
-                    Markdown(assistant_response),
+                    Markdown(final_display_content),
                     title=f"Final {panel_title}",
                     border_style="blue"
                 )

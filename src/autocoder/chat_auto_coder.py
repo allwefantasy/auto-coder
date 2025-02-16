@@ -2390,23 +2390,7 @@ def auto_command(params,query: str):
         border_style="blue",
         padding=(1, 2)
     ))
-    
-    console.print(Panel(
-        table,
-        title="Command Suggestions",
-        border_style="green",
-        padding=(1, 2)
-    ))
-    
-    # 执行最高置信度的命令
-    # if response.suggestions:
-    #     best = response.suggestions[0]
-    #     console.print(Panel(
-    #         f"Executing command: [bold]{best.command}[/bold] with parameters: {best.parameters}",
-    #         title="Executing Command",
-    #         border_style="yellow"
-    #     ))
-    #     tuner.execute_auto_command(best.command, best.parameters)
+      
 
 def main():
     from autocoder.rag.variable_holder import VariableHolder

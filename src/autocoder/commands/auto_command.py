@@ -16,6 +16,7 @@ from byzerllm.utils.str2model import to_model
 from autocoder.common import git_utils
 from autocoder.commands.tools import AutoCommandTools
 from autocoder.auto_coder import AutoCoderArgs
+from loguru import logger
 
 class CommandMessage(BaseModel):
     role: str
@@ -214,12 +215,13 @@ class CommandAutoTuner:
         printer = Printer()
         title = printer.get_message_from_key("auto_command_analyzing")
 
-        def extract_command_response(content: str) -> AutoCommandResponse:
+        def extract_command_response(content: str) -> str:
             # 提取 JSON 并转换为 AutoCommandResponse
             try:
                 response = to_model(content, AutoCommandResponse)         
                 return response.suggestions[0].command
             except Exception as e:
+                logger.error(f"Error extracting command response: {e}")
                 return content
 
         result, _ = stream_out(
@@ -244,7 +246,7 @@ class CommandAutoTuner:
             command = response.suggestions[0].command
             parameters = response.suggestions[0].parameters
             
-            # 打印正在执行的命令
+            # 打印正在执行的命令            
             self.printer.print_in_terminal(
                 "auto_command_executing", 
                 style="blue", 
@@ -659,7 +661,7 @@ class CommandAutoTuner:
 
         ## 添加完模型后，你还需要能够激活模型:
 
-        models(query="/activate openrouter-sonnet-3.5 <YOUR_API_KEY>")
+        models(query="/activate <模型名，/add_mdoel里的 name字段> <YOUR_API_KEY>")
 
         之后你就可以这样配置来使用激活的模型：
 
@@ -697,8 +699,11 @@ class CommandAutoTuner:
         models(query="/add_model name=tencent_r1_chat base_url=https://tencent.ai.qq.com/v1 model_name=deepseek-r1 is_reasoning=true")
         models(query="/add_model name=tencent_v3_chat base_url=https://tencent.ai.qq.com/v1 model_name=deepseek-v3")                
 
-        注意，像推理点名称，激活时的 api key 等,需要先通过 ask_user 来获取,之后再执行 models 命令。
+        *** 特别注意 ***
         
+        在使用本函数时，如果添加的模型用户在需求中没有提供像推理点名称，激活时的 api key，以及模型名称等时,
+        你需要先通过函数 ask_user 来获取,之后再执行 models 命令。
+
         </usage>
         </command>
 

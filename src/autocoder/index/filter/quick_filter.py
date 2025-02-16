@@ -19,6 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 from byzerllm import MetaHolder
 
 from autocoder.utils.llms import get_llm_names, get_model_info
+from loguru import logger
 
 
 def get_file_path(file_path):
@@ -313,6 +314,7 @@ class QuickFilter():
                     v = to_model(content, FileNumberList)
                     return "\n".join([index_items[file_number].module_name for file_number in v.file_list])
                 except Exception as e:
+                    logger.error(f"Error extracting file number list: {e}")
                     return content
 
             # 获取完整响应
