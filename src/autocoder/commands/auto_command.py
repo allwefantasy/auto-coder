@@ -343,50 +343,14 @@ class CommandAutoTuner:
          /list_files
 
         </usage>
-        </command>
-
-        <command>
-        <name>conf</name>
-        <description>配置管理命令，用于设置和管理系统配置项。</description>
-        <usage>
-         该命令支持两种操作模式：设置配置和删除配置。
-
-         ## 设置配置
-         使用 key:value 格式设置配置项
-         使用例子：
-
-         /conf model:v3_chat
-         /conf auto_merge:editblock
-         /conf skip_build_index:true
-
-         支持的主要配置项：
-         - model: 设置默认使用的模型
-         - chat_model: 设置聊天使用的模型
-         - code_model: 设置代码生成使用的模型
-         - auto_merge: 代码合并方式(editblock/diff/wholefile)
-         - editblock_similarity: 编辑块相似度阈值(0-1)
-         - skip_build_index: 是否跳过索引构建(true/false)
-         - skip_filter_index: 是否跳过索引过滤(true/false)
-         - human_as_model: 是否将人类作为模型(true/false)
-
-         ## 删除配置
-         使用 /drop 删除指定配置项
-         使用例子：
-
-         /conf /drop model
-         /conf /drop auto_merge
-
-         ## 查看当前配置
-         直接使用 /conf 命令不带参数
-         使用例子：
-
-         /conf
-        </usage>
-        </command>
+        </command>        
 
         <command>
         <name>revert</name>
-        <description>撤销最后一次代码修改，恢复到修改前的状态。同时会删除对应的操作记录文件。</description>
+        <description>
+        撤销最后一次代码修改，恢复到修改前的状态。同时会删除对应的操作记录文件，
+        如果很明显你对上一次coding执行后的效果觉得不满意，可以使用该函数来撤销上一次的代码修改。
+        </description>
         <usage>
          该命令不需要任何参数，直接使用即可。会撤销最近一次的代码修改操作。
          使用例子：
@@ -402,7 +366,9 @@ class CommandAutoTuner:
         
         <command>
         <name>help</name>
-        <description>显示帮助信息。可以加上具体的查询内容获取特定帮助，例如：/help auto_merge</description>
+        <description>
+         显示帮助信息,也可以执行一些配置需求。
+        </description>
         <usage>
          该命令支持两种使用方式：
 
@@ -421,6 +387,53 @@ class CommandAutoTuner:
          /conf skip_build_index:true
 
          的执行。
+
+         常见的一些配置选项示例：
+                                     键 ┃ 值                                                 ┃                 │
+        │  ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩                 │
+        │  │                     auto_merge │ editblock                                          │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │                     chat_model │ r1_chat                                            │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │                     code_model │ v3_chat                                            │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │           editblock_similarity │ 0.9                                                │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │           enable_global_memory │ false                                              │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │              enable_rag_search │ false                                              │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │          generate_rerank_model │ r1_chat                                            │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │      generate_times_same_model │ 3                                                  │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │                 human_as_model │ false                                              │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │                human_model_num │ 1                                                  │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │            index_build_workers │ 100                                                │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │             index_filter_level │ 0                                                  │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │           index_filter_workers │ 100                                                │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │                          model │ v3_chat                                            │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │                   product_mode │ lite                                               │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │                   project_type │ .py,.ts,.css,.tsx,.js,.json                        │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │                      rag_token │ true                                               │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │                       rag_type │ simple                                             │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │                        rag_url │ http://127.0.0.1:8024/v1                           │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │               skip_build_index │ false                                              │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │                   skip_confirm │ true                                               │                 │
+        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
+        │  │              skip_filter_index │ false                         
          
         </usage>
         </command>
@@ -440,6 +453,7 @@ class CommandAutoTuner:
         </usage>
         </command>
 
+        
         <command>
         <name>chat</name>
         <description>进入聊天模式，与AI进行交互对话。支持多轮对话和上下文理解。</description>
@@ -486,27 +500,35 @@ class CommandAutoTuner:
 
         <command>
         <name>coding</name>
-        <description>代码生成命令，用于生成、修改和重构代码。</description>
+        <description>代码生成函数，用于生成、修改和重构代码。</description>
         <usage>
-         该命令支持多种代码生成和修改场景。
+         该函数支持多种代码生成和修改场景。
+
+         该函数支持一个参数 query，query 为字符串，表示要生成的代码需求。
 
          ## 基础代码生成
          直接描述需求
          使用例子：
 
          /coding 创建一个处理用户登录的函数
+         
+         此处的 query 参数为 "创建一个处理用户登录的函数".
 
          ## 和/chat 搭配使用
          当你用过 /chat 之后，继续使用 /coding 时，可以添加 /apply 来带上 /chat 的对话内容。         
          使用例子：
 
-         /coding /apply 根据我们的历史对话实现代码。
+         /coding /apply 根据我们的历史对话实现代码,请不要遗漏任何细节。
+
+         此处 query 参数为 "/apply 根据我们的历史对话实现代码,请不要遗漏任何细节。"
 
          ## 预测下一步
          使用 /next 分析并建议后续步骤
          使用例子：
 
          /coding /next
+
+         此处 query 参数为 "/next"
 
          ## 引用语法
          - @文件名：引用特定文件
@@ -631,8 +653,7 @@ class CommandAutoTuner:
         command_map = {
             "add_files": self.command_config.add_files,
             "remove_files": self.command_config.remove_files,
-            "list_files": self.command_config.list_files,
-            "conf": self.command_config.configure,
+            "list_files": self.command_config.list_files,            
             "revert": self.command_config.revert,
             "commit": self.command_config.commit,
             "help": self.command_config.help,

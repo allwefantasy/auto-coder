@@ -709,6 +709,7 @@ def print_conf(content:Dict[str,Any]):
         ))
 
 def revert():
+    result_manager = ResultManager()
     last_yaml_file = get_last_yaml_file("actions")
     if last_yaml_file:
         file_path = os.path.join("actions", last_yaml_file)
@@ -718,11 +719,15 @@ def revert():
         s = output.getvalue()
         print(s, flush=True)
         if "Successfully reverted changes" in s:
+            result_manager.append(content=s, meta={"action": "revert","success":False})
             print(
                 "Reverted the last chat action successfully. Remove the yaml file {file_path}"
             )
             os.remove(file_path)
+        else:
+            result_manager.append(content=s, meta={"action": "revert","success":False})
     else:
+        result_manager.append(content="No previous chat action found to revert.", meta={"action": "revert","success":False})
         print("No previous chat action found to revert.")
 
 
