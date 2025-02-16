@@ -7,6 +7,9 @@ from typing import List, Dict, Any, Union, Callable
 from autocoder.common.printer import Printer
 from pydantic import SkipValidation
 
+from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
+from byzerllm.utils.str2model import to_model
+
 
 class CommandMessage(BaseModel):
     role: str
@@ -144,8 +147,9 @@ class CommandAutoTuner:
         {% endfor %}
         {% endif %}
 
-        请分析用户意图，一个命令执行序列，并给出推荐理由。
+        请分析用户意图，返回一个命令并给出推荐理由。
         返回格式必须是严格的JSON格式：
+        
         ```json
         {
             "suggestions": [
@@ -158,7 +162,10 @@ class CommandAutoTuner:
             ],
             "reasoning": "整体推理说明"
         }
-        ```        
+        ```   
+
+        注意，只能返回一个命令。我后续会把每个命令的执行结果告诉你。你继续确定下一步该执行什么命令，直到
+        满足需求。
         """
         return {
             "user_input": request.user_input,
@@ -166,40 +173,58 @@ class CommandAutoTuner:
             "conversation_history": [],
             "available_commands": self._command_readme.prompt()
         }
-def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
-    # 获取 prompt 内容
-    prompt = self._analyze.prompt(request)
     
-    # 构造对话上下文
-    conversations = [{"role": "user", "content": prompt}]
+    @byzerllm.prompt()
+    def _execute_command_result(self, result:str) -> str:
+        '''
+        根据函数执行结果，返回下一个函数。
+
+        下面是我们上一个函数执行结果: 
+        
+        <function_result>
+        {{ result }}
+        </function_result>
+
+        请分析命令执行结果，返回下一个函数。如果已经满足要求，则不要返回任何函数。        
+        '''
     
-    # 使用 stream_out 进行输出
-    printer = Printer()
-    title = printer.get_message_from_key("auto_command_analyzing")
-    result, _ = stream_out(
-        self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
-        model_name=self.llm.default_model_name,
-        title=title        
-    )
-    
-    # 提取 JSON 并转换为 AutoCommandResponse
-    from byzerllm.utils.client import code_utils
-    json_str = code_utils.extract_code(result)[-1][1]
-    response = AutoCommandResponse.model_validate_json(json_str)
-    
-    # 保存对话记录
-    save_to_memory_file(
-        query=request.user_input,
-        response=response.model_dump_json(indent=2)
-    )
-    
-    return response
-        return response
+    def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
+        # 获取 prompt 内容
+        prompt = self._analyze.prompt(request)
+        
+        # 构造对话上下文
+        conversations = [{"role": "user", "content": prompt}]
+        
+        # 使用 stream_out 进行输出
+        printer = Printer()
+        title = printer.get_message_from_key("auto_command_analyzing")
+        result, _ = stream_out(
+            self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
+            model_name=self.llm.default_model_name,
+            title=title        
+        )
+        conversations.append({"role": "assistant", "content": result})    
+        # 提取 JSON 并转换为 AutoCommandResponse            
+        response = to_model(result, AutoCommandResponse)         
+        
+        # 保存对话记录
+        save_to_memory_file(
+            query=request.user_input,
+            response=response.model_dump_json(indent=2)
+        )
+
+        # while True:
+        #     # 执行命令
+        #     self.execute_auto_command(response.suggestions[0].command, response.suggestions[0].parameters)            
+        #     conversations.append({"role": "user", "content": response.suggestions[0].reasoning})
+            
+        
+        return response        
     
     @byzerllm.prompt()
     def _command_readme(self) -> str:
         '''
-        # 命令说明
+        # 函数说明
         <commands>
         
         <command>
