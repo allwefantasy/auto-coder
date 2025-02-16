@@ -2717,7 +2717,7 @@ def auto_command(query: str, memory: dict):
     # 执行最高置信度的命令
     if response.suggestions:
         best = response.suggestions[0]
-        execute_auto_command(best.command, best.parameters, memory)
+        tuner.execute_auto_command(best.command, best.parameters)
 
 def main():
     from autocoder.rag.variable_holder import VariableHolder
