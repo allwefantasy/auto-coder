@@ -1,3 +1,4 @@
+from autocoder.common.result_manager import ResultManager
 from autocoder.index.index import IndexManager
 from autocoder.pyproject import PyProject
 from autocoder.tsproject import TSProject
@@ -50,6 +51,7 @@ class AutoCommandTools:
     def __init__(self, args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
         self.args = args
         self.llm = llm
+        self.result_manager = ResultManager()
 
     def ask_user(self,question:str) -> str:
         '''
@@ -106,6 +108,13 @@ class AutoCommandTools:
         )
         console.print(answer_panel)
 
+        self.result_manager.add_result(content=answer, meta = {
+            "action": "ask_user",
+            "input": {
+                "question": question
+            }
+        })
+
         return answer
 
     def run_python_code(self, code: str) -> str:
@@ -124,6 +133,13 @@ class AutoCommandTools:
             )
         finally:
             interpreter.close()
+        
+        self.result_manager.add_result(content=s, meta = {
+            "action": "run_python_code",
+            "input": {
+                "code": code
+            }
+        })
 
         return s
 
@@ -145,6 +161,13 @@ class AutoCommandTools:
             )
         finally:
             interpreter.close()
+        
+        self.result_manager.add_result(content=s, meta = {
+            "action": "run_shell_code",
+            "input": {
+                "script": script
+            }
+        })
 
         return s
    
@@ -152,7 +175,14 @@ class AutoCommandTools:
         """
         你可以给出类名，函数名，以及文件的用途描述等信息，该工具会根据这些信息返回项目中相关的文件。
         """
-        return self.get_project_related_files(query)
+        v = self.get_project_related_files(query)
+        self.result_manager.add_result(content=v, meta = {
+            "action": "get_related_files_by_symbols",
+            "input": {
+                "query": query
+            }
+        })
+        return v
 
     def get_project_related_files(self, query: str) -> str:
         """
@@ -173,8 +203,15 @@ class AutoCommandTools:
         index_manager = IndexManager(llm=self.llm, sources=sources, args=self.args)
         target_files = index_manager.get_target_files_by_query(query)
         file_list = target_files.file_list
-        return ",".join([file.file_path for file in file_list])
-
+        v =  ",".join([file.file_path for file in file_list])
+        self.result_manager.add_result(content=v, meta = {
+            "action": "get_project_related_files",
+            "input": {
+                "query": query
+            }
+        })
+        return v
+    
     def get_project_map(self) -> str:
         """
         该工具会返回项目中所有已经被构建索引的文件以及该文件的信息，诸如该文件的用途，导入的包，定义的类，函数，变量等信息。
@@ -202,7 +239,13 @@ class AutoCommandTools:
             value["file_name"] = k["module_name"]
             value["symbols"] = k["symbols"]
             final_result.append(value)
-        return json.dumps(final_result, ensure_ascii=False)
+        v = json.dumps(final_result, ensure_ascii=False)
+        self.result_manager.add_result(content=v, meta = {
+            "action": "get_project_map",
+            "input": {                
+            }
+        })
+        return v
 
     def read_files(self, paths: str) -> str:
         """
@@ -217,7 +260,7 @@ class AutoCommandTools:
         for path in paths:
             if not os.path.isabs(path):
                 # Find the first matching absolute path by traversing args.source_dir
-                for root, _, files in os.walk(args.source_dir):
+                for root, _, files in os.walk(self.args.source_dir):
                     for file in files:
                         if path in os.path.join(root, file):
                             path = os.path.join(root, file)
@@ -228,7 +271,13 @@ class AutoCommandTools:
                 sc = SourceCode(module_name=path, source_code=source_code)
                 source_code_str += f"##File: {sc.module_name}\n"
                 source_code_str += f"{sc.source_code}\n\n"
-
+        
+        self.result_manager.add_result(content=source_code_str, meta = {
+            "action": "read_files",
+            "input": {
+                "paths": paths
+            }
+        })
         return source_code_str
 
     def find_files_by_name(self, keyword: str) -> str:
@@ -246,7 +295,14 @@ class AutoCommandTools:
                 if keyword.lower() in file.lower():
                     matched_files.append(os.path.join(root, file))
 
-        return ",".join(matched_files)
+        v = ",".join(matched_files)
+        self.result_manager.add_result(content=v, meta = {
+            "action": "find_files_by_name",
+            "input": {
+                "keyword": keyword
+            }
+        })
+        return v
 
     def find_files_by_content(self, keyword: str) -> str:
         """
@@ -259,7 +315,7 @@ class AutoCommandTools:
         搜索不区分大小写。
         """
         matched_files = []
-        for root, _, files in os.walk(args.source_dir):
+        for root, _, files in os.walk(self.args.source_dir):
             for file in files:
                 file_path = os.path.join(root, file)
                 try:
@@ -271,4 +327,11 @@ class AutoCommandTools:
                     # Skip files that can't be read
                     pass
 
-        return ",".join(matched_files)
+        v = ",".join(matched_files)
+        self.result_manager.add_result(content=v, meta = {
+            "action": "find_files_by_content",
+            "input": {
+                "keyword": keyword
+            }
+        })
+        return v

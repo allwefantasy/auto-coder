@@ -719,15 +719,18 @@ def revert():
         s = output.getvalue()
         print(s, flush=True)
         if "Successfully reverted changes" in s:
-            result_manager.append(content=s, meta={"action": "revert","success":False})
+            result_manager.append(content=s, meta={"action": "revert","success":False, "input":{                
+            }})
             print(
                 "Reverted the last chat action successfully. Remove the yaml file {file_path}"
             )
             os.remove(file_path)
         else:
-            result_manager.append(content=s, meta={"action": "revert","success":False})
+            result_manager.append(content=s, meta={"action": "revert","success":False, "input":{                
+            }})
     else:
-        result_manager.append(content="No previous chat action found to revert.", meta={"action": "revert","success":False})
+        result_manager.append(content="No previous chat action found to revert.", meta={"action": "revert","success":False, "input":{                
+            }})
         print("No previous chat action found to revert.")
 
 
@@ -1545,7 +1548,9 @@ def coding(query: str):
             cmd = ["--file", execute_file]
             auto_coder_main(cmd)
             result_manager = ResultManager()
-            result_manager.append(content="", meta={"query": query,"commit_message": f"auto_coder_{latest_yaml_file}_{md5}","action": "coding"})
+            result_manager.append(content="", meta={"commit_message": f"auto_coder_{latest_yaml_file}_{md5}","action": "coding", "input":{
+                "query": query
+            }})
 
         execute_chat()
     else:

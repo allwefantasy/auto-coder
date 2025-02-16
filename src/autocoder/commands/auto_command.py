@@ -667,25 +667,7 @@ class CommandAutoTuner:
          - 禁止执行包含 rm 命令的脚本
          - 输出结果会返回给用户
         </usage>
-        </command>
-
-        <command>
-        <name>auto_run</name>
-        <description>根据任务描述自动拆解任务，生成执行步骤并执行。主要用于自动化编译、运行、测试等任务。</description>
-        <usage>
-         该命令接受两个参数：
-         - job: 任务描述字符串
-         - context: 上下文信息字符串（可选）
-         
-         使用例子：
-         
-         /auto_run "编译并运行测试" "项目使用Maven构建"
-         
-         注意：
-         - 工具会根据项目目录结构（如pom文件）自动识别项目类型
-         - 可以结合其他工具（如read_files）获取上下文信息
-        </usage>
-        </command>
+        </command>        
 
         <command>
         <name>get_related_files</name>

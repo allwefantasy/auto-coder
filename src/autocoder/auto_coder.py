@@ -1270,7 +1270,10 @@ def main(input_args: Optional[List[str]] = None):
                     f.write(chat_content)
 
                 result_manager = ResultManager()
-                result_manager.append(content=result, meta={"query": args.query,"action": "chat"})
+                result_manager.append(content=result, 
+                                      meta={"action": "chat","input":{
+                                            "query":args.query
+                                      }})
 
                 # Update chat history with user's response
                 chat_history["ask_conversation"].append(
@@ -1348,7 +1351,12 @@ def main(input_args: Optional[List[str]] = None):
                 )
 
             result_manager = ResultManager()
-            result_manager.append(content=assistant_response, meta={"query": args.query,"action": "chat"})                                                           
+            result_manager.append(content=assistant_response, meta={
+                "action": "chat",
+                "input": {
+                    "query": args.query
+                }
+            })                                                           
             
             # 打印耗时和token统计            
             if last_meta:
