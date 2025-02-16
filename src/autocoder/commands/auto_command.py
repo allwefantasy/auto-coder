@@ -128,7 +128,7 @@ class CommandAutoTuner:
     @byzerllm.prompt()
     def _analyze(self, request: AutoCommandRequest) -> str:
         """
-        根据用户输入和当前上下文，分析并推荐最合适的命令。
+        根据用户输入和当前上下文，分析并推荐最合适的函数。
 
         用户输入: {{ user_input }}
 
@@ -138,6 +138,7 @@ class CommandAutoTuner:
         - {{ file }}
         {% endfor %}
         {% endif %}
+
         
         可用命令列表:
         {{ available_commands }}
@@ -173,7 +174,8 @@ class CommandAutoTuner:
             "user_input": request.user_input,
             "current_files": self.memory_config.memory["current_files"]["files"],            
             "conversation_history": [],
-            "available_commands": self._command_readme.prompt()
+            "available_commands": self._command_readme.prompt(),
+            "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),        
         }
     
     @byzerllm.prompt()
@@ -187,7 +189,8 @@ class CommandAutoTuner:
         {{ result }}
         </function_result>
 
-        请分析命令执行结果，返回下一个函数。如果已经满足要求，则不要返回任何函数。        
+        请分析命令执行结果，返回下一个函数。如果已经满足要求，则不要返回任何函数,确保 suggestions 为空。
+        注意，你最多尝试10次，如果10次都没有满足要求，则不要返回任何函数，确保 suggestions 为空。
         '''
     
     def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
@@ -221,20 +224,22 @@ class CommandAutoTuner:
             command = response.suggestions[0].command
             parameters = response.suggestions[0].parameters
             self.execute_auto_command(command, parameters)            
+            content = ""
             last_result = result_manager.get_last()
             if last_result:
-                if last_result.meta["action"] == "coding":
-                    content = ""
+                if last_result.meta["action"] == "coding":                    
                     # 如果上一步是 coding，则需要把上一步的更改前和更改后的内容作为上下文
                     changes = git_utils.get_changes_by_commit_message("", last_result.meta["commit_message"])
                     if changes.success:
                         for file_path, change in changes.changes.items():
                             if change.before:
                                 content += f"## File:\n {file_path}[更改前]\n{change.before}\n\nFile:\n {file_path}\n\n[更改后]\n{change.after}\n\n"
-
+                else:
+                    content = last_result.content
 
                 conversations.append({"role": "user", "content": content})
                 title = printer.get_message_from_key("auto_command_analyzing")
+                print(conversations)
                 result, _ = stream_out(
                     self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
                     model_name=self.llm.default_model_name,
@@ -266,7 +271,10 @@ class CommandAutoTuner:
         
         <command>
         <name>add_files</name>
-        <description>添加文件到当前会话。支持通过模式匹配添加文件，支持 glob 语法，例如 *.py。可以使用相对路径或绝对路径。</description>
+        <description>
+          添加文件到一个活跃区，活跃区当你使用 chat,coding 函数时，活跃区的文件会被他们使用。
+          支持通过模式匹配添加文件，支持 glob 语法，例如 *.py。可以使用相对路径或绝对路径。
+        </description>
         <usage>
          该方法只有一个参数 args，args 是一个列表，列表的元素是字符串。会包含子指令，例如 
          
@@ -313,7 +321,7 @@ class CommandAutoTuner:
 
         <command>
         <name>remove_files</name>
-        <description>从当前会话中移除文件。可以指定多个文件，支持文件名或完整路径。</description>
+        <description>从活跃区移除文件。可以指定多个文件，支持文件名或完整路径。</description>
         <usage>
          该方法接受一个参数 file_names，是一个列表，列表的元素是字符串。下面是常见的子指令：
 
@@ -335,7 +343,7 @@ class CommandAutoTuner:
 
         <command>
         <name>list_files</name>
-        <description>列出当前会话中的所有文件，显示相对于项目根目录的路径。</description>
+        <description>通过add_files 添加的文件</description>
         <usage>
          该命令不需要任何参数，直接使用即可。
          使用例子：
@@ -370,7 +378,9 @@ class CommandAutoTuner:
          显示帮助信息,也可以执行一些配置需求。
         </description>
         <usage>
-         该命令支持两种使用方式：
+        该命令只有一个参数 query，query 为字符串，表示要执行的配置需求。
+
+        如果query 为空，则显示一个通用帮助信息。
 
          ## 显示通用帮助
          不带参数显示所有可用命令的概览
@@ -388,53 +398,34 @@ class CommandAutoTuner:
 
          的执行。
 
-         常见的一些配置选项示例：
-                                     键 ┃ 值                                                 ┃                 │
-        │  ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩                 │
-        │  │                     auto_merge │ editblock                                          │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │                     chat_model │ r1_chat                                            │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │                     code_model │ v3_chat                                            │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │           editblock_similarity │ 0.9                                                │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │           enable_global_memory │ false                                              │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │              enable_rag_search │ false                                              │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │          generate_rerank_model │ r1_chat                                            │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │      generate_times_same_model │ 3                                                  │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │                 human_as_model │ false                                              │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │                human_model_num │ 1                                                  │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │            index_build_workers │ 100                                                │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │             index_filter_level │ 0                                                  │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │           index_filter_workers │ 100                                                │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │                          model │ v3_chat                                            │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │                   product_mode │ lite                                               │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │                   project_type │ .py,.ts,.css,.tsx,.js,.json                        │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │                      rag_token │ true                                               │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │                       rag_type │ simple                                             │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │                        rag_url │ http://127.0.0.1:8024/v1                           │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │               skip_build_index │ false                                              │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │                   skip_confirm │ true                                               │                 │
-        │  ├────────────────────────────────┼────────────────────────────────────────────────────┤                 │
-        │  │              skip_filter_index │ false                         
-         
+        常见的一些配置选项示例：
+
+        # 配置项说明
+        ## auto_merge: 代码合并方式，可选值为editblock、diff、wholefile.
+        - editblock: 生成 SEARCH/REPLACE 块，然后根据 SEARCH块到对应的源码查找，如果相似度阈值大于 editblock_similarity， 那么则将
+        找到的代码块替换为 REPLACE 块。大部分情况都推荐使用 editblock。        
+        - wholefile: 重新生成整个文件，然后替换原来的文件。对于重构场景，推荐使用 wholefile。
+        - diff: 生成标准 git diff 格式，适用于简单的代码修改。        
+
+        ## editblock_similarity: editblock相似度阈值
+        - editblock相似度阈值，取值范围为0-1，默认值为0.9。如果设置的太低，虽然能合并进去，但是会引入错误。推荐不要修改该值。
+
+        ## generate_times_same_model: 相同模型生成次数
+        当进行生成代码时，大模型会对同一个需求生成多份代码，然后会使用 generate_rerank_model 模型对多份代码进行重排序，
+        然后选择得分最高的代码。一般次数越多，最终得到正确的代码概率越高。默认值为1，推荐设置为3。但是设置值越多，可能速度就越慢，消耗的token也越多。
+
+        ## skip_filter_index: 是否跳过索引过滤
+        是否跳过根据用户的query 自动查找上下文。推荐设置为 false
+        
+        ## skip_build_index: 是否跳过索引构建
+        是否自动构建索引。推荐设置为 false。注意，如果该值设置为 true, 那么 skip_filter_index 设置不会生效。
+        
+        比如你想开启索引，则可以执行：
+
+        /help 开启索引
+
+        其中 query 参数为 "开启索引"                                                                              
+                                        
         </usage>
         </command>
 
