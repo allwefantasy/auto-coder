@@ -228,7 +228,7 @@ MESSAGES = {
         "ranking_process_failed": "排序过程失败: {{ error }}",
         "ranking_failed": "排序失败，耗时 {{ elapsed }} 秒，使用原始顺序",
         "stream_out_stats": "模型: {{ model_name }},总耗时 {{ elapsed_time }} 秒,首token时间: {{ first_token_time }} 秒, 速度: {{ speed }} tokens/秒, 输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}, 输入成本: {{ input_cost }}, 输出成本: {{ output_cost }}",
-        "quick_filter_stats": "{{ model_names }} Quick filter completed in {{ elapsed_time }} seconds, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}, input cost: {{ input_cost }}, output cost: {{ output_cost }}",
+        "quick_filter_stats": "{{ model_names }} 快速过滤器完成，耗时 {{ elapsed_time }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}, 输入成本: {{ input_cost }}, 输出成本: {{ output_cost }}",
         "quick_filter_title": "{{ model_name }} 正在分析如何筛选上下文...",
         "quick_filter_failed": "❌ 快速过滤器失败: {{ error }}. ",
         "estimated_chat_input_tokens": "对话输入token预估为: {{ estimated_input_tokens }}",
