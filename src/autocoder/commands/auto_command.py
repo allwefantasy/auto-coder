@@ -184,16 +184,230 @@ class CommandAutoTuner:
         '''
         # 命令说明
         <commands>
+        
         <command>
-        <name>命令名称</name>
-        <description>命令说明</description>
+        <name>add_files</name>
+        <description>添加文件到当前会话。支持通过模式匹配添加文件。</description>
         <parameters>
         <parameter>
-        <name>参数名称</name>
-        <description>参数说明</description>
+        <name>/refresh</name>
+        <description>刷新文件列表</description>
+        </parameter>
+        <parameter>
+        <name>/group</name>
+        <description>文件分组管理，支持子指令：
+        /add &lt;组名&gt; - 创建新组
+        /drop &lt;组名&gt; - 删除组
+        /set &lt;组名&gt; - 设置组描述
+        /list - 列出所有组
+        /reset - 重置当前活跃组
+        </description>
         </parameter>
         </parameters>
         </command>
+
+        <command>
+        <name>remove_files</name>
+        <description>从当前会话中移除文件</description>
+        <parameters>
+        <parameter>
+        <name>/all</name>
+        <description>移除所有文件</description>
+        </parameter>
+        <parameter>
+        <name>file_names</name>
+        <description>要移除的文件名列表，用逗号分隔</description>
+        </parameter>
+        </parameters>
+        </command>
+
+        <command>
+        <name>list_files</name>
+        <description>列出当前会话中的所有文件</description>
+        </command>
+
+        <command>
+        <name>conf</name>
+        <description>配置管理命令</description>
+        <parameters>
+        <parameter>
+        <name>/drop &lt;key&gt;</name>
+        <description>删除指定配置项</description>
+        </parameter>
+        <parameter>
+        <name>&lt;key&gt;:&lt;value&gt;</name>
+        <description>设置配置项</description>
+        </parameter>
+        </parameters>
+        </command>
+
+        <command>
+        <name>revert</name>
+        <description>撤销最后一次代码修改</description>
+        </command>
+
+        <command>
+        <name>commit</name>
+        <description>提交代码更改</description>
+        </command>
+
+        <command>
+        <name>help</name>
+        <description>显示帮助信息</description>
+        </command>
+
+        <command>
+        <name>exclude_dirs</name>
+        <description>设置排除目录</description>
+        <parameters>
+        <parameter>
+        <name>dir_names</name>
+        <description>要排除的目录列表，用逗号分隔</description>
+        </parameter>
+        </parameters>
+        </command>
+
+        <command>
+        <name>ask</name>
+        <description>向AI提问</description>
+        <parameters>
+        <parameter>
+        <name>query</name>
+        <description>问题内容</description>
+        </parameter>
+        </parameters>
+        </command>
+
+        <command>
+        <name>chat</name>
+        <description>进入聊天模式</description>
+        <parameters>
+        <parameter>
+        <name>query</name>
+        <description>聊天内容</description>
+        </parameter>
+        <parameter>
+        <name>/new</name>
+        <description>开启新的聊天会话</description>
+        </parameter>
+        <parameter>
+        <name>/no_context</name>
+        <description>不使用上下文</description>
+        </parameter>
+        </parameters>
+        </command>
+
+        <command>
+        <name>coding</name>
+        <description>代码生成命令</description>
+        <parameters>
+        <parameter>
+        <name>query</name>
+        <description>代码生成需求描述</description>
+        </parameter>
+        <parameter>
+        <name>/apply</name>
+        <description>应用上次生成的代码</description>
+        </parameter>
+        <parameter>
+        <name>/next</name>
+        <description>预测下一步任务</description>
+        </parameter>
+        </parameters>
+        </command>
+
+        <command>
+        <name>design</name>
+        <description>设计相关命令</description>
+        <parameters>
+        <parameter>
+        <name>query</name>
+        <description>设计需求描述</description>
+        </parameter>
+        <parameter>
+        <name>/svg</name>
+        <description>生成SVG设计</description>
+        </parameter>
+        <parameter>
+        <name>/sd</name>
+        <description>生成Stable Diffusion设计</description>
+        </parameter>
+        <parameter>
+        <name>/logo</name>
+        <description>生成Logo设计</description>
+        </parameter>
+        </parameters>
+        </command>
+
+        <command>
+        <name>summon</name>
+        <description>调用AI工具</description>
+        <parameters>
+        <parameter>
+        <name>query</name>
+        <description>工具调用需求描述</description>
+        </parameter>
+        </parameters>
+        </command>
+
+        <command>
+        <name>lib</name>
+        <description>库管理命令</description>
+        <parameters>
+        <parameter>
+        <name>/add &lt;库名&gt;</name>
+        <description>添加新库</description>
+        </parameter>
+        <parameter>
+        <name>/remove &lt;库名&gt;</name>
+        <description>移除库</description>
+        </parameter>
+        <parameter>
+        <name>/list</name>
+        <description>列出所有库</description>
+        </parameter>
+        <parameter>
+        <name>/set-proxy &lt;代理地址&gt;</name>
+        <description>设置库下载代理</description>
+        </parameter>
+        <parameter>
+        <name>/refresh</name>
+        <description>刷新库列表</description>
+        </parameter>
+        <parameter>
+        <name>/get &lt;包名&gt;</name>
+        <description>获取包的文档</description>
+        </parameter>
+        </parameters>
+        </command>
+
+        <command>
+        <name>mcp</name>
+        <description>模型控制面板命令</description>
+        <parameters>
+        <parameter>
+        <name>/add &lt;模型配置&gt;</name>
+        <description>添加新模型</description>
+        </parameter>
+        <parameter>
+        <name>/remove &lt;模型名&gt;</name>
+        <description>移除模型</description>
+        </parameter>
+        <parameter>
+        <name>/list</name>
+        <description>列出所有模型</description>
+        </parameter>
+        <parameter>
+        <name>/list_running</name>
+        <description>列出正在运行的模型</description>
+        </parameter>
+        <parameter>
+        <name>/refresh &lt;模型名&gt;</name>
+        <description>刷新模型</description>
+        </parameter>
+        </parameters>
+        </command>
+
         </commands>
         '''
 
