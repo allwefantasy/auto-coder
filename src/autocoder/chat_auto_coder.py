@@ -2487,8 +2487,7 @@ def help(query: str):
     product_mode = memory.get("product_mode", "lite")
     llm = get_single_llm(args.chat_model or args.model, product_mode=product_mode)
     auto_config_tuner = ConfigAutoTuner(llm=llm, memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory))
-    response = auto_config_tuner.tune(AutoConfigRequest(query=query, current_conf=memory.get("conf", {})))
-    print(response)
+    auto_config_tuner.tune(AutoConfigRequest(query=query, current_conf=memory.get("conf", {})))    
 
 @run_in_raw_thread()
 def index_query(query: str):

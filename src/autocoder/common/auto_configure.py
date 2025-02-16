@@ -16,7 +16,7 @@ class ConfigMessage(BaseModel):
     role: str
     content: str
 
-class ExtenedConfigMessage(ConfigMessage):
+class ExtenedConfigMessage(BaseModel):
     message: ConfigMessage
     timestamp: str
 
@@ -24,11 +24,11 @@ class ConfigConversation(BaseModel):
     history: Dict[str, ExtenedConfigMessage]
     current_conversation: List[ConfigMessage]
 
-def save_to_memory_file(ask_conversation: List[Dict[str, Any]], query: str, response: str):
+def save_to_memory_file(query: str, response: str):
     """Save conversation to memory file using ConfigConversation structure"""
     memory_dir = os.path.join(".auto-coder", "memory")
     os.makedirs(memory_dir, exist_ok=True)
-    file_path = os.path.join(memory_dir, "config_conversation.json")
+    file_path = os.path.join(memory_dir, "config_chat_history.json")
     
     # Create new message objects
     user_msg = ConfigMessage(role="user", content=query)
@@ -47,7 +47,7 @@ def save_to_memory_file(ask_conversation: List[Dict[str, Any]], query: str, resp
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             try:
-                existing_conv = ConfigConversation.parse_raw(f.read())
+                existing_conv = ConfigConversation.model_validate_json(f.read())
             except Exception:
                 existing_conv = ConfigConversation(
                     history={},
@@ -58,20 +58,12 @@ def save_to_memory_file(ask_conversation: List[Dict[str, Any]], query: str, resp
             history={},
             current_conversation=[]
         )
-    
-    # Add messages to history and current conversation
-    user_id = str(uuid.uuid4())
-    assistant_id = str(uuid.uuid4())
-    
-    existing_conv.history[user_id] = extended_user_msg
-    existing_conv.history[assistant_id] = extended_assistant_msg
-    
-    existing_conv.current_conversation.append(user_msg)
-    existing_conv.current_conversation.append(assistant_msg)
-    
+
+    existing_conv.current_conversation.append(extended_user_msg)
+    existing_conv.current_conversation.append(extended_assistant_msg)        
     # Save updated conversation
     with open(file_path, "w", encoding="utf-8") as f:
-        f.write(existing_conv.json(indent=2))
+        f.write(existing_conv.model_dump_json(indent=2))
 
 class MemoryConfig(BaseModel):
     """
@@ -122,37 +114,10 @@ class AutoConfigRequest(BaseModel):
 
 class AutoConfigResponse(BaseModel):
     configs: List[Dict[str, Any]] = Field(default_factory=list)
-    reasoning: str = "No configuration changes"    
-
-    @classmethod
-    def from_str(cls, response_str: str) -> 'AutoConfigResponse':
-        try:
-            json_str = code_utils.extract_code(response_str)[0][1]
-            data = json.loads(json_str)
-            return cls(**data)
-        except Exception as e:
-            logger.warning(f"Failed to parse response: {str(e)}")
-            return cls()
-
-    def apply(self, current_conf: Dict[str, Any]) -> Dict[str, Any]:
-        # 保留用户手动设置的配置
-        merged = current_conf.copy()
-        merged.update(self.configs)
-        return merged
-
-    def execute_configure(self):
-        if self.call_configure:
-            module = __import__(self.call_configure["location"].replace(
-                ".py", "").replace("/", "."))
-            func = getattr(module, self.call_configure["method"], None)
-            if func:
-                for k, v in self.configs.items():
-                    func(f"{k}:{v}")
-
-
+    reasoning: str = "No configuration changes"        
 
 class ConfigAutoTuner:
-    def __init__(self, llm: ByzerLLM, memory_config: MemoryConfig):
+    def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], memory_config: MemoryConfig):
         self.llm = llm
         self.memory_config = memory_config
             
@@ -186,6 +151,13 @@ class ConfigAutoTuner:
         
         ## skip_build_index: 是否跳过索引构建
         是否自动构建索引。推荐设置为 false。注意，如果该值设置为 true, 那么 skip_filter_index 设置不会生效。
+        """
+
+    def command_readme(self) -> str:
+        """
+        # 命令说明
+        ## /chat: 进入配置对话模式
+        ## /coding: 进入代码生成模式
         """
         
     @byzerllm.prompt()
@@ -238,12 +210,11 @@ class ConfigAutoTuner:
                 self.llm).with_return_type(AutoConfigResponse).run(request)
             
             # Save conversation using new structure
-            save_to_memory_file(
-                ask_conversation=[{"role": "user", "content": request.query}],
+            save_to_memory_file(                
                 query=request.query,
-                response=response.reasoning or "No configuration changes"
+                response=response.model_dump_json(indent=2)
             )
-            
+            print(response.reasoning,end="\n\n")
             for config in response.configs:
                 for k, v in config["config"].items():
                     self.configure(f"{k}:{v}")
