@@ -7,28 +7,32 @@ from typing import List, Dict, Any, Union, Callable
 from autocoder.common.printer import Printer
 from pydantic import SkipValidation
 
+
 class CommandMessage(BaseModel):
     role: str
     content: str
+
 
 class ExtendedCommandMessage(BaseModel):
     message: CommandMessage
     timestamp: str
 
+
 class CommandConversation(BaseModel):
     history: Dict[str, ExtendedCommandMessage]
     current_conversation: List[CommandMessage]
+
 
 def save_to_memory_file(query: str, response: str):
     """Save command conversation to memory file using CommandConversation structure"""
     memory_dir = os.path.join(".auto-coder", "memory")
     os.makedirs(memory_dir, exist_ok=True)
     file_path = os.path.join(memory_dir, "command_chat_history.json")
-    
+
     # Create new message objects
     user_msg = CommandMessage(role="user", content=query)
     assistant_msg = CommandMessage(role="assistant", content=response)
-    
+
     extended_user_msg = ExtendedCommandMessage(
         message=user_msg,
         timestamp=str(int(time.time()))
@@ -37,12 +41,13 @@ def save_to_memory_file(query: str, response: str):
         message=assistant_msg,
         timestamp=str(int(time.time()))
     )
-    
+
     # Load existing conversation or create new
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             try:
-                existing_conv = CommandConversation.model_validate_json(f.read())
+                existing_conv = CommandConversation.model_validate_json(
+                    f.read())
             except Exception:
                 existing_conv = CommandConversation(
                     history={},
@@ -55,25 +60,29 @@ def save_to_memory_file(query: str, response: str):
         )
 
     existing_conv.current_conversation.append(extended_user_msg)
-    existing_conv.current_conversation.append(extended_assistant_msg)        
+    existing_conv.current_conversation.append(extended_assistant_msg)
     # Save updated conversation
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(existing_conv.model_dump_json(indent=2))
+
 
 class CommandSuggestion(BaseModel):
     command: str
     parameters: Dict[str, Any]
     confidence: float
 
+
 class AutoCommandResponse(BaseModel):
     suggestions: List[CommandSuggestion]
     reasoning: str
+
 
 class AutoCommandRequest(BaseModel):
     user_input: str
     conversation_history: List[Dict[str, str]]
     current_files: List[str]
     available_commands: List[str]
+
 
 class MemoryConfig(BaseModel):
     """
@@ -84,6 +93,7 @@ class MemoryConfig(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
 
 class CommandConfig(BaseModel):
     coding: SkipValidation[Callable]
@@ -103,16 +113,18 @@ class CommandConfig(BaseModel):
     mcp: SkipValidation[Callable]
     models: SkipValidation[Callable]
     lib: SkipValidation[Callable]
+
+
 class CommandAutoTuner:
-    def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],
-        memory_config: MemoryConfig, command_config: CommandConfig):
+    def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],                 
+                 memory_config: MemoryConfig, command_config: CommandConfig):
         self.llm = llm
         self.printer = Printer()
         self.memory_config = memory_config
-        self.command_config = command_config
+        self.command_config = command_config        
 
     @byzerllm.prompt()
-    def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
+    def _analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
         """
         根据用户输入和当前上下文，分析并推荐最合适的命令。
 
@@ -149,10 +161,18 @@ class CommandAutoTuner:
         ```
         """
 
+    def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
+        response = self._analyze.with_llm(self.llm).with_return_type(AutoCommandResponse).run(request)
+        save_to_memory_file(
+            query=request.user_input,
+            response=response.model_dump_json(indent=2)
+        )
+        return response
+
     def execute_auto_command(self, command: str, parameters: Dict[str, Any]) -> None:
         """
         执行自动生成的命令
-        """    
+        """
         command_map = {
             "add_files": self.commmand_config.add_files,
             "remove_files": self.commmand_config.remove_files,
@@ -167,31 +187,27 @@ class CommandAutoTuner:
             "coding": self.commmand_config.coding,
             "design": self.commmand_config.design,
             "summon": self.commmand_config.summon,
-            "lib": self.commmand_config.lib_command,
+            "lib": self.commmand_config.lib,
             "mcp": self.commmand_config.mcp
         }
 
         if command not in command_map:
-            self.printer.print_in_terminal("auto_command_not_found", style="red", command=command)
+            self.printer.print_in_terminal(
+                "auto_command_not_found", style="red", command=command)
             return
 
         try:
             # 将参数字典转换为命令所需的格式
             if parameters:
                 command_map[command](**parameters)
-            else:                
-                command_map[command]()
-            
-            # Save the command conversation
-            save_to_memory_file(
-                query=f"Command: {command} Parameters: {json.dumps(parameters) if parameters else 'None'}",
-                response="Command executed successfully"
-            )
+            else:
+                command_map[command]()            
 
         except Exception as e:
             error_msg = str(e)
-            self.printer.print_in_terminal("auto_command_failed", style="red", command=command, error=error_msg)
-            
+            self.printer.print_in_terminal(
+                "auto_command_failed", style="red", command=command, error=error_msg)
+
             # Save failed command execution
             save_to_memory_file(
                 query=f"Command: {command} Parameters: {json.dumps(parameters) if parameters else 'None'}",
