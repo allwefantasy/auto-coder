@@ -308,13 +308,21 @@ class QuickFilter():
                 {}
             )
 
+            def extract_file_number_list(content: str) -> str:
+                try:
+                    v = to_model(content, FileNumberList)
+                    return "\n".join([index_items[file_number].module_name for file_number in v.file_list])
+                except Exception as e:
+                    return content
+
             # 获取完整响应
             full_response, last_meta = stream_out(
                 stream_generator,
                 model_name=model_name,
                 title=self.printer.get_message_from_key_with_format(
                     "quick_filter_title", model_name=model_name),
-                args=self.args
+                args=self.args,
+                display_func=extract_file_number_list
             )
             # 解析结果
             file_number_list = to_model(full_response, FileNumberList)

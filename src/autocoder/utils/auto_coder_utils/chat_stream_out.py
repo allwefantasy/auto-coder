@@ -6,7 +6,7 @@ from rich.markdown import Markdown
 from rich.layout import Layout
 from threading import Thread, Lock
 from queue import Queue, Empty
-from typing import Generator, List, Dict, Any, Optional, Tuple, Literal
+from typing import Generator, List, Dict, Any, Optional, Tuple, Callable
 from autocoder.utils.request_queue import RequestValue, RequestOption, StreamValue
 from autocoder.utils.request_queue import request_queue
 import time
@@ -148,7 +148,8 @@ def stream_out(
     console: Optional[Console] = None,
     model_name: Optional[str] = None,
     title: Optional[str] = None,
-    args: Optional[AutoCoderArgs] = None
+    args: Optional[AutoCoderArgs] = None,
+    display_func: Optional[Callable] = None
 ) -> Tuple[str, Optional[SingleOutputMeta]]:
     """
     处理流式输出事件并在终端中展示
@@ -250,8 +251,8 @@ def stream_out(
                             value=StreamValue(value=[content]),
                             status=RequestOption.RUNNING,
                         ),
-                    )
-                    
+                    )                
+                
                 live.update(
                     Panel(
                         Markdown(display_content),
@@ -266,6 +267,9 @@ def stream_out(
                 lines_buffer.append(current_line)
             
             # 最终显示结果
+            if display_func:
+                display_content = display_func(display_content)
+                
             live.update(
                 Panel(
                     Markdown(assistant_response),

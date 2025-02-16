@@ -1,5 +1,5 @@
 from byzerllm import ByzerLLM,SimpleByzerLLM
-from typing import Generator, List, Any, Union
+from typing import Generator, List, Any, Union, Optional, Callable
 from pydantic import BaseModel
 from loguru import logger
 
@@ -41,7 +41,7 @@ def chat_with_continue(llm: Union[ByzerLLM,SimpleByzerLLM], conversations: List[
 def stream_chat_with_continue(
     llm: Union[ByzerLLM, SimpleByzerLLM], 
     conversations: List[dict], 
-    llm_config: dict
+    llm_config: dict    
 ) -> Generator[Any, None, None]:
     """
     流式处理并继续生成内容，直到完成。

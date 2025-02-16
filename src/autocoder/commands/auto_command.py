@@ -201,7 +201,7 @@ class CommandAutoTuner:
         *** 非常非常重要的提示 ***
         1. 如果已经满足要求，则不要返回任何函数,确保 suggestions 为空。
         2. 你最多尝试10次，如果10次都没有满足要求，则不要返回任何函数，确保 suggestions 为空。
-        '''
+        '''    
     
     def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
         # 获取 prompt 内容
@@ -213,10 +213,20 @@ class CommandAutoTuner:
         # 使用 stream_out 进行输出
         printer = Printer()
         title = printer.get_message_from_key("auto_command_analyzing")
+
+        def extract_command_response(content: str) -> AutoCommandResponse:
+            # 提取 JSON 并转换为 AutoCommandResponse
+            try:
+                response = to_model(content, AutoCommandResponse)         
+                return response.suggestions[0].command
+            except Exception as e:
+                return content
+
         result, _ = stream_out(
             self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
             model_name=self.llm.default_model_name,
-            title=title        
+            title=title,
+            display_func= extract_command_response
         )
         conversations.append({"role": "assistant", "content": result})    
         # 提取 JSON 并转换为 AutoCommandResponse            
@@ -276,7 +286,8 @@ class CommandAutoTuner:
                 result, _ = stream_out(
                     self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
                     model_name=self.llm.default_model_name,
-                    title=title        
+                    title=title,
+                    display_func= extract_command_response
                 )
                 conversations.append({"role": "assistant", "content": result})    
                 # 提取 JSON 并转换为 AutoCommandResponse            
