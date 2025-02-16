@@ -201,7 +201,6 @@ class CommandAutoTuner:
         *** 非常非常重要的提示 ***
         1. 如果已经满足要求，则不要返回任何函数,确保 suggestions 为空。
         2. 你最多尝试10次，如果10次都没有满足要求，则不要返回任何函数，确保 suggestions 为空。
-
         '''
     
     def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
@@ -247,17 +246,17 @@ class CommandAutoTuner:
                                 content += f"## File:\n {file_path}[更改前]\n{change.before}\n\nFile:\n {file_path}\n\n[更改后]\n{change.after}\n\n"
                 else:
                     content = last_result.content
-                
-                ## 这里打印执行结果
+
+                # 打印执行结果
                 console = Console()
                 console.print(Panel(
-                    Markdown(content),
+                    content,
                     title="Command Execution Result",
                     border_style="blue",
                     padding=(1, 2)
                 ))
                 
-                conversations.append({"role": "user", "content": content})
+                conversations.append({"role": "user", "content": self._execute_command_result.prompt(content)})
                 title = printer.get_message_from_key("auto_command_analyzing")
                 
                 result, _ = stream_out(
