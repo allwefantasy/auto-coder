@@ -53,8 +53,7 @@ class AutoCommandTools:
 
     def ask_user(self,question:str) -> str:
         '''
-        如果你对用户的问题有什么疑问，或者你想从用户收集一些额外信息，可以调用
-        此方法。
+        如果你对用户的问题有什么疑问，或者你想从用户收集一些额外信息，可以调用此方法。
         输入参数 question 是你对用户的提问。
         返回值是 用户对你问题的回答。
 
@@ -148,25 +147,7 @@ class AutoCommandTools:
             interpreter.close()
 
         return s
-
-    def auto_run_job(self, job: str, context: str = "") -> str:
-        """
-        该工具会根据job描述，自动拆解任务，然后生成执行步骤，然后按执行步骤一个一个执行。
-        输入参数 job: 任务描述
-        输入参数 context: 上下文信息
-        返回值是执行步骤的输出。
-
-        该工具的主要用途是帮助用户自动执行一些任务，比如编译，运行，测试等。
-        你需要通过目录结构（比如包含了pom文件，那么就是maven项目）并且搭配工具read_files(比如可以读取README.md)来获得一些context信息，
-        指导该工具生成合适的执行步骤，帮助用户自动化完成任务。
-        """
-        executor = code_auto_execute.CodeAutoExecute(
-            self.llm, self.args, code_auto_execute.Mode.SINGLE_ROUND
-        )
-        with redirect_stdout() as output:
-            executor.run(query=job, context=context, source_code="")
-        return output.getvalue()
-
+   
     def get_related_files_by_symbols(self, query: str) -> str:
         """
         你可以给出类名，函数名，以及文件的用途描述等信息，该工具会根据这些信息返回项目中相关的文件。
@@ -260,7 +241,7 @@ class AutoCommandTools:
         搜索不区分大小写。
         """
         matched_files = []
-        for root, _, files in os.walk(args.source_dir):
+        for root, _, files in os.walk(self.args.source_dir):
             for file in files:
                 if keyword.lower() in file.lower():
                     matched_files.append(os.path.join(root, file))
