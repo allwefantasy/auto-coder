@@ -48,7 +48,8 @@ def redirect_stdout():
         sys.stdout = original_stdout    
 
 class AutoCommandTools:
-    def __init__(self, args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
+    def __init__(self, args: AutoCoderArgs, 
+                 llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
         self.args = args
         self.llm = llm
         self.result_manager = ResultManager()

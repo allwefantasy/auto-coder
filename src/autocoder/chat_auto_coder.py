@@ -2326,7 +2326,7 @@ def lib_command(args: List[str]):
         console.print(f"Unknown subcommand: {subcommand}")
 
 
-def auto_command(query: str):
+def auto_command(params,query: str):
     """处理/auto指令"""
     from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
     args = get_final_config()
@@ -2339,7 +2339,9 @@ def auto_command(query: str):
     
     # 初始化调优器
     llm = get_single_llm(args.chat_model or args.model,product_mode=args.product_mode)
-    tuner = CommandAutoTuner(llm, memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory), 
+    tuner = CommandAutoTuner(llm, 
+                             args=args,
+                             memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory), 
                              command_config=CommandConfig(
                                  add_files=add_files,
                                  remove_files=remove_files,
@@ -2676,7 +2678,7 @@ def main():
 
             elif user_input.startswith("/auto"):
                 query = user_input[len("/auto"):].strip()
-                auto_command(query)
+                auto_command(ARGS,query)
             elif user_input.startswith("/debug"):
                 code = user_input[len("/debug"):].strip()
                 try:

@@ -11,7 +11,8 @@ from autocoder.common.result_manager import ResultManager
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from byzerllm.utils.str2model import to_model
 from autocoder.common import git_utils
-
+from autocoder.commands.tools import AutoCommandTools
+from autocoder.auto_coder import AutoCoderArgs
 
 class CommandMessage(BaseModel):
     role: str
@@ -116,14 +117,17 @@ class CommandConfig(BaseModel):
     models: SkipValidation[Callable]
     lib: SkipValidation[Callable]
 
+    
 
 class CommandAutoTuner:
-    def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],                 
+    def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],
+                 args: AutoCoderArgs,
                  memory_config: MemoryConfig, command_config: CommandConfig):
         self.llm = llm
         self.printer = Printer()
         self.memory_config = memory_config
-        self.command_config = command_config        
+        self.command_config = command_config
+        self.tools = AutoCommandTools(args=args, llm=self.llm)        
 
     @byzerllm.prompt()
     def _analyze(self, request: AutoCommandRequest) -> str:
@@ -239,7 +243,7 @@ class CommandAutoTuner:
 
                 conversations.append({"role": "user", "content": content})
                 title = printer.get_message_from_key("auto_command_analyzing")
-                print(conversations)
+                
                 result, _ = stream_out(
                     self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
                     model_name=self.llm.default_model_name,
@@ -329,14 +333,14 @@ class CommandAutoTuner:
          移除所有当前会话中的文件，同时清空活跃组列表。
          使用例子：
 
-         /remove_files /all
+         remove_files(file_names=["/all"])
 
          ## 移除指定文件
          可以指定一个或多个文件，文件名之间用逗号分隔。
          使用例子：
 
-         /remove_files file1.py,file2.py
-         /remove_files /path/to/file1.py,file2.py
+         remove_files(file_names=["file1.py,file2.py"])
+         remove_files(file_names=["/path/to/file1.py,file2.py"])
 
         </usage>
         </command>
@@ -348,7 +352,7 @@ class CommandAutoTuner:
          该命令不需要任何参数，直接使用即可。
          使用例子：
 
-         /list_files
+         list_files()
 
         </usage>
         </command>        
@@ -363,7 +367,7 @@ class CommandAutoTuner:
          该命令不需要任何参数，直接使用即可。会撤销最近一次的代码修改操作。
          使用例子：
 
-         /revert
+         revert()
 
          注意：
          - 只能撤销最后一次的修改
@@ -386,11 +390,11 @@ class CommandAutoTuner:
          不带参数显示所有可用命令的概览
          使用例子：
 
-         /help
+         help(query="")
 
          ## 帮助用户执行特定的配置
          
-         /help 关闭索引
+         help(query="关闭索引")
 
          这条命令会触发:
 
@@ -422,7 +426,7 @@ class CommandAutoTuner:
         
         比如你想开启索引，则可以执行：
 
-        /help 开启索引
+        help(query="开启索引")
 
         其中 query 参数为 "开启索引"                                                                              
                                         
@@ -433,13 +437,13 @@ class CommandAutoTuner:
         <name>exclude_dirs</name>
         <description>设置要排除的目录，这些目录下的文件被 @ 或者 @@ 不会触发对这些目录的提示。</description>
         <usage>
-         该命令接受一个或多个目录名，多个目录用逗号分隔。
+         该命令接受一个或多个目录名 dir_names, list 类型
 
          ## 添加排除目录
          使用例子：
 
-         /exclude_dirs node_modules,dist,build
-         /exclude_dirs .git
+         exclude_dirs(dir_names=["node_modules","dist","build"])
+         exclude_dirs(dir_names=[".git"])
          
         </usage>
         </command>
@@ -455,37 +459,42 @@ class CommandAutoTuner:
          直接输入对话内容
          使用例子：
 
-         /chat 这个项目使用了什么技术栈？
+         chat(query="这个项目使用了什么技术栈？")
 
          ## 新会话
          使用 /new 开启新对话
          使用例子：
 
-         /chat /new 让我们讨论新的话题
+         chat(query="/new 让我们讨论新的话题")         
 
          ## 代码审查
          使用 /review 请求代码审查
          使用例子：
 
-         /chat /review @main.py
+         chat(query="/review @main.py")
 
          ## 特殊功能
          - /no_context：不使用当前文件上下文
          - /mcp：获取 MCP 服务内容
-         - /rag：使用检索增强生成
-         - /copy：复制生成内容
-         - /save：保存对话内容
+         - /rag：使用检索增强生成。 如果用户配置了 rag_url, 那可以设置query参数类似 `/rag 查询mcp该如何开发`
+         - /copy：chat 函数执行后的结果会被复制到黏贴版
+         - /save：chat 函数执行后的结果会被保存到全局记忆中，后续会自动加到 coding,chat 的上下文中
 
          ## 引用语法
          - @文件名：引用特定文件
          - @@符号：引用函数或类
-         - <img>图片路径</img>：引入图片
+         - <img>图片路径</img>：引入图片         
 
          使用例子：
 
-         /chat @utils.py 这个文件的主要功能是什么？
-         /chat @@process_data 这个函数的实现有什么问题？
-         /chat <img>screenshots/error.png</img> 这个错误如何解决？
+         chat(query="@utils.py 这个文件的主要功能是什么？")
+         chat(query="@@process_data 这个函数的实现有什么问题？")
+         chat(query="<img>screenshots/error.png</img> 这个错误如何解决？")
+
+         ## 对最后一次commit 进行review
+         使用例子：
+         chat(query="/review /commit")
+
         </usage>
         </command>
 
@@ -501,25 +510,20 @@ class CommandAutoTuner:
          直接描述需求
          使用例子：
 
-         /coding 创建一个处理用户登录的函数
+         coding(query="创建一个处理用户登录的函数")
          
-         此处的 query 参数为 "创建一个处理用户登录的函数".
 
-         ## 和/chat 搭配使用
-         当你用过 /chat 之后，继续使用 /coding 时，可以添加 /apply 来带上 /chat 的对话内容。         
+         ## 和 chat 搭配使用
+         当你用过 chat 之后，继续使用 coding 时，可以添加 /apply 来带上 chat 的对话内容。         
          使用例子：
 
-         /coding /apply 根据我们的历史对话实现代码,请不要遗漏任何细节。
-
-         此处 query 参数为 "/apply 根据我们的历史对话实现代码,请不要遗漏任何细节。"
+         coding(query="/apply 根据我们的历史对话实现代码,请不要遗漏任何细节。")
 
          ## 预测下一步
          使用 /next 分析并建议后续步骤
          使用例子：
 
-         /coding /next
-
-         此处 query 参数为 "/next"
+         coding(query="/next")
 
          ## 引用语法
          - @文件名：引用特定文件
@@ -528,15 +532,9 @@ class CommandAutoTuner:
 
          使用例子：
 
-         /coding @auth.py 添加JWT认证
-         /coding @@login 优化错误处理
-         /coding <img>design/flow.png</img> 实现这个流程图的功能
-
-         注意：
-         - 支持多文件联动修改
-         - 自动处理代码依赖关系
-         - 保持代码风格一致性
-         - 生成代码会进行自动测试
+         coding(query="@auth.py 添加JWT认证")
+         coding(query="@@login 优化错误处理")
+         coding(query="<img>design/flow.png</img> 实现这个流程图的功能")
         </usage>
         </command>
 
@@ -545,43 +543,44 @@ class CommandAutoTuner:
         <description>库管理命令，用于管理项目依赖和文档。</description>
         <usage>
          该命令用于管理项目的依赖库和相关文档。
+         参数为 args: List[str]
 
          ## 添加库
          使用 /add 添加新库
          使用例子：
 
-         /lib /add byzer-llm
+         lib(args=["/add", "byzer-llm"])
         
 
          ## 移除库
          使用 /remove 移除库
          使用例子：
 
-         /lib /remove byzer-llm
+         lib(args=["/remove", "byzer-llm"])
 
          ## 查看库列表
          使用 /list 查看已添加的库
          使用例子：
 
-         /lib /list
+         lib(args=["/list"])
 
          ## 设置代理
          使用 /set-proxy 设置下载代理
          使用例子：
 
-         /lib /set-proxy https://gitee.com/allwefantasy/llm_friendly_packages
+         lib(args=["/set-proxy", "https://gitee.com/allwefantasy/llm_friendly_packages"])
 
          ## 刷新文档
          使用 /refresh 更新文档
          使用例子：
 
-         /lib /refresh
+         lib(args=["/refresh"])
 
          ## 获取文档
          使用 /get 获取特定包的文档
          使用例子：
 
-         /lib /get byzer-llm
+         lib(args=["/get", "byzer-llm"])
 
         目前仅支持用于大模型的 byzer-llm 包，用于数据分析的 byzer-sql 包。
 
@@ -592,13 +591,11 @@ class CommandAutoTuner:
         <name>models</name>
         <description>模型控制面板命令，用于管理和控制AI模型。</description>
         <usage>
-        该命令用于管理和控制AI模型的配置和运行。 包含两个参数：
-        1. params
-        2. query
+        该命令用于管理和控制AI模型的配置和运行。 包含一个参数：query，字符串类型。
          
         罗列模型模板
 
-        /models /list
+        models(query="/list")
 
 
         其中展示的结果中标注 * 好的模型表示目前已经激活（配置过api key)的。
@@ -607,14 +604,14 @@ class CommandAutoTuner:
 
         比如我想添加 open router 或者硅基流动的模型，则可以通过如下方式：
         
-        /models /add_model name=openrouter-sonnet-3.5 base_url=https://openrouter.ai/api/v1
+        models(query="/add_model name=openrouter-sonnet-3.5 base_url=https://openrouter.ai/api/v1")
         
         这样就能添加自定义模型: openrouter-sonnet-3.5
         
 
         如果你想添加添加硅基流动deepseek 模型的方式为：
 
-        /models /add_model name=siliconflow_ds_2.5  base_url=https://api.siliconflow.cn/v1 model_name=deepseek-ai/DeepSeek-V2.5
+        models(query="/add_model name=siliconflow_ds_2.5  base_url=https://api.siliconflow.cn/v1 model_name=deepseek-ai/DeepSeek-V2.5")
 
         name 为你取的一个名字，这意味着同一个模型，你可以添加多个，只要保证 name 不一样即可。
         base_url 是 硅基流动的 API 地址
@@ -622,15 +619,15 @@ class CommandAutoTuner:
 
         添加完模型后，你还需要能够激活模型:
 
-        /models /activate openrouter-sonnet-3.5 <YOUR_API_KEY>
+        models(query="/activate openrouter-sonnet-3.5 <YOUR_API_KEY>")
 
         之后你就可以这样配置来使用激活的模型：
 
-        /conf model:openrouter-sonnet-3.5 
+        conf(conf="model:openrouter-sonnet-3.5")
 
         删除模型
 
-        /models /remove openrouter-sonnet-3.5
+        models(query="/remove openrouter-sonnet-3.5")
         
         </usage>
         </command>
@@ -643,7 +640,7 @@ class CommandAutoTuner:
          
          使用例子：
          
-         /run_python "print('Hello World')"
+         run_python(code="print('Hello World')")
          
          注意：
          - 代码将在项目根目录下执行
@@ -660,7 +657,7 @@ class CommandAutoTuner:
          
          使用例子：
          
-         /run_shell "ls -l"
+         run_shell(script="ls -l")
          
          注意：
          - 脚本将在项目根目录下执行
@@ -677,7 +674,7 @@ class CommandAutoTuner:
          
          使用例子：
          
-         /get_related_files "用户登录功能"
+         get_related_files(query="用户登录功能")
          
          注意：
          - 返回值为逗号分隔的文件路径列表
@@ -693,7 +690,7 @@ class CommandAutoTuner:
          
          使用例子：
          
-         /get_project_map
+         get_project_map()
          
          注意：
          - 返回值为JSON格式文本
@@ -710,7 +707,7 @@ class CommandAutoTuner:
          
          使用例子：
          
-         /read_files "main.py,utils.py"
+         read_files(paths=["main.py,utils.py"])
          
          注意：
          - 支持文件名（匹配第一个找到的文件）或绝对路径
@@ -727,7 +724,7 @@ class CommandAutoTuner:
          
          使用例子：
          
-         /find_files_by_name "test"
+         find_files_by_name(keyword="test")
          
          注意：
          - 搜索不区分大小写
@@ -743,7 +740,7 @@ class CommandAutoTuner:
          
          使用例子：
          
-         /find_files_by_content "TODO"
+         find_files_by_content(keyword="TODO")
          
          注意：
          - 搜索不区分大小写
@@ -772,7 +769,18 @@ class CommandAutoTuner:
             "design": self.command_config.design,
             "summon": self.command_config.summon,
             "lib": self.command_config.lib,
-            "models": self.command_config.models
+            "models": self.command_config.models,
+
+            "run_python": self.tools.run_python_code,
+            "run_shell": self.tools.run_shell_code,
+            "get_related_files_by_symbols": self.tools.get_related_files_by_symbols,
+            "get_project_map": self.tools.get_project_map,
+            "read_files": self.tools.read_files,
+            "find_files_by_name": self.tools.find_files_by_name,
+            "find_files_by_content": self.tools.find_files_by_content,        
+            "get_project_related_files": self.tools.get_project_related_files,
+            "ask_user":self.tools.ask_user
+                        
         }
 
         if command not in command_map:
