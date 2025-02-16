@@ -1832,7 +1832,7 @@ def generate_shell_command(input_text):
     finally:
         os.remove(execute_file)
 
-def manage_models(params, query: str):
+def manage_models(query: str):
     """    
     Handle /models subcommands:
       /models /list - List all models (default + custom)
@@ -1843,7 +1843,8 @@ def manage_models(params, query: str):
     printer = Printer()
     console = Console()
     
-    if params.product_mode != "lite":
+    product_mode = memory.get("product_mode", "lite")
+    if product_mode != "lite":
         printer.print_in_terminal("models_lite_only", style="red")
         return
         
@@ -2339,6 +2340,7 @@ def auto_command(params,query: str):
     
     # 初始化调优器
     llm = get_single_llm(args.chat_model or args.model,product_mode=args.product_mode)
+    from functools import partial
     tuner = CommandAutoTuner(llm, 
                              args=args,
                              memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory), 
@@ -2358,7 +2360,7 @@ def auto_command(params,query: str):
                                  summon=summon,
                                  lib=lib_command,
                                  mcp=mcp,
-                                 models=manage_models,
+                                 models=partial(manage_models),
                                  index_build=index_build,
                                  index_query=index_query,                                                                                           
                              ))
@@ -2597,7 +2599,7 @@ def main():
                 if not query:
                     print("Please enter your query.")
                 else:
-                    manage_models(ARGS,query) 
+                    manage_models(query) 
 
             elif user_input.startswith("/mode"):
                 conf = user_input[len("/mode"):].strip()
