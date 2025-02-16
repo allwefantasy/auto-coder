@@ -651,16 +651,13 @@ def get_changes_by_commit_message(repo_path: str, message: str) -> CommitChanges
         
         # 比较当前commit与其父commit的差异
         for diff_item in commit.parents[0].diff(commit):
-            # 获取相对路径
-            rel_path = diff_item.a_path if diff_item.a_path else diff_item.b_path
-            # 转换为完整路径
-            file_path = os.path.join(repo_path, rel_path) if repo_path else os.path.abspath(rel_path)
+            file_path = diff_item.a_path if diff_item.a_path else diff_item.b_path
             
             # 获取变更前内容
             before_content = None
             try:
                 if diff_item.a_blob:
-                    before_content = repo.git.show(f"{commit.parents[0].hexsha}:{rel_path}")
+                    before_content = repo.git.show(f"{commit.parents[0].hexsha}:{file_path}")
             except GitCommandError:
                 pass  # 文件可能是新增的
 
@@ -668,7 +665,7 @@ def get_changes_by_commit_message(repo_path: str, message: str) -> CommitChanges
             after_content = None
             try:
                 if diff_item.b_blob:
-                    after_content = repo.git.show(f"{commit.hexsha}:{rel_path}")
+                    after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
             except GitCommandError:
                 pass  # 文件可能被删除
 
