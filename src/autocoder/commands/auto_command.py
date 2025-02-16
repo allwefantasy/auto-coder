@@ -5,6 +5,9 @@ from pydantic import BaseModel, Field
 import byzerllm
 from typing import List, Dict, Any, Union, Callable
 from autocoder.common.printer import Printer
+from rich.console import Console
+from rich.panel import Panel
+from rich.markdown import Markdown
 from pydantic import SkipValidation
 
 from autocoder.common.result_manager import ResultManager
@@ -246,6 +249,14 @@ class CommandAutoTuner:
                     content = last_result.content
                 
                 ## 这里打印执行结果
+                console = Console()
+                console.print(Panel(
+                    Markdown(content),
+                    title="Command Execution Result",
+                    border_style="blue",
+                    padding=(1, 2)
+                ))
+                
                 conversations.append({"role": "user", "content": content})
                 title = printer.get_message_from_key("auto_command_analyzing")
                 
