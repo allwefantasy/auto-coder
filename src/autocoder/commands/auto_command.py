@@ -70,7 +70,7 @@ class CommandSuggestion(BaseModel):
     command: str
     parameters: Dict[str, Any]
     confidence: float
-
+    reasoning: str
 
 class AutoCommandResponse(BaseModel):
     suggestions: List[CommandSuggestion]
@@ -78,9 +78,7 @@ class AutoCommandResponse(BaseModel):
 
 
 class AutoCommandRequest(BaseModel):
-    user_input: str
-    conversation_history: List[Dict[str, str]]
-    current_files: List[str]    
+    user_input: str     
 
 
 class MemoryConfig(BaseModel):
@@ -123,7 +121,7 @@ class CommandAutoTuner:
         self.command_config = command_config        
 
     @byzerllm.prompt()
-    def _analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
+    def _analyze(self, request: AutoCommandRequest) -> str:
         """
         根据用户输入和当前上下文，分析并推荐最合适的命令。
 
@@ -137,9 +135,7 @@ class CommandAutoTuner:
         {% endif %}
         
         可用命令列表:
-        {% for cmd in available_commands %}
-        - {{ cmd }}
-        {% endfor %}
+        {{ available_commands }}
 
         {% if conversation_history %}
         历史对话:
@@ -166,9 +162,9 @@ class CommandAutoTuner:
         """
         return {
             "user_input": request.user_input,
-            "current_files": request.current_files,
-            "conversation_history": request.conversation_history,
-            "available_commands": ""
+            "current_files": self.memory_config.memory["current_files"]["files"],            
+            "conversation_history": [],
+            "available_commands": self._command_readme.prompt()
         }
 
     def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
@@ -263,11 +259,6 @@ class CommandAutoTuner:
 
          /list_files
 
-         输出示例：
-         Current Files
-         ├── src/main.py
-         ├── tests/test_main.py
-         └── README.md
         </usage>
         </command>
 
@@ -363,19 +354,22 @@ class CommandAutoTuner:
 
          /help
 
-         ## 显示特定功能帮助
-         指定具体的功能或配置项获取详细说明
-         使用例子：
+         ## 帮助用户执行特定的配置
+         
+         /help 关闭索引
 
-         /help auto_merge
-         /help editblock_similarity
-         /help coding
+         这条命令会触发:
+
+         /conf skip_build_index:true
+
+         的执行。
+         
         </usage>
         </command>
 
         <command>
         <name>exclude_dirs</name>
-        <description>设置要排除的目录，这些目录下的文件将不会被索引和处理。</description>
+        <description>设置要排除的目录，这些目录下的文件被 @ 或者 @@ 不会触发对这些目录的提示。</description>
         <usage>
          该命令接受一个或多个目录名，多个目录用逗号分隔。
 
@@ -384,12 +378,7 @@ class CommandAutoTuner:
 
          /exclude_dirs node_modules,dist,build
          /exclude_dirs .git
-
-         注意：
-         - 默认已排除：.git, node_modules, dist, build, __pycache__
-         - 排除的目录不会被索引和处理
-         - 支持相对路径和绝对路径
-         - 更改后需要重新构建索引才能生效
+         
         </usage>
         </command>
 
@@ -480,11 +469,11 @@ class CommandAutoTuner:
 
          /coding 创建一个处理用户登录的函数
 
-         ## 应用上次生成
-         使用 /apply 应用上次生成的代码
+         ## 和/chat 搭配使用
+         当你用过 /chat 之后，继续使用 /coding 时，可以添加 /apply 来带上 /chat 的对话内容。         
          使用例子：
 
-         /coding /apply 在上次的基础上添加密码加密
+         /coding /apply 根据我们的历史对话实现代码。
 
          ## 预测下一步
          使用 /next 分析并建议后续步骤
@@ -575,14 +564,14 @@ class CommandAutoTuner:
          使用 /add 添加新库
          使用例子：
 
-         /lib /add requests
-         /lib /add numpy,pandas
+         /lib /add byzer-llm
+        
 
          ## 移除库
          使用 /remove 移除库
          使用例子：
 
-         /lib /remove requests
+         /lib /remove byzer-llm
 
          ## 查看库列表
          使用 /list 查看已添加的库
@@ -594,7 +583,7 @@ class CommandAutoTuner:
          使用 /set-proxy 设置下载代理
          使用例子：
 
-         /lib /set-proxy http://proxy.example.com:8080
+         /lib /set-proxy https://gitee.com/allwefantasy/llm_friendly_packages
 
          ## 刷新文档
          使用 /refresh 更新文档
@@ -606,85 +595,82 @@ class CommandAutoTuner:
          使用 /get 获取特定包的文档
          使用例子：
 
-         /lib /get requests
+         /lib /get byzer-llm
 
-         注意：
-         - 自动处理依赖关系
-         - 自动下载相关文档
-         - 支持版本管理
-         - 可以设置代理加速下载
+        目前仅支持用于大模型的 byzer-llm 包，用于数据分析的 byzer-sql 包。
+
         </usage>
         </command>
 
         <command>
-        <name>mcp</name>
+        <name>models</name>
         <description>模型控制面板命令，用于管理和控制AI模型。</description>
         <usage>
-         该命令用于管理和控制AI模型的配置和运行。
+        该命令用于管理和控制AI模型的配置和运行。 包含两个参数：
+        1. params
+        2. query
+         
+        罗列模型模板
 
-         ## 添加模型
-         使用 /add 添加新模型
-         使用例子：
+        /models /list
 
-         /mcp /add name=gpt4 base_url=https://api.example.com api_key=xxx
 
-         ## 移除模型
-         使用 /remove 移除模型
-         使用例子：
+        其中展示的结果中标注 * 好的模型表示目前已经激活（配置过api key)的。
 
-         /mcp /remove gpt4
+        添加模型模板
 
-         ## 查看模型列表
-         使用 /list 查看所有可用模型
-         使用例子：
+        比如我想添加 open router 或者硅基流动的模型，则可以通过如下方式：
+        
+        /models /add_model name=openrouter-sonnet-3.5 base_url=https://openrouter.ai/api/v1
+        
+        这样就能添加自定义模型: openrouter-sonnet-3.5
+        
 
-         /mcp /list
+        如果你想添加添加硅基流动deepseek 模型的方式为：
 
-         ## 查看运行中的模型
-         使用 /list_running 查看正在运行的模型
-         使用例子：
+        /models /add_model name=siliconflow_ds_2.5  base_url=https://api.siliconflow.cn/v1 model_name=deepseek-ai/DeepSeek-V2.5
 
-         /mcp /list_running
+        name 为你取的一个名字，这意味着同一个模型，你可以添加多个，只要保证 name 不一样即可。
+        base_url 是 硅基流动的 API 地址
+        model_name 则为你在硅基流动选择的模型名
 
-         ## 刷新模型状态
-         使用 /refresh 刷新指定模型
-         使用例子：
+        添加完模型后，你还需要能够激活模型:
 
-         /mcp /refresh gpt4
+        /models /activate openrouter-sonnet-3.5 <YOUR_API_KEY>
 
-         注意：
-         - 支持多种模型类型
-         - 自动管理模型生命周期
-         - 支持模型热切换
-         - 提供性能监控
+        之后你就可以这样配置来使用激活的模型：
+
+        /conf model:openrouter-sonnet-3.5 
+
+        删除模型
+
+        /models /remove openrouter-sonnet-3.5
+        
         </usage>
         </command>
-
-        </commands>
+        </commands>        
         '''
-        '''
-
 
     def execute_auto_command(self, command: str, parameters: Dict[str, Any]) -> None:
         """
         执行自动生成的命令
         """
         command_map = {
-            "add_files": self.commmand_config.add_files,
-            "remove_files": self.commmand_config.remove_files,
-            "list_files": self.commmand_config.list_files,
-            "conf": self.commmand_config.configure,
-            "revert": self.commmand_config.revert,
-            "commit": self.commmand_config.commit,
-            "help": self.commmand_config.help,
-            "exclude_dirs": self.commmand_config.exclude_dirs,
-            "ask": self.commmand_config.ask,
-            "chat": self.commmand_config.chat,
-            "coding": self.commmand_config.coding,
-            "design": self.commmand_config.design,
-            "summon": self.commmand_config.summon,
-            "lib": self.commmand_config.lib,
-            "mcp": self.commmand_config.mcp
+            "add_files": self.command_config.add_files,
+            "remove_files": self.command_config.remove_files,
+            "list_files": self.command_config.list_files,
+            "conf": self.command_config.configure,
+            "revert": self.command_config.revert,
+            "commit": self.command_config.commit,
+            "help": self.command_config.help,
+            "exclude_dirs": self.command_config.exclude_dirs,
+            "ask": self.command_config.ask,
+            "chat": self.command_config.chat,
+            "coding": self.command_config.coding,
+            "design": self.command_config.design,
+            "summon": self.command_config.summon,
+            "lib": self.command_config.lib,
+            "models": self.command_config.models
         }
 
         if command not in command_map:

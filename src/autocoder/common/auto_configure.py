@@ -108,8 +108,7 @@ class MemoryConfig(BaseModel):
 
 
 class AutoConfigRequest(BaseModel):
-    query: str = Field(..., description="用户原始请求内容")
-    current_conf: Dict[str, Any] = Field(..., description="当前配置项")
+    query: str = Field(..., description="用户原始请求内容")    
 
 
 class AutoConfigResponse(BaseModel):
@@ -199,7 +198,7 @@ class ConfigAutoTuner:
         """
         return {
             "query": request.query,
-            "current_conf": json.dumps(request.current_conf, indent=2),        
+            "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),        
             "last_execution_stat": "",
             "config_readme": self.config_readme.prompt()
         }

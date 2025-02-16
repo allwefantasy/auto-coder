@@ -55,6 +55,7 @@ from autocoder.utils.llms import get_single_llm
 import pkg_resources
 from autocoder.common.printer import Printer
 from autocoder.utils.thread_utils import run_in_thread,run_in_raw_thread
+from autocoder.common.command_completer import CommandCompleter,FileSystemModel as CCFileSystemModel,MemoryConfig as CCMemoryModel
 
 class SymbolItem(BaseModel):
     symbol_name: str
@@ -631,384 +632,6 @@ def get_symbol_list() -> List[SymbolItem]:
     return list_of_symbols
 
 
-class CommandCompleter(Completer):
-    def __init__(self, commands):
-        self.commands = commands
-        self.all_file_names = get_all_file_names_in_project()
-        self.all_files = get_all_file_in_project()
-        self.all_dir_names = get_all_dir_names_in_project()
-        self.all_files_with_dot = get_all_file_in_project_with_dot()
-        self.symbol_list = get_symbol_list()
-        self.current_file_names = []
-
-    def get_completions(self, document, complete_event):
-        text = document.text_before_cursor
-        words = text.split()
-
-        if len(words) > 0:
-            if words[0] == "/mode":
-                left_word = text[len("/mode"):]
-                for mode in ["normal", "auto_detect", "voice_input"]:
-                    if mode.startswith(left_word.strip()):
-                        yield Completion(mode, start_position=-len(left_word.strip()))
-
-            if words[0] == "/add_files":
-                new_text = text[len("/add_files"):]
-                parser = CommandTextParser(new_text, words[0])
-                parser.add_files()
-                current_word = parser.current_word()
-
-                if parser.last_sub_command() == "/refresh":
-                    return
-
-                for command in parser.get_sub_commands():
-                    if command.startswith(current_word):
-                        yield Completion(command, start_position=-len(current_word))
-
-                if parser.first_sub_command() == "/group" and (
-                    parser.last_sub_command() == "/group"
-                    or parser.last_sub_command() == "/drop"
-                ):
-                    group_names = memory["current_files"]["groups"].keys()
-                    if "," in current_word:
-                        current_word = current_word.split(",")[-1]
-
-                    for group_name in group_names:
-                        if group_name.startswith(current_word):
-                            yield Completion(
-                                group_name, start_position=-len(current_word)
-                            )
-
-                if parser.first_sub_command() != "/group":
-                    if current_word and current_word.startswith("."):
-                        for file_name in self.all_files_with_dot:
-                            if file_name.startswith(current_word):
-                                yield Completion(
-                                    file_name, start_position=-
-                                    len(current_word)
-                                )
-                    else:
-                        for file_name in self.all_file_names:
-                            if file_name.startswith(current_word):
-                                yield Completion(
-                                    file_name, start_position=-
-                                    len(current_word)
-                                )
-                        for file_name in self.all_files:
-                            if current_word and current_word in file_name:
-                                yield Completion(
-                                    file_name, start_position=-
-                                    len(current_word)
-                                )
-            elif words[0] in ["/chat", "/coding"]:
-                image_extensions = (
-                    ".png",
-                    ".jpg",
-                    ".jpeg",
-                    ".gif",
-                    ".bmp",
-                    ".tiff",
-                    ".tif",
-                    ".webp",
-                    ".svg",
-                    ".ico",
-                    ".heic",
-                    ".heif",
-                    ".raw",
-                    ".cr2",
-                    ".nef",
-                    ".arw",
-                    ".dng",
-                    ".orf",
-                    ".rw2",
-                    ".pef",
-                    ".srw",
-                    ".eps",
-                    ".ai",
-                    ".psd",
-                    ".xcf",
-                )
-                new_text = text[len(words[0]):]
-                parser = CommandTextParser(new_text, words[0])
-
-                parser.coding()
-                current_word = parser.current_word()
-
-                if len(new_text.strip()) == 0 or new_text.strip() == "/":
-                    for command in parser.get_sub_commands():
-                        if command.startswith(current_word):
-                            yield Completion(command, start_position=-len(current_word))
-
-                all_tags = parser.tags
-
-                if current_word.startswith("@"):
-                    name = current_word[1:]
-                    target_set = set()
-
-                    for file_name in self.current_file_names:
-                        base_file_name = os.path.basename(file_name)
-                        if name in base_file_name:
-                            target_set.add(base_file_name)
-                            path_parts = file_name.split(os.sep)
-                            display_name = (
-                                os.sep.join(path_parts[-3:])
-                                if len(path_parts) > 3
-                                else file_name
-                            )
-                            relative_path = os.path.relpath(
-                                file_name, project_root)
-                            yield Completion(
-                                relative_path,
-                                start_position=-len(name),
-                                display=f"{display_name} (in active files)",
-                            )
-
-                    for file_name in self.all_file_names:
-                        if file_name.startswith(name) and file_name not in target_set:
-                            target_set.add(file_name)
-
-                            path_parts = file_name.split(os.sep)
-                            display_name = (
-                                os.sep.join(path_parts[-3:])
-                                if len(path_parts) > 3
-                                else file_name
-                            )
-                            relative_path = os.path.relpath(
-                                file_name, project_root)
-
-                            yield Completion(
-                                relative_path,
-                                start_position=-len(name),
-                                display=f"{display_name}",
-                            )
-
-                    for file_name in self.all_files:
-                        if name in file_name and file_name not in target_set:
-                            path_parts = file_name.split(os.sep)
-                            display_name = (
-                                os.sep.join(path_parts[-3:])
-                                if len(path_parts) > 3
-                                else file_name
-                            )
-                            relative_path = os.path.relpath(
-                                file_name, project_root)
-                            yield Completion(
-                                relative_path,
-                                start_position=-len(name),
-                                display=f"{display_name}",
-                            )
-
-                if current_word.startswith("@@"):
-                    name = current_word[2:]
-                    for symbol in self.symbol_list:
-                        if name in symbol.symbol_name:
-                            file_name = symbol.file_name
-                            path_parts = file_name.split(os.sep)
-                            display_name = (
-                                os.sep.join(path_parts[-3:])
-                                if len(path_parts) > 3
-                                else symbol.symbol_name
-                            )
-                            relative_path = os.path.relpath(
-                                file_name, project_root)
-                            yield Completion(
-                                f"{symbol.symbol_name}(location: {relative_path})",
-                                start_position=-len(name),
-                                display=f"{symbol.symbol_name} ({display_name}/{symbol.symbol_type})",
-                            )
-
-                tags = [tag for tag in parser.tags]
-
-                if current_word.startswith("<"):
-                    name = current_word[1:]
-                    for tag in ["<img>", "</img>"]:
-                        if all_tags and all_tags[-1].start_tag == "<img>":
-                            if tag.startswith(name):
-                                yield Completion(
-                                    "</img>", start_position=-len(current_word)
-                                )
-                        elif tag.startswith(name):
-                            yield Completion(tag, start_position=-len(current_word))
-
-                if tags and tags[-1].start_tag == "<img>" and tags[-1].end_tag == "":
-                    raw_file_name = tags[0].content
-                    file_name = raw_file_name.strip()
-                    parent_dir = os.path.dirname(file_name)
-                    file_basename = os.path.basename(file_name)
-                    search_dir = parent_dir if parent_dir else "."
-                    for root, dirs, files in os.walk(search_dir):
-                        # 只处理直接子目录
-                        if root != search_dir:
-                            continue
-
-                        # 补全子目录
-                        for dir in dirs:
-                            full_path = os.path.join(root, dir)
-                            if full_path.startswith(file_name):
-                                relative_path = os.path.relpath(
-                                    full_path, search_dir)
-                                yield Completion(
-                                    relative_path,
-                                    start_position=-len(file_basename),
-                                )
-
-                        # 补全文件
-                        for file in files:
-                            if file.lower().endswith(
-                                image_extensions
-                            ) and file.startswith(file_basename):
-                                full_path = os.path.join(root, file)
-                                relative_path = os.path.relpath(
-                                    full_path, search_dir)
-                                yield Completion(
-                                    relative_path,
-                                    start_position=-len(file_basename),
-                                )
-
-                        # 只处理一层子目录，然后退出循环
-                        break
-
-            elif words[0] == "/remove_files":
-                new_words = text[len("/remove_files"):].strip().split(",")
-
-                is_at_space = text[-1] == " "
-                last_word = new_words[-2] if len(new_words) > 1 else ""
-                current_word = new_words[-1] if new_words else ""
-
-                if is_at_space:
-                    last_word = current_word
-                    current_word = ""
-
-                # /remove_files /all [cursor] or /remove_files /all p[cursor]
-                if not last_word and not current_word:
-                    if "/all".startswith(current_word):
-                        yield Completion("/all", start_position=-len(current_word))
-                    for file_name in self.current_file_names:
-                        yield Completion(file_name, start_position=-len(current_word))
-
-                # /remove_files /a[cursor] or /remove_files p[cursor]
-                if current_word:
-                    if "/all".startswith(current_word):
-                        yield Completion("/all", start_position=-len(current_word))
-                    for file_name in self.current_file_names:
-                        if current_word and current_word in file_name:
-                            yield Completion(
-                                file_name, start_position=-len(current_word)
-                            )
-            elif words[0] == "/exclude_dirs":
-                new_words = text[len("/exclude_dirs"):].strip().split(",")
-                current_word = new_words[-1]
-
-                for file_name in self.all_dir_names:
-                    if current_word and current_word in file_name:
-                        yield Completion(file_name, start_position=-len(current_word))
-
-            elif words[0] == "/lib":
-                new_text = text[len("/lib"):]
-                parser = CommandTextParser(new_text, words[0])
-                parser.lib()
-                current_word = parser.current_word()
-
-                for command in parser.get_sub_commands():
-                    if command.startswith(current_word):
-                        yield Completion(command, start_position=-len(current_word))
-
-                if parser.last_sub_command() in ["/add", "/remove", "/get"]:
-                    for lib_name in memory.get("libs", {}).keys():
-                        if lib_name.startswith(current_word):
-                            yield Completion(
-                                lib_name, start_position=-len(current_word)
-                            )
-            elif words[0] == "/mcp":
-                new_text = text[len("/mcp"):]
-                parser = CommandTextParser(new_text, words[0])
-                parser.lib()
-                current_word = parser.current_word()
-                for command in parser.get_sub_commands():
-                    if command.startswith(current_word):
-                        yield Completion(command, start_position=-len(current_word))
-            elif words[0] == "/models":
-                new_text = text[len("/models"):]
-                parser = CommandTextParser(new_text, words[0])
-                parser.lib()
-                current_word = parser.current_word()
-                for command in parser.get_sub_commands():
-                    if command.startswith(current_word):
-                        yield Completion(command, start_position=-len(current_word))
-
-            elif words[0] == "/coding":
-                new_text = text[len("/coding"):]
-                parser = CommandTextParser(new_text, words[0])
-                parser.lib()
-                current_word = parser.current_word()
-                for command in parser.get_sub_commands():
-                    if command.startswith(current_word):
-                        yield Completion(command, start_position=-len(current_word))
-
-            elif words[0] == "/conf":
-                new_words = text[len("/conf"):].strip().split()
-                is_at_space = text[-1] == " "
-                last_word = new_words[-2] if len(new_words) > 1 else ""
-                current_word = new_words[-1] if new_words else ""
-                completions = []
-
-                if is_at_space:
-                    last_word = current_word
-                    current_word = ""
-
-                # /conf /drop [curor] or /conf /drop p[cursor]
-                if last_word == "/drop":
-                    completions = [
-                        field_name
-                        for field_name in memory["conf"].keys()
-                        if field_name.startswith(current_word)
-                    ]
-                # /conf [curosr]
-                elif not last_word and not current_word:
-                    completions = [
-                        "/drop"] if "/drop".startswith(current_word) else []
-                    completions += [
-                        field_name + ":"
-                        for field_name in AutoCoderArgs.model_fields.keys()
-                        if field_name.startswith(current_word)
-                    ]
-                # /conf p[cursor]
-                elif not last_word and current_word:
-                    completions = [
-                        "/drop"] if "/drop".startswith(current_word) else []
-                    completions += [
-                        field_name + ":"
-                        for field_name in AutoCoderArgs.model_fields.keys()
-                        if field_name.startswith(current_word)
-                    ]
-
-                for completion in completions:
-                    yield Completion(completion, start_position=-len(current_word))
-
-            else:
-                for command in self.commands:
-                    if command.startswith(text):
-                        yield Completion(command, start_position=-len(text))
-
-        else:
-            for command in self.commands:
-                if command.startswith(text):
-                    yield Completion(command, start_position=-len(text))
-
-    def update_current_files(self, files):
-        self.current_file_names = [f for f in files]
-
-    def refresh_files(self):
-        self.all_file_names = get_all_file_names_in_project()
-        self.all_files = get_all_file_in_project()
-        self.all_dir_names = get_all_dir_names_in_project()
-        self.all_files_with_dot = get_all_file_in_project_with_dot()
-        self.symbol_list = get_symbol_list()
-
-
-completer = CommandCompleter(commands)
-
-
 def save_memory():
     with open(os.path.join(base_persist_dir, "memory.json"), "w") as f:
         json.dump(memory, f, indent=2, ensure_ascii=False)
@@ -1022,6 +645,21 @@ def load_memory():
         with open(memory_path, "r") as f:
             memory = json.load(f)
     completer.update_current_files(memory["current_files"]["files"])
+
+
+completer = CommandCompleter(commands,
+                             file_system_model=CCFileSystemModel(project_root=project_root,
+                                                                defaut_exclude_dirs=defaut_exclude_dirs,
+                                                                get_all_file_names_in_project=get_all_file_names_in_project,
+                                                                get_all_file_in_project=get_all_file_in_project,
+                                                                get_all_dir_names_in_project=get_all_dir_names_in_project,
+                                                                get_all_file_in_project_with_dot=get_all_file_in_project_with_dot,
+                                                                get_symbol_list=get_symbol_list
+                                                                ),
+                             memory_model=CCMemoryModel(memory=memory,
+                                                        save_memory_func=save_memory))
+
+
 
 
 def print_conf(content:Dict[str,Any]):        
@@ -2488,7 +2126,7 @@ def help(query: str):
     product_mode = memory.get("product_mode", "lite")
     llm = get_single_llm(args.chat_model or args.model, product_mode=product_mode)
     auto_config_tuner = ConfigAutoTuner(llm=llm, memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory))
-    auto_config_tuner.tune(AutoConfigRequest(query=query, current_conf=memory.get("conf", {})))    
+    auto_config_tuner.tune(AutoConfigRequest(query=query))    
 
 @run_in_raw_thread()
 def index_query(query: str):
@@ -2673,20 +2311,19 @@ def lib_command(args: List[str]):
         console.print(f"Unknown subcommand: {subcommand}")
 
 
-def auto_command(query: str, memory: dict):
+def auto_command(query: str):
     """处理/auto指令"""
     from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
+    args = get_final_config()
+    help(query)
     
     # 准备请求参数
     request = AutoCommandRequest(
-        user_input=query,
-        conversation_history=memory["conversation"],
-        current_files=memory["current_files"]["files"],
-        available_commands=[cmd.replace("/","") for cmd in commands if cmd != "/auto"]
+        user_input=query        
     )
     
     # 初始化调优器
-    llm = get_single_llm(memory["conf"].get("model", "v3_chat"))
+    llm = get_single_llm(args.chat_model or args.model,product_mode=args.product_mode)
     tuner = CommandAutoTuner(llm, memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory), 
                              command_config=CommandConfig(
                                  add_files=add_files,
@@ -2703,7 +2340,10 @@ def auto_command(query: str, memory: dict):
                                  design=design,
                                  summon=summon,
                                  lib=lib_command,
-                                 mcp=mcp
+                                 mcp=mcp,
+                                 models=manage_models,
+                                 index_build=index_build,
+                                 index_query=index_query,                                                                                           
                              ))
     
     # 生成建议
@@ -3021,7 +2661,7 @@ def main():
 
             elif user_input.startswith("/auto"):
                 query = user_input[len("/auto"):].strip()
-                auto_command(query, memory)
+                auto_command(query)
             elif user_input.startswith("/debug"):
                 code = user_input[len("/debug"):].strip()
                 try:

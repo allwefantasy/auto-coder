@@ -176,6 +176,7 @@ def run_in_raw_thread():
             exception = []            
             def worker():            
                 try:
+                    # global_cancel.reset()
                     ret = func(*args, **kwargs)
                     result.append(ret)
                     global_cancel.reset()                
@@ -196,6 +197,9 @@ def run_in_raw_thread():
             except KeyboardInterrupt:  
                 global_cancel.set()                              
                 raise KeyboardInterrupt("Task was cancelled by user")
+            except Exception as e:
+                global_cancel.reset()
+                raise
                 
         return wrapper
     return decorator    
