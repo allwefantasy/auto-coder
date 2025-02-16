@@ -2675,7 +2675,7 @@ def lib_command(args: List[str]):
 
 def auto_command(query: str, memory: dict):
     """处理/auto指令"""
-    from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest
+    from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
     
     # 准备请求参数
     request = AutoCommandRequest(
@@ -2687,7 +2687,24 @@ def auto_command(query: str, memory: dict):
     
     # 初始化调优器
     llm = get_single_llm(memory["conf"].get("model", "v3_chat"))
-    tuner = CommandAutoTuner(llm)
+    tuner = CommandAutoTuner(llm, memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory), 
+                             command_config=CommandConfig(
+                                 add_files=add_files,
+                                 remove_files=remove_files,
+                                 list_files=list_files,
+                                 conf=configure,
+                                 revert=revert,
+                                 commit=commit,
+                                 help=help,
+                                 exclude_dirs=exclude_dirs,
+                                 ask=ask,
+                                 chat=chat,
+                                 coding=coding,
+                                 design=design,
+                                 summon=summon,
+                                 lib=lib_command,
+                                 mcp=mcp
+                             ))
     
     # 生成建议
     response = tuner.analyze(request)
