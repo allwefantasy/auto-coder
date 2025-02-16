@@ -634,6 +634,50 @@ class CommandAutoTuner:
         
         </usage>
         </command>
+
+        <command>
+        <name>tools</name>
+        <description>提供各种实用工具函数，用于辅助开发和调试。</description>
+        <usage>
+        该命令提供以下工具函数：
+
+        1. run_python_code: 运行Python代码
+        使用示例：
+        /tools run_python_code code="print('Hello World')"
+
+        2. run_shell_code: 运行Shell脚本
+        使用示例：
+        /tools run_shell_code script="ls -l"
+
+        3. auto_run_job: 自动拆解并执行任务
+        使用示例：
+        /tools auto_run_job job="编译项目"
+
+        4. get_related_files_by_symbols: 根据符号获取相关文件
+        使用示例：
+        /tools get_related_files_by_symbols query="UserService类"
+
+        5. get_project_related_files: 根据查询获取项目相关文件
+        使用示例：
+        /tools get_project_related_files query="用户认证模块"
+
+        6. get_project_map: 获取项目结构映射
+        使用示例：
+        /tools get_project_map
+
+        7. read_files: 读取指定文件内容
+        使用示例：
+        /tools read_files paths="src/main.py,src/utils.py"
+
+        8. find_files_by_name: 根据文件名搜索文件
+        使用示例：
+        /tools find_files_by_name keyword="service"
+
+        9. find_files_by_content: 根据文件内容搜索文件
+        使用示例：
+        /tools find_files_by_content keyword="UserService"
+        </usage>
+        </command>
         </commands>        
         '''
 
