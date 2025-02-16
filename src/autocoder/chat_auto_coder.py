@@ -1998,7 +1998,7 @@ def manage_models(query: str):
         if args and args[0].isdigit():
             test_rounds = int(args[0])
             
-        render_speed_test_in_terminal(params.product_mode, test_rounds,enable_long_context=enable_long_context)
+        render_speed_test_in_terminal(product_mode, test_rounds,enable_long_context=enable_long_context)
     
     elif subcmd == "/add":
         # Support both simplified and legacy formats
@@ -2339,8 +2339,7 @@ def auto_command(params,query: str):
     )
     
     # 初始化调优器
-    llm = get_single_llm(args.chat_model or args.model,product_mode=args.product_mode)
-    from functools import partial
+    llm = get_single_llm(args.chat_model or args.model,product_mode=args.product_mode)    
     tuner = CommandAutoTuner(llm, 
                              args=args,
                              memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory), 
@@ -2360,7 +2359,7 @@ def auto_command(params,query: str):
                                  summon=summon,
                                  lib=lib_command,
                                  mcp=mcp,
-                                 models=partial(manage_models),
+                                 models=manage_models,
                                  index_build=index_build,
                                  index_query=index_query,                                                                                           
                              ))

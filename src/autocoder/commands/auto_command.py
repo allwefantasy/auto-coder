@@ -193,8 +193,12 @@ class CommandAutoTuner:
         {{ result }}
         </function_result>
 
-        请分析命令执行结果，返回下一个函数。如果已经满足要求，则不要返回任何函数,确保 suggestions 为空。
-        注意，你最多尝试10次，如果10次都没有满足要求，则不要返回任何函数，确保 suggestions 为空。
+        请分析命令执行结果，返回下一个函数。
+        
+        *** 非常非常重要的提示 ***
+        1. 如果已经满足要求，则不要返回任何函数,确保 suggestions 为空。
+        2. 你最多尝试10次，如果10次都没有满足要求，则不要返回任何函数，确保 suggestions 为空。
+
         '''
     
     def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
@@ -240,7 +244,8 @@ class CommandAutoTuner:
                                 content += f"## File:\n {file_path}[更改前]\n{change.before}\n\nFile:\n {file_path}\n\n[更改后]\n{change.after}\n\n"
                 else:
                     content = last_result.content
-
+                
+                ## 这里打印执行结果
                 conversations.append({"role": "user", "content": content})
                 title = printer.get_message_from_key("auto_command_analyzing")
                 
@@ -593,14 +598,14 @@ class CommandAutoTuner:
         <usage>
         该命令用于管理和控制AI模型的配置和运行。 包含一个参数：query，字符串类型。
          
-        罗列模型模板
+        ## 罗列模型模板
 
         models(query="/list")
 
 
         其中展示的结果中标注 * 好的模型表示目前已经激活（配置过api key)的。
 
-        添加模型模板
+        ##添加模型模板
 
         比如我想添加 open router 或者硅基流动的模型，则可以通过如下方式：
         
@@ -617,7 +622,7 @@ class CommandAutoTuner:
         base_url 是 硅基流动的 API 地址
         model_name 则为你在硅基流动选择的模型名
 
-        添加完模型后，你还需要能够激活模型:
+        ## 添加完模型后，你还需要能够激活模型:
 
         models(query="/activate openrouter-sonnet-3.5 <YOUR_API_KEY>")
 
@@ -625,11 +630,56 @@ class CommandAutoTuner:
 
         conf(conf="model:openrouter-sonnet-3.5")
 
-        删除模型
+        ## 删除模型
 
         models(query="/remove openrouter-sonnet-3.5")
+
+        常见的供应商模型模板(以 DeepSeek R1 和 V3 模型为例)：
+
+        ## openrouter
+        models(query="/add_model name=or_r1_chat base_url=https://openrouter.ai/api/v1 model_name=deepseek/deepseek-r1:nitro")
+        models(query="/add_model name=or_v3_chat base_url=https://openrouter.ai/api/v1 model_name=deepseek/deepseek-chat")
+
+        ## 硅基流动
+        models(query="/add_model name=siliconflow_r1_chat  base_url=https://api.siliconflow.cn/v1 model_name=Pro/deepseek-ai/DeepSeek-R1")
+        models(query="/add_model name=siliconflow_v3_chat  base_url=https://api.siliconflow.cn/v1 model_name=Pro/deepseek-ai/DeepSeek-V3")
+
+        ## 火山引擎/火山方舟
+
+        models(query="/add_model name=ark_v3_chat base_url=https://ark.cn-beijing.volces.com/api/v3 model_name=<你的推理点名称>")
+        models(query="/add_model name=ark_r1_chat base_url=https://ark.cn-beijing.volces.com/api/v3 model_name=<你的推理点名称> is_reasoning=true")
+
+        ## 百度千帆
+
+        models(query="/add_model name=qianfan_r1_chat base_url=https://qianfan.baidubce.com/v2 model_name=deepseek-r1 is_reasoning=true")
+        models(query="/add_model name=qianfan_v3_chat base_url=https://qianfan.baidubce.com/v2 model_name=deepseek-v3")
+
+        ## 阿里百炼
+        models(query="/add_model name=ali_r1_chat base_url=https://dashscope.aliyuncs.com/compatible-mode/v1 model_name=deepseek-r1 is_reasoning=true")
+        models(query="/add_model name=ali_deepseek_chat base_url=https://dashscope.aliyuncs.com/compatible-mode/v1 model_name=deepseek-v3")
+
+        ## 腾讯混元
+        models(query="/add_model name=tencent_r1_chat base_url=https://tencent.ai.qq.com/v1 model_name=deepseek-r1 is_reasoning=true")
+        models(query="/add_model name=tencent_v3_chat base_url=https://tencent.ai.qq.com/v1 model_name=deepseek-v3")                
+
+        注意，像推理点名称，激活时的 api key 等,需要先通过 ask_user 来获取,之后再执行 models 命令。
         
         </usage>
+        </command>
+
+        <command>
+        <name>ask_user</name>
+        <description>
+        如果你对用户的问题有什么疑问，或者你想从用户收集一些额外信息，可以调用此方法。
+        输入参数 question 是你对用户的提问。
+        返回值是 用户对你问题的回答。        
+        </description>
+        <usage>
+         该命令接受一个参数 question，为要询问的问题字符串。
+         
+         使用例子：
+         ask_user(question="请输入火山引擎的 R1 模型推理点")
+         
         </command>
 
         <command>
