@@ -138,6 +138,7 @@ commands = [
     "/design",
     "/mcp",
     "/models",
+    "/auto",
 ]
 
 
@@ -2672,6 +2673,52 @@ def lib_command(args: List[str]):
         console.print(f"Unknown subcommand: {subcommand}")
 
 
+def auto_command(query: str, memory: dict):
+    """处理/auto指令"""
+    from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest
+    
+    # 准备请求参数
+    request = AutoCommandRequest(
+        user_input=query,
+        conversation_history=memory["conversation"],
+        current_files=memory["current_files"]["files"],
+        available_commands=[cmd.replace("/","") for cmd in commands if cmd != "/auto"]
+    )
+    
+    # 初始化调优器
+    llm = get_single_llm(memory["conf"].get("model", "v3_chat"))
+    tuner = CommandAutoTuner(llm)
+    
+    # 生成建议
+    response = tuner.analyze(request)
+    
+    # 显示建议
+    console = Console()
+    table = Table(title="Recommended Commands")
+    table.add_column("Command", style="cyan")
+    table.add_column("Parameters", style="magenta")
+    table.add_column("Confidence", style="green")
+    
+    for suggestion in response.suggestions:
+        params = "\n".join([f"{k}:{v}" for k,v in suggestion.parameters.items()])
+        table.add_row(
+            suggestion.command, 
+            params,
+            f"{suggestion.confidence*100:.1f}%"
+        )
+    
+    console.print(Panel(
+        Markdown(response.reasoning),
+        title="Reasoning",
+        border_style="blue"
+    ))
+    console.print(table)
+    
+    # 执行最高置信度的命令
+    if response.suggestions:
+        best = response.suggestions[0]
+        execute_auto_command(best.command, best.parameters, memory)
+
 def main():
     from autocoder.rag.variable_holder import VariableHolder
     from tokenizers import Tokenizer    
@@ -2941,6 +2988,9 @@ def main():
                 else:
                     mcp(query)
 
+            elif user_input.startswith("/auto"):
+                query = user_input[len("/auto"):].strip()
+                auto_command(query, memory)
             elif user_input.startswith("/debug"):
                 code = user_input[len("/debug"):].strip()
                 try:
