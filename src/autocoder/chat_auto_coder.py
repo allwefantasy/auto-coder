@@ -2452,12 +2452,40 @@ def index_build():
         os.remove(yaml_file)
 
 
+def get_final_config()->AutoCoderArgs:
+    conf = memory.get("conf", {})
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+        "auto_merge": conf.get("auto_merge", "editblock"),
+        "human_as_model": conf.get("human_as_model", "false") == "true",
+        "skip_build_index": conf.get("skip_build_index", "true") == "true",
+        "skip_confirm": conf.get("skip_confirm", "true") == "true",
+        "silence": conf.get("silence", "true") == "true",
+        "include_project_structure": conf.get("include_project_structure", "true")
+        == "true",
+    }
+    for key, value in conf.items():
+        converted_value = convert_config_value(key, value)
+        if converted_value is not None:
+            yaml_config[key] = converted_value
+
+    temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
+    try:
+        with open(temp_yaml, "w") as f:
+            f.write(convert_yaml_config_to_str(yaml_config=yaml_config))
+        args = convert_yaml_to_config(temp_yaml)
+    finally:
+        if os.path.exists(temp_yaml):
+            os.remove(temp_yaml)
+    return args
+
 def help(query: str):
     from autocoder.common.auto_configure import ConfigAutoTuner,MemoryConfig,AutoConfigRequest
     from autocoder.common.printer import Printer
     printer = Printer()
+    args = get_final_config()
     product_mode = memory.get("product_mode", "lite")
-    llm = get_single_llm(memory.get("chat_model", "model"), product_mode=product_mode)
+    llm = get_single_llm(args.chat_model or args.model, product_mode=product_mode)
     auto_config_tuner = ConfigAutoTuner(llm, MemoryConfig(memory, save_memory))
     response = auto_config_tuner.tune(AutoConfigRequest(query=query, current_conf=memory.get("conf", {})))
     print(response)
