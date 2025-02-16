@@ -196,9 +196,9 @@ class CommandAutoTuner:
         <parameter>
         <name>/group</name>
         <description>文件分组管理，支持子指令：
-        /add &lt;组名&gt; - 创建新组
-        /drop &lt;组名&gt; - 删除组
-        /set &lt;组名&gt; - 设置组描述
+        /add <组名> - 创建新组
+        /drop <组名> - 删除组
+        /set <组名> - 设置组描述
         /list - 列出所有组
         /reset - 重置当前活跃组
         </description>
@@ -231,11 +231,11 @@ class CommandAutoTuner:
         <description>配置管理命令</description>
         <parameters>
         <parameter>
-        <name>/drop &lt;key&gt;</name>
+        <name>/drop <key></name>
         <description>删除指定配置项</description>
         </parameter>
         <parameter>
-        <name>&lt;key&gt;:&lt;value&gt;</name>
+        <name><key>:<value></name>
         <description>设置配置项</description>
         </parameter>
         </parameters>
@@ -355,11 +355,11 @@ class CommandAutoTuner:
         <description>库管理命令</description>
         <parameters>
         <parameter>
-        <name>/add &lt;库名&gt;</name>
+        <name>/add <库名></name>
         <description>添加新库</description>
         </parameter>
         <parameter>
-        <name>/remove &lt;库名&gt;</name>
+        <name>/remove <库名></name>
         <description>移除库</description>
         </parameter>
         <parameter>
@@ -367,7 +367,7 @@ class CommandAutoTuner:
         <description>列出所有库</description>
         </parameter>
         <parameter>
-        <name>/set-proxy &lt;代理地址&gt;</name>
+        <name>/set-proxy <代理地址></name>
         <description>设置库下载代理</description>
         </parameter>
         <parameter>
@@ -375,7 +375,7 @@ class CommandAutoTuner:
         <description>刷新库列表</description>
         </parameter>
         <parameter>
-        <name>/get &lt;包名&gt;</name>
+        <name>/get <包名></name>
         <description>获取包的文档</description>
         </parameter>
         </parameters>
@@ -386,11 +386,11 @@ class CommandAutoTuner:
         <description>模型控制面板命令</description>
         <parameters>
         <parameter>
-        <name>/add &lt;模型配置&gt;</name>
+        <name>/add <模型配置></name>
         <description>添加新模型</description>
         </parameter>
         <parameter>
-        <name>/remove &lt;模型名&gt;</name>
+        <name>/remove <模型名></name>
         <description>移除模型</description>
         </parameter>
         <parameter>
@@ -402,7 +402,7 @@ class CommandAutoTuner:
         <description>列出正在运行的模型</description>
         </parameter>
         <parameter>
-        <name>/refresh &lt;模型名&gt;</name>
+        <name>/refresh <模型名></name>
         <description>刷新模型</description>
         </parameter>
         </parameters>
