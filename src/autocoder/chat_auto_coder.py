@@ -2331,7 +2331,7 @@ def auto_command(params,query: str):
     """处理/auto指令"""
     from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
     args = get_final_config()
-    help(query)
+    # help(query)
     
     # 准备请求参数
     request = AutoCommandRequest(

@@ -119,6 +119,7 @@ MESSAGES = {
         "model_has_access_restrictions": "{{model_name}} has access restrictions, cannot use the current function",
         "auto_command_not_found": "Auto command not found: {{command}}. Please check your input and try again.",
         "auto_command_failed": "Auto command failed: {{error}}. Please check your input and try again.",
+        "command_execution_result": "{{action}} execution result"
     },
     "zh": {
         "auto_command_break": "自动命令执行失败: {{command}}",
@@ -236,10 +237,7 @@ MESSAGES = {
         "model_has_access_restrictions": "{{model_name}} 有访问限制，无法使用当前功能",
         "auto_command_not_found": "未找到自动命令: {{command}}。请检查您的输入并重试。",
         "auto_command_failed": "自动命令执行失败: {{error}}。请检查您的输入并重试。",
-        "command_execution_result": {
-            "en": "Execution result of {{action}}",
-            "zh": "{{action}} 的执行结果"
-        },
+        "command_execution_result": "{{action}} 执行结果"
     }}
 
 

@@ -237,7 +237,8 @@ class CommandAutoTuner:
             content = ""
             last_result = result_manager.get_last()
             if last_result:
-                if last_result.meta["action"] == "coding":                    
+                action = last_result.meta["action"] 
+                if action == "coding":                    
                     # 如果上一步是 coding，则需要把上一步的更改前和更改后的内容作为上下文
                     changes = git_utils.get_changes_by_commit_message("", last_result.meta["commit_message"])
                     if changes.success:
@@ -245,14 +246,14 @@ class CommandAutoTuner:
                             if change.before:
                                 content += f"## File:\n {file_path}[更改前]\n{change.before}\n\nFile:\n {file_path}\n\n[更改后]\n{change.after}\n\n"
                 else:
+                    # 其他的直接获取执行结果
                     content = last_result.content
 
                 # 打印执行结果
-                console = Console()
-                printer = Printer()
+                console = Console()                
                 title = printer.get_message_from_key_with_format(
                     "command_execution_result", 
-                    action=last_result.meta["action"]
+                    action=action
                 )
                 console.print(Panel(
                     content,
