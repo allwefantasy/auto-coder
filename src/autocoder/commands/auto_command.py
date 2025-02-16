@@ -16,6 +16,8 @@ from byzerllm.utils.str2model import to_model
 from autocoder.common import git_utils
 from autocoder.commands.tools import AutoCommandTools
 from autocoder.auto_coder import AutoCoderArgs
+from autocoder.common import detect_env
+from autocoder.common import shells
 from loguru import logger
 
 class CommandMessage(BaseModel):
@@ -153,9 +155,23 @@ class CommandAutoTuner:
     @byzerllm.prompt()
     def _analyze(self, request: AutoCommandRequest) -> str:
         """
-        根据用户输入和当前上下文，分析并推荐最合适的函数。
+        当前用户环境信息如下:
+        <os_info>
+        操作系统: {{ env_info.os_name }} {{ env_info.os_version }}
+        Python版本: {{ env_info.python_version }}
+        终端类型: {{ env_info.shell_type }}
+        终端编码: {{ env_info.shell_encoding }}
+        {%- if env_info.conda_env %}
+        Conda环境: {{ env_info.conda_env }}
+        {%- endif %}
+        {%- if env_info.virtualenv %}
+        虚拟环境: {{ env_info.virtualenv }}
+        {%- endif %}  
+        </os_info>
+        
+        我们的目标是根据用户输入和当前上下文，组合多个函数来完成用户的需求。
 
-        用户输入: {{ user_input }}
+        用户需求: {{ user_input }}
 
         {% if current_files %}
         当前文件列表: 
@@ -163,9 +179,8 @@ class CommandAutoTuner:
         - {{ file }}
         {% endfor %}
         {% endif %}
-
         
-        可用命令列表:
+        可用函数列表:
         {{ available_commands }}
 
         {% if conversation_history %}
@@ -195,12 +210,17 @@ class CommandAutoTuner:
         注意，只能返回一个命令。我后续会把每个命令的执行结果告诉你。你继续确定下一步该执行什么命令，直到
         满足需求。
         """
+
+        env_info = detect_env()            
         return {
             "user_input": request.user_input,
             "current_files": self.memory_config.memory["current_files"]["files"],            
             "conversation_history": self.get_conversations(),
             "available_commands": self._command_readme.prompt(),
             "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),        
+            "env_info": env_info,
+            "shell_type": shells.get_terminal_name(),
+            "shell_encoding": shells.get_terminal_encoding()
         }
     
     @byzerllm.prompt()
