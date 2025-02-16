@@ -100,7 +100,8 @@ class ActionRegexProject:
                 input_cost=input_tokens_cost,
                 output_cost=generated_tokens_cost,
                 speed=round(speed, 2),
-                model_names=model_names
+                model_names=model_names,
+                sampling_count=len(generate_result.contents)
             )
             merge_result = None
             if args.execute and args.auto_merge:
