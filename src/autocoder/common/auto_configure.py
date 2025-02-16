@@ -9,6 +9,8 @@ import byzerllm
 from byzerllm import ByzerLLM
 from byzerllm.utils.client import code_utils
 from autocoder.common.printer import Printer
+from byzerllm.utils.str2model import to_model
+from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 
 logger = logging.getLogger(__name__)
 
@@ -205,14 +207,30 @@ class ConfigAutoTuner:
 
     def tune(self, request: AutoConfigRequest) -> 'AutoConfigResponse':
         try:
-            response = self._generate_config_str.with_llm(
-                self.llm).with_return_type(AutoConfigResponse).run(request)
+            # 获取 prompt 内容
+            prompt = self._generate_config_str.prompt(request)
             
-            # Save conversation using new structure
+            # 构造对话上下文
+            conversations = [{"role": "user", "content": prompt}]
+            
+            # 使用 stream_out 进行输出
+            printer = Printer()
+            title = printer.get_message_from_key("auto_config_analyzing")
+            result, _ = stream_out(
+                self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
+                model_name=self.llm.default_model_name,
+                title=title        
+            )
+            
+            # 提取 JSON 并转换为 AutoConfigResponse            
+            response = to_model(result, AutoConfigResponse)
+            
+            # 保存对话记录
             save_to_memory_file(                
                 query=request.query,
                 response=response.model_dump_json(indent=2)
             )
+            
             print(response.reasoning,end="\n\n")
             for config in response.configs:
                 for k, v in config["config"].items():
