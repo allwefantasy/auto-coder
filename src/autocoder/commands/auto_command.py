@@ -249,9 +249,14 @@ class CommandAutoTuner:
 
                 # 打印执行结果
                 console = Console()
+                printer = Printer()
+                title = printer.get_message_from_key_with_format(
+                    "command_execution_result", 
+                    action=last_result.meta["action"]
+                )
                 console.print(Panel(
                     content,
-                    title="Command Execution Result",
+                    title=title,
                     border_style="blue",
                     padding=(1, 2)
                 ))
