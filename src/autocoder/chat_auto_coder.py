@@ -2741,14 +2741,14 @@ def auto_command(query: str, memory: dict):
     ))
     
     # 执行最高置信度的命令
-    if response.suggestions:
-        best = response.suggestions[0]
-        console.print(Panel(
-            f"Executing command: [bold]{best.command}[/bold] with parameters: {best.parameters}",
-            title="Executing Command",
-            border_style="yellow"
-        ))
-        tuner.execute_auto_command(best.command, best.parameters)
+    # if response.suggestions:
+    #     best = response.suggestions[0]
+    #     console.print(Panel(
+    #         f"Executing command: [bold]{best.command}[/bold] with parameters: {best.parameters}",
+    #         title="Executing Command",
+    #         border_style="yellow"
+    #     ))
+    #     tuner.execute_auto_command(best.command, best.parameters)
 
 def main():
     from autocoder.rag.variable_holder import VariableHolder

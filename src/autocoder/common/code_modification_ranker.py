@@ -158,6 +158,7 @@ class CodeModificationRanker:
                                            reverse=True)
 
                 elapsed = time.time() - start_time
+                speed = generated_tokens_count / elapsed
                 # Format scores for logging
                 score_details = ", ".join(
                     [f"candidate {i}: {candidate_scores[i]:.2f}" for i in sorted_candidates])
@@ -172,7 +173,8 @@ class CodeModificationRanker:
                     output_tokens=generated_tokens_count,
                     input_cost=total_input_cost,
                     output_cost=total_output_cost,
-                    model_names=", ".join(model_names)
+                    model_names=", ".join(model_names),
+                    speed=f"{speed:.2f}"
                 )
 
                 rerank_contents = [generate_result.contents[i]
