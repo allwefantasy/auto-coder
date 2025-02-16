@@ -39,6 +39,18 @@ def save_to_memory_file(query: str, response: str):
     os.makedirs(memory_dir, exist_ok=True)
     file_path = os.path.join(memory_dir, "command_chat_history.json")
 
+def load_memory_file() -> CommandConversation:
+    """Load command conversations from memory file"""
+    memory_dir = os.path.join(".auto-coder", "memory")
+    file_path = os.path.join(memory_dir, "command_chat_history.json")
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            try:
+                return CommandConversation.model_validate_json(f.read())
+            except Exception:
+                return CommandConversation(history={}, current_conversation=[])
+    return CommandConversation(history={}, current_conversation=[])
+
     # Create new message objects
     user_msg = CommandMessage(role="user", content=query)
     assistant_msg = CommandMessage(role="assistant", content=response)
@@ -134,6 +146,11 @@ class CommandAutoTuner:
         self.tools = AutoCommandTools(args=args, llm=self.llm)        
 
     @byzerllm.prompt()
+    def get_conversations(self) -> List[CommandMessage]:
+        """Get conversation history from memory file"""
+        conversation = load_memory_file()
+        return [extended_msg.message for extended_msg in conversation.current_conversation]
+
     def _analyze(self, request: AutoCommandRequest) -> str:
         """
         根据用户输入和当前上下文，分析并推荐最合适的函数。
@@ -181,7 +198,7 @@ class CommandAutoTuner:
         return {
             "user_input": request.user_input,
             "current_files": self.memory_config.memory["current_files"]["files"],            
-            "conversation_history": [],
+            "conversation_history": self.get_conversations(),
             "available_commands": self._command_readme.prompt(),
             "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),        
         }
