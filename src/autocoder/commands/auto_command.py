@@ -844,7 +844,24 @@ class CommandAutoTuner:
           的看到生成的脚本。然后配合 ask_user, execute_shell_command 两个函数，最终完成
           脚本执行。
         </usage>
-        </command>       
+        </command>  
+
+
+        <command>
+        <name>get_project_structure</name>
+        <description>返回当前项目结构</description>
+        <usage>
+         该命令不需要参数。返回一个目录树结构（类似 tree 命令的输出）
+         
+         使用例子：
+         
+         get_project_structure()
+         
+         该函数特别适合你通过目录结构来了解这个项目是什么类型的项目，有什么文件，如果你对一些文件
+         感兴趣，可以配合 read_files 函数来读取文件内容，从而帮你做更好的决策
+             
+        </usage>
+        </command>
 
         <command>
         <name>get_related_files</name>
@@ -864,18 +881,21 @@ class CommandAutoTuner:
 
         <command>
         <name>get_project_map</name>
-        <description>返回项目中所有已被构建索引的文件及其信息，包括文件用途、导入的包、定义的类、函数、变量等。</description>
+        <description>返回项目中指定文件包括文件用途、导入的包、定义的类、函数、变量等。</description>
         <usage>
-         该命令不需要参数。
+         该命令接受一个参数 file_path，为文件路径（文件名或者文件路径的一部分）
          
          使用例子：
          
-         get_project_map()
+         get_project_map(file_path="main.py")
+
+         该函数特别适合你想要了解某个文件的用途，以及该文件的导入的包，定义的类，函数，变量等信息。
+         同时，你还能看到文件的大小（tokens数），以及索引的大小（tokens数），以及构建索引花费费用等信息。
+         如果你觉得该文件确实是你关注的，你可以通过 read_files 函数来读取文件完整内容，从而帮你做更好的决策。
          
          注意：
          - 返回值为JSON格式文本
          - 只能返回已被索引的文件
-         - 尽量避免使用该工具，因为返回内容可能很大
         </usage>
         </command>
 
@@ -883,15 +903,17 @@ class CommandAutoTuner:
         <name>read_files</name>
         <description>读取指定文件的内容。支持文件名或绝对路径。</description>
         <usage>
-         该命令接受一个参数 paths，为逗号分隔的文件路径列表。
+        你可以通过该函数获取相关文本文件的内容。输入参数 paths: 逗号分隔的文件路径列表,支持文件名（多个文件匹配上了，则选择第一个）或绝对路径
+        返回值是文件的源代码。
+
+        推荐一次一个路径
          
          使用例子：
          
-         read_files(paths=["main.py,utils.py"])
+         read_files(paths="main.py,utils.py")
          
          注意：
-         - 支持文件名（匹配第一个找到的文件）或绝对路径
-         - 推荐只读取最相关的5-6个文件
+         - 支持文件名（匹配第一个找到的文件）或绝对路径         
          - 返回值为文件内容
         </usage>
         </command>
@@ -955,6 +977,7 @@ class CommandAutoTuner:
             "run_python": self.tools.run_python_code,            
             "get_related_files_by_symbols": self.tools.get_related_files_by_symbols,
             "get_project_map": self.tools.get_project_map,
+            "get_project_structure": self.tools.get_project_structure,
             "read_files": self.tools.read_files,
             "find_files_by_name": self.tools.find_files_by_name,
             "find_files_by_content": self.tools.find_files_by_content,        

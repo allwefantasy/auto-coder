@@ -1,3 +1,4 @@
+from pyparsing import Optional
 from autocoder.common.result_manager import ResultManager
 from autocoder.index.index import IndexManager
 from autocoder.pyproject import PyProject
@@ -7,6 +8,7 @@ from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.common.interpreter import Interpreter
 from autocoder.common import ExecuteSteps, ExecuteStep, detect_env
 from autocoder.common import code_auto_execute
+from typing import List, Tuple
 import os
 import byzerllm
 import json
@@ -213,7 +215,7 @@ class AutoCommandTools:
         })
         return v
     
-    def get_project_map(self) -> str:
+    def get_project_map(self, file_path: Optional[str] = None) -> str:
         """
         该工具会返回项目中所有已经被构建索引的文件以及该文件的信息，诸如该文件的用途，导入的包，定义的类，函数，变量等信息。
         返回的是json格式文本。
@@ -239,7 +241,12 @@ class AutoCommandTools:
             value = {}
             value["file_name"] = k["module_name"]
             value["symbols"] = k["symbols"]
-            final_result.append(value)
+            value["file_tokens"] = k.get("input_tokens_count", -1)
+            value["index_tokens"] = k.get("generated_tokens_count", -1)
+            value["file_tokens_cost"] = k.get("input_tokens_cost", -1)
+            value["index_tokens_cost"] = k.get("generated_tokens_cost", -1)
+            if file_path and file_path in k["module_name"]:
+                final_result.append(value)
         v = json.dumps(final_result, ensure_ascii=False)
         self.result_manager.add_result(content=v, meta = {
             "action": "get_project_map",
@@ -248,13 +255,16 @@ class AutoCommandTools:
         })
         return v
 
-    def read_files(self, paths: str) -> str:
+    def read_files(self, paths: str, line_ranges: Optional[str] = None) -> str:
         """
         你可以通过使用该工具获取相关文本文件的内容。
         输入参数 paths: 逗号分隔的文件路径列表,支持文件名（多个文件匹配上了，则选择第一个）或绝对路径
         返回值是文件的源代码。
 
         注意，paths数量务必不要太多，否则内容会太多，推荐输入最相关的5-6个文件来进行阅读。
+
+        line_ranges 是可选参数，用于指定要读取的行范围。
+        格式为："0-100/50-100,2-10", 其中,切割后需要和paths数量一致, 然后/ 切割多个行范围。
         """
         paths = [p.strip() for p in paths.split(",")]
         source_code_str = ""
@@ -280,6 +290,23 @@ class AutoCommandTools:
             }
         })
         return source_code_str
+
+    def get_project_structure(self) -> str:        
+        if self.args.project_type == "ts":
+            pp = TSProject(args=self.args, llm=self.llm)
+        elif self.args.project_type == "py":
+            pp = PyProject(args=self.args, llm=self.llm)
+        else:
+            pp = SuffixProject(args=self.args, llm=self.llm, file_filter=None)
+        pp.run()
+        s = pp.get_tree_like_directory_structure()
+        self.result_manager.add_result(content=s, meta = {
+            "action": "get_project_structure",
+            "input": {
+            }
+        })
+        return s
+
 
     def find_files_by_name(self, keyword: str) -> str:
         """
