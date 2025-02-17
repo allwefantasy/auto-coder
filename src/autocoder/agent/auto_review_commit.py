@@ -41,13 +41,13 @@ class AutoReviewCommit:
         self.console = console or Console()
 
     @byzerllm.prompt()
-    def review(self, querie_with_urls_and_diffs: List[Tuple[str, List[str], str]], query: str) -> Generator[str,None,None]:
+    def review(self, querie_with_urls_and_changes: List[Tuple[str, List[str], Dict[str, Tuple[str, str]]]], query: str) -> Generator[str,None,None]:
         """
         如果前面我们对话提供了文档，请参考上面的文档对提交的代码变更进行审查，提供改进建议。
 
         下面包含最新一次提交的信息：        
         <commit>
-        {% for query,urls,diff in querie_with_urls_and_diffs %}
+        {% for query,urls,changes in querie_with_urls_and_changes %}
         ## 任务需求
         {{ query }}
 
@@ -57,9 +57,18 @@ class AutoReviewCommit:
         {% endfor %}
 
         代码变更:
-        ```diff
-        {{ diff }}
+        {% for file_path, (before, after) in changes.items() %}
+        ### {{ file_path }}
+        修改前:
+        ```python
+        {{ before or "New file" }}
         ```
+        
+        修改后:
+        ```python
+        {{ after or "File deleted" }}
+        ```
+        {% endfor %}
         {% endfor %}
         </commit>
 
@@ -130,10 +139,10 @@ class AutoReviewCommit:
 
         action_file = action_files[0]
 
-        querie_with_urls_and_diffs = []
+        querie_with_urls_and_changes = []
         repo = git.Repo(self.project_dir)
 
-        # 收集所有query、urls和对应的commit diff
+        # 收集所有query、urls和对应的文件变化
         for yaml_file in [action_file]:
             yaml_path = os.path.join(self.actions_dir, yaml_file)
             config = load_yaml_config(yaml_path)
@@ -145,7 +154,7 @@ class AutoReviewCommit:
             urls = config.get('urls', [])
 
             if query and urls:
-                commit_diff = ""
+                changes = {}
                 if not self.skip_diff:
                     # 计算文件的MD5用于匹配commit
                     import hashlib
@@ -157,19 +166,36 @@ class AutoReviewCommit:
                             if response_id in commit.message:
                                 if commit.parents:
                                     parent = commit.parents[0]
-                                    commit_diff = repo.git.diff(
-                                        parent.hexsha, commit.hexsha)
-                                else:
-                                    commit_diff = repo.git.show(commit.hexsha)
+                                    # 获取所有文件的前后内容
+                                    for diff_item in parent.diff(commit):
+                                        file_path = diff_item.a_path if diff_item.a_path else diff_item.b_path
+                                        
+                                        # 获取变更前内容
+                                        before_content = None
+                                        try:
+                                            if diff_item.a_blob:
+                                                before_content = repo.git.show(f"{parent.hexsha}:{file_path}")
+                                        except git.exc.GitCommandError:
+                                            pass  # 文件可能是新增的
+
+                                        # 获取变更后内容
+                                        after_content = None
+                                        try:
+                                            if diff_item.b_blob:
+                                                after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
+                                        except git.exc.GitCommandError:
+                                            pass  # 文件可能被删除
+
+                                        changes[file_path] = (before_content, after_content)
                                 break
                     except git.exc.GitCommandError as e:
                         printer = Printer()
                         printer.print_in_terminal("git_command_error", style="red", error=str(e))
                     except Exception as e:
                         printer = Printer()
-                        printer.print_in_terminal("get_commit_diff_error", style="red", error=str(e))
+                        printer.print_in_terminal("get_commit_changes_error", style="red", error=str(e))
 
-                querie_with_urls_and_diffs.append((query, urls, commit_diff))
+                querie_with_urls_and_changes.append((query, urls, changes))
 
         return querie_with_urls_and_diffs
     
@@ -183,15 +209,15 @@ class AutoReviewCommit:
         """
         printer = Printer()
         # 获取最新的提交信息
-        commits = self.parse_history_tasks()
-        if not commits:            
+        changes = self.parse_history_tasks()
+        if not changes:            
             printer.print_in_terminal("no_latest_commit", style="red")
             return None
 
         # 调用LLM进行代码审查
         try:
             # 获取 prompt 内容            
-            query = self.review.prompt(commits, query)
+            query = self.review.prompt(changes, query)
             new_conversations = conversations.copy()[0:-1]
             new_conversations.append({"role": "user", "content": query})
             # 构造对话消息            
