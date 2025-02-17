@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import time
+import traceback
 import uuid
 from typing import Dict, Any, Optional, Union, Callable, List
 from pydantic import BaseModel, Field, SkipValidation
@@ -11,7 +12,7 @@ from byzerllm.utils.client import code_utils
 from autocoder.common.printer import Printer
 from byzerllm.utils.str2model import to_model
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
-
+from autocoder.common.result_manager import ResultManager
 logger = logging.getLogger(__name__)
 
 class ConfigMessage(BaseModel):
@@ -211,6 +212,7 @@ class ConfigAutoTuner:
         }
 
     def tune(self, request: AutoConfigRequest) -> 'AutoConfigResponse':
+        result_manager = ResultManager()
         try:
             # 获取 prompt 内容
             prompt = self._generate_config_str.prompt(request)
@@ -247,10 +249,28 @@ class ConfigAutoTuner:
             )
             
             print(response.reasoning,end="\n\n")
+            content = response.reasoning
             for config in response.configs:
                 for k, v in config["config"].items():
                     self.configure(f"{k}:{v}")
+                    content += f"\nconf({k}:{v})"
+
+            result_manager = ResultManager()
+            
+            result_manager.add_result(content=content, meta={
+                "action": "help",
+                "input": {
+                    "query": request.query
+                }
+            })        
             return response
         except Exception as e:
-            logger.error(f"Auto config failed: {str(e)}")
+            v = f"help error: {str(e)} {traceback.format_exc()}"
+            logger.error(v)            
+            result_manager.add_result(content=v, meta={
+                "action": "help",
+                "input": {
+                    "query": request.query
+                }
+            })
             return AutoConfigResponse()
