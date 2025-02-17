@@ -1,7 +1,7 @@
 from pydantic import ValidationError
 from typing import Any, Dict, Optional
 from autocoder.common import models
-from autocoder.common.auto_coder_lang import get_message
+from autocoder.common.auto_coder_lang import get_message,get_message_with_format
 from autocoder.common import AutoCoderArgs
 
 class ConfigValidationError(Exception):
