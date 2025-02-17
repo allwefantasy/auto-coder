@@ -299,7 +299,7 @@ class CommandAutoTuner:
                 return content
             
         model_name = ",".join(llms_utils.get_llm_names(self.llm))
-        start_time = time.monotonic()
+        start_time = time.time()
         result, last_meta = stream_out(
             self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
             model_name=model_name,
@@ -400,7 +400,7 @@ class CommandAutoTuner:
 
                 model_name = ",".join(llms_utils.get_llm_names(self.llm))
                 
-                start_time = time.monotonic()
+                start_time = time.time()
                 result, last_meta = stream_out(
                     self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
                     model_name=model_name,
@@ -425,7 +425,7 @@ class CommandAutoTuner:
                     output_cost = (last_meta.generated_tokens_count * output_price) / 1000000  # Convert to millions
                     
                     printer.print_in_terminal("stream_out_stats", 
-                                        model_name=",".join(llms_utils.get_llm_names(self.llm)),
+                                        model_name=model_name,
                                         elapsed_time=elapsed_time,
                                         first_token_time=last_meta.first_token_time,
                                         input_tokens=last_meta.input_tokens_count,
