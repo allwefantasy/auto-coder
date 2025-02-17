@@ -132,7 +132,8 @@ MESSAGES = {
         "auto_command_failed": "Auto command failed: {{error}}. Please check your input and try again.",
         "command_execution_result": "{{action}} execution result",
         "satisfied_prompt": "Requirements satisfied, no further action needed",
-        "auto_command_analyzed": "Selected command"
+        "auto_command_analyzed": "Selected command",
+        "invalid_enum_value": "Value '{{value}}' is not in allowed values ({{allowed}})"
     },
     "zh": {
         "config_validation_error": "配置验证错误: {{error}}",
@@ -263,7 +264,8 @@ MESSAGES = {
         "auto_command_failed": "自动命令执行失败: {{error}}。请检查您的输入并重试。",
         "command_execution_result": "{{action}} 执行结果",
         "satisfied_prompt": "已满足需求，无需进一步操作",
-        "auto_command_analyzed": "被选择指令"
+        "auto_command_analyzed": "被选择指令",
+        "invalid_enum_value": "值 '{{value}}' 不在允许的值列表中 ({{allowed}})"
     }}
 
 
