@@ -291,6 +291,8 @@ class CommandAutoTuner:
             try:
                 response = to_model(content, AutoCommandResponse)  
                 if response.suggestions:
+                    command = response.suggestions[0].command
+                    parameters = response.suggestions[0].parameters
                     return response.suggestions[0].command
                 else:
                     return printer.get_message_from_key("satisfied_prompt", style="green")                    
