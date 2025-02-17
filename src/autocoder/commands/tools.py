@@ -255,13 +255,14 @@ class AutoCommandTools:
         })
         return v
     
-    def read_file_with_keyword_ranges(self, file_path: str,keyword:str, range_size:int = 100) -> str:
+    def read_file_with_keyword_ranges(self, file_path: str, keyword:str, before_size:int = 100, after_size:int = 100) -> str:
         """
-        该函数用于读取包含了关键字(keyword)的行，以及该行前后指定大小的行（range_size）。
+        该函数用于读取包含了关键字(keyword)的行，以及该行前后指定大小的行。
         输入参数:
         - file_path: 文件路径
         - keyword: 关键字
-        - range_size: 行范围大小
+        - before_size: 关键字所在行之前的行数
+        - after_size: 关键字所在行之后的行数
         
         返回值:
         - 返回str类型，返回包含关键字的行，以及该行前后指定大小的行。
@@ -298,8 +299,8 @@ class AutoCommandTools:
                 processed_ranges = set()
                 for line_num in keyword_lines:
                     # Calculate range boundaries
-                    start = max(0, line_num - range_size)
-                    end = min(len(lines), line_num + range_size + 1)
+                    start = max(0, line_num - before_size)
+                    end = min(len(lines), line_num + after_size + 1)
                     
                     # Check if this range overlaps with any previously processed range
                     range_key = (start, end)
