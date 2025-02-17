@@ -340,17 +340,20 @@ class CommandAutoTuner:
                     break
 
                 # 打印执行结果
-                console = Console()                
+                console = Console()
+                # 截取content前后200字符
+                truncated_content = content[:200] + "\n...\n" + content[-200:] if len(content) > 400 else content
                 title = printer.get_message_from_key_with_format(
                     "command_execution_result", 
                     action=action
                 )
                 console.print(Panel(
-                    content,
+                    truncated_content,
                     title=title,
                     border_style="blue",
                     padding=(1, 2)
                 ))
+                # 保持原content不变，继续后续处理
                 
                 conversations.append({"role": "user", "content": self._execute_command_result.prompt(content)})
                 title = printer.get_message_from_key("auto_command_analyzing")
