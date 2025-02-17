@@ -217,6 +217,15 @@ class ConfigAutoTuner:
             
             # 构造对话上下文
             conversations = [{"role": "user", "content": prompt}]
+
+            def extract_command_response(content):
+                # 提取 JSON 并转换为 AutoConfigResponse
+                try:
+                    response = to_model(content, AutoConfigResponse)
+                    return response.reasoning
+                except Exception as e:
+                    return content
+            
             
             # 使用 stream_out 进行输出
             printer = Printer()
@@ -224,7 +233,8 @@ class ConfigAutoTuner:
             result, _ = stream_out(
                 self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
                 model_name=self.llm.default_model_name,
-                title=title        
+                title=title,
+                display_func=extract_command_response
             )
             
             # 提取 JSON 并转换为 AutoConfigResponse            
