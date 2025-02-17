@@ -735,7 +735,8 @@ def revert():
 
 
 def add_files(args: List[str]):
-
+    
+    result_manager = ResultManager()
     if "groups" not in memory["current_files"]:
         memory["current_files"]["groups"] = {}
     if "groups_info" not in memory["current_files"]:
@@ -750,6 +751,8 @@ def add_files(args: List[str]):
 
     if not args:
         printer.print_in_terminal("add_files_no_args", style="red")
+        result_manager.append(content=printer.get_message_from_key("add_files_no_args"), 
+                              meta={"action": "add_files","success":False, "input":{ "args": args}})
         return
 
     if args[0] == "/refresh":
@@ -759,6 +762,8 @@ def add_files(args: List[str]):
             Panel("Refreshed file list.",
                   title="Files Refreshed", border_style="green")
         )
+        result_manager.append(content="Files refreshed.", 
+                              meta={"action": "add_files","success":True, "input":{ "args": args}})
         return
 
     if args[0] == "/group":
@@ -768,6 +773,8 @@ def add_files(args: List[str]):
                     Panel("No groups defined.", title="Groups",
                           border_style="yellow")
                 )
+                result_manager.append(content="No groups defined.", 
+                              meta={"action": "add_files","success":False, "input":{ "args": args}})
             else:
                 table = Table(
                     title="Defined Groups",
@@ -798,6 +805,8 @@ def add_files(args: List[str]):
                         end_section=(i == len(groups) - 1),
                     )
                 console.print(Panel(table, border_style="blue"))
+                result_manager.append(content="Defined groups.", 
+                              meta={"action": "add_files","success":True, "input":{ "args": args}})
         elif len(args) >= 2 and args[1] == "/reset":
             memory["current_files"]["current_groups"] = []
             console.print(
@@ -807,6 +816,8 @@ def add_files(args: List[str]):
                     border_style="green",
                 )
             )
+            result_manager.append(content="Active group names have been reset. If you want to clear the active files, you should use the command /remove_files /all.", 
+                              meta={"action": "add_files","success":True, "input":{ "args": args}})
         elif len(args) >= 3 and args[1] == "/add":
             group_name = args[2]
             groups[group_name] = memory["current_files"]["files"].copy()
@@ -817,6 +828,9 @@ def add_files(args: List[str]):
                     border_style="green",
                 )
             )
+            result_manager.append(content=f"Added group '{group_name}' with current files.", 
+                              meta={"action": "add_files","success":True, "input":{ "args": args}})
+            
         elif len(args) >= 3 and args[1] == "/drop":
             group_name = args[2]
             if group_name in groups:
@@ -833,6 +847,8 @@ def add_files(args: List[str]):
                         border_style="green",
                     )
                 )
+                result_manager.append(content=f"Dropped group '{group_name}'.", 
+                              meta={"action": "add_files","success":True, "input":{ "args": args}})
             else:
                 console.print(
                     Panel(
@@ -841,6 +857,8 @@ def add_files(args: List[str]):
                         border_style="red",
                     )
                 )
+                result_manager.append(content=f"Group '{group_name}' not found.", 
+                              meta={"action": "add_files","success":False, "input":{ "args": args}})
         elif len(args) == 3 and args[1] == "/set":
             group_name = args[2]
 
@@ -912,6 +930,8 @@ def add_files(args: List[str]):
                         border_style="red",
                     )
                 )
+                result_manager.append(content=f"Group(s) not found: {', '.join(missing_groups)}", 
+                              meta={"action": "add_files","success":False, "input":{ "args": args}})
 
             if merged_files:
                 memory["current_files"]["files"] = list(merged_files)
@@ -947,6 +967,8 @@ def add_files(args: List[str]):
                         border_style="green",
                     )
                 )
+                result_manager.append(content=f"Active groups: {', '.join(memory['current_files']['current_groups'])}", 
+                              meta={"action": "add_files","success":True, "input":{ "args": args}})
             elif not missing_groups:
                 console.print(
                     Panel(
@@ -954,7 +976,9 @@ def add_files(args: List[str]):
                         title="No Files Added",
                         border_style="yellow",
                     )
-                )
+                    )
+                result_manager.append(content="No files in the specified groups.", 
+                              meta={"action": "add_files","success":False, "input":{ "args": args}})
     else:
         existing_files = memory["current_files"]["files"]
         matched_files = find_files_in_project(args)
@@ -976,9 +1000,13 @@ def add_files(args: List[str]):
                         i == len(files_to_add) - 1
                     ),  # 在最后一行之后不添加分割线
                 )
-            console.print(Panel(table, border_style="green"))
+            console.print(Panel(table, border_style="green"))   
+            result_manager.append(content=f"Added files: {', '.join(files_to_add)}", 
+                              meta={"action": "add_files","success":True, "input":{ "args": args}})
         else:
             printer.print_in_terminal("add_files_matched", style="yellow")
+            result_manager.append(content=f"No files matched.", 
+                              meta={"action": "add_files","success":False, "input":{ "args": args}})
 
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()
@@ -987,11 +1015,14 @@ def add_files(args: List[str]):
 def remove_files(file_names: List[str]):
     project_root = os.getcwd()
     printer = Printer()
+    result_manager = ResultManager()
 
     if "/all" in file_names:
         memory["current_files"]["files"] = []
         memory["current_files"]["current_groups"] = []
         printer.print_in_terminal("remove_files_all", style="green")
+        result_manager.append(content="All files removed.", 
+                              meta={"action": "remove_files","success":True, "input":{ "file_names": file_names}})
     else:
         removed_files = []
         for file in memory["current_files"]["files"]:
@@ -1014,9 +1045,13 @@ def remove_files(file_names: List[str]):
             console = Console()
             console.print(
                 Panel(table, border_style="green",
-                      title=printer.get_message_from_key("files_removed")))            
+                      title=printer.get_message_from_key("files_removed"))) 
+            result_manager.append(content=f"Removed files: {', '.join(removed_files)}", 
+                              meta={"action": "remove_files","success":True, "input":{ "file_names": file_names}})
         else:
             printer.print_in_terminal("remove_files_none", style="yellow")
+            result_manager.append(content=printer.get_message_from_key("remove_files_none"), 
+                              meta={"action": "remove_files","success":False, "input":{ "file_names": file_names}})
 
     completer.update_current_files(memory["current_files"]["files"])
     save_memory()

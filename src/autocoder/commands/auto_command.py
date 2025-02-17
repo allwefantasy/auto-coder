@@ -221,14 +221,14 @@ class CommandAutoTuner:
         {{ user_input }}
         </user_input>
 
-        请分析用户意图，返回一个命令并给出推荐理由。
+        请分析用户意图，组合一个或者多个函数，帮助用户完成需求。
         返回格式必须是严格的JSON格式：
         
         ```json
         {
             "suggestions": [
                 {
-                    "command": "命令名称",
+                    "command": "函数名称",
                     "parameters": {},
                     "confidence": 0.9,
                     "reasoning": "推荐理由"
@@ -238,7 +238,7 @@ class CommandAutoTuner:
         }
         ```   
 
-        注意，只能返回一个命令。我后续会把每个命令的执行结果告诉你。你继续确定下一步该执行什么命令，直到
+        注意，现在，请返回第一个函数。我后续会把每个函数的执行结果告诉你。你根据执行结果继续确定下一步该执行什新的函数，直到
         满足需求。
         """
 
@@ -291,19 +291,21 @@ class CommandAutoTuner:
                 if response.suggestions:
                     return response.suggestions[0].command
                 else:
-                    is_zh = auto_coder_lang.get_system_language() == 'zh'
-                return auto_coder_lang.zh.get('satisfied_prompt') if is_zh else auto_coder_lang.en.get('satisfied_prompt')
+                    return printer.get_message_from_key("satisfied_prompt", style="green")                    
             except Exception as e:
                 logger.error(f"Error extracting command response: {e}")
                 return content
 
-        result, _ = stream_out(
+        result, last_meta = stream_out(
             self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
             model_name=self.llm.default_model_name,
             title=title,
             final_title=final_title,
             display_func= extract_command_response
         )
+
+        ## 这里打印
+
         conversations.append({"role": "assistant", "content": result})    
         # 提取 JSON 并转换为 AutoCommandResponse            
         response = to_model(result, AutoCommandResponse)         
