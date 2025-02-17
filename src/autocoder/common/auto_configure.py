@@ -77,6 +77,14 @@ class MemoryConfig(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Initialize enable_token_stats if not exists
+        if "conf" not in self.memory:
+            self.memory["conf"] = {}
+        if "enable_token_stats" not in self.memory["conf"]:
+            self.memory["conf"]["enable_token_stats"] = "true"
     
     def configure(self, conf: str, skip_print: bool = False) -> None:
         """
@@ -108,6 +116,39 @@ class MemoryConfig(BaseModel):
             if not skip_print:
                 printer.print_in_terminal("config_set_success", style="green", key=key, value=value)
 
+    def print_token_stats(self, model_name: str, last_meta: Any, start_time: float):
+        """
+        Print token usage statistics if enable_token_stats is true.
+        """
+        if self.memory["conf"].get("enable_token_stats", "true").lower() != "true":
+            return
+
+        from autocoder.utils import llms as llm_utils
+        printer = Printer()
+        
+        # Calculate elapsed time and speed
+        elapsed_time = time.time() - start_time
+        speed = last_meta.generated_tokens_count / elapsed_time
+        
+        # Get model info for pricing
+        model_info = llm_utils.get_model_info(model_name, False) or {}
+        input_price = model_info.get("input_price", 0.0)
+        output_price = model_info.get("output_price", 0.0)
+        
+        # Calculate costs
+        input_cost = (last_meta.input_tokens_count * input_price) / 1000000  # Convert to millions
+        output_cost = (last_meta.generated_tokens_count * output_price) / 1000000  # Convert to millions
+        
+        # Print statistics
+        printer.print_in_terminal("stream_out_stats", 
+                                model_name=model_name,
+                                elapsed_time=elapsed_time,
+                                first_token_time=last_meta.first_token_time,
+                                input_tokens=last_meta.input_tokens_count,
+                                output_tokens=last_meta.generated_tokens_count,
+                                input_cost=round(input_cost, 4),
+                                output_cost=round(output_cost, 4),
+                                speed=round(speed, 2))
 
 
 class AutoConfigRequest(BaseModel):
