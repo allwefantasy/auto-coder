@@ -32,7 +32,161 @@ class ConfigValidator:
             "default": 1,
             "description": "同模型生成次数(1-5)"
         },
-        # 其他配置项...
+        "rank_times_same_model": {
+            "type": int,
+            "min": 1,
+            "max": 3,
+            "default": 1,
+            "description": "同模型重排序次数(1-3)"
+        },
+        "skip_filter_index": {
+            "type": bool,
+            "default": False,
+            "description": "是否跳过根据query自动查找上下文"
+        },
+        "skip_build_index": {
+            "type": bool,
+            "default": True,
+            "description": "是否自动构建索引"
+        },
+        "enable_global_memory": {
+            "type": bool,
+            "default": True,
+            "description": "是否开启全局记忆"
+        },
+        "human_as_model": {
+            "type": bool,
+            "default": False,
+            "description": "是否使用人类作为模型"
+        },
+        "silence": {
+            "type": bool,
+            "default": True,
+            "description": "是否静默模式(减少输出)"
+        },
+        "skip_confirm": {
+            "type": bool,
+            "default": True,
+            "description": "是否跳过确认提示"
+        },
+        "include_project_structure": {
+            "type": bool,
+            "default": True,
+            "description": "是否包含项目结构信息"
+        },
+        "max_tokens": {
+            "type": int,
+            "min": 1000,
+            "max": 100000,
+            "default": 32000,
+            "description": "最大token限制(1000-100000)"
+        },
+        "temperature": {
+            "type": float,
+            "min": 0.0,
+            "max": 2.0,
+            "default": 0.7,
+            "description": "生成温度(0.0-2.0)"
+        },
+        "top_p": {
+            "type": float,
+            "min": 0.0,
+            "max": 1.0,
+            "default": 1.0,
+            "description": "采样概率阈值(0.0-1.0)"
+        },
+        "presence_penalty": {
+            "type": float,
+            "min": -2.0,
+            "max": 2.0,
+            "default": 0.0,
+            "description": "存在惩罚(-2.0-2.0)"
+        },
+        "frequency_penalty": {
+            "type": float,
+            "min": -2.0,
+            "max": 2.0,
+            "default": 0.0,
+            "description": "频率惩罚(-2.0-2.0)"
+        },
+        "max_retries": {
+            "type": int,
+            "min": 0,
+            "max": 10,
+            "default": 3,
+            "description": "最大重试次数(0-10)"
+        },
+        "timeout": {
+            "type": int,
+            "min": 1,
+            "max": 600,
+            "default": 60,
+            "description": "请求超时时间(1-600秒)"
+        },
+        "max_workers": {
+            "type": int,
+            "min": 1,
+            "max": 100,
+            "default": 10,
+            "description": "最大工作线程数(1-100)"
+        },
+        "log_level": {
+            "type": str,
+            "allowed": ["debug", "info", "warning", "error", "critical"],
+            "default": "info",
+            "description": "日志级别(debug/info/warning/error/critical)"
+        },
+        "product_mode": {
+            "type": str,
+            "allowed": ["lite", "pro"],
+            "default": "lite",
+            "description": "产品模式(lite/pro)"
+        },
+        "model": {
+            "type": str,
+            "default": "v3_chat",
+            "description": "默认模型"
+        },
+        "chat_model": {
+            "type": str,
+            "default": "r1_chat",
+            "description": "聊天模型"
+        },
+        "code_model": {
+            "type": str,
+            "default": "v3_chat",
+            "description": "代码生成模型"
+        },
+        "index_filter_model": {
+            "type": str,
+            "default": "r1_chat",
+            "description": "索引过滤模型"
+        },
+        "generate_rerank_model": {
+            "type": str,
+            "default": "r1_chat",
+            "description": "生成重排序模型"
+        },
+        "prompt_review": {
+            "type": str,
+            "default": "",
+            "description": "代码审查提示模板"
+        },
+        "prompt_summary": {
+            "type": str,
+            "default": "",
+            "description": "代码总结提示模板"
+        },
+        "prompt_optimize": {
+            "type": str,
+            "default": "",
+            "description": "代码优化提示模板"
+        },
+        "prompt_refactor": {
+            "type": str,
+            "default": "",
+            "description": "代码重构提示模板"
+        }
     }
 
     @classmethod
