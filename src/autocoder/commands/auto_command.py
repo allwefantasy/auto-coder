@@ -207,6 +207,7 @@ class CommandAutoTuner:
         通过 get_project_structure 来获取项目结构，然后通过 get_project_map 来获取你想看的某个文件的用途，符号列表，最后再通过 read_files/read_file_with_keyword_ranges 函数来读取文件内容,确认对应的功能是否在相关的文件里。
         5. 调用 coding 函数的时候，尽可能多的 @文件和@@符号，让需求更加清晰明了，建议多描述具体怎么完成对应的需求。
         6. 对于代码需求设计，尽可能使用 chat 函数。
+        7. 如果成功执行了 coding 函数，最好再调用一次 chat("/review /commit")
         </function_combination_readme>
 
 
