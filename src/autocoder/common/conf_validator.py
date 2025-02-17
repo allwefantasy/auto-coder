@@ -140,9 +140,10 @@ class ConfigValidator:
         # 获取配置规范
         spec = cls.CONFIG_SPEC.get(key)
         if not spec:
-            raise ConfigValidationError(
-                get_message_with_format("unknown_config_key", key=key)
-            )
+            # raise ConfigValidationError(
+            #     get_message_with_format("unknown_config_key", key=key)
+            # )
+            return
 
         # 类型转换和验证
         try:
