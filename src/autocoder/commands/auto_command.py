@@ -286,19 +286,21 @@ class CommandAutoTuner:
         title = printer.get_message_from_key("auto_command_analyzing")
         final_title = printer.get_message_from_key("auto_command_analyzed")
 
-        def extract_command_response(content: str) -> str:
-            # 提取 JSON 并转换为 AutoCommandResponse
-            try:
-                response = to_model(content, AutoCommandResponse)  
-                if response.suggestions:
-                    command = response.suggestions[0].command
-                    parameters = response.suggestions[0].parameters
-                    return response.suggestions[0].command
-                else:
-                    return printer.get_message_from_key("satisfied_prompt", style="green")                    
-            except Exception as e:
-                logger.error(f"Error extracting command response: {e}")
-                return content
+            def extract_command_response(content: str) -> str:
+                # 提取 JSON 并转换为 AutoCommandResponse
+                try:
+                    response = to_model(content, AutoCommandResponse)  
+                    if response.suggestions:
+                        command = response.suggestions[0].command
+                        parameters = response.suggestions[0].parameters
+                        # 返回更友好的命令和参数信息
+                        params_str = json.dumps(parameters, ensure_ascii=False, indent=2) if parameters else "{}"
+                        return f"命令: {command}, 参数: {params_str}"
+                    else:
+                        return printer.get_message_from_key("satisfied_prompt", style="green")                    
+                except Exception as e:
+                    logger.error(f"Error extracting command response: {e}")
+                    return content
             
         model_name = ",".join(llms_utils.get_llm_names(self.llm))
         start_time = time.monotonic()
