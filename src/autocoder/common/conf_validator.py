@@ -1,6 +1,6 @@
 from pydantic import ValidationError
 from typing import Any, Dict, Optional
-from autocoder.common import models
+from autocoder.utils import llms as llms_utils
 from autocoder.common.auto_coder_lang import get_message,get_message_with_format
 from autocoder.common import AutoCoderArgs
 
@@ -138,12 +138,12 @@ class ConfigValidator:
     }
 
     @classmethod
-    def validate(cls, key: str, value: Any) -> Any:
+    def validate(cls, key: str, value: Any, product_mode: str) -> Any:
         # 获取字段元数据
         field_info = AutoCoderArgs.model_fields.get(key)
         if not field_info:
             raise ConfigValidationError(
-                get_message("unknown_config_key", key=key)
+                get_message_with_format("unknown_config_key", key=key)
             )
 
         # 类型转换和验证
@@ -155,23 +155,28 @@ class ConfigValidator:
             converted_value = field_info.annotation(value)
         except ValueError:
             raise ConfigValidationError(
-                get_message(f"invalid_{field_info.annotation.__name__.lower()}_value", value=value)
+                get_message_with_format(f"invalid_{field_info.annotation.__name__.lower()}_value", value=value)
             )
 
         # 范围检查
         if hasattr(field_info, 'ge') and converted_value < field_info.ge:
             raise ConfigValidationError(
-                get_message("value_out_of_range", 
+                get_message_with_format("value_out_of_range", 
                           value=converted_value,
                           min=field_info.ge,
                           max=field_info.le)
             )
         
-        # 模型存在性检查
-        if key == "model":
-            if not models.check_model_exists(converted_value):
+        # 模型存在性检查        
+        if product_mode == "lite" and key in ["chat_model","code_model", 
+                                     "index_filter_model", "generate_rerank_model", 
+                                     "rank_times_same_model", 
+                                     "emb_model", "vl_model", "designer_model", "sd_model", 
+                                     "voice2text_model", 
+                                     "commit_model","model"]:
+            if not llms_utils.get_model_info(converted_value):
                 raise ConfigValidationError(
-                    get_message("model_not_found", model=converted_value)
+                    get_message_with_format("model_not_found", model=converted_value)
                 )
 
         return converted_value
@@ -183,7 +188,7 @@ class ConfigValidator:
         if value.lower() in ("false", "0", "no"):
             return False
         raise ConfigValidationError(
-            get_message("invalid_boolean_value", value=value)
+            get_message_with_format("invalid_boolean_value", value=value)
         )
 
     @classmethod

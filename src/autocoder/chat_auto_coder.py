@@ -1,3 +1,4 @@
+from itertools import product
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.shortcuts import radiolist_dialog
 from prompt_toolkit import prompt
@@ -57,6 +58,7 @@ import pkg_resources
 from autocoder.common.printer import Printer
 from autocoder.utils.thread_utils import run_in_thread,run_in_raw_thread
 from autocoder.common.command_completer import CommandCompleter,FileSystemModel as CCFileSystemModel,MemoryConfig as CCMemoryModel
+from autocoder.common.conf_validator import ConfigValidator
 
 class SymbolItem(BaseModel):
     symbol_name: str
@@ -584,6 +586,9 @@ def configure(conf: str, skip_print=False):
         if not value:
             printer.print_in_terminal("config_value_empty", style="red")
             return
+        product_mode = memory["conf"].get("product_mode",None)  
+        # if product_mode:
+        #     ConfigValidator.validate(key, value, product_mode)    
         memory["conf"][key] = value
         save_memory()
         if not skip_print:
