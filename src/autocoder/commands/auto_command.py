@@ -933,7 +933,12 @@ class CommandAutoTuner:
 
         read_files(paths="main.py,utils.py", line_ranges="1-100/200-300,50-100")
 
-        read_files(paths="main.py,utils.py")                
+        read_files(paths="main.py,utils.py") 
+
+        你可以使用 get_project_structure 函数获取项目结构后，然后再通过 get_project_map 函数获取某个文件的用途，符号列表，以及
+        文件大小（tokens数）,最后再通过 read_files 函数来读取文件内容，从而帮你做更好的决策。如果需要读取的文件过大，
+        你可以通过指定行范围来读取文件内容，从而避免读取过多的内容，你可以多次用行范围来调用 read_files,直到你看到满意的内容为止。
+        
         </usage>
         </command>
 

@@ -254,6 +254,27 @@ class AutoCommandTools:
             }
         })
         return v
+    
+    def read_file_with_keyword_ranges(self, file_path: str,keyword:str, range_size:int = 100) -> str:
+        """
+        该函数用于读取包含了关键字(keyword)的行，以及该行前后指定大小的行（range_size）。
+        输入参数:
+        - file_path: 文件路径
+        - keyword: 关键字
+        - range_size: 行范围大小
+        
+        返回值:
+        - 返回str类型，返回包含关键字的行，以及该行前后指定大小的行。
+
+        返回值的格式如下：
+        ```
+        ##File: /path/to/file.py
+        ##Line: 10-20
+        
+        内容
+        ```
+        """
+        return ""
 
     def read_files(self, paths: str, line_ranges: Optional[str] = None) -> str:
         """
