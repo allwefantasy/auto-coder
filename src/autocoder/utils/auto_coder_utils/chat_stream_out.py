@@ -165,6 +165,7 @@ def stream_out(
     Returns:
         Tuple[str, Dict[SingleOutputMeta]]: 返回完整的响应内容和最后的元数据
     """
+    total_tokens = 0
     if console is None:
         console = Console(force_terminal=True, color_system="auto", height=None)
     
@@ -207,6 +208,12 @@ def stream_out(
                 
                 if first_token_time == 0.0:
                     first_token_time = time.time() - first_token_time_start
+
+                # Count tokens for both content and reasoning
+                if content:
+                    total_tokens += byzerllm.count_token(content)
+                if reasoning_content:
+                    total_tokens += byzerllm.count_token(reasoning_content)
 
                 if keep_only_reasoning_content:
                     assistant_response += reasoning_content
@@ -276,10 +283,13 @@ def stream_out(
             live.update(
                 Panel(
                     Markdown(final_display_content),
-                    title=f"{final_panel_title}",
+                    title=f"{final_panel_title} [Tokens Used: {total_tokens}]",
                     border_style="blue"
                 )
-            )            
+            )
+            
+            # Print token usage
+            console.print(f"Tokens used: {total_tokens}")
             
     except Exception as e:
         console.print(Panel(
