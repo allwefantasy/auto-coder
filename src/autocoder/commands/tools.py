@@ -274,7 +274,60 @@ class AutoCommandTools:
         内容
         ```
         """
-        return ""
+        absolute_path = file_path
+        if not os.path.isabs(file_path):
+            # Find the first matching absolute path by traversing args.source_dir
+            for root, _, files in os.walk(self.args.source_dir):
+                for file in files:
+                    if file_path in os.path.join(root, file):
+                        absolute_path = os.path.join(root, file)
+                        break
+
+        result = []
+        try:
+            with open(absolute_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                
+                # Find all lines containing the keyword
+                keyword_lines = []
+                for i, line in enumerate(lines):
+                    if keyword.lower() in line.lower():
+                        keyword_lines.append(i)
+                
+                # Process each keyword line and its surrounding range
+                processed_ranges = set()
+                for line_num in keyword_lines:
+                    # Calculate range boundaries
+                    start = max(0, line_num - range_size)
+                    end = min(len(lines), line_num + range_size + 1)
+                    
+                    # Check if this range overlaps with any previously processed range
+                    range_key = (start, end)
+                    if range_key in processed_ranges:
+                        continue
+                    
+                    processed_ranges.add(range_key)
+                    
+                    # Format the content block
+                    content = f"##File: {absolute_path}\n"
+                    content += f"##Line: {start+1}-{end}\n\n"
+                    content += "".join(lines[start:end])
+                    result.append(content)
+                
+        except Exception as e:
+            return f"Error reading file {absolute_path}: {str(e)}"
+        
+        final_result = "\n\n".join(result)
+        self.result_manager.add_result(content=final_result, meta={
+            "action": "read_file_with_keyword_ranges",
+            "input": {
+                "file_path": file_path,
+                "keyword": keyword,
+                "range_size": range_size
+            }
+        })
+        
+        return final_result
 
     def read_files(self, paths: str, line_ranges: Optional[str] = None) -> str:
         """
