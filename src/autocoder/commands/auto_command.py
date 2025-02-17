@@ -3,7 +3,7 @@ import os
 import time
 from pydantic import BaseModel, Field
 import byzerllm
-from typing import List, Dict, Any, Union, Callable
+from typing import List, Dict, Any, Union, Callable, Optional
 from autocoder.common.printer import Printer
 from rich.console import Console
 from rich.panel import Panel
@@ -98,7 +98,7 @@ class CommandSuggestion(BaseModel):
 
 class AutoCommandResponse(BaseModel):
     suggestions: List[CommandSuggestion]
-    reasoning: str
+    reasoning: Optional[str] = None
 
 
 class AutoCommandRequest(BaseModel):
@@ -283,8 +283,11 @@ class CommandAutoTuner:
         def extract_command_response(content: str) -> str:
             # 提取 JSON 并转换为 AutoCommandResponse
             try:
-                response = to_model(content, AutoCommandResponse)         
-                return response.suggestions[0].command
+                response = to_model(content, AutoCommandResponse)  
+                if response.suggestions:
+                    return response.suggestions[0].command
+                else:
+                    return ""
             except Exception as e:
                 logger.error(f"Error extracting command response: {e}")
                 return content
@@ -293,6 +296,7 @@ class CommandAutoTuner:
             self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
             model_name=self.llm.default_model_name,
             title=title,
+            final_title=title,
             display_func= extract_command_response
         )
         conversations.append({"role": "assistant", "content": result})    

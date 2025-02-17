@@ -116,7 +116,7 @@ class AutoConfigRequest(BaseModel):
 
 class AutoConfigResponse(BaseModel):
     configs: List[Dict[str, Any]] = Field(default_factory=list)
-    reasoning: str = "No configuration changes"        
+    reasoning: str = ""        
 
 class ConfigAutoTuner:
     def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], memory_config: MemoryConfig):
@@ -247,9 +247,8 @@ class ConfigAutoTuner:
                 query=request.query,
                 response=response.model_dump_json(indent=2)
             )
-            
-            print(response.reasoning,end="\n\n")
-            content = response.reasoning
+                        
+            content = response.reasoning or "success"
             for config in response.configs:
                 for k, v in config["config"].items():
                     self.configure(f"{k}:{v}")

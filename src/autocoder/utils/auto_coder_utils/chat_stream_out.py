@@ -148,6 +148,7 @@ def stream_out(
     console: Optional[Console] = None,
     model_name: Optional[str] = None,
     title: Optional[str] = None,
+    final_title: Optional[str] = None,
     args: Optional[AutoCoderArgs] = None,
     display_func: Optional[Callable] = None
 ) -> Tuple[str, Optional[SingleOutputMeta]]:
@@ -180,6 +181,7 @@ def stream_out(
     assistant_response = ""
     last_meta = None
     panel_title = title if title is not None else f"Response[ {model_name} ]"  
+    final_panel_title = final_title if final_title is not None else title
     first_token_time = 0.0
     first_token_time_start = time.time()
     try:        
@@ -274,7 +276,7 @@ def stream_out(
             live.update(
                 Panel(
                     Markdown(final_display_content),
-                    title=f"Final {panel_title}",
+                    title=f"{final_panel_title}",
                     border_style="blue"
                 )
             )            

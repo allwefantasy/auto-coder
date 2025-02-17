@@ -2281,9 +2281,7 @@ def get_final_config()->AutoCoderArgs:
     return args
 
 def help(query: str):
-    from autocoder.common.auto_configure import ConfigAutoTuner,MemoryConfig,AutoConfigRequest
-    from autocoder.common.printer import Printer
-    printer = Printer()
+    from autocoder.common.auto_configure import ConfigAutoTuner,MemoryConfig,AutoConfigRequest        
     args = get_final_config()
     product_mode = memory.get("product_mode", "lite")
     llm = get_single_llm(args.chat_model or args.model, product_mode=product_mode)
@@ -2516,24 +2514,9 @@ def auto_command(params,query: str):
     response = tuner.analyze(request)
     
     # 显示建议
-    console = Console()
-    table = Table(title="Recommended Commands", show_header=True, header_style="bold magenta", show_lines=True)
-    table.add_column("Command", style="cyan", width=20)
-    table.add_column("Parameters", style="magenta", width=40)
-    table.add_column("Confidence", style="green", width=10)
-    table.add_column("Reasoning", style="blue", width=50)
-    
-    for suggestion in response.suggestions:
-        params = "\n".join([f"{k}: {v}" for k,v in suggestion.parameters.items()]) if suggestion.parameters else "None"
-        table.add_row(
-            suggestion.command, 
-            params,
-            f"{suggestion.confidence*100:.1f}%",
-            suggestion.reasoning
-        )
-    
+    console = Console()    
     console.print(Panel(
-        Markdown(response.reasoning),
+        Markdown(response.reasoning or ""),
         title="Reasoning",
         border_style="blue",
         padding=(1, 2)
