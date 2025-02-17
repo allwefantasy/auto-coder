@@ -1,7 +1,6 @@
 import json
 import os
 import time
-import auto_coder_lang
 from pydantic import BaseModel, Field
 import byzerllm
 from typing import List, Dict, Any, Union, Callable, Optional
@@ -21,6 +20,7 @@ from autocoder.common import detect_env
 from autocoder.common import shells
 from loguru import logger
 from autocoder.common import auto_coder_lang
+from autocoder.utils import llms as llms_utils
 
 class CommandMessage(BaseModel):
     role: str
@@ -146,6 +146,7 @@ class CommandAutoTuner:
                  args: AutoCoderArgs,
                  memory_config: MemoryConfig, command_config: CommandConfig):
         self.llm = llm
+        self.args = args
         self.printer = Printer()
         self.memory_config = memory_config
         self.command_config = command_config
@@ -296,31 +297,41 @@ class CommandAutoTuner:
             except Exception as e:
                 logger.error(f"Error extracting command response: {e}")
                 return content
-
+            
+        model_name = ",".join(llms_utils.get_llm_names(self.llm))
         start_time = time.monotonic()
         result, last_meta = stream_out(
             self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
-            model_name=self.llm.default_model_name,
+            model_name=model_name,
             title=title,
             final_title=final_title,
             display_func= extract_command_response
         )
-        end_time = time.monotonic()
-        
-        # 计算速度
-        speed = last_meta.input_tokens_count / (end_time - start_time)
-        
-        # 打印 token 统计信息
-        self.printer.print_in_terminal(auto_coder_lang.get_message_with_format(
-            "quick_filter_stats",
-            model_names=self.llm.default_model_name,
-            elapsed_time=f"{end_time - start_time:.2f}",
-            input_tokens=last_meta.input_tokens_count,
-            output_tokens=last_meta.generated_tokens_count,
-            input_cost=0,
-            output_cost=0,
-            speed=f"{speed:.2f}"
-        ))
+                
+        if last_meta:
+            elapsed_time = time.time() - start_time
+            printer = Printer()
+            speed = last_meta.generated_tokens_count / elapsed_time
+            
+            # Get model info for pricing
+            from autocoder.utils import llms as llm_utils
+            model_info = llm_utils.get_model_info(model_name, self.args.product_mode) or {}
+            input_price = model_info.get("input_price", 0.0) if model_info else 0.0
+            output_price = model_info.get("output_price", 0.0) if model_info else 0.0
+            
+            # Calculate costs
+            input_cost = (last_meta.input_tokens_count * input_price) / 1000000  # Convert to millions
+            output_cost = (last_meta.generated_tokens_count * output_price) / 1000000  # Convert to millions
+            
+            printer.print_in_terminal("stream_out_stats", 
+                                model_name=",".join(llms_utils.get_llm_names(self.llm)),
+                                elapsed_time=elapsed_time,
+                                first_token_time=last_meta.first_token_time,
+                                input_tokens=last_meta.input_tokens_count,
+                                output_tokens=last_meta.generated_tokens_count,
+                                input_cost=round(input_cost, 4),
+                                output_cost=round(output_cost, 4),
+                                speed=round(speed, 2))
 
         ## 这里打印
 
@@ -386,31 +397,44 @@ class CommandAutoTuner:
                 
                 conversations.append({"role": "user", "content": self._execute_command_result.prompt(content)})
                 title = printer.get_message_from_key("auto_command_analyzing")
+
+                model_name = ",".join(llms_utils.get_llm_names(self.llm))
                 
                 start_time = time.monotonic()
                 result, last_meta = stream_out(
                     self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
-                    model_name=self.llm.default_model_name,
+                    model_name=model_name,
                     title=title,
                     final_title=final_title,
                     display_func= extract_command_response
                 )
                 end_time = time.monotonic()
                 
-                # 计算速度
-                speed = last_meta.input_tokens_count / (end_time - start_time)
-                
-                # 打印 token 统计信息
-                self.printer.print_in_terminal(auto_coder_lang.get_message_with_format(
-                    "quick_filter_stats",
-                    model_names=self.llm.default_model_name,
-                    elapsed_time=f"{end_time - start_time:.2f}",
-                    input_tokens=last_meta.input_tokens_count,
-                    output_tokens=last_meta.generated_tokens_count,
-                    input_cost=0,
-                    output_cost=0,
-                    speed=f"{speed:.2f}"
-                ))
+                if last_meta:
+                    elapsed_time = time.time() - start_time
+                    printer = Printer()
+                    speed = last_meta.generated_tokens_count / elapsed_time
+                    
+                    # Get model info for pricing
+                    from autocoder.utils import llms as llm_utils
+                    model_info = llm_utils.get_model_info(model_name, self.args.product_mode) or {}
+                    input_price = model_info.get("input_price", 0.0) if model_info else 0.0
+                    output_price = model_info.get("output_price", 0.0) if model_info else 0.0
+                    
+                    # Calculate costs
+                    input_cost = (last_meta.input_tokens_count * input_price) / 1000000  # Convert to millions
+                    output_cost = (last_meta.generated_tokens_count * output_price) / 1000000  # Convert to millions
+                    
+                    printer.print_in_terminal("stream_out_stats", 
+                                        model_name=",".join(llms_utils.get_llm_names(self.llm)),
+                                        elapsed_time=elapsed_time,
+                                        first_token_time=last_meta.first_token_time,
+                                        input_tokens=last_meta.input_tokens_count,
+                                        output_tokens=last_meta.generated_tokens_count,
+                                        input_cost=round(input_cost, 4),
+                                        output_cost=round(output_cost, 4),
+                                        speed=round(speed, 2))
+                    
                 conversations.append({"role": "assistant", "content": result})    
                 # 提取 JSON 并转换为 AutoCommandResponse            
                 response = to_model(result, AutoCommandResponse)  

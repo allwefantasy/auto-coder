@@ -245,7 +245,7 @@ MESSAGES = {
         "auto_command_failed": "自动命令执行失败: {{error}}。请检查您的输入并重试。",
         "command_execution_result": "{{action}} 执行结果",
         "satisfied_prompt": "已满足需求，无需进一步操作",
-        "auto_command_analyzed": "被选择的指令"
+        "auto_command_analyzed": "被选择指令"
     }}
 
 
