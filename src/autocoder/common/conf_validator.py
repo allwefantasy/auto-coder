@@ -148,13 +148,34 @@ class ConfigValidator:
         # 类型转换和验证
         try:
             # 布尔类型特殊处理
-            if spec['type'] == bool:
-                return cls.validate_boolean(value)
-            # 其他类型转换
-            converted_value = spec['type'](value)
+            if isinstance(spec['type'], (list, tuple)):
+                # 多个类型支持
+                for type_ in spec['type']:
+                    try:
+                        if type_ == bool:
+                            return cls.validate_boolean(value)
+                        converted_value = type_(value)
+                        break
+                    except ValueError:
+                        continue
+                else:
+                    types_str = ', '.join([t.__name__ for t in spec['type']])
+                    raise ConfigValidationError(
+                        get_message_with_format(f"invalid_type_value", 
+                                  value=value,
+                                  types=types_str)
+                    )
+            else:
+                # 单个类型处理
+                if spec['type'] == bool:
+                    return cls.validate_boolean(value)
+                converted_value = spec['type'](value)
         except ValueError:
+            type_name = spec['type'].__name__ if not isinstance(spec['type'], (list, tuple)) else ', '.join([t.__name__ for t in spec['type']])
             raise ConfigValidationError(
-                get_message_with_format(f"invalid_{spec['type'].__name__.lower()}_value", value=value)
+                get_message_with_format(f"invalid_type_value", 
+                          value=value,
+                          types=type_name)
             )
 
         # 范围检查
