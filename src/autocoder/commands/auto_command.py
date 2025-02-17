@@ -407,8 +407,7 @@ class CommandAutoTuner:
                     title=title,
                     final_title=final_title,
                     display_func= extract_command_response
-                )
-                end_time = time.monotonic()
+                )                
                 
                 if last_meta:
                     elapsed_time = time.time() - start_time
