@@ -302,14 +302,14 @@ class AutoCommandTools:
                         # Adjust for 0-based indexing
                         start = max(0, start - 1)
                         end = min(len(lines), end)
-                        filtered_lines.extend(lines[start:end])
+                        filtered_lines.extend(f"##File: {path}\n\##Line: {start}-{end}\n\n{lines[start:end]}")
                     source_code = "".join(filtered_lines)
                 else:
                     # Read entire file if no range specified
-                    source_code = f.read()
+                    content = f.read()
+                    source_code = f"##File: {path}\n\n{content}"
                 
                 sc = SourceCode(module_name=path, source_code=source_code)
-                source_code_str += f"##File: {sc.module_name}\n"
                 source_code_str += f"{sc.source_code}\n\n"
         
         self.result_manager.add_result(content=source_code_str, meta = {
