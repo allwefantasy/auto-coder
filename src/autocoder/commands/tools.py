@@ -268,6 +268,22 @@ class AutoCommandTools:
         """
         paths = [p.strip() for p in paths.split(",")]
         source_code_str = ""
+        
+        # Parse line ranges if provided
+        file_line_ranges = {}
+        if line_ranges:
+            ranges_per_file = line_ranges.split(",")
+            if len(ranges_per_file) != len(paths):
+                raise ValueError("Number of line ranges must match number of files")
+            
+            for path, ranges in zip(paths, ranges_per_file):
+                file_line_ranges[path] = []
+                for range_str in ranges.split("/"):
+                    if not range_str:
+                        continue
+                    start, end = map(int, range_str.split("-"))
+                    file_line_ranges[path].append((start, end))
+
         for path in paths:
             if not os.path.isabs(path):
                 # Find the first matching absolute path by traversing args.source_dir
@@ -277,8 +293,21 @@ class AutoCommandTools:
                             path = os.path.join(root, file)
                             break
 
-            with open(path, "r",encoding="utf-8") as f:
-                source_code = f.read()
+            with open(path, "r", encoding="utf-8") as f:
+                if path in file_line_ranges:
+                    # Read specific line ranges
+                    lines = f.readlines()
+                    filtered_lines = []
+                    for start, end in file_line_ranges[path]:
+                        # Adjust for 0-based indexing
+                        start = max(0, start - 1)
+                        end = min(len(lines), end)
+                        filtered_lines.extend(lines[start:end])
+                    source_code = "".join(filtered_lines)
+                else:
+                    # Read entire file if no range specified
+                    source_code = f.read()
+                
                 sc = SourceCode(module_name=path, source_code=source_code)
                 source_code_str += f"##File: {sc.module_name}\n"
                 source_code_str += f"{sc.source_code}\n\n"
