@@ -93,8 +93,7 @@ class AutoReviewCommit:
            - 依赖关系：组件耦合是否合理
            - 复用性：是否有重复代码
 
-        返回格式说明：
-        返回 markdown 格式，包含以下内容：
+        评审结果包含以下内容：
         1. issues: 发现的具体问题列表
         2. suggestions: 对应的改进建议列表
         3. severity: 问题的严重程度(low/medium/high)
@@ -157,8 +156,10 @@ class AutoReviewCommit:
             if query and urls:
                 changes = {}
                 if not self.skip_diff:
-                    # 计算文件的MD5用于匹配commit                    
-                    file_md5 = hashlib.md5(open(yaml_path, 'rb').read()).hexdigest()
+                    # 计算文件的MD5用于匹配commit   
+                    with open(yaml_path, 'r', encoding='utf-8') as f:
+                        yaml_content = f.read()                 
+                        file_md5 = hashlib.md5(yaml_content.encode("utf-8")).hexdigest()
                     response_id = f"auto_coder_{yaml_file}_{file_md5}"
                     # 查找对应的commit                   
                     try:
@@ -197,7 +198,7 @@ class AutoReviewCommit:
 
                 querie_with_urls_and_changes.append((query, urls, changes))
 
-        return querie_with_urls_and_diffs
+        return querie_with_urls_and_changes
     
 
     def review_commit(self,query: str, conversations: List[Dict]) -> Generator[str,None,None]:
