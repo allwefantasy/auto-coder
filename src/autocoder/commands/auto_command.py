@@ -205,6 +205,7 @@ class CommandAutoTuner:
         3. 注意，为了防止对话过长，你可以使用 chat("/new") 来创新新的会话。然后接着正常再次调用 chat 函数。 即可
         4. 当用户询问项目，比如询问什么什么功能在哪里的时候，或者哪个文件实现了什么功能，推荐的工具组合是 get_project_map 和 get_project_structure。可以直通过 get_project_map 查看整个项目文件的索引（该索引包含了文件列表，每个文件的用途和符号列表），也可以
         通过 get_project_structure 来获取项目结构，然后通过 get_project_map 来获取你想看的某个文件的用途，符号列表，最后再通过 read_files/read_file_with_keyword_ranges 函数来读取文件内容,确认对应的功能是否在相关的文件里。
+        5. 调用 coding 函数的时候，尽可能多的 @文件和@@符号，让需求更加清晰明了，建议多描述具体怎么完成对应的需求。
         </function_combination_readme>
 
 
