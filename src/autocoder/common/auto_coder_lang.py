@@ -3,6 +3,15 @@ from byzerllm.utils import format_str_jinja2
 
 MESSAGES = {
     "en": {
+        "config_validation_error": "Config validation error: {{error}}",
+        "invalid_boolean_value": "Value '{{value}}' is not a valid boolean(true/false)",
+        "invalid_integer_value": "Value '{{value}}' is not a valid integer",
+        "invalid_float_value": "Value '{{value}}' is not a valid float",
+        "value_out_of_range": "Value {{value}} is out of allowed range({{min}}~{{max}})",
+        "invalid_choice": "Value '{{value}}' is not in allowed options({{allowed}})",
+        "unknown_config_key": "Unknown config key '{{key}}'",
+        "model_not_found": "Model '{{model}}' is not configured in models.yml",
+        "required_without_default": "Config key '{{key}}' requires explicit value",
         "auto_command_action_break": "Command {{command}} execution failed (got {{action}} result), no result can be obtained, please try again",
         "auto_command_break": "Auto command execution failed to execute command: {{command}}",
         "auto_command_executing": "\n\n============= Executing command: {{command}} =============\n\n",
@@ -126,6 +135,15 @@ MESSAGES = {
         "auto_command_analyzed": "Selected command"
     },
     "zh": {
+        "config_validation_error": "配置验证错误: {{error}}",
+        "invalid_boolean_value": "值 '{{value}}' 不是有效的布尔值(true/false)",
+        "invalid_integer_value": "值 '{{value}}' 不是有效的整数",
+        "invalid_float_value": "值 '{{value}}' 不是有效的浮点数",
+        "value_out_of_range": "值 {value} 超出允许范围({min}~{max})",
+        "invalid_choice": "值 '{value}' 不在允许选项中({allowed})",
+        "unknown_config_key": "未知的配置项 '{key}'",
+        "model_not_found": "模型 '{model}' 未在 models.yml 中配置",
+        "required_without_default": "配置项 '{key}' 需要明确设置值",
         "auto_command_action_break": "命令 {{command}} 执行失败（获取到了 {{action}} 的结果），无法获得任何结果,请重试",
         "auto_command_break": "自动命令执行失败: {{command}}",
         "auto_command_executing": "\n\n============= 正在执行指令: {{command}} =============\n\n",
