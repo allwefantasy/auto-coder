@@ -263,3 +263,12 @@ def get_message(key):
 
 def get_message_with_format(msg_key: str, **kwargs):
     return format_str_jinja2(get_message(msg_key), **kwargs)
+
+MESSAGES = {
+    "en": {
+        "stream_out_stats": "Model: {{ model_name }}, Total time: {{ elapsed_time }}s, First token: {{ first_token_time }}s\nInput tokens: {{ input_tokens }}, Output tokens: {{ output_tokens }}\nInput cost: ${{ input_cost }}, Output cost: ${{ output_cost }}\nSpeed: {{ speed }} tokens/s",
+    },
+    "zh": {
+        "stream_out_stats": "模型: {{ model_name }}, 总耗时: {{ elapsed_time }}秒, 首Token延迟: {{ first_token_time }}秒\n输入Token: {{ input_tokens }}, 输出Token: {{ output_tokens }}\n输入成本: {{ input_cost }}美元, 输出成本: {{ output_cost }}美元\n速度: {{ speed }} tokens/秒",
+    }
+}
