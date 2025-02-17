@@ -123,7 +123,11 @@ MESSAGES = {
         "auto_command_failed": "Auto command failed: {{error}}. Please check your input and try again.",
         "command_execution_result": "{{action}} execution result",
         "satisfied_prompt": "Requirements satisfied, no further action needed",
-        "auto_command_analyzed": "Selected command"
+        "auto_command_analyzed": "Selected command",
+        "history_not_found": "No conversation history found",
+        "history_format_error": "Error formatting conversation history",
+        "history_save_error": "Error saving conversation history",
+        "history_load_error": "Error loading conversation history"
     },
     "zh": {
         "auto_command_action_break": "命令 {{command}} 执行失败（获取到了 {{action}} 的结果），无法获得任何结果,请重试",
@@ -245,7 +249,11 @@ MESSAGES = {
         "auto_command_failed": "自动命令执行失败: {{error}}。请检查您的输入并重试。",
         "command_execution_result": "{{action}} 执行结果",
         "satisfied_prompt": "已满足需求，无需进一步操作",
-        "auto_command_analyzed": "被选择指令"
+        "auto_command_analyzed": "被选择指令",
+        "history_not_found": "未找到对话历史",
+        "history_format_error": "格式化对话历史时出错",
+        "history_save_error": "保存对话历史时出错",
+        "history_load_error": "加载对话历史时出错"
     }}
 
 
