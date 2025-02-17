@@ -174,21 +174,35 @@ class CommandAutoTuner:
         我们的目标是根据用户输入和当前上下文，组合多个函数来完成用户的需求。
         
         {% if current_files %}
-        当前文件列表: 
+        当前活跃区文件列表：
         <current_files>
         {% for file in current_files %}
         - {{ file }}
         {% endfor %}
         </current_files>
         {% endif %}
-        
-        可用函数列表:
-        {{ available_commands }}
+
 
         当前用户的配置选项如下:
         <current_conf>
         {{ current_conf }}
         </current_conf>
+        
+        可用函数列表:
+        {{ available_commands }}
+
+        函数组合说明：        
+        <function_combination_readme>
+        如果用户是一个编码需求，你可以先简单观察当前活跃区文件列表：
+        1. 如果你觉得这些文件不够满足用户的需求，而当前的索引配置关闭的，那么你可以通过help("将skip_filter_index 和 skip_build_index 设置为 false") 让
+        chat,coding 函数来获取更多文件，或者你也可以自己通过调用 get_project_structure 函数来获取项目结构，然后通过 get_project_map 函数来获取某个文件的用途，符号列表，以及
+        文件大小（tokens数）,最后再通过 read_files/read_file_with_keyword_ranges 函数来读取文件内容, 最后通过 add_files 函数来添加文件到活跃区。
+        确保 chat,coding 函数能够正常使用。
+        2. 对于一个比较复杂的代码需求，你可以先通过 chat 函数来获得一些设计，根据chat返回的结果，你可以选择多次调用chat调整最后的设计。最后，当你满意后，可以通过 coding("/apply 根据历史对话实现代码，请不要有遗漏") 来完成最后的编码。
+        3. 注意，为了防止对话过长，你可以使用 chat("/new") 来创新新的会话。然后接着正常再次调用 chat 函数。 即可
+        </function_combination_readme>
+
+
 
         {% if conversation_history %}
         历史对话:

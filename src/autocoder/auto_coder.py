@@ -1063,6 +1063,7 @@ def main(input_args: Optional[List[str]] = None):
             os.makedirs(memory_dir, exist_ok=True)
             memory_file = os.path.join(memory_dir, "chat_history.json")
             console = Console()
+            result_manager = ResultManager()
             if args.new_session:
                 if os.path.exists(memory_file):
                     with open(memory_file, "r") as f:
@@ -1078,6 +1079,13 @@ def main(input_args: Optional[List[str]] = None):
                                     "conversation_history": []}
                 with open(memory_file, "w") as f:
                     json.dump(chat_history, f, ensure_ascii=False)
+                
+                result_manager.add_result(content=get_message("new_session_started"), meta={
+                    "action": "chat",
+                    "input": {
+                        "query": args.query
+                    }
+                })    
                 console.print(
                     Panel(
                         get_message("new_session_started"),
