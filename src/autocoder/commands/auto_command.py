@@ -280,6 +280,7 @@ class CommandAutoTuner:
         # 使用 stream_out 进行输出
         printer = Printer()
         title = printer.get_message_from_key("auto_command_analyzing")
+        final_title = printer.get_message_from_key("auto_command_analyzed")
 
         def extract_command_response(content: str) -> str:
             # 提取 JSON 并转换为 AutoCommandResponse
@@ -298,6 +299,7 @@ class CommandAutoTuner:
             self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
             model_name=self.llm.default_model_name,
             title=title,
+            final_title=final_title,
             display_func= extract_command_response
         )
         conversations.append({"role": "assistant", "content": result})    
@@ -367,6 +369,7 @@ class CommandAutoTuner:
                     self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
                     model_name=self.llm.default_model_name,
                     title=title,
+                    final_title=final_title,
                     display_func= extract_command_response
                 )
                 conversations.append({"role": "assistant", "content": result})    
