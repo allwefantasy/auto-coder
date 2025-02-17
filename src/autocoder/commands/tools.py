@@ -332,7 +332,8 @@ class AutoCommandTools:
         self.result_manager.add_result(content=source_code_str, meta = {
             "action": "read_files",
             "input": {
-                "paths": paths
+                "paths": paths,
+                "line_ranges": line_ranges
             }
         })
         return source_code_str
