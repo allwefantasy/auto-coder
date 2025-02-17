@@ -19,6 +19,7 @@ from autocoder.auto_coder import AutoCoderArgs
 from autocoder.common import detect_env
 from autocoder.common import shells
 from loguru import logger
+from autocoder.common import auto_coder_lang
 
 class CommandMessage(BaseModel):
     role: str
@@ -287,7 +288,8 @@ class CommandAutoTuner:
                 if response.suggestions:
                     return response.suggestions[0].command
                 else:
-                    return ""
+                    is_zh = auto_coder_lang.get_system_language() == 'zh'
+                return auto_coder_lang.zh.get('satisfied_prompt') if is_zh else auto_coder_lang.en.get('satisfied_prompt')
             except Exception as e:
                 logger.error(f"Error extracting command response: {e}")
                 return content
@@ -296,7 +298,6 @@ class CommandAutoTuner:
             self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
             model_name=self.llm.default_model_name,
             title=title,
-            final_title=title,
             display_func= extract_command_response
         )
         conversations.append({"role": "assistant", "content": result})    
