@@ -316,7 +316,17 @@ class AutoCommandTools:
                     result.append(content)
                 
         except Exception as e:
-            return f"Error reading file {absolute_path}: {str(e)}"
+            v = f"Error reading file {absolute_path}: {str(e)}"
+            self.result_manager.add_result(content=v, meta={
+                "action": "read_file_with_keyword_ranges",
+                "input": {
+                    "file_path": file_path,
+                    "keyword": keyword,
+                    "before_size": before_size,
+                    "after_size": after_size
+                }
+            })
+            return v
         
         final_result = "\n\n".join(result)
         self.result_manager.add_result(content=final_result, meta={
@@ -324,7 +334,8 @@ class AutoCommandTools:
             "input": {
                 "file_path": file_path,
                 "keyword": keyword,
-                "range_size": range_size
+                "before_size": before_size,
+                "after_size": after_size
             }
         })
         
