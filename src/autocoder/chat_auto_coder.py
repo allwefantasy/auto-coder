@@ -2596,7 +2596,7 @@ def main():
     @kb.add("c-k")
     def _(event):
         if "mode" not in memory:
-            memory["mode"] = "normal"
+            memory["mode"] = "auto_detect"
 
         current_mode = memory["mode"]
         if current_mode == "normal":
@@ -2620,7 +2620,7 @@ def main():
 
     def get_bottom_toolbar():
         if "mode" not in memory:
-            memory["mode"] = "normal"
+            memory["mode"] = "auto_detect"
         mode = memory["mode"]
         human_as_model = memory["conf"].get("human_as_model", "false")
         if mode not in MODES:
@@ -2682,7 +2682,7 @@ def main():
             new_prompt = ""
 
             if "mode" not in memory:
-                memory["mode"] = "normal"
+                memory["mode"] = "auto_detect"
 
             # 处理 user_input 的空格
             if user_input:
@@ -2695,11 +2695,8 @@ def main():
                 and user_input
                 and not user_input.startswith("/")
             ):
-                shell_script = generate_shell_command(user_input)
-                if confirm(get_message("confirm_execute")):
-                    execute_shell_command(shell_script)
-                else:
-                    continue
+                auto_command(ARGS,user_input)
+
             elif memory["mode"] == "voice_input" and not user_input.startswith("/"):
                 text = voice_input()
                 new_prompt = "/coding " + text
