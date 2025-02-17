@@ -273,13 +273,8 @@ def stream_out(
             if display_func:
                 final_display_content = display_func(assistant_response)
 
-            live.update(
-                Panel(
-                    Markdown(final_display_content),
-                    title=f"{final_panel_title}",
-                    border_style="blue"
-                )
-            )            
+            # 直接输出内容，不使用 Panel 框架
+            console.print(Markdown(final_display_content))
             
     except Exception as e:
         console.print(Panel(
