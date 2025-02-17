@@ -1,4 +1,4 @@
-from src.autocoder.common.conf_validator import ConfigValidator, ConfigValidationError
+from autocoder.common.conf_validator import ConfigValidator, ConfigValidationError
 import pytest
 
 def test_validate_boolean():

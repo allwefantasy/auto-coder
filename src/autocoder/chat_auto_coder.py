@@ -587,8 +587,8 @@ def configure(conf: str, skip_print=False):
             printer.print_in_terminal("config_value_empty", style="red")
             return
         product_mode = memory["conf"].get("product_mode",None)  
-        # if product_mode:
-        #     ConfigValidator.validate(key, value, product_mode)    
+        if product_mode:
+            ConfigValidator.validate(key, value, product_mode)    
         memory["conf"][key] = value
         save_memory()
         if not skip_print:

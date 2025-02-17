@@ -157,7 +157,7 @@ class CodeAutoMerge:
         # get the file name 
         file_name = os.path.basename(self.args.file)
         
-        if not force_skip_git:
+        if not force_skip_git and not self.args.skip_commit:
             try:
                 git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
             except Exception as e:            
@@ -176,6 +176,6 @@ class CodeAutoMerge:
                 f.write(block.content)
 
         self.printer.print_in_terminal("files_merged", total=total)
-        if not force_skip_git:
+        if not force_skip_git and not self.args.skip_commit:
             commit_result = git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}\n{self.args.query}")
             git_utils.print_commit_info(commit_result=commit_result)

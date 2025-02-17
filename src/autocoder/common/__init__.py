@@ -369,6 +369,8 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     in_code_apply: bool = False
     model_filter_path: Optional[str] = None
+    
+    skip_commit: Optional[bool] = False
 
     class Config:
         protected_namespaces = ()

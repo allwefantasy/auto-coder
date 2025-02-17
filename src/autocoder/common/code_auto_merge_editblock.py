@@ -360,7 +360,7 @@ class CodeAutoMergeEditBlock:
                                                   file_path=file_path, 
                                                   error_message=error_message)
 
-        if changes_made and not force_skip_git:
+        if changes_made and not force_skip_git and not self.args.skip_commit:
             try:
                 git_utils.commit_changes(
                     self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}"
@@ -400,7 +400,7 @@ class CodeAutoMergeEditBlock:
             )
 
         if changes_made:
-            if not force_skip_git:
+            if not force_skip_git and not self.args.skip_commit:
                 try:
                     commit_result = git_utils.commit_changes(
                         self.args.source_dir, f"auto_coder_{file_name}_{md5}\n{self.args.query}"
