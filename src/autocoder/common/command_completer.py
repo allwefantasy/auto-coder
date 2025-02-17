@@ -731,7 +731,7 @@ class CommandCompleter(Completer):
                     ".xcf",
                 )
                 new_text = text
-                parser = CommandTextParser(new_text, "coding")
+                parser = CommandTextParser(new_text, "/auto")
 
                 parser.coding()
                 current_word = parser.current_word()
