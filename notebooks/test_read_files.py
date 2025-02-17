@@ -14,7 +14,7 @@ def test_read_files():
     llm = byzerllm.SimpleByzerLLM()
     tools = AutoCommandTools(args=args, llm=llm)
     
-    # 测试场景1: 使用完整路径读取单个文件
+    # # 测试场景1: 使用完整路径读取单个文件
     file_path = "src/autocoder/commands/tools.py"
     result1 = tools.read_files(file_path)
     print("=== Test 1: Read single file ===")
@@ -26,14 +26,14 @@ def test_read_files():
     print("=== Test 2: Read file with line range ===")
     print(result2)
     
-    # 测试场景3: 读取多个文件
+    # # 测试场景3: 读取多个文件
     multiple_files = "src/autocoder/commands/tools.py,src/autocoder/commands/__init__.py"
     result3 = tools.read_files(multiple_files)
     print("=== Test 3: Read multiple files ===")
     print(f"Result contains tools.py: {'tools.py' in result3}")
     print(f"Result contains __init__.py: {'__init__.py' in result3}")
 
-    # 测试场景4: 读取多个文件的特定行范围
+    # # 测试场景4: 读取多个文件的特定行范围
     result4 = tools.read_files(multiple_files, "1-10,1-5")
     print("=== Test 4: Read multiple files with line ranges ===")
     print(result4)

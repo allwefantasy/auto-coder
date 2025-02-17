@@ -291,6 +291,13 @@ class AutoCommandTools:
         if line_ranges:
             ranges_per_file = line_ranges.split(",")
             if len(ranges_per_file) != len(paths):
+                self.result_manager.add_result(content="Number of line ranges must match number of files", meta = {
+                    "action": "read_files",
+                    "input": {
+                        "paths": paths,
+                        "line_ranges": line_ranges
+                    }
+                })
                 raise ValueError("Number of line ranges must match number of files")
             
             for path, ranges in zip(paths, ranges_per_file):
@@ -302,15 +309,16 @@ class AutoCommandTools:
                     file_line_ranges[path].append((start, end))
 
         for path in paths:
+            absolute_path = path
             if not os.path.isabs(path):
                 # Find the first matching absolute path by traversing args.source_dir
                 for root, _, files in os.walk(self.args.source_dir):
                     for file in files:
                         if path in os.path.join(root, file):
-                            path = os.path.join(root, file)
+                            absolute_path = os.path.join(root, file)
                             break
 
-            with open(path, "r", encoding="utf-8") as f:
+            with open(absolute_path, "r", encoding="utf-8") as f:
                 if path in file_line_ranges:
                     # Read specific line ranges
                     lines = f.readlines()
@@ -319,14 +327,15 @@ class AutoCommandTools:
                         # Adjust for 0-based indexing
                         start = max(0, start - 1)
                         end = min(len(lines), end)
-                        filtered_lines.extend(f"##File: {path}\n\##Line: {start}-{end}\n\n{lines[start:end]}")
+                        content = "".join(lines[start:end])
+                        filtered_lines.extend(f"##File: {absolute_path}\n##Line: {start}-{end}\n\n{content}")
                     source_code = "".join(filtered_lines)
                 else:
                     # Read entire file if no range specified
                     content = f.read()
-                    source_code = f"##File: {path}\n\n{content}"
+                    source_code = f"##File: {absolute_path}\n\n{content}"
                 
-                sc = SourceCode(module_name=path, source_code=source_code)
+                sc = SourceCode(module_name=absolute_path, source_code=source_code)
                 source_code_str += f"{sc.source_code}\n\n"
         
         self.result_manager.add_result(content=source_code_str, meta = {
