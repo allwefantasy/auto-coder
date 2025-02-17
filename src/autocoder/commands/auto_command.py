@@ -1043,16 +1043,25 @@ class CommandAutoTuner:
             "models": self.command_config.models,
             "execute_shell_command": self.command_config.execute_shell_command,
 
-            "run_python": self.tools.run_python_code,            
-            "get_related_files_by_symbols": self.tools.get_related_files_by_symbols,
-            "get_project_map": self.tools.get_project_map,
-            "get_project_structure": self.tools.get_project_structure,
-            "read_files": self.tools.read_files,
-            "find_files_by_name": self.tools.find_files_by_name,
-            "find_files_by_content": self.tools.find_files_by_content,        
-            "get_project_related_files": self.tools.get_project_related_files,
-            "ask_user":self.tools.ask_user,
-            "read_file_with_keyword_ranges": self.tools.read_file_with_keyword_ranges
+            "run_python": lambda **kwargs: self.tools.run_python_code(code=kwargs.get("code", "")),
+            "execute_shell_command": lambda **kwargs: self.tools.run_shell_code(script=kwargs.get("command", "")),
+            "get_related_files_by_symbols": lambda **kwargs: self.tools.get_related_files_by_symbols(query=kwargs.get("query", "")),
+            "get_project_map": lambda **kwargs: self.tools.get_project_map(file_path=kwargs.get("file_path")),
+            "get_project_structure": lambda **kwargs: self.tools.get_project_structure(),
+            "read_files": lambda **kwargs: self.tools.read_files(
+                paths=kwargs.get("paths", ""),
+                line_ranges=kwargs.get("line_ranges")
+            ),
+            "find_files_by_name": lambda **kwargs: self.tools.find_files_by_name(keyword=kwargs.get("keyword", "")),
+            "find_files_by_content": lambda **kwargs: self.tools.find_files_by_content(keyword=kwargs.get("keyword", "")),
+            "get_project_related_files": lambda **kwargs: self.tools.get_project_related_files(query=kwargs.get("query", "")),
+            "ask_user": lambda **kwargs: self.tools.ask_user(question=kwargs.get("question", "")),
+            "read_file_with_keyword_ranges": lambda **kwargs: self.tools.read_file_with_keyword_ranges(
+                file_path=kwargs.get("file_path", ""),
+                keyword=kwargs.get("keyword", ""),
+                before_size=kwargs.get("before_size", 100),
+                after_size=kwargs.get("after_size", 100)
+            )
                         
         }
 
@@ -1062,19 +1071,62 @@ class CommandAutoTuner:
             return
 
         try:
-            # 将参数字典转换为命令所需的格式
+            # 参数类型检查
+            if not isinstance(parameters, dict):
+                parameters = {}
+                self.logger.warning(f"Invalid parameters type for command {command}, reset to empty dict")
+
+            # 参数验证
+            if command == "execute_shell_command":
+                if "command" not in parameters:
+                    raise ValueError("Missing 'command' parameter for execute_shell_command")
+                confirm = self.tools.ask_user(f"确认要执行 shell 命令：{parameters.get('command')} 吗？(y/n)")
+                if confirm.lower() != 'y':
+                    self.logger.info(f"User canceled shell command: {parameters.get('command')}")
+                    return
+
+            if command == "run_python" and "code" not in parameters:
+                raise ValueError("Missing 'code' parameter for run_python")
+
+            # 执行命令
             if parameters:
-                command_map[command](**parameters)
+                result = command_map[command](**parameters)
             else:
-                command_map[command]()            
+                result = command_map[command]()
+
+            # 记录成功执行
+            save_to_memory_file(
+                query=f"Command: {command} Parameters: {json.dumps(parameters) if parameters else 'None'}",
+                response=f"Command executed successfully. Result: {str(result)[:200]}..."
+            )
+
+        except KeyError as e:
+            error_msg = f"Missing required parameter: {str(e)}"
+            self.logger.error(f"Parameter error in {command}: {error_msg}")
+            self.printer.print_in_terminal(
+                "auto_command_failed", style="red", command=command, error=error_msg)
+            save_to_memory_file(
+                query=f"Command: {command} Parameters: {json.dumps(parameters) if parameters else 'None'}",
+                response=f"Parameter error: {error_msg}"
+            )
+
+        except ValueError as e:
+            error_msg = str(e)
+            self.logger.error(f"Validation error in {command}: {error_msg}")
+            self.printer.print_in_terminal(
+                "auto_command_failed", style="red", command=command, error=error_msg)
+            save_to_memory_file(
+                query=f"Command: {command} Parameters: {json.dumps(parameters) if parameters else 'None'}",
+                response=f"Validation error: {error_msg}"
+            )
 
         except Exception as e:
             error_msg = str(e)
+            self.logger.error(f"Unexpected error executing {command}: {error_msg}")
+            self.logger.debug(f"Error params: {parameters}")
             self.printer.print_in_terminal(
                 "auto_command_failed", style="red", command=command, error=error_msg)
-
-            # Save failed command execution
             save_to_memory_file(
                 query=f"Command: {command} Parameters: {json.dumps(parameters) if parameters else 'None'}",
-                response=f"Command execution failed: {error_msg}"
+                response=f"Unexpected error: {error_msg}"
             )
