@@ -13,6 +13,7 @@ from autocoder.common.printer import Printer
 from byzerllm.utils.str2model import to_model
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common.result_manager import ResultManager
+from autocoder.utils import llms as llms_utils
 logger = logging.getLogger(__name__)
 
 class ConfigMessage(BaseModel):
@@ -230,6 +231,7 @@ class ConfigAutoTuner:
             
             
             # 使用 stream_out 进行输出
+            model_name = ",".join(llms_utils.get_llm_names(self.llm))
             printer = Printer()
             title = printer.get_message_from_key("auto_config_analyzing")
             start_time = time.monotonic()
@@ -238,8 +240,32 @@ class ConfigAutoTuner:
                 model_name=self.llm.default_model_name,
                 title=title,
                 display_func=extract_command_response
-            )
-            end_time = time.monotonic()
+            )            
+
+            if last_meta:
+                elapsed_time = time.monotonic() - start_time
+                printer = Printer()
+                speed = last_meta.generated_tokens_count / elapsed_time
+                
+                # Get model info for pricing
+                from autocoder.utils import llms as llm_utils
+                model_info = llm_utils.get_model_info(model_name, self.args.product_mode) or {}
+                input_price = model_info.get("input_price", 0.0) if model_info else 0.0
+                output_price = model_info.get("output_price", 0.0) if model_info else 0.0
+                
+                # Calculate costs
+                input_cost = (last_meta.input_tokens_count * input_price) / 1000000  # Convert to millions
+                output_cost = (last_meta.generated_tokens_count * output_price) / 1000000  # Convert to millions
+                
+                printer.print_in_terminal("stream_out_stats", 
+                                    model_name=",".join(llms_utils.get_llm_names(self.llm)),
+                                    elapsed_time=elapsed_time,
+                                    first_token_time=last_meta.first_token_time,
+                                    input_tokens=last_meta.input_tokens_count,
+                                    output_tokens=last_meta.generated_tokens_count,
+                                    input_cost=round(input_cost, 4),
+                                    output_cost=round(output_cost, 4),
+                                    speed=round(speed, 2))
                         
             
             # 提取 JSON 并转换为 AutoConfigResponse            

@@ -345,7 +345,7 @@ class QuickFilter():
             # 四舍五入到4位小数
             total_input_cost = round(total_input_cost, 4)
             total_output_cost = round(total_output_cost, 4)
-            speed = last_meta.input_tokens_count / (end_time - start_time)
+            speed = last_meta.generated_tokens_count / (end_time - start_time)
 
             # 打印 token 统计信息和成本
             self.printer.print_in_terminal(

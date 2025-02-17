@@ -299,7 +299,7 @@ class CommandAutoTuner:
                 return content
             
         model_name = ",".join(llms_utils.get_llm_names(self.llm))
-        start_time = time.time()
+        start_time = time.monotonic()
         result, last_meta = stream_out(
             self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
             model_name=model_name,
@@ -309,7 +309,7 @@ class CommandAutoTuner:
         )
                 
         if last_meta:
-            elapsed_time = time.time() - start_time
+            elapsed_time = time.monotonic() - start_time
             printer = Printer()
             speed = last_meta.generated_tokens_count / elapsed_time
             
@@ -400,7 +400,7 @@ class CommandAutoTuner:
 
                 model_name = ",".join(llms_utils.get_llm_names(self.llm))
                 
-                start_time = time.time()
+                start_time = time.monotonic()
                 result, last_meta = stream_out(
                     self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
                     model_name=model_name,
@@ -410,7 +410,7 @@ class CommandAutoTuner:
                 )                
                 
                 if last_meta:
-                    elapsed_time = time.time() - start_time
+                    elapsed_time = time.monotonic() - start_time
                     printer = Printer()
                     speed = last_meta.generated_tokens_count / elapsed_time
                     
