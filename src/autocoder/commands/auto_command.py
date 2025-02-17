@@ -567,23 +567,7 @@ class CommandAutoTuner:
         ** 特别注意，这些配置参数会影响 coding,chat 的执行效果或者结果 根据返回调用该函数做合理的配置**
 
         </usage>
-        </command>
-
-        <command>
-        <name>exclude_dirs</name>
-        <description>设置要排除的目录，这些目录下的文件被 @ 或者 @@ 不会触发对这些目录的提示。</description>
-        <usage>
-         该命令接受一个或多个目录名 dir_names, list 类型
-
-         ## 添加排除目录
-         使用例子：
-
-         exclude_dirs(dir_names=["node_modules","dist","build"])
-         exclude_dirs(dir_names=[".git"])
-         
-        </usage>
-        </command>
-
+        </command>        
         
         <command>
         <name>chat</name>
