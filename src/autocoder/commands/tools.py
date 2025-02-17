@@ -483,9 +483,16 @@ class AutoCommandTools:
         该工具会搜索文件内容，返回所有匹配的文件。
         如果结果过多，只返回前10个匹配项。
         搜索不区分大小写。
+
+        默认排除以下目录：['node_modules', '.git', '.venv', 'venv', '__pycache__', 'dist', 'build']
         """
+        excluded_dirs = ['node_modules', '.git', '.venv', 'venv', '__pycache__', 'dist', 'build']
         matched_files = []
-        for root, _, files in os.walk(self.args.source_dir):
+        
+        for root, dirs, files in os.walk(self.args.source_dir):
+            # Remove excluded directories from dirs to prevent os.walk from traversing them
+            dirs[:] = [d for d in dirs if d not in excluded_dirs]
+            
             for file in files:
                 file_path = os.path.join(root, file)
                 try:
@@ -493,11 +500,16 @@ class AutoCommandTools:
                         content = f.read()
                         if keyword.lower() in content.lower():
                             matched_files.append(file_path)
+                            # Limit to first 10 matches
+                            if len(matched_files) >= 10:
+                                break
                 except Exception:
                     # Skip files that can't be read
                     pass
+            if len(matched_files) >= 10:
+                break
 
-        v = ",".join(matched_files)
+        v = ",".join(matched_files[:10])
         self.result_manager.add_result(content=v, meta = {
             "action": "find_files_by_content",
             "input": {
