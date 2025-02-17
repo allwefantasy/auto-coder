@@ -1,4 +1,4 @@
-from pyparsing import Optional
+from typing import Optional
 from autocoder.common.result_manager import ResultManager
 from autocoder.index.index import IndexManager
 from autocoder.pyproject import PyProject
