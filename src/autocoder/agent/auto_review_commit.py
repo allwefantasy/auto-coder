@@ -8,6 +8,7 @@ from rich.console import Console
 from autocoder.common.printer import Printer
 from autocoder.common import AutoCoderArgs
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
+import hashlib
 
 
 def load_yaml_config(yaml_file: str) -> Dict:
@@ -58,16 +59,16 @@ class AutoReviewCommit:
 
         代码变更:
         {% for file_path, (before, after) in changes.items() %}
-        ### {{ file_path }}
-        修改前:
-        ```python
-        {{ before or "New file" }}
-        ```
+        ##File: {{ file_path }}
+        ##修改前:
         
-        修改后:
-        ```python
+        {{ before or "New file" }}        
+        
+        ##File: {{ file_path }}
+        ##修改后:
+        
         {{ after or "File deleted" }}
-        ```
+        
         {% endfor %}
         {% endfor %}
         </commit>
@@ -156,8 +157,7 @@ class AutoReviewCommit:
             if query and urls:
                 changes = {}
                 if not self.skip_diff:
-                    # 计算文件的MD5用于匹配commit
-                    import hashlib
+                    # 计算文件的MD5用于匹配commit                    
                     file_md5 = hashlib.md5(open(yaml_path, 'rb').read()).hexdigest()
                     response_id = f"auto_coder_{yaml_file}_{file_md5}"
                     # 查找对应的commit                   
