@@ -1,8 +1,6 @@
-from pydantic import ValidationError
-from typing import Any, Dict, Optional
+from typing import Any
 from autocoder.utils import llms as llms_utils
-from autocoder.common.auto_coder_lang import get_message,get_message_with_format
-from autocoder.common import AutoCoderArgs
+from autocoder.common.auto_coder_lang import get_message_with_format
 
 class ConfigValidationError(Exception):
     def __init__(self, message: str):
@@ -139,9 +137,9 @@ class ConfigValidator:
 
     @classmethod
     def validate(cls, key: str, value: Any, product_mode: str) -> Any:
-        # 获取字段元数据
-        field_info = AutoCoderArgs.model_fields.get(key)
-        if not field_info:
+        # 获取配置规范
+        spec = cls.CONFIG_SPEC.get(key)
+        if not spec:
             raise ConfigValidationError(
                 get_message_with_format("unknown_config_key", key=key)
             )
@@ -149,22 +147,38 @@ class ConfigValidator:
         # 类型转换和验证
         try:
             # 布尔类型特殊处理
-            if field_info.annotation == bool:
+            if spec['type'] == bool:
                 return cls.validate_boolean(value)
             # 其他类型转换
-            converted_value = field_info.annotation(value)
+            converted_value = spec['type'](value)
         except ValueError:
             raise ConfigValidationError(
-                get_message_with_format(f"invalid_{field_info.annotation.__name__.lower()}_value", value=value)
+                get_message_with_format(f"invalid_{spec['type'].__name__.lower()}_value", value=value)
             )
 
         # 范围检查
-        if hasattr(field_info, 'ge') and converted_value < field_info.ge:
+        if 'min' in spec and converted_value < spec['min']:
             raise ConfigValidationError(
                 get_message_with_format("value_out_of_range", 
                           value=converted_value,
-                          min=field_info.ge,
-                          max=field_info.le)
+                          min=spec['min'],
+                          max=spec['max'])
+            )
+        
+        if 'max' in spec and converted_value > spec['max']:
+            raise ConfigValidationError(
+                get_message_with_format("value_out_of_range", 
+                          value=converted_value,
+                          min=spec['min'],
+                          max=spec['max'])
+            )
+
+        # 枚举值检查
+        if 'allowed' in spec and converted_value not in spec['allowed']:
+            raise ConfigValidationError(
+                get_message_with_format("invalid_enum_value", 
+                          value=converted_value,
+                          allowed=', '.join(map(str, spec['allowed'])))
             )
         
         # 模型存在性检查        
