@@ -32,7 +32,109 @@ class ConfigValidator:
             "default": 1,
             "description": "同模型生成次数(1-5)"
         },
-        # 其他配置项...
+        "skip_filter_index": {
+            "type": bool,
+            "default": False,
+            "description": "是否跳过根据用户的query自动查找上下文"
+        },
+        "skip_build_index": {
+            "type": bool,
+            "default": True,
+            "description": "是否自动构建索引"
+        },
+        "enable_global_memory": {
+            "type": bool,
+            "default": True,
+            "description": "是否开启全局记忆"
+        },
+        "rank_times_same_model": {
+            "type": int,
+            "min": 1,
+            "max": 3,
+            "default": 1,
+            "description": "相同模型重排序次数"
+        },
+        "human_as_model": {
+            "type": bool,
+            "default": False,
+            "description": "是否以人类作为模型"
+        },
+        "skip_confirm": {
+            "type": bool,
+            "default": True,
+            "description": "是否跳过确认步骤"
+        },
+        "silence": {
+            "type": bool,
+            "default": True,
+            "description": "是否静默模式"
+        },
+        "include_project_structure": {
+            "type": bool,
+            "default": True,
+            "description": "是否包含项目结构"
+        },
+        "product_mode": {
+            "type": str,
+            "allowed": ["lite", "pro"],
+            "default": "lite",
+            "description": "产品模式(lite/pro)"
+        },
+        "model": {
+            "type": str,
+            "default": "v3_chat",
+            "description": "默认模型名称"
+        },
+        "chat_model": {
+            "type": str,
+            "default": "r1_chat",
+            "description": "聊天模型名称"
+        },
+        "code_model": {
+            "type": str,
+            "default": "v3_chat",
+            "description": "代码生成模型名称"
+        },
+        "index_filter_model": {
+            "type": str,
+            "default": "r1_chat",
+            "description": "索引过滤模型名称"
+        },
+        "generate_rerank_model": {
+            "type": str,
+            "default": "r1_chat",
+            "description": "生成重排序模型名称"
+        },
+        "emb_model": {
+            "type": str,
+            "default": "v3_chat",
+            "description": "嵌入模型名称"
+        },
+        "vl_model": {
+            "type": str,
+            "default": "v3_chat",
+            "description": "视觉语言模型名称"
+        },
+        "designer_model": {
+            "type": str,
+            "default": "v3_chat",
+            "description": "设计模型名称"
+        },
+        "sd_model": {
+            "type": str,
+            "default": "v3_chat",
+            "description": "稳定扩散模型名称"
+        },
+        "voice2text_model": {
+            "type": str,
+            "default": "v3_chat",
+            "description": "语音转文本模型名称"
+        },
+        "commit_model": {
+            "type": str,
+            "default": "v3_chat",
+            "description": "提交信息生成模型名称"
+        }
     }
 
     @classmethod
