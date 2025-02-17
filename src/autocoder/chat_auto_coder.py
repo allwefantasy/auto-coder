@@ -2507,7 +2507,9 @@ def auto_command(params,query: str):
                                  mcp=mcp,
                                  models=manage_models,
                                  index_build=index_build,
-                                 index_query=index_query,                                                                                           
+                                 index_query=index_query,  
+                                 execute_shell_command=execute_shell_command,  
+                                 generate_shell_command=generate_shell_command                                                                                       
                              ))
     
     # 生成建议

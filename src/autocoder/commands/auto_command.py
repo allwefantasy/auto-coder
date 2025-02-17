@@ -134,6 +134,8 @@ class CommandConfig(BaseModel):
     mcp: SkipValidation[Callable]
     models: SkipValidation[Callable]
     lib: SkipValidation[Callable]
+    execute_shell_command: SkipValidation[Callable]
+    generate_shell_command: SkipValidation[Callable]
 
     
 
@@ -814,21 +816,35 @@ class CommandAutoTuner:
         </command>
 
         <command>
-        <name>run_shell</name>
+        <name>execute_shell_command</name>
         <description>运行指定的Shell脚本。主要用于编译、运行、测试等任务。</description>
         <usage>
-         该命令接受一个参数 script，为要执行的Shell脚本字符串。
+         该命令接受一个参数 command，为要执行的Shell脚本字符串。
+         
          
          使用例子：
          
-         run_shell(script="ls -l")
+         execute_shell_command(command="ls -l")
          
          注意：
          - 脚本将在项目根目录下执行
          - 禁止执行包含 rm 命令的脚本
          - 输出结果会返回给用户
+         - 执行该命令的时候，需要通过 ask_user 询问用户是否同意执行，如果用户拒绝，则不再执行当前想执行的脚本呢。
         </usage>
-        </command>        
+        </command> 
+
+        <command>
+        <name>generate_shell_command</name>
+        <description>
+        根据用户需求描述，生成shell脚本。 
+        </description>
+        <usage>
+          支持的参数名为 input_text， 字符串类型，用户的需求，使用该函数，会打印生成结果，用户可以更加清晰
+          的看到生成的脚本。然后配合 ask_user, execute_shell_command 两个函数，最终完成
+          脚本执行。
+        </usage>
+        </command>       
 
         <command>
         <name>get_related_files</name>
@@ -934,9 +950,9 @@ class CommandAutoTuner:
             "summon": self.command_config.summon,
             "lib": self.command_config.lib,
             "models": self.command_config.models,
+            "execute_shell_command": self.command_config.execute_shell_command,
 
-            "run_python": self.tools.run_python_code,
-            "run_shell": self.tools.run_shell_code,
+            "run_python": self.tools.run_python_code,            
             "get_related_files_by_symbols": self.tools.get_related_files_by_symbols,
             "get_project_map": self.tools.get_project_map,
             "read_files": self.tools.read_files,
