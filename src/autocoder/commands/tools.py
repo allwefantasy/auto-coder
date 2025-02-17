@@ -486,12 +486,26 @@ class AutoCommandTools:
 
         默认排除以下目录：['node_modules', '.git', '.venv', 'venv', '__pycache__', 'dist', 'build']
         """
-        excluded_dirs = ['node_modules', '.git', '.venv', 'venv', '__pycache__', 'dist', 'build']
+        # 需要排除的目录和文件模式
+        excluded_dirs = [
+            'node_modules', '.git', '.venv', 'venv', '__pycache__', 'dist', 'build',
+            '.DS_Store', '.idea', '.vscode', 'tmp', 'temp', 'cache', 'coverage',
+            'htmlcov', '.mypy_cache', '.pytest_cache', '.hypothesis'
+        ]
+        excluded_file_patterns = [
+            '*.pyc', '*.pyo', '*.pyd', '*.egg-info', '*.log'
+        ]
+        
         matched_files = []
         
         for root, dirs, files in os.walk(self.args.source_dir):
-            # Remove excluded directories from dirs to prevent os.walk from traversing them
+            # 移除需要排除的目录
             dirs[:] = [d for d in dirs if d not in excluded_dirs]
+            
+            # 过滤掉需要排除的文件
+            files[:] = [f for f in files if not any(
+                f.endswith(pattern[1:]) for pattern in excluded_file_patterns
+            )]
             
             for file in files:
                 file_path = os.path.join(root, file)
