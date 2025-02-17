@@ -377,7 +377,7 @@ class CommandAutoTuner:
                     if changes.success:
                         for file_path, change in changes.changes.items():
                             if change.before:
-                                content += f"## File: {file_path}[更改前]\n{change.before}\n\nFile: {file_path}\n\n[更改后]\n{change.after}\n\n"
+                                content += f"## File: {file_path}[更改前]\n{change.before or 'New File'}\n\nFile: {file_path}\n\n[更改后]\n{change.after or 'Deleted File'}\n\n"
                 else:
                     # 其他的直接获取执行结果
                     content = last_result.content
