@@ -974,6 +974,37 @@ class CommandAutoTuner:
         </usage>
         </command>
 
+        <command>
+        <name>read_file_with_keyword_ranges</name>
+        <description>读取包含指定关键字的行及其前后指定范围的行。</description>
+        <usage>
+         该函数用于读取包含关键字的行及其前后指定范围的行。
+
+         参数说明:
+         1. file_path (str): 文件路径，可以是相对路径或绝对路径
+         2. keyword (str): 要搜索的关键字
+         3. before_size (int): 关键字行之前要读取的行数，默认100
+         4. after_size (int): 关键字行之后要读取的行数，默认100
+
+         返回值:
+         - 返回str类型，包含关键字的行及其前后指定范围的行
+         - 格式如下：
+           ```
+           ##File: /path/to/file.py
+           ##Line: 10-20
+           
+           内容
+           ```
+
+         使用例子：
+         read_file_with_keyword_ranges(file_path="main.py", keyword="TODO", before_size=5, after_size=5)
+
+         注意：
+         - 如果文件中有多个匹配的关键字，会返回多个内容块
+         - 搜索不区分大小写
+        </usage>
+        </command>
+
         </commands>        
         '''
 
@@ -1006,7 +1037,8 @@ class CommandAutoTuner:
             "find_files_by_name": self.tools.find_files_by_name,
             "find_files_by_content": self.tools.find_files_by_content,        
             "get_project_related_files": self.tools.get_project_related_files,
-            "ask_user":self.tools.ask_user
+            "ask_user":self.tools.ask_user,
+            "read_file_with_keyword_ranges": self.tools.read_file_with_keyword_ranges
                         
         }
 
