@@ -240,7 +240,10 @@ class ConfigAutoTuner:
                 display_func=extract_command_response
             )
             end_time = time.monotonic()
-                        
+            
+            # 打印token使用信息
+            if last_meta:
+                print(f'Token usage - Input: {last_meta.input_tokens_count}, Output: {last_meta.generated_tokens_count}')
             
             # 提取 JSON 并转换为 AutoConfigResponse            
             response = to_model(result, AutoConfigResponse)
