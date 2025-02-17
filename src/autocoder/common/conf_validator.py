@@ -11,125 +11,125 @@ class ConfigValidator:
     CONFIG_SPEC = {
         # 核心配置项
         "auto_merge": {
-            "type": (str,),
+            "type": str,
             "allowed": ["editblock", "diff", "wholefile"],
             "default": "editblock",
             "description": "代码合并方式(editblock/diff/wholefile)"
         },
         "editblock_similarity": {
-            "type": (float,),
+            "type": float,
             "min": 0.0,
             "max": 1.0,
             "default": 0.9,
             "description": "代码块相似度阈值(0-1)"
         },
         "generate_times_same_model": {
-            "type": (int,),
+            "type": int,
             "min": 1,
             "max": 5,
             "default": 1,
             "description": "同模型生成次数(1-5)"
         },
         "skip_filter_index": {
-            "type": (bool, str),
+            "type": bool,
             "default": False,
             "description": "是否跳过根据用户的query自动查找上下文"
         },
         "skip_build_index": {
-            "type": (bool, str),
+            "type": bool,
             "default": True,
             "description": "是否自动构建索引"
         },
         "enable_global_memory": {
-            "type": (bool, str),
+            "type": bool,
             "default": True,
             "description": "是否开启全局记忆"
         },
         "rank_times_same_model": {
-            "type": (int,),
+            "type": int,
             "min": 1,
             "max": 3,
             "default": 1,
             "description": "相同模型重排序次数"
         },
         "human_as_model": {
-            "type": (bool, str),
+            "type": bool,
             "default": False,
             "description": "是否以人类作为模型"
         },
         "skip_confirm": {
-            "type": (bool, str),
+            "type": bool,
             "default": True,
             "description": "是否跳过确认步骤"
         },
         "silence": {
-            "type": (bool, str),
+            "type": bool,
             "default": True,
             "description": "是否静默模式"
         },
         "include_project_structure": {
-            "type": (bool, str),
+            "type": bool,
             "default": True,
             "description": "是否包含项目结构"
         },
         "product_mode": {
-            "type": (str,),
+            "type": str,
             "allowed": ["lite", "pro"],
             "default": "lite",
             "description": "产品模式(lite/pro)"
         },
         "model": {
-            "type": (str,),
+            "type": str,
             "default": "v3_chat",
             "description": "默认模型名称"
         },
         "chat_model": {
-            "type": (str,),
+            "type": str,
             "default": "r1_chat",
             "description": "聊天模型名称"
         },
         "code_model": {
-            "type": (str,),
+            "type": str,
             "default": "v3_chat",
             "description": "代码生成模型名称"
         },
         "index_filter_model": {
-            "type": (str,),
+            "type": str,
             "default": "r1_chat",
             "description": "索引过滤模型名称"
         },
         "generate_rerank_model": {
-            "type": (str,),
+            "type": str,
             "default": "r1_chat",
             "description": "生成重排序模型名称"
         },
         "emb_model": {
-            "type": (str,),
+            "type": str,
             "default": "v3_chat",
             "description": "嵌入模型名称"
         },
         "vl_model": {
-            "type": (str,),
+            "type": str,
             "default": "v3_chat",
             "description": "视觉语言模型名称"
         },
         "designer_model": {
-            "type": (str,),
+            "type": str,
             "default": "v3_chat",
             "description": "设计模型名称"
         },
         "sd_model": {
-            "type": (str,),
+            "type": str,
             "default": "v3_chat",
             "description": "稳定扩散模型名称"
         },
         "voice2text_model": {
-            "type": (str,),
+            "type": str,
             "default": "v3_chat",
             "description": "语音转文本模型名称"
         },
         "commit_model": {
-            "type": (str,),
+            "type": str,
             "default": "v3_chat",
             "description": "提交信息生成模型名称"
         }
@@ -147,27 +147,14 @@ class ConfigValidator:
 
         # 类型转换和验证
         try:
-            # 获取允许的类型列表
-            allowed_types = spec['type']
-            
-            # 尝试每一个允许的类型
-            for t in allowed_types:
-                try:
-                    # 布尔类型特殊处理
-                    if t == bool:
-                        return cls.validate_boolean(value)
-                    # 其他类型转换
-                    return t(value)
-                except ValueError:
-                    continue
-                    
-            # 如果所有类型都转换失败
-            raise ValueError()
-            
+            # 布尔类型特殊处理
+            if spec['type'] == bool:
+                return cls.validate_boolean(value)
+            # 其他类型转换
+            converted_value = spec['type'](value)
         except ValueError:
-            type_names = [t.__name__.lower() for t in allowed_types]
             raise ConfigValidationError(
-                get_message_with_format(f"invalid_{type_names[0]}_value", value=value)
+                get_message_with_format(f"invalid_{spec['type'].__name__.lower()}_value", value=value)
             )
 
         # 范围检查
