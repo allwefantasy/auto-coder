@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import auto_coder_lang
 from pydantic import BaseModel, Field
 import byzerllm
 from typing import List, Dict, Any, Union, Callable, Optional
@@ -296,6 +297,7 @@ class CommandAutoTuner:
                 logger.error(f"Error extracting command response: {e}")
                 return content
 
+        start_time = time.monotonic()
         result, last_meta = stream_out(
             self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
             model_name=self.llm.default_model_name,
@@ -303,6 +305,22 @@ class CommandAutoTuner:
             final_title=final_title,
             display_func= extract_command_response
         )
+        end_time = time.monotonic()
+        
+        # 计算速度
+        speed = last_meta.input_tokens_count / (end_time - start_time)
+        
+        # 打印 token 统计信息
+        self.printer.print_in_terminal(auto_coder_lang.get_message_with_format(
+            "quick_filter_stats",
+            model_names=self.llm.default_model_name,
+            elapsed_time=f"{end_time - start_time:.2f}",
+            input_tokens=last_meta.input_tokens_count,
+            output_tokens=last_meta.generated_tokens_count,
+            input_cost=0,
+            output_cost=0,
+            speed=f"{speed:.2f}"
+        ))
 
         ## 这里打印
 
@@ -369,13 +387,30 @@ class CommandAutoTuner:
                 conversations.append({"role": "user", "content": self._execute_command_result.prompt(content)})
                 title = printer.get_message_from_key("auto_command_analyzing")
                 
-                result, _ = stream_out(
+                start_time = time.monotonic()
+                result, last_meta = stream_out(
                     self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
                     model_name=self.llm.default_model_name,
                     title=title,
                     final_title=final_title,
                     display_func= extract_command_response
                 )
+                end_time = time.monotonic()
+                
+                # 计算速度
+                speed = last_meta.input_tokens_count / (end_time - start_time)
+                
+                # 打印 token 统计信息
+                self.printer.print_in_terminal(auto_coder_lang.get_message_with_format(
+                    "quick_filter_stats",
+                    model_names=self.llm.default_model_name,
+                    elapsed_time=f"{end_time - start_time:.2f}",
+                    input_tokens=last_meta.input_tokens_count,
+                    output_tokens=last_meta.generated_tokens_count,
+                    input_cost=0,
+                    output_cost=0,
+                    speed=f"{speed:.2f}"
+                ))
                 conversations.append({"role": "assistant", "content": result})    
                 # 提取 JSON 并转换为 AutoCommandResponse            
                 response = to_model(result, AutoCommandResponse)  

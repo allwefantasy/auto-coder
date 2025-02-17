@@ -4,6 +4,7 @@ import os
 import time
 import traceback
 import uuid
+import auto_coder_lang
 from typing import Dict, Any, Optional, Union, Callable, List
 from pydantic import BaseModel, Field, SkipValidation
 import byzerllm
@@ -232,12 +233,29 @@ class ConfigAutoTuner:
             # 使用 stream_out 进行输出
             printer = Printer()
             title = printer.get_message_from_key("auto_config_analyzing")
-            result, _ = stream_out(
+            start_time = time.monotonic()
+            result, last_meta = stream_out(
                 self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
                 model_name=self.llm.default_model_name,
                 title=title,
                 display_func=extract_command_response
             )
+            end_time = time.monotonic()
+            
+            # 计算速度
+            speed = last_meta.input_tokens_count / (end_time - start_time)
+            
+            # 打印 token 统计信息
+            printer.print_in_terminal(auto_coder_lang.get_message_with_format(
+                "quick_filter_stats",
+                model_names=self.llm.default_model_name,
+                elapsed_time=f"{end_time - start_time:.2f}",
+                input_tokens=last_meta.input_tokens_count,
+                output_tokens=last_meta.generated_tokens_count,
+                input_cost=0,
+                output_cost=0,
+                speed=f"{speed:.2f}"
+            ))
             
             # 提取 JSON 并转换为 AutoConfigResponse            
             response = to_model(result, AutoConfigResponse)
