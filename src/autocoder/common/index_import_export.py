@@ -1,19 +1,8 @@
 import os
 import json
 import shutil
-from typing import Dict, Optional
-from git import Repo
-from pathlib import Path
 from loguru import logger
 
-def get_project_root(path: Optional[str] = None) -> str:
-    """Get project root directory using git"""
-    try:
-        repo = Repo(path or os.getcwd(), search_parent_directories=True)
-        return repo.working_dir
-    except Exception as e:
-        logger.warning(f"Failed to get git root: {e}")
-        return path or os.getcwd()
 
 def export_index(project_root: str, export_path: str) -> bool:
     """
