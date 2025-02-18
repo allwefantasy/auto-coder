@@ -1870,6 +1870,13 @@ def generate_shell_command(input_text):
         auto_coder_main(["agent", "generate_command", "--file", execute_file])
         with open(os.path.join(".auto-coder", "exchange.txt"), "r") as f:
             shell_script = f.read()
+        result_manager = ResultManager()
+        result_manager.add_result(content=shell_script,meta={
+            "action": "generate_shell_command",
+            "input": {
+                "query": input_text
+            }
+        })
         return shell_script
     finally:
         os.remove(execute_file)

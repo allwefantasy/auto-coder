@@ -1134,6 +1134,7 @@ class CommandAutoTuner:
             "lib": self.command_config.lib,
             "models": self.command_config.models,
             "execute_shell_command": self.command_config.execute_shell_command,
+            "generate_shell_command": self.command_config.generate_shell_command,
 
             "run_python": self.tools.run_python_code,            
             "get_related_files_by_symbols": self.tools.get_related_files_by_symbols,
@@ -1144,7 +1145,8 @@ class CommandAutoTuner:
             "find_files_by_content": self.tools.find_files_by_content,        
             "get_project_related_files": self.tools.get_project_related_files,
             "ask_user":self.tools.ask_user,
-            "read_file_with_keyword_ranges": self.tools.read_file_with_keyword_ranges
+            "read_file_with_keyword_ranges": self.tools.read_file_with_keyword_ranges,
+            
                         
         }
 

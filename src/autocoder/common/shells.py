@@ -9,6 +9,8 @@ from rich.panel import Panel
 from rich.text import Text
 from rich.live import Live
 
+from autocoder.common.result_manager import ResultManager
+
 def get_terminal_name() -> str:
     """
     获取当前终端名称(自动适配 Windows/Linux/Mac)
@@ -139,6 +141,7 @@ def execute_shell_command(command: str):
         encoding (str, optional): Override default encoding. Defaults to None.
     """
     console = Console()
+    result_manager = ResultManager()
     try:
         # Get terminal encoding
         encoding = get_terminal_encoding()
@@ -199,7 +202,13 @@ def execute_shell_command(command: str):
             output.append(safe_decode(remaining_out, encoding))
         if remaining_err:
             output.append(f"ERROR: {safe_decode(remaining_err, encoding)}")
-
+        
+        result_manager.add_result(content="\n".join(output),meta={
+            "action": "execute_shell_command",
+            "input": {
+                "command": command
+            }
+        })
         # Show final output
         console.print(
             Panel(
@@ -210,16 +219,23 @@ def execute_shell_command(command: str):
             )
         )
 
-        if process.returncode != 0:
-            console.print(
-                f"[bold red]Command failed with code {process.returncode}[/bold red]"
-            )
-
     except FileNotFoundError:
+        result_manager.add_result(content=f"[bold red]Command not found:[/bold red] [yellow]{command}[/yellow]",meta={
+            "action": "execute_shell_command",
+            "input": {
+                "command": command
+            }
+        })
         console.print(
             f"[bold red]Command not found:[/bold red] [yellow]{command}[/yellow]"
         )
     except Exception as e:
+        result_manager.add_result(content=f"[bold red]Unexpected error:[/bold red] [yellow]{str(e)}[/yellow]",meta={
+            "action": "execute_shell_command",
+            "input": {
+                "command": command
+            }
+        })
         console.print(
             f"[bold red]Unexpected error:[/bold red] [yellow]{str(e)}[/yellow]"
         )

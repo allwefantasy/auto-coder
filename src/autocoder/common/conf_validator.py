@@ -210,7 +210,7 @@ class ConfigValidator:
                                      "emb_model", "vl_model", "designer_model", "sd_model", 
                                      "voice2text_model", 
                                      "commit_model","model"]:
-            if not llms_utils.get_model_info(converted_value):
+            if not llms_utils.get_model_info(converted_value,product_mode):
                 raise ConfigValidationError(
                     get_message_with_format("model_not_found", model=converted_value)
                 )
