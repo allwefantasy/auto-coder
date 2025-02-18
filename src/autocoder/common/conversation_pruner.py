@@ -9,7 +9,7 @@ from loguru import logger
 class PruneStrategy(BaseModel):
     name: str
     description: str
-    config: Dict[str, Any] = {}
+    config: Dict[str, Any] = {"safe_zone_tokens": 0, "group_size": 4}
 
 class ConversationPruner:
     def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
@@ -18,18 +18,18 @@ class ConversationPruner:
         self.strategies = {
             "summarize": PruneStrategy(
                 name="summarize",
-                description="对早期对话进行摘要，保留关键信息",
-                config={"keep_recent": 3}
+                description="对早期对话进行分组摘要，保留关键信息",
+                config={"safe_zone_tokens": 500, "group_size": 4}
             ),
             "truncate": PruneStrategy(
                 name="truncate",
-                description="直接截断最早的部分对话",
-                config={}
+                description="分组截断最早的部分对话",
+                config={"safe_zone_tokens": 500, "group_size": 4}
             ),
             "hybrid": PruneStrategy(
                 name="hybrid",
-                description="先尝试摘要，如果仍超限则截断",
-                config={"keep_recent": 3}
+                description="先尝试分组摘要，如果仍超限则分组截断",
+                config={"safe_zone_tokens": 500, "group_size": 4}
             )
         }
 
@@ -70,20 +70,31 @@ class ConversationPruner:
     def _summarize_prune(self, conversations: List[Dict[str, Any]], 
                         max_tokens: int, config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """摘要式剪枝"""
-        keep_recent = config.get("keep_recent", 3)
-        recent_conversations = conversations[-keep_recent:]
-        early_conversations = conversations[:-keep_recent]
-
-        if not early_conversations:
-            return recent_conversations
-
-        # 生成摘要
-        summary = self._generate_summary(early_conversations)
+        safe_zone_tokens = config.get("safe_zone_tokens", 0)
+        group_size = config.get("group_size", 4)
+        processed_conversations = conversations.copy()
         
-        # 重组对话历史
-        return [
-            {"role": "system", "content": f"历史对话摘要：{summary}"}
-        ] + recent_conversations
+        while True:
+            current_tokens = count_tokens(json.dumps(processed_conversations, ensure_ascii=False))
+            if current_tokens <= max_tokens - safe_zone_tokens:
+                break
+                
+            # 找到要处理的对话组
+            early_conversations = processed_conversations[:-group_size]
+            recent_conversations = processed_conversations[-group_size:]
+            
+            if not early_conversations:
+                break
+                
+            # 生成当前组的摘要
+            group_summary = self._generate_summary(early_conversations[-group_size:])
+            
+            # 更新对话历史
+            processed_conversations = early_conversations[:-group_size] + [
+                {"role": "system", "content": f"历史对话摘要：{group_summary}"}
+            ] + recent_conversations
+            
+        return processed_conversations
 
     def _generate_summary(self, conversations: List[Dict[str, Any]]) -> str:
         """生成对话摘要"""
@@ -92,16 +103,20 @@ class ConversationPruner:
 
     def _truncate_prune(self, conversations: List[Dict[str, Any]], max_tokens: int) -> List[Dict[str, Any]]:
         """截断式剪枝"""
-        removed_tokens = 0
-        new_conversations = []
+        safe_zone_tokens = self.strategies["truncate"].config.get("safe_zone_tokens", 0)
+        group_size = self.strategies["truncate"].config.get("group_size", 4)
+        processed_conversations = conversations.copy()
         
-        # 从最早的消息开始移除
-        for conv in reversed(conversations):
-            conv_tokens = count_tokens(conv["content"])
-            if removed_tokens + conv_tokens <= max_tokens:
-                removed_tokens += conv_tokens
-                new_conversations.insert(0, conv)
-            else:
+        while True:
+            current_tokens = count_tokens(json.dumps(processed_conversations, ensure_ascii=False))
+            if current_tokens <= max_tokens - safe_zone_tokens:
                 break
-        
-        return new_conversations
+                
+            # 如果剩余对话不足一组，直接返回
+            if len(processed_conversations) <= group_size:
+                return []
+                
+            # 移除最早的一组对话
+            processed_conversations = processed_conversations[group_size:]
+            
+        return processed_conversations
