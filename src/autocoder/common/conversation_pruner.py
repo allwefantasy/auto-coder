@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 import json
 from pydantic import BaseModel
 import byzerllm

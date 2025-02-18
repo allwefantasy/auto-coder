@@ -153,6 +153,11 @@ class ActionTSProject(BaseAction):
                 model_names=model_names,
                 sampling_count=len(generate_result.contents)
             )
+            
+            if global_cancel.requested:
+                printer = Printer()            
+                raise Exception(printer.get_message_from_key("generation_cancelled")) 
+            
             merge_result = None
             if args.execute and args.auto_merge:
                 self.printer.print_in_terminal("code_merge_start")
@@ -212,6 +217,10 @@ class ActionPyScriptProject(BaseAction):
 
     def process_content(self, source_code_list: SourceCodeList):
         args = self.args
+        if global_cancel.requested:
+            printer = Printer()            
+            raise Exception(printer.get_message_from_key("generation_cancelled")) 
+        
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
             start_time = time.time()
@@ -254,6 +263,11 @@ class ActionPyScriptProject(BaseAction):
                 model_names=model_names,
                 sampling_count=len(generate_result.contents)
             )
+
+            if global_cancel.requested:
+                printer = Printer()            
+                raise Exception(printer.get_message_from_key("generation_cancelled")) 
+            
             merge_result = None
             if args.execute and args.auto_merge:
                 self.printer.print_in_terminal("code_merge_start")
@@ -336,6 +350,10 @@ class ActionPyProject(BaseAction):
                 content_length=content_length,
                 max_length=self.args.model_max_input_length
             )
+        
+        if global_cancel.requested:
+            printer = Printer()            
+            raise Exception(printer.get_message_from_key("generation_cancelled")) 
 
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
@@ -380,6 +398,11 @@ class ActionPyProject(BaseAction):
                 model_names=model_names,
                 sampling_count=len(generate_result.contents)
             )
+
+            if global_cancel.requested:
+                printer = Printer()            
+                raise Exception(printer.get_message_from_key("generation_cancelled")) 
+            
             merge_result = None
             if args.execute and args.auto_merge:
                 self.printer.print_in_terminal("code_merge_start")
@@ -453,6 +476,10 @@ class ActionSuffixProject(BaseAction):
                 logger.warning(
                     f"Content(send to model) is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}"
                 )                
+
+        if global_cancel.requested:
+            printer = Printer()            
+            raise Exception(printer.get_message_from_key("generation_cancelled")) 
 
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
