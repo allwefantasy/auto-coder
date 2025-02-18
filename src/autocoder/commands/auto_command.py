@@ -417,6 +417,13 @@ class CommandAutoTuner:
                 # 统计 token 数量                
                 total_tokens = count_tokens(json.dumps(conversations,ensure_ascii=False))                
 
+                # 如果对话过长，使用默认策略进行修剪
+                if total_tokens > 8000:
+                    from autocoder.common.conversation_pruner import ConversationPruner
+                    pruner = ConversationPruner(self.llm)
+                    conversations = pruner.prune_conversations(conversations, max_tokens=8000)
+                    total_tokens = count_tokens(json.dumps(conversations,ensure_ascii=False))
+
                 title = printer.get_message_from_key("auto_command_analyzing")
                 model_name = ",".join(llms_utils.get_llm_names(self.llm))
                 
