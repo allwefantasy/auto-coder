@@ -406,9 +406,22 @@ class CommandAutoTuner:
                 ))
                 # 保持原content不变，继续后续处理
                 
-                conversations.append({"role": "user", "content": self._execute_command_result.prompt(content)})
-                title = printer.get_message_from_key("auto_command_analyzing")
+                # 添加新的对话内容
+                new_content = self._execute_command_result.prompt(content)
+                conversations.append({"role": "user", "content": new_content})
+                
+                # 统计 token 数量
+                from autocoder.rag.token_counter import count_tokens
+                total_tokens = sum(count_tokens(msg["content"]) for msg in conversations)
+                if total_tokens > 50000:
+                    self.printer.print_in_terminal(
+                        "token_limit_warning", 
+                        style="yellow", 
+                        total_tokens=total_tokens,
+                        suggestion="建议使用 chat('/new') 开启新对话以重置上下文"
+                    )
 
+                title = printer.get_message_from_key("auto_command_analyzing")
                 model_name = ",".join(llms_utils.get_llm_names(self.llm))
                 
                 start_time = time.monotonic()
@@ -457,6 +470,17 @@ class CommandAutoTuner:
                 )
 
             else:
+                # 统计 token 数量
+                from autocoder.rag.token_counter import count_tokens
+                total_tokens = sum(count_tokens(msg["content"]) for msg in conversations)
+                if total_tokens > 50000:
+                    self.printer.print_in_terminal(
+                        "token_limit_warning", 
+                        style="yellow", 
+                        total_tokens=total_tokens,
+                        suggestion="建议使用 chat('/new') 开启新对话以重置上下文"
+                    )
+                
                 self.printer.print_in_terminal("auto_command_break", style="yellow", command=command)
                 break            
         
