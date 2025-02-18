@@ -12,24 +12,25 @@ class PruneStrategy(BaseModel):
     config: Dict[str, Any] = {"safe_zone_tokens": 0, "group_size": 4}
 
 class ConversationPruner:
-    def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
+    def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], 
+                 safe_zone_tokens: int = 500, group_size: int = 4):
         self.llm = llm
         self.printer = Printer()
         self.strategies = {
             "summarize": PruneStrategy(
                 name="summarize",
                 description="对早期对话进行分组摘要，保留关键信息",
-                config={"safe_zone_tokens": 500, "group_size": 4}
+                config={"safe_zone_tokens": safe_zone_tokens, "group_size": group_size}
             ),
             "truncate": PruneStrategy(
                 name="truncate",
                 description="分组截断最早的部分对话",
-                config={"safe_zone_tokens": 500, "group_size": 4}
+                config={"safe_zone_tokens": safe_zone_tokens, "group_size": group_size}
             ),
             "hybrid": PruneStrategy(
                 name="hybrid",
                 description="先尝试分组摘要，如果仍超限则分组截断",
-                config={"safe_zone_tokens": 500, "group_size": 4}
+                config={"safe_zone_tokens": safe_zone_tokens, "group_size": group_size}
             )
         }
 
@@ -57,7 +58,7 @@ class ConversationPruner:
         if strategy.name == "summarize":
             return self._summarize_prune(conversations, max_tokens, strategy.config)
         elif strategy.name == "truncate":
-            return self._truncate_prune(conversations, max_tokens)
+            return self._truncate_prune.with_llm(self.llm).run(conversations, max_tokens)
         elif strategy.name == "hybrid":
             pruned = self._summarize_prune(conversations, max_tokens, strategy.config)
             if count_tokens(json.dumps(pruned, ensure_ascii=False)) > max_tokens:
@@ -70,7 +71,7 @@ class ConversationPruner:
     def _summarize_prune(self, conversations: List[Dict[str, Any]], 
                         max_tokens: int, config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """摘要式剪枝"""
-        safe_zone_tokens = config.get("safe_zone_tokens", 0)
+        safe_zone_tokens = config.get("safe_zone_tokens", 50*1024)
         group_size = config.get("group_size", 4)
         processed_conversations = conversations.copy()
         
@@ -87,19 +88,28 @@ class ConversationPruner:
                 break
                 
             # 生成当前组的摘要
-            group_summary = self._generate_summary(early_conversations[-group_size:])
+            group_summary = self._generate_summary.with_llm(self.llm).run(early_conversations[-group_size:])
             
             # 更新对话历史
             processed_conversations = early_conversations[:-group_size] + [
-                {"role": "system", "content": f"历史对话摘要：{group_summary}"}
+                {"role": "user", "content": f"历史对话摘要：\n{group_summary}"},
+                {"role": "assistant", "content": f"收到"}
             ] + recent_conversations
             
         return processed_conversations
 
+    @byzerllm.prompt()
     def _generate_summary(self, conversations: List[Dict[str, Any]]) -> str:
-        """生成对话摘要"""
-        summary_prompt = f"请用中文将以下对话浓缩为要点，保留关键决策和技术细节：\n{conversations}"
-        return self.llm.chat_oai([{"role": "user", "content": summary_prompt}])[0].output
+        '''
+        请用中文将以下对话浓缩为要点，保留关键决策和技术细节：
+        
+        <history_conversations>
+        {{conversations}}
+        </history_conversations>
+        '''    
+        return {
+            "conversations": json.dumps(conversations, ensure_ascii=False)
+        }    
 
     def _truncate_prune(self, conversations: List[Dict[str, Any]], max_tokens: int) -> List[Dict[str, Any]]:
         """截断式剪枝"""
