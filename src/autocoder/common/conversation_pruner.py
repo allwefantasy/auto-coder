@@ -39,7 +39,7 @@ class ConversationPruner:
         return [strategy.dict() for strategy in self.strategies.values()]
 
     def prune_conversations(self, conversations: List[Dict[str, Any]], 
-                          max_tokens: int, strategy_name: str = "summarize") -> List[Dict[str, Any]]:
+                            strategy_name: str = "summarize") -> List[Dict[str, Any]]:
         """
         根据策略修剪对话
         Args:
@@ -48,28 +48,28 @@ class ConversationPruner:
             strategy_name: 策略名称
         Returns:
             修剪后的对话列表
-        """
+        """        
         current_tokens = count_tokens(json.dumps(conversations, ensure_ascii=False))
-        if current_tokens <= max_tokens:
+        if current_tokens <= self.args.conversation_prune_safe_zone_tokens:
             return conversations
 
         strategy = self.strategies.get(strategy_name, self.strategies["summarize"])
         
         if strategy.name == "summarize":
-            return self._summarize_prune(conversations, max_tokens, strategy.config)
+            return self._summarize_prune(conversations, strategy.config)
         elif strategy.name == "truncate":
-            return self._truncate_prune.with_llm(self.llm).run(conversations, max_tokens)
+            return self._truncate_prune.with_llm(self.llm).run(conversations)
         elif strategy.name == "hybrid":
-            pruned = self._summarize_prune(conversations, max_tokens, strategy.config)
-            if count_tokens(json.dumps(pruned, ensure_ascii=False)) > max_tokens:
-                return self._truncate_prune(pruned, max_tokens)
+            pruned = self._summarize_prune(conversations, strategy.config)
+            if count_tokens(json.dumps(pruned, ensure_ascii=False)) > self.args.conversation_prune_safe_zone_tokens:
+                return self._truncate_prune(pruned)
             return pruned
         else:
             logger.warning(f"Unknown strategy: {strategy_name}, using summarize instead")
-            return self._summarize_prune(conversations, max_tokens, strategy.config)
+            return self._summarize_prune(conversations, strategy.config)
 
     def _summarize_prune(self, conversations: List[Dict[str, Any]], 
-                        max_tokens: int, config: Dict[str, Any]) -> List[Dict[str, Any]]:
+                         config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """摘要式剪枝"""
         safe_zone_tokens = config.get("safe_zone_tokens", 50*1024)
         group_size = config.get("group_size", 4)
@@ -77,7 +77,7 @@ class ConversationPruner:
         
         while True:
             current_tokens = count_tokens(json.dumps(processed_conversations, ensure_ascii=False))
-            if current_tokens <= max_tokens - safe_zone_tokens:
+            if current_tokens <= safe_zone_tokens:
                 break
                 
             # 找到要处理的对话组
@@ -111,7 +111,7 @@ class ConversationPruner:
             "conversations": json.dumps(conversations, ensure_ascii=False)
         }    
 
-    def _truncate_prune(self, conversations: List[Dict[str, Any]], max_tokens: int) -> List[Dict[str, Any]]:
+    def _truncate_prune(self, conversations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """截断式剪枝"""
         safe_zone_tokens = self.strategies["truncate"].config.get("safe_zone_tokens", 0)
         group_size = self.strategies["truncate"].config.get("group_size", 4)
@@ -119,7 +119,7 @@ class ConversationPruner:
         
         while True:
             current_tokens = count_tokens(json.dumps(processed_conversations, ensure_ascii=False))
-            if current_tokens <= max_tokens - safe_zone_tokens:
+            if current_tokens <= safe_zone_tokens:
                 break
                 
             # 如果剩余对话不足一组，直接返回

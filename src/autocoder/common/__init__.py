@@ -369,6 +369,9 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     in_code_apply: bool = False
     model_filter_path: Optional[str] = None
+
+    conversation_prune_safe_zone_tokens: Optional[int] = 50*1024
+    conversation_prune_group_size: Optional[int] = 4
     
     skip_commit: Optional[bool] = False
 
