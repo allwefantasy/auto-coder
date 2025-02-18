@@ -230,7 +230,8 @@ class QuickFilter():
         {{ content }}
         </index>
 
-        索引文件包含文件序号(##[]括起来的部分)，文件路径，文件符号信息等。
+        索引文件包含文件序号(##[]括起来的部分)，文件路径，文件符号信息等。            
+
         下面是用户的查询需求：
 
         <query>
@@ -252,14 +253,15 @@ class QuickFilter():
         特别注意    
         1. 如果用户的query里 @文件 或者 @@符号，那么被@的文件或者@@的符号必须要返回，并且尝试通过索引文件诸如导入语句等信息找到这些文件依赖的其他文件，再分析这些文件是否需要提供才能满足后续编码。
         2. 如果 query 里是一段历史对话，那么对话里的内容提及的文件路径必须要返回。
-        3. 想想，如果是你你需要修改代码，然后满足这个需求，你希望得到哪些文件。
-        3. 返回的 json格式数据不允许有注释
+        3. 想想，如果是你你需要修改代码，然后满足这个需求，根据索引文件，你希望得到哪些文件。
+        4. 返回的 json格式数据不允许有注释
         '''
+
         file_meta_str = "\n".join(
             [f"##[{index}]{item.module_name}\n{item.symbols}" for index, item in enumerate(file_meta_list)])
         context = {
             "content": file_meta_str,
-            "query": query
+            "query": query            
         }
         return context
 
