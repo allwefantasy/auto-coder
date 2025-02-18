@@ -422,6 +422,12 @@ class CommandAutoTuner:
 
                 # 如果对话过长，使用默认策略进行修剪
                 if total_tokens > self.args.conversation_prune_safe_zone_tokens:
+                    self.printer.print_in_terminal(
+                        "conversation_pruning_start", 
+                        style="yellow",
+                        total_tokens=total_tokens,
+                        safe_zone=self.args.conversation_prune_safe_zone_tokens
+                    )
                     from autocoder.common.conversation_pruner import ConversationPruner
                     pruner = ConversationPruner(self.llm)
                     conversations = pruner.prune_conversations(conversations)                    

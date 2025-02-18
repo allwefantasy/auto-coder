@@ -268,7 +268,8 @@ MESSAGES = {
         "command_execution_result": "{{action}} 执行结果",
         "satisfied_prompt": "已满足需求，无需进一步操作",
         "auto_command_analyzed": "被选择指令",
-        "invalid_enum_value": "值 '{{value}}' 不在允许的值列表中 ({{allowed}})"
+        "invalid_enum_value": "值 '{{value}}' 不在允许的值列表中 ({{allowed}})",
+        "conversation_pruning_start": "⚠️ 对话长度 {{total_tokens}} tokens 超过安全阈值 {{safe_zone}}，开始修剪对话。记得使用 @@print_in_terminal(location: src/autocoder/common/printer.py) @auto_coder_lang.py"
     }}
 
 
