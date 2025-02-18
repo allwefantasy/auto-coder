@@ -43,8 +43,7 @@ class ConversationPruner:
         """
         根据策略修剪对话
         Args:
-            conversations: 原始对话列表
-            max_tokens: 最大token数
+            conversations: 原始对话列表            
             strategy_name: 策略名称
         Returns:
             修剪后的对话列表

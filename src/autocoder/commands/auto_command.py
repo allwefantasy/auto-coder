@@ -275,8 +275,11 @@ class CommandAutoTuner:
         
         *** 非常非常重要的提示 ***
         1. 如果已经满足要求，则不要返回任何函数,确保 suggestions 为空。
-        2. 你最多尝试10次，如果10次都没有满足要求，则不要返回任何函数，确保 suggestions 为空。
-        '''    
+        2. 你最多尝试 {{ auto_command_max_iterations }} 次，如果 {{ auto_command_max_iterations }} 次都没有满足要求，则不要返回任何函数，确保 suggestions 为空。
+        '''   
+        return {
+            "auto_command_max_iterations": self.args.auto_command_max_iterations
+        } 
     
     def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
         # 获取 prompt 内容
@@ -421,7 +424,7 @@ class CommandAutoTuner:
                 if total_tokens > self.args.conversation_prune_safe_zone_tokens:
                     from autocoder.common.conversation_pruner import ConversationPruner
                     pruner = ConversationPruner(self.llm)
-                    conversations = pruner.prune_conversations(conversations, max_tokens=8000)                    
+                    conversations = pruner.prune_conversations(conversations)                    
 
                 title = printer.get_message_from_key("auto_command_analyzing")
                 model_name = ",".join(llms_utils.get_llm_names(self.llm))

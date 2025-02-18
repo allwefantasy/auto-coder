@@ -372,6 +372,9 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     conversation_prune_safe_zone_tokens: Optional[int] = 50*1024
     conversation_prune_group_size: Optional[int] = 4
+    conversation_prune_strategy: Optional[str] = "summarize"
+
+    auto_command_max_iterations: Optional[int] = 10
     
     skip_commit: Optional[bool] = False
 
