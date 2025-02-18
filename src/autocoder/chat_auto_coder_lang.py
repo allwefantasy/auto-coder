@@ -123,7 +123,7 @@ MESSAGES = {
         "files_removed": "Files Removed",
         "models_api_key_empty": "Warning : {{name}} API key is empty. Please set a valid API key.",
         "commit_generating": "{{ model_name }} Generating commit message...",
-    "auto_command_reasoning_title": "回复", 
+        "auto_command_reasoning_title": "Reply", 
         "commit_message": "{{ model_name }} Generated commit message: {{ message }}",
         "commit_failed": "{{ model_name }} Failed to generate commit message: {{ error }}",
         "confirm_execute": "Do you want to execute this script?",
@@ -132,7 +132,7 @@ MESSAGES = {
     "zh": {
         "auto_command_analyzing": "正在分析命令请求",
         "commit_generating": "{{ model_name }} 正在生成提交信息...",
-    "auto_command_reasoning_title": "回复", 
+        "auto_command_reasoning_title": "回复", 
         "commit_message": "{{ model_name }} 生成的提交信息: {{ message }}",
         "commit_failed": "{{ model_name }} 生成提交信息失败: {{ error }}",
         "mcp_remove_error": "移除 MCP 服务器时出错:{error}",
