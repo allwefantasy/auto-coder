@@ -250,9 +250,9 @@ class QuickFilter():
         ```
 
         特别注意
-        1. 如果用户的query里 @文件 或者 @@符号，那么被@的文件或者@@的符号必须要返回，并且查看他们依赖的文件是否相关。        
+        1. 如果用户的query里 @文件 或者 @@符号，那么被@的文件或者@@的符号必须要返回，并且尝试通过导入语句等找到这些文件依赖的所有其他文件，再分析这些文件是否是这个需求必须的。        
         2. 如果 query 里是一段历史对话，那么对话里的内容提及的文件路径必须要返回。
-        3. json格式数据不允许有注释        
+        3. 返回的 json格式数据不允许有注释
         '''
         file_meta_str = "\n".join(
             [f"##[{index}]{item.module_name}\n{item.symbols}" for index, item in enumerate(file_meta_list)])

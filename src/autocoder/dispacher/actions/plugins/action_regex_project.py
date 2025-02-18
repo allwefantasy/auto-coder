@@ -16,6 +16,7 @@ from autocoder.common.printer import Printer
 import time
 from autocoder.utils.llms import get_llm_names
 from autocoder.common import SourceCodeList
+from autocoder.common.global_cancel import global_cancel
 from loguru import logger
 class ActionRegexProject:
     def __init__(
@@ -61,6 +62,11 @@ class ActionRegexProject:
                 content = content[: self.args.model_max_input_length]
 
         start_time = time.time()
+        
+        if global_cancel.requested:
+            printer = Printer()            
+            raise Exception(printer.get_message_from_key("generation_cancelled")) 
+        
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
             
@@ -103,6 +109,11 @@ class ActionRegexProject:
                 model_names=model_names,
                 sampling_count=len(generate_result.contents)
             )
+
+            if global_cancel.requested:
+                printer = Printer()            
+                raise Exception(printer.get_message_from_key("generation_cancelled")) 
+            
             merge_result = None
             if args.execute and args.auto_merge:
                 self.printer.print_in_terminal("code_merge_start")

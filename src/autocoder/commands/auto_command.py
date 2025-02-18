@@ -7,7 +7,6 @@ from typing import List, Dict, Any, Union, Callable, Optional
 from autocoder.common.printer import Printer
 from rich.console import Console
 from rich.panel import Panel
-from rich.markdown import Markdown
 from pydantic import SkipValidation
 
 from autocoder.common.result_manager import ResultManager
@@ -19,8 +18,9 @@ from autocoder.auto_coder import AutoCoderArgs
 from autocoder.common import detect_env
 from autocoder.common import shells
 from loguru import logger
-from autocoder.common import auto_coder_lang
 from autocoder.utils import llms as llms_utils
+from autocoder.rag.token_counter import count_tokens
+from autocoder.common.global_cancel import global_cancel
 
 class CommandMessage(BaseModel):
     role: str
@@ -356,6 +356,10 @@ class CommandAutoTuner:
         result_manager = ResultManager()
         
         while True:
+            if global_cancel.requested:
+                printer = Printer(console)
+                printer.print_in_terminal("generation_cancelled")                    
+                break
             # 执行命令
             command = response.suggestions[0].command
             parameters = response.suggestions[0].parameters
@@ -410,16 +414,8 @@ class CommandAutoTuner:
                 new_content = self._execute_command_result.prompt(content)
                 conversations.append({"role": "user", "content": new_content})
                 
-                # 统计 token 数量
-                from autocoder.rag.token_counter import count_tokens
-                total_tokens = sum(count_tokens(msg["content"]) for msg in conversations)
-                if total_tokens > 50000:
-                    self.printer.print_in_terminal(
-                        "token_limit_warning", 
-                        style="yellow", 
-                        total_tokens=total_tokens,
-                        suggestion="建议使用 chat('/new') 开启新对话以重置上下文"
-                    )
+                # 统计 token 数量                
+                total_tokens = count_tokens(json.dumps(conversations,ensure_ascii=False))                
 
                 title = printer.get_message_from_key("auto_command_analyzing")
                 model_name = ",".join(llms_utils.get_llm_names(self.llm))
@@ -469,18 +465,7 @@ class CommandAutoTuner:
                     response=response.model_dump_json(indent=2)
                 )
 
-            else:
-                # 统计 token 数量
-                from autocoder.rag.token_counter import count_tokens
-                total_tokens = sum(count_tokens(msg["content"]) for msg in conversations)
-                if total_tokens > 50000:
-                    self.printer.print_in_terminal(
-                        "token_limit_warning", 
-                        style="yellow", 
-                        total_tokens=total_tokens,
-                        suggestion="建议使用 chat('/new') 开启新对话以重置上下文"
-                    )
-                
+            else:                               
                 self.printer.print_in_terminal("auto_command_break", style="yellow", command=command)
                 break            
         
