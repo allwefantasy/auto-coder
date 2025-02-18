@@ -197,6 +197,7 @@ class CommandAutoTuner:
         函数组合说明：        
         <function_combination_readme>
         如果用户是一个编码需求，你可以先简单观察当前活跃区文件列表：
+        0. 关注下当前软件的配置，诸如索引开启关闭。如果有觉得不合理的可以通过 help 函数来修改。
         1. 如果你觉得这些文件不够满足用户的需求，而当前的索引配置关闭的，那么你可以通过help("将skip_filter_index 和 skip_build_index 设置为 false") 让
         chat,coding 函数来获取更多文件，或者你也可以自己通过调用 get_project_structure 函数来获取项目结构，然后通过 get_project_map 函数来获取某个文件的用途，符号列表，以及
         文件大小（tokens数）,最后再通过 read_files/read_file_with_keyword_ranges 函数来读取文件内容, 最后通过 add_files 函数来添加文件到活跃区。
@@ -377,8 +378,10 @@ class CommandAutoTuner:
                     changes = git_utils.get_changes_by_commit_message("", last_result.meta["commit_message"])
                     if changes.success:
                         for file_path, change in changes.changes.items():
-                            if change.before:
+                            if change:
                                 content += f"## File: {file_path}[更改前]\n{change.before or 'New File'}\n\nFile: {file_path}\n\n[更改后]\n{change.after or 'Deleted File'}\n\n"
+                    else:
+                        content = "没有任何文件发生修改。这个原因可能是因为coding函数生成的文本块格式有问题，导致无法合并进项目"            
                 else:
                     # 其他的直接获取执行结果
                     content = last_result.content
