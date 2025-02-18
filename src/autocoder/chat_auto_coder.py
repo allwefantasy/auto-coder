@@ -2555,12 +2555,16 @@ def auto_command(params,query: str):
     
     # 显示建议
     console = Console()    
-    console.print(Panel(
-        Markdown(response.reasoning or ""),
-        title="Reasoning",
-        border_style="blue",
-        padding=(1, 2)
-    ))
+    printer = Printer()
+    printer.print_panel(
+        content=Markdown(response.reasoning or ""),
+        text_options={"justify": "left"},
+        panel_options={
+            "title": printer.get_message_from_key_with_format("auto_command_reasoning_title"),
+            "border_style": "blue",
+            "padding": (1, 2)
+        }
+    )
       
 
 def main():
