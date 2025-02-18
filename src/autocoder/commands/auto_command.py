@@ -381,7 +381,7 @@ class CommandAutoTuner:
                             if change:
                                 content += f"## File: {file_path}[更改前]\n{change.before or 'New File'}\n\nFile: {file_path}\n\n[更改后]\n{change.after or 'Deleted File'}\n\n"
                     else:
-                        content = "没有任何文件发生修改。这个原因可能是因为coding函数生成的文本块格式有问题，导致无法合并进项目"            
+                        content = auto_coder_lang.get_message_with_format("no_changes_made")            
                 else:
                     # 其他的直接获取执行结果
                     content = last_result.content
