@@ -131,6 +131,8 @@ commands = [
     "/revert",
     "/index/query",
     "/index/build",
+    "/index/export",
+    "/index/import",
     "/exclude_dirs",
     "/help",
     "/shell",
@@ -2329,6 +2331,28 @@ def help(query: str):
     auto_config_tuner.tune(AutoConfigRequest(query=query))    
 
 @run_in_raw_thread()
+def index_export(export_path: str):
+    from autocoder.common.index_import_export import export_index
+    from autocoder.common.printer import Printer
+    printer = Printer()
+    project_root = os.getcwd()
+    if export_index(project_root, export_path):
+        printer.print_in_terminal("index_export_success", path=export_path)
+    else:
+        printer.print_in_terminal("index_export_fail", path=export_path)
+
+@run_in_raw_thread()
+def index_import(import_path: str):
+    from autocoder.common.index_import_export import import_index
+    from autocoder.common.printer import Printer
+    printer = Printer()
+    project_root = os.getcwd()
+    if import_index(project_root, import_path):
+        printer.print_in_terminal("index_import_success", path=import_path)
+    else:
+        printer.print_in_terminal("index_import_fail", path=import_path)
+
+@run_in_raw_thread()
 def index_query(query: str):
     conf = memory.get("conf", {})
     yaml_config = {
@@ -2741,6 +2765,20 @@ def main():
 
             elif user_input.startswith("/index/build"):
                 index_build()
+                
+            elif user_input.startswith("/index/export"):
+                export_path = user_input[len("/index/export"):].strip()
+                if not export_path:
+                    print("Please specify the export path")
+                else:
+                    index_export(export_path)
+                    
+            elif user_input.startswith("/index/import"):
+                import_path = user_input[len("/index/import"):].strip()
+                if not import_path:
+                    print("Please specify the import path")
+                else:
+                    index_import(import_path)
 
             elif user_input.startswith("/list_files"):
                 list_files()

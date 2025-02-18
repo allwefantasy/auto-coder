@@ -2,9 +2,11 @@ import os
 import json
 import shutil
 from loguru import logger
+from autocoder.common.printer import Printer
 
 
 def export_index(project_root: str, export_path: str) -> bool:
+    printer = Printer()
     """
     Export index.json with absolute paths converted to relative paths
     
@@ -18,7 +20,7 @@ def export_index(project_root: str, export_path: str) -> bool:
     try:
         index_path = os.path.join(project_root, ".auto-coder", "index.json")
         if not os.path.exists(index_path):
-            logger.error(f"Index file not found at {index_path}")
+            printer.print_in_terminal("index_not_found", path=index_path)
             return False
             
         # Read and convert paths
@@ -30,9 +32,10 @@ def export_index(project_root: str, export_path: str) -> bool:
         for abs_path, data in index_data.items():
             try:
                 rel_path = os.path.relpath(abs_path, project_root)
+                data["module_name"] = rel_path
                 converted_data[rel_path] = data
             except ValueError:
-                logger.warning(f"Could not convert path {abs_path}")
+                printer.print_in_terminal("index_convert_path_fail", path=abs_path)
                 converted_data[abs_path] = data
         
         # Write to export location
@@ -44,10 +47,11 @@ def export_index(project_root: str, export_path: str) -> bool:
         return True
         
     except Exception as e:
-        logger.error(f"Error exporting index: {e}")
+        printer.print_in_terminal("index_error", error=str(e))
         return False
 
 def import_index(project_root: str, import_path: str) -> bool:
+    printer = Printer()
     """
     Import index.json with relative paths converted to absolute paths
     
@@ -61,7 +65,7 @@ def import_index(project_root: str, import_path: str) -> bool:
     try:
         import_file = os.path.join(import_path, "index.json")
         if not os.path.exists(import_file):
-            logger.error(f"Import file not found at {import_file}")
+            printer.print_in_terminal("index_not_found", path=import_file)
             return False
             
         # Read and convert paths
@@ -73,9 +77,10 @@ def import_index(project_root: str, import_path: str) -> bool:
         for rel_path, data in index_data.items():
             try:
                 abs_path = os.path.join(project_root, rel_path)
+                data["module_name"] = abs_path
                 converted_data[abs_path] = data
             except Exception:
-                logger.warning(f"Could not convert path {rel_path}")
+                printer.print_in_terminal("index_convert_path_fail", path=rel_path)
                 converted_data[rel_path] = data
         
         # Backup existing index
@@ -83,7 +88,7 @@ def import_index(project_root: str, import_path: str) -> bool:
         if os.path.exists(index_path):
             backup_path = index_path + ".bak"
             shutil.copy2(index_path, backup_path)
-            logger.info(f"Backed up existing index to {backup_path}")
+            printer.print_in_terminal("index_backup_success", path=backup_path)
             
         # Write new index
         with open(index_path, "w") as f:
@@ -92,5 +97,5 @@ def import_index(project_root: str, import_path: str) -> bool:
         return True
         
     except Exception as e:
-        logger.error(f"Error importing index: {e}")
+        printer.print_in_terminal("index_error", error=str(e))
         return False
