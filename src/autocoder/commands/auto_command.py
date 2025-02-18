@@ -319,8 +319,7 @@ class CommandAutoTuner:
         )
                 
         if last_meta:
-            elapsed_time = time.monotonic() - start_time
-            printer = Printer()
+            elapsed_time = time.monotonic() - start_time            
             speed = last_meta.generated_tokens_count / elapsed_time
             
             # Get model info for pricing
@@ -381,7 +380,7 @@ class CommandAutoTuner:
                             if change:
                                 content += f"## File: {file_path}[更改前]\n{change.before or 'New File'}\n\nFile: {file_path}\n\n[更改后]\n{change.after or 'Deleted File'}\n\n"
                     else:
-                        content = auto_coder_lang.get_message_with_format("no_changes_made")            
+                        content = printer.get_message_from_key_with_format("no_changes_made")            
                 else:
                     # 其他的直接获取执行结果
                     content = last_result.content
