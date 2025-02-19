@@ -211,6 +211,7 @@ class PruneContext:
         selected_files = []
         total_tokens = 0
         scored_files = []
+        from concurrent.futures import ThreadPoolExecutor, as_completed
 
         @byzerllm.prompt()
         def verify_file_relevance(self, file_content: str, conversations: List[Dict[str, str]]) -> str:
@@ -238,8 +239,7 @@ class PruneContext:
             ```
             """
 
-        # 第一步：为每个文件打分
-        for file_path in file_paths:
+        def _score_file(file_path: str) -> dict:
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
@@ -248,15 +248,23 @@ class PruneContext:
                         file_content=content,
                         query=self.args.query
                     )
-                    scored_files.append({
+                    return {
                         "file_path": file_path,
                         "score": result.relevant_score,
                         "tokens": tokens,
                         "content": content
-                    })
+                    }
             except Exception as e:
                 logger.error(f"Failed to score file {file_path}: {e}")
-                continue
+                return None
+
+        # 使用线程池并行打分
+        with ThreadPoolExecutor() as executor:
+            futures = [executor.submit(_score_file, file_path) for file_path in file_paths]
+            for future in as_completed(futures):
+                result = future.result()
+                if result:
+                    scored_files.append(result)
 
         # 第二步：按分数从高到低排序
         scored_files.sort(key=lambda x: x["score"], reverse=True)
