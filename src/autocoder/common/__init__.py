@@ -378,7 +378,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     conversation_prune_strategy: Optional[str] = "summarize"
 
     context_prune_strategy: Optional[str] = "score"
-    context_prune: Optional[bool] = False
+    context_prune: Optional[bool] = True
 
     auto_command_max_iterations: Optional[int] = 10
     

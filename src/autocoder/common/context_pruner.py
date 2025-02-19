@@ -7,6 +7,7 @@ from autocoder.common import AutoCoderArgs,SourceCode
 from byzerllm.utils.client.code_utils import extract_code
 from autocoder.index.types import VerifyFileRelevance
 import byzerllm
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class PruneContext:
     def __init__(self, max_tokens: int, args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
@@ -190,13 +191,17 @@ class PruneContext:
         file_paths: List[str],
         conversations: List[Dict[str, str]],
         strategy: str = "score"        
-    ) -> List[str]:
+    ) -> List[SourceCode]:
         """
         处理超出 token 限制的文件
         :param file_paths: 要处理的文件路径列表
         :param conversations: 对话上下文（用于提取策略）
         :param strategy: 处理策略 (delete/extract/score)        
         """
+        total_tokens,sources = self._count_tokens(file_paths)
+        if total_tokens <= self.max_tokens:
+            return sources
+
         if strategy == "score":            
             return self._score_and_filter_files(file_paths, conversations)
         if strategy == "delete":
@@ -206,15 +211,29 @@ class PruneContext:
         else:
             raise ValueError(f"无效策略: {strategy}. 可选值: delete/extract/score")
     
+    def _count_tokens(self, file_paths: List[str]) -> int:
+        """计算文件总token数"""
+        total_tokens = 0
+        sources = []
+        for file_path in file_paths:
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    sources.append(SourceCode(module_name=file_path,source_code=content,tokens=count_tokens(content)))
+                    total_tokens += count_tokens(content)
+            except Exception as e:
+                logger.error(f"Failed to read file {file_path}: {e}")
+                total_tokens += 0
+        return total_tokens,sources
+
     def _score_and_filter_files(self, file_paths: List[str], conversations: List[Dict[str, str]]) -> List[SourceCode]:
         """根据文件相关性评分过滤文件，直到token数大于max_tokens 停止追加"""
         selected_files = []
         total_tokens = 0
-        scored_files = []
-        from concurrent.futures import ThreadPoolExecutor, as_completed
+        scored_files = []        
 
         @byzerllm.prompt()
-        def verify_file_relevance(self, file_content: str, conversations: List[Dict[str, str]]) -> str:
+        def verify_file_relevance(file_content: str, conversations: List[Dict[str, str]]) -> str:
             """
             请验证下面的文件内容是否与用户对话相关:
 
@@ -263,6 +282,7 @@ class PruneContext:
             futures = [executor.submit(_score_file, file_path) for file_path in file_paths]
             for future in as_completed(futures):
                 result = future.result()
+                print(f"score file {result['file_path']} {result['score']}")
                 if result:
                     scored_files.append(result)
 
