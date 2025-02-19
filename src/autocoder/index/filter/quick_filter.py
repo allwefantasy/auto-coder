@@ -36,6 +36,14 @@ class QuickFilterResult(BaseModel):
     error_message: Optional[str] = None
     file_positions: Optional[Dict[str, int]] = {}
 
+    def get_sorted_file_positions(self) -> List[str]:
+        """
+        返回按 value 排序的文件列表
+        """
+        if not self.file_positions:
+            return []
+        return [file_path for file_path, _ in sorted(self.file_positions.items(), key=lambda x: x[1])]
+
 
 class QuickFilter():
     def __init__(self, index_manager: IndexManager, stats: Dict[str, Any], sources: List[SourceCode]):
