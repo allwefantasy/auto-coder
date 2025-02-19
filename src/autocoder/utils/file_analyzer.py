@@ -1,11 +1,11 @@
 import os
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Any, Optional, Union
 import byzerllm
 from loguru import logger
 from rich.console import Console
 
 class FileAnalyzer:
-    def __init__(self, directory: str, llm: Optional[byzerllm.ByzerLLM] = None):
+    def __init__(self, directory: str, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM] = None):
         self.directory = directory
         self.llm = llm
         self.default_exclude_dirs = [
