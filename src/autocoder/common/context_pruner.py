@@ -73,6 +73,13 @@ class PruneContext:
             输出格式:
             严格的JSON数组，不包含其他文字或解释。
 
+            ```json
+            [
+                {"start_line": 第一个代码段的起始行号, "end_line": 第一个代码段的结束行号},
+                {"start_line": 第二个代码段的起始行号, "end_line": 第二个代码段的结束行号}
+            ]
+            ```
+
             示例:
             1.  代码文件：
             <code_file>
@@ -85,7 +92,12 @@ class PruneContext:
                 <user>: 如何实现加法？                
             </conversation_history>
 
-            返回：[{"start_line": 1, "end_line": 2}]
+            返回：
+            ```json
+            [
+                {"start_line": 1, "end_line": 2}                
+            ]
+            ```
 
             2.  代码文件：
                 1 class User:
@@ -98,7 +110,12 @@ class PruneContext:
                 <user>: 如何创建一个User对象？                
             </conversation_history>
 
-            返回：[{"start_line": 1, "end_line": 3}]
+            返回：
+            ```json
+            [
+                {"start_line": 1, "end_line": 3}
+            ]
+            ```
 
             3.  代码文件：
             <code_file>
@@ -109,7 +126,11 @@ class PruneContext:
                 <user>: 如何实现减法？                
             </conversation_history>
 
-            返回：[]
+            返回：
+            
+            ```json
+            []
+            ```
             """
 
         for file_path in file_paths:
