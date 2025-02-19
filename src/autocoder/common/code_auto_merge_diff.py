@@ -460,6 +460,11 @@ class CodeAutoMergeDiff:
         errors = []
         for path, hunk in uniq:
             full_path = self.abs_root_path(path)
+
+            if not os.path.exists(full_path):            
+                with open(full_path, "w",encoding="utf-8") as f:
+                    f.write("")
+            
             content = FileUtils.read_file(full_path)
 
             original, _ = hunk_to_before_after(hunk)
