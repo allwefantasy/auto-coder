@@ -268,7 +268,7 @@ def initialize_system(args):
     from autocoder.utils.model_provider_selector import ModelProviderSelector
     from autocoder import models as models_module
     print(f"\n\033[1;34m{get_message('initializing')}\033[0m")
-    
+
     first_time = [False]
     configure_success = [False]
 
@@ -391,7 +391,7 @@ def initialize_system(args):
             except subprocess.CalledProcessError:
                 print_status(get_message("deploy_fail"), "error")
                 return
-            
+
 
             deploy_cmd = [
                 "byzerllm",
@@ -672,12 +672,12 @@ completer = CommandCompleter(commands,
 
 def print_conf(content:Dict[str,Any]):        
         """Display configuration dictionary in a Rich table format with enhanced visual styling.
-        
+
         Args:
             conf (Dict[str, Any]): Configuration dictionary to display
         """
         console = Console()
-        
+
         # Create a styled table with rounded borders
         table = Table(
             show_header=True,
@@ -687,11 +687,11 @@ def print_conf(content:Dict[str,Any]):
             border_style="blue",
             show_lines=True            
         )
-        
+
         # Add columns with explicit width and alignment
         table.add_column(get_message("conf_key"), style="cyan", justify="right", width=30, no_wrap=False)
         table.add_column(get_message("conf_value"), style="green", justify="left", width=50, no_wrap=False)
-        
+
         # Sort keys for consistent display
         for key in sorted(content.keys()):
             value = content[key]
@@ -704,9 +704,9 @@ def print_conf(content:Dict[str,Any]):
                 formatted_value = Text(str(value), style="bright_cyan")
             else:
                 formatted_value = Text(str(value), style="green")
-                
+
             table.add_row(str(key), formatted_value)
-        
+
         # Add padding and print with a panel
         console.print(Panel(
             table,
@@ -742,7 +742,7 @@ def revert():
 
 
 def add_files(args: List[str]):
-    
+
     result_manager = ResultManager()
     if "groups" not in memory["current_files"]:
         memory["current_files"]["groups"] = {}
@@ -837,7 +837,7 @@ def add_files(args: List[str]):
             )
             result_manager.append(content=f"Added group '{group_name}' with current files.", 
                               meta={"action": "add_files","success":True, "input":{ "args": args}})
-            
+
         elif len(args) >= 3 and args[1] == "/drop":
             group_name = args[2]
             if group_name in groups:
@@ -1272,14 +1272,14 @@ def mcp(query: str):
         os.makedirs(mcp_dir, exist_ok=True)
         timestamp = str(int(time.time()))
         file_path = os.path.join(mcp_dir, f"{timestamp}.md")
-        
+
         # Format response as markdown
         markdown_content = response.result
-        
+
         # Save to file
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(markdown_content)
-            
+
         console = Console()
         console.print(
             Panel(
@@ -1424,13 +1424,13 @@ def commit(query: str):
             finally:
                 if os.path.exists(temp_yaml):
                     os.remove(temp_yaml)
-            
+
             target_model = args.commit_model or args.model
             llm = get_single_llm(target_model, product_mode)
             printer = Printer()
             printer.print_in_terminal("commit_generating", style="yellow", model_name=target_model)
             commit_message = ""
-            
+
             try:
                 uncommitted_changes = git_utils.get_uncommitted_changes(".")
                 commit_message = git_utils.generate_commit_message.with_llm(llm).run(
@@ -1441,7 +1441,7 @@ def commit(query: str):
             except Exception as e:
                 printer.print_in_terminal("commit_failed", style="red", error=str(e), model_name=target_model)
                 return
-            
+
             yaml_config["query"] = commit_message
             yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
             with open(os.path.join(execute_file), "w") as f:
@@ -1513,14 +1513,14 @@ def coding(query: str):
             converted_value = convert_config_value(key, value)
             if converted_value is not None:
                 yaml_config[key] = converted_value
-        
+
         yaml_config["urls"] = current_files + get_llm_friendly_package_docs(
             return_paths=True
         )
 
         if conf.get("enable_global_memory", "true") in ["true", "True",True]:
             yaml_config["urls"] += get_global_memory_file_paths()
-        
+
         # handle image
         v = Image.convert_image_paths_from(query)
         yaml_config["query"] = v
@@ -1667,7 +1667,7 @@ def chat(query: str):
     if "/save" in query:
         yaml_config["action"].append("save")
         query = query.replace("/save", "", 1).strip()        
-    
+
     if "/review" in query and "/commit" in query:
         yaml_config["action"].append("review_commit")
         query = query.replace("/review", "", 1).replace("/commit", "", 1).strip()
@@ -1892,22 +1892,22 @@ def manage_models(query: str):
     """
     printer = Printer()
     console = Console()
-    
+
     product_mode = memory.get("product_mode", "lite")
     if product_mode != "lite":
         printer.print_in_terminal("models_lite_only", style="red")
         return
-        
+
     models_data = models_module.load_models()
     subcmd = ""
     if "/list" in query:
         subcmd = "/list"
         query = query.replace("/list", "", 1).strip()
-    
+
     if "/add_model" in query:
         subcmd = "/add_model"
         query = query.replace("/add_model", "", 1).strip()
-    
+
     if "/add" in query:
         subcmd = "/add"
         query = query.replace("/add", "", 1).strip()
@@ -1916,7 +1916,7 @@ def manage_models(query: str):
     if "/activate" in query:
         subcmd = "/add"
         query = query.replace("/activate", "", 1).strip()    
-    
+
     if "/remove" in query:
         subcmd = "/remove"
         query = query.replace("/remove", "", 1).strip()
@@ -1936,23 +1936,23 @@ def manage_models(query: str):
     if "output_price" in query:
         subcmd = "/output_price"
         query = query.replace("/output_price", "", 1).strip()        
-            
+
     if "/speed" in query:
         subcmd = "/speed"
         query = query.replace("/speed", "", 1).strip()
-    
-        
+
+
 
     if not subcmd:
         printer.print_in_terminal("models_usage")        
-    
+
     result_manager = ResultManager()
     if subcmd == "/list":                    
         if models_data:
             # Sort models by speed (average_speed)
             sorted_models = sorted(models_data, key=lambda x: float(x.get('average_speed', 0)))
             sorted_models.reverse()
-            
+
             table = Table(
                 title=printer.get_message_from_key("models_title"),
                 expand=True,
@@ -1973,7 +1973,7 @@ def manage_models(query: str):
                     if not api_key:                                                
                         printer.print_in_terminal("models_api_key_empty", style="yellow", name=name)                                           
                     name = f"{name} *"
-                
+
                 table.add_row(
                     name,                    
                     m.get("model_name", ""),                    
@@ -1989,7 +1989,7 @@ def manage_models(query: str):
                     "query": query
                 }
             })
-            
+
         else:
             printer.print_in_terminal("models_no_models", style="yellow")
             result_manager.add_result(content="No models found",meta={
@@ -2037,7 +2037,7 @@ def manage_models(query: str):
                 }
             })
             printer.print_in_terminal("models_input_price_usage", style="red")
-            
+
     elif subcmd == "/output_price":
         args = query.strip().split()
         if len(args) >= 2:
@@ -2115,11 +2115,11 @@ def manage_models(query: str):
                 }
             })
             printer.print_in_terminal("models_speed_usage", style="red")
-            
+
     elif subcmd == "/speed-test":
         from autocoder.common.model_speed_test import render_speed_test_in_terminal
         test_rounds = 1  # 默认测试轮数
-        
+
         enable_long_context = False
         if "/long_context" in query:
             enable_long_context = True
@@ -2133,7 +2133,7 @@ def manage_models(query: str):
         args = query.strip().split()
         if args and args[0].isdigit():
             test_rounds = int(args[0])
-            
+
         render_speed_test_in_terminal(product_mode, test_rounds,enable_long_context=enable_long_context)
         ## 等待优化，获取明细数据
         result_manager.add_result(content="models test success",meta={
@@ -2142,7 +2142,7 @@ def manage_models(query: str):
                 "query": query
             }
         })
-    
+
     elif subcmd == "/add":
         # Support both simplified and legacy formats
         args = query.strip().split(" ")        
@@ -2548,12 +2548,12 @@ def auto_command(params,query: str):
     from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
     args = get_final_config()
     # help(query)
-    
+
     # 准备请求参数
     request = AutoCommandRequest(
         user_input=query        
     )
-    
+
     # 初始化调优器
     llm = get_single_llm(args.chat_model or args.model,product_mode=args.product_mode)    
     tuner = CommandAutoTuner(llm, 
@@ -2581,7 +2581,7 @@ def auto_command(params,query: str):
                                  execute_shell_command=execute_shell_command,  
                                  generate_shell_command=generate_shell_command                                                                                       
                              ))
-    
+
     # 生成建议
     response = tuner.analyze(request)
     printer = Printer()
@@ -2593,7 +2593,7 @@ def auto_command(params,query: str):
         border_style="blue",
         padding=(1, 2)
     ))    
-      
+
 
 def main():
     from autocoder.rag.variable_holder import VariableHolder
@@ -2606,20 +2606,20 @@ def main():
         VariableHolder.TOKENIZER_MODEL = Tokenizer.from_file(tokenizer_path)
     except FileNotFoundError:
         tokenizer_path = None
-        
+
     ARGS = parse_arguments()
-    
+
     if ARGS.lite:
         ARGS.product_mode = "lite"
-    
+
     if ARGS.pro:
         ARGS.product_mode = "pro" 
 
     if not ARGS.quick:
         initialize_system(ARGS)    
-    
+
     load_memory()
-    
+
     configure(f"product_mode:{ARGS.product_mode}")
 
     MODES = {
@@ -2680,7 +2680,7 @@ def main():
         human_as_model = memory["conf"].get("human_as_model", "false")
         if mode not in MODES:
             mode = "auto_detect"
-        return f" Mode: {MODES[mode]} | Human as Model: {human_as_model}"
+        return f" Mode: {MODES[mode]} | Human as Model: {human_as_model} | Current Dir: {os.getcwd()}"
 
     session = PromptSession(
         history=InMemoryHistory(),
@@ -2773,14 +2773,14 @@ def main():
 
             elif user_input.startswith("/index/build"):
                 index_build()
-                
+
             elif user_input.startswith("/index/export"):
                 export_path = user_input[len("/index/export"):].strip()
                 if not export_path:
                     print("Please specify the export path")
                 else:
                     index_export(export_path)
-                    
+
             elif user_input.startswith("/index/import"):
                 import_path = user_input[len("/index/import"):].strip()
                 if not import_path:
@@ -2822,7 +2822,7 @@ def main():
                     show_help()
                 else:
                     help(query)
-                    
+
             elif user_input.startswith("/exclude_dirs"):
                 dir_names = user_input[len(
                     "/exclude_dirs"):].strip().split(",")
