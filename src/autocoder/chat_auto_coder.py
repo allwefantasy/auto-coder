@@ -110,7 +110,7 @@ memory = {
     "current_files": {"files": [], "groups": {}},
     "conf": {},
     "exclude_dirs": [],
-    "mode": "normal",  # 新增mode字段,默认为normal模式
+    "mode": "auto_detect",  # 新增mode字段,默认为 auto_detect 模式
 }
 
 project_root = os.getcwd()
@@ -2678,7 +2678,7 @@ def main():
         mode = memory["mode"]
         human_as_model = memory["conf"].get("human_as_model", "false")
         if mode not in MODES:
-            mode = "normal"
+            mode = "auto_detect"
         return f" Mode: {MODES[mode]} (ctl+k) | Human as Model: {human_as_model} (ctl+n or /conf human_as_model:true/false)"
 
     session = PromptSession(

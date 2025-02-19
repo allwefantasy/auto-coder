@@ -153,7 +153,7 @@ class AutoReviewCommit:
             query = config.get('query', '')
             urls = config.get('urls', [])
 
-            if query and urls:
+            if query:
                 changes = {}
                 if not self.skip_diff:
                     # 计算文件的MD5用于匹配commit   
