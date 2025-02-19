@@ -404,33 +404,6 @@ class QuickFilter():
                     logger.error(f"Failed to extract code snippets from {file_path}: {e}")
         return selected_files
 
-    def handle_overflow_files(
-        self,
-        index_items: List[IndexItem],
-        conversations: List[Dict[str, str]],
-        strategy: str = "delete",
-    ) -> List[IndexItem]:
-        """
-        处理超出token限制的文件，提供两种策略：
-        1. delete: 直接删除后面的文件
-        2. extract: 对超出部分的文件抽取相关代码片段
-
-        Args:
-            index_items: 需要处理的文件列表
-            conversations: 对话历史
-            strategy: 处理策略，可选值为 "delete" 或 "extract"
-
-        Returns:
-            处理后的文件列表
-        """
-        if strategy == "delete":
-            # 简单删除后面的文件
-            return self._delete_overflow_files(index_items)
-        elif strategy == "extract":
-            # 对超出部分的文件抽取代码片段
-            return self._extract_code_snippets_from_overflow_files(index_items, conversations)
-        else:
-            raise ValueError(f"Unknown strategy: {strategy}")
 
     def filter(self, index_items: List[IndexItem], query: str) -> QuickFilterResult:
         final_files: Dict[str, TargetFile] = {}
