@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 from loguru import logger
 from autocoder.rag.token_counter import count_tokens
-from autocoder.common import AutoCoderArgs
+from autocoder.common import AutoCoderArgs,SourceCode
 from byzerllm.utils.client.code_utils import extract_code
 import byzerllm
 
@@ -13,11 +13,11 @@ class PruneContext:
         self.args = args
         self.llm = llm
 
-    def _delete_overflow_files(self, file_paths: List[str]) -> List[str]:
+    def _delete_overflow_files(self, file_paths: List[str]) -> List[SourceCode]:
         """直接删除超出 token 限制的文件"""
         total_tokens = 0
         selected_files = []
-
+        token_count = 0
         for file_path in file_paths:
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
@@ -25,16 +25,17 @@ class PruneContext:
                     token_count = count_tokens(content)
                     if total_tokens + token_count <= self.max_tokens:
                         total_tokens += token_count
-                        selected_files.append(file_path)
+                        print(f"{file_path} {token_count} {content}")
+                        selected_files.append(SourceCode(module_name=file_path,source_code=content,tokens=token_count))
                     else:
                         break
             except Exception as e:
                 logger.error(f"Failed to read file {file_path}: {e}")
-                selected_files.append(file_path)
+                selected_files.append(SourceCode(module_name=file_path,source_code=content,tokens=token_count))
 
         return selected_files
 
-    def _extract_code_snippets(self, file_paths: List[str], conversations: List[Dict[str, str]]) -> List[str]:
+    def _extract_code_snippets(self, file_paths: List[str], conversations: List[Dict[str, str]]) -> List[SourceCode]:
         """抽取关键代码片段策略"""
         token_count = 0
         selected_files = []
@@ -43,7 +44,60 @@ class PruneContext:
         @byzerllm.prompt()
         def extract_code_snippets(conversations: List[Dict[str, str]], content: str) -> str:
             """
-            根据提供的代码文件和对话历史提取相关代码片段。
+            根据提供的代码文件和对话历史提取相关代码片段。            
+
+            处理示例：
+            <examples>
+            1.  代码文件：
+            <code_file>
+                1 def add(a, b):
+                2     return a + b
+                3 def sub(a, b):
+                4     return a - b
+            </code_file>
+            <conversation_history>
+                <user>: 如何实现加法？                
+            </conversation_history>
+
+            输出：
+            ```json
+            [
+                {"start_line": 1, "end_line": 2}                
+            ]
+            ```
+
+            2.  代码文件：
+                1 class User:
+                2     def __init__(self, name):
+                3         self.name = name
+                4     def greet(self):
+                5         return f"Hello, {self.name}"
+            </code_file>
+            <conversation_history>
+                <user>: 如何创建一个User对象？                
+            </conversation_history>
+
+            输出：
+            ```json
+            [
+                {"start_line": 1, "end_line": 3}
+            ]
+            ```
+
+            3.  代码文件：
+            <code_file>
+                1 def foo():
+                2     pass
+            </code_file>
+            <conversation_history>
+                <user>: 如何实现减法？                
+            </conversation_history>
+
+            输出：
+            ```json
+            []
+            ```
+            </examples>
 
             输入:
             1. 代码文件内容:
@@ -78,59 +132,7 @@ class PruneContext:
                 {"start_line": 第一个代码段的起始行号, "end_line": 第一个代码段的结束行号},
                 {"start_line": 第二个代码段的起始行号, "end_line": 第二个代码段的结束行号}
             ]
-            ```
-
-            示例:
-            1.  代码文件：
-            <code_file>
-                1 def add(a, b):
-                2     return a + b
-                3 def sub(a, b):
-                4     return a - b
-            </code_file>
-            <conversation_history>
-                <user>: 如何实现加法？                
-            </conversation_history>
-
-            返回：
-            ```json
-            [
-                {"start_line": 1, "end_line": 2}                
-            ]
-            ```
-
-            2.  代码文件：
-                1 class User:
-                2     def __init__(self, name):
-                3         self.name = name
-                4     def greet(self):
-                5         return f"Hello, {self.name}"
-            </code_file>
-            <conversation_history>
-                <user>: 如何创建一个User对象？                
-            </conversation_history>
-
-            返回：
-            ```json
-            [
-                {"start_line": 1, "end_line": 3}
-            ]
-            ```
-
-            3.  代码文件：
-            <code_file>
-                1 def foo():
-                2     pass
-            </code_file>
-            <conversation_history>
-                <user>: 如何实现减法？                
-            </conversation_history>
-
-            返回：
-            
-            ```json
-            []
-            ```
+            ```            
             """
 
         for file_path in file_paths:
@@ -141,7 +143,7 @@ class PruneContext:
                     # 完整文件优先
                     tokens = count_tokens(content)
                     if token_count + tokens <= full_file_tokens:
-                        selected_files.append(file_path)
+                        selected_files.append(SourceCode(module_name=file_path,source_code=content,tokens=tokens))
                         token_count += tokens
                         continue
 
@@ -151,6 +153,8 @@ class PruneContext:
                         content=content
                     )
 
+                    print(f"{file_path} {extracted}")
+
                     if extracted:
                         json_str = extract_code(extracted)[0][1]
                         snippets = json.loads(json_str)
@@ -158,7 +162,7 @@ class PruneContext:
 
                         snippet_tokens = count_tokens(new_content)
                         if token_count + snippet_tokens <= self.max_tokens:
-                            selected_files.append(file_path)
+                            selected_files.append(SourceCode(module_name=file_path,source_code=new_content,tokens=snippet_tokens))
                             token_count += snippet_tokens
                         else:
                             break
@@ -170,7 +174,7 @@ class PruneContext:
     def _build_snippet_content(self, file_path: str, full_content: str, snippets: List[dict]) -> str:
         """构建包含代码片段的文件内容"""
         lines = full_content.split("\n")
-        header = f"# File: {file_path}\n# Snippets:\n"
+        header = f"Snippets:\n"
 
         content = []
         for snippet in snippets:

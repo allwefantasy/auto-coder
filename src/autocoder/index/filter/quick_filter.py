@@ -34,6 +34,7 @@ class QuickFilterResult(BaseModel):
     files: Dict[str, TargetFile]
     has_error: bool
     error_message: Optional[str] = None
+    file_positions: Optional[Dict[str, int]]
 
 
 class QuickFilter():

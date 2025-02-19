@@ -1,4 +1,6 @@
-from typing import List, Union,Dict,Any
+from typing import List, Union,Dict,Any,Optional
+
+from pydantic import BaseModel
 from autocoder.index.types import IndexItem
 from autocoder.common import SourceCode, AutoCoderArgs
 import byzerllm
@@ -25,6 +27,11 @@ def get_file_path(file_path):
         return file_path.strip()[2:]
     return file_path
 
+class NormalFilterResult(BaseModel):
+    files: Dict[str, TargetFile]
+    has_error: bool
+    error_message: Optional[str] = None
+    file_positions: Optional[Dict[str, int]]
 
 class NormalFilter():
     def __init__(self, index_manager: IndexManager,stats:Dict[str,Any],sources:List[SourceCode]):
@@ -167,4 +174,8 @@ class NormalFilter():
                 # Keep all files, not just verified ones
                 final_files = verified_files
         
-        return final_files
+        return NormalFilterResult(
+            files=final_files,
+            has_error=False,
+            error_message=None
+        )

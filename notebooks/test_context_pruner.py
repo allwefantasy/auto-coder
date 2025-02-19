@@ -7,6 +7,7 @@ from autocoder.utils.llms import get_single_llm
 from autocoder.rag.variable_holder import VariableHolder
 from tokenizers import Tokenizer    
 import pkg_resources
+import os
 
 try:
     tokenizer_path = pkg_resources.resource_filename(
@@ -24,13 +25,13 @@ def create_test_files() -> List[str]:
         file_path = f"test_file_{i}.py"
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(f"def test_function_{i}():\n    pass\n")
-        files.append(file_path)
+        files.append(os.path.abspath(file_path))
     return files
 
 def main():
     args = AutoCoderArgs(source_dir=".")
     llm = get_single_llm("v3_chat", product_mode="lite")
-    max_tokens = 1000
+    max_tokens = 50
     prune_context = PruneContext(max_tokens, args, llm)
     test_files = create_test_files()
 
