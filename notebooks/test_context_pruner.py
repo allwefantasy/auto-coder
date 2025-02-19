@@ -55,6 +55,14 @@ def main():
         print(f"捕获到预期错误: {e}")
     print("=" * 50)
 
+    print("测试评分策略:")
+    conversations = [
+        {"role": "user", "content": "如何实现 test_function_1?"}
+    ]
+    selected_files = prune_context.handle_overflow(test_files, conversations, strategy="score")
+    print(f"处理后的文件列表: {selected_files}")
+    print("=" * 50)
+
     # 清理测试文件
     for file in test_files:
         Path(file).unlink(missing_ok=True)
