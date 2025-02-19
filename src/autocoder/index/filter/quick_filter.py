@@ -386,6 +386,7 @@ class QuickFilter():
             )
 
         if file_number_list:
+            validated_file_numbers = []
             for file_number in file_number_list.file_list:
                 if file_number < 0 or file_number >= len(index_items):
                     self.printer.print_in_terminal(
@@ -395,6 +396,13 @@ class QuickFilter():
                         total_files=len(index_items)
                     )
                     continue
+                validated_file_numbers.append(file_number)
+
+            for validated_file_number in validated_file_numbers:
+                ## MARK
+                pass
+            
+            for file_number in validated_file_numbers:
                 final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
                     file_path=index_items[file_number].module_name,
                     reason=self.printer.get_message_from_key(
