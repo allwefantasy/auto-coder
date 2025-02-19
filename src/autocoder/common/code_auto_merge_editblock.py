@@ -168,25 +168,29 @@ class CodeAutoMergeEditBlock:
         merge_results = []
         for content,conversations in zip(generate_result.contents,generate_result.conversations):
             merge_result = self._merge_code_without_effect(content)
-            if not merge_result.failed_blocks:
-                merge_results.append(merge_result.success_blocks)
-            else:
-                merge_results.append(None)        
-
-        ranker = CodeModificationRanker(self.llm, self.args)
-        ranked_result = ranker.rank_modifications(generate_result,merge_results)
+            merge_results.append(merge_result)
 
         # If all merge results are None, return first one
-        if all(result is None for result in merge_results):
-            return CodeGenerateResult(contents=[ranked_result.contents[0]], conversations=[ranked_result.conversations[0]])
+        if all(len(result.failed_blocks) != 0 for result in merge_results):
+            return CodeGenerateResult(contents=[generate_result.contents[0]], conversations=[generate_result.conversations[0]])
         
         # If only one merge result is not None, return that one
-        not_none_indices = [i for i, result in enumerate(merge_results) if result is not None]
+        not_none_indices = [i for i, result in enumerate(merge_results) if len(result.failed_blocks) == 0]
         if len(not_none_indices) == 1:
             idx = not_none_indices[0]
-            return CodeGenerateResult(contents=[ranked_result.contents[idx]], conversations=[ranked_result.conversations[idx]])
+            return CodeGenerateResult(contents=[ranked_result.contents[idx]], conversations=[ranked_result.conversations[idx]])        
 
-        # Otherwise return first ranked result
+        # 最后，如果有多个，那么根据质量排序再返回
+        ranker = CodeModificationRanker(self.llm, self.args)
+        ranked_result = ranker.rank_modifications(generate_result,merge_results)        
+         
+        ## 得到的结果，再做一次合并，第一个通过的返回 , 返回做合并有点重复低效，未来修改。
+        for content,conversations in zip(ranked_result.contents,ranked_result.conversations):
+            merge_result = self._merge_code_without_effect(content)
+            if not merge_result.failed_blocks:
+                return CodeGenerateResult(contents=[content], conversations=[conversations])
+
+        # 最后保底，但实际不会出现
         return CodeGenerateResult(contents=[ranked_result.contents[0]], conversations=[ranked_result.conversations[0]])
 
     @byzerllm.prompt()

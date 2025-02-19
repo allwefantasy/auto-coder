@@ -10,6 +10,7 @@ from autocoder.common.utils_code_auto_generate import chat_with_continue
 from byzerllm.utils.str2model import to_model
 from autocoder.utils.llms import get_llm_names, get_model_info
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
+import os
 
 class RankResult(BaseModel):
     rank_result: List[int]
@@ -57,6 +58,59 @@ class CodeModificationRanker:
         2. 只输出前面要求的 Json 格式就好，不要输出其他内容，Json 需要使用 ```json ```包裹                
         '''
 
+    @byzerllm.prompt()
+    def _rank_modifications_with_merge_result(self, s: CodeGenerateResult,merge_results: List[MergeCodeWithoutEffect]) -> str:
+        '''
+        对一组代码修改进行质量评估并排序。
+
+        下面是修改需求：
+
+        <edit_requirement>
+        {{ s.conversations[0][-2]["content"] }}
+        </edit_requirement>
+
+        下面是相应的代码修改，如果Before 为空，那么表示是新增文件，如果After 为空，那么表示是删除文件，如果Before 和 After 都不为空，那么表示是修改文件：        
+        {% for change in changes %}
+        <edit_file id="{{ loop.index0 }}">
+        {{change}}
+        </edit_file>
+        {% endfor %}
+        
+        请输出如下格式的评估结果,只包含 JSON 数据:
+
+        ```json
+        {
+            "rank_result": [id1, id2, id3] 
+        }
+        ```
+
+        注意：     
+        1. 像python的缩进，前端诸如 reacjs,vue 的标签闭合匹配，这些很重要，需要在排序中作为重点考虑对象之一。   
+        1. id 为 edit_file 的 id,按质量从高到低排序，并且 id 必须是数字        
+        2. 只输出前面要求的 Json 格式就好，不要输出其他内容，Json 需要使用 ```json ```包裹                
+        '''
+        changes = []
+        for merge_result in merge_results:
+            s = ""
+            for block in merge_result.success_blocks:
+                file_path,content = block
+                s += f"##File: {file_path}\n\n"
+                if not os.path.exists(file_path):                    
+                    s += f"##Before: \n\n"
+                    s += f"##After: \n\n"
+                    s += content
+                else:
+                    with open(file_path, "r",encoding="utf-8") as f:
+                        original_content = f.read()
+                    s += f"##Before: \n\n"
+                    s += original_content
+                    s += f"##After: \n\n"
+                    s += content 
+            changes.append(s)                       
+        return {
+            "changes": changes
+        }    
+
     def rank_modifications(self, generate_result: CodeGenerateResult, merge_result: List[MergeCodeWithoutEffect]) -> CodeGenerateResult:
         import time
         from collections import defaultdict
@@ -70,8 +124,13 @@ class CodeModificationRanker:
         
         rank_times = self.args.rank_times_same_model
         total_tasks = len(self.llms) * rank_times
+        if self.args.rank_strategy == "block":
+            query = self._rank_modifications.prompt(generate_result)
+        elif self.args.rank_strategy == "file":
+            query = self._rank_modifications_with_merge_result.prompt(generate_result, merge_result)
+        else:
+            raise Exception(f"Invalid rank strategy: {self.args.rank_strategy}")
 
-        query = self._rank_modifications.prompt(generate_result)
         input_tokens_count = 0
         generated_tokens_count = 0
         try:

@@ -359,6 +359,9 @@ class AutoCoderArgs(pydantic.BaseModel):
     data_cells_max_num: Optional[int] = 2000
     generate_times_same_model: Optional[int] = 1
     rank_times_same_model: Optional[int] = 1
+    
+    # block:给定每个文件修改的代码块 file: 给定每个文件修改前后内容
+    rank_strategy: Optional[str] = "file"
 
     action: List[str] = []
     enable_global_memory: Optional[bool] = True  
