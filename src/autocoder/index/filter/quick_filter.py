@@ -408,26 +408,34 @@ class QuickFilter():
                     continue
                 validated_file_numbers.append(file_number)
             
-            ## 保证最后的上下文累计不超过max_tokens
-            for validated_file_number in validated_file_numbers:
-                file_path = get_file_path(index_items[validated_file_number].module_name)
+
+
+            # 拼接所有文件内容并计算总token数
+            total_tokens = 0
+            selected_files = []
+            for file_number in validated_file_numbers:
+                file_path = get_file_path(index_items[file_number].module_name)
                 try:
-                    truncated_content = self._truncate_file_content(file_path, self.max_tokens)
-                    if truncated_content:
-                        final_files[file_path] = TargetFile(
-                            file_path=index_items[validated_file_number].module_name,
-                            reason=self.printer.get_message_from_key("quick_filter_reason")
-                        )
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                        token_count = count_tokens(content)
+                        if total_tokens + token_count <= self.max_tokens:
+                            total_tokens += token_count
+                            selected_files.append(file_number)
+                        else:
+                            # 如果加上当前文件后超过max_tokens，则停止添加
+                            break
                 except Exception as e:
-                    logger.error(f"Failed to truncate file {file_path}: {e}")
+                    logger.error(f"Failed to read file {file_path}: {e}")
                     continue
 
             
-            for file_number in validated_file_numbers:
-                final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
+            # 将最终选中的文件加入final_files
+            for file_number in selected_files:
+                file_path = get_file_path(index_items[file_number].module_name)
+                final_files[file_path] = TargetFile(
                     file_path=index_items[file_number].module_name,
-                    reason=self.printer.get_message_from_key(
-                        "quick_filter_reason")
+                    reason=self.printer.get_message_from_key("quick_filter_reason")
                 )
 
         end_time = time.monotonic()
