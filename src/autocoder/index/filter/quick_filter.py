@@ -242,7 +242,29 @@ class QuickFilter():
             # 收集逻辑为所以 0 的为一组，然后序号为 0,1,2, 所有1 的为一组，序号是 3,4,5,依次往下推
             # {file_path_1_0: 0, file_path_2_0: 1, file_path_3_0: 2, file_path_1_1: 3, file_path_2_1: 4, file_path_3_1: 5}            
             # 
-            ## MARK
+            # 获取所有结果的最大 position 值
+            max_position = max([max(pos.values()) for pos in [result.file_positions for result in results if result.file_positions]] + [0])
+
+            # 创建一个映射表，用于记录每个 position 对应的文件路径
+            position_map = {}
+            for result in results:
+                if result.file_positions:
+                    for file_path, position in result.file_positions.items():
+                        if position not in position_map:
+                            position_map[position] = []
+                        position_map[position].append(file_path)
+
+            # 重新排序文件路径
+            new_file_positions = {}
+            current_index = 0
+            for position in range(max_position + 1):
+                if position in position_map:
+                    for file_path in position_map[position]:
+                        new_file_positions[file_path] = current_index
+                        current_index += 1
+
+            # 更新 final_file_positions
+            final_file_positions.update(new_file_positions)
 
         return QuickFilterResult(
             files=final_files,
