@@ -2680,7 +2680,8 @@ def main():
         human_as_model = memory["conf"].get("human_as_model", "false")
         if mode not in MODES:
             mode = "auto_detect"
-        return f" Mode: {MODES[mode]} | Human as Model: {human_as_model} | Current Dir: {os.getcwd()}"
+        pwd = os.getcwd()    
+        return f"Current Dir: {pwd} | Mode: {MODES[mode]} | Human as Model: {human_as_model} "
 
     session = PromptSession(
         history=InMemoryHistory(),
