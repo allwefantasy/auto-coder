@@ -1,11 +1,24 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Union
 from autocoder.index.types import IndexItem
 from loguru import logger
 from autocoder.rag.token_counter import count_tokens
+from autocoder.common import AutoCoderArgs
+from byzerllm.utils.client.code_utils import extract_code
+import json
+import byzerllm
+
+
+def get_file_path(file_path):
+    if file_path.startswith("##"):
+        return file_path.strip()[2:]
+    return file_path
+
 
 class PruneContext:
-    def __init__(self, max_tokens: int):
+    def __init__(self, max_tokens: int, args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
         self.max_tokens = max_tokens
+        self.args = args
+        self.llm = llm
 
     def _delete_overflow_files(self, validated_file_numbers: List[int], index_items: List[IndexItem]):
         # 拼接所有文件内容并计算总token数
@@ -26,12 +39,12 @@ class PruneContext:
             except Exception as e:
                 logger.error(f"Failed to read file {file_path}: {e}")
                 selected_files.append(file_number)
-                continue 
+                continue
 
         return selected_files
 
     def _extract_code_snippets_from_overflow_files(self, validated_file_numbers: List[int], index_items: List[IndexItem], conversations: List[Dict[str, str]]):
-        token_count = 0        
+        token_count = 0
         selected_files = []
         selected_file_contents = []
         full_file_tokens = int(self.max_tokens * 0.8)
@@ -59,11 +72,12 @@ class PruneContext:
 
                     new_content = ""
 
-                    if json_objs:                        
+                    if json_objs:
                         for json_obj in json_objs:
                             start_line = json_obj["start_line"] - 1
                             end_line = json_obj["end_line"]
-                            chunk = "\n".join(content.split("\n")[start_line:end_line])
+                            chunk = "\n".join(content.split(
+                                "\n")[start_line:end_line])
                             new_content += chunk + "\n"
 
                         token_count += count_tokens(new_content)
@@ -73,7 +87,8 @@ class PruneContext:
                             selected_files.append(file_number)
                             selected_file_contents.append(new_content)
                 except Exception as e:
-                    logger.error(f"Failed to extract code snippets from {file_path}: {e}")
+                    logger.error(
+                        f"Failed to extract code snippets from {file_path}: {e}")
         return selected_files
 
     def handle_overflow_files(
@@ -103,8 +118,3 @@ class PruneContext:
             return self._extract_code_snippets_from_overflow_files(index_items, conversations)
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
-
-def get_file_path(file_path):
-    if file_path.startswith("##"):
-        return file_path.strip()[2:]
-    return file_path

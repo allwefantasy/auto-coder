@@ -230,63 +230,6 @@ class QuickFilter():
             error_message="\n".join(error_messages) if error_messages else None
         )
     
-    @byzerllm.prompt()
-    def extract_code_snippets_from_files(
-        self, conversations: List[Dict[str, str]], documents: List[str]
-    ) -> str:
-        """
-        根据提供的文档和对话历史提取相关代码片段。
-
-        输入:
-        1. 文档内容:
-        <documents>
-        {% for doc in documents %}
-        {{ doc }}
-        {% endfor %}
-        </documents>
-
-        2. 对话历史:
-        <conversations>
-        {% for msg in conversations %}
-        <{{ msg.role }}>: {{ msg.content }}
-        {% endfor %}
-        </conversations>
-
-        任务:
-        1. 分析最后一个用户问题及其上下文。
-        2. 在文档中找出与问题相关的一个或多个重要代码片段。
-        3. 对每个相关代码片段，确定其起始行号(start_line)和结束行号(end_line)。
-        4. 代码片段数量不超过4个。
-
-        输出要求:
-        1. 返回一个JSON数组，每个元素包含"start_line"和"end_line"。
-        2. start_line和end_line必须是整数，表示文档中的行号。
-        3. 行号从1开始计数。
-        4. 如果没有相关代码片段，返回空数组[]。
-
-        输出格式:
-        严格的JSON数组，不包含其他文字或解释。
-
-        示例:
-        1.  文档：
-            1 def hello():
-            2     print("Hello World")
-            3 def goodbye():
-            4     print("Goodbye World")
-            问题：哪个函数会打印 "Hello World"？
-            返回：[{"start_line": 1, "end_line": 2}]
-
-        2.  文档：
-            1 class MyClass:
-            2     def __init__(self):
-            3         pass
-            4     def method1(self):
-            5         pass
-            6     def method2(self):
-            7         pass
-            问题：MyClass有哪些方法？
-            返回：[{"start_line": 4, "end_line": 5}, {"start_line": 6, "end_line": 7}]
-        """
 
     @byzerllm.prompt()
     def quick_filter_files(self, file_meta_list: List[IndexItem], query: str) -> str:
@@ -335,28 +278,6 @@ class QuickFilter():
         }
         return context
     
-    def _delete_overflow_files(self, validated_file_numbers: List[int],index_items: List[IndexItem]):
-        # 拼接所有文件内容并计算总token数
-        total_tokens = 0
-        selected_files = []
-        for file_number in validated_file_numbers:
-            file_path = get_file_path(index_items[file_number].module_name)
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    token_count = count_tokens(content)
-                    if total_tokens + token_count <= self.max_tokens:
-                        total_tokens += token_count
-                        selected_files.append(file_number)
-                    else:
-                        # 如果加上当前文件后超过max_tokens，则停止添加
-                        break
-            except Exception as e:
-                logger.error(f"Failed to read file {file_path}: {e}")
-                selected_files.append(file_number)
-                continue 
-
-        return selected_files
 
     def _extract_code_snippets_from_overflow_files(self, validated_file_numbers: List[int],index_items: List[IndexItem], conversations: List[Dict[str, str]]):
         token_count = 0        
@@ -527,30 +448,10 @@ class QuickFilter():
                     )
                     continue
                 validated_file_numbers.append(file_number)
-            
-
-            # 拼接所有文件内容并计算总token数
-            total_tokens = 0
-            selected_files = []
-            for file_number in validated_file_numbers:
-                file_path = get_file_path(index_items[file_number].module_name)
-                try:
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                        token_count = count_tokens(content)
-                        if total_tokens + token_count <= self.max_tokens:
-                            total_tokens += token_count
-                            selected_files.append(file_number)
-                        else:
-                            # 如果加上当前文件后超过max_tokens，则停止添加
-                            break
-                except Exception as e:
-                    logger.error(f"Failed to read file {file_path}: {e}")
-                    selected_files.append(file_number)
-                    continue
+                    
             
             # 将最终选中的文件加入final_files
-            for file_number in selected_files:
+            for file_number in validated_file_numbers:
                 file_path = get_file_path(index_items[file_number].module_name)
                 final_files[file_path] = TargetFile(
                     file_path=index_items[file_number].module_name,
