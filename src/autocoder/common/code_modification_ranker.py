@@ -97,6 +97,7 @@ class CodeModificationRanker:
                 s += f"##File: {file_path}\n\n"
                 if not os.path.exists(file_path):                    
                     s += f"##Before: \n\n"
+                    s += f"##File: {file_path}\n\n"
                     s += f"##After: \n\n"
                     s += content
                 else:
@@ -104,6 +105,7 @@ class CodeModificationRanker:
                         original_content = f.read()
                     s += f"##Before: \n\n"
                     s += original_content
+                    s += f"##File: {file_path}\n\n"
                     s += f"##After: \n\n"
                     s += content 
             changes.append(s)                       
@@ -127,8 +129,7 @@ class CodeModificationRanker:
         if self.args.rank_strategy == "block":
             query = self._rank_modifications.prompt(generate_result)
         elif self.args.rank_strategy == "file":
-            query = self._rank_modifications_with_merge_result.prompt(generate_result, merge_result)
-            print(query)
+            query = self._rank_modifications_with_merge_result.prompt(generate_result, merge_result)            
         else:
             raise Exception(f"Invalid rank strategy: {self.args.rank_strategy}")
 

@@ -132,6 +132,12 @@ class ConfigValidator:
             "type": str,
             "default": "v3_chat",
             "description": "提交信息生成模型名称"
+        },
+        "rank_strategy": {
+            "type": str,
+            "allowed": ["block", "file"],
+            "default": "block",
+            "description": "排序策略(block/file)"
         }
     }
 
