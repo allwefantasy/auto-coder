@@ -359,8 +359,7 @@ class QuickFilter():
         return selected_files
 
     def _extract_code_snippets_from_overflow_files(self, validated_file_numbers: List[int],index_items: List[IndexItem], conversations: List[Dict[str, str]]):
-        token_count = 0
-        result = []
+        token_count = 0        
         selected_files = []
         selected_file_contents = []
         full_file_tokens = int(self.max_tokens * 0.8)
@@ -403,7 +402,7 @@ class QuickFilter():
                             selected_file_contents.append(new_content)
                 except Exception as e:
                     logger.error(f"Failed to extract code snippets from {file_path}: {e}")
-        return result
+        return selected_files
 
     def handle_overflow_files(
         self,
