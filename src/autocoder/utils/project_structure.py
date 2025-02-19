@@ -25,8 +25,8 @@ class EnhancedFileAnalyzer:
     DEFAULT_EXCLUDE_DIRS = [".git", "node_modules", "__pycache__", "venv"]
     DEFAULT_EXCLUDE_EXTS = [".log", ".tmp", ".bak", ".swp"]
 
-    def __init__(self, directory: str, config: AnalysisConfig = None, llm: byzerllm.ByzerLLM = None):
-        self.directory = os.path.abspath(directory)
+    def __init__(self, args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], config: AnalysisConfig = None,):
+        self.directory = os.path.abspath(args.source_dir)
         self.config = config or self.default_config()
         self.llm = llm
         self.console = Console()
