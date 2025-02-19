@@ -85,6 +85,7 @@ class QuickFilter():
                     self.index_manager.index_filter_llm)
                 model_name = ",".join(model_names)
                 files: Dict[str, TargetFile] = {}
+                file_positions: Dict[str, int] = {}
 
                 # 获取模型价格信息
                 model_info_map = {}
@@ -149,6 +150,7 @@ class QuickFilter():
                     file_number_list = self.quick_filter_files.with_llm(self.index_manager.index_filter_llm).with_meta(
                         meta_holder).with_return_type(FileNumberList).run(chunk, self.args.query)
                     end_time = time.monotonic()
+
                     
                     total_input_cost = 0.0
                     total_output_cost = 0.0
@@ -157,6 +159,7 @@ class QuickFilter():
                         total_input_cost = meta_dict.get("input_tokens_count", 0) * model_info_map.get(model_name, {}).get("input_price", 0.0) / 1000000
                         total_output_cost = meta_dict.get("generated_tokens_count", 0) * model_info_map.get(model_name, {}).get("output_price", 0.0) / 1000000
                     
+
                     self.printer.print_in_terminal(
                         "quick_filter_stats",
                         style="blue",
@@ -185,9 +188,12 @@ class QuickFilter():
                             reason=self.printer.get_message_from_key(
                                 "quick_filter_reason")
                         )
+                        file_positions[file_path] = file_number
                 return QuickFilterResult(
                     files=files,
                     has_error=False
+                    has_error=False,
+                    file_positions=file_positions
                 )
 
             except Exception as e:
@@ -217,6 +223,7 @@ class QuickFilter():
         final_files: Dict[str, TargetFile] = {}
         has_error = False
         error_messages: List[str] = []
+        final_file_positions: Dict[str, int] = {}
 
         for result in results:
             if result.has_error:
@@ -224,10 +231,16 @@ class QuickFilter():
                 if result.error_message:
                     error_messages.append(result.error_message)
             final_files.update(result.files)
+            if result.file_positions:
+                final_file_positions.update(result.file_positions)
 
         return QuickFilterResult(
             files=final_files,
             has_error=has_error,
+            error_message="\n".join(error_messages) if error_messages else None,
+            file_positions=final_file_positions
+        )
+
             error_message="\n".join(error_messages) if error_messages else None
         )
     
@@ -332,6 +345,7 @@ class QuickFilter():
 
     def filter(self, index_items: List[IndexItem], query: str) -> QuickFilterResult:
         final_files: Dict[str, TargetFile] = {}
+        file_positions: Dict[str, int] = {}
         start_time = time.monotonic()
 
         prompt_str = self.quick_filter_files.prompt(index_items, query)
@@ -452,6 +466,8 @@ class QuickFilter():
                     )
                     continue
                 validated_file_numbers.append(file_number)
+
+
                     
             
             # 将最终选中的文件加入final_files
@@ -461,10 +477,13 @@ class QuickFilter():
                     file_path=index_items[file_number].module_name,
                     reason=self.printer.get_message_from_key("quick_filter_reason")
                 )
+                file_positions[file_path] = file_number
 
         end_time = time.monotonic()
         self.stats["timings"]["quick_filter"] = end_time - start_time
         return QuickFilterResult(
             files=final_files,
+            has_error=False,
+            file_positions=file_positions
             has_error=False
         )
