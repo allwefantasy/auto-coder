@@ -24,6 +24,7 @@ from autocoder.index.filter.normal_filter import NormalFilter
 from autocoder.index.index import IndexManager
 from loguru import logger
 from autocoder.common import SourceCodeList
+from autocoder.common.context_pruner import ContextPruner
 
 def build_index_and_filter_files(
     llm, args: AutoCoderArgs, sources: List[SourceCode]
@@ -113,8 +114,7 @@ def build_index_and_filter_files(
                 raise KeyboardInterrupt(printer.get_message_from_key_with_format("quick_filter_failed",error=quick_filter_result.error_message))
 
             # Merge quick filter results into final_files
-            final_files.update(quick_filter_result.files)    
-
+            final_files.update(quick_filter_result.files)                                     
         
         if not args.skip_filter_index and not args.index_filter_model:
             model_name = getattr(index_manager.llm, 'default_model_name', None)

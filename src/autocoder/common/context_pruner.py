@@ -151,9 +151,7 @@ class PruneContext:
                     extracted = extract_code_snippets.with_llm(self.llm).run(
                         conversations=conversations, 
                         content=content
-                    )
-
-                    print(f"{file_path} {extracted}")
+                    )                
 
                     if extracted:
                         json_str = extract_code(extracted)[0][1]
@@ -168,6 +166,7 @@ class PruneContext:
                             break
             except Exception as e:
                 logger.error(f"Failed to process {file_path}: {e}")
+                continue
 
         return selected_files
 
