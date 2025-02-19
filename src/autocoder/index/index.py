@@ -26,6 +26,7 @@ from autocoder.index.types import (
 )
 from autocoder.common.global_cancel import global_cancel
 from autocoder.utils.llms import get_llm_names
+from autocoder.rag.token_counter import count_tokens
 class IndexManager:
     def __init__(
         self, llm: byzerllm.ByzerLLM, sources: List[SourceCode], args: AutoCoderArgs
@@ -257,7 +258,7 @@ class IndexManager:
             total_input_cost = 0.0
             total_output_cost = 0.0
             
-            if len(source.source_code) > self.args.conversation_prune_safe_zone_tokens:
+            if count_tokens(source.source_code) > self.args.conversation_prune_safe_zone_tokens:
                 self.printer.print_in_terminal(
                     "index_file_too_large",
                     style="yellow",
