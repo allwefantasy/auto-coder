@@ -141,38 +141,13 @@ class CodeAutoMergeStrictDiff:
 
         ranker = CodeModificationRanker(self.llm, self.args)
         ranked_result = ranker.rank_modifications(generate_result)
-        
-        # Get merge results for all contents
-        merge_results = []
-        for content in ranked_result.contents:
-            merge_results.append(self._merge_code_without_effect(content))
-            
-        # If all merge results are None, return the first one
-        if all(mr is None for mr in merge_results):
-            return CodeGenerateResult(
-                contents=[ranked_result.contents[0]], 
-                conversations=[ranked_result.conversations[0]]
-            )
-            
-        # If only one merge result is not None, return that one
-        not_none_results = [i for i, mr in enumerate(merge_results) if mr is not None]
-        if len(not_none_results) == 1:
-            idx = not_none_results[0]
-            return CodeGenerateResult(
-                contents=[ranked_result.contents[idx]], 
-                conversations=[ranked_result.conversations[idx]]
-            )
-            
         # Filter out contents with failed blocks
-        for content, conversations, merge_result in zip(ranked_result.contents, ranked_result.conversations, merge_results):
-            if merge_result and not merge_result.failed_blocks:
+        for content,conversations in zip(ranked_result.contents,ranked_result.conversations):
+            merge_result = self._merge_code_without_effect(content)
+            if not merge_result.failed_blocks:
                 return CodeGenerateResult(contents=[content], conversations=[conversations])
-                
         # If all have failed blocks, return the first one
-        return CodeGenerateResult(
-            contents=[ranked_result.contents[0]], 
-            conversations=[ranked_result.conversations[0]]
-        )
+        return CodeGenerateResult(contents=[ranked_result.contents[0]], conversations=[ranked_result.conversations[0]])
     
 
     def abs_root_path(self, path):
