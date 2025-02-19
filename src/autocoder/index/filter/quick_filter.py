@@ -143,7 +143,6 @@ class QuickFilter():
                     # 其他chunks直接使用with_llm
                     meta_holder = MetaHolder()
                     start_time = time.monotonic()
-            from autocoder.common.files import read_file, save_file
                     file_number_list = self.quick_filter_files.with_llm(self.index_manager.index_filter_llm).with_meta(
                         meta_holder).with_return_type(FileNumberList).run(chunk, self.args.query)
                     end_time = time.monotonic()
@@ -401,35 +400,6 @@ class QuickFilter():
                     reason=self.printer.get_message_from_key(
                         "quick_filter_reason")
                 )
-
-            # 处理文件内容，确保 token 数量不超过 max_tokens
-            for file_path, target_file in final_files.items():
-                try:
-                    content = read_file(file_path)
-                    tokens_count = count_tokens(content)
-                    while tokens_count > self.max_tokens:
-                        # 从文件末尾开始删除内容
-                        lines = content.splitlines()
-                        if len(lines) > 1:
-                            lines = lines[:-1]  # 删除最后一行
-                            content = "\n".join(lines)
-                            tokens_count = count_tokens(content)
-                        else:
-                            # 如果只剩一行，直接清空内容
-                            content = ""
-                            tokens_count = 0
-                            break
-
-                    # 保存修改后的内容
-                    if tokens_count != count_tokens(read_file(file_path)):
-                        save_file(file_path, content)
-                except Exception as e:
-                    self.printer.print_in_terminal(
-                        "file_token_limit_error",
-                        style="yellow",
-                        file_path=file_path,
-                        error=str(e)
-                    )
 
         end_time = time.monotonic()
         self.stats["timings"]["quick_filter"] = end_time - start_time
