@@ -407,11 +407,10 @@ class QuickFilter():
                     )
                     continue
                 validated_file_numbers.append(file_number)
-
+            
+            ## 保证最后的上下文累计不超过max_tokens
             for validated_file_number in validated_file_numbers:
-                file_path = index_items[validated_file_number].module_name
-                if file_path.startswith("##"):
-                    file_path = file_path.strip()[2:]
+                file_path = get_file_path(index_items[validated_file_number].module_name)
                 try:
                     truncated_content = self._truncate_file_content(file_path, self.max_tokens)
                     if truncated_content:
