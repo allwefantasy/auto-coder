@@ -167,6 +167,14 @@ class QuickFilter():
 
                 if file_number_list:
                     for file_number in file_number_list.file_list:
+                        if file_number < 0 or file_number >= len(chunk):
+                            self.printer.print_in_terminal(
+                                "invalid_file_number",
+                                style="yellow",
+                                file_number=file_number,
+                                total_files=len(chunk)
+                            )
+                            continue
                         file_path = get_file_path(
                             chunk[file_number].module_name)
                         files[file_path] = TargetFile(
@@ -376,13 +384,21 @@ class QuickFilter():
                 error_message=str(e)
             )
 
-        if file_number_list:
-            for file_number in file_number_list.file_list:                
-                final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
-                    file_path=index_items[file_number].module_name,
-                    reason=self.printer.get_message_from_key(
-                        "quick_filter_reason")
-                )
+            if file_number_list:
+                for file_number in file_number_list.file_list:
+                    if file_number < 0 or file_number >= len(index_items):
+                        self.printer.print_in_terminal(
+                            "invalid_file_number",
+                            style="yellow",
+                            file_number=file_number,
+                            total_files=len(index_items)
+                        )
+                        continue
+                    final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
+                        file_path=index_items[file_number].module_name,
+                        reason=self.printer.get_message_from_key(
+                            "quick_filter_reason")
+                    )
         end_time = time.monotonic()
         self.stats["timings"]["quick_filter"] = end_time - start_time
         return QuickFilterResult(
