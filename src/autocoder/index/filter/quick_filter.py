@@ -377,7 +377,7 @@ class QuickFilter():
             )
 
         if file_number_list:
-            for file_number in file_number_list.file_list:
+            for file_number in file_number_list.file_list:                
                 final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
                     file_path=index_items[file_number].module_name,
                     reason=self.printer.get_message_from_key(
