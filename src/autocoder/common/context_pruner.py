@@ -5,6 +5,7 @@ from loguru import logger
 from autocoder.rag.token_counter import count_tokens
 from autocoder.common import AutoCoderArgs,SourceCode
 from byzerllm.utils.client.code_utils import extract_code
+from autocoder.index.types import VerifyFileRelevance
 import byzerllm
 
 class PruneContext:
@@ -110,7 +111,7 @@ class PruneContext:
             {% for msg in conversations %}
             <{{ msg.role }}>: {{ msg.content }}
             {% endfor %}
-            </conversation>
+            </conversation_history>
 
             任务:
             1. 分析最后一个用户问题及其上下文。
@@ -188,20 +189,15 @@ class PruneContext:
         self,
         file_paths: List[str],
         conversations: List[Dict[str, str]],
-        strategy: str = "delete",
-        index_manager: Optional[IndexManager] = None
+        strategy: str = "score"        
     ) -> List[str]:
         """
         处理超出 token 限制的文件
         :param file_paths: 要处理的文件路径列表
         :param conversations: 对话上下文（用于提取策略）
-        :param strategy: 处理策略 (delete/extract)
-        :param index_manager: IndexManager实例（用于评分策略）
+        :param strategy: 处理策略 (delete/extract/score)        
         """
-        if strategy == "score":
-            if index_manager is None:
-                raise ValueError("评分策略需要提供IndexManager实例")
-            self.index_manager = index_manager
+        if strategy == "score":            
             return self._score_and_filter_files(file_paths, conversations)
         if strategy == "delete":
             return self._delete_overflow_files(file_paths)
@@ -209,11 +205,38 @@ class PruneContext:
             return self._extract_code_snippets(file_paths, conversations)
         else:
             raise ValueError(f"无效策略: {strategy}. 可选值: delete/extract/score")
+    
     def _score_and_filter_files(self, file_paths: List[str], conversations: List[Dict[str, str]]) -> List[SourceCode]:
-        """根据文件相关性评分过滤文件，直到token数小于max_tokens"""
+        """根据文件相关性评分过滤文件，直到token数大于max_tokens 停止追加"""
         selected_files = []
         total_tokens = 0
         scored_files = []
+
+        @byzerllm.prompt()
+        def verify_file_relevance(self, file_content: str, conversations: List[Dict[str, str]]) -> str:
+            """
+            请验证下面的文件内容是否与用户对话相关:
+
+            文件内容:
+            {{ file_content }}
+
+            历史对话:
+            <conversation_history>
+            {% for msg in conversations %}
+            <{{ msg.role }}>: {{ msg.content }}
+            {% endfor %}
+            </conversation_history>
+
+            相关是指，需要依赖这个文件提供上下文，或者需要修改这个文件才能解决用户的问题。
+            请给出相应的可能性分数：0-10，并结合用户问题，理由控制在50字以内。格式如下:
+
+            ```json
+            {
+                "relevant_score": 0-10,
+                "reason": "这是相关的原因（不超过10个中文字符）..."
+            }
+            ```
+            """
 
         # 第一步：为每个文件打分
         for file_path in file_paths:
@@ -221,7 +244,7 @@ class PruneContext:
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
                     tokens = count_tokens(content)
-                    result = self.index_manager.verify_file_relevance.with_llm(self.llm).with_return_type(VerifyFileRelevance).run(
+                    result = verify_file_relevance.with_llm(self.llm).with_return_type(VerifyFileRelevance).run(
                         file_content=content,
                         query=self.args.query
                     )
@@ -235,10 +258,10 @@ class PruneContext:
                 logger.error(f"Failed to score file {file_path}: {e}")
                 continue
 
-        # 第二步：按分数从低到高排序
-        scored_files.sort(key=lambda x: x["score"])
+        # 第二步：按分数从高到低排序
+        scored_files.sort(key=lambda x: x["score"], reverse=True)
 
-        # 第三步：从低分开始过滤，直到token数小于max_tokens
+        # 第三步：从高分开始过滤，直到token数大于max_tokens 停止追加
         for file_info in scored_files:
             if total_tokens + file_info["tokens"] <= self.max_tokens:
                 selected_files.append(SourceCode(
