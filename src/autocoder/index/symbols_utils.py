@@ -27,8 +27,11 @@ def extract_symbols(text: str) -> SymbolsInfo:
         "variables": r"变量：(.+)",
         "classes": r"类：(.+)",
         "import_statements": r"导入语句：(.+)",
-    }
-
+    }    
+    ## index.json 中可能会出现 text 为 null 的情况
+    if not text or text == "null":        
+        return SymbolsInfo(usage="",functions=[],variables=[],classes=[],import_statements=[])
+    
     info = SymbolsInfo()
     for field, pattern in patterns.items():
         match = re.search(pattern, text)
