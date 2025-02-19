@@ -77,17 +77,28 @@ if "save" in args.action:
 </think>
 
 ```json
-{
-    "rank_result": ["0", "2", "1"]  
+{   
+    
+    "rank_result": [
+    "0", // 好的
+    "2", "1"]  
 }
 ```
 '''
-
+from byzerllm.utils.client import code_utils
 from byzerllm.utils.str2model import to_model
 from pydantic import BaseModel
 from typing import List
+
+s = code_utils.extract_code(s)[-1][1]
 
 class RankResult(BaseModel):
     rank_result: List[int]
 
 print(to_model(s,RankResult))
+# import yaml
+# print(yaml.safe_load(s))
+
+# import json5
+
+# print(json5.loads(s))

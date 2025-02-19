@@ -318,16 +318,16 @@ def build_index_and_filter_files(
 • Total time: {total_time:.2f}s
 
 """
-    printer.print_panel(
-        summary,
-        text_options={"justify": "left", "style": "bold white"},
-        panel_options={
-            "title": "Indexing and Filtering Summary", 
-            "border_style": "bold blue",
-            "padding": (1, 2),
-            "expand": False
-        }
-    )
+    # printer.print_panel(
+    #     summary,
+    #     text_options={"justify": "left", "style": "bold white"},
+    #     panel_options={
+    #         "title": "Indexing and Filtering Summary", 
+    #         "border_style": "bold blue",
+    #         "padding": (1, 2),
+    #         "expand": False
+    #     }
+    # )
 
     if args.request_id and not args.skip_events:
         queue_communicate.send_event(
