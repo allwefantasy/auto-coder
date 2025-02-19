@@ -180,7 +180,7 @@ class CodeAutoMergeEditBlock:
         if len(not_none_indices) == 1:
             idx = not_none_indices[0]
             self.printer.print_in_terminal("only_one_merge_result_success")
-            return CodeGenerateResult(contents=[ranked_result.contents[idx]], conversations=[ranked_result.conversations[idx]])        
+            return CodeGenerateResult(contents=[generate_result.contents[idx]], conversations=[generate_result.conversations[idx]])        
 
         # 最后，如果有多个，那么根据质量排序再返回
         ranker = CodeModificationRanker(self.llm, self.args)

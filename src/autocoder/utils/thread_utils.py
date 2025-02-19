@@ -176,6 +176,7 @@ def run_in_raw_thread():
             exception = []            
             def worker():            
                 try:
+                    # 如果刚开始就遇到了
                     # global_cancel.reset()
                     ret = func(*args, **kwargs)
                     result.append(ret)
