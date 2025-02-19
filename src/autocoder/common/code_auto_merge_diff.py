@@ -441,6 +441,85 @@ class CodeAutoMergeDiff:
         return safe_abs_path(res)
 
     def apply_edits(self, edits):
+    seen = set()
+    uniq = []
+    new_files = {}  # 新增：跟踪需要创建的新文件及其内容
+
+    # 预处理阶段：收集所有新文件的内容
+    for path, hunk in edits:
+        hunk = normalize_hunk(hunk)
+        if not hunk:
+            continue
+
+        full_path = self.abs_root_path(path)
+        original, after = hunk_to_before_after(hunk)
+
+        # 检测新增文件的条件
+        if not os.path.exists(full_path) and not original.strip():
+            if full_path not in new_files:
+                new_files[full_path] = []
+            new_files[full_path].append(after)  # 收集所有hunk的after内容
+
+    # 处理新增文件（合并多个hunk的内容）
+    for full_path, contents in new_files.items():
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        with open(full_path, "w") as f:
+            f.write("\n".join(contents))  # 合并所有hunk的after内容
+
+    # 处理现有文件的修改
+    for path, hunk in edits:
+        hunk = normalize_hunk(hunk)
+        if not hunk:
+            continue
+
+        this = [path + "\n"] + hunk
+        this = "".join(this)
+
+        if this in seen:
+            continue
+        seen.add(this)
+
+        uniq.append((path, hunk))
+
+    errors = []
+    for path, hunk in uniq:
+        full_path = self.abs_root_path(path)
+
+        # 跳过已处理的新增文件
+        if full_path in new_files:
+            continue
+
+        content = FileUtils.read_file(full_path) if os.path.exists(full_path) else ""
+
+        original, _ = hunk_to_before_after(hunk)
+
+        try:
+            content = do_replace(full_path, content, hunk)
+        except SearchTextNotUnique:
+            errors.append(
+                not_unique_error.format(
+                    path=path, original=original, num_lines=len(original.splitlines())
+                )
+            )
+            continue
+
+        if not content:
+            errors.append(
+                no_match_error.format(
+                    path=path, original=original, num_lines=len(original.splitlines())
+                )
+            )
+            continue
+
+        # 写入修改后的内容
+        with open(full_path, "w") as f:
+            f.write(content)
+
+    if errors:
+        errors = "\n\n".join(errors)
+        if len(errors) < len(uniq):
+            errors += other_hunks_applied
+        raise ValueError(errors)
         seen = set()
         uniq = []
         for path, hunk in edits:
@@ -550,3 +629,19 @@ class CodeAutoMergeDiff:
         if not force_skip_git and not self.args.skip_commit:
             commit_result = git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}\n{self.args.query}")
             git_utils.print_commit_info(commit_result=commit_result)
+def do_replace(fname, content, hunk):
+    fname = Path(fname)
+    print(f"Processing file: {fname}")  # 调试日志
+
+    before_text, after_text = hunk_to_before_after(hunk)
+
+    # 新增调试信息
+    print(f"Before text length: {len(before_text)}")
+    print(f"After text length: {len(after_text)}")
+
+    if not fname.exists() and not before_text.strip():
+        print(f"Creating new file: {fname}")  # 调试日志
+        fname.touch()
+        return after_text  # 直接返回完整内容
+
+    # ...原有逻辑...
