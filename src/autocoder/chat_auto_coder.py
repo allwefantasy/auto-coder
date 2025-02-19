@@ -2681,6 +2681,9 @@ def main():
         if mode not in MODES:
             mode = "auto_detect"
         pwd = os.getcwd()    
+         pwd_parts = pwd.split(os.sep)
+         if len(pwd_parts) > 3:
+             pwd = os.sep.join(pwd_parts[-3:])
         return f"Current Dir: {pwd} | Mode: {MODES[mode]} | Human as Model: {human_as_model} "
 
     session = PromptSession(
