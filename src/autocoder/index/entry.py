@@ -116,7 +116,7 @@ def build_index_and_filter_files(
             # Merge quick filter results into final_files
             if args.context_prune:
                 context_pruner = PruneContext(max_tokens=args.conversation_prune_safe_zone_tokens, args=args, llm=llm)
-                pruned_files = context_pruner.handle_overflow(quick_filter_result.files, args.conversations, args.context_prune_strategy)
+                pruned_files = context_pruner.handle_overflow(quick_filter_result.files, [{"role":"user","content":args.query}], args.context_prune_strategy)
                 for source_file in pruned_files:
                     final_files[source_file.module_name] = quick_filter_result.files[source_file.module_name]
             else:

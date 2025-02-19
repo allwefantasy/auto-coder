@@ -257,13 +257,13 @@ class IndexManager:
             total_input_cost = 0.0
             total_output_cost = 0.0
             
-            if len(source.source_code) > self.max_input_length:
+            if len(source.source_code) > self.args.conversation_prune_safe_zone_tokens:
                 self.printer.print_in_terminal(
                     "index_file_too_large",
                     style="yellow",
                     file_path=source.module_name,
                     file_size=len(source.source_code),
-                    max_length=self.max_input_length
+                    max_length=self.args.conversation_prune_safe_zone_tokens
                 )
                 chunks = self.split_text_into_chunks(
                     source_code, self.max_input_length - 1000

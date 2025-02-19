@@ -504,7 +504,8 @@ class QuickFilter():
                 validated_file_numbers.append(file_number)
                                 
             # 将最终选中的文件加入final_files
-            for index,file_path in enumerate(validated_file_numbers):
+            for index,file_number in enumerate(validated_file_numbers):
+                file_path = get_file_path(index_items[file_number].module_name)
                 final_files[file_path] = TargetFile(
                     file_path=index_items[file_number].module_name,
                     reason=self.printer.get_message_from_key("quick_filter_reason")
