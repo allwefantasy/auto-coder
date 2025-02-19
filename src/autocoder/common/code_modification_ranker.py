@@ -128,6 +128,7 @@ class CodeModificationRanker:
             query = self._rank_modifications.prompt(generate_result)
         elif self.args.rank_strategy == "file":
             query = self._rank_modifications_with_merge_result.prompt(generate_result, merge_result)
+            print(query)
         else:
             raise Exception(f"Invalid rank strategy: {self.args.rank_strategy}")
 
