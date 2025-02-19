@@ -399,6 +399,7 @@ class QuickFilter():
                     reason=self.printer.get_message_from_key(
                         "quick_filter_reason")
                 )
+                
         end_time = time.monotonic()
         self.stats["timings"]["quick_filter"] = end_time - start_time
         return QuickFilterResult(

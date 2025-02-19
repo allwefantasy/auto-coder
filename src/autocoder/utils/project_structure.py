@@ -1,9 +1,11 @@
+from collections import defaultdict
 import os
 import re
 from dataclasses import dataclass
 from typing import List, Pattern, Dict, Any, Set, Union
 from concurrent.futures import ThreadPoolExecutor
 import byzerllm
+from pydantic import BaseModel
 from rich.tree import Tree
 from rich.console import Console
 from loguru import logger
@@ -20,6 +22,13 @@ class AnalysisConfig:
     max_depth: int = -1
     show_hidden: bool = False
     parallel_processing: bool = True
+
+class ExtentionResult(BaseModel):
+    code: List[str] = []
+    config: List[str] = []
+    data: List[str] = []
+    document: List[str] = []
+    other: List[str] = []
 
 class EnhancedFileAnalyzer:
     DEFAULT_EXCLUDE_DIRS = [".git", "node_modules", "__pycache__", "venv"]
@@ -114,7 +123,7 @@ class EnhancedFileAnalyzer:
         from collections import defaultdict
         extensions = self._collect_extensions()
         if self.llm:
-            return self._llm_enhanced_analysis(extensions)
+            return self._llm_enhanced_analysis.with_llm(self.llm).run(extensions)
         return self._basic_analysis(extensions)
 
     def _collect_extensions(self) -> Set[str]:
@@ -204,7 +213,7 @@ class EnhancedFileAnalyzer:
 
     def interactive_display(self):
         """交互式可视化展示"""
-        tree = build_interactive_tree(self.directory, self.config)
+        tree = self.build_interactive_tree(self.directory, self.config)
         self.console.print(tree)
         self.console.print("\n[bold]Statistical Summary:[/]")
         stats = self.get_directory_stats()
