@@ -1680,9 +1680,10 @@ def chat(query: str):
             else:
                 query = code_review.prompt(query)
 
-    is_no_context = query.strip().startswith("/no_context")
+    is_no_context = "/no_context" in query.strip()
     if is_no_context:
         query = query.replace("/no_context", "", 1).strip()
+        yaml_config["action"].append("no_context")
 
     for key, value in conf.items():
         converted_value = convert_config_value(key, value)

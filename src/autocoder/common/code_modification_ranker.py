@@ -9,6 +9,7 @@ import traceback
 from autocoder.common.utils_code_auto_generate import chat_with_continue
 from byzerllm.utils.str2model import to_model
 from autocoder.utils.llms import get_llm_names, get_model_info
+from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
 
 class RankResult(BaseModel):
     rank_result: List[int]
@@ -51,12 +52,12 @@ class CodeModificationRanker:
         }
         ```
 
-        注意：   
+        注意：                   
         1. id 为 edit_block 的 id,按质量从高到低排序，并且 id 必须是数字        
         2. 只输出前面要求的 Json 格式就好，不要输出其他内容，Json 需要使用 ```json ```包裹                
         '''
 
-    def rank_modifications(self, generate_result: CodeGenerateResult) -> CodeGenerateResult:
+    def rank_modifications(self, generate_result: CodeGenerateResult, merge_result: List[MergeCodeWithoutEffect]) -> CodeGenerateResult:
         import time
         from collections import defaultdict
 

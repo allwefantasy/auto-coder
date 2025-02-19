@@ -164,7 +164,15 @@ class CodeAutoMergeEditBlock:
     def choose_best_choice(self, generate_result: CodeGenerateResult) -> CodeGenerateResult:
         if len(generate_result.contents) == 1:
             return generate_result
-
+        
+        merge_result = []
+        for content,conversations in zip(ranked_result.contents,ranked_result.conversations):
+            merge_result = self._merge_code_without_effect(content)
+            if not merge_result.failed_blocks:
+                merge_result.append(merge_result.success_blocks)
+            else:
+                merge_result.append(None)        
+        
         ranker = CodeModificationRanker(self.llm, self.args)
         ranked_result = ranker.rank_modifications(generate_result)
         # Filter out contents with failed blocks

@@ -1164,19 +1164,20 @@ def main(input_args: Optional[List[str]] = None):
                                                file_path=source.module_name, 
                                                model_name=",".join(get_llm_names(chat_llm)))
             
-            s = build_index_and_filter_files(
-                llm=llm, args=args, sources=filtered_sources).to_str()                        
-            
-            if s:
-                pre_conversations.append(
-                    {
-                        "role": "user",
-                        "content": f"请阅读下面的代码和文档：\n\n <files>\n{s}\n</files>",
-                    }
-                )
-                pre_conversations.append(
-                    {"role": "assistant", "content": "read"})
-                source_count += 1
+            if "no_context" not in args.action:
+                s = build_index_and_filter_files(
+                    llm=llm, args=args, sources=filtered_sources).to_str()                        
+                
+                if s:
+                    pre_conversations.append(
+                        {
+                            "role": "user",
+                            "content": f"请阅读下面的代码和文档：\n\n <files>\n{s}\n</files>",
+                        }
+                    )
+                    pre_conversations.append(
+                        {"role": "assistant", "content": "read"})
+                    source_count += 1
 
             loaded_conversations = pre_conversations + \
                 chat_history["ask_conversation"]              
