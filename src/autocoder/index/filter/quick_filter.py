@@ -275,16 +275,6 @@ class QuickFilter():
         }
         return context
 
-    def _truncate_file_content(self, file_path: str, max_tokens: int) -> str:
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        token_count = count_tokens(content)
-        while token_count > max_tokens and content:
-            # 从文件末尾删除一行
-            content = content[:content.rfind("\n")]
-            token_count = count_tokens(content)
-        return content
-
     def filter(self, index_items: List[IndexItem], query: str) -> QuickFilterResult:
         final_files: Dict[str, TargetFile] = {}
         start_time = time.monotonic()
@@ -409,7 +399,6 @@ class QuickFilter():
                 validated_file_numbers.append(file_number)
             
 
-
             # 拼接所有文件内容并计算总token数
             total_tokens = 0
             selected_files = []
@@ -427,8 +416,8 @@ class QuickFilter():
                             break
                 except Exception as e:
                     logger.error(f"Failed to read file {file_path}: {e}")
+                    selected_files.append(file_number)
                     continue
-
             
             # 将最终选中的文件加入final_files
             for file_number in selected_files:
