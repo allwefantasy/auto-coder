@@ -188,17 +188,67 @@ class PruneContext:
         self,
         file_paths: List[str],
         conversations: List[Dict[str, str]],
-        strategy: str = "delete"
+        strategy: str = "delete",
+        index_manager: Optional[IndexManager] = None
     ) -> List[str]:
         """
         处理超出 token 限制的文件
         :param file_paths: 要处理的文件路径列表
         :param conversations: 对话上下文（用于提取策略）
         :param strategy: 处理策略 (delete/extract)
+        :param index_manager: IndexManager实例（用于评分策略）
         """
+        if strategy == "score":
+            if index_manager is None:
+                raise ValueError("评分策略需要提供IndexManager实例")
+            self.index_manager = index_manager
+            return self._score_and_filter_files(file_paths, conversations)
         if strategy == "delete":
             return self._delete_overflow_files(file_paths)
         elif strategy == "extract":
             return self._extract_code_snippets(file_paths, conversations)
         else:
-            raise ValueError(f"无效策略: {strategy}. 可选值: delete/extract")
+            raise ValueError(f"无效策略: {strategy}. 可选值: delete/extract/score")
+    def _score_and_filter_files(self, file_paths: List[str], conversations: List[Dict[str, str]]) -> List[SourceCode]:
+        """根据文件相关性评分过滤文件，直到token数小于max_tokens"""
+        selected_files = []
+        total_tokens = 0
+        scored_files = []
+
+        # 第一步：为每个文件打分
+        for file_path in file_paths:
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    tokens = count_tokens(content)
+                    result = self.index_manager.verify_file_relevance.with_llm(self.llm).with_return_type(VerifyFileRelevance).run(
+                        file_content=content,
+                        query=self.args.query
+                    )
+                    scored_files.append({
+                        "file_path": file_path,
+                        "score": result.relevant_score,
+                        "tokens": tokens,
+                        "content": content
+                    })
+            except Exception as e:
+                logger.error(f"Failed to score file {file_path}: {e}")
+                continue
+
+        # 第二步：按分数从低到高排序
+        scored_files.sort(key=lambda x: x["score"])
+
+        # 第三步：从低分开始过滤，直到token数小于max_tokens
+        for file_info in scored_files:
+            if total_tokens + file_info["tokens"] <= self.max_tokens:
+                selected_files.append(SourceCode(
+                    module_name=file_info["file_path"],
+                    source_code=file_info["content"],
+                    tokens=file_info["tokens"]
+                ))
+                total_tokens += file_info["tokens"]
+            else:
+                break
+
+        return selected_files
+
