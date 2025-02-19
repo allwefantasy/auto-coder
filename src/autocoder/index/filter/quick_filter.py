@@ -275,6 +275,16 @@ class QuickFilter():
         }
         return context
 
+    def _truncate_file_content(self, file_path: str, max_tokens: int) -> str:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        token_count = count_tokens(content)
+        while token_count > max_tokens and content:
+            # 从文件末尾删除一行
+            content = content[:content.rfind("\n")]
+            token_count = count_tokens(content)
+        return content
+
     def filter(self, index_items: List[IndexItem], query: str) -> QuickFilterResult:
         final_files: Dict[str, TargetFile] = {}
         start_time = time.monotonic()
@@ -399,8 +409,20 @@ class QuickFilter():
                 validated_file_numbers.append(file_number)
 
             for validated_file_number in validated_file_numbers:
-                ## MARK
-                pass
+                file_path = index_items[validated_file_number].module_name
+                if file_path.startswith("##"):
+                    file_path = file_path.strip()[2:]
+                try:
+                    truncated_content = self._truncate_file_content(file_path, self.max_tokens)
+                    if truncated_content:
+                        final_files[file_path] = TargetFile(
+                            file_path=index_items[validated_file_number].module_name,
+                            reason=self.printer.get_message_from_key("quick_filter_reason")
+                        )
+                except Exception as e:
+                    logger.error(f"Failed to truncate file {file_path}: {e}")
+                    continue
+
             
             for file_number in validated_file_numbers:
                 final_files[get_file_path(index_items[file_number].module_name)] = TargetFile(
