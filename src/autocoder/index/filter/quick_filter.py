@@ -263,6 +263,7 @@ class QuickFilter():
         2. 如果 query 里是一段历史对话，那么对话里的内容提及的文件路径必须要返回。
         3. 想想，如果是你需要修改代码，然后满足这个需求，根据索引文件，你希望查看哪些文件，修改哪些文件，然后返回这些文件。
         4. 如果用户需求为空，则直接返回空列表即可。
+        6. file_list 返回的文件序号，相关度最高要排在前面
         5. 返回的 json格式数据不允许有注释
         '''
 
@@ -399,7 +400,7 @@ class QuickFilter():
                     reason=self.printer.get_message_from_key(
                         "quick_filter_reason")
                 )
-                
+
         end_time = time.monotonic()
         self.stats["timings"]["quick_filter"] = end_time - start_time
         return QuickFilterResult(
