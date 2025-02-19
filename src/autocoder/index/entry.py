@@ -1,3 +1,5 @@
+from autocoder.rag.token_counter import count_tokens
+
 import os
 import json
 import time
@@ -67,11 +69,12 @@ def build_index_and_filter_files(
     for source in sources:
         if source.tag in ["REST", "RAG", "SEARCH"]:
             final_files[get_file_path(source.module_name)] = TargetFile(
-                file_path=source.module_name, reason="Rest/Rag/Search"
+                file_path=source.module_name, reason="Rest/Rag/Search", token_count=count_tokens(source.source_code)
             )
     phase_end = time.monotonic()
     stats["timings"]["process_tagged_sources"] = phase_end - phase_start
         
+
     if not args.skip_build_index and llm:
         # Phase 2: Build index
         if args.request_id and not args.skip_events:
@@ -121,6 +124,7 @@ def build_index_and_filter_files(
                     final_files[source_file.module_name] = quick_filter_result.files[source_file.module_name]
             else:
                 final_files.update(quick_filter_result.files)                                     
+
         
         if not args.skip_filter_index and not args.index_filter_model:
             model_name = getattr(index_manager.llm, 'default_model_name', None)
