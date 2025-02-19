@@ -246,7 +246,7 @@ class PruneContext:
                     tokens = count_tokens(content)
                     result = verify_file_relevance.with_llm(self.llm).with_return_type(VerifyFileRelevance).run(
                         file_content=content,
-                        query=self.args.query
+                        conversations=conversations
                     )
                     return {
                         "file_path": file_path,
