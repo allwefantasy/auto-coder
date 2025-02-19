@@ -34,7 +34,7 @@ class QuickFilterResult(BaseModel):
     files: Dict[str, TargetFile]
     has_error: bool
     error_message: Optional[str] = None
-    file_positions: Optional[Dict[str, int]]
+    file_positions: Optional[Dict[str, int]] = {}
 
 
 class QuickFilter():
@@ -85,6 +85,7 @@ class QuickFilter():
                     self.index_manager.index_filter_llm)
                 model_name = ",".join(model_names)
                 files: Dict[str, TargetFile] = {}
+                file_positions: Dict[str, int] = {}
 
                 # 获取模型价格信息
                 model_info_map = {}
@@ -169,7 +170,7 @@ class QuickFilter():
                     )
 
                 if file_number_list:
-                    for file_number in file_number_list.file_list:
+                    for index,file_number in enumerate(file_number_list.file_list):
                         if file_number < 0 or file_number >= len(chunk):
                             self.printer.print_in_terminal(
                                 "invalid_file_number",
@@ -185,9 +186,11 @@ class QuickFilter():
                             reason=self.printer.get_message_from_key(
                                 "quick_filter_reason")
                         )
+                        file_positions[file_path] = index
                 return QuickFilterResult(
                     files=files,
-                    has_error=False
+                    has_error=False,
+                    file_positions=file_positions
                 )
 
             except Exception as e:
@@ -215,6 +218,7 @@ class QuickFilter():
 
         # 合并所有结果
         final_files: Dict[str, TargetFile] = {}
+        final_file_positions: Dict[str, int] = {}
         has_error = False
         error_messages: List[str] = []
 
@@ -224,6 +228,21 @@ class QuickFilter():
                 if result.error_message:
                     error_messages.append(result.error_message)
             final_files.update(result.files)
+
+
+        for result in results:
+            if result.has_error:
+                has_error = True
+                if result.error_message:
+                    error_messages.append(result.error_message)
+            ## 实现多个 result.file_positions 交织排序
+            # 比如第一个是 {file_path_1_0: 0, file_path_1_1: 1, file_path_1_2: 2}    
+            # 第二个是 {file_path_2_0: 0, file_path_2_1: 1}
+            # 第三个是 {file_path_3_0: 0, file_path_3_1: 1, file_path_3_2: 2, file_path_3_3: 3}
+            # 收集逻辑为所以 0 的为一组，然后序号为 0,1,2, 所有1 的为一组，序号是 3,4,5,依次往下推
+            # {file_path_1_0: 0, file_path_2_0: 1, file_path_3_0: 2, file_path_1_1: 3, file_path_2_1: 4, file_path_3_1: 5}            
+            # 
+            ## MARK
 
         return QuickFilterResult(
             files=final_files,
@@ -332,6 +351,7 @@ class QuickFilter():
 
     def filter(self, index_items: List[IndexItem], query: str) -> QuickFilterResult:
         final_files: Dict[str, TargetFile] = {}
+        final_file_positions: Dict[str, int] = {}
         start_time = time.monotonic()
 
         prompt_str = self.quick_filter_files.prompt(index_items, query)
@@ -452,19 +472,19 @@ class QuickFilter():
                     )
                     continue
                 validated_file_numbers.append(file_number)
-                    
-            
+                                
             # 将最终选中的文件加入final_files
-            for file_number in validated_file_numbers:
-                file_path = get_file_path(index_items[file_number].module_name)
+            for index,file_path in enumerate(validated_file_numbers):
                 final_files[file_path] = TargetFile(
                     file_path=index_items[file_number].module_name,
                     reason=self.printer.get_message_from_key("quick_filter_reason")
                 )
+                final_file_positions[file_path] = index
 
         end_time = time.monotonic()
         self.stats["timings"]["quick_filter"] = end_time - start_time
         return QuickFilterResult(
             files=final_files,
-            has_error=False
+            has_error=False,
+            file_positions=final_file_positions
         )
