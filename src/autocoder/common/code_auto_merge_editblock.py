@@ -172,14 +172,15 @@ class CodeAutoMergeEditBlock:
                 merge_result.append(merge_result.success_blocks)
             else:
                 merge_result.append(None)        
-        
+                
+
         ranker = CodeModificationRanker(self.llm, self.args)
-        ranked_result = ranker.rank_modifications(generate_result)
+        ranked_result = ranker.rank_modifications(generate_result,merge_result)
         # Filter out contents with failed blocks
-        for content,conversations in zip(ranked_result.contents,ranked_result.conversations):
-            merge_result = self._merge_code_without_effect(content)
-            if not merge_result.failed_blocks:
-                return CodeGenerateResult(contents=[content], conversations=[conversations])
+        # for content,conversations in zip(ranked_result.contents,ranked_result.conversations):
+        #     merge_result = self._merge_code_without_effect(content)
+        #     if not merge_result.failed_blocks:
+        #         return CodeGenerateResult(contents=[content], conversations=[conversations])
         # If all have failed blocks, return the first one
         return CodeGenerateResult(contents=[ranked_result.contents[0]], conversations=[ranked_result.conversations[0]])
 
