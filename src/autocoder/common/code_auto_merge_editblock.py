@@ -172,12 +172,14 @@ class CodeAutoMergeEditBlock:
 
         # If all merge results are None, return first one
         if all(len(result.failed_blocks) != 0 for result in merge_results):
+            self.printer.print_in_terminal("all_merge_results_failed")
             return CodeGenerateResult(contents=[generate_result.contents[0]], conversations=[generate_result.conversations[0]])
         
         # If only one merge result is not None, return that one
         not_none_indices = [i for i, result in enumerate(merge_results) if len(result.failed_blocks) == 0]
         if len(not_none_indices) == 1:
             idx = not_none_indices[0]
+            self.printer.print_in_terminal("only_one_merge_result_success")
             return CodeGenerateResult(contents=[ranked_result.contents[idx]], conversations=[ranked_result.conversations[idx]])        
 
         # 最后，如果有多个，那么根据质量排序再返回
