@@ -4,12 +4,23 @@ from typing import List, Dict, Any
 from autocoder.common.context_pruner import PruneContext
 from autocoder.common import AutoCoderArgs
 import byzerllm
-
+from autocoder.utils.llms import get_single_llm
+from autocoder.rag.variable_holder import VariableHolder
+from tokenizers import Tokenizer    
+import pkg_resources
+try:
+    tokenizer_path = pkg_resources.resource_filename(
+        "autocoder", "data/tokenizer.json"
+    )
+    VariableHolder.TOKENIZER_PATH = tokenizer_path
+    VariableHolder.TOKENIZER_MODEL = Tokenizer.from_file(tokenizer_path)
+except FileNotFoundError:
+    tokenizer_path = None
 class TestPruneContext(unittest.TestCase):
     def setUp(self):
         self.args = AutoCoderArgs(source_dir=".")
-        self.llm = byzerllm.ByzerLLM()
-        self.max_tokens = 1000
+        self.llm = get_single_llm("v3_chat",product_mode="lite")
+        self.max_tokens = 1000                
         self.prune_context = PruneContext(self.max_tokens, self.args, self.llm)
         self.test_files = self._create_test_files()
 
