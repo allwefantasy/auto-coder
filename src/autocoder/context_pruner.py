@@ -41,22 +41,57 @@ class PruneContext:
         full_file_tokens = int(self.max_tokens * 0.8)
 
         @byzerllm.prompt()
-        def extract_code_snippets(content: str) -> str:
+        def extract_code_snippets(conversations: List[Dict[str, str]], content: str) -> str:
             """
-            请分析以下代码文件，提取与当前对话最相关的代码片段：
+            根据提供的代码文件和对话历史提取相关代码片段。
 
-            对话上下文:
-            {{ conversations }}
-
-            代码文件内容:
+            输入:
+            1. 代码文件内容:
             {{ content }}
 
-            返回包含关键代码片段的 JSON 数组，格式示例：
-            [{
-                "start_line": 1,
-                "end_line": 10,
-                "reason": "包含核心业务逻辑"
-            }]
+            2. 对话历史:
+            {% for msg in conversations %}
+            <{{ msg.role }}>: {{ msg.content }}
+            {% endfor %}
+
+            任务:
+            1. 分析最后一个用户问题及其上下文。
+            2. 在代码文件中找出与问题相关的一个或多个重要代码段。
+            3. 对每个相关代码段，确定其起始行号(start_line)和结束行号(end_line)。
+            4. 代码段数量不超过4个。
+
+            输出要求:
+            1. 返回一个JSON数组，每个元素包含"start_line"和"end_line"。
+            2. start_line和end_line必须是整数，表示代码文件中的行号。
+            3. 行号从1开始计数。
+            4. 如果没有相关代码段，返回空数组[]。
+
+            输出格式:
+            严格的JSON数组，不包含其他文字或解释。
+
+            示例:
+            1.  代码文件：
+                1 def add(a, b):
+                2     return a + b
+                3 def sub(a, b):
+                4     return a - b
+                问题：如何实现加法？
+                返回：[{"start_line": 1, "end_line": 2}]
+
+            2.  代码文件：
+                1 class User:
+                2     def __init__(self, name):
+                3         self.name = name
+                4     def greet(self):
+                5         return f"Hello, {self.name}"
+                问题：如何创建一个User对象？
+                返回：[{"start_line": 1, "end_line": 3}]
+
+            3.  代码文件：
+                1 def foo():
+                2     pass
+                问题：如何实现减法？
+                返回：[]
             """
 
         for file_path in file_paths:
