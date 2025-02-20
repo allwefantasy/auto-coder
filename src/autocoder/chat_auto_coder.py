@@ -2281,6 +2281,8 @@ def exclude_dirs(dir_names: List[str]):
     save_memory()
     completer.refresh_files()
 
+from autocoder.common.auto_coder_lang import get_message_with_format
+
 def exclude_files(file_patterns: List[str]):
     result_manager = ResultManager()
     new_file_patterns = file_patterns
@@ -2289,7 +2291,7 @@ def exclude_files(file_patterns: List[str]):
 
     for file_pattern in file_patterns_to_add:
         if not file_pattern.startswith("regex://"):
-            raise ValueError(f"Invalid file pattern: {file_pattern}. e.g. regex://.*/package-lock\.json")            
+            raise ValueError(get_message_with_format("invalid_file_pattern", file_pattern=file_pattern))            
 
     if file_patterns_to_add:
         existing_file_patterns.extend(file_patterns_to_add)
