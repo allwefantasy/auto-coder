@@ -1,5 +1,5 @@
 from rich.console import Console
-from src.autocoder.common.stats_panel import StatsPanel
+from autocoder.common.stats_panel import StatsPanel
 
 # 创建控制台实例
 console = Console()
