@@ -2267,17 +2267,52 @@ def manage_models(query: str):
 
 def exclude_dirs(dir_names: List[str]):
     new_dirs = dir_names
-    existing_dirs = memory.get("exclude_dirs", [])
+    existing_dirs = memory.get("exclude_dirs", [])    
     dirs_to_add = [d for d in new_dirs if d not in existing_dirs]
+    
     if dirs_to_add:
         existing_dirs.extend(dirs_to_add)
         if "exclude_dirs" not in memory:
             memory["exclude_dirs"] = existing_dirs
         print(f"Added exclude dirs: {dirs_to_add}")
+        exclude_files([f"regex://.*/{d}/*." for d in dirs_to_add])            
     else:
         print("All specified dirs are already in the exclude list.")
     save_memory()
     completer.refresh_files()
+
+def exclude_files(file_patterns: List[str]):
+    result_manager = ResultManager()
+    new_file_patterns = file_patterns
+    existing_file_patterns = memory.get("exclude_files", [])    
+    file_patterns_to_add = [f for f in new_file_patterns if f not in existing_file_patterns]
+
+    for file_pattern in file_patterns_to_add:
+        if not file_pattern.startswith("regex://"):
+            raise ValueError(f"Invalid file pattern: {file_pattern}. e.g. regex://.*/package-lock\.json")            
+
+    if file_patterns_to_add:
+        existing_file_patterns.extend(file_patterns_to_add)
+        if "exclude_files" not in memory:
+            memory["exclude_files"] = existing_file_patterns
+        
+        result_manager.add_result(content=f"Added exclude files: {file_patterns_to_add}",meta={
+            "action": "exclude_files",
+            "input": {
+                "query": file_patterns_to_add
+            }
+        })
+        print(f"Added exclude files: {file_patterns_to_add}")
+    else:
+        result_manager.add_result(content=f"All specified files are already in the exclude list.",meta={
+            "action": "exclude_files",
+            "input": {
+                "query": file_patterns_to_add
+            }
+        })
+        print("All specified files are already in the exclude list.")
+    
+    
 
 @run_in_raw_thread()
 def index_build():
@@ -2604,6 +2639,7 @@ def auto_command(params,query: str):
                                  commit=commit,
                                  help=help,
                                  exclude_dirs=exclude_dirs,
+                                 exclude_files=exclude_files,
                                  ask=ask,
                                  chat=chat,
                                  coding=coding,
@@ -2875,6 +2911,12 @@ def main():
                 dir_names = user_input[len(
                     "/exclude_dirs"):].strip().split(",")
                 exclude_dirs(dir_names)
+
+            elif user_input.startswith("/exclude_files"):
+                file_patterns = user_input[len(
+                    "/exclude_files"):].strip().split(",")
+                exclude_files(file_patterns)
+
             elif user_input.startswith("/ask"):
                 query = user_input[len("/ask"):].strip()
                 if not query:
