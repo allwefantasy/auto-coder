@@ -157,7 +157,6 @@ MESSAGES = {
         "index_export_success": "Index exported successfully: {{path}}",
         "index_import_success": "Index imported successfully: {{path}}",
     },
-    "invalid_file_pattern": "Invalid file pattern: {{file_pattern}}. e.g. regex://.*/package-lock\.json",
     "zh": {
         "conf_not_found": "未找到配置文件: {{path}}",
         "conf_import_success": "成功导入配置: {{path}}",
