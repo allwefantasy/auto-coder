@@ -197,7 +197,7 @@ class CodeAutoGenerate:
                 instruction=query, content=source_content
             )
 
-        with open(self.args.target_file, "w") as file:
+        with open(self.args.target_file, "w",encoding="utf-8") as file:
             file.write(init_prompt)
 
         conversations = []
@@ -298,7 +298,7 @@ class CodeAutoGenerate:
 
         conversations = [{"role": "user", "content": init_prompt}]
 
-        with open(self.args.target_file, "w") as file:
+        with open(self.args.target_file, "w",encoding="utf-8") as file:
             file.write(init_prompt)
 
         t = self.llm.chat_oai(conversations=conversations, llm_config=llm_config)
@@ -320,7 +320,7 @@ class CodeAutoGenerate:
 
             conversations.append({"role": "user", "content": "继续"})
 
-            with open(self.args.target_file, "w") as file:
+            with open(self.args.target_file, "w",encoding="utf-8") as file:
                 file.write("继续")
 
             t = self.llm.chat_oai(conversations=conversations, llm_config=llm_config)

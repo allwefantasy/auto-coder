@@ -134,6 +134,7 @@ commands = [
     "/index/export",
     "/index/import",
     "/exclude_dirs",
+    "/exclude_files",
     "/help",
     "/shell",
     "/voice_input",
@@ -1506,6 +1507,7 @@ def coding(query: str):
             "silence": conf.get("silence", "true") == "true",
             "include_project_structure": conf.get("include_project_structure", "true")
             == "true",
+            "exclude_files": conf.get("exclude_files", []),
         }
 
         yaml_config["context"] = ""        
@@ -1634,6 +1636,7 @@ def chat(query: str):
         "skip_build_index": conf.get("skip_build_index", "true") == "true",
         "skip_confirm": conf.get("skip_confirm", "true") == "true",
         "silence": conf.get("silence", "true") == "true",
+        "exclude_files": conf.get("exclude_files", []),
     }
 
     current_files = memory["current_files"]["files"] + get_llm_friendly_package_docs(
@@ -2283,14 +2286,20 @@ def exclude_dirs(dir_names: List[str]):
 
 def exclude_files(file_patterns: List[str]):
     result_manager = ResultManager()
+    printer = Printer()
     new_file_patterns = file_patterns
     existing_file_patterns = memory.get("exclude_files", [])    
     file_patterns_to_add = [f for f in new_file_patterns if f not in existing_file_patterns]
 
     for file_pattern in file_patterns_to_add:
-        if not file_pattern.startswith("regex://"):
-            from autocoder.common.auto_coder_lang import get_message_with_format
-            raise ValueError(get_message_with_format("invalid_file_pattern", file_pattern=file_pattern))
+        if not file_pattern.startswith("regex://"): 
+            result_manager.add_result(content=printer.get_message_from_key_with_format("invalid_file_pattern", file_pattern=file_pattern),meta={
+                "action": "exclude_files",
+                "input": {
+                    "query": file_pattern
+                }
+            })
+            raise ValueError(printer.get_message_from_key_with_format("invalid_file_pattern", file_pattern=file_pattern))
 
     if file_patterns_to_add:
         existing_file_patterns.extend(file_patterns_to_add)
@@ -2303,6 +2312,7 @@ def exclude_files(file_patterns: List[str]):
                 "query": file_patterns_to_add
             }
         })
+        save_memory()
         print(f"Added exclude files: {file_patterns_to_add}")
     else:
         result_manager.add_result(content=f"All specified files are already in the exclude list.",meta={

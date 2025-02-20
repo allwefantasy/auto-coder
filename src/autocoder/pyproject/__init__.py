@@ -357,7 +357,7 @@ class PyProject:
             self.clone_repository()
 
         if self.target_file:
-            with open(self.target_file, "w") as file:
+            with open(self.target_file, "w",encoding="utf-8") as file:
 
                 for code in self.get_rest_source_codes():
                     self.sources.append(code)                    

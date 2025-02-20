@@ -485,6 +485,9 @@ def main(input_args: Optional[List[str]] = None):
                 )
                 instruction = input_value[0]["instruction"]
                 final_ins = instruction
+                
+                with open(args.target_file, "w",encoding="utf-8") as f:
+                    f.write(final_ins)
 
                 try:
                     import pyperclip
@@ -1218,7 +1221,11 @@ def main(input_args: Optional[List[str]] = None):
                     source_codes=source_codes,
                     pre_conversations=loaded_conversations[source_count * 2: -1],
                     last_conversation=loaded_conversations[-1],
-                )
+                )  
+                
+                with open(args.target_file, "w",encoding="utf-8") as f:
+                    f.write(chat_content)
+                
                 try:
                     import pyperclip
 
@@ -1274,9 +1281,7 @@ def main(input_args: Optional[List[str]] = None):
                     lines.append(line)
 
                 result = "\n".join(lines)
-
-                with open(args.target_file, "w") as f:
-                    f.write(chat_content)
+                
 
                 result_manager = ResultManager()
                 result_manager.append(content=result, 
@@ -1500,7 +1505,7 @@ def main(input_args: Optional[List[str]] = None):
         else:
             http_doc = HttpDoc(args=args, llm=llm, urls=None)
             source_codes = http_doc.crawl_urls()
-            with open(args.target_file, "w") as f:
+            with open(args.target_file, "w",encoding="utf-8") as f:
                 f.write("\n".join([sc.source_code for sc in source_codes]))
             return
 

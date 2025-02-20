@@ -418,7 +418,7 @@ class CodeAutoGenerateEditBlock:
                 instruction=query, content=source_content
             )
 
-        with open(self.args.target_file, "w") as file:
+        with open(self.args.target_file, "w",encoding="utf-8") as file:
             file.write(init_prompt)
 
         conversations = []
@@ -538,7 +538,7 @@ class CodeAutoGenerateEditBlock:
         # conversations.append({"role": "system", "content": sys_prompt.prompt()})
         conversations.append({"role": "user", "content": init_prompt})
 
-        with open(self.args.target_file, "w") as file:
+        with open(self.args.target_file, "w",encoding="utf-8") as file:
             file.write(init_prompt)
 
         code_llm = self.llms[0]
@@ -558,7 +558,7 @@ class CodeAutoGenerateEditBlock:
 
             conversations.append({"role": "user", "content": "继续"})
 
-            with open(self.args.target_file, "w") as file:
+            with open(self.args.target_file, "w",encoding="utf-8") as file:
                 file.write("继续")
 
             t = code_llm.chat_oai(

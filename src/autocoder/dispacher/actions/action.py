@@ -190,9 +190,7 @@ class ActionTSProject(BaseAction):
                         conversations=generate_result.conversations[0],
                         model=self.llm.default_model_name,
                     )
-
-                with open(args.target_file, "w") as file:
-                    file.write(content)
+                
 
 
 class ActionPyScriptProject(BaseAction):
@@ -300,11 +298,7 @@ class ActionPyScriptProject(BaseAction):
                     instruction=self.args.query,
                     conversations=generate_result.conversations[0],
                     model=self.llm.default_model_name,
-                )
-
-            end_time = time.time()            
-            with open(self.args.target_file, "w") as file:
-                file.write(content)
+                )                        
 
 
 class ActionPyProject(BaseAction):
@@ -435,9 +429,7 @@ class ActionPyProject(BaseAction):
                     instruction=self.args.query,
                     conversations=generate_result.conversations[0],
                     model=self.llm.default_model_name,
-                )            
-            with open(args.target_file, "w") as file:
-                file.write(content)
+                )                        
 
 
 class ActionSuffixProject(BaseAction):
@@ -551,9 +543,7 @@ class ActionSuffixProject(BaseAction):
                 instruction=self.args.query,
                 conversations=merge_result.conversations[0],
                 model=self.llm.default_model_name,
-            )
-            with open(args.target_file, "w") as file:
-                file.write(content)
+            )            
         else:
             content = generate_result.contents[0]
 
@@ -563,7 +553,5 @@ class ActionSuffixProject(BaseAction):
                 conversations=generate_result.conversations[0],
                 model=self.llm.default_model_name,
             )
-
-            with open(args.target_file, "w") as file:
-                file.write(content)
+            
 

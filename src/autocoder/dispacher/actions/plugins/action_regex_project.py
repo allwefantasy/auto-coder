@@ -146,6 +146,4 @@ class ActionRegexProject:
                     conversations=generate_result.conversations[0],
                     model=self.llm.default_model_name,
                 )
-
-            with open(args.target_file, "w") as file:
-                file.write(content)
+            

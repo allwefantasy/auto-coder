@@ -142,7 +142,7 @@ class ConfigValidator:
     }
 
     @classmethod
-    def validate(cls, key: str, value: Any, product_mode: str) -> Any:
+    def validate(cls, key: str, value: Any, product_mode: str) -> Any:        
         # 获取配置规范
         spec = cls.CONFIG_SPEC.get(key)
         if not spec:

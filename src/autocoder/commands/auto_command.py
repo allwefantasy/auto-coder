@@ -142,6 +142,7 @@ class CommandConfig(BaseModel):
     conf_import: SkipValidation[Callable]
     index_export: SkipValidation[Callable]
     index_import: SkipValidation[Callable]
+    exclude_files: SkipValidation[Callable]
 
     
 
@@ -1163,7 +1164,22 @@ class CommandAutoTuner:
          
         </usage>
         </command>
-       
+
+        <command>
+        <name>exclude_files</name>
+        <description>排除指定文件。</description>
+        <usage>
+         该命令接受一个参数 file_patterns, 为要排除的文件模式字符串列表。
+         
+         使用例子,比如你想要排除 package-lock.json 文件，你可以这样调用：
+        
+         exclude_files(file_patterns=["regex://.*/package-lock\.json"])
+         
+         注意：
+         - 文件模式字符串必须以 regex:// 开头
+         - regex:// 后面部分是标准的正则表达式         
+        </usage>
+        </command>
         </commands>
         
         
@@ -1194,6 +1210,7 @@ class CommandAutoTuner:
             "conf_import": self.command_config.conf_import,
             "index_export": self.command_config.index_export,
             "index_import": self.command_config.index_import,
+            "exclude_files": self.command_config.exclude_files,
 
             "run_python": self.tools.run_python_code,            
             "get_related_files_by_symbols": self.tools.get_related_files_by_symbols,
