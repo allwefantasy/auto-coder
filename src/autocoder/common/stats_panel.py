@@ -57,13 +57,16 @@ class StatsPanel:
              Panel(
                  Text.assemble(
                      ("🤖 模型: ", "bold"), model_names + "\n",
-                     self._format_mini_progress(int(duration), 100, "cyan"),
+                     self._format_mini_progress(int(duration), 60, "cyan"),
                      (" ⏱", "cyan"), f" {duration:.1f}s │ ",
                      self._format_mini_progress(sampling_count, 100, "blue"),
                      (" 🔢", "blue"), f" {sampling_count}\n",
                      ("📥", "green"), " ", self._format_mini_progress(input_tokens, 2000, "green"),
                      f" {input_tokens} │ ",
                      ("📤", "bright_green"), " ", self._format_mini_progress(output_tokens, 2000, "bright_green"),
+                     ("📥", "green"), " ", self._format_mini_progress(input_tokens, 65536, "green"),
+                     f" {input_tokens} │ ",
+                     ("📤", "bright_green"), " ", self._format_mini_progress(output_tokens, 65536, "bright_green"),
                      f" {output_tokens}"
                  ),
                  border_style="cyan",
@@ -72,10 +75,10 @@ class StatsPanel:
              Panel(
                  Text.assemble(
                      ("💵 成本: ", "bold"), 
-                     self._format_mini_progress(int(input_cost*1000), 100, "yellow"),
+                     self._format_mini_progress(int(input_cost*1000), 500, "yellow"),
                      (" IN", "yellow"), f" {input_cost:.3f}\n",
                      ("💸 ", "bold"), 
-                     self._format_mini_progress(int(output_cost*1000), 100, "gold1"),
+                     self._format_mini_progress(int(output_cost*1000), 500, "gold1"),
                      (" OUT", "gold1"), f" {output_cost:.3f}\n",
                      self._format_speed_bar(speed)  # 复用原速度条
                  ),
@@ -93,6 +96,7 @@ class StatsPanel:
          )
 
          self.console.print(main_panel)
+
     
     def _format_mini_progress(self, value: int, max_value: int, color: str) -> Text:
         """紧凑型进度条"""
