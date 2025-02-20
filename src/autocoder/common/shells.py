@@ -300,29 +300,41 @@ def execute_shell_command(command: str):
         encoding = get_terminal_encoding()
         terminal_name = get_terminal_name()
 
+        # Windows系统特殊处理
+        if sys.platform == 'win32':
+            # 设置控制台代码页为 UTF-8
+            os.system('chcp 65001 > nul')
+            # 强制使用 UTF-8 编码
+            encoding = 'utf-8'
+
         # Create temp script file
         if sys.platform == 'win32':
             if is_running_in_powershell():
-                # Create temp PowerShell script
+                # Create temp PowerShell script with UTF-8 BOM
                 temp_file = tempfile.NamedTemporaryFile(
-                    mode='w',
+                    mode='wb',
                     suffix='.ps1',
-                    encoding=encoding,
                     delete=False
                 )
-                temp_file.write(command)
+                # 添加 UTF-8 BOM
+                temp_file.write(b'\xef\xbb\xbf')
+                # 写入命令内容
+                temp_file.write(command.encode('utf-8'))
                 temp_file.close()
                 # Execute the temp script with PowerShell
                 command = f'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{temp_file.name}"'
             elif is_running_in_cmd():
-                # Create temp batch script
+                # Create temp batch script with UTF-8
                 temp_file = tempfile.NamedTemporaryFile(
-                    mode='w',
+                    mode='wb',
                     suffix='.cmd',
-                    encoding=encoding,
                     delete=False
                 )
-                temp_file.write(f"@echo off\n{command}")
+                # 添加 UTF-8 BOM
+                temp_file.write(b'\xef\xbb\xbf')
+                # 写入命令内容
+                content = f"@echo off\nchcp 65001 > nul\n{command}"
+                temp_file.write(content.encode('utf-8'))
                 temp_file.close()
                 # Execute the temp batch script
                 command = f'cmd.exe /c "{temp_file.name}"'
@@ -331,7 +343,7 @@ def execute_shell_command(command: str):
             temp_file = tempfile.NamedTemporaryFile(
                 mode='w',
                 suffix='.sh',
-                encoding=encoding,
+                encoding='utf-8',
                 delete=False
             )
             temp_file.write('#!/bin/bash\n' + command)
@@ -340,16 +352,20 @@ def execute_shell_command(command: str):
             os.chmod(temp_file.name, 0o755)
             command = temp_file.name
 
-        # Start subprocess
+        # Start subprocess with UTF-8 encoding
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            shell=True
+            shell=True,
+            encoding='utf-8',  # 直接指定 UTF-8 编码
+            errors='replace'   # 处理无法解码的字符
         )
 
-        # Safe decoding helper
+        # Safe decoding helper (for binary output)
         def safe_decode(byte_stream, encoding):
+            if isinstance(byte_stream, str):
+                return byte_stream.strip()
             try:
                 return byte_stream.decode(encoding).strip()
             except UnicodeDecodeError:
