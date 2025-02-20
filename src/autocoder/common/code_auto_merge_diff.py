@@ -462,7 +462,7 @@ class CodeAutoMergeDiff:
             full_path = self.abs_root_path(path)
 
             if not os.path.exists(full_path):            
-                with open(full_path, "w",encoding="utf-8") as f:
+                with open(full_path, "w") as f:
                     f.write("")
             
             content = FileUtils.read_file(full_path)
@@ -531,7 +531,7 @@ class CodeAutoMergeDiff:
     def _merge_code(self, content: str,force_skip_git:bool=False):        
         total = 0
         
-        file_content = open(self.args.file).read()
+        file_content = FileUtils.read_file(self.args.file)
         md5 = hashlib.md5(file_content.encode('utf-8')).hexdigest()
         # get the file name 
         file_name = os.path.basename(self.args.file)

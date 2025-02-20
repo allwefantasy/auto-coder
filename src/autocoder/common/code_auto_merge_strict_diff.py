@@ -10,6 +10,7 @@ import hashlib
 from pathlib import Path
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
 from autocoder.common.code_modification_ranker import CodeModificationRanker
+from autocoder.common import files as  FileUtils
 
 class PathAndCode(pydantic.BaseModel):
     path: str
@@ -195,8 +196,7 @@ class CodeAutoMergeStrictDiff:
                 continue
                 
             if full_path not in file_content_mapping:
-                with open(full_path, "r") as f:
-                    file_content_mapping[full_path] = f.read()
+                file_content_mapping[full_path] = FileUtils.read_file(full_path)
             
             try:
                 import patch
@@ -224,7 +224,7 @@ class CodeAutoMergeStrictDiff:
     def _merge_code(self, content: str, force_skip_git: bool = False):        
         total = 0
         
-        file_content = open(self.args.file).read()
+        file_content = FileUtils.read_file(self.args.file)
         md5 = hashlib.md5(file_content.encode('utf-8')).hexdigest()
         # get the file name 
         file_name = os.path.basename(self.args.file)

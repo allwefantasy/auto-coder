@@ -289,7 +289,7 @@ class CodeAutoMergeEditBlock:
         )
 
     def _merge_code(self, content: str, force_skip_git: bool = False):
-        file_content = open(self.args.file).read()
+        file_content = FileUtils.read_file(self.args.file)
         md5 = hashlib.md5(file_content.encode("utf-8")).hexdigest()
         file_name = os.path.basename(self.args.file)
 
