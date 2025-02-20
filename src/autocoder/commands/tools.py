@@ -27,6 +27,7 @@ from autocoder.utils.queue_communicate import (
 )
 import sys
 import io
+from autocoder.common import files as files_utils
 
 @byzerllm.prompt()
 def detect_rm_command(command: str) -> Bool:
@@ -286,34 +287,33 @@ class AutoCommandTools:
 
         result = []
         try:
-            with open(absolute_path, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
+            
+            lines = files_utils.read_lines(absolute_path)            
+            # Find all lines containing the keyword
+            keyword_lines = []
+            for i, line in enumerate(lines):
+                if keyword.lower() in line.lower():
+                    keyword_lines.append(i)
+            
+            # Process each keyword line and its surrounding range
+            processed_ranges = set()
+            for line_num in keyword_lines:
+                # Calculate range boundaries
+                start = max(0, line_num - before_size)
+                end = min(len(lines), line_num + after_size + 1)
                 
-                # Find all lines containing the keyword
-                keyword_lines = []
-                for i, line in enumerate(lines):
-                    if keyword.lower() in line.lower():
-                        keyword_lines.append(i)
+                # Check if this range overlaps with any previously processed range
+                range_key = (start, end)
+                if range_key in processed_ranges:
+                    continue
                 
-                # Process each keyword line and its surrounding range
-                processed_ranges = set()
-                for line_num in keyword_lines:
-                    # Calculate range boundaries
-                    start = max(0, line_num - before_size)
-                    end = min(len(lines), line_num + after_size + 1)
-                    
-                    # Check if this range overlaps with any previously processed range
-                    range_key = (start, end)
-                    if range_key in processed_ranges:
-                        continue
-                    
-                    processed_ranges.add(range_key)
-                    
-                    # Format the content block
-                    content = f"##File: {absolute_path}\n"
-                    content += f"##Line: {start+1}-{end}\n\n"
-                    content += "".join(lines[start:end])
-                    result.append(content)
+                processed_ranges.add(range_key)
+                
+                # Format the content block
+                content = f"##File: {absolute_path}\n"
+                content += f"##Line: {start+1}-{end}\n\n"
+                content += "".join(lines[start:end])
+                result.append(content)
                 
         except Exception as e:
             v = f"Error reading file {absolute_path}: {str(e)}"
@@ -403,23 +403,22 @@ class AutoCommandTools:
                         if path in os.path.join(root, file):
                             absolute_path = os.path.join(root, file)
                             break
-
-            with open(absolute_path, "r", encoding="utf-8") as f:
-                if path in file_line_ranges:
-                    # Read specific line ranges
-                    lines = f.readlines()
-                    filtered_lines = []
-                    for start, end in file_line_ranges[path]:
-                        # Adjust for 0-based indexing
-                        start = max(0, start - 1)
-                        end = min(len(lines), end)
-                        content = "".join(lines[start:end])
-                        filtered_lines.extend(f"##File: {absolute_path}\n##Line: {start}-{end}\n\n{content}")
-                    source_code = "".join(filtered_lines)
-                else:
-                    # Read entire file if no range specified
-                    content = f.read()
-                    source_code = f"##File: {absolute_path}\n\n{content}"
+            
+            if path in file_line_ranges:
+                # Read specific line ranges
+                lines = files_utils.read_lines(absolute_path)
+                filtered_lines = []
+                for start, end in file_line_ranges[path]:
+                    # Adjust for 0-based indexing
+                    start = max(0, start - 1)
+                    end = min(len(lines), end)
+                    content = "".join(lines[start:end])
+                    filtered_lines.extend(f"##File: {absolute_path}\n##Line: {start}-{end}\n\n{content}")
+                source_code = "".join(filtered_lines)
+            else:
+                # Read entire file if no range specified
+                content = files_utils.read_file(absolute_path)
+                source_code = f"##File: {absolute_path}\n\n{content}"
                 
                 sc = SourceCode(module_name=absolute_path, source_code=source_code)
                 source_code_str += f"{sc.source_code}\n\n"
@@ -510,13 +509,12 @@ class AutoCommandTools:
             for file in files:
                 file_path = os.path.join(root, file)
                 try:
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                        if keyword.lower() in content.lower():
-                            matched_files.append(file_path)
-                            # Limit to first 10 matches
-                            if len(matched_files) >= 10:
-                                break
+                    content = files_utils.read_file(file_path)
+                    if keyword.lower() in content.lower():
+                        matched_files.append(file_path)
+                        # Limit to first 10 matches
+                        if len(matched_files) >= 10:
+                            break
                 except Exception:
                     # Skip files that can't be read
                     pass

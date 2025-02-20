@@ -30,6 +30,18 @@ def read_file(file_path):
         file_path=file_path, 
         encodings=", ".join(encodings)))
 
+def read_lines(file_path:str):
+    encodings = ['utf-8', 'gbk', 'utf-16', 'latin-1']
+    for encoding in encodings:
+        try:
+            with open(file_path, 'r', encoding=encoding) as f:
+                return f.readlines()
+        except UnicodeDecodeError:
+            continue
+    raise ValueError(get_message_with_format("file_decode_error", 
+        file_path=file_path, 
+        encodings=", ".join(encodings)))
+
 
 
 def save_file(file_path: str, content: Union[str, List[str]]) -> None:
