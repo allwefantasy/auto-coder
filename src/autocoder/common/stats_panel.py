@@ -33,7 +33,7 @@ class StatsPanel:
         bar.append(f" {value} ({label})", style="bold white")
         return bar
 
-     def generate(
+    def generate(
          self,
          model_names: str,
          duration: float,
