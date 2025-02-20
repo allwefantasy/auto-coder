@@ -2411,9 +2411,42 @@ def list_files():
 
 
 def gen_and_exec_shell_command(query: str):
+    from rich.prompt import Confirm
+    from rich.panel import Panel
+    from rich.text import Text
+    from rich.console import Console
+    from autocoder.common.printer import Printer
+    from autocoder.common.auto_coder_lang import get_message
+
+    console = Console()
+    printer = Printer()
+
+    # Generate the shell script
     shell_script = generate_shell_command(query)
-    if confirm(f"Execute the following shell command?\n{shell_script}"):
+
+    # Display the generated script in a rich panel
+    console.print(
+        Panel(
+            Text(shell_script, style="green"),
+            title=printer.get_message_from_key("generated_shell_script"),
+            border_style="blue",
+            padding=(1, 2)
+        )
+    )
+
+    # Ask for confirmation using rich
+    if Confirm.ask(
+        printer.get_message_from_key("confirm_execute_shell_script"),
+        default=False
+    ):
         execute_shell_command(shell_script)
+    else:
+        console.print(
+            Panel(
+                printer.get_message_from_key("shell_script_not_executed"),
+                border_style="yellow"
+            )
+        )
 
 
 def lib_command(args: List[str]):
