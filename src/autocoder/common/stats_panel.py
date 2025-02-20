@@ -44,68 +44,58 @@ class StatsPanel:
          output_cost: float,
          speed: float,
      ) -> None:
-         """生成并显示统计面板"""
-         # 构建带颜色的主标题
-         title = Text("代码生成统计报告", style="bold cyan")
-         title.stylize("underline", 0, 6)
+         """新版紧凑布局"""
+         # 复合标题（带图标和关键数据）
+         title = Text.assemble(
+             "📊 ", ("代码生成统计", "bold cyan underline"),
+             " │ ⚡", (f"{speed:.1f}t/s ", "bold green"),
+             "│ 💰", (f"${input_cost + output_cost:.4f}", "bold yellow")
+         )
 
-         # 构建各统计模块
-         modules = [
+         # 紧凑网格布局
+         grid = [
              Panel(
                  Text.assemble(
-                     ("🧠 模型: ", "bold"),
-                     model_names + "\n",
-                     ("⏱ 总耗时: ", "bold"),
-                     self._format_progress_bar(int(duration), 100, f"{duration:.2f}s", "blue") + "\n",
-                     ("🔢 采样数: ", "bold"),
-                     self._format_progress_bar(sampling_count, 100, str(sampling_count), "cyan")
+                     ("🤖 模型: ", "bold"), model_names + "\n",
+                     self._format_mini_progress(int(duration), 100, "cyan"),
+                     (" ⏱", "cyan"), f" {duration:.1f}s │ ",
+                     self._format_mini_progress(sampling_count, 100, "blue"),
+                     (" 🔢", "blue"), f" {sampling_count}\n",
+                     ("📥", "green"), " ", self._format_mini_progress(input_tokens, 2000, "green"),
+                     f" {input_tokens} │ ",
+                     ("📤", "bright_green"), " ", self._format_mini_progress(output_tokens, 2000, "bright_green"),
+                     f" {output_tokens}"
                  ),
-                 title="[bold]基础信息[/]",
-                 border_style="blue"
+                 border_style="cyan",
+                 padding=(0, 2)
              ),
              Panel(
                  Text.assemble(
-                     ("📥 输入token: ", "bold"),
-                     self._format_progress_bar(input_tokens, 2000, str(input_tokens), "green") + "\n",
-                     ("📤 输出token: ", "bold"),
-                     self._format_progress_bar(output_tokens, 2000, str(output_tokens), "bright_green") + "\n",
-                     ("🧮 总数: ", "bold"),
-                     self._format_progress_bar(input_tokens + output_tokens, 4000, str(input_tokens + output_tokens), "dark_green")
+                     ("💵 成本: ", "bold"), 
+                     self._format_mini_progress(int(input_cost*1000), 100, "yellow"),
+                     (" IN", "yellow"), f" ${input_cost:.3f}\n",
+                     ("💸 ", "bold"), 
+                     self._format_mini_progress(int(output_cost*1000), 100, "gold1"),
+                     (" OUT", "gold1"), f" ${output_cost:.3f}\n",
+                     self._format_speed_bar(speed)  # 复用原速度条
                  ),
-                 title="[bold]Token统计[/]",
-                 border_style="green"
-             ),
-             Panel(
-                 Text.assemble(
-                     ("💵 输入成本: ", "bold"),
-                     self._format_progress_bar(int(input_cost * 1000), 100, f"${input_cost:.4f}", "yellow") + "\n",
-                     ("💸 输出成本: ", "bold"),
-                     self._format_progress_bar(int(output_cost * 1000), 100, f"${output_cost:.4f}", "gold1") + "\n",
-                     ("💰 总成本: ", "bold"),
-                     self._format_progress_bar(int((input_cost + output_cost) * 1000), 200, f"${input_cost + output_cost:.4f}", "orange3")
-                 ),
-                 title="[bold]成本分析[/]",
-                 border_style="yellow"
+                 border_style="yellow",
+                 padding=(0, 1)
              )
          ]
 
-         # 构建速度可视化面板
-         speed_panel = Panel(
-             Text.assemble(
-                 ("性能速度\n", "bold underline"),
-                 self._format_speed_bar(speed),
-                 "\n\n等级说明:\n",
-                 ("▮▮▮ 低 (<30)  ", "red"), 
-                 ("▮▮▮▮▮ 中 (30-60)  ", "yellow"), 
-                 ("▮▮▮▮▮▮▮ 高 (>60)", "green")
-             ),
-             title="[bold]速度分析[/]",
-             border_style="magenta",
+         # 组合布局
+         main_panel = Panel(
+             Columns(grid, equal=True, expand=True),
+             title=title,
+             border_style="bright_blue",
              padding=(1, 2)
          )
 
-         # 组合所有内容
-         grid = Columns([*modules, speed_panel], equal=True, expand=True)
-         full_panel = Panel(grid, title=title, padding=(1, 3), border_style="bright_blue")
-
-         self.console.print(full_panel)
+         self.console.print(main_panel)
+    def _format_mini_progress(self, value: int, max_value: int, color: str) -> Text:
+        """紧凑型进度条"""
+        progress = min(value / max_value, 1.0)
+        filled = "▮" * int(progress * 10)  # 缩短进度条长度
+        empty = "▯" * (10 - len(filled))
+        return Text(filled + empty, style=color)
