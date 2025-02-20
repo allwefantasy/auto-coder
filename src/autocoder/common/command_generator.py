@@ -43,7 +43,7 @@ def _generate_shell_script(user_input: str) -> str:
     }
 
 
-def generate_shell_script(user_input: str, llm: Union[byzerllm.ByzerLLM,byzerllm.ByzerLLMStream]) -> str:
+def generate_shell_script(user_input: str, llm: Union[byzerllm.ByzerLLM,byzerllm.SimpleByzerLLM]) -> str:
     # 获取 prompt 内容
     prompt = _generate_shell_script.prompt(user_input=user_input)
     if llm.get_sub_client("chat_model"):
