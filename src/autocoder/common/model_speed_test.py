@@ -287,7 +287,6 @@ def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_w
     """
     运行所有已激活模型的速度测试
     
-
     Args:
         product_mode: 产品模式 (lite/pro)
         test_rounds: 每个模型测试的轮数
@@ -295,15 +294,6 @@ def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_w
     """
     printer = Printer()
     console = Console()
-
-    # 获取所有模型
-    models_data = models_module.load_models()
-    active_models = [m for m in models_data if "api_key" in m] if product_mode == "lite" else models_data
-
-    if not active_models:
-        printer.print_in_terminal("models_no_active", style="yellow")
-        return
-
     
     # 获取所有模型
     models_data = models_module.load_models()
@@ -321,7 +311,6 @@ def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_w
         show_lines=True
     )
     
-
     table.add_column("Model", style="cyan", width=30)
     table.add_column("Tokens/s", style="green", width=15)
     table.add_column("First Token(s)", style="magenta", width=15)
@@ -330,21 +319,6 @@ def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_w
     table.add_column("Input Tokens Cost", style="yellow", width=15)
     table.add_column("Generated Tokens Cost", style="yellow", width=15)
     table.add_column("Status", style="red", width=20)
-
-    # 准备测试参数
-    test_args = [(model["name"], product_mode, test_rounds, enable_long_context) for model in active_models]
-
-    # 存储结果用于排序
-    results_list = []
-
-    # 使用线程池并发测试
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        printer.print_in_terminal("models_testing_start", style="yellow")
-
-        # 提交所有测试任务并获取future对象
-        future_to_model = {executor.submit(test_model_speed_wrapper, args): args[0] 
-                          for args in test_args}
-
     
     # 准备测试参数
     test_args = [(model["name"], product_mode, test_rounds, enable_long_context) for model in active_models]
@@ -372,10 +346,6 @@ def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_w
             try:
                 _, results = future.result()
                 
-
-            try:
-                _, results = future.result()
-
                 if results["success"]:
                     status = "✓"
                     results['status'] = status
@@ -405,7 +375,6 @@ def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_w
 
     # 按速度排序
     results_list.sort(key=lambda x: x[0], reverse=True)
-
     
     # 添加排序后的结果到表格
     for tokens_per_second, model_name, results in results_list:        
@@ -413,13 +382,11 @@ def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_w
             model_name,  
             f"{tokens_per_second:.2f}",
             f"{results['first_token_time']:.2f}",
-            f"{results['input_tokens_count']} ({results['input_tokens_count']/65536*100:.2f}%)",
-            f"{results['generated_tokens_count']} ({results['generated_tokens_count']/65536*100:.2f}%)",
+            f"{results['input_tokens_count']}",
+            f"{results['generated_tokens_count']}",
             f"{results['input_tokens_cost']:.4f}",
             f"{results['generated_tokens_cost']:.4f}",            
             results['status']
         )        
-
-    console.print(Panel(table, border_style="blue"))
     
     console.print(Panel(table, border_style="blue"))
