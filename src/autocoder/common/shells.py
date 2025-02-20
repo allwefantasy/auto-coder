@@ -22,18 +22,179 @@ def get_terminal_name() -> str:
     else:
         return _get_unix_terminal_name()
 
+def _is_running_in_powershell() -> bool:
+    """
+    检查当前 Python 进程是否在 PowerShell 环境中运行
+    Returns:
+        bool: True 表示在 PowerShell 环境中，False 表示不在
+    """
+    try:
+        # 方法1: 检查特定的 PowerShell 环境变量
+        if any(key for key in os.environ if 'POWERSHELL' in key.upper()):
+            return True
+
+        # 方法2: 尝试执行 PowerShell 特定命令
+        try:
+            result = subprocess.run(
+                ['powershell', '-NoProfile', '-Command', '$PSVersionTable'],
+                capture_output=True,
+                timeout=1
+            )
+            if result.returncode == 0:
+                return True
+        except Exception:
+            pass
+
+        # 方法3: 检查父进程
+        try:
+            import psutil
+            current_process = psutil.Process()
+            parent = current_process.parent()
+            if parent:
+                parent_name = parent.name().lower()
+                if 'powershell' in parent_name or 'pwsh' in parent_name:
+                    return True
+                
+                # 递归检查父进程链
+                while parent and parent.pid != 1:  # 1 是系统初始进程
+                    if 'powershell' in parent.name().lower() or 'pwsh' in parent.name().lower():
+                        return True
+                    parent = parent.parent()
+        except Exception:
+            pass
+
+        # 方法4: 检查命令行参数
+        try:
+            import sys
+            if any('powershell' in arg.lower() for arg in sys.argv):
+                return True
+        except Exception:
+            pass
+
+        return False
+    except Exception:
+        return False
+
+def _is_running_in_cmd() -> bool:
+    """
+    检查当前 Python 进程是否在 CMD 环境中运行
+    Returns:
+        bool: True 表示在 CMD 环境中，False 表示不在
+    """
+    try:
+        # 方法1: 检查特定的 CMD 环境变量
+        env = os.environ
+        # CMD 特有的环境变量
+        if 'PROMPT' in env and not any(key for key in env if 'POWERSHELL' in key.upper()):
+            return True
+        
+        # 方法2: 检查 ComSpec 环境变量
+        comspec = env.get('ComSpec', '').lower()
+        if 'cmd.exe' in comspec and not _is_running_in_powershell():
+            return True
+
+        # 方法3: 尝试执行 CMD 特定命令
+        try:
+            # ver 是 CMD 的内置命令
+            result = subprocess.run(
+                ['cmd', '/c', 'ver'],
+                capture_output=True,
+                timeout=1
+            )
+            if result.returncode == 0 and not _is_running_in_powershell():
+                return True
+        except Exception:
+            pass
+
+        # 方法4: 检查父进程
+        try:
+            import psutil
+            current_process = psutil.Process()
+            parent = current_process.parent()
+            if parent:
+                parent_name = parent.name().lower()
+                if 'cmd.exe' in parent_name:
+                    return True
+                
+                # 递归检查父进程链
+                while parent and parent.pid != 1:  # 1 是系统初始进程
+                    if 'cmd.exe' in parent.name().lower():
+                        return True
+                    parent = parent.parent()
+        except Exception:
+            pass
+
+        return False
+    except Exception:
+        return False
+
 def _get_windows_terminal_name() -> str:
     """Windows 系统终端检测"""
-    # 检查是否在 PowerShell
-    if 'POWERSHELL_DISTRIBUTION_CHANNEL' in os.environ:
+    # 检查环境变量
+    env = os.environ
+
+    # 首先使用新方法检查是否在 PowerShell 环境中
+    if _is_running_in_powershell():
+        # 进一步区分是否在 VSCode 的 PowerShell 终端
+        if 'VSCODE_GIT_IPC_HANDLE' in env:
+            return 'vscode-powershell'
         return 'powershell'
     
+    # 检查是否在 CMD 环境中
+    if _is_running_in_cmd():
+        # 区分是否在 VSCode 的 CMD 终端
+        if 'VSCODE_GIT_IPC_HANDLE' in env:
+            return 'vscode-cmd'
+        return 'cmd'
+    
     # 检查是否在 Git Bash
-    if 'MINGW' in platform.system():
+    if ('MINGW' in platform.system() or 
+        'MSYSTEM' in env or 
+        any('bash.exe' in path.lower() for path in env.get('PATH', '').split(os.pathsep))):
+        # 区分是否在 VSCode 的 Git Bash 终端
+        if 'VSCODE_GIT_IPC_HANDLE' in env:
+            return 'vscode-git-bash'
         return 'git-bash'
     
+    # 检查是否在 VSCode 的集成终端
+    if 'VSCODE_GIT_IPC_HANDLE' in env:
+        if 'WT_SESSION' in env:  # Windows Terminal
+            return 'vscode-windows-terminal'
+        return 'vscode-terminal'
+    
+    # 检查是否在 Windows Terminal
+    if 'WT_SESSION' in env:
+        return 'windows-terminal'
+    
+    # 检查是否在 Cygwin
+    if 'CYGWIN' in platform.system():
+        return 'cygwin'
+    
+    # 检查 TERM 环境变量
+    term = env.get('TERM', '').lower()
+    if term:
+        if 'xterm' in term:
+            return 'xterm'
+        elif 'cygwin' in term:
+            return 'cygwin'
+    
+    # 检查进程名
+    try:
+        import psutil
+        parent = psutil.Process().parent()
+        if parent:
+            parent_name = parent.name().lower()
+            if 'powershell' in parent_name:
+                return 'powershell'
+            elif 'windowsterminal' in parent_name:
+                return 'windows-terminal'
+            elif 'cmd.exe' in parent_name:
+                return 'cmd'
+    except (ImportError, Exception):
+        pass
+    
     # 默认返回 cmd.exe
-    return 'cmd.exe'
+    return 'cmd'
 
 def _get_unix_terminal_name() -> str:
     """Linux/Mac 系统终端检测"""
@@ -150,7 +311,7 @@ def execute_shell_command(command: str):
 
         # Create temp script file
         if sys.platform == 'win32':
-            if terminal_name == 'powershell':
+            if _is_running_in_powershell():
                 # Create temp PowerShell script
                 temp_file = tempfile.NamedTemporaryFile(
                     mode='w',
@@ -162,7 +323,7 @@ def execute_shell_command(command: str):
                 temp_file.close()
                 # Execute the temp script with PowerShell
                 command = f'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{temp_file.name}"'
-            elif terminal_name == 'cmd.exe':
+            elif _is_running_in_cmd():
                 # Create temp batch script
                 temp_file = tempfile.NamedTemporaryFile(
                     mode='w',

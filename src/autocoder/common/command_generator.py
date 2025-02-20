@@ -15,6 +15,11 @@ def _generate_shell_script(user_input: str) -> str:
     Python版本: {{ env_info.python_version }}
     终端类型: {{ env_info.shell_type }}
     终端编码: {{ env_info.shell_encoding }}
+    
+    {%- if shell_type %}
+    脚本类型：{{ shell_type }}
+    {%- endif %}
+
     {%- if env_info.conda_env %}
     Conda环境: {{ env_info.conda_env }}
     {%- endif %}
@@ -22,9 +27,9 @@ def _generate_shell_script(user_input: str) -> str:
     虚拟环境: {{ env_info.virtualenv }}
     {%- endif %}    
 
-    根据用户的输入以及当前的操作系统和Shell类型生成合适的 shell 脚本，注意只能生成一个shell脚本，不要生成多个。
-    如果是 windows 系统，要注意区分 cmd 和 powershell 语法的不同。 linux 和 mac 也需要区分各自的shell语法的不同。
-
+    根据用户的输入以及当前的操作系统和终端类型以及脚本类型生成脚本，
+    注意只能生成一个shell脚本，不要生成多个。    
+    
     用户输入: {{ user_input }}
 
     请生成一个适当的脚本来执行用户的请求。确保脚本是安全的,并且可以在当前Shell环境中运行。
@@ -35,10 +40,15 @@ def _generate_shell_script(user_input: str) -> str:
     # 你的 script 脚本内容
     ```
     """
-    env_info = detect_env()    
+    env_info = detect_env() 
+    shell_type = "bash"
+    if shells.is_running_in_cmd():
+        shell_type = "cmd"
+    elif shells.is_running_in_powershell():
+        shell_type = "powershell"
     return {
         "env_info": env_info,
-        "shell_type": shells.get_terminal_name(),
+        "shell_type": shell_type,
         "shell_encoding": shells.get_terminal_encoding()
     }
 
