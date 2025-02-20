@@ -17,6 +17,7 @@ def export_conf(project_root: str, export_path: str) -> bool:
     Returns:
         bool: True if successful, False otherwise
     """
+    project_root = os.path.abspath(project_root) or os.getcwd()
     try:
         memory_path = os.path.join(project_root, ".auto-coder", "plugins", "chat-auto-coder", "memory.json")
         if not os.path.exists(memory_path):
@@ -43,6 +44,7 @@ def export_conf(project_root: str, export_path: str) -> bool:
 
 
 def import_conf(project_root: str, import_path: str) -> bool:
+    project_root = os.path.abspath(project_root) or os.getcwd()
     printer = Printer()
     """
     Import conf from a specified directory into memory.json

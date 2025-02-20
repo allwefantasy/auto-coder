@@ -145,6 +145,8 @@ commands = [
     "/mcp",
     "/models",
     "/auto",
+    "/conf/export",
+    "/conf/import",
 ]
 
 
@@ -2567,6 +2569,15 @@ def execute_shell_command(command: str):
     from autocoder.common.shells import execute_shell_command as shell_exec
     shell_exec(command)
 
+
+def conf_export(path: str):
+    from autocoder.common.conf_import_export import export_conf
+    export_conf(os.getcwd(), path)
+
+def conf_import(path: str):
+    from autocoder.common.conf_import_export import import_conf
+    import_conf(os.getcwd(), path)
+
 @run_in_raw_thread()
 def auto_command(params,query: str):
     """处理/auto指令"""
@@ -2805,17 +2816,11 @@ def main():
 
             elif user_input.startswith("/index/export"):
                 export_path = user_input[len("/index/export"):].strip()
-                if not export_path:
-                    print("Please specify the export path")
-                else:
-                    index_export(export_path)
+                index_export(export_path)                    
 
             elif user_input.startswith("/index/import"):
-                import_path = user_input[len("/index/import"):].strip()
-                if not import_path:
-                    print("Please specify the import path")
-                else:
-                    index_import(import_path)
+                import_path  = user_input[len("/index/import"):].strip()
+                index_import(import_path)                    
 
             elif user_input.startswith("/list_files"):
                 list_files()
@@ -2833,7 +2838,17 @@ def main():
                     print(memory["mode"])
                 else:
                     memory["mode"] = conf                    
-
+            
+            elif user_input.startswith("/conf/export"):
+                from autocoder.common.conf_import_export import export_conf
+                export_path = user_input[len("/conf/export"):].strip()
+                export_conf(os.getcwd(), export_path)                    
+            
+            elif user_input.startswith("/conf/import"):
+                from autocoder.common.conf_import_export import import_conf
+                import_path = user_input[len("/conf/import"):].strip()
+                import_conf(os.getcwd(), import_path)                    
+                    
             elif user_input.startswith("/conf"):
                 conf = user_input[len("/conf"):].strip()
                 if not conf:

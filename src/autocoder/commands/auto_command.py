@@ -1111,6 +1111,18 @@ class CommandAutoTuner:
         </usage>
         </command>
 
+        <command>
+        <name>conf_export</name>
+        <description>配置管理命令，用于管理和控制配置。</description>
+        <usage>
+         该命令用于管理和控制配置。
+         
+         使用例子：
+         
+         conf_export(path="conf.json")
+         
+        </usage>
+        </command>
         </commands>        
         '''
 
