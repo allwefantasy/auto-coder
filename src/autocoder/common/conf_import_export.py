@@ -3,7 +3,9 @@ import json
 import shutil
 from loguru import logger
 from autocoder.common.printer import Printer
+from autocoder.common.result_manager import ResultManager
 
+result_manager = ResultManager()
 
 def export_conf(project_root: str, export_path: str) -> bool:
     printer = Printer()
@@ -35,10 +37,16 @@ def export_conf(project_root: str, export_path: str) -> bool:
         os.makedirs(export_path, exist_ok=True)
         with open(export_file, "w") as f:
             json.dump(conf_data, f, indent=2)
-
+        printer.print_in_terminal("conf_export_success", path=export_file)
+        result_manager.add_result(content=printer.get_message_from_key_with_format("conf_export_success", path=export_file), meta={"action": "conf_export", "input": {
+            "path": export_file
+        }})
         return True
 
     except Exception as e:
+        result_manager.add_result(content=printer.get_message_from_key_with_format("conf_export_error", error=str(e)), meta={"action": "conf_export", "input": {
+            "path": export_file
+        }})
         printer.print_in_terminal("conf_export_error", error=str(e))
         return False
 
@@ -82,9 +90,16 @@ def import_conf(project_root: str, import_path: str) -> bool:
         # Write updated memory
         with open(memory_path, "w") as f:
             json.dump(memory_data, f, indent=2)
-
+        
+        printer.print_in_terminal("conf_import_success", path=memory_path)
+        result_manager.add_result(content=printer.get_message_from_key_with_format("conf_import_success", path=memory_path), meta={"action": "conf_import", "input": {
+            "path": memory_path
+        }})
         return True
 
     except Exception as e:
+        result_manager.add_result(content=printer.get_message_from_key_with_format("conf_import_error", error=str(e)), meta={"action": "conf_import", "input": {
+            "path": memory_path
+        }})
         printer.print_in_terminal("conf_import_error", error=str(e))
         return False

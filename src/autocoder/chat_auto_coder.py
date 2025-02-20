@@ -2341,26 +2341,26 @@ def help(query: str):
     auto_config_tuner.tune(AutoConfigRequest(query=query))    
 
 @run_in_raw_thread()
-def index_export(export_path: str):
+def index_export(path: str):
     from autocoder.common.index_import_export import export_index
     from autocoder.common.printer import Printer
     printer = Printer()
     project_root = os.getcwd()
-    if export_index(project_root, export_path):
-        printer.print_in_terminal("index_export_success", path=export_path)
+    if export_index(project_root, path):
+        printer.print_in_terminal("index_export_success", path=path)
     else:
-        printer.print_in_terminal("index_export_fail", path=export_path)
+        printer.print_in_terminal("index_export_fail", path=path)
 
 @run_in_raw_thread()
-def index_import(import_path: str):
+def index_import(path: str):
     from autocoder.common.index_import_export import import_index
     from autocoder.common.printer import Printer
     printer = Printer()
     project_root = os.getcwd()
-    if import_index(project_root, import_path):
-        printer.print_in_terminal("index_import_success", path=import_path)
+    if import_index(project_root, path):
+        printer.print_in_terminal("index_import_success", path=path)
     else:
-        printer.print_in_terminal("index_import_fail", path=import_path)
+        printer.print_in_terminal("index_import_fail", path=path)
 
 @run_in_raw_thread()
 def index_query(query: str):
@@ -2615,7 +2615,11 @@ def auto_command(params,query: str):
                                  index_build=index_build,
                                  index_query=index_query,  
                                  execute_shell_command=execute_shell_command,  
-                                 generate_shell_command=generate_shell_command                                                                                       
+                                 generate_shell_command=generate_shell_command,
+                                 conf_export=conf_export,
+                                 conf_import=conf_import,
+                                 index_export=index_export,
+                                 index_import=index_import                                                                                       
                              ))
 
     # 生成建议

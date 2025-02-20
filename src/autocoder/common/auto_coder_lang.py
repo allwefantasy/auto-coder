@@ -140,8 +140,8 @@ MESSAGES = {
         "invalid_file_number": "⚠️ Invalid file number {{file_number}}, total files: {{total_files}}",
         "all_merge_results_failed": "⚠️ All merge attempts failed, returning first candidate",
         "only_one_merge_result_success": "✅ Only one merge result succeeded, returning that candidate",
-        "conf_import_success": "Successfully imported configuration: {{key}}",
-        "conf_export_success": "Successfully exported configuration: {{key}}",
+        "conf_import_success": "Successfully imported configuration: {{path}}",
+        "conf_export_success": "Successfully exported configuration: {{path}}",
         "conf_import_error": "Error importing configuration: {{error}}",
         "conf_export_error": "Error exporting configuration: {{error}}",
         "conf_import_invalid_format": "Invalid import configuration format, expected 'key:value'",
@@ -154,11 +154,13 @@ MESSAGES = {
         "confirm_execute_shell_script": "Do you want to execute this shell script?",
         "shell_script_not_executed": "Shell script was not executed",
         "conf_not_found": "Configuration file not found: {{path}}",
+        "index_export_success": "Index exported successfully: {{path}}",
+        "index_import_success": "Index imported successfully: {{path}}",
     },
     "zh": {
         "conf_not_found": "未找到配置文件: {{path}}",
-        "conf_import_success": "成功导入配置: {{key}}",
-        "conf_export_success": "成功导出配置: {{key}}",
+        "conf_import_success": "成功导入配置: {{path}}",
+        "conf_export_success": "成功导出配置: {{path}}",
         "conf_import_error": "导入配置出错: {{error}}",
         "conf_export_error": "导出配置出错: {{error}}",
         "conf_import_invalid_format": "导入配置格式无效, 应为 'key:value' 格式",
@@ -304,7 +306,9 @@ MESSAGES = {
         "conversation_pruning_start": "⚠️ 对话长度 {{total_tokens}} tokens 超过安全阈值 {{safe_zone}}，开始修剪对话。",
         "invalid_file_number": "⚠️ 无效的文件编号 {{file_number}}，总文件数为 {{total_files}}",        
         "all_merge_results_failed": "⚠️ 所有合并尝试都失败，返回第一个候选",
-        "only_one_merge_result_success": "✅ 只有一个合并结果成功，返回该候选"
+        "only_one_merge_result_success": "✅ 只有一个合并结果成功，返回该候选",
+        "index_export_success": "索引导出成功: {{path}}",
+        "index_import_success": "索引导入成功: {{path}}",
     }}
 
 

@@ -138,6 +138,10 @@ class CommandConfig(BaseModel):
     lib: SkipValidation[Callable]
     execute_shell_command: SkipValidation[Callable]
     generate_shell_command: SkipValidation[Callable]
+    conf_export: SkipValidation[Callable]
+    conf_import: SkipValidation[Callable]
+    index_export: SkipValidation[Callable]
+    index_import: SkipValidation[Callable]
 
     
 
@@ -298,6 +302,7 @@ class CommandAutoTuner:
             try:
                 response = to_model(content, AutoCommandResponse)  
                 if response.suggestions:
+                    print(response)
                     command = response.suggestions[0].command
                     parameters = response.suggestions[0].parameters                    
                     if parameters:
@@ -306,9 +311,9 @@ class CommandAutoTuner:
                         params_str = ""                    
                     return f"{command}({params_str})"
                 else:
-                    return printer.get_message_from_key("satisfied_prompt", style="green")                    
-            except Exception as e:
-                logger.error(f"Error extracting command response: {e}")
+                    return printer.get_message_from_key("satisfied_prompt")                    
+            except Exception as e:                
+                logger.error(f"Error extracting command response: {str(e)}")
                 return content
             
         model_name = ",".join(llms_utils.get_llm_names(self.llm))
@@ -1115,15 +1120,53 @@ class CommandAutoTuner:
         <name>conf_export</name>
         <description>配置管理命令，用于管理和控制配置。</description>
         <usage>
-         该命令用于管理和控制配置。
+         该命令导出当前软件的配置，并保存到指定路径。
          
-         使用例子：
-         
-         conf_export(path="conf.json")
+         使用例子：         
+         conf_export(path="导出路径,通常是.json文件")
          
         </usage>
         </command>
-        </commands>        
+
+        <command>
+        <name>conf_import</name>
+        <description>配置管理命令，用于管理和控制配置。</description>
+        <usage>
+         该命令导入指定路径的配置文件到当前软件。
+         
+         使用例子：         
+         conf_import(path="导入路径,通常是.json文件")
+         
+        </usage>
+        </command>
+
+        <command>
+        <name>index_export</name>
+        <description>索引管理命令，用于管理和控制索引。</description>
+        <usage>
+         该命令导出当前软件的索引，并保存到指定路径。
+         
+         使用例子：         
+         index_export(path="导出路径,通常是.json文件")
+         
+        </usage>
+        </command>
+
+        <command>
+        <name>index_import</name>
+        <description>索引管理命令，用于管理和控制索引。</description>
+        <usage>
+         该命令导入指定路径的索引文件到当前软件。
+         
+         使用例子：         
+         index_import(path="导入路径，通常最后是.json文件")
+         
+        </usage>
+        </command>
+       
+        </commands>
+        
+        
         '''
 
     def execute_auto_command(self, command: str, parameters: Dict[str, Any]) -> None:
@@ -1147,6 +1190,10 @@ class CommandAutoTuner:
             "models": self.command_config.models,
             "execute_shell_command": self.command_config.execute_shell_command,
             "generate_shell_command": self.command_config.generate_shell_command,
+            "conf_export": self.command_config.conf_export,
+            "conf_import": self.command_config.conf_import,
+            "index_export": self.command_config.index_export,
+            "index_import": self.command_config.index_import,
 
             "run_python": self.tools.run_python_code,            
             "get_related_files_by_symbols": self.tools.get_related_files_by_symbols,
@@ -1158,6 +1205,7 @@ class CommandAutoTuner:
             "get_project_related_files": self.tools.get_project_related_files,
             "ask_user":self.tools.ask_user,
             "read_file_with_keyword_ranges": self.tools.read_file_with_keyword_ranges,
+
             
                         
         }

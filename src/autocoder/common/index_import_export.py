@@ -3,6 +3,9 @@ import json
 import shutil
 from loguru import logger
 from autocoder.common.printer import Printer
+from autocoder.common.result_manager import ResultManager
+
+result_manager = ResultManager()
 
 
 def export_index(project_root: str, export_path: str) -> bool:
@@ -22,11 +25,11 @@ def export_index(project_root: str, export_path: str) -> bool:
         if not os.path.exists(index_path):
             printer.print_in_terminal("index_not_found", path=index_path)
             return False
-            
+
         # Read and convert paths
         with open(index_path, "r") as f:
             index_data = json.load(f)
-            
+
         # Convert absolute paths to relative
         converted_data = {}
         for abs_path, data in index_data.items():
@@ -35,20 +38,28 @@ def export_index(project_root: str, export_path: str) -> bool:
                 data["module_name"] = rel_path
                 converted_data[rel_path] = data
             except ValueError:
-                printer.print_in_terminal("index_convert_path_fail", path=abs_path)
+                printer.print_in_terminal(
+                    "index_convert_path_fail", path=abs_path)
                 converted_data[abs_path] = data
-        
+
         # Write to export location
         export_file = os.path.join(export_path, "index.json")
         os.makedirs(export_path, exist_ok=True)
         with open(export_file, "w") as f:
             json.dump(converted_data, f, indent=2)
-            
+        printer.print_in_terminal("index_export_success", path=export_file)
+        result_manager.add_result(content=printer.get_message_from_key_with_format("index_export_success", path=export_file), meta={"action": "index_export", "input": {
+            "path": export_file
+        }})
         return True
-        
+
     except Exception as e:
         printer.print_in_terminal("index_error", error=str(e))
+        result_manager.add_result(content=printer.get_message_from_key_with_format("index_error", error=str(e)), meta={"action": "index_export", "input": {
+            "path": export_file
+        }})
         return False
+
 
 def import_index(project_root: str, import_path: str) -> bool:
     printer = Printer()
@@ -67,11 +78,11 @@ def import_index(project_root: str, import_path: str) -> bool:
         if not os.path.exists(import_file):
             printer.print_in_terminal("index_not_found", path=import_file)
             return False
-            
+
         # Read and convert paths
         with open(import_file, "r") as f:
             index_data = json.load(f)
-            
+
         # Convert relative paths to absolute
         converted_data = {}
         for rel_path, data in index_data.items():
@@ -80,22 +91,31 @@ def import_index(project_root: str, import_path: str) -> bool:
                 data["module_name"] = abs_path
                 converted_data[abs_path] = data
             except Exception:
-                printer.print_in_terminal("index_convert_path_fail", path=rel_path)
+                printer.print_in_terminal(
+                    "index_convert_path_fail", path=rel_path)
                 converted_data[rel_path] = data
-        
+
         # Backup existing index
         index_path = os.path.join(project_root, ".auto-coder", "index.json")
         if os.path.exists(index_path):
             backup_path = index_path + ".bak"
             shutil.copy2(index_path, backup_path)
             printer.print_in_terminal("index_backup_success", path=backup_path)
-            
+
         # Write new index
         with open(index_path, "w") as f:
             json.dump(converted_data, f, indent=2)
-            
-        return True
         
+        printer.print_in_terminal("index_import_success", path=index_path)
+        result_manager.add_result(content=printer.get_message_from_key_with_format("index_import_success", path=index_path), meta={"action": "index_import", "input": {
+            "path": index_path
+        }})
+
+        return True
+
     except Exception as e:
         printer.print_in_terminal("index_error", error=str(e))
+        result_manager.add_result(content=printer.get_message_from_key_with_format("index_error", error=str(e)), meta={"action": "index_import", "input": {
+            "path": index_path
+        }})
         return False
