@@ -1,5 +1,5 @@
 from autocoder.common.auto_coder_lang import get_message_with_format
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Generator, Tuple
 
 def read_file(file_path):
     """Read a file with automatic encoding detection.
@@ -44,7 +44,7 @@ def read_lines(file_path:str):
 
 
 
-def read_file_with_line_numbers(file_path: str) -> List[str]:
+def read_file_with_line_numbers(file_path: str,line_number_start:int=0) -> Generator[Tuple[int, str], None, None]:
     """Read a file and return its content with line numbers.
 
     Args:
@@ -57,14 +57,12 @@ def read_file_with_line_numbers(file_path: str) -> List[str]:
         ValueError: If the file cannot be decoded with any of the tried encodings
     """
     encodings = ['utf-8', 'gbk', 'utf-16', 'latin-1']
-    result = []
-
+    
     for encoding in encodings:
         try:
             with open(file_path, 'r', encoding=encoding) as file:
-                for line_number, line in enumerate(file, start=1):
-                    result.append(f"{line_number}:{line}")
-                return result
+                for line_number, line in enumerate(file, start=line_number_start):
+                    yield (line_number, line)                
         except UnicodeDecodeError:
             continue
 

@@ -183,9 +183,8 @@ class PyProject:
     def read_file_content(self, file_path):
         if self.args.auto_merge == "strict_diff":
             result = []
-            with open(file_path, "r",encoding="utf-8") as file:
-                for line_number, line in enumerate(file, start=1):
-                    result.append(f"{line_number}:{line}")
+            for line_number, line in FileUtils.read_file_with_line_numbers(file_path,line_number_start=1):
+                result.append(f"{line_number}:{line}")
             return "\n".join(result)
 
         return FileUtils.read_file(file_path)
