@@ -53,8 +53,15 @@ def test_shell_commands():
     # 测试系统信息命令
     if sys.platform == 'win32':
         console.print("\n[cyan]1. 执行系统信息命令[/cyan]")
-        # 使用 wmic 命令替代 systeminfo，输出更稳定
-        execute_shell_command("wmic os get Caption,Version,OSArchitecture /format:list")
+        # 使用更可靠的命令组合
+        execute_shell_command("""
+            wmic os get Caption,Version,OSArchitecture /value | findstr /v /r "^$"
+            echo 系统信息:
+            ver
+            echo.
+            echo CPU信息:
+            wmic cpu get Name /value
+        """.strip())
         
         console.print("\n[cyan]2. 执行目录列表命令[/cyan]")
         execute_shell_command("dir")

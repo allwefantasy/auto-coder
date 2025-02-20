@@ -306,6 +306,8 @@ def execute_shell_command(command: str):
             os.system('chcp 65001 > nul')
             # 强制使用 UTF-8 编码
             encoding = 'utf-8'
+            # 设置环境变量
+            os.environ['PYTHONIOENCODING'] = 'utf-8'
 
         # Create temp script file
         if sys.platform == 'win32':
@@ -318,8 +320,9 @@ def execute_shell_command(command: str):
                 )
                 # 添加 UTF-8 BOM
                 temp_file.write(b'\xef\xbb\xbf')
-                # 写入命令内容
-                temp_file.write(command.encode('utf-8'))
+                # 设置输出编码
+                ps_command = f'$OutputEncoding = [Console]::OutputEncoding = [Text.Encoding]::UTF8\n{command}'
+                temp_file.write(ps_command.encode('utf-8'))
                 temp_file.close()
                 # Execute the temp script with PowerShell
                 command = f'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{temp_file.name}"'
@@ -332,8 +335,12 @@ def execute_shell_command(command: str):
                 )
                 # 添加 UTF-8 BOM
                 temp_file.write(b'\xef\xbb\xbf')
-                # 写入命令内容
-                content = f"@echo off\nchcp 65001 > nul\n{command}"
+                # 写入命令内容，确保UTF-8输出
+                content = f"""@echo off
+chcp 65001 > nul
+set PYTHONIOENCODING=utf-8
+{command}
+"""
                 temp_file.write(content.encode('utf-8'))
                 temp_file.close()
                 # Execute the temp batch script
@@ -353,13 +360,24 @@ def execute_shell_command(command: str):
             command = temp_file.name
 
         # Start subprocess with UTF-8 encoding
+        startupinfo = None
+        if sys.platform == 'win32':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            
+        # 创建子进程时设置环境变量
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
+        
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=True,
             encoding='utf-8',  # 直接指定 UTF-8 编码
-            errors='replace'   # 处理无法解码的字符
+            errors='replace',  # 处理无法解码的字符
+            env=env,          # 传递修改后的环境变量
+            startupinfo=startupinfo
         )
 
         # Safe decoding helper (for binary output)
@@ -367,9 +385,15 @@ def execute_shell_command(command: str):
             if isinstance(byte_stream, str):
                 return byte_stream.strip()
             try:
-                return byte_stream.decode(encoding).strip()
+                # 首先尝试 UTF-8
+                return byte_stream.decode('utf-8').strip()
             except UnicodeDecodeError:
-                return byte_stream.decode(encoding, errors='replace').strip()
+                try:
+                    # 如果失败，尝试 GBK
+                    return byte_stream.decode('gbk').strip()
+                except UnicodeDecodeError:
+                    # 最后使用替换模式
+                    return byte_stream.decode(encoding, errors='replace').strip()
 
         output = []
         with Live(console=console, refresh_per_second=4) as live:
