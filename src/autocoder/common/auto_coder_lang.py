@@ -152,9 +152,11 @@ MESSAGES = {
         "conf_export_file_empty": "Export configuration file is empty: {{file_path}}",
         "generated_shell_script": "Generated Shell Script",
         "confirm_execute_shell_script": "Do you want to execute this shell script?",
-        "shell_script_not_executed": "Shell script was not executed"
+        "shell_script_not_executed": "Shell script was not executed",
+        "conf_not_found": "Configuration file not found: {{path}}",
     },
     "zh": {
+        "conf_not_found": "未找到配置文件: {{path}}",
         "conf_import_success": "成功导入配置: {{key}}",
         "conf_export_success": "成功导出配置: {{key}}",
         "conf_import_error": "导入配置出错: {{error}}",
