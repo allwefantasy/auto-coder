@@ -73,10 +73,10 @@ class StatsPanel:
                  Text.assemble(
                      ("💵 成本: ", "bold"), 
                      self._format_mini_progress(int(input_cost*1000), 100, "yellow"),
-                     (" IN", "yellow"), f" ${input_cost:.3f}\n",
+                     (" IN", "yellow"), f" {input_cost:.3f}\n",
                      ("💸 ", "bold"), 
                      self._format_mini_progress(int(output_cost*1000), 100, "gold1"),
-                     (" OUT", "gold1"), f" ${output_cost:.3f}\n",
+                     (" OUT", "gold1"), f" {output_cost:.3f}\n",
                      self._format_speed_bar(speed)  # 复用原速度条
                  ),
                  border_style="yellow",
@@ -93,6 +93,7 @@ class StatsPanel:
          )
 
          self.console.print(main_panel)
+    
     def _format_mini_progress(self, value: int, max_value: int, color: str) -> Text:
         """紧凑型进度条"""
         progress = min(value / max_value, 1.0)
