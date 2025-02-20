@@ -29,7 +29,7 @@ def _generate_shell_script(user_input: str) -> str:
 
     根据用户的输入以及当前的操作系统和终端类型以及脚本类型生成脚本，
     注意只能生成一个shell脚本，不要生成多个。    
-    
+
     用户输入: {{ user_input }}
 
     请生成一个适当的脚本来执行用户的请求。确保脚本是安全的,并且可以在当前Shell环境中运行。

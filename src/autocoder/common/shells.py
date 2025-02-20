@@ -22,7 +22,7 @@ def get_terminal_name() -> str:
     else:
         return _get_unix_terminal_name()
 
-def _is_running_in_powershell() -> bool:
+def is_running_in_powershell() -> bool:
     """
     检查当前 Python 进程是否在 PowerShell 环境中运行
     Returns:
@@ -75,7 +75,7 @@ def _is_running_in_powershell() -> bool:
     except Exception:
         return False
 
-def _is_running_in_cmd() -> bool:
+def is_running_in_cmd() -> bool:
     """
     检查当前 Python 进程是否在 CMD 环境中运行
     Returns:
@@ -134,14 +134,14 @@ def _get_windows_terminal_name() -> str:
     env = os.environ
 
     # 首先使用新方法检查是否在 PowerShell 环境中
-    if _is_running_in_powershell():
+    if is_running_in_powershell():
         # 进一步区分是否在 VSCode 的 PowerShell 终端
         if 'VSCODE_GIT_IPC_HANDLE' in env:
             return 'vscode-powershell'
         return 'powershell'
     
     # 检查是否在 CMD 环境中
-    if _is_running_in_cmd():
+    if is_running_in_cmd():
         # 区分是否在 VSCode 的 CMD 终端
         if 'VSCODE_GIT_IPC_HANDLE' in env:
             return 'vscode-cmd'
@@ -311,7 +311,7 @@ def execute_shell_command(command: str):
 
         # Create temp script file
         if sys.platform == 'win32':
-            if _is_running_in_powershell():
+            if is_running_in_powershell():
                 # Create temp PowerShell script
                 temp_file = tempfile.NamedTemporaryFile(
                     mode='w',
@@ -323,7 +323,7 @@ def execute_shell_command(command: str):
                 temp_file.close()
                 # Execute the temp script with PowerShell
                 command = f'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{temp_file.name}"'
-            elif _is_running_in_cmd():
+            elif is_running_in_cmd():
                 # Create temp batch script
                 temp_file = tempfile.NamedTemporaryFile(
                     mode='w',
