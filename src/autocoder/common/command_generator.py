@@ -4,6 +4,7 @@ from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common import detect_env
 from autocoder.common import shells
 from autocoder.common.printer import Printer
+from typing import Dict,Union
 
 @byzerllm.prompt()
 def _generate_shell_script(user_input: str) -> str:
@@ -22,7 +23,7 @@ def _generate_shell_script(user_input: str) -> str:
     {%- endif %}    
 
     根据用户的输入以及当前的操作系统和Shell类型生成合适的 shell 脚本，注意只能生成一个shell脚本，不要生成多个。
-    如果是 windows 系统，要注意区分 cmd 和 powershell 语法的不同。 linux 和 mac 也需要区分各自的shell语法的不同。    
+    如果是 windows 系统，要注意区分 cmd 和 powershell 语法的不同。 linux 和 mac 也需要区分各自的shell语法的不同。
 
     用户输入: {{ user_input }}
 
@@ -42,9 +43,13 @@ def _generate_shell_script(user_input: str) -> str:
     }
 
 
-def generate_shell_script(user_input: str, llm: byzerllm.ByzerLLM) -> str:
+def generate_shell_script(user_input: str, llm: Union[byzerllm.ByzerLLM,byzerllm.ByzerLLMStream]) -> str:
     # 获取 prompt 内容
     prompt = _generate_shell_script.prompt(user_input=user_input)
+    if llm.get_sub_client("chat_model"):
+        shell_llm = llm.get_sub_client("chat_model")                
+    else:
+        shell_llm = llm
     
     # 构造对话上下文
     conversations = [{"role": "user", "content": prompt}]
@@ -53,7 +58,7 @@ def generate_shell_script(user_input: str, llm: byzerllm.ByzerLLM) -> str:
     printer = Printer()
     title = printer.get_message_from_key("generating_shell_script")
     result, _ = stream_out(
-        llm.stream_chat_oai(conversations=conversations, delta_mode=True),
+        shell_llm.stream_chat_oai(conversations=conversations, delta_mode=True),
         model_name=llm.default_model_name,
         title=title        
     )
