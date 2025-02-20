@@ -25,13 +25,13 @@ class StatsPanel:
         bar.append(f" {speed:.1f} tokens/s ({level})", style="bold white")
         return bar
 
-     def _format_progress_bar(self, value: int, max_value: int, label: str, color: str) -> Text:
-         """生成通用进度条"""
-         progress = min(value / max_value, 1.0)
-         bar_length = int(progress * 20)
-         bar = Text("▮" * bar_length, style=color)
-         bar.append(f" {value} ({label})", style="bold white")
-         return bar
+    def _format_progress_bar(self, value: int, max_value: int, label: str, color: str) -> Text:
+        """生成通用进度条"""
+        progress = min(value / max_value, 1.0)
+        bar_length = int(progress * 20)
+        bar = Text("▮" * bar_length, style=color)
+        bar.append(f" {value} ({label})", style="bold white")
+        return bar
 
      def generate(
          self,
