@@ -2409,10 +2409,11 @@ def list_files():
             )
         )
 
-@run_in_raw_thread()
-def execute_shell_command(command: str):
-    from autocoder.common.shells import execute_shell_command as shell_exec
-    shell_exec(command)
+
+def gen_and_exec_shell_command(query: str):
+    shell_script = generate_shell_command(query)
+    if confirm(f"Execute the following shell command?\n{shell_script}"):
+        execute_shell_command(shell_script)
 
 
 def lib_command(args: List[str]):
@@ -2541,6 +2542,11 @@ def lib_command(args: List[str]):
 
     else:
         console.print(f"Unknown subcommand: {subcommand}")
+
+
+def execute_shell_command(command: str):
+    from autocoder.common.shells import execute_shell_command as shell_exec
+    shell_exec(command)
 
 @run_in_raw_thread()
 def auto_command(params,query: str):
@@ -2681,10 +2687,10 @@ def main():
         if mode not in MODES:
             mode = "auto_detect"
         pwd = os.getcwd()    
-         pwd_parts = pwd.split(os.sep)
-         if len(pwd_parts) > 3:
-             pwd = os.sep.join(pwd_parts[-3:])
-        return f"Current Dir: {pwd} | Mode: {MODES[mode]} | Human as Model: {human_as_model} "
+        pwd_parts = pwd.split(os.sep)
+        if len(pwd_parts) > 3:
+            pwd = os.sep.join(pwd_parts[-3:])
+        return f"Current Dir: {pwd} \nMode: {MODES[mode]} | Human as Model: {human_as_model} "
 
     session = PromptSession(
         history=InMemoryHistory(),
