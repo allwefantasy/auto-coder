@@ -2411,28 +2411,14 @@ def list_files():
 
 
 def gen_and_exec_shell_command(query: str):
-    from rich.prompt import Confirm
-    from rich.panel import Panel
-    from rich.text import Text
+    from rich.prompt import Confirm    
+    from autocoder.common.printer import Printer 
     from rich.console import Console
-    from autocoder.common.printer import Printer
-    from autocoder.common.auto_coder_lang import get_message
-
-    console = Console()
+    
     printer = Printer()
-
+    console = Console()
     # Generate the shell script
-    shell_script = generate_shell_command(query)
-
-    # Display the generated script in a rich panel
-    console.print(
-        Panel(
-            Text(shell_script, style="green"),
-            title=printer.get_message_from_key("generated_shell_script"),
-            border_style="blue",
-            padding=(1, 2)
-        )
-    )
+    shell_script = generate_shell_command(query)    
 
     # Ask for confirmation using rich
     if Confirm.ask(
@@ -2932,12 +2918,16 @@ def main():
             # elif user_input.startswith("/shell"):
             else:
                 command = user_input
-                if user_input.startswith("/shell"):
+                if user_input.startswith("/shell"):                    
                     command = user_input[len("/shell"):].strip()
                     if not command:
                         print("Please enter a shell command to execute.")
                     else:
-                        execute_shell_command(command)
+                        if command.startswith("/chat"):
+                            command = command[len("/chat"):].strip()
+                            gen_and_exec_shell_command(command)
+                        else:
+                            execute_shell_command(command)
 
         except KeyboardInterrupt:
             continue

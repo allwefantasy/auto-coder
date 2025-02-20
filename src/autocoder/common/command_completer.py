@@ -43,6 +43,9 @@ COMMANDS = {
         "/output_price": "",       
     },
     "/auto": {     
+    },
+    "/shell": {
+        "/chat": "",
     }
 }
 

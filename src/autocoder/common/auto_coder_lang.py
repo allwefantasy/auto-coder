@@ -139,15 +139,15 @@ MESSAGES = {
         "conversation_pruning_start": "⚠️ Conversation pruning started, total tokens: {{total_tokens}}, safe zone: {{safe_zone}}",
         "invalid_file_number": "⚠️ Invalid file number {{file_number}}, total files: {{total_files}}",
         "all_merge_results_failed": "⚠️ All merge attempts failed, returning first candidate",
-        "only_one_merge_result_success": "✅ Only one merge result succeeded, returning that candidate"
-            "generated_shell_script": "Generated Shell Script",
+        "only_one_merge_result_success": "✅ Only one merge result succeeded, returning that candidate",
+        "generated_shell_script": "Generated Shell Script",
         "confirm_execute_shell_script": "Do you want to execute this shell script?",
         "shell_script_not_executed": "Shell script was not executed"
     },
     "zh": {
         "generated_shell_script": "生成的 Shell 脚本",
         "confirm_execute_shell_script": "您要执行此 shell 脚本吗？",
-        "shell_script_not_executed": "Shell 脚本未执行"
+        "shell_script_not_executed": "Shell 脚本未执行",
         "config_validation_error": "配置验证错误: {{error}}",
         "invalid_boolean_value": "值 '{{value}}' 不是有效的布尔值(true/false)",
         "invalid_integer_value": "值 '{{value}}' 不是有效的整数",
