@@ -6,9 +6,6 @@ import os
 import time
 from typing import List, Dict, Any, Optional, Union
 
-
-from .stats_panel import StatsPanel
-
 class SourceCode(pydantic.BaseModel):
     module_name: str
     source_code: str
