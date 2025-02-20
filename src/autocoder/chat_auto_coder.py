@@ -133,6 +133,8 @@ commands = [
     "/index/build",
     "/index/export",
     "/index/import",
+    "/conf/export",
+    "/conf/import",
     "/exclude_dirs",
     "/help",
     "/shell",
@@ -2414,7 +2416,7 @@ def gen_and_exec_shell_command(query: str):
     from rich.prompt import Confirm    
     from autocoder.common.printer import Printer 
     from rich.console import Console
-    
+
     printer = Printer()
     console = Console()
     # Generate the shell script
@@ -2817,143 +2819,164 @@ def main():
                 else:
                     index_import(import_path)
 
-            elif user_input.startswith("/list_files"):
-                list_files()
-
-            elif user_input.startswith("/models"):
-                query = user_input[len("/models"):].strip()
-                if not query:
-                    print("Please enter your query.")
+            elif user_input.startswith("/conf/export"):
+                export_path = user_input[len("/conf/export"):].strip()
+                if not export_path:
+                    print("Please specify the export path")
                 else:
-                    manage_models(query) 
-
-            elif user_input.startswith("/mode"):
-                conf = user_input[len("/mode"):].strip()
-                if not conf:
-                    print(memory["mode"])
-                else:
-                    memory["mode"] = conf                    
-
-            elif user_input.startswith("/conf"):
-                conf = user_input[len("/conf"):].strip()
-                if not conf:
-                    print_conf(memory["conf"])
-                else:
-                    configure(conf)
-            elif user_input.startswith("/revert"):
-                revert()
-            elif user_input.startswith("/commit"):
-                query = user_input[len("/commit"):].strip()
-                commit(query)
-            elif user_input.startswith("/help"):
-                query = user_input[len("/help"):].strip()
-                if not query:
-                    show_help()
-                else:
-                    help(query)
-
-            elif user_input.startswith("/exclude_dirs"):
-                dir_names = user_input[len(
-                    "/exclude_dirs"):].strip().split(",")
-                exclude_dirs(dir_names)
-            elif user_input.startswith("/ask"):
-                query = user_input[len("/ask"):].strip()
-                if not query:
-                    print("Please enter your question.")
-                else:
-                    ask(query)
-
-            elif user_input.startswith("/exit"):
-                raise EOFError()
-
-            elif user_input.startswith("/coding"):
-                query = user_input[len("/coding"):].strip()
-                if not query:
-                    print("\033[91mPlease enter your request.\033[0m")
-                    continue
-                coding(query)
-            elif user_input.startswith("/chat"):
-                query = user_input[len("/chat"):].strip()
-                if not query:
-                    print("\033[91mPlease enter your request.\033[0m")
-                else:
-                    chat(query)
-
-            elif user_input.startswith("/design"):
-                query = user_input[len("/design"):].strip()
-                if not query:
-                    print("\033[91mPlease enter your design request.\033[0m")
-                else:
-                    design(query)
-
-            elif user_input.startswith("/summon"):
-                query = user_input[len("/summon"):].strip()
-                if not query:
-                    print("\033[91mPlease enter your request.\033[0m")
-                else:
-                    summon(query)
-
-            elif user_input.startswith("/lib"):
-                args = user_input[len("/lib"):].strip().split()
-                lib_command(args)
-
-            elif user_input.startswith("/mcp"):
-                query = user_input[len("/mcp"):].strip()
-                if not query:
-                    print("Please enter your query.")
-                else:
-                    mcp(query)
-
-            elif user_input.startswith("/auto"):
-                query = user_input[len("/auto"):].strip()
-                auto_command(ARGS,query)
-            elif user_input.startswith("/debug"):
-                code = user_input[len("/debug"):].strip()
-                try:
-                    result = eval(code)
-                    print(f"Debug result: {result}")
-                except Exception as e:
-                    print(f"Debug error: {str(e)}")            
-
-            # elif user_input.startswith("/shell"):
-            else:
-                command = user_input
-                if user_input.startswith("/shell"):                    
-                    command = user_input[len("/shell"):].strip()
-                    if not command:
-                        print("Please enter a shell command to execute.")
+                    if export_conf(os.getcwd(), export_path):
+                        print("Conf exported successfully")
                     else:
-                        if command.startswith("/chat"):
-                            command = command[len("/chat"):].strip()
-                            gen_and_exec_shell_command(command)
-                        else:
-                            execute_shell_command(command)
+                        print("Failed to export conf")
 
-        except KeyboardInterrupt:
-            continue
-        except EOFError:
-            try:
-                save_memory()
+            elif user_input.startswith("/conf/import"):
+                import_path = user_input[len("/conf/import"):].strip()
+                if not import_path:
+                    print("Please specify the import path")
+                else:
+                    if import_conf(os.getcwd(), import_path):
+                        print("Conf imported successfully")
+                    else:
+                        print("Failed to import conf")
+
+                elif user_input.startswith("/list_files"):
+                    list_files()
+
+                elif user_input.startswith("/models"):
+                    query = user_input[len("/models"):].strip()
+                    if not query:
+                        print("Please enter your query.")
+                    else:
+                        manage_models(query) 
+
+                elif user_input.startswith("/mode"):
+                    conf = user_input[len("/mode"):].strip()
+                    if not conf:
+                        print(memory["mode"])
+                    else:
+                        memory["mode"] = conf                    
+
+                elif user_input.startswith("/conf"):
+                    conf = user_input[len("/conf"):].strip()
+                    if not conf:
+                        print_conf(memory["conf"])
+                    else:
+                        configure(conf)
+                elif user_input.startswith("/revert"):
+                    revert()
+                elif user_input.startswith("/commit"):
+                    query = user_input[len("/commit"):].strip()
+                    commit(query)
+                elif user_input.startswith("/help"):
+                    query = user_input[len("/help"):].strip()
+                    if not query:
+                        show_help()
+                    else:
+                        help(query)
+
+                elif user_input.startswith("/exclude_dirs"):
+                    dir_names = user_input[len(
+                        "/exclude_dirs"):].strip().split(",")
+                    exclude_dirs(dir_names)
+                elif user_input.startswith("/ask"):
+                    query = user_input[len("/ask"):].strip()
+                    if not query:
+                        print("Please enter your question.")
+                    else:
+                        ask(query)
+
+                elif user_input.startswith("/exit"):
+                    raise EOFError()
+
+                elif user_input.startswith("/coding"):
+                    query = user_input[len("/coding"):].strip()
+                    if not query:
+                        print("\033[91mPlease enter your request.\033[0m")
+                        continue
+                    coding(query)
+                elif user_input.startswith("/chat"):
+                    query = user_input[len("/chat"):].strip()
+                    if not query:
+                        print("\033[91mPlease enter your request.\033[0m")
+                    else:
+                        chat(query)
+
+                elif user_input.startswith("/design"):
+                    query = user_input[len("/design"):].strip()
+                    if not query:
+                        print("\033[91mPlease enter your design request.\033[0m")
+                    else:
+                        design(query)
+
+                elif user_input.startswith("/summon"):
+                    query = user_input[len("/summon"):].strip()
+                    if not query:
+                        print("\033[91mPlease enter your request.\033[0m")
+                    else:
+                        summon(query)
+
+                elif user_input.startswith("/lib"):
+                    args = user_input[len("/lib"):].strip().split()
+                    lib_command(args)
+
+                elif user_input.startswith("/mcp"):
+                    query = user_input[len("/mcp"):].strip()
+                    if not query:
+                        print("Please enter your query.")
+                    else:
+                        mcp(query)
+
+                elif user_input.startswith("/auto"):
+                    query = user_input[len("/auto"):].strip()
+                    auto_command(ARGS,query)
+                elif user_input.startswith("/debug"):
+                    code = user_input[len("/debug"):].strip()
+                    try:
+                        result = eval(code)
+                        print(f"Debug result: {result}")
+                    except Exception as e:
+                        print(f"Debug error: {str(e)}")            
+
+                # elif user_input.startswith("/shell"):
+                else:
+                    command = user_input
+                    if user_input.startswith("/shell"):                    
+                        command = user_input[len("/shell"):].strip()
+                        if not command:
+                            print("Please enter a shell command to execute.")
+                        else:
+                            if command.startswith("/chat"):
+                                command = command[len("/chat"):].strip()
+                                gen_and_exec_shell_command(command)
+                            else:
+                                execute_shell_command(command)
+
+            except KeyboardInterrupt:
+                continue
+            except EOFError:
                 try:
-                    if get_mcp_server():
-                        get_mcp_server().stop()
+                    save_memory()
+                    try:
+                        if get_mcp_server():
+                            get_mcp_server().stop()
+                    except Exception as e:
+                        pass
                 except Exception as e:
-                    pass
+                    print(
+                        f"\033[91mAn error occurred while saving memory:\033[0m \033[93m{type(e).__name__}\033[0m - {str(e)}"
+                    )
+                print("\n\033[93mExiting Chat Auto Coder...\033[0m")
+                break
             except Exception as e:
                 print(
-                    f"\033[91mAn error occurred while saving memory:\033[0m \033[93m{type(e).__name__}\033[0m - {str(e)}"
+                    f"\033[91mAn error occurred:\033[0m \033[93m{type(e).__name__}\033[0m - {str(e)}"
                 )
-            print("\n\033[93mExiting Chat Auto Coder...\033[0m")
-            break
-        except Exception as e:
-            print(
-                f"\033[91mAn error occurred:\033[0m \033[93m{type(e).__name__}\033[0m - {str(e)}"
-            )
-            if ARGS and ARGS.debug:
-                import traceback
+                if ARGS and ARGS.debug:
+                    import traceback
 
-                traceback.print_exc()
+                    traceback.print_exc()
 
 
-if __name__ == "__main__":
-    main()
+    if __name__ == "__main__":
+        main()
+    from autocoder.common.conf_import_export import export_conf, import_conf
