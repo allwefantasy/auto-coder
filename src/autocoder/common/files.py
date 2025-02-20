@@ -44,6 +44,35 @@ def read_lines(file_path:str):
 
 
 
+def read_file_with_line_numbers(file_path: str) -> List[str]:
+    """Read a file and return its content with line numbers.
+
+    Args:
+        file_path (str): Path to the file to read
+
+    Returns:
+        List[str]: A list of strings where each string is in the format "line_number:line_content"
+
+    Raises:
+        ValueError: If the file cannot be decoded with any of the tried encodings
+    """
+    encodings = ['utf-8', 'gbk', 'utf-16', 'latin-1']
+    result = []
+
+    for encoding in encodings:
+        try:
+            with open(file_path, 'r', encoding=encoding) as file:
+                for line_number, line in enumerate(file, start=1):
+                    result.append(f"{line_number}:{line}")
+                return result
+        except UnicodeDecodeError:
+            continue
+
+    raise ValueError(get_message_with_format("file_decode_error", 
+        file_path=file_path, 
+        encodings=", ".join(encodings)))
+
+
 def save_file(file_path: str, content: Union[str, List[str]]) -> None:
     """Save content to a file using UTF-8 encoding.
     
