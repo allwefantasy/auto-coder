@@ -3,6 +3,7 @@ from byzerllm.utils import format_str_jinja2
 
 MESSAGES = {
     "en": {
+        "invalid_file_pattern": "Invalid file pattern: {{file_pattern}}. e.g. regex://.*/package-lock\\.json",
         "config_validation_error": "Config validation error: {{error}}",
         "invalid_boolean_value": "Value '{{value}}' is not a valid boolean(true/false)",
         "invalid_integer_value": "Value '{{value}}' is not a valid integer",
@@ -158,6 +159,7 @@ MESSAGES = {
         "index_import_success": "Index imported successfully: {{path}}",
     },
     "zh": {
+        "invalid_file_pattern": "无效的文件模式: {{file_pattern}}. 例如: regex://.*/package-lock\\.json",
         "conf_not_found": "未找到配置文件: {{path}}",
         "conf_import_success": "成功导入配置: {{path}}",
         "conf_export_success": "成功导出配置: {{path}}",
