@@ -1,3 +1,11 @@
+
+
+
+
+
+
+
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.columns import Columns
@@ -9,7 +17,7 @@ class StatsPanel:
         self.console = console if console else Console()
 
     def _format_speed_bar(self, speed: float) -> Text:
-        """生成速度可视化进度条"""
+        """生成速度可视化进度条（保持原30-60区间）"""
         if speed < 30:
             color = "red"
             level = "低"
@@ -52,19 +60,34 @@ class StatsPanel:
              "│ 💰", (f"${input_cost + output_cost:.4f}", "bold yellow")
          )
 
+         # 处理耗时颜色逻辑（新增15-30-60区间）
+         duration_color = "green"
+         if 15 <= duration < 30:
+             duration_color = "yellow"
+         elif duration >= 30:
+             duration_color = "red"
+
+         # 处理成本颜色逻辑（新增0.5-1区间）
+         def get_cost_color(cost: float) -> str:
+             if cost < 0.5: return "green"
+             elif 0.5 <= cost < 1: return "yellow"
+             else: return "red"
+
          # 紧凑网格布局
          grid = [
              Panel(
                  Text.assemble(
                      ("🤖 模型: ", "bold"), model_names + "\n",
-                     self._format_mini_progress(int(duration), 100, "cyan"),
-                     (" ⏱", "cyan"), f" {duration:.1f}s │ ",
+                     self._format_mini_progress(duration, 60.0, duration_color),  # 耗时max=60
+                     (" ⏱", duration_color), f" {duration:.1f}s │ ",
                      self._format_mini_progress(sampling_count, 100, "blue"),
                      (" 🔢", "blue"), f" {sampling_count}\n",
-                     ("📥", "green"), " ", self._format_mini_progress(input_tokens, 2000, "green"),
-                     f" {input_tokens} │ ",
-                     ("📤", "bright_green"), " ", self._format_mini_progress(output_tokens, 2000, "bright_green"),
-                     f" {output_tokens}"
+                     ("📥", "green"), " ", 
+                     self._format_mini_progress(input_tokens, 65536.0, "green"),  # token分母改为65536
+                     f" {input_tokens} ({input_tokens/65536*100:.2f}%) │ ",  # 新增百分比显示
+                     ("📤", "bright_green"), " ", 
+                     self._format_mini_progress(output_tokens, 65536.0, "bright_green"),
+                     f" {output_tokens} ({output_tokens/65536*100:.2f}%)"  # 新增百分比显示
                  ),
                  border_style="cyan",
                  padding=(0, 2)
@@ -72,12 +95,12 @@ class StatsPanel:
              Panel(
                  Text.assemble(
                      ("💵 成本: ", "bold"), 
-                     self._format_mini_progress(int(input_cost*1000), 100, "yellow"),
-                     (" IN", "yellow"), f" {input_cost:.3f}\n",
+                     self._format_mini_progress(input_cost, 1.0, get_cost_color(input_cost)),  # 成本max=1
+                     (" IN", get_cost_color(input_cost)), f" {input_cost:.3f}\n",
                      ("💸 ", "bold"), 
-                     self._format_mini_progress(int(output_cost*1000), 100, "gold1"),
-                     (" OUT", "gold1"), f" {output_cost:.3f}\n",
-                     self._format_speed_bar(speed)  # 复用原速度条
+                     self._format_mini_progress(output_cost, 1.0, get_cost_color(output_cost)),
+                     (" OUT", get_cost_color(output_cost)), f" {output_cost:.3f}\n",
+                     self._format_speed_bar(speed)
                  ),
                  border_style="yellow",
                  padding=(0, 1)
@@ -94,9 +117,10 @@ class StatsPanel:
 
          self.console.print(main_panel)
     
-    def _format_mini_progress(self, value: int, max_value: int, color: str) -> Text:
-        """紧凑型进度条"""
+
+    def _format_mini_progress(self, value: float, max_value: float, color: str) -> Text:
+        """紧凑型进度条（支持浮点数）"""
         progress = min(value / max_value, 1.0)
-        filled = "▮" * int(progress * 10)  # 缩短进度条长度
+        filled = "▮" * int(progress * 10)
         empty = "▯" * (10 - len(filled))
         return Text(filled + empty, style=color)
