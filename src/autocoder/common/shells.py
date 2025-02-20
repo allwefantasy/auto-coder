@@ -81,6 +81,10 @@ def is_running_in_cmd() -> bool:
     Returns:
         bool: True 表示在 CMD 环境中，False 表示不在
     """
+    # 如果在 PowerShell 中，直接返回 False
+    if is_running_in_powershell():
+        return False
+        
     try:
         # 方法1: 检查特定的 CMD 环境变量
         env = os.environ
@@ -90,23 +94,10 @@ def is_running_in_cmd() -> bool:
         
         # 方法2: 检查 ComSpec 环境变量
         comspec = env.get('ComSpec', '').lower()
-        if 'cmd.exe' in comspec and not _is_running_in_powershell():
+        if 'cmd.exe' in comspec:
             return True
 
-        # 方法3: 尝试执行 CMD 特定命令
-        try:
-            # ver 是 CMD 的内置命令
-            result = subprocess.run(
-                ['cmd', '/c', 'ver'],
-                capture_output=True,
-                timeout=1
-            )
-            if result.returncode == 0 and not _is_running_in_powershell():
-                return True
-        except Exception:
-            pass
-
-        # 方法4: 检查父进程
+        # 方法3: 检查父进程
         try:
             import psutil
             current_process = psutil.Process()
