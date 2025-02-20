@@ -1,9 +1,10 @@
-
 import sys
 import os
 import locale
 import subprocess
 import platform
+import tempfile
+import uuid
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
@@ -138,13 +139,54 @@ def execute_shell_command(command: str):
     
     Args:
         command (str): The shell command to execute
-        encoding (str, optional): Override default encoding. Defaults to None.
     """
     console = Console()
     result_manager = ResultManager()
+    temp_file = None
     try:
-        # Get terminal encoding
+        # Get terminal encoding and name
         encoding = get_terminal_encoding()
+        terminal_name = get_terminal_name()
+
+        # Create temp script file
+        if sys.platform == 'win32':
+            if terminal_name == 'powershell':
+                # Create temp PowerShell script
+                temp_file = tempfile.NamedTemporaryFile(
+                    mode='w',
+                    suffix='.ps1',
+                    encoding=encoding,
+                    delete=False
+                )
+                temp_file.write(command)
+                temp_file.close()
+                # Execute the temp script with PowerShell
+                command = f'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{temp_file.name}"'
+            elif terminal_name == 'cmd.exe':
+                # Create temp batch script
+                temp_file = tempfile.NamedTemporaryFile(
+                    mode='w',
+                    suffix='.cmd',
+                    encoding=encoding,
+                    delete=False
+                )
+                temp_file.write(f"@echo off\n{command}")
+                temp_file.close()
+                # Execute the temp batch script
+                command = f'cmd.exe /c "{temp_file.name}"'
+        else:
+            # Create temp shell script for Unix-like systems
+            temp_file = tempfile.NamedTemporaryFile(
+                mode='w',
+                suffix='.sh',
+                encoding=encoding,
+                delete=False
+            )
+            temp_file.write('#!/bin/bash\n' + command)
+            temp_file.close()
+            # Make the script executable
+            os.chmod(temp_file.name, 0o755)
+            command = temp_file.name
 
         # Start subprocess
         process = subprocess.Popen(
@@ -239,3 +281,10 @@ def execute_shell_command(command: str):
         console.print(
             f"[bold red]Unexpected error:[/bold red] [yellow]{str(e)}[/yellow]"
         )
+    finally:
+        # Clean up temp file
+        if temp_file and os.path.exists(temp_file.name):
+            try:
+                os.unlink(temp_file.name)
+            except Exception:
+                pass
