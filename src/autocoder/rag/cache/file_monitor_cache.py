@@ -106,11 +106,11 @@ class AutoCoderRAGDocListener(BaseCacheManager):
         gitignore_path = os.path.join(self.path, ".gitignore")
 
         if os.path.exists(serveignore_path):
-            with open(serveignore_path, "r") as ignore_file:
+            with open(serveignore_path, "r",encoding="utf-8") as ignore_file:
                 patterns = ignore_file.readlines()
                 return [pattern.strip() for pattern in patterns]
         elif os.path.exists(gitignore_path):
-            with open(gitignore_path, "r") as ignore_file:
+            with open(gitignore_path, "r",encoding="utf-8") as ignore_file:
                 patterns = ignore_file.readlines()
                 return [pattern.strip() for pattern in patterns]
         return []

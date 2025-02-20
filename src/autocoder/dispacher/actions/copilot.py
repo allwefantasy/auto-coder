@@ -343,7 +343,7 @@ class ActionCopilot:
             logger.info(
                 "model is not specified and we will generate prompt to the target file"
             )
-            with open(args.target_file, "w") as f:
+            with open(args.target_file, "w",encoding="utf-8") as f:
                 f.write(q)
             return True
 
@@ -379,7 +379,7 @@ class ActionCopilot:
         logger.info(result)
 
         # 将结果写入文件
-        with open(args.target_file, "w") as f:
+        with open(args.target_file, "w",encoding="utf-8") as f:
             f.write("=================CONVERSATION==================\n\n")
             for conversation in conversations:
                 f.write(f"{conversation['role']}: {conversation['content']}\n")

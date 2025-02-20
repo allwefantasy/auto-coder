@@ -27,7 +27,7 @@ def export_index(project_root: str, export_path: str) -> bool:
             return False
 
         # Read and convert paths
-        with open(index_path, "r") as f:
+        with open(index_path, "r",encoding="utf-8") as f:
             index_data = json.load(f)
 
         # Convert absolute paths to relative
@@ -45,7 +45,7 @@ def export_index(project_root: str, export_path: str) -> bool:
         # Write to export location
         export_file = os.path.join(export_path, "index.json")
         os.makedirs(export_path, exist_ok=True)
-        with open(export_file, "w") as f:
+        with open(export_file, "w",encoding="utf-8") as f:
             json.dump(converted_data, f, indent=2)
         printer.print_in_terminal("index_export_success", path=export_file)
         result_manager.add_result(content=printer.get_message_from_key_with_format("index_export_success", path=export_file), meta={"action": "index_export", "input": {
@@ -80,7 +80,7 @@ def import_index(project_root: str, import_path: str) -> bool:
             return False
 
         # Read and convert paths
-        with open(import_file, "r") as f:
+        with open(import_file, "r",encoding="utf-8") as f:
             index_data = json.load(f)
 
         # Convert relative paths to absolute
@@ -103,7 +103,7 @@ def import_index(project_root: str, import_path: str) -> bool:
             printer.print_in_terminal("index_backup_success", path=backup_path)
 
         # Write new index
-        with open(index_path, "w") as f:
+        with open(index_path, "w",encoding="utf-8") as f:
             json.dump(converted_data, f, indent=2)
         
         printer.print_in_terminal("index_import_success", path=index_path)

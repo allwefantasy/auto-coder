@@ -97,7 +97,7 @@ def load_models() -> List[Dict]:
         if model.get("api_key_path",""):           
             api_key_file = os.path.join(api_key_dir, model["api_key_path"])
             if os.path.exists(api_key_file):
-                with open(api_key_file, "r") as f:
+                with open(api_key_file, "r",encoding="utf-8") as f:
                     model["api_key"] = f.read()                   
     return target_models
 
@@ -269,7 +269,7 @@ def update_model_with_api_key(name: str, api_key: str) -> Dict:
         api_key_dir = os.path.expanduser("~/.auto-coder/keys")
         os.makedirs(api_key_dir, exist_ok=True)
         api_key_file = os.path.join(api_key_dir, api_key_path)
-        with open(api_key_file, "w") as f:
+        with open(api_key_file, "w",encoding="utf-8") as f:
             f.write(api_key.strip())
         
         # 如果是新模型，添加到模型列表中

@@ -174,7 +174,8 @@ class PyProject:
         return False
 
     def output(self):
-        return open(self.target_file, "r").read()
+        with open(self.target_file, "r",encoding="utf-8") as file:
+            return file.read()
 
     def is_python_file(self, file_path):
         return file_path.endswith(".py")
@@ -182,7 +183,7 @@ class PyProject:
     def read_file_content(self, file_path):
         if self.args.auto_merge == "strict_diff":
             result = []
-            with open(file_path, "r") as file:
+            with open(file_path, "r",encoding="utf-8") as file:
                 for line_number, line in enumerate(file, start=1):
                     result.append(f"{line_number}:{line}")
             return "\n".join(result)

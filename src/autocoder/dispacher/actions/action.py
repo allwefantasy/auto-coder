@@ -86,7 +86,7 @@ class ActionTSProject(BaseAction):
                 max_iter=self.args.image_max_iter,
             )
             html_code = ""
-            with open(html_path, "r") as f:
+            with open(html_path, "r",encoding="utf-8") as f:
                 html_code = f.read()
             
             source_code_list.sources.append(SourceCode( 

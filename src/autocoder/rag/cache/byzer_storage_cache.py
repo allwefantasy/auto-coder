@@ -126,7 +126,7 @@ class ByzerStorageCache(BaseCacheManager):
         """Load cache from file"""
         if os.path.exists(self.cache_file):
             try:
-                with open(self.cache_file, "r") as f:
+                with open(self.cache_file, "r",encoding="utf-8") as f:
                     lines = f.readlines()
                     cache = {}
                     for line in lines:
@@ -147,7 +147,7 @@ class ByzerStorageCache(BaseCacheManager):
 
         if not fcntl:
             try:
-                with open(cache_file, "w") as f:
+                with open(cache_file, "w",encoding="utf-8") as f:
                     for data in self.cache.values():
                         json.dump(data, f, ensure_ascii=False)
                         f.write("\n")
@@ -155,12 +155,12 @@ class ByzerStorageCache(BaseCacheManager):
                 logger.error(f"Error writing cache file: {str(e)}")
         else:
             lock_file = cache_file + ".lock"
-            with open(lock_file, "w") as lockf:
+            with open(lock_file, "w",encoding="utf-8") as lockf:
                 try:
                     # 获取文件锁
                     fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     # 写入缓存文件
-                    with open(cache_file, "w") as f:
+                    with open(cache_file, "w",encoding="utf-8") as f:
                         for data in self.cache.values():
                             json.dump(data, f, ensure_ascii=False)
                             f.write("\n")

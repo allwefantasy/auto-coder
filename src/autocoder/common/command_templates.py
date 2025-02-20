@@ -139,7 +139,7 @@ def create_actions(source_dir:str,params:Dict[str,str]):
         "000_example": base_000_example.prompt(),
     }
     init_file_path = os.path.join(source_dir, "actions", "101_current_work.yml")
-    with open(init_file_path, "w") as f:
+    with open(init_file_path, "w", encoding="utf-8") as f:
         f.write(init_command_template.prompt(source_dir=source_dir))
 
     for k,v in mapping.items():
@@ -152,7 +152,7 @@ def create_actions(source_dir:str,params:Dict[str,str]):
         if k == "000_example":
             file_path = os.path.join(source_dir, "actions", f"{k}.yml")
 
-        with open(file_path, "w") as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(v)    
 
 @byzerllm.prompt()

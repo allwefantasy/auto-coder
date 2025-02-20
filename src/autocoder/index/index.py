@@ -342,7 +342,7 @@ class IndexManager:
 
     def build_index(self):
         if os.path.exists(self.index_file):
-            with open(self.index_file, "r") as file:
+            with open(self.index_file, "r",encoding="utf-8") as file:
                 index_data = json.load(file)
         else:
             index_data = {}
@@ -433,13 +433,13 @@ class IndexManager:
                     index_data[module_name] = result
                     updated_sources.append(module_name)
                     if len(updated_sources) > 5:
-                        with open(self.index_file, "w") as file:
+                        with open(self.index_file, "w",encoding="utf-8") as file:
                             json.dump(index_data, file, ensure_ascii=False, indent=2)
                         updated_sources = []
         
         # 如果 updated_sources 或 keys_to_remove 有值，则保存索引文件
         if updated_sources or keys_to_remove:
-            with open(self.index_file, "w") as file:
+            with open(self.index_file, "w",encoding="utf-8") as file:
                 json.dump(index_data, file, ensure_ascii=False, indent=2)
 
             print("")    
@@ -461,14 +461,14 @@ class IndexManager:
         if not os.path.exists(self.index_file):
             return []
 
-        with open(self.index_file, "r") as file:
+        with open(self.index_file, "r",encoding="utf-8") as file:
             return file.read()
 
     def read_index(self) -> List[IndexItem]:
         if not os.path.exists(self.index_file):
             return []
 
-        with open(self.index_file, "r") as file:
+        with open(self.index_file, "r",encoding="utf-8") as file:
             index_data = json.load(file)
 
         index_items = []

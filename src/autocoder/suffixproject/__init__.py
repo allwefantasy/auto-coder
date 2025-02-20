@@ -114,7 +114,8 @@ class SuffixProject:
         return False
 
     def output(self):
-        return open(self.target_file, "r").read()
+        with open(self.target_file, "r",encoding="utf-8") as file:
+            return file.read()
 
     def is_suffix_file(self, file_path):
         return any([file_path.endswith(suffix) for suffix in self.suffixs])
@@ -273,7 +274,7 @@ class SuffixProject:
             self.clone_repository()
 
         if self.target_file:
-            with open(self.target_file, "w") as file:
+            with open(self.target_file, "w",encoding="utf-8") as file:
                 for code in self.get_source_codes():
                     self.sources.append(code)
                     file.write(f"##File: {code.module_name}\n")

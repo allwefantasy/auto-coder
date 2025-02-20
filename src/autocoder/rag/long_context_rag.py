@@ -245,10 +245,10 @@ class LongContextRAG:
         gitignore_path = os.path.join(self.path, ".gitignore")
 
         if os.path.exists(serveignore_path):
-            with open(serveignore_path, "r") as ignore_file:
+            with open(serveignore_path, "r",encoding="utf-8") as ignore_file:
                 return pathspec.PathSpec.from_lines("gitwildmatch", ignore_file)
         elif os.path.exists(gitignore_path):
-            with open(gitignore_path, "r") as ignore_file:
+            with open(gitignore_path, "r",encoding="utf-8") as ignore_file:
                 return pathspec.PathSpec.from_lines("gitwildmatch", ignore_file)
         return None
 

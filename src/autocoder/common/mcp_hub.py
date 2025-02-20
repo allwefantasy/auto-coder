@@ -116,7 +116,7 @@ class McpHub:
     def _write_default_settings(self):
         """Write default MCP settings file"""
         default_settings = {"mcpServers": {}}
-        with open(self.settings_path, "w") as f:
+        with open(self.settings_path, "w",encoding="utf-8") as f:
             json.dump(default_settings, f, indent=2)
 
     async def add_server_config(self, name: str, config:Dict[str,Any]) -> None:
@@ -129,7 +129,7 @@ class McpHub:
         try:
             settings = self._read_settings()            
             settings["mcpServers"][name] = config
-            with open(self.settings_path, "w") as f:
+            with open(self.settings_path, "w",encoding="utf-8") as f:
                 json.dump(settings, f, indent=2, ensure_ascii=False)
             await self.initialize()
             logger.info(f"Added/updated MCP server config: {name}")
@@ -148,7 +148,7 @@ class McpHub:
             settings = self._read_settings()
             if name in settings["mcpServers"]:
                 del settings["mcpServers"][name]
-                with open(self.settings_path, "w") as f:
+                with open(self.settings_path, "w",encoding="utf-8") as f:
                     json.dump(settings, f, indent=2, ensure_ascii=False)
                 logger.info(f"Removed MCP server config: {name}")
                 await self.initialize()

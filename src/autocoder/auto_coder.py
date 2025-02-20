@@ -75,7 +75,7 @@ def load_include_files(config, base_path, max_depth=10, current_depth=0):
 
         for include_file in include_files:
             abs_include_path = resolve_include_path(base_path, include_file)            
-            with open(abs_include_path, "r") as f:
+            with open(abs_include_path, "r",encoding="utf-8") as f:
                 include_config = yaml.safe_load(f)
                 if not include_config:
                     logger.info(
@@ -103,7 +103,7 @@ def main(input_args: Optional[List[str]] = None):
     args: AutoCoderArgs = args
 
     if args.file:
-        with open(args.file, "r") as f:
+        with open(args.file, "r",encoding="utf-8") as f:
             config = yaml.safe_load(f)
             config = load_include_files(config, args.file)
             for key, value in config.items():
@@ -224,11 +224,11 @@ def main(input_args: Optional[List[str]] = None):
                 f for f in action_files if f.startswith(raw_args.from_yaml)]
             if from_files:
                 from_file = from_files[0]  # Take the first match
-                with open(os.path.join(actions_dir, from_file), "r") as f:
+                with open(os.path.join(actions_dir, from_file), "r",encoding="utf-8") as f:
                     content = f.read()
                 new_file = os.path.join(
                     actions_dir, f"{new_seq}_{raw_args.name}.yml")
-                with open(new_file, "w") as f:
+                with open(new_file, "w",encoding="utf-8") as f:
                     f.write(content)
             else:
                 print(
@@ -239,15 +239,15 @@ def main(input_args: Optional[List[str]] = None):
             if not prev_files:
                 new_file = os.path.join(
                     actions_dir, f"{new_seq}_{raw_args.name}.yml")
-                with open(new_file, "w") as f:
+                with open(new_file, "w",encoding="utf-8") as f:
                     pass
             else:
                 prev_file = sorted(prev_files)[-1]  # 取序号最大的文件
-                with open(os.path.join(actions_dir, prev_file), "r") as f:
+                with open(os.path.join(actions_dir, prev_file), "r",encoding="utf-8") as f:
                     content = f.read()
                 new_file = os.path.join(
                     actions_dir, f"{new_seq}_{raw_args.name}.yml")
-                with open(new_file, "w") as f:
+                with open(new_file, "w",encoding="utf-8") as f:
                     f.write(content)        
         # open_yaml_file_in_editor(new_file)
         return
@@ -962,7 +962,7 @@ def main(input_args: Optional[List[str]] = None):
                 )
             )
 
-            with open(os.path.join(".auto-coder", "exchange.txt"), "w") as f:
+            with open(os.path.join(".auto-coder", "exchange.txt"), "w",encoding="utf-8") as f:
                 f.write(transcription)
 
             request_queue.add_request(
@@ -990,7 +990,7 @@ def main(input_args: Optional[List[str]] = None):
                 )
             )
 
-            with open(os.path.join(".auto-coder", "exchange.txt"), "w") as f:
+            with open(os.path.join(".auto-coder", "exchange.txt"), "w",encoding="utf-8") as f:
                 f.write(shell_script)
 
             request_queue.add_request(
@@ -1069,7 +1069,7 @@ def main(input_args: Optional[List[str]] = None):
             result_manager = ResultManager()
             if args.new_session:
                 if os.path.exists(memory_file):
-                    with open(memory_file, "r") as f:
+                    with open(memory_file, "r",encoding="utf-8") as f:
                         old_chat_history = json.load(f)
                     if "conversation_history" not in old_chat_history:
                         old_chat_history["conversation_history"] = []
@@ -1080,7 +1080,7 @@ def main(input_args: Optional[List[str]] = None):
                 else:
                     chat_history = {"ask_conversation": [],
                                     "conversation_history": []}
-                with open(memory_file, "w") as f:
+                with open(memory_file, "w",encoding="utf-8") as f:
                     json.dump(chat_history, f, ensure_ascii=False)
                 
                 result_manager.add_result(content=get_message("new_session_started"), meta={
@@ -1101,7 +1101,7 @@ def main(input_args: Optional[List[str]] = None):
                     return
 
             if os.path.exists(memory_file):
-                with open(memory_file, "r") as f:
+                with open(memory_file, "r",encoding="utf-8") as f:
                     chat_history = json.load(f)
                 if "conversation_history" not in chat_history:
                     chat_history["conversation_history"] = []
@@ -1294,7 +1294,7 @@ def main(input_args: Optional[List[str]] = None):
                     {"role": "assistant", "content": result}
                 )
 
-                with open(memory_file, "w") as f:
+                with open(memory_file, "w",encoding="utf-8") as f:
                     json.dump(chat_history, f, ensure_ascii=False)
 
                 request_queue.add_request(
@@ -1402,7 +1402,7 @@ def main(input_args: Optional[List[str]] = None):
                 {"role": "assistant", "content": assistant_response}
             )
 
-            with open(memory_file, "w") as f:
+            with open(memory_file, "w",encoding="utf-8") as f:
                 json.dump(chat_history, f, ensure_ascii=False)
 
             if "copy" in args.action:

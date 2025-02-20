@@ -209,6 +209,6 @@ class ActionTranslate:
                 new_filename = f"{filename}{new_file_mark}{extension}"
 
             logger.info(f"Writing to {new_filename}...")
-            with open(new_filename, "w") as file:
+            with open(new_filename, "w",encoding="utf-8") as file:
                 file.write(readme.content)
         return True

@@ -27,7 +27,7 @@ def export_conf(project_root: str, export_path: str) -> bool:
             return False
 
         # Read and extract conf
-        with open(memory_path, "r") as f:
+        with open(memory_path, "r",encoding="utf-8") as f:
             memory_data = json.load(f)
 
         conf_data = memory_data.get("conf", {})
@@ -35,7 +35,7 @@ def export_conf(project_root: str, export_path: str) -> bool:
         # Write to export location
         export_file = os.path.join(export_path, "conf.json")
         os.makedirs(export_path, exist_ok=True)
-        with open(export_file, "w") as f:
+        with open(export_file, "w",encoding="utf-8") as f:
             json.dump(conf_data, f, indent=2)
         printer.print_in_terminal("conf_export_success", path=export_file)
         result_manager.add_result(content=printer.get_message_from_key_with_format("conf_export_success", path=export_file), meta={"action": "conf_export", "input": {
@@ -71,7 +71,7 @@ def import_conf(project_root: str, import_path: str) -> bool:
             return False
 
         # Read conf file
-        with open(import_file, "r") as f:
+        with open(import_file, "r",encoding="utf-8") as f:
             conf_data = json.load(f)
 
         # Backup existing memory
@@ -82,13 +82,13 @@ def import_conf(project_root: str, import_path: str) -> bool:
             printer.print_in_terminal("conf_backup_success", path=backup_path)
 
         # Update conf in memory
-        with open(memory_path, "r") as f:
+        with open(memory_path, "r",encoding="utf-8") as f:
             memory_data = json.load(f)
 
         memory_data["conf"] = conf_data
 
         # Write updated memory
-        with open(memory_path, "w") as f:
+        with open(memory_path, "w",encoding="utf-8") as f:
             json.dump(memory_data, f, indent=2)
         
         printer.print_in_terminal("conf_import_success", path=memory_path)

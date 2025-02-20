@@ -160,7 +160,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
 
         cache = {}
         if os.path.exists(cache_file):
-            with open(cache_file, "r") as f:
+            with open(cache_file, "r",encoding="utf-8") as f:
                 for line in f:
                     data = json.loads(line)
                     cache[data["file_path"]] = data
@@ -171,7 +171,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         cache_file = os.path.join(cache_dir, "cache.jsonl")
 
         if not fcntl:
-            with open(cache_file, "w") as f:
+            with open(cache_file, "w",encoding="utf-8") as f:
                 for data in self.cache.values():
                     try:
                         json.dump(data, f, ensure_ascii=False)
@@ -181,12 +181,12 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                             f"Failed to write {data['file_path']} to .cache/cache.jsonl: {e}")
         else:
             lock_file = cache_file + ".lock"
-            with open(lock_file, "w") as lockf:
+            with open(lock_file, "w",encoding="utf-8") as lockf:
                 try:
                     # 获取文件锁
                     fcntl.flock(lockf, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     # 写入缓存文件
-                    with open(cache_file, "w") as f:
+                    with open(cache_file, "w",encoding="utf-8") as f:
                         for data in self.cache.values():
                             try:
                                 json.dump(data, f, ensure_ascii=False)

@@ -119,11 +119,11 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
 
         if not prev_files:
             new_file = os.path.join(actions_dir, f"{new_seq}_{yaml_file_name}.yml")
-            with open(new_file, "w") as f:
+            with open(new_file, "w",encoding="utf-8") as f:
                 pass
         else:
             prev_file = sorted(prev_files)[-1]  # 取序号最大的文件
-            with open(os.path.join(actions_dir, prev_file), "r") as f:
+            with open(os.path.join(actions_dir, prev_file), "r",encoding="utf-8") as f:
                 content = f.read()
 
             yaml_content = yaml.safe_load(content)
@@ -137,7 +137,7 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
                          
             new_content = yaml.safe_dump(yaml_content, allow_unicode=True, default_flow_style=False)
             new_file = os.path.join(actions_dir, f"{new_seq}_{yaml_file_name}.yml")
-            with open(new_file, "w") as f:
+            with open(new_file, "w",encoding="utf-8") as f:
                 f.write(new_content + "\n" + yaml_str)
 
         return new_file
@@ -151,7 +151,7 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         paths = [p.strip() for p in paths.split(",")]
         source_code_str = ""
         for path in paths:
-            with open(path, "r") as f:
+            with open(path, "r",encoding="utf-8") as f:
                 source_code = f.read()
                 sc = SourceCode(module_name=path, source_code=source_code)
                 source_code_str += f"##File: {sc.module_name}\n"

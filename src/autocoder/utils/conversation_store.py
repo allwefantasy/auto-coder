@@ -34,7 +34,7 @@ def load_code_model_conversation_from_store(args: AutoCoderArgs):
         return []
 
     conversations = []
-    with open(conversation_file, "r") as f:
+    with open(conversation_file, "r",encoding="utf-8") as f:
         for line in f:
             conversations.append(json.loads(line))
 

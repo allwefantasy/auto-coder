@@ -607,7 +607,7 @@ def get_symbol_list() -> List[SymbolItem]:
     index_file = os.path.join(".auto-coder", "index.json")
 
     if os.path.exists(index_file):
-        with open(index_file, "r") as file:
+        with open(index_file, "r",encoding="utf-8") as file:
             index_data = json.load(file)
     else:
         index_data = {}
@@ -644,7 +644,7 @@ def get_symbol_list() -> List[SymbolItem]:
 
 
 def save_memory():
-    with open(os.path.join(base_persist_dir, "memory.json"), "w") as f:
+    with open(os.path.join(base_persist_dir, "memory.json"), "w",encoding="utf-8") as f:
         json.dump(memory, f, indent=2, ensure_ascii=False)
     load_memory()
 
@@ -653,7 +653,7 @@ def load_memory():
     global memory
     memory_path = os.path.join(base_persist_dir, "memory.json")
     if os.path.exists(memory_path):
-        with open(memory_path, "r") as f:
+        with open(memory_path, "r", encoding="utf-8") as f:
             memory = json.load(f)
     completer.update_current_files(memory["current_files"]["files"])
 
@@ -1096,7 +1096,7 @@ def ask(query: str):
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-    with open(os.path.join(execute_file), "w") as f:
+    with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
         f.write(yaml_content)
 
     def execute_ask():
@@ -1144,7 +1144,7 @@ def get_llm_friendly_package_docs(
                                         if return_paths:
                                             docs.append(file_path)
                                         else:
-                                            with open(file_path, "r") as f:
+                                            with open(file_path, "r",encoding="utf-8") as f:
                                                 docs.append(f.read())
 
     return docs
@@ -1154,7 +1154,7 @@ def convert_yaml_to_config(yaml_file: str):
     from autocoder.auto_coder import AutoCoderArgs, load_include_files, Template
 
     args = AutoCoderArgs()
-    with open(yaml_file, "r") as f:
+    with open(yaml_file, "r",encoding="utf-8") as f:
         config = yaml.safe_load(f)
         config = load_include_files(config, yaml_file)
         for key, value in config.items():
@@ -1244,7 +1244,7 @@ def mcp(query: str):
 
     temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
     try:
-        with open(temp_yaml, "w") as f:
+        with open(temp_yaml, "w",encoding="utf-8") as f:
             f.write(convert_yaml_config_to_str(yaml_config=yaml_config))
         args = convert_yaml_to_config(temp_yaml)
     finally:
@@ -1313,7 +1313,7 @@ def code_next(query: str):
 
     temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
     try:
-        with open(temp_yaml, "w") as f:
+        with open(temp_yaml, "w",encoding="utf-8") as f:
             f.write(convert_yaml_config_to_str(yaml_config=yaml_config))
         args = convert_yaml_to_config(temp_yaml)
     finally:
@@ -1420,7 +1420,7 @@ def commit(query: str):
             # 临时保存yaml文件，然后读取yaml文件，转换为args
             temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
             try:
-                with open(temp_yaml, "w") as f:
+                with open(temp_yaml, "w",encoding="utf-8") as f:
                     f.write(convert_yaml_config_to_str(
                         yaml_config=yaml_config))
                 args = convert_yaml_to_config(temp_yaml)
@@ -1447,7 +1447,7 @@ def commit(query: str):
 
             yaml_config["query"] = commit_message
             yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
-            with open(os.path.join(execute_file), "w") as f:
+            with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
                 f.write(yaml_content)
 
             file_content = open(execute_file).read()
@@ -1563,7 +1563,7 @@ def coding(query: str):
                 error_message()
                 return
 
-            with open(memory_file, "r") as f:
+            with open(memory_file, "r",encoding="utf-8") as f:
                 chat_history = json.load(f)
 
             if not chat_history["ask_conversation"]:
@@ -1587,7 +1587,7 @@ def coding(query: str):
         md5 = hashlib.md5(yaml_content.encode("utf-8")).hexdigest()
 
         execute_file = os.path.join("actions", latest_yaml_file)
-        with open(os.path.join(execute_file), "w") as f:
+        with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
             f.write(yaml_content)
 
         def execute_chat():
@@ -1703,7 +1703,7 @@ def chat(query: str):
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-    with open(os.path.join(execute_file), "w") as f:
+    with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
         f.write(yaml_content)
 
     def execute_ask():
@@ -1727,7 +1727,7 @@ def summon(query: str):
     for file in current_files:
         if os.path.exists(file):
             try:
-                with open(file, "r") as f:
+                with open(file, "r",encoding="utf-8") as f:
                     content = f.read()
                     s = f"##File: {file}\n{content}\n\n"
                     file_contents.append(s)
@@ -1763,7 +1763,7 @@ def summon(query: str):
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-    with open(os.path.join(execute_file), "w") as f:
+    with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
         f.write(yaml_content)
 
     def execute_summon():
@@ -1810,7 +1810,7 @@ def design(query: str):
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-    with open(os.path.join(execute_file), "w") as f:
+    with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
         f.write(yaml_content)
 
     def execute_design():
@@ -1839,7 +1839,7 @@ def voice_input():
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-    with open(os.path.join(execute_file), "w") as f:
+    with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
         f.write(yaml_content)
 
     def execute_voice2text_command():
@@ -1847,7 +1847,7 @@ def voice_input():
 
     try:
         execute_voice2text_command()
-        with open(os.path.join(".auto-coder", "exchange.txt"), "r") as f:
+        with open(os.path.join(".auto-coder", "exchange.txt"), "r",encoding="utf-8") as f:
             return f.read()
     finally:
         os.remove(execute_file)
@@ -1869,12 +1869,12 @@ def generate_shell_command(input_text):
 
     execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-    with open(os.path.join(execute_file), "w") as f:
+    with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
         f.write(yaml_content)
 
     try:
         auto_coder_main(["agent", "generate_command", "--file", execute_file])
-        with open(os.path.join(".auto-coder", "exchange.txt"), "r") as f:
+        with open(os.path.join(".auto-coder", "exchange.txt"), "r",encoding="utf-8") as f:
             shell_script = f.read()
         result_manager = ResultManager()
         result_manager.add_result(content=shell_script,meta={
@@ -2340,7 +2340,7 @@ def index_build():
     yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
     yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-    with open(yaml_file, "w") as f:
+    with open(yaml_file, "w",encoding="utf-8") as f:
         f.write(yaml_content)
     try:
         with redirect_stdout() as output:
@@ -2370,7 +2370,7 @@ def get_final_config()->AutoCoderArgs:
 
     temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
     try:
-        with open(temp_yaml, "w") as f:
+        with open(temp_yaml, "w",encoding="utf-8") as f:
             f.write(convert_yaml_config_to_str(yaml_config=yaml_config))
         args = convert_yaml_to_config(temp_yaml)
     finally:
@@ -2425,7 +2425,7 @@ def index_query(query: str):
     yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
     yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-    with open(yaml_file, "w") as f:
+    with open(yaml_file, "w",encoding="utf-8") as f:
         f.write(yaml_content)
     try:
         with redirect_stdout() as output:

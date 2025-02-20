@@ -78,7 +78,8 @@ class RegexProject:
             raise ValueError("Invalid project_type format. Expected 'regex//<pattern>'")
 
     def output(self):
-        return open(self.target_file, "r").read()
+        with open(self.target_file, "r",encoding="utf-8") as file:
+            return file.read()
 
     def is_regex_match(self, file_path):
         return re.search(self.regex_pattern, file_path) is not None
@@ -231,7 +232,7 @@ class RegexProject:
             self.clone_repository()
 
         if self.target_file:
-            with open(self.target_file, "w") as file:
+            with open(self.target_file, "w",encoding="utf-8") as file:
                 for code in self.get_source_codes():
                     self.sources.append(code)
                     file.write(f"##File: {code.module_name}\n")

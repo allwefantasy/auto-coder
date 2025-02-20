@@ -80,7 +80,7 @@ def get_mcp_external_servers() -> List[McpExternalServer]:
     if os.path.exists(cache_file):
         cache_time = os.path.getmtime(cache_file)
         if time.time() - cache_time < 3600:  # 1 hour cache
-            with open(cache_file, "r") as f:
+            with open(cache_file, "r",encoding="utf-8") as f:
                 raw_data = json.load(f)
                 return [McpExternalServer(**item) for item in raw_data]
 
@@ -91,7 +91,7 @@ def get_mcp_external_servers() -> List[McpExternalServer]:
         response = requests.get(url)
         if response.status_code == 200:
             raw_data = response.json()
-            with open(cache_file, "w") as f:
+            with open(cache_file, "w",encoding="utf-8") as f:
                 json.dump(raw_data, f)
             return [McpExternalServer(**item) for item in raw_data]
         return []

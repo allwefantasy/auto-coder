@@ -88,7 +88,7 @@ def load_memory():
     global memory
     memory_path = os.path.join(base_persist_dir, "memory.json")
     if os.path.exists(memory_path):
-        with open(memory_path, "r") as f:
+        with open(memory_path, "r",encoding="utf-8") as f:
             memory = json.load(f)
 
 
@@ -222,7 +222,7 @@ async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
 
             yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
             execute_file = os.path.join("actions", latest_yaml_file)
-            with open(execute_file, "w") as f:
+            with open(execute_file, "w", encoding="utf-8") as f:
                 f.write(yaml_content)
 
             try:
@@ -262,7 +262,7 @@ async def chat(request: QueryRequest, background_tasks: BackgroundTasks):
             file_contents = []
             for file in current_files:
                 if os.path.exists(file):
-                    with open(file, "r") as f:
+                    with open(file, "r",encoding="utf-8") as f:
                         content = f.read()
                         s = f"##File: {file}\n{content}\n\n"
                         file_contents.append(s)
@@ -282,7 +282,7 @@ async def chat(request: QueryRequest, background_tasks: BackgroundTasks):
 
             yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
 
-            with open(execute_file, "w") as f:
+            with open(execute_file, "w",encoding="utf-8") as f:
                 f.write(yaml_content)
             auto_coder_main(
                 ["agent", "chat", "--file", execute_file, "--request_id", request_id]
@@ -318,7 +318,7 @@ async def ask(request: QueryRequest, background_tasks: BackgroundTasks):
 
         execute_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
 
-        with open(execute_file, "w") as f:
+        with open(execute_file, "w", encoding="utf-8") as f:
             f.write(yaml_content)
 
         try:
@@ -372,7 +372,7 @@ async def index_build(background_tasks: BackgroundTasks):
 include_file:
   - ./base/base.yml  
 """
-        with open(yaml_file, "w") as f:
+        with open(yaml_file, "w", encoding="utf-8") as f:
             f.write(yaml_content)
 
         log_capture = LogCapture(request_id=request_id)
@@ -400,7 +400,7 @@ async def index_query(request: QueryRequest, background_tasks: BackgroundTasks):
     query: |
     {request.query}
     """
-        with open(yaml_file, "w") as f:
+        with open(yaml_file, "w", encoding="utf-8") as f:
             f.write(yaml_content)
         try:
             auto_coder_main(

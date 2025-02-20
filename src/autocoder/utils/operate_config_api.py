@@ -15,7 +15,7 @@ import hashlib
 def convert_yaml_to_config(yaml_file: str):
 
     args = AutoCoderArgs()
-    with open(yaml_file, "r") as f:
+    with open(yaml_file, "r",encoding="utf-8") as f:
         config = yaml.safe_load(f)
         config = load_include_files(config, yaml_file)
         for key, value in config.items():
@@ -75,7 +75,7 @@ def get_llm_friendly_package_docs(memory,
                                         if return_paths:
                                             docs.append(file_path)
                                         else:
-                                            with open(file_path, "r") as f:
+                                            with open(file_path, "r",encoding="utf-8") as f:
                                                 docs.append(f.read())
 
     return docs
@@ -130,7 +130,7 @@ def get_llm(memory, model:Optional[str]=None):
             # 临时保存yaml文件，然后读取yaml文件，转换为args
             temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
             try:
-                with open(temp_yaml, "w") as f:
+                with open(temp_yaml, "w",encoding="utf-8") as f:
                     f.write(convert_yaml_config_to_str(
                         yaml_config=yaml_config))
                 args = convert_yaml_to_config(temp_yaml)

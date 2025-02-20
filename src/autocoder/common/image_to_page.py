@@ -122,7 +122,7 @@ class ImageToPageDirectly:
 
         counter = 1 
         target_html_path = os.path.join(html_dir,f"{html_file_name}-{counter}.html") 
-        with open(target_html_path, "w") as f:
+        with open(target_html_path, "w",encoding="utf-8") as f:
             f.write(html)               
         
         while counter < max_iter:
@@ -137,11 +137,11 @@ class ImageToPageDirectly:
             
             target_html_path = os.path.join(html_dir,f"{html_file_name}-{counter}.html")
             logger.info(f"generate html: {target_html_path}")                
-            with open(target_html_path, "w") as f:
+            with open(target_html_path, "w",encoding="utf-8") as f:
                 f.write(html)            
         
         logger.info(f"finally generate html: {html_path}")
-        with open(html_path, "w") as f:
+        with open(html_path, "w",encoding="utf-8") as f:
             f.write(html)    
              
 
@@ -248,7 +248,7 @@ class ImageToPage:
                 file_path = block.path
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-                with open(file_path, "w") as f:
+                with open(file_path, "w",encoding="utf-8") as f:
                     logger.info(f"Upsert path: {file_path}")                                       
                     f.write(block.content)
                     file_modified_num += 1
@@ -268,7 +268,7 @@ class ImageToPage:
         ## generate html by image description        
         content_contains_html_prompt = self.generate_html.prompt(desc,html_path) 
 
-        with open(self.args.target_file, "w") as f:
+        with open(self.args.target_file, "w",encoding="utf-8") as f:
             f.write(content_contains_html_prompt) 
 
         t = self.llm.chat_oai(conversations=[{
@@ -278,7 +278,7 @@ class ImageToPage:
 
         content_contains_html = t[0].output 
 
-        with open(self.args.target_file, "w") as f:
+        with open(self.args.target_file, "w",encoding="utf-8") as f:
             f.write(content_contains_html)
         
         
@@ -296,7 +296,7 @@ class ImageToPage:
 
         for i in range(max_iter):
             logger.info(f"iterate  {i}")
-            with open(html_path,"r") as f:
+            with open(html_path,"r",encoding="utf-8") as f:
                 prev_html = f.read()
 
             gen_screenshots(url=html_path,image_dir=new_image_dir)        
@@ -309,7 +309,7 @@ class ImageToPage:
             ## get new description prompt by comparing old and new image
             new_desc_prompt = self.get_optimize(self.score(origin_image,new_image))
 
-            with open(self.args.target_file, "w") as f:
+            with open(self.args.target_file, "w",encoding="utf-8") as f:
                 f.write(new_desc_prompt) 
 
             t = self.llm.chat_oai(conversations=[{
@@ -319,7 +319,7 @@ class ImageToPage:
 
             new_desc = t[0].output 
 
-            with open(self.args.target_file, "w") as f:
+            with open(self.args.target_file, "w",encoding="utf-8") as f:
                 f.write(new_desc)            
 
             logger.info(f"score old/new image: {new_desc}")
@@ -327,7 +327,7 @@ class ImageToPage:
             ## generate new html by new description
             optimze_html_prompt =  self.optimize_html.prompt(desc=new_desc,html=prev_html,html_path=html_path)                                    
             
-            with open(self.args.target_file, "w") as f:
+            with open(self.args.target_file, "w",encoding="utf-8") as f:
                 f.write(optimze_html_prompt) 
 
             t = self.llm.chat_oai(conversations=[{
@@ -336,7 +336,7 @@ class ImageToPage:
             }],llm_config={**extra_llm_config}) 
             new_code = t[0].output
             
-            with open(self.args.target_file, "w") as f:
+            with open(self.args.target_file, "w",encoding="utf-8") as f:
                 f.write(new_code) 
 
             self.write_code(new_code,html_path)
