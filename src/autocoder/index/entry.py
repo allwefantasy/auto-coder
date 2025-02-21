@@ -291,7 +291,15 @@ def build_index_and_filter_files(
             ## 将 [(pos,file_path)] 转换为 [file_path]
             ## 通过 [file_path] 顺序调整 temp_sources 的顺序             
             ## MARK 
-            pass
+             # 将 file_positions 转换为 [(pos, file_path)] 的列表
+            position_file_pairs = [(pos, file_path) for file_path, pos in file_positions.items()]
+            # 按位置排序
+            position_file_pairs.sort(key=lambda x: x[0])
+            # 提取排序后的文件路径列表
+            sorted_file_paths = [file_path for _, file_path in position_file_pairs]
+            # 根据 sorted_file_paths 重新排序 temp_sources
+            temp_sources.sort(key=lambda x: sorted_file_paths.index(x.module_name) if x.module_name in sorted_file_paths else len(sorted_file_paths))
+           pass
         pruned_files = context_pruner.handle_overflow([source.module_name for source in temp_sources], [{"role":"user","content":args.query}], args.context_prune_strategy)
         source_code_list.sources = pruned_files
 
