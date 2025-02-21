@@ -12,6 +12,7 @@ from autocoder.index.symbols_utils import (
 from autocoder.privacy.model_filter import ModelPathFilter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
+import re
 
 import byzerllm
 import hashlib
@@ -27,6 +28,8 @@ from autocoder.index.types import (
 from autocoder.common.global_cancel import global_cancel
 from autocoder.utils.llms import get_llm_names
 from autocoder.rag.token_counter import count_tokens
+
+
 class IndexManager:
     def __init__(
         self, llm: byzerllm.ByzerLLM, sources: List[SourceCode], args: AutoCoderArgs
@@ -52,12 +55,14 @@ class IndexManager:
             self.index_filter_llm = llm
 
         self.llm = llm
-        
+
         # Initialize model filters
         if self.index_llm:
-            self.index_model_filter = ModelPathFilter.from_model_object(self.index_llm, args)
+            self.index_model_filter = ModelPathFilter.from_model_object(
+                self.index_llm, args)
         if self.index_filter_llm:
-            self.index_filter_model_filter = ModelPathFilter.from_model_object(self.index_filter_llm, args)
+            self.index_filter_model_filter = ModelPathFilter.from_model_object(
+                self.index_filter_llm, args)
         self.args = args
         self.max_input_length = (
             args.index_model_max_input_length or args.model_max_input_length
@@ -68,7 +73,6 @@ class IndexManager:
         if not os.path.exists(self.index_dir):
             os.makedirs(self.index_dir)
 
-    
     @byzerllm.prompt()
     def verify_file_relevance(self, file_content: str, query: str) -> str:
         """
@@ -201,12 +205,12 @@ class IndexManager:
         if current_chunk:
             chunks.append("\n".join(current_chunk))
         return chunks
-    
+
     def should_skip(self, file_path: str):
         ext = os.path.splitext(file_path)[1].lower()
         if ext in [".md", ".html", ".txt", ".doc", ".pdf"]:
             return True
-            
+
         # Check model filter restrictions
         if self.index_model_filter and not self.index_model_filter.is_accessible(file_path):
             self.printer.print_in_terminal(
@@ -216,10 +220,10 @@ class IndexManager:
                 model_name=",".join(get_llm_names(self.index_llm))
             )
             return True
-            
+
         return False
 
-    def build_index_for_single_source(self, source: SourceCode):   
+    def build_index_for_single_source(self, source: SourceCode):
         if global_cancel.requested:
             return None
 
@@ -251,13 +255,13 @@ class IndexManager:
 
             start_time = time.monotonic()
             source_code = source.source_code
-            
+
             # 统计token和成本
             total_input_tokens = 0
             total_output_tokens = 0
             total_input_cost = 0.0
             total_output_cost = 0.0
-            
+
             if count_tokens(source.source_code) > self.args.conversation_prune_safe_zone_tokens:
                 self.printer.print_in_terminal(
                     "index_file_too_large",
@@ -276,34 +280,40 @@ class IndexManager:
                         self.index_llm).with_meta(meta_holder).run(source.module_name, chunk)
                     time.sleep(self.anti_quota_limit)
                     symbols.append(chunk_symbols)
-                    
+
                     if meta_holder.get_meta():
                         meta_dict = meta_holder.get_meta()
-                        total_input_tokens += meta_dict.get("input_tokens_count", 0)
-                        total_output_tokens += meta_dict.get("generated_tokens_count", 0)
-                        
+                        total_input_tokens += meta_dict.get(
+                            "input_tokens_count", 0)
+                        total_output_tokens += meta_dict.get(
+                            "generated_tokens_count", 0)
+
                 symbols = "\n".join(symbols)
             else:
                 meta_holder = byzerllm.MetaHolder()
                 symbols = self.get_all_file_symbols.with_llm(
                     self.index_llm).with_meta(meta_holder).run(source.module_name, source_code)
                 time.sleep(self.anti_quota_limit)
-                
+
                 if meta_holder.get_meta():
                     meta_dict = meta_holder.get_meta()
-                    total_input_tokens += meta_dict.get("input_tokens_count", 0)
-                    total_output_tokens += meta_dict.get("generated_tokens_count", 0)
-            
+                    total_input_tokens += meta_dict.get(
+                        "input_tokens_count", 0)
+                    total_output_tokens += meta_dict.get(
+                        "generated_tokens_count", 0)
+
             # 计算总成本
             for name in model_names:
                 info = model_info_map.get(name, {})
-                total_input_cost += (total_input_tokens * info.get("input_price", 0.0)) / 1000000
-                total_output_cost += (total_output_tokens * info.get("output_price", 0.0)) / 1000000
-            
+                total_input_cost += (total_input_tokens *
+                                     info.get("input_price", 0.0)) / 1000000
+                total_output_cost += (total_output_tokens *
+                                      info.get("output_price", 0.0)) / 1000000
+
             # 四舍五入到4位小数
             total_input_cost = round(total_input_cost, 4)
             total_output_cost = round(total_output_cost, 4)
-            
+
             self.printer.print_in_terminal(
                 "index_update_success",
                 style="green",
@@ -340,9 +350,44 @@ class IndexManager:
             "generated_tokens_cost": total_output_cost
         }
 
+    def parse_exclude_files(self, exclude_files):
+        if not exclude_files:
+            return []
+
+        if isinstance(exclude_files, str):
+            exclude_files = [exclude_files]
+
+        exclude_patterns = []
+        for pattern in exclude_files:
+            if pattern.startswith("regex://"):
+                pattern = pattern[8:]
+                exclude_patterns.append(re.compile(pattern))
+            elif pattern.startswith("human://"):
+                pattern = pattern[8:]
+                v = (
+                    self.generate_regex_pattern.with_llm(self.llm)
+                    .with_extractor(self.extract_regex_pattern)
+                    .run(desc=pattern)
+                )
+                if not v:
+                    raise ValueError(
+                        "Fail to generate regex pattern, try again.")
+                exclude_patterns.append(re.compile(v))
+            else:
+                raise ValueError(
+                    "Invalid exclude_files format. Expected 'regex://<pattern>' or 'human://<description>' "
+                )
+        return exclude_patterns
+
+    def filter_exclude_files(self, file_path, exclude_patterns):
+        for pattern in exclude_patterns:
+            if pattern.search(file_path):
+                return True
+        return False
+
     def build_index(self):
         if os.path.exists(self.index_file):
-            with open(self.index_file, "r",encoding="utf-8") as file:
+            with open(self.index_file, "r", encoding="utf-8") as file:
                 index_data = json.load(file)
         else:
             index_data = {}
@@ -351,14 +396,20 @@ class IndexManager:
         keys_to_remove = []
         for file_path in index_data:
             if not os.path.exists(file_path):
-                keys_to_remove.append(file_path)                
-        
+                keys_to_remove.append(file_path)
+
+        # 删除被排除的文件
+        exclude_patterns = self.parse_exclude_files(self.args.exclude_files)
+        for file_path in index_data:
+            if self.filter_exclude_files(file_path, exclude_patterns):
+                keys_to_remove.append(file_path)
+
         # 删除无效条目并记录日志
         for key in set(keys_to_remove):
             if key in index_data:
                 del index_data[key]
                 self.printer.print_in_terminal(
-                    "index_file_removed", 
+                    "index_file_removed",
                     style="yellow",
                     file_path=key
                 )
@@ -388,7 +439,7 @@ class IndexManager:
                     for line in v:
                         new_v.append(line[line.find(":"):])
                     source_code = "\n".join(new_v)
-                
+
                 md5 = hashlib.md5(source_code.encode("utf-8")).hexdigest()
                 if (
                     source.module_name not in index_data
@@ -397,7 +448,8 @@ class IndexManager:
                     wait_to_build_files.append(source)
 
             # Remove duplicates based on module_name
-            wait_to_build_files = list({source.module_name: source for source in wait_to_build_files}.values())
+            wait_to_build_files = list(
+                {source.module_name: source for source in wait_to_build_files}.values())
 
             counter = 0
             num_files = len(wait_to_build_files)
@@ -433,16 +485,17 @@ class IndexManager:
                     index_data[module_name] = result
                     updated_sources.append(module_name)
                     if len(updated_sources) > 5:
-                        with open(self.index_file, "w",encoding="utf-8") as file:
-                            json.dump(index_data, file, ensure_ascii=False, indent=2)
+                        with open(self.index_file, "w", encoding="utf-8") as file:
+                            json.dump(index_data, file,
+                                      ensure_ascii=False, indent=2)
                         updated_sources = []
-        
+
         # 如果 updated_sources 或 keys_to_remove 有值，则保存索引文件
         if updated_sources or keys_to_remove:
-            with open(self.index_file, "w",encoding="utf-8") as file:
+            with open(self.index_file, "w", encoding="utf-8") as file:
                 json.dump(index_data, file, ensure_ascii=False, indent=2)
 
-            print("")    
+            print("")
             self.printer.print_in_terminal(
                 "index_file_saved",
                 style="green",
@@ -461,14 +514,14 @@ class IndexManager:
         if not os.path.exists(self.index_file):
             return []
 
-        with open(self.index_file, "r",encoding="utf-8") as file:
+        with open(self.index_file, "r", encoding="utf-8") as file:
             return file.read()
 
     def read_index(self) -> List[IndexItem]:
         if not os.path.exists(self.index_file):
             return []
 
-        with open(self.index_file, "r",encoding="utf-8") as file:
+        with open(self.index_file, "r", encoding="utf-8") as file:
             index_data = json.load(file)
 
         index_items = []
@@ -572,7 +625,7 @@ class IndexManager:
             {file.file_path: file for file in all_results}.values())
         return FileList(file_list=all_results)
 
-    def _query_index_with_thread(self, query, func):        
+    def _query_index_with_thread(self, query, func):
         all_results = []
         lock = threading.Lock()
         completed_threads = 0
@@ -582,7 +635,7 @@ class IndexManager:
             nonlocal completed_threads
             result = self._get_target_files_by_query.with_llm(
                 self.llm).with_return_type(FileList).run(chunk, query)
-            
+
             if result is not None:
                 with lock:
                     all_results.extend(result.file_list)
@@ -708,4 +761,3 @@ class IndexManager:
 
         请确保结果的准确性和完整性，包括所有可能相关的文件。
         """
-

@@ -1507,7 +1507,7 @@ def coding(query: str):
             "silence": conf.get("silence", "true") == "true",
             "include_project_structure": conf.get("include_project_structure", "true")
             == "true",
-            "exclude_files": conf.get("exclude_files", []),
+            "exclude_files": memory.get("exclude_files", []),
         }
 
         yaml_config["context"] = ""        
@@ -1636,7 +1636,7 @@ def chat(query: str):
         "skip_build_index": conf.get("skip_build_index", "true") == "true",
         "skip_confirm": conf.get("skip_confirm", "true") == "true",
         "silence": conf.get("silence", "true") == "true",
-        "exclude_files": conf.get("exclude_files", []),
+        "exclude_files": memory.get("exclude_files", []),
     }
 
     current_files = memory["current_files"]["files"] + get_llm_friendly_package_docs(
