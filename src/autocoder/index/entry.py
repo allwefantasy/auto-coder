@@ -247,7 +247,7 @@ def build_index_and_filter_files(
     try:
         print_selected(
             [
-                (file.file_path, file.reason)
+                (file["file_path"], file.reason)
                 for file in final_files.values()
                 if file.file_path in final_filenames
             ]
@@ -278,7 +278,7 @@ def build_index_and_filter_files(
             event=CommunicateEvent(
                 event_type=CommunicateEventType.CODE_INDEX_FILTER_FILE_SELECTED.value,
                 data=json.dumps([
-                    (file.file_path, file.reason)
+                    (file["file_path"], file.reason)
                     for file in final_files.values()
                     if file.file_path in depulicated_sources
                 ])
