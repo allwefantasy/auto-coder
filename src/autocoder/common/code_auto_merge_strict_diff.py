@@ -224,23 +224,19 @@ class CodeAutoMergeStrictDiff:
     def _merge_code(self, content: str, force_skip_git: bool = False):        
         total = 0
         
-
         file_content = FileUtils.read_file(self.args.file)
         md5 = hashlib.md5(file_content.encode('utf-8')).hexdigest()
         # get the file name 
         file_name = os.path.basename(self.args.file)
         
-
         if not force_skip_git and not self.args.skip_commit:
             try:
                 git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
             except Exception as e:            
                 self.printer.print_in_terminal("git_init_required", style="red", source_dir=self.args.source_dir, error=str(e))
                 return            
-
        
         diff_blocks = self.parse_diff_block(content)
-        self.print_diff_blocks(diff_blocks)
         for diff_blocks in diff_blocks:
             path = diff_blocks.path
             content = diff_blocks.content          
@@ -254,17 +250,12 @@ class CodeAutoMergeStrictDiff:
             success = patch_obj.apply(root=root_path)
             if not success:
                 raise Exception("Error applying diff to file: " + path)
-
                             
         self.printer.print_in_terminal("files_merged_total", total=total)
         if not force_skip_git and not self.args.skip_commit:
             commit_result = git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}\n{self.args.query}")
             git_utils.print_commit_info(commit_result=commit_result)
 
-    def print_diff_blocks(self, diff_blocks):
-        """Print the diff blocks in a human-readable format."""
-        for block in diff_blocks:
-            self.printer.print_in_terminal("diff_block_info", style="blue", path=block.path, content=block.content)
     @byzerllm.prompt(render="jinja2")
     def git_require_msg(self, source_dir: str, error: str) -> str:
         '''
