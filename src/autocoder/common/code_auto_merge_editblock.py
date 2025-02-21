@@ -465,4 +465,35 @@ class CodeAutoMergeEditBlock:
 
     def print_merged_blocks(self, merged_blocks: List[tuple]):
         """Print search/replace blocks for user review using rich library"""
-        pass
+        from rich.syntax import Syntax
+        from rich.panel import Panel
+
+        # Group blocks by file path
+        file_blocks = {}
+        for file_path, head, update, similarity in merged_blocks:
+            if file_path not in file_blocks:
+                file_blocks[file_path] = []
+            file_blocks[file_path].append((head, update, similarity))
+
+        # Generate formatted text for each file
+        formatted_text = ""
+        for file_path, blocks in file_blocks.items():
+            formatted_text += f"##File: {file_path}\n"
+            for head, update, similarity in blocks:
+                formatted_text += "<<<<<<< SEARCH\n"
+                formatted_text += head + "\n"
+                formatted_text += "=======\n"
+                formatted_text += update + "\n"
+                formatted_text += ">>>>>>> REPLACE\n"
+            formatted_text += "\n"
+
+        # Print with rich panel
+        self.printer.print_in_terminal("merged_blocks_title", style="bold green")
+        self.printer.console.print(
+            Panel(
+                Syntax(formatted_text, "diff", theme="monokai"),
+                title="Merged Changes",
+                border_style="green",
+                expand=False
+            )
+        )
