@@ -31,7 +31,7 @@ class NormalFilterResult(BaseModel):
     files: Dict[str, TargetFile]
     has_error: bool
     error_message: Optional[str] = None
-    file_positions: Optional[Dict[str, int]]
+    file_positions: Optional[Dict[str, int]] = {}
 
 class NormalFilter():
     def __init__(self, index_manager: IndexManager,stats:Dict[str,Any],sources:List[SourceCode]):
