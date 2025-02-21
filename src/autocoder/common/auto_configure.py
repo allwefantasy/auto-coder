@@ -14,6 +14,8 @@ from byzerllm.utils.str2model import to_model
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common.result_manager import ResultManager
 from autocoder.utils import llms as llms_utils
+from autocoder.common import AutoCoderArgs
+
 logger = logging.getLogger(__name__)
 
 class ConfigMessage(BaseModel):
@@ -120,9 +122,10 @@ class AutoConfigResponse(BaseModel):
     reasoning: str = ""        
 
 class ConfigAutoTuner:
-    def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], memory_config: MemoryConfig):
+    def __init__(self,args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], memory_config: MemoryConfig):
         self.llm = llm
         self.memory_config = memory_config
+        self.args = args
             
 
     def configure(self, conf: str, skip_print: bool = False) -> None:

@@ -507,11 +507,19 @@ class CommandAutoTuner:
           如果你检测到用户的coding执行结果，缺少必要的文件修改，可以尝试使用该函数先添加文件再执行coding。
         </description>
         <usage>
-         该方法只有一个参数 args，args 是一个列表，列表的元素是字符串。会包含子指令，例如 
-         
-         add_files(args=["/refresh"]) 
-        
-         会刷新文件列表。下面是常见的子指令：
+         该方法只有一个参数 args，args 是一个列表，列表的元素是字符串。
+
+         如果没有包含子指令，单纯的添加文件，那么 args 列表的元素是文件路径，注意我们需要使用绝对路径。
+
+         使用例子：
+
+         add_files(args=["/absolute/path/to/file1.py"])
+
+         也支持glob 语法，例如：
+
+         add_files(args=["*.py"])
+
+         如果是有子指令，参考下面是常见的子指令说明。
 
          ## /refresh 刷新文件列表
          刷新文件列表

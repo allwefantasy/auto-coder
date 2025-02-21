@@ -2383,7 +2383,7 @@ def help(query: str):
     args = get_final_config()
     product_mode = memory.get("product_mode", "lite")
     llm = get_single_llm(args.chat_model or args.model, product_mode=product_mode)
-    auto_config_tuner = ConfigAutoTuner(llm=llm, memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory))
+    auto_config_tuner = ConfigAutoTuner(args=args, llm=llm, memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory))
     auto_config_tuner.tune(AutoConfigRequest(query=query))    
 
 @run_in_raw_thread()
