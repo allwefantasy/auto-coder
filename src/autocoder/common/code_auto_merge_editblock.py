@@ -288,6 +288,29 @@ class CodeAutoMergeEditBlock:
             failed_blocks=failed_blocks
         )
 
+    def print_edit_blocks(self, content: str):
+        """Print search/replace blocks for user review using rich library"""
+        self.printer.print_in_terminal("edit_blocks_summary_title", style="bold magenta")
+        edits = self.get_edits(content)
+
+        for file_path, head, update in edits:
+            self.printer.print_str_in_terminal(
+                f"\n[bold blue]File: {file_path}[/bold blue]"
+            )
+
+            if head:
+                self.printer.print_str_in_terminal(
+                    "\n[bold green]Search Block:[/bold green]"
+                )
+                syntax = Syntax(head, "python", theme="monokai", line_numbers=True)
+                self.printer.console.print(Panel(syntax, expand=False))
+
+            self.printer.print_str_in_terminal(
+                "\n[bold yellow]Replace Block:[/bold yellow]"
+            )
+            syntax = Syntax(update, "python", theme="monokai", line_numbers=True)
+            self.printer.console.print(Panel(syntax, expand=False))
+
     def _merge_code(self, content: str, force_skip_git: bool = False):
         file_content = FileUtils.read_file(self.args.file)
         md5 = hashlib.md5(file_content.encode("utf-8")).hexdigest()
@@ -391,6 +414,9 @@ class CodeAutoMergeEditBlock:
                     style="red"
                 )
                 return
+
+            # Print edit blocks when skipping commit
+            self.print_edit_blocks(content)
         # Now, apply the changes
         for file_path, new_content in file_content_mapping.items():
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
