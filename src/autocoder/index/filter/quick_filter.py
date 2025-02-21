@@ -154,7 +154,7 @@ class QuickFilter():
                 else:
                     # 其他chunks直接使用with_llm
                     meta_holder = MetaHolder()
-                    start_time = time.monotonic()
+                    start_time = time.monotonic()                    
                     file_number_list = self.quick_filter_files.with_llm(self.index_manager.index_filter_llm).with_meta(
                         meta_holder).with_return_type(FileNumberList).run(chunk, self.args.query)
                     end_time = time.monotonic()

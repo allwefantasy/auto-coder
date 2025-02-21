@@ -110,8 +110,8 @@ def build_index_and_filter_files(
             printer.print_in_terminal("quick_filter_start", style="blue", model_name=model_name)
             quick_filter = QuickFilter(index_manager,stats,sources)        
             quick_filter_result = quick_filter.filter(index_manager.read_index(),args.query)
-            if quick_filter_result.has_error:                
-                raise KeyboardInterrupt(printer.get_message_from_key_with_format("quick_filter_failed",error=quick_filter_result.error_message))
+            # if quick_filter_result.has_error:                
+            #     raise KeyboardInterrupt(printer.get_message_from_key_with_format("quick_filter_failed",error=quick_filter_result.error_message))
 
             # Merge quick filter results into final_files
             if args.context_prune:

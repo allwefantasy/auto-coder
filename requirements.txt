@@ -46,7 +46,7 @@ tokenizers
 
 # camelot-py
 # llama_index
-byzerllm[saas]>=0.1.167
+byzerllm[saas]>=0.1.168
 patch
 diff_match_patch
 GitPython
