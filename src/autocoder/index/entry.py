@@ -114,18 +114,10 @@ def build_index_and_filter_files(
                 model_name = "unknown(without default model name)"    
             printer.print_in_terminal("quick_filter_start", style="blue", model_name=model_name)
             quick_filter = QuickFilter(index_manager,stats,sources)        
-            quick_filter_result = quick_filter.filter(index_manager.read_index(),args.query)
-            # if quick_filter_result.has_error:                
-            #     raise KeyboardInterrupt(printer.get_message_from_key_with_format("quick_filter_failed",error=quick_filter_result.error_message))
-
-            # Merge quick filter results into final_files
-            # if args.context_prune:
-            #     context_pruner = PruneContext(max_tokens=args.conversation_prune_safe_zone_tokens, args=args, llm=llm)
-            #     pruned_files = context_pruner.handle_overflow(quick_filter_result.files, [{"role":"user","content":args.query}], args.context_prune_strategy)
-            #     for source_file in pruned_files:
-            #         final_files[source_file.module_name] = quick_filter_result.files[source_file.module_name]
-            # else:
+            quick_filter_result = quick_filter.filter(index_manager.read_index(),args.query)            
+            
             final_files.update(quick_filter_result.files)
+            
             if quick_filter_result.file_positions:
                 file_positions.update(quick_filter_result.file_positions)
         
@@ -283,6 +275,7 @@ def build_index_and_filter_files(
             # source_code += f"{file.source_code}\n\n"
             temp_sources.append(file)
 
+    ## 开启了裁剪，则需要做裁剪，不过目前只针对 quick filter 生效
     if args.context_prune:
         context_pruner = PruneContext(max_tokens=args.conversation_prune_safe_zone_tokens, args=args, llm=llm)
         # 如果 file_positions 不为空，则通过 file_positions 来获取文件
