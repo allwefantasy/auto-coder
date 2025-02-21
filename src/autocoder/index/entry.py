@@ -298,8 +298,7 @@ def build_index_and_filter_files(
             # 提取排序后的文件路径列表
             sorted_file_paths = [file_path for _, file_path in position_file_pairs]
             # 根据 sorted_file_paths 重新排序 temp_sources
-            temp_sources.sort(key=lambda x: sorted_file_paths.index(x.module_name) if x.module_name in sorted_file_paths else len(sorted_file_paths))
-           pass
+            temp_sources.sort(key=lambda x: sorted_file_paths.index(x.module_name) if x.module_name in sorted_file_paths else len(sorted_file_paths))           
         pruned_files = context_pruner.handle_overflow([source.module_name for source in temp_sources], [{"role":"user","content":args.query}], args.context_prune_strategy)
         source_code_list.sources = pruned_files
 
@@ -309,14 +308,12 @@ def build_index_and_filter_files(
             event=CommunicateEvent(
                 event_type=CommunicateEventType.CODE_INDEX_FILTER_FILE_SELECTED.value,
                 data=json.dumps([
-                    (file["file_path"], file.reason)
-                    for file in final_files.values()
-                    if file.file_path in depulicated_sources
+                    (file.module_name, "") for file in source_code_list.sources
                 ])
             )
         )        
 
-    stats["final_files"] = len(depulicated_sources)
+    stats["final_files"] = len(source_code_list.sources)
     phase_end = time.monotonic()
     stats["timings"]["prepare_output"] = phase_end - phase_start
 
