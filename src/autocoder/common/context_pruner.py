@@ -285,15 +285,15 @@ class PruneContext:
         with ThreadPoolExecutor() as executor:
             futures = [executor.submit(_score_file, file_path) for file_path in file_paths]
             for future in as_completed(futures):
-                result = future.result()
-                self.printer.print_str_in_terminal(
-                    get_message_with_format(
-                        "file_scored_message",
-                        file_path=result["file_path"],
-                        score=result["score"]
-                    )
-                )
+                result = future.result()                
                 if result:
+                    self.printer.print_str_in_terminal(
+                        get_message_with_format(
+                            "file_scored_message",
+                            file_path=result["file_path"],
+                            score=result["score"]
+                        )
+                    )
                     scored_files.append(result)
 
         # 第二步：按分数从高到低排序
