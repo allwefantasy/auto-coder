@@ -573,3 +573,19 @@ class CodeAutoGenerateEditBlock:
                 return CodeGenerateResult(contents=["\n\n".join(result)], conversations=[conversations])
 
         return CodeGenerateResult(contents=["\n\n".join(result)], conversations=[conversations])
+    def print_merged_blocks(self, results: List[str]) -> None:
+        """
+        Merge all blocks into a single text and print using rich panel
+        """
+        printer = Printer()
+        merged_content = "\n\n".join(results)
+
+        panel_options = {
+            "title": "Merged Code Blocks",
+            "border_style": "blue",
+            "width": 120
+        }
+        text_options = {
+            "style": "white"
+        }
+        printer.print_panel(merged_content, text_options, panel_options)
