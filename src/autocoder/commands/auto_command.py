@@ -213,7 +213,11 @@ class CommandAutoTuner:
         通过 get_project_structure 来获取项目结构，然后通过 get_project_map 来获取你想看的某个文件的用途，符号列表，最后再通过 read_files/read_file_with_keyword_ranges 函数来读取文件内容,确认对应的功能是否在相关的文件里。
         5. 调用 coding 函数的时候，尽可能多的 @文件和@@符号，让需求更加清晰明了，建议多描述具体怎么完成对应的需求。
         6. 对于代码需求设计，尽可能使用 chat 函数。
-        7. 如果成功执行了 coding 函数，最好再调用一次 chat("/review /commit")
+        7. 如果成功执行了 coding 函数，最好再调用一次 chat("/review /commit")    
+        8. 我们所有的对话不能超过 {{ conversation_safe_zone_tokens }} 个tokens,当你读取索引文件 (get_project_map) 的时候，你可以看到
+        每个文件的tokens数，你可以根据这个信息来决定如何读取这个文件。比如对于很小的文件，那么可以直接全部读取，
+        而对于分析一个超大文件推荐组合 read_files 带上 line_ranges 参数来读取，或者组合 read_file_withread_file_with_keyword_ranges 等来读取，
+        每个函数你还可以使用多次来获取更多信息。
         </function_combination_readme>
 
 
@@ -262,7 +266,8 @@ class CommandAutoTuner:
             "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),        
             "env_info": env_info,
             "shell_type": shells.get_terminal_name(),
-            "shell_encoding": shells.get_terminal_encoding()
+            "shell_encoding": shells.get_terminal_encoding(),
+            "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens
         }
     
     @byzerllm.prompt()
@@ -274,7 +279,7 @@ class CommandAutoTuner:
         
         <function_result>
         {{ result }}
-        </function_result>
+        </function_result>                
 
         请根据命令执行结果以及前面的对话，返回下一个函数。
         
@@ -283,7 +288,8 @@ class CommandAutoTuner:
         2. 你最多尝试 {{ auto_command_max_iterations }} 次，如果 {{ auto_command_max_iterations }} 次都没有满足要求，则不要返回任何函数，确保 suggestions 为空。
         '''   
         return {
-            "auto_command_max_iterations": self.args.auto_command_max_iterations
+            "auto_command_max_iterations": self.args.auto_command_max_iterations,
+            "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens
         } 
     
     def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
@@ -985,23 +991,7 @@ class CommandAutoTuner:
          感兴趣，可以配合 read_files 函数来读取文件内容，从而帮你做更好的决策
              
         </usage>
-        </command>
-
-        <command>
-        <name>get_related_files</name>
-        <description>根据类名、函数名或文件用途描述，返回项目中相关的文件。</description>
-        <usage>
-         该命令接受一个参数 query，为要查询的符号或描述字符串。
-         
-         使用例子：
-         
-         get_related_files(query="用户登录功能")
-         
-         注意：
-         - 返回值为逗号分隔的文件路径列表
-         - 只能返回已被索引的文件
-        </usage>
-        </command>
+        </command>        
 
         <command>
         <name>get_project_map</name>
