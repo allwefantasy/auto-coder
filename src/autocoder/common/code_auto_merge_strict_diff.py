@@ -267,9 +267,7 @@ class CodeAutoMergeStrictDiff:
                 self.printer.print_in_terminal("git_init_required", style="red", source_dir=self.args.source_dir, error=str(e))
                 return            
        
-        diff_blocks = self.parse_diff_block(content)
-        # Print diff blocks for review
-        self.print_diff_blocks(diff_blocks)
+        diff_blocks = self.parse_diff_block(content)        
 
         for diff_blocks in diff_blocks:
             path = diff_blocks.path
@@ -289,6 +287,9 @@ class CodeAutoMergeStrictDiff:
         if not force_skip_git and not self.args.skip_commit:
             commit_result = git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}\n{self.args.query}")
             git_utils.print_commit_info(commit_result=commit_result)
+        else:
+            # Print diff blocks for review
+            self.print_diff_blocks(diff_blocks)    
 
     @byzerllm.prompt(render="jinja2")
     def git_require_msg(self, source_dir: str, error: str) -> str:
