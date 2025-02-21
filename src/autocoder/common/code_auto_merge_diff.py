@@ -531,22 +531,31 @@ class CodeAutoMergeDiff:
     def _merge_code(self, content: str,force_skip_git:bool=False):        
         total = 0
         
+
         file_content = FileUtils.read_file(self.args.file)
         md5 = hashlib.md5(file_content.encode('utf-8')).hexdigest()
         # get the file name 
         file_name = os.path.basename(self.args.file)
         
+
         if not force_skip_git and not self.args.skip_commit:
             try:
                 git_utils.commit_changes(self.args.source_dir, f"auto_coder_pre_{file_name}_{md5}")
             except Exception as e:            
                 self.printer.print_in_terminal("git_init_required", style="red", source_dir=self.args.source_dir, error=str(e))
                 return            
+
        
         edits = self.get_edits(content)        
+        self.print_edits(edits)
         self.apply_edits(edits)
 
         self.printer.print_in_terminal("files_merged_total", total=total)
         if not force_skip_git and not self.args.skip_commit:
             commit_result = git_utils.commit_changes(self.args.source_dir, f"auto_coder_{file_name}_{md5}\n{self.args.query}")
             git_utils.print_commit_info(commit_result=commit_result)
+
+    def print_edits(self, edits):
+        """Print the edits in a human-readable format."""
+        for path, hunk in edits:
+            self.printer.print_in_terminal("edit_info", style="blue", path=path, hunk="\n".join(hunk))
