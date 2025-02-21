@@ -528,6 +528,37 @@ class CodeAutoMergeDiff:
             failed_blocks=failed_blocks
         )
 
+    def print_edits(self, edits: List[Tuple[str, List[str]]]):
+        """Print diffs for user review using rich library"""
+        from rich.syntax import Syntax
+        from rich.panel import Panel
+
+        # Group edits by file path
+        file_edits = {}
+        for path, hunk in edits:
+            if path not in file_edits:
+                file_edits[path] = []
+            file_edits[path].append(hunk)
+
+        # Generate formatted text for each file
+        formatted_text = ""
+        for path, hunks in file_edits.items():
+            formatted_text += f"##File: {path}\n"
+            for hunk in hunks:
+                formatted_text += "".join(hunk)
+            formatted_text += "\n"
+
+        # Print with rich panel
+        self.printer.print_in_terminal("edits_title", style="bold green")
+        self.printer.console.print(
+            Panel(
+                Syntax(formatted_text, "diff", theme="monokai"),
+                title="Edits",
+                border_style="green",
+                expand=False
+            )
+        )
+
     def _merge_code(self, content: str,force_skip_git:bool=False):        
         total = 0
         
@@ -545,6 +576,9 @@ class CodeAutoMergeDiff:
        
         edits = self.get_edits(content)        
         self.apply_edits(edits)
+
+        # Print edits for review
+        self.print_edits(edits)
 
         self.printer.print_in_terminal("files_merged_total", total=total)
         if not force_skip_git and not self.args.skip_commit:

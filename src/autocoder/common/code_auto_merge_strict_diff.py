@@ -221,6 +221,37 @@ class CodeAutoMergeStrictDiff:
             failed_blocks=failed_blocks
         )
 
+    def print_diff_blocks(self, diff_blocks: List[PathAndCode]):
+        """Print diff blocks for user review using rich library"""
+        from rich.syntax import Syntax
+        from rich.panel import Panel
+
+        # Group blocks by file path
+        file_blocks = {}
+        for block in diff_blocks:
+            if block.path not in file_blocks:
+                file_blocks[block.path] = []
+            file_blocks[block.path].append(block.content)
+
+        # Generate formatted text for each file
+        formatted_text = ""
+        for path, contents in file_blocks.items():
+            formatted_text += f"##File: {path}\n"
+            for content in contents:
+                formatted_text += content + "\n"
+            formatted_text += "\n"
+
+        # Print with rich panel
+        self.printer.print_in_terminal("diff_blocks_title", style="bold green")
+        self.printer.console.print(
+            Panel(
+                Syntax(formatted_text, "diff", theme="monokai"),
+                title="Diff Blocks",
+                border_style="green",
+                expand=False
+            )
+        )
+
     def _merge_code(self, content: str, force_skip_git: bool = False):        
         total = 0
         
@@ -237,6 +268,9 @@ class CodeAutoMergeStrictDiff:
                 return            
        
         diff_blocks = self.parse_diff_block(content)
+        # Print diff blocks for review
+        self.print_diff_blocks(diff_blocks)
+
         for diff_blocks in diff_blocks:
             path = diff_blocks.path
             content = diff_blocks.content          
