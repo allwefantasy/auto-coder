@@ -1181,15 +1181,23 @@ class CommandAutoTuner:
         <name>exclude_files</name>
         <description>排除指定文件。</description>
         <usage>
-         该命令接受一个参数 file_patterns, 为要排除的文件模式字符串列表。
+         该命令接受一个参数 query, 为要排除的文件模式字符串,多个文件模式用逗号分隔。
          
          使用例子,比如你想要排除 package-lock.json 文件，你可以这样调用：
         
-         exclude_files(file_patterns=["regex://.*/package-lock\.json"])
+         exclude_files(query="regex://.*/package-lock\.json")
          
          注意：
          - 文件模式字符串必须以 regex:// 开头
          - regex:// 后面部分是标准的正则表达式         
+
+         也支持子命令：
+         /list 列出当前排除的文件模式
+         /drop 删除指定的文件模式
+
+         使用例子：
+         exclude_files(query="/list")
+         exclude_files(query="/drop regex://.*/package-lock\.json")
         </usage>
         </command>
         </commands>
