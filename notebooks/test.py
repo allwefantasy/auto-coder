@@ -77,11 +77,17 @@ if "save" in args.action:
 </think>
 
 ```json
-{   
-    
-    "rank_result": [
-    "0", // 好的
-    "2", "1"]  
+{
+    "file_list": [
+        53,   // Token\Stack.php 处理公式解析栈操作，可能包含解析hook点
+        73,   // Cell.php 单元格核心操作类，可能包含单元格事件hook
+        83,   // Chart.php 图表属性管理，可能包含图表渲染hook
+        95,   // JpGraphRendererBase.php 图表渲染基类，可能包含渲染扩展点
+        150,  // Chart.php 图表数据处理，可能包含数据系列处理hook
+        210,  // CellMatcher.php 条件格式化匹配逻辑，可能包含匹配规则hook
+        214,  // Wizard.php 条件规则生成，可能提供规则生成扩展点
+        228   // WizardAbstract.php 条件规则抽象类，包含可覆盖的hook方法
+    ]
 }
 ```
 '''
@@ -92,13 +98,13 @@ from typing import List
 
 s = code_utils.extract_code(s)[-1][1]
 
-class RankResult(BaseModel):
-    rank_result: List[int]
+# class RankResult(BaseModel):
+#     rank_result: List[int]
 
-print(to_model(s,RankResult))
+# print(to_model(s,RankResult))
 # import yaml
 # print(yaml.safe_load(s))
 
-# import json5
+import json5
 
-# print(json5.loads(s))
+print(json5.loads(s))

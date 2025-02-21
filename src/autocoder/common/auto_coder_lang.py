@@ -158,6 +158,8 @@ MESSAGES = {
         "conf_not_found": "Configuration file not found: {{path}}",
         "index_export_success": "Index exported successfully: {{path}}",
         "index_import_success": "Index imported successfully: {{path}}",
+        "edits_title": "edits",
+        "diff_blocks_title":"diff blocks"
     },
     "zh": {
         "invalid_file_pattern": "无效的文件模式: {{file_pattern}}. 例如: regex://.*/package-lock\\.json",
@@ -313,6 +315,8 @@ MESSAGES = {
         "only_one_merge_result_success": "✅ 只有一个合并结果成功，返回该候选",
         "index_export_success": "索引导出成功: {{path}}",
         "index_import_success": "索引导入成功: {{path}}",
+        "edits_title": "编辑块",
+        "diff_blocks_title": "差异块",
     }}
 
 
