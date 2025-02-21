@@ -58,7 +58,11 @@ def build_index_and_filter_files(
             return file_path.strip()[2:]
         return file_path
 
+    # 文件路径 -> TargetFile 
     final_files: Dict[str, TargetFile] = {}
+
+    # 文件路径 -> 文件在文件列表中的位置（越前面表示越相关）
+    file_positions:Dict[str,int] = {}
 
     # Phase 1: Process REST/RAG/Search sources
     printer = Printer()
@@ -102,7 +106,8 @@ def build_index_and_filter_files(
                     })
                 )
             )
-
+        
+        
         if not args.skip_filter_index and args.index_filter_model:
             model_name = getattr(index_manager.index_filter_llm, 'default_model_name', None)
             if not model_name:
@@ -114,13 +119,15 @@ def build_index_and_filter_files(
             #     raise KeyboardInterrupt(printer.get_message_from_key_with_format("quick_filter_failed",error=quick_filter_result.error_message))
 
             # Merge quick filter results into final_files
-            if args.context_prune:
-                context_pruner = PruneContext(max_tokens=args.conversation_prune_safe_zone_tokens, args=args, llm=llm)
-                pruned_files = context_pruner.handle_overflow(quick_filter_result.files, [{"role":"user","content":args.query}], args.context_prune_strategy)
-                for source_file in pruned_files:
-                    final_files[source_file.module_name] = quick_filter_result.files[source_file.module_name]
-            else:
-                final_files.update(quick_filter_result.files)                                     
+            # if args.context_prune:
+            #     context_pruner = PruneContext(max_tokens=args.conversation_prune_safe_zone_tokens, args=args, llm=llm)
+            #     pruned_files = context_pruner.handle_overflow(quick_filter_result.files, [{"role":"user","content":args.query}], args.context_prune_strategy)
+            #     for source_file in pruned_files:
+            #         final_files[source_file.module_name] = quick_filter_result.files[source_file.module_name]
+            # else:
+            final_files.update(quick_filter_result.files)
+            if quick_filter_result.file_positions:
+                file_positions.update(quick_filter_result.file_positions)
         
         if not args.skip_filter_index and not args.index_filter_model:
             model_name = getattr(index_manager.llm, 'default_model_name', None)
@@ -261,18 +268,33 @@ def build_index_and_filter_files(
         for file in final_filenames:
             print(f"{file} - {final_files[file].reason}")
 
-    source_code = ""  
+    # source_code = ""  
     source_code_list = SourceCodeList(sources=[])
     depulicated_sources = set()
-
+    
+    ## 先去重
+    temp_sources = []
     for file in sources:
         if file.module_name in final_filenames:
             if file.module_name in depulicated_sources:
                 continue
             depulicated_sources.add(file.module_name)
-            source_code += f"##File: {file.module_name}\n"
-            source_code += f"{file.source_code}\n\n"
-            source_code_list.sources.append(file)
+            # source_code += f"##File: {file.module_name}\n"
+            # source_code += f"{file.source_code}\n\n"
+            temp_sources.append(file)
+
+    if args.context_prune:
+        context_pruner = PruneContext(max_tokens=args.conversation_prune_safe_zone_tokens, args=args, llm=llm)
+        # 如果 file_positions 不为空，则通过 file_positions 来获取文件
+        if file_positions:
+            ## 拿到位置列表，然后根据位置排序 得到 [(pos,file_path)]
+            ## 将 [(pos,file_path)] 转换为 [file_path]
+            ## 通过 [file_path] 顺序调整 temp_sources 的顺序             
+            ## MARK 
+            pass
+        pruned_files = context_pruner.handle_overflow([source.module_name for source in temp_sources], [{"role":"user","content":args.query}], args.context_prune_strategy)
+        source_code_list.sources = pruned_files
+
     if args.request_id and not args.skip_events:
         queue_communicate.send_event(
             request_id=args.request_id,
