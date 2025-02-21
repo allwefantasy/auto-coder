@@ -154,19 +154,24 @@ class PruneContext:
                         continue
 
                     # 抽取关键片段
+                    lines = content.splitlines()
+                    new_content = ""
+                    for index,line in enumerate(lines):                        
+                        new_content += f"{index+1} {line}\n"
+                    
                     extracted = extract_code_snippets.with_llm(self.llm).run(
                         conversations=conversations, 
-                        content=content
+                        content=new_content
                     )                
-
+                    
                     if extracted:
                         json_str = extract_code(extracted)[0][1]
                         snippets = json.loads(json_str)
-                        new_content = self._build_snippet_content(file_path, content, snippets)
+                        content_snippets = self._build_snippet_content(file_path, content, snippets)
 
-                        snippet_tokens = count_tokens(new_content)
+                        snippet_tokens = count_tokens(content_snippets)
                         if token_count + snippet_tokens <= self.max_tokens:
-                            selected_files.append(SourceCode(module_name=file_path,source_code=new_content,tokens=snippet_tokens))
+                            selected_files.append(SourceCode(module_name=file_path,source_code=content_snippets,tokens=snippet_tokens))
                             token_count += snippet_tokens
                         else:
                             break
@@ -178,7 +183,7 @@ class PruneContext:
 
     def _build_snippet_content(self, file_path: str, full_content: str, snippets: List[dict]) -> str:
         """构建包含代码片段的文件内容"""
-        lines = full_content.split("\n")
+        lines = full_content.splitlines()
         header = f"Snippets:\n"
 
         content = []

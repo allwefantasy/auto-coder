@@ -1,25 +1,53 @@
-import os
+from pathlib import Path
 from typing import List, Dict, Any
-from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.common.context_pruner import PruneContext
+from autocoder.common import AutoCoderArgs
 import byzerllm
+from autocoder.utils.llms import get_single_llm
+from autocoder.rag.variable_holder import VariableHolder
+from tokenizers import Tokenizer    
+import pkg_resources
+import os
+from autocoder.common import SourceCode
+
+try:
+    tokenizer_path = pkg_resources.resource_filename(
+        "autocoder", "data/tokenizer.json"
+    )
+    VariableHolder.TOKENIZER_PATH = tokenizer_path
+    VariableHolder.TOKENIZER_MODEL = Tokenizer.from_file(tokenizer_path)
+except FileNotFoundError:
+    tokenizer_path = None
+
+
+def create_test_files() -> List[str]:
+    """创建测试文件并返回文件路径列表"""
+    files = []
+    for i in range(4):
+        file_path = f"file{i}.py"
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(f"def test_function_{i}():\n    pass\n")
+        files.append(os.path.abspath(file_path))
+    return files
 
 def test_context_prune():
+    create_test_files()
     # 模拟 AutoCoderArgs
     args = AutoCoderArgs(
+        source_dir=".",
         context_prune=True,
-        context_prune_strategy="score",
-        conversation_prune_safe_zone_tokens=1000,
+        context_prune_strategy="extract",
+        conversation_prune_safe_zone_tokens=30,
         query="Test query"
     )
 
-    # 模拟 LLM
-    llm = byzerllm.ByzerLLM()
+    # 模拟 LLM    
+    llm = get_single_llm("v3_chat", product_mode="lite")
 
     # 模拟文件内容和位置
     file_positions = {
-        "file1.py": 1,
         "file2.py": 2,
+        "file1.py": 1,        
         "file3.py": 3
     }
 
@@ -43,7 +71,7 @@ def test_context_prune():
         sorted_file_paths = [file_path for _, file_path in position_file_pairs]
         # 根据 sorted_file_paths 重新排序 temp_sources
         temp_sources.sort(key=lambda x: sorted_file_paths.index(x.module_name) if x.module_name in sorted_file_paths else len(sorted_file_paths))
-
+    print(temp_sources)
     # 处理文件
     pruned_files = context_pruner.handle_overflow(
         [source.module_name for source in temp_sources],
@@ -54,7 +82,7 @@ def test_context_prune():
     # 打印结果
     print("Pruned files:")
     for file in pruned_files:
-        print(f"File: {file.module_name}, Tokens: {file.tokens}")
+        print(f"File: {file.module_name}, Tokens: {file.tokens} , {file.source_code}")
 
 if __name__ == "__main__":
     test_context_prune()
