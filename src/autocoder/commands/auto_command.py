@@ -641,9 +641,10 @@ class CommandAutoTuner:
         ## editblock_similarity: editblock相似度阈值
         - editblock相似度阈值，取值范围为0-1，默认值为0.9。如果设置的太低，虽然能合并进去，但是会引入错误。推荐不要修改该值。
 
-        ## generate_times_same_model: 相同模型生成次数
+        ## generate_times_same_model: 相同模型生成次数,也叫采样数
         当进行生成代码时，大模型会对同一个需求生成多份代码，然后会使用 generate_rerank_model 模型对多份代码进行重排序，
         然后选择得分最高的代码。一般次数越多，最终得到正确的代码概率越高。默认值为1，推荐设置为3。但是设置值越多，可能速度就越慢，消耗的token也越多。
+        当用户提到，帮我采样数设置为3， 那么你就设置该参数即可。
 
         ## skip_filter_index: 是否跳过索引过滤
         是否跳过根据用户的query 自动查找上下文。推荐设置为 false
