@@ -9,11 +9,15 @@ from autocoder.index.types import VerifyFileRelevance
 import byzerllm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from autocoder.common.printer import Printer
+from autocoder.common.auto_coder_lang import get_message_with_format
+
 class PruneContext:
     def __init__(self, max_tokens: int, args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
         self.max_tokens = max_tokens
         self.args = args
         self.llm = llm
+        self.printer = Printer()
 
     def _delete_overflow_files(self, file_paths: List[str]) -> List[SourceCode]:
         """直接删除超出 token 限制的文件"""
@@ -282,7 +286,13 @@ class PruneContext:
             futures = [executor.submit(_score_file, file_path) for file_path in file_paths]
             for future in as_completed(futures):
                 result = future.result()
-                print(f"score file {result['file_path']} {result['score']}")
+                self.printer.print_str_in_terminal(
+                    get_message_with_format(
+                        "file_scored_message",
+                        file_path=result["file_path"],
+                        score=result["score"]
+                    )
+                )
                 if result:
                     scored_files.append(result)
 
