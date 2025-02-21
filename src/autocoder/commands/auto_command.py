@@ -302,8 +302,7 @@ class CommandAutoTuner:
             # 提取 JSON 并转换为 AutoCommandResponse
             try:
                 response = to_model(content, AutoCommandResponse)  
-                if response.suggestions:
-                    print(response)
+                if response.suggestions:                    
                     command = response.suggestions[0].command
                     parameters = response.suggestions[0].parameters                    
                     if parameters:
@@ -517,7 +516,9 @@ class CommandAutoTuner:
 
          也支持glob 语法，例如：
 
-         add_files(args=["*.py"])
+         add_files(args=["**/*.py"])
+
+         这样会把项目根目录下的所有.py文件添加到活跃区，尽量确保少的添加文件。
 
          如果是有子指令，参考下面是常见的子指令说明。
 
@@ -765,6 +766,8 @@ class CommandAutoTuner:
          coding(query="@auth.py 添加JWT认证")
          coding(query="@@login 优化错误处理")
          coding(query="<img>design/flow.png</img> 实现这个流程图的功能")
+
+         在使用 coding 函数时，建议通过 ask_user 来确认是否执行 coding 函数，除非用户明确说不要询问，直接执行。
         </usage>
         </command>
 

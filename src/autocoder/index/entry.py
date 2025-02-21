@@ -128,8 +128,9 @@ def build_index_and_filter_files(
                 model_name = "unknown(without default model name)" 
             printer.print_in_terminal("normal_filter_start", style="blue",model_name=model_name)
             normal_filter = NormalFilter(index_manager,stats,sources)
+            normal_filter_result = normal_filter.filter(index_manager.read_index(),args.query)
             # Merge normal filter results into final_files
-            final_files.update(normal_filter.filter(index_manager.read_index(),args.query))
+            final_files.update(normal_filter_result.files)
         
 
     def display_table_and_get_selections(data):
@@ -212,7 +213,7 @@ def build_index_and_filter_files(
 
     # Phase 6: File selection and limitation
     printer.print_in_terminal("phase6_file_selection")
-    phase_start = time.monotonic()
+    phase_start = time.monotonic()    
 
     if args.index_filter_file_num > 0:
         logger.info(
@@ -247,7 +248,7 @@ def build_index_and_filter_files(
     try:
         print_selected(
             [
-                (file["file_path"], file.reason)
+                (file.file_path, file.reason)
                 for file in final_files.values()
                 if file.file_path in final_filenames
             ]
