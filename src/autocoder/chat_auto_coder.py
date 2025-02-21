@@ -133,8 +133,7 @@ commands = [
     "/index/build",
     "/index/export",
     "/index/import",
-    "/exclude_dirs",
-    "/exclude_files",
+    "/exclude_files",        
     "/help",
     "/shell",
     "/voice_input",
@@ -148,6 +147,7 @@ commands = [
     "/auto",
     "/conf/export",
     "/conf/import",
+    "/exclude_dirs",
 ]
 
 
@@ -2284,10 +2284,44 @@ def exclude_dirs(dir_names: List[str]):
     save_memory()
     completer.refresh_files()
 
-def exclude_files(file_patterns: List[str]):
+def exclude_files(query: str):
     result_manager = ResultManager()
     printer = Printer()
-    new_file_patterns = file_patterns
+    if "/list" in query:
+        query = query.replace("/list", "", 1).strip()
+        existing_file_patterns = memory.get("exclude_files", []) 
+        console = Console()
+        # 打印表格
+        table = Table(title="Exclude Files")
+        table.add_column("File Pattern")
+        for file_pattern in existing_file_patterns:
+            table.add_row(file_pattern)
+        console.print(table)
+        result_manager.add_result(content=f"Exclude files: {existing_file_patterns}",meta={
+            "action": "exclude_files",
+            "input": {
+                "query": query
+            }
+        })
+        return
+
+    if "/drop" in query:
+        query = query.replace("/drop", "", 1).strip()
+        existing_file_patterns = memory.get("exclude_files", [])    
+        existing_file_patterns.remove(query.strip())
+        memory["exclude_files"] = existing_file_patterns
+        save_memory()
+        completer.refresh_files()
+        result_manager.add_result(content=f"Dropped exclude files: {query}",meta={
+            "action": "exclude_files",
+            "input": {
+                "query": query
+            }
+        })
+        return
+    
+    new_file_patterns = query.strip().split(",")
+    
     existing_file_patterns = memory.get("exclude_files", [])    
     file_patterns_to_add = [f for f in new_file_patterns if f not in existing_file_patterns]
 
@@ -2924,9 +2958,8 @@ def main():
                 exclude_dirs(dir_names)
 
             elif user_input.startswith("/exclude_files"):
-                file_patterns = user_input[len(
-                    "/exclude_files"):].strip().split(",")
-                exclude_files(file_patterns)
+                query = user_input[len("/exclude_files"):].strip()                
+                exclude_files(query)
 
             elif user_input.startswith("/ask"):
                 query = user_input[len("/ask"):].strip()
