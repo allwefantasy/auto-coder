@@ -399,10 +399,17 @@ class IndexManager:
                 keys_to_remove.append(file_path)
 
         # 删除被排除的文件
-        exclude_patterns = self.parse_exclude_files(self.args.exclude_files)
-        for file_path in index_data:
-            if self.filter_exclude_files(file_path, exclude_patterns):
-                keys_to_remove.append(file_path)
+        try:
+            exclude_patterns = self.parse_exclude_files(self.args.exclude_files)
+            for file_path in index_data:
+                if self.filter_exclude_files(file_path, exclude_patterns):
+                    keys_to_remove.append(file_path)
+        except Exception as e:
+            self.printer.print_in_terminal(
+                "index_exclude_files_error",
+                style="red",
+                error=str(e)
+            )
 
         # 删除无效条目并记录日志
         for key in set(keys_to_remove):

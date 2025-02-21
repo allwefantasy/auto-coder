@@ -159,7 +159,8 @@ MESSAGES = {
         "index_export_success": "Index exported successfully: {{path}}",
         "index_import_success": "Index imported successfully: {{path}}",
         "edits_title": "edits",
-        "diff_blocks_title":"diff blocks"
+        "diff_blocks_title":"diff blocks",
+        "index_exclude_files_error": "index filter exclude files fail: {{ error }}"
     },
     "zh": {
         "invalid_file_pattern": "无效的文件模式: {{file_pattern}}. 例如: regex://.*/package-lock\\.json",
@@ -317,6 +318,7 @@ MESSAGES = {
         "index_import_success": "索引导入成功: {{path}}",
         "edits_title": "编辑块",
         "diff_blocks_title": "差异块",
+        "index_exclude_files_error": "索引排除文件时出错: {{error}}"
     }}
 
 
