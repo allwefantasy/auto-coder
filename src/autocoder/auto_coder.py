@@ -1339,6 +1339,10 @@ def main(input_args: Optional[List[str]] = None):
                 from autocoder.agent.auto_review_commit import AutoReviewCommit
                 reviewer = AutoReviewCommit(llm=chat_llm, args=args)
                 v = reviewer.review_commit(query=args.query,conversations=loaded_conversations)
+            elif "learn_from_commit" in args.action:
+                from autocoder.agent.auto_learn_from_commit import AutoLearnFromCommit
+                learner = AutoLearnFromCommit(llm=chat_llm, args=args)
+                v = learner.learn_from_commit(query=args.query,conversations=loaded_conversations)
             else:                
                 # 预估token数量
                 estimated_input_tokens = count_tokens(json.dumps(loaded_conversations, ensure_ascii=False))

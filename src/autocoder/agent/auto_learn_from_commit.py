@@ -46,7 +46,7 @@ class AutoLearnFromCommit:
         """
         请根据下面的代码变更，总结出通用的代码调整模式，以帮助实现类似的需求。
 
-        下面是本次提交的目标：
+        下面用户对本次的目标以及你需要总结的要求：
         <goal>
         {{ query }}
         </goal>
@@ -54,7 +54,7 @@ class AutoLearnFromCommit:
         下面是本次提交的代码变更：
         <changes>
         {% for query,urls,changes in querie_with_urls_and_changes %}
-        ## 任务需求
+        ## 原始的任务需求
         {{ query }}
 
         修改的文件:

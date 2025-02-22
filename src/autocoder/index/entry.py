@@ -292,6 +292,7 @@ def build_index_and_filter_files(
             sorted_file_paths = [file_path for _, file_path in position_file_pairs]
             # 根据 sorted_file_paths 重新排序 temp_sources
             temp_sources.sort(key=lambda x: sorted_file_paths.index(x.module_name) if x.module_name in sorted_file_paths else len(sorted_file_paths))           
+            # 打印重新排序后的文件路径
         pruned_files = context_pruner.handle_overflow([source.module_name for source in temp_sources], [{"role":"user","content":args.query}], args.context_prune_strategy)
         source_code_list.sources = pruned_files
 

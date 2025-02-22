@@ -166,7 +166,9 @@ MESSAGES = {
         "file_sliding_window_processing": "File {{ file_path }} is too large ({{ tokens }} tokens), processing with sliding window...",
         "file_snippet_processing": "Processing file {{ file_path }} with code snippet extraction...",
         "context_pruning_start": "⚠️ Context pruning started. Total tokens: {{ total_tokens }} (max allowed: {{ max_tokens }}). Applying strategy: {{ strategy }}.",
-        "context_pruning_reason": "Context length exceeds maximum limit ({{ total_tokens }} > {{ max_tokens }}). Pruning is required to fit within the model's context window."
+        "context_pruning_reason": "Context length exceeds maximum limit ({{ total_tokens }} > {{ max_tokens }}). Pruning is required to fit within the model's context window.",
+        "rank_code_modification_title": "{{model_name}} ranking codes"
+        
     },
     "zh": {
         "file_sliding_window_processing": "文件 {{ file_path }} 过大 ({{ tokens }} tokens)，正在使用滑动窗口处理...",
@@ -330,7 +332,8 @@ MESSAGES = {
         "index_import_success": "索引导入成功: {{path}}",
         "edits_title": "编辑块",
         "diff_blocks_title": "差异块",
-        "index_exclude_files_error": "索引排除文件时出错: {{error}}"
+        "index_exclude_files_error": "索引排除文件时出错: {{error}}",
+        "rank_code_modification_title": "模型{{model_name}}对代码打分"
     }}
 
 

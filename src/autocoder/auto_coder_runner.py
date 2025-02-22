@@ -1595,6 +1595,9 @@ def chat(query: str):
     if "/review" in query and "/commit" in query:
         yaml_config["action"].append("review_commit")
         query = query.replace("/review", "", 1).replace("/commit", "", 1).strip()
+    elif "/learn" in query:
+        yaml_config["action"].append("learn_from_commit")
+        query = query.replace("/learn", "", 1).strip()
     else:    
         is_review = query.strip().startswith("/review")
         if is_review:

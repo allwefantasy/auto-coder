@@ -209,7 +209,7 @@ class CodeModificationRanker:
                         stream_generator,
                         model_name=model_name,
                         title=self.printer.get_message_from_key_with_format(
-                            "quick_filter_title", model_name=model_name),
+                            "rank_code_modification_title", model_name=model_name),
                         args=self.args
                     )
                 
