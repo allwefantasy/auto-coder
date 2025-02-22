@@ -21,6 +21,8 @@ from loguru import logger
 from autocoder.utils import llms as llms_utils
 from autocoder.rag.token_counter import count_tokens
 from autocoder.common.global_cancel import global_cancel
+from autocoder.common.auto_configure import config_readme
+from autocoder.utils.auto_project_type import ProjectTypeAnalyzer
 
 class CommandMessage(BaseModel):
     role: str
@@ -155,7 +157,8 @@ class CommandAutoTuner:
         self.printer = Printer()
         self.memory_config = memory_config
         self.command_config = command_config
-        self.tools = AutoCommandTools(args=args, llm=self.llm)        
+        self.tools = AutoCommandTools(args=args, llm=self.llm)
+        self.project_type_analyzer = ProjectTypeAnalyzer(args=args, llm=self.llm)        
     
     def get_conversations(self) -> List[CommandMessage]:
         """Get conversation history from memory file"""
@@ -646,34 +649,7 @@ class CommandAutoTuner:
 
         常见的一些配置选项示例：
 
-        # 配置项说明
-        ## auto_merge: 代码合并方式，可选值为editblock、diff、wholefile.
-        - editblock: 生成 SEARCH/REPLACE 块，然后根据 SEARCH块到对应的源码查找，如果相似度阈值大于 editblock_similarity， 那么则将
-        找到的代码块替换为 REPLACE 块。大部分情况都推荐使用 editblock。        
-        - wholefile: 重新生成整个文件，然后替换原来的文件。对于重构场景，推荐使用 wholefile。
-        - diff: 生成标准 git diff 格式，适用于简单的代码修改。        
-
-        ## editblock_similarity: editblock相似度阈值
-        - editblock相似度阈值，取值范围为0-1，默认值为0.9。如果设置的太低，虽然能合并进去，但是会引入错误。推荐不要修改该值。
-
-        ## generate_times_same_model: 相同模型生成次数,也叫采样数
-        当进行生成代码时，大模型会对同一个需求生成多份代码，然后会使用 generate_rerank_model 模型对多份代码进行重排序，
-        然后选择得分最高的代码。一般次数越多，最终得到正确的代码概率越高。默认值为1，推荐设置为3。但是设置值越多，可能速度就越慢，消耗的token也越多。
-        当用户提到，帮我采样数设置为3， 那么你就设置该参数即可。
-
-        ## skip_filter_index: 是否跳过索引过滤
-        是否跳过根据用户的query 自动查找上下文。推荐设置为 false
-        
-        ## skip_build_index: 是否跳过索引构建
-        是否自动构建索引。推荐设置为 false。注意，如果该值设置为 true, 那么 skip_filter_index 设置不会生效。
-
-        ## enable_global_memory: 是否开启全局记忆
-        是否开启全局记忆。
-
-        ## rank_times_same_model: 相同模型重排序次数
-        默认值为1. 如果 generate_times_same_model 参数设置大于1，那么 coding 函数会自动对多份代码进行重排序。
-        rank_times_same_model 表示重拍的次数，次数越多，选择到最好的代码的可能性越高，但是也会显著增加消耗的token和时间。
-        建议保持默认，要修改也建议不要超过3。
+        {{ config_readme }}
                 
         比如你想开启索引，则可以执行：
 
@@ -1190,10 +1166,26 @@ class CommandAutoTuner:
          exclude_files(query="/drop regex://.*/package-lock\.json")
         </usage>
         </command>
+
+        <command>
+        <name>get_project_type</name>
+        <description>获取项目类型。</description>
+        <usage>
+         该命令获取项目类型。
+
+         使用例子：
+         get_project_type()
+
+         此时会返回诸如 "ts,py,java,go,js,ts" 这样的字符串，表示项目类型。
+        </usage>
+        </command>
         </commands>
         
         
         '''
+        return {
+            "config_readme": config_readme.prompt()
+        }
 
     def execute_auto_command(self, command: str, parameters: Dict[str, Any]) -> None:
         """
@@ -1232,9 +1224,7 @@ class CommandAutoTuner:
             "get_project_related_files": self.tools.get_project_related_files,
             "ask_user":self.tools.ask_user,
             "read_file_with_keyword_ranges": self.tools.read_file_with_keyword_ranges,
-
-            
-                        
+            "get_project_type": self.project_type_analyzer.analyze,                                    
         }
 
         if command not in command_map:

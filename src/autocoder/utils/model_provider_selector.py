@@ -25,8 +25,8 @@ PROVIDER_INFO_LIST = [
     ProviderInfo(
         name="volcano",
         endpoint="https://ark.cn-beijing.volces.com/api/v3",   
-        r1_model="",
-        v3_model="",
+        r1_model="deepseek-r1-250120",
+        v3_model="deepseek-v3-241226",
         api_key="",
         r1_input_price=2.0,
         r1_output_price=8.0,
@@ -162,32 +162,32 @@ class ModelProviderSelector:
                 provider_info = provider
                 break
         
-        if result == "volcano":
-            # Get R1 endpoint
-            r1_endpoint = input_dialog(
-                title=self.printer.get_message_from_key("model_provider_api_key_title"),
-                text=self.printer.get_message_from_key("model_provider_volcano_r1_text"),
-                validator=VolcanoEndpointValidator(),
-                style=dialog_style
-            ).run()
+        # if result == "volcano":
+        #     # Get R1 endpoint
+        #     r1_endpoint = input_dialog(
+        #         title=self.printer.get_message_from_key("model_provider_api_key_title"),
+        #         text=self.printer.get_message_from_key("model_provider_volcano_r1_text"),
+        #         validator=VolcanoEndpointValidator(),
+        #         style=dialog_style
+        #     ).run()
             
-            if r1_endpoint is None:
-                return None
+        #     if r1_endpoint is None:
+        #         return None
             
-            provider_info.r1_model = r1_endpoint
+        #     provider_info.r1_model = r1_endpoint
             
-            # Get V3 endpoint
-            v3_endpoint = input_dialog(
-                title=self.printer.get_message_from_key("model_provider_api_key_title"),
-                text=self.printer.get_message_from_key("model_provider_volcano_v3_text"),
-                validator=VolcanoEndpointValidator(),
-                style=dialog_style
-            ).run()
+        #     # Get V3 endpoint
+        #     v3_endpoint = input_dialog(
+        #         title=self.printer.get_message_from_key("model_provider_api_key_title"),
+        #         text=self.printer.get_message_from_key("model_provider_volcano_v3_text"),
+        #         validator=VolcanoEndpointValidator(),
+        #         style=dialog_style
+        #     ).run()
             
-            if v3_endpoint is None:
-                return None
+        #     if v3_endpoint is None:
+        #         return None
                 
-            provider_info.v3_model = v3_endpoint
+        #     provider_info.v3_model = v3_endpoint
         
         # Get API key for all providers
         api_key = input_dialog(

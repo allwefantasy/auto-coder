@@ -7,7 +7,18 @@ from loguru import logger
 import byzerllm
 from autocoder.common import AutoCoderArgs
 from autocoder.common.printer import Printer
+from typing import Union
+import pydantic
+from autocoder.common.result_manager import ResultManager
 
+class ExtensionClassifyResult(pydantic.BaseModel):
+    code: List[str] = []
+    config: List[str] = []
+    data: List[str] = []
+    document: List[str] = []
+    other: List[str] = []
+    framework: List[str] = []
+    
 class ProjectTypeAnalyzer:
     def __init__(self, args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
         self.args = args
@@ -21,6 +32,7 @@ class ProjectTypeAnalyzer:
         ]
         self.extension_counts = defaultdict(int)
         self.stats_file = Path(args.source_dir) / ".auto-coder" / "project_type_stats.json"
+        self.result_manager = ResultManager()
 
     def traverse_project(self) -> None:
         """遍历项目目录，统计文件后缀"""
@@ -38,7 +50,7 @@ class ProjectTypeAnalyzer:
         return dict(sorted(self.extension_counts.items(), key=lambda x: x[1], reverse=True))
 
     @byzerllm.prompt()
-    def classify_extensions(self, extensions: List[str]) -> Dict[str, List[str]]:
+    def classify_extensions(self, extensions: str) -> str:
         """
         根据文件后缀列表，将后缀分类为代码、配置、数据、文档等类型。
 
@@ -86,44 +98,10 @@ class ProjectTypeAnalyzer:
     def detect_project_type(self) -> str:
         """根据后缀统计结果推断项目类型"""
         # 获取统计结果
-        ext_counts = self.count_extensions()
-        
+        ext_counts = self.count_extensions()        
         # 将后缀分类
-        classification = self.classify_extensions.with_llm(self.llm).run(list(ext_counts.keys()))
-        
-        # 根据代码文件占比判断项目类型
-        code_exts = set(classification.get("code", []))
-        framework_exts = set(classification.get("framework", []))
-        total_files = sum(ext_counts.values())
-        
-        # 添加防除零保护
-        if total_files == 0:
-            return "unknown"
-            
-        code_files = sum(count for ext, count in ext_counts.items() if ext in code_exts)
-        
-        # 优先检测前端框架
-        if ".vue" in framework_exts:
-            return "vue"
-        elif ".svelte" in framework_exts:
-            return "svelte"
-        elif ".jsx" in framework_exts or ".tsx" in framework_exts:
-            return "react"
-        elif ".astro" in framework_exts:
-            return "astro"
-            
-        # 根据代码文件占比判断项目类型
-        if code_files / total_files > 0.7:
-            if ".py" in code_exts:
-                return "py"
-            elif ".ts" in code_exts or ".tsx" in code_exts:
-                return "ts"
-            else:
-                # 如果有多个代码后缀，返回主要后缀
-                main_ext = max((ext for ext in code_exts), key=lambda x: ext_counts.get(x, 0))
-                return main_ext.lstrip(".")
-        else:
-            return "unknown"
+        classification = self.classify_extensions.with_llm(self.llm).with_return_type(ExtensionClassifyResult).run(json.dumps(ext_counts,ensure_ascii=False))        
+        return ",".join(classification.code)
 
     def analyze(self) -> Dict[str, any]:
         """执行完整的项目类型分析流程"""
@@ -131,12 +109,12 @@ class ProjectTypeAnalyzer:
         self.traverse_project()
         
         # 检测项目类型
-        project_type = self.detect_project_type()
-        
-        # 保存统计结果
-        self.save_stats()
-        
-        return {
-            "project_type": project_type,
-            "extension_counts": self.count_extensions()
-        }
+        project_type = self.detect_project_type()  
+
+        self.result_manager.add_result(content=project_type, meta={
+                    "action": "get_project_type",
+                    "input": {
+                       
+                    }
+                })      
+        return project_type

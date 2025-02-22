@@ -3,7 +3,7 @@ import json
 from pydantic import BaseModel
 import byzerllm
 from autocoder.common.printer import Printer
-from autocoder.utils.llms import count_tokens
+from autocoder.rag.token_counter import count_tokens
 from loguru import logger
 
 class PruneStrategy(BaseModel):

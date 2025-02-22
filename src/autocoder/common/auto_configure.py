@@ -119,7 +119,45 @@ class AutoConfigRequest(BaseModel):
 
 class AutoConfigResponse(BaseModel):
     configs: List[Dict[str, Any]] = Field(default_factory=list)
-    reasoning: str = ""        
+    reasoning: str = "" 
+
+
+@byzerllm.prompt()
+def config_readme() -> str:
+    """
+    # 配置项说明
+    ## auto_merge: 代码合并方式，可选值为editblock、diff、wholefile.
+    - editblock: 生成 SEARCH/REPLACE 块，然后根据 SEARCH块到对应的源码查找，如果相似度阈值大于 editblock_similarity， 那么则将
+    找到的代码块替换为 REPLACE 块。大部分情况都推荐使用 editblock。        
+    - wholefile: 重新生成整个文件，然后替换原来的文件。对于重构场景，推荐使用 wholefile。
+    - diff: 生成标准 git diff 格式，适用于简单的代码修改。        
+
+    ## editblock_similarity: editblock相似度阈值
+    - editblock相似度阈值，取值范围为0-1，默认值为0.9。如果设置的太低，虽然能合并进去，但是会引入错误。推荐不要修改该值。
+
+    ## generate_times_same_model: 相同模型生成次数
+    当进行生成代码时，大模型会对同一个需求生成多份代码，然后会使用 generate_rerank_model 模型对多份代码进行重排序，
+    然后选择得分最高的代码。一般次数越多，最终得到正确的代码概率越高。默认值为1，推荐设置为3。但是设置值越多，可能速度就越慢，消耗的token也越多。
+
+    ## skip_filter_index: 是否跳过索引过滤
+    是否跳过根据用户的query 自动查找上下文。推荐设置为 false
+    
+    ## skip_build_index: 是否跳过索引构建
+    是否自动构建索引。推荐设置为 false。注意，如果该值设置为 true, 那么 skip_filter_index 设置不会生效。
+
+    ## rank_times_same_model: 相同模型重排序次数
+    默认值为1. 如果 generate_times_same_model 参数设置大于1，那么 coding 函数会自动对多份代码进行重排序。
+    rank_times_same_model 表示重拍的次数，次数越多，选择到最好的代码的可能性越高，但是也会显著增加消耗的token和时间。
+    建议保持默认，要修改也建议不要超过3。
+
+    ## project_type: 项目类型
+    项目类型通常为如下三种选择：
+    1. ts
+    2. py
+    3. 代码文件后缀名列表（比如.java,.py,.go,.js,.ts），多个按逗号分割
+
+    推荐使用 3 选项，因为项目类型通常为多种后缀名混合。
+    """
 
 class ConfigAutoTuner:
     def __init__(self,args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], memory_config: MemoryConfig):
@@ -135,34 +173,7 @@ class ConfigAutoTuner:
         self.memory_config.configure(conf, skip_print)
 
 
-    @byzerllm.prompt()
-    def config_readme(self) -> str:
-        """
-        # 配置项说明
-        ## auto_merge: 代码合并方式，可选值为editblock、diff、wholefile.
-        - editblock: 生成 SEARCH/REPLACE 块，然后根据 SEARCH块到对应的源码查找，如果相似度阈值大于 editblock_similarity， 那么则将
-        找到的代码块替换为 REPLACE 块。大部分情况都推荐使用 editblock。        
-        - wholefile: 重新生成整个文件，然后替换原来的文件。对于重构场景，推荐使用 wholefile。
-        - diff: 生成标准 git diff 格式，适用于简单的代码修改。        
-
-        ## editblock_similarity: editblock相似度阈值
-        - editblock相似度阈值，取值范围为0-1，默认值为0.9。如果设置的太低，虽然能合并进去，但是会引入错误。推荐不要修改该值。
-
-        ## generate_times_same_model: 相同模型生成次数
-        当进行生成代码时，大模型会对同一个需求生成多份代码，然后会使用 generate_rerank_model 模型对多份代码进行重排序，
-        然后选择得分最高的代码。一般次数越多，最终得到正确的代码概率越高。默认值为1，推荐设置为3。但是设置值越多，可能速度就越慢，消耗的token也越多。
-
-        ## skip_filter_index: 是否跳过索引过滤
-        是否跳过根据用户的query 自动查找上下文。推荐设置为 false
-        
-        ## skip_build_index: 是否跳过索引构建
-        是否自动构建索引。推荐设置为 false。注意，如果该值设置为 true, 那么 skip_filter_index 设置不会生效。
-
-        ## rank_times_same_model: 相同模型重排序次数
-        默认值为1. 如果 generate_times_same_model 参数设置大于1，那么 coding 函数会自动对多份代码进行重排序。
-        rank_times_same_model 表示重拍的次数，次数越多，选择到最好的代码的可能性越高，但是也会显著增加消耗的token和时间。
-        建议保持默认，要修改也建议不要超过3。
-        """
+    
 
     def command_readme(self) -> str:
         """
@@ -212,7 +223,7 @@ class ConfigAutoTuner:
             "query": request.query,
             "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),        
             "last_execution_stat": "",
-            "config_readme": self.config_readme.prompt()
+            "config_readme": config_readme.prompt()
         }
 
     def tune(self, request: AutoConfigRequest) -> 'AutoConfigResponse':
