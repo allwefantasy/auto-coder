@@ -58,7 +58,7 @@ class ConversationPruner:
         if strategy.name == "summarize":
             return self._summarize_prune(conversations, strategy.config)
         elif strategy.name == "truncate":
-            return self._truncate_prune.with_llm(self.llm).run(conversations)
+            return self._truncate_prune(conversations)
         elif strategy.name == "hybrid":
             pruned = self._summarize_prune(conversations, strategy.config)
             if count_tokens(json.dumps(pruned, ensure_ascii=False)) > self.args.conversation_prune_safe_zone_tokens:
@@ -81,7 +81,7 @@ class ConversationPruner:
                 break
                 
             # 找到要处理的对话组
-            early_conversations = processed_conversations[:-group_size]
+            early_conversations = processed_conversations[:group_size]
             recent_conversations = processed_conversations[-group_size:]
             
             if not early_conversations:
@@ -91,7 +91,7 @@ class ConversationPruner:
             group_summary = self._generate_summary.with_llm(self.llm).run(early_conversations[-group_size:])
             
             # 更新对话历史
-            processed_conversations = early_conversations[:-group_size] + [
+            processed_conversations =  [
                 {"role": "user", "content": f"历史对话摘要：\n{group_summary}"},
                 {"role": "assistant", "content": f"收到"}
             ] + recent_conversations

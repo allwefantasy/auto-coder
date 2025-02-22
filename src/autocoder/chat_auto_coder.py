@@ -229,7 +229,7 @@ def main():
         pwd_parts = pwd.split(os.sep)
         if len(pwd_parts) > 3:
             pwd = os.sep.join(pwd_parts[-3:])
-        return f"Current Dir: {pwd} \nMode: {MODES[mode]} | Human as Model: {human_as_model} "
+        return f"Current Dir: {pwd} \nMode: {MODES[mode]}(ctrl+k) | Human as Model: {human_as_model}(ctrl+n) "
 
     session = PromptSession(
         history=InMemoryHistory(),
