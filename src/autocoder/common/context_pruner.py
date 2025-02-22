@@ -156,14 +156,18 @@ class PruneContext:
                     # 抽取关键片段
                     lines = content.splitlines()
                     new_content = ""
+
+                    ## 将文件内容按行编号
                     for index,line in enumerate(lines):                        
                         new_content += f"{index+1} {line}\n"
                     
+                    ## 抽取代码片段
                     extracted = extract_code_snippets.with_llm(self.llm).run(
                         conversations=conversations, 
                         content=new_content
                     )                
                     
+                    ## 构建代码片段内容
                     if extracted:
                         json_str = extract_code(extracted)[0][1]
                         snippets = json.loads(json_str)
