@@ -174,9 +174,8 @@ def base_base(source_dir:str,project_type:str)->str:
     source_dir: {{ source_dir }}
     target_file: {{ target_file }}
 
-    model: v3_chat
-    model_max_input_length: 100000
-    model_max_input_length: 120000
+    model: v3_chat    
+    model_max_input_length: 60000
     enable_multi_round_generate: false
     index_filter_workers: 100
     index_build_workers: 100
