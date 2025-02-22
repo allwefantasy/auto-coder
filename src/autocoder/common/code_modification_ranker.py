@@ -6,8 +6,9 @@ from pydantic import BaseModel
 from autocoder.common.printer import Printer
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import traceback
-from autocoder.common.utils_code_auto_generate import chat_with_continue
+from autocoder.common.utils_code_auto_generate import chat_with_continue,stream_chat_with_continue
 from byzerllm.utils.str2model import to_model
+from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.utils.llms import get_llm_names, get_model_info
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
 import os
@@ -156,16 +157,25 @@ class CodeModificationRanker:
                     self.printer.print_in_terminal(
                         "ranking_start", style="blue", count=len(generate_result.contents), model_name=model_name)
                     
-                    for _ in range(rank_times):
-                        
-                        futures.append(
-                            executor.submit(
-                                chat_with_continue,
-                                llm,
-                                [{"role": "user", "content": query}],
-                                {}
+                    for i in range(rank_times):
+                        if i == 0:
+                            futures.append(
+                                executor.submit(
+                                    stream_chat_with_continue,
+                                    llm,
+                                    [{"role": "user", "content": query}],
+                                    {}
+                                )
                             )
-                        )
+                        else:    
+                            futures.append(
+                                executor.submit(
+                                    chat_with_continue,
+                                    llm,
+                                    [{"role": "user", "content": query}],
+                                    {}
+                                )
+                            )
 
                 # Collect all results
                 results = []
@@ -191,7 +201,31 @@ class CodeModificationRanker:
                 total_input_cost = 0.0
                 total_output_cost = 0.0
 
-                for future, model_name in zip(futures, model_names):
+                # 第一个future使用流式输出
+                stream_future = futures[0]
+                model_name = model_names[0]
+                stream_generator = stream_future.result()
+                full_response, last_meta = stream_out(
+                        stream_generator,
+                        model_name=model_name,
+                        title=self.printer.get_message_from_key_with_format(
+                            "quick_filter_title", model_name=model_name),
+                        args=self.args
+                    )
+                
+                if last_meta:
+                    input_tokens_count += last_meta.input_tokens_count
+                    generated_tokens_count += last_meta.generated_tokens_count
+                    # 计算成本                        
+                    info = model_info_map.get(model_name, {})
+                    # 计算公式:token数 * 单价 / 1000000
+                    total_input_cost += (last_meta.input_tokens_count * info.get("input_cost", 0.0)) / 1000000
+                    total_output_cost += (last_meta.generated_tokens_count * info.get("output_cost", 0.0)) / 1000000
+                
+                v = to_model(full_response,RankResult)                        
+                results.append(v.rank_result)
+
+                for future, model_name in zip(futures[1:], model_names[1:]):
                     try:
                         result = future.result()
                         input_tokens_count += result.input_tokens_count
