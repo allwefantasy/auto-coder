@@ -1,4 +1,5 @@
 from typing import List, Dict, Any, Union
+from typing import Tuple
 from pathlib import Path
 import json
 from loguru import logger
@@ -18,6 +19,60 @@ class PruneContext:
         self.args = args
         self.llm = llm
         self.printer = Printer()
+
+    def _split_content_with_sliding_window(self, content: str, window_size=100, overlap=20) -> List[Tuple[int, int, str]]:
+        """使用滑动窗口分割大文件内容"""
+        lines = content.splitlines()
+        chunks = []
+        start = 0
+        while start < len(lines):
+            end = min(start + window_size, len(lines))
+            chunk_lines = lines[max(0, start - overlap):end]
+            chunk_content = "\n".join([
+                f"{i+1} {line}" for i, line in enumerate(chunk_lines, start=max(0, start - overlap))
+            ])
+            chunks.append((max(0, start - overlap) + 1, end, chunk_content))  # (起始行号, 结束行号, 分块内容)
+            start += (window_size - overlap)
+        return chunks
+
+    def _merge_overlapping_snippets(self, snippets: List[dict]) -> List[dict]:
+        """合并重叠或相邻的代码片段"""
+        if not snippets:
+            return []
+
+        # 按起始行排序
+        sorted_snippets = sorted(snippets, key=lambda x: x["start_line"])
+
+        merged = [sorted_snippets[0]]
+        for current in sorted_snippets[1:]:
+            last = merged[-1]
+            if current["start_line"] <= last["end_line"] + 1:  # 允许1行间隔
+                # 合并区间
+                merged[-1] = {
+                    "start_line": min(last["start_line"], current["start_line"]),
+                    "end_line": max(last["end_line"], current["end_line"])
+                }
+            else:
+                merged.append(current)
+
+        return merged
+    
+    def _split_content_with_sliding_window(self, content: str, window_size=1000, overlap=100) -> List[Tuple[int, int, str]]:
+        """使用滑动窗口分割大文件内容"""
+        lines = content.splitlines()
+        chunks = []
+        start = 0
+        while start < len(lines):
+            end = min(start + window_size, len(lines))                                 
+            chunk_lines = lines[max(0, start - overlap):end]                           
+            chunk_content = "\n".join([                                                
+                f"{i+1} {line}" for i, line in enumerate(chunk_lines, start=max(0,     
+    start - overlap))                                                                  
+            ])                                                                         
+            chunks.append((max(0, start - overlap) + 1, end, chunk_content))  #(起始行号, 结束行号, 分块内容)         
+                                                        
+            start += (window_size - overlap)                                           
+        return chunks 
 
     def _delete_overflow_files(self, file_paths: List[str]) -> List[SourceCode]:
         """直接删除超出 token 限制的文件"""
@@ -48,7 +103,7 @@ class PruneContext:
         full_file_tokens = int(self.max_tokens * 0.8)
 
         @byzerllm.prompt()
-        def extract_code_snippets(conversations: List[Dict[str, str]], content: str) -> str:
+        def extract_code_snippets(conversations: List[Dict[str, str]], content: str, is_partial_content: bool = False) -> str:
             """
             根据提供的代码文件和对话历史提取相关代码片段。            
 
@@ -111,6 +166,11 @@ class PruneContext:
             {{ content }}
             </code_file>
 
+            <% if is_partial_content: %>
+            当前处理的是文件的局部内容（行号{start_line}-{end_line}），
+            请仅基于当前可见内容判断相关性，返回绝对行号。
+            <% endif %>
+
             2. 对话历史:
             <conversation_history>
             {% for msg in conversations %}
@@ -131,15 +191,17 @@ class PruneContext:
             4. 如果没有相关代码段，返回空数组[]。
 
             输出格式:
-            严格的JSON数组，不包含其他文字或解释。
-
+            严格的JSON数组，不包含其他文字或解释。           
+            
             ```json
             [
                 {"start_line": 第一个代码段的起始行号, "end_line": 第一个代码段的结束行号},
                 {"start_line": 第二个代码段的起始行号, "end_line": 第二个代码段的结束行号}
             ]
-            ```            
+            ``` 
+                       
             """
+            
 
         for file_path in file_paths:
             try:
@@ -152,7 +214,36 @@ class PruneContext:
                         selected_files.append(SourceCode(module_name=file_path,source_code=content,tokens=tokens))
                         token_count += tokens
                         continue
+                    
+                    if tokens > self.max_tokens:
+                        chunks = self._split_content_with_sliding_window(content)
+                        all_snippets = [] 
+                        for chunk_start, chunk_end, chunk_content in chunks: 
+                            extracted = extract_code_snippets.with_llm(self.llm).run( 
+                                conversations=conversations, 
+                                content=chunk_content, 
+                                is_partial_content=True 
+                            )
+                            if extracted:
+                                json_str = extract_code(extracted)[0][1]
+                                snippets = json.loads(json_str)
+                                # 将分块内的相对行号转换为全局行号
+                                adjusted_snippets = [{
+                                    "start_line": chunk_start + snippet["start_line"] - 1,
+                                    "end_line": chunk_start + snippet["end_line"] - 1
+                                } for snippet in snippets]
+                                all_snippets.extend(adjusted_snippets)                                                                
+                        merged_snippets = self._merge_overlapping_snippets(all_snippets)         
+                        content_snippets = self._build_snippet_content(file_path, content, merged_snippets)
 
+                        snippet_tokens = count_tokens(content_snippets)
+                        if token_count + snippet_tokens <= self.max_tokens:
+                            selected_files.append(SourceCode(module_name=file_path,source_code=content_snippets,tokens=snippet_tokens))
+                            token_count += snippet_tokens
+                            continue
+                        else:
+                            break
+                        
                     # 抽取关键片段
                     lines = content.splitlines()
                     new_content = ""
@@ -160,13 +251,13 @@ class PruneContext:
                     ## 将文件内容按行编号
                     for index,line in enumerate(lines):                        
                         new_content += f"{index+1} {line}\n"
-                    
+
                     ## 抽取代码片段
                     extracted = extract_code_snippets.with_llm(self.llm).run(
                         conversations=conversations, 
                         content=new_content
                     )                
-                    
+
                     ## 构建代码片段内容
                     if extracted:
                         json_str = extract_code(extracted)[0][1]
@@ -184,6 +275,28 @@ class PruneContext:
                 continue
 
         return selected_files
+    
+
+    def _merge_overlapping_snippets(self, snippets: List[dict]) -> List[dict]: 
+        if not snippets:
+            return []
+
+        # 按起始行排序
+        sorted_snippets = sorted(snippets, key=lambda x: x["start_line"])
+
+        merged = [sorted_snippets[0]]
+        for current in sorted_snippets[1:]:
+            last = merged[-1]
+            if current["start_line"] <= last["end_line"] + 1:  # 允许1行间隔
+                # 合并区间
+                merged[-1] = {
+                    "start_line": min(last["start_line"], current["start_line"]),
+                    "end_line": max(last["end_line"], current["end_line"])
+                }
+            else:
+                merged.append(current)
+
+        return merged
 
     def _build_snippet_content(self, file_path: str, full_content: str, snippets: List[dict]) -> str:
         """构建包含代码片段的文件内容"""
@@ -223,7 +336,7 @@ class PruneContext:
             return self._extract_code_snippets(file_paths, conversations)
         else:
             raise ValueError(f"无效策略: {strategy}. 可选值: delete/extract/score")
-    
+
     def _count_tokens(self, file_paths: List[str]) -> int:
         """计算文件总token数"""
         total_tokens = 0
@@ -321,4 +434,3 @@ class PruneContext:
                 break
 
         return selected_files
-
