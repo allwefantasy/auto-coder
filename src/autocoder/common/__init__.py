@@ -383,7 +383,9 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     auto_command_max_iterations: Optional[int] = 10
     
-    skip_commit: Optional[bool] = False    
+    skip_commit: Optional[bool] = False 
+
+    enable_beta: Optional[bool] = False
 
     class Config:
         protected_namespaces = ()

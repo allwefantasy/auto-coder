@@ -13,20 +13,11 @@ import time
 import hashlib
 from contextlib import contextmanager
 from typing import List, Dict, Any, Optional
-from prompt_toolkit import PromptSession
-from prompt_toolkit.history import InMemoryHistory
-from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
-from prompt_toolkit.styles import Style
-from prompt_toolkit.formatted_text import FormattedText
-from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.completion import WordCompleter, Completer, Completion
-from prompt_toolkit.shortcuts import confirm
 from autocoder.common import AutoCoderArgs
-from pydantic import Field, BaseModel
+from pydantic import BaseModel
 from autocoder.common.result_manager import ResultManager
 from autocoder.version import __version__
 from autocoder.auto_coder import main as auto_coder_main
-from autocoder.common.command_completer import CommandTextParser
 from autocoder.utils import get_last_yaml_file
 from autocoder.index.symbols_utils import (
     extract_symbols,
@@ -45,7 +36,6 @@ from byzerllm.utils.nontext import Image
 import git
 from autocoder.common import git_utils
 from autocoder.chat_auto_coder_lang import get_message
-from autocoder.utils import operate_config_api
 from autocoder.agent.auto_guess_query import AutoGuessQuery
 from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest
 import byzerllm
@@ -56,7 +46,7 @@ import shlex
 from autocoder.utils.llms import get_single_llm
 import pkg_resources
 from autocoder.common.printer import Printer
-from autocoder.utils.thread_utils import run_in_thread,run_in_raw_thread
+from autocoder.utils.thread_utils import run_in_raw_thread
 from autocoder.common.command_completer import CommandCompleter,FileSystemModel as CCFileSystemModel,MemoryConfig as CCMemoryModel
 from autocoder.common.conf_validator import ConfigValidator
 
@@ -125,67 +115,17 @@ commands = [
     "/exclude_dirs",
 ]
 
-
-def show_help():
-    print(f"\033[1m{get_message('official_doc')}\033[0m")
-    print()
-    print(f"\033[1m{get_message('supported_commands')}\033[0m")
-    print()
-    print(
-        f"  \033[94m{get_message('commands')}\033[0m - \033[93m{get_message('description')}\033[0m"
-    )
-    print(
-        f"  \033[94m/add_files\033[0m \033[93m<file1> <file2> ...\033[0m - \033[92m{get_message('add_files_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/remove_files\033[0m \033[93m<file1>,<file2> ...\033[0m - \033[92m{get_message('remove_files_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/chat\033[0m \033[93m<query>\033[0m - \033[92m{get_message('chat_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/coding\033[0m \033[93m<query>\033[0m - \033[92m{get_message('coding_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92m{get_message('ask_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/summon\033[0m \033[93m<query>\033[0m - \033[92m{get_message('summon_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/revert\033[0m - \033[92m{get_message('revert_desc')}\033[0m")
-    print(
-        f"  \033[94m/commit\033[0m - \033[92m{get_message('commit_desc')}\033[0m")
-    print(
-        f"  \033[94m/conf\033[0m \033[93m<key>:<value>\033[0m  - \033[92m{get_message('conf_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/index/query\033[0m \033[93m<args>\033[0m - \033[92m{get_message('index_query_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/index/build\033[0m - \033[92m{get_message('index_build_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/list_files\033[0m - \033[92m{get_message('list_files_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/help\033[0m - \033[92m{get_message('help_desc')}\033[0m")
-    print(
-        f"  \033[94m/exclude_dirs\033[0m \033[93m<dir1>,<dir2> ...\033[0m - \033[92m{get_message('exclude_dirs_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/shell\033[0m \033[93m<command>\033[0m - \033[92m{get_message('shell_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/voice_input\033[0m - \033[92m{get_message('voice_input_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
-    print(f"  \033[94m/lib\033[0m - \033[92m{get_message('lib_desc')}\033[0m")
-    print(f"  \033[94m/models\033[0m - \033[92m{get_message('models_desc')}\033[0m")
-    print(
-        f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
-    print()
+def load_tokenizer():
+    from autocoder.rag.variable_holder import VariableHolder
+    from tokenizers import Tokenizer    
+    try:
+        tokenizer_path = pkg_resources.resource_filename(
+            "autocoder", "data/tokenizer.json"
+        )
+        VariableHolder.TOKENIZER_PATH = tokenizer_path
+        VariableHolder.TOKENIZER_MODEL = Tokenizer.from_file(tokenizer_path)
+    except FileNotFoundError:
+        tokenizer_path = None
 
 
 def configure_project_type():
