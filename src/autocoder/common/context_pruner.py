@@ -215,6 +215,7 @@ class PruneContext:
                         token_count += tokens
                         continue
                     
+                    ## 如果单个文件太大，那么先按滑动窗口分割，然后对窗口抽取代码片段
                     if tokens > self.max_tokens:
                         chunks = self._split_content_with_sliding_window(content)
                         all_snippets = [] 
