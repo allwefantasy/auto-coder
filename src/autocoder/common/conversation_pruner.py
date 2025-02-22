@@ -82,7 +82,7 @@ class ConversationPruner:
                 
             # 找到要处理的对话组
             early_conversations = processed_conversations[:group_size]
-            recent_conversations = processed_conversations[-group_size:]
+            recent_conversations = processed_conversations[group_size:]
             
             if not early_conversations:
                 break
