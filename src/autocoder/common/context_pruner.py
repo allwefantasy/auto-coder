@@ -56,23 +56,7 @@ class PruneContext:
                 merged.append(current)
 
         return merged
-    
-    def _split_content_with_sliding_window(self, content: str, window_size=1000, overlap=100) -> List[Tuple[int, int, str]]:
-        """使用滑动窗口分割大文件内容"""
-        lines = content.splitlines()
-        chunks = []
-        start = 0
-        while start < len(lines):
-            end = min(start + window_size, len(lines))                                 
-            chunk_lines = lines[max(0, start - overlap):end]                           
-            chunk_content = "\n".join([                                                
-                f"{i+1} {line}" for i, line in enumerate(chunk_lines, start=max(0,     
-    start - overlap))                                                                  
-            ])                                                                         
-            chunks.append((max(0, start - overlap) + 1, end, chunk_content))  #(起始行号, 结束行号, 分块内容)         
-                                                        
-            start += (window_size - overlap)                                           
-        return chunks 
+     
 
     def _delete_overflow_files(self, file_paths: List[str]) -> List[SourceCode]:
         """直接删除超出 token 限制的文件"""
