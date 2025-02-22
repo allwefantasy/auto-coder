@@ -7,6 +7,7 @@ from autocoder.common.printer import Printer
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import traceback
 from autocoder.common.utils_code_auto_generate import chat_with_continue
+from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from byzerllm.utils.str2model import to_model
 from autocoder.utils.llms import get_llm_names, get_model_info
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
@@ -191,23 +192,54 @@ class CodeModificationRanker:
                 total_input_cost = 0.0
                 total_output_cost = 0.0
 
-                for future, model_name in zip(futures, model_names):
+                # 处理第一个任务，使用 stream_out
+                first_future = futures[0]
+                first_model_name = model_names[0]
+                try:
+                    # 使用 stream_out 处理第一个任务
+                    full_response, last_meta = stream_out(
+                        first_future.result(),
+                        model_name=first_model_name,
+                        title=self.printer.get_message_from_key_with_format(
+                            "ranking_title", model_name=first_model_name),
+                        args=self.args
+                    )
+                    
+                    # 更新统计信息
+                    input_tokens_count += last_meta.input_tokens_count
+                    generated_tokens_count += last_meta.generated_tokens_count
+                    
+                    # 解析结果
+                    v = to_model(full_response, RankResult)
+                    results.append(v.rank_result)
+                    
+                    # 计算成本
+                    info = model_info_map.get(first_model_name, {})
+                    total_input_cost += (last_meta.input_tokens_count * info.get("input_cost", 0.0)) / 1000000
+                    total_output_cost += (last_meta.generated_tokens_count * info.get("output_cost", 0.0)) / 1000000
+                    
+                except Exception as e:
+                    self.printer.print_in_terminal(
+                        "ranking_failed_request", style="yellow", error=str(e))
+                    continue
+                
+                # 处理剩余任务，使用现有模式
+                for future, model_name in zip(futures[1:], model_names[1:]):
                     try:
                         result = future.result()
                         input_tokens_count += result.input_tokens_count
                         generated_tokens_count += result.generated_tokens_count
-                        v = to_model(result.content,RankResult)                        
+                        v = to_model(result.content, RankResult)
                         results.append(v.rank_result)
-
-                        # 计算成本                        
+                        
+                        # 计算成本
                         info = model_info_map.get(model_name, {})
-                        # 计算公式:token数 * 单价 / 1000000
                         total_input_cost += (result.input_tokens_count * info.get("input_cost", 0.0)) / 1000000
                         total_output_cost += (result.generated_tokens_count * info.get("output_cost", 0.0)) / 1000000
-
+                        
                     except Exception as e:
                         self.printer.print_in_terminal(
-                            "ranking_failed_request", style="yellow", error=str(e))                        
+                            "ranking_failed_request", style="yellow", error=str(e))
                         continue
 
                 if not results:
@@ -235,6 +267,8 @@ class CodeModificationRanker:
                 # Format scores for logging
                 score_details = ", ".join(
                     [f"candidate {i}: {candidate_scores[i]:.2f}" for i in sorted_candidates])
+                
+                # 打印统计信息
                 self.printer.print_in_terminal(
                     "ranking_complete",
                     style="green",
@@ -244,11 +278,25 @@ class CodeModificationRanker:
                     scores=score_details,
                     input_tokens=input_tokens_count,
                     output_tokens=generated_tokens_count,
-                    input_cost=total_input_cost,
-                    output_cost=total_output_cost,
+                    input_cost=round(total_input_cost, 4),
+                    output_cost=round(total_output_cost, 4),
                     model_names=", ".join(model_names),
                     speed=f"{speed:.2f}"
                 )
+                
+                # 如果有 stream_out 的元数据，打印更详细的统计信息
+                if 'last_meta' in locals():
+                    self.printer.print_in_terminal(
+                        "stream_out_stats",
+                        model_name=model_names[0],
+                        elapsed_time=f"{elapsed:.2f}",
+                        first_token_time=f"{last_meta.first_token_time:.2f}",
+                        input_tokens=last_meta.input_tokens_count,
+                        output_tokens=last_meta.generated_tokens_count,
+                        input_cost=round((last_meta.input_tokens_count * model_info_map[model_names[0]].get("input_cost", 0.0)) / 1000000, 4),
+                        output_cost=round((last_meta.generated_tokens_count * model_info_map[model_names[0]].get("output_cost", 0.0)) / 1000000, 4),
+                        speed=f"{speed:.2f}"
+                    )
 
                 rerank_contents = [generate_result.contents[i]
                                    for i in sorted_candidates]
