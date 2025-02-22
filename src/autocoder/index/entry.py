@@ -295,7 +295,7 @@ def build_index_and_filter_files(
             # 打印重新排序后的文件路径
             printer.print_in_terminal(
                 "sorted_files_message", 
-                files=sorted_file_paths
+                files=temp_sources
             )
         pruned_files = context_pruner.handle_overflow([source.module_name for source in temp_sources], [{"role":"user","content":args.query}], args.context_prune_strategy)
         source_code_list.sources = pruned_files

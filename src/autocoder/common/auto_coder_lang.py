@@ -167,7 +167,8 @@ MESSAGES = {
         "file_snippet_processing": "Processing file {{ file_path }} with code snippet extraction...",
         "context_pruning_start": "⚠️ Context pruning started. Total tokens: {{ total_tokens }} (max allowed: {{ max_tokens }}). Applying strategy: {{ strategy }}.",
         "context_pruning_reason": "Context length exceeds maximum limit ({{ total_tokens }} > {{ max_tokens }}). Pruning is required to fit within the model's context window.",
-        "rank_code_modification_title": "{{model_name}} ranking codes"
+        "rank_code_modification_title": "{{model_name}} ranking codes",
+        "sorted_files_message": "Reordered files:\n{% for file in files %}- {{ file }}\n{% endfor %}"
         
     },
     "zh": {
@@ -333,7 +334,8 @@ MESSAGES = {
         "edits_title": "编辑块",
         "diff_blocks_title": "差异块",
         "index_exclude_files_error": "索引排除文件时出错: {{error}}",
-        "rank_code_modification_title": "模型{{model_name}}对代码打分"
+        "rank_code_modification_title": "模型{{model_name}}对代码打分",
+        "sorted_files_message": "重新排序后的文件路径:\n{% for file in files %}- {{ file }}\n{% endfor %}"
     }}
 
 
