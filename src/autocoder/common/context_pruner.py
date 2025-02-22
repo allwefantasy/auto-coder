@@ -261,6 +261,7 @@ class PruneContext:
                     
                     ## 如果单个文件太大，那么先按滑动窗口分割，然后对窗口抽取代码片段
                     if tokens > self.max_tokens:
+                        self.printer.print_in_terminal("file_sliding_window_processing", file_path=file_path, tokens=tokens)
                         chunks = self._split_content_with_sliding_window(content, 
                                                                          self.args.context_prune_sliding_window_size, 
                                                                          self.args.context_prune_sliding_window_overlap)                        
@@ -301,6 +302,7 @@ class PruneContext:
                         new_content += f"{index+1} {line}\n"
 
                     ## 抽取代码片段
+                    self.printer.print_in_terminal("file_snippet_processing", file_path=file_path)
                     extracted = extract_code_snippets.with_llm(self.llm).run(
                         conversations=conversations, 
                         content=new_content

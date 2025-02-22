@@ -161,9 +161,13 @@ MESSAGES = {
         "index_import_success": "Index imported successfully: {{path}}",
         "edits_title": "edits",
         "diff_blocks_title":"diff blocks",
-        "index_exclude_files_error": "index filter exclude files fail: {{ error }}"
+        "index_exclude_files_error": "index filter exclude files fail: {{ error }}",
+        "file_sliding_window_processing": "File {{ file_path }} is too large ({{ tokens }} tokens), processing with sliding window...",
+        "file_snippet_processing": "Processing file {{ file_path }} with code snippet extraction..."
     },
     "zh": {
+        "file_sliding_window_processing": "文件 {{ file_path }} 过大 ({{ tokens }} tokens)，正在使用滑动窗口处理...",
+        "file_snippet_processing": "正在对文件 {{ file_path }} 进行代码片段提取...",
         "file_scored_message": "文件评分: {{file_path}} - 分数: {{score}}",
         "invalid_file_pattern": "无效的文件模式: {{file_pattern}}. 例如: regex://.*/package-lock\\.json",
         "conf_not_found": "未找到配置文件: {{path}}",
