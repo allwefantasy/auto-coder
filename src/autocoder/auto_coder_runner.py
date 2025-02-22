@@ -2298,10 +2298,8 @@ def index_build():
 
     with open(yaml_file, "w",encoding="utf-8") as f:
         f.write(yaml_content)
-    try:
-        with redirect_stdout() as output:
-            auto_coder_main(["index", "--file", yaml_file])
-        print(output.getvalue(), flush=True)
+    try:        
+        auto_coder_main(["index", "--file", yaml_file])        
         completer.refresh_files()
     finally:
         os.remove(yaml_file)
@@ -2383,10 +2381,8 @@ def index_query(query: str):
 
     with open(yaml_file, "w",encoding="utf-8") as f:
         f.write(yaml_content)
-    try:
-        with redirect_stdout() as output:
-            auto_coder_main(["index-query", "--file", yaml_file])
-        print(output.getvalue(), flush=True)
+    try:        
+        auto_coder_main(["index-query", "--file", yaml_file])        
     finally:
         os.remove(yaml_file)
 
