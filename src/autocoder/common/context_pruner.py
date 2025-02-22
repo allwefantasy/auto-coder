@@ -379,7 +379,18 @@ class PruneContext:
         total_tokens,sources = self._count_tokens(file_paths)
         if total_tokens <= self.max_tokens:
             return sources
-        # print(f"total_tokens: {total_tokens} {self.max_tokens}, 进行策略: {strategy}")
+        self.printer.print_in_terminal(
+            "context_pruning_start",
+            total_tokens=total_tokens,
+            max_tokens=self.max_tokens,
+            strategy=strategy
+        )
+        self.printer.print_in_terminal(
+            "context_pruning_reason",
+            total_tokens=total_tokens,
+            max_tokens=self.max_tokens,
+            style="yellow"
+        )
         if strategy == "score":            
             return self._score_and_filter_files(file_paths, conversations)
         if strategy == "delete":
