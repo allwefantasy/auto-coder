@@ -261,7 +261,9 @@ class PruneContext:
                     
                     ## 如果单个文件太大，那么先按滑动窗口分割，然后对窗口抽取代码片段
                     if tokens > self.max_tokens:
-                        chunks = self._split_content_with_sliding_window(content)
+                        chunks = self._split_content_with_sliding_window(content, 
+                                                                         self.args.context_prune_sliding_window_size, 
+                                                                         self.args.context_prune_sliding_window_overlap)                        
                         all_snippets = [] 
                         for chunk_start, chunk_end, chunk_content in chunks: 
                             extracted = extract_code_snippets.with_llm(self.llm).run( 
@@ -274,15 +276,14 @@ class PruneContext:
                                 snippets = json.loads(json_str)  
 
                                 # 获取到的本来就是在原始文件里的绝对行号  
-                                # 所以无需再调整。但是因为行号是从1开始的，我们要抽取的行号是0开始的，所以需要减1                        
+                                # 后续在构建代码片段内容时，会为了适配数组操作修改行号，这里无需处理
                                 adjusted_snippets = [{
-                                    "start_line": snippet["start_line"] - 1,
-                                    "end_line": snippet["end_line"] - 1
-                                } for snippet in snippets]
+                                    "start_line": snippet["start_line"],
+                                    "end_line": snippet["end_line"]
+                                } for snippet in snippets]                                
                                 all_snippets.extend(adjusted_snippets)                                                                
-                        merged_snippets = self._merge_overlapping_snippets(all_snippets)         
+                        merged_snippets = self._merge_overlapping_snippets(all_snippets)                        
                         content_snippets = self._build_snippet_content(file_path, content, merged_snippets)
-
                         snippet_tokens = count_tokens(content_snippets)
                         if token_count + snippet_tokens <= self.max_tokens:
                             selected_files.append(SourceCode(module_name=file_path,source_code=content_snippets,tokens=snippet_tokens))
@@ -313,7 +314,9 @@ class PruneContext:
 
                         snippet_tokens = count_tokens(content_snippets)
                         if token_count + snippet_tokens <= self.max_tokens:
-                            selected_files.append(SourceCode(module_name=file_path,source_code=content_snippets,tokens=snippet_tokens))
+                            selected_files.append(SourceCode(module_name=file_path,
+                                                             source_code=content_snippets,
+                                                             tokens=snippet_tokens))
                             token_count += snippet_tokens
                         else:
                             break

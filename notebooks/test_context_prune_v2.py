@@ -93,7 +93,9 @@ def test_extract_large_file():
         source_dir=".",
         context_prune=True,
         context_prune_strategy="extract",
-        conversation_prune_safe_zone_tokens=100,  # 设置较小的token限制以触发抽取逻辑
+        conversation_prune_safe_zone_tokens=400,  # 设置较小的token限制以触发抽取逻辑
+        context_prune_sliding_window_size=10,
+        context_prune_sliding_window_overlap=2,
         query="如何实现加法和减法运算？"
     )
 
@@ -205,5 +207,5 @@ if __name__ == "__main__":
     print("测试1: 提取相关代码片段")
     test_extract_large_file()
     
-    print("\n测试2: 滑动窗口处理超大文件")
-    test_extract_with_sliding_window()
+    # print("\n测试2: 滑动窗口处理超大文件")
+    # test_extract_with_sliding_window()
