@@ -21,22 +21,70 @@ class PruneContext:
         self.printer = Printer()
 
     def _split_content_with_sliding_window(self, content: str, window_size=100, overlap=20) -> List[Tuple[int, int, str]]:
-        """使用滑动窗口分割大文件内容"""
+        """使用滑动窗口分割大文件内容，返回包含行号信息的文本块
+        
+        Args:
+            content: 要分割的文件内容
+            window_size: 每个窗口包含的行数
+            overlap: 相邻窗口的重叠行数
+            
+        Returns:
+            List[Tuple[int, int, str]]: 返回元组列表，每个元组包含:
+                - 起始行号(从1开始)
+                - 结束行号
+                - 带行号的内容文本
+        """
+        # 按行分割内容
         lines = content.splitlines()
         chunks = []
         start = 0
+        
         while start < len(lines):
+            # 计算当前窗口的结束位置
             end = min(start + window_size, len(lines))
-            chunk_lines = lines[max(0, start - overlap):end]
+            
+            # 计算实际的起始位置(考虑重叠)
+            actual_start = max(0, start - overlap)
+            
+            # 提取当前窗口的行
+            chunk_lines = lines[actual_start:end]
+            
+            # 为每一行添加行号
+            # 行号从actual_start+1开始，保持与原文件的绝对行号一致
             chunk_content = "\n".join([
-                f"{i+1} {line}" for i, line in enumerate(chunk_lines, start=max(0, start - overlap))
+                f"{i+1} {line}" for i, line in enumerate(chunk_lines, start=actual_start)
             ])
-            chunks.append((max(0, start - overlap) + 1, end, chunk_content))  # (起始行号, 结束行号, 分块内容)
+            
+            # 保存分块信息：(起始行号, 结束行号, 带行号的内容)
+            # 行号从1开始计数
+            chunks.append((actual_start + 1, end, chunk_content))
+            
+            # 移动到下一个窗口的起始位置
+            # 减去overlap确保窗口重叠
             start += (window_size - overlap)
+            
         return chunks
 
     def _merge_overlapping_snippets(self, snippets: List[dict]) -> List[dict]:
-        """合并重叠或相邻的代码片段"""
+        """合并重叠或相邻的代码片段
+        
+        Args:
+            snippets: 代码片段列表，每个片段是包含start_line和end_line的字典
+            
+        Returns:
+            List[dict]: 合并后的代码片段列表
+            
+        示例:
+            输入: [
+                {"start_line": 1, "end_line": 5},
+                {"start_line": 4, "end_line": 8},
+                {"start_line": 10, "end_line": 12}
+            ]
+            输出: [
+                {"start_line": 1, "end_line": 8},
+                {"start_line": 10, "end_line": 12}
+            ]
+        """
         if not snippets:
             return []
 
@@ -44,15 +92,23 @@ class PruneContext:
         sorted_snippets = sorted(snippets, key=lambda x: x["start_line"])
 
         merged = [sorted_snippets[0]]
+        
         for current in sorted_snippets[1:]:
             last = merged[-1]
-            if current["start_line"] <= last["end_line"] + 1:  # 允许1行间隔
-                # 合并区间
+            
+            # 判断是否需要合并:
+            # 1. 如果当前片段的起始行小于等于上一个片段的结束行+1
+            # 2. +1是为了合并相邻的片段，比如1-5和6-8应该合并为1-8
+            if current["start_line"] <= last["end_line"] + 1:
+                # 合并区间:
+                # - 起始行取两者最小值
+                # - 结束行取两者最大值
                 merged[-1] = {
                     "start_line": min(last["start_line"], current["start_line"]),
                     "end_line": max(last["end_line"], current["end_line"])
                 }
             else:
+                # 如果不重叠且不相邻，则作为新片段添加
                 merged.append(current)
 
         return merged
