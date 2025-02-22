@@ -83,4 +83,4 @@ pydub
 youtube-transcript-api
 SpeechRecognition
 pathvalidate
-mcp
+mcp>=3.10; python_version >= '3.10'
