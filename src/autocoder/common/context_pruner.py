@@ -30,8 +30,8 @@ class PruneContext:
             
         Returns:
             List[Tuple[int, int, str]]: 返回元组列表，每个元组包含:
-                - 起始行号(从1开始)
-                - 结束行号
+                - 起始行号(从1开始)，在原始文件的绝对行号
+                - 结束行号，在原始文件的绝对行号
                 - 带行号的内容文本
         """
         # 按行分割内容
@@ -135,6 +135,8 @@ class PruneContext:
                 selected_files.append(SourceCode(module_name=file_path,source_code=content,tokens=token_count))
 
         return selected_files
+    
+    
 
     def _extract_code_snippets(self, file_paths: List[str], conversations: List[Dict[str, str]]) -> List[SourceCode]:
         """抽取关键代码片段策略"""
@@ -207,8 +209,10 @@ class PruneContext:
             </code_file>
 
             <% if is_partial_content: %>
+            <partial_content_process_note>
             当前处理的是文件的局部内容（行号{start_line}-{end_line}），
-            请仅基于当前可见内容判断相关性，返回绝对行号。
+            请仅基于当前可见内容判断相关性，返回标注的行号区间。            
+            </partial_content_process_note>
             <% endif %>
 
             2. 对话历史:
@@ -267,11 +271,13 @@ class PruneContext:
                             )
                             if extracted:
                                 json_str = extract_code(extracted)[0][1]
-                                snippets = json.loads(json_str)
-                                # 将分块内的相对行号转换为全局行号
+                                snippets = json.loads(json_str)  
+
+                                # 获取到的本来就是在原始文件里的绝对行号  
+                                # 所以无需再调整。但是因为行号是从1开始的，我们要抽取的行号是0开始的，所以需要减1                        
                                 adjusted_snippets = [{
-                                    "start_line": chunk_start + snippet["start_line"] - 1,
-                                    "end_line": chunk_start + snippet["end_line"] - 1
+                                    "start_line": snippet["start_line"] - 1,
+                                    "end_line": snippet["end_line"] - 1
                                 } for snippet in snippets]
                                 all_snippets.extend(adjusted_snippets)                                                                
                         merged_snippets = self._merge_overlapping_snippets(all_snippets)         
