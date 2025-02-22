@@ -5,6 +5,7 @@ import byzerllm
 from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
 from loguru import logger
+from autocoder.common import AutoCoderArgs
 
 class PruneStrategy(BaseModel):
     name: str
@@ -12,25 +13,25 @@ class PruneStrategy(BaseModel):
     config: Dict[str, Any] = {"safe_zone_tokens": 0, "group_size": 4}
 
 class ConversationPruner:
-    def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], 
-                 safe_zone_tokens: int = 500, group_size: int = 4):
+    def __init__(self, args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
+        self.args = args
         self.llm = llm
         self.printer = Printer()
         self.strategies = {
             "summarize": PruneStrategy(
                 name="summarize",
                 description="对早期对话进行分组摘要，保留关键信息",
-                config={"safe_zone_tokens": safe_zone_tokens, "group_size": group_size}
+                config={"safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens, "group_size": self.args.conversation_prune_group_size}
             ),
             "truncate": PruneStrategy(
                 name="truncate",
                 description="分组截断最早的部分对话",
-                config={"safe_zone_tokens": safe_zone_tokens, "group_size": group_size}
+                config={"safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens, "group_size": self.args.conversation_prune_group_size}
             ),
             "hybrid": PruneStrategy(
                 name="hybrid",
                 description="先尝试分组摘要，如果仍超限则分组截断",
-                config={"safe_zone_tokens": safe_zone_tokens, "group_size": group_size}
+                config={"safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens, "group_size": self.args.conversation_prune_group_size}
             )
         }
 

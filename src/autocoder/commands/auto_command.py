@@ -443,7 +443,7 @@ class CommandAutoTuner:
                         safe_zone=self.args.conversation_prune_safe_zone_tokens
                     )
                     from autocoder.common.conversation_pruner import ConversationPruner
-                    pruner = ConversationPruner(self.llm)
+                    pruner = ConversationPruner(self.args, self.llm)
                     conversations = pruner.prune_conversations(conversations)                    
 
                 title = printer.get_message_from_key("auto_command_analyzing")

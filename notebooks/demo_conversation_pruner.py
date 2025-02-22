@@ -2,12 +2,24 @@ import byzerllm
 from autocoder.common.conversation_pruner import ConversationPruner
 import json
 from loguru import logger
+from autocoder.utils.llms import get_single_llm
+from autocoder.auto_coder_runner import load_tokenizer
+from autocoder.rag.token_counter import count_tokens
+from autocoder.common import AutoCoderArgs
+
 
 # 初始化 LLM
-llm = byzerllm.ByzerLLM.from_default_model("deepseek_chat")
+load_tokenizer()
 
 # 创建 ConversationPruner 实例
-pruner = ConversationPruner(llm, safe_zone_tokens=50*1024, group_size=4)
+llm = get_single_llm("v3_chat", product_mode="lite")
+args = AutoCoderArgs(
+    query="请帮我写一个Python函数来计算斐波那契数列",
+    project_type="py",
+    conversation_prune_safe_zone_tokens=400,
+    conversation_prune_group_size=4
+)
+pruner = ConversationPruner(args, llm)
 
 # 生成一个长的对话历史
 conversations = [
@@ -26,11 +38,11 @@ conversations = [
 ]
 
 # 打印原始对话长度
-logger.info(f"原始对话长度: {len(conversations)}")
+logger.info(f"原始对话长度: {count_tokens(json.dumps(conversations,ensure_ascii=False ))}")
 
 # 测试不同的修剪策略
 strategies = ["summarize", "truncate", "hybrid"]
 for strategy in strategies:
     pruned_conversations = pruner.prune_conversations(conversations, strategy_name=strategy)
-    logger.info(f"使用策略 '{strategy}' 修剪后的对话长度: {len(pruned_conversations)}")
+    logger.info(f"使用策略 '{strategy}' 修剪后的对话长度: {count_tokens(json.dumps(pruned_conversations,ensure_ascii=False ))}")
     logger.info(f"修剪后的对话内容:\n{json.dumps(pruned_conversations, indent=2, ensure_ascii=False)}")
