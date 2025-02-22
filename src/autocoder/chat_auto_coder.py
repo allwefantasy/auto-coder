@@ -35,17 +35,16 @@ from autocoder.auto_coder_runner import (
     mcp,
     revert,
     commit,
-    design,
-    memory,
+    design,    
     voice_input,
     chat,
     gen_and_exec_shell_command,
     execute_shell_command,
     get_mcp_server,
     completer,
-    summon    
+    summon,  
+    get_memory  
 )
-
 
 def parse_arguments():
     
@@ -164,6 +163,7 @@ def main():
         ))
 
     load_memory()
+    memory = get_memory()    
 
     configure(f"product_mode:{ARGS.product_mode}")
 
