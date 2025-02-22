@@ -2,7 +2,8 @@
 
 import argparse
 import os
-from prompt_toolkit import PromptSession,KeyBindings
+from prompt_toolkit import PromptSession
+from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.styles import Style
@@ -13,8 +14,7 @@ from autocoder.auto_coder_runner import (
     auto_command,
     load_memory,
     save_memory,
-    configure,
-    show_help,
+    configure,    
     manage_models,
     print_conf,    
     exclude_dirs,
@@ -153,13 +153,14 @@ def main():
     if ARGS.pro:
         ARGS.product_mode = "pro" 
 
-    if not ARGS.quick:
+    if not ARGS.quick:        
         initialize_system(InitializeSystemRequest(
             product_mode=ARGS.product_mode,
             skip_provider_selection=ARGS.skip_provider_selection,
             debug=ARGS.debug,
             quick=ARGS.quick,
             lite=ARGS.lite,
+            pro=ARGS.pro
         ))
 
     load_memory()
