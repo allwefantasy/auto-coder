@@ -15,7 +15,9 @@ class ProjectTypeAnalyzer:
         self.printer = Printer()
         self.default_exclude_dirs = [
             ".git", ".svn", ".hg", "build", "dist", "__pycache__", 
-            "node_modules", ".auto-coder", ".vscode", ".idea", "venv"
+            "node_modules", ".auto-coder", ".vscode", ".idea", "venv",
+            ".next", ".nuxt", ".svelte-kit", "out", "cache", "logs",
+            "temp", "tmp", "coverage", ".DS_Store", "public", "static"
         ]
         self.extension_counts = defaultdict(int)
         self.stats_file = Path(args.source_dir) / ".auto-coder" / "project_type_stats.json"
@@ -49,7 +51,8 @@ class ProjectTypeAnalyzer:
             "config": ["后缀3", "后缀4"],
             "data": ["后缀5", "后缀6"],
             "document": ["后缀7", "后缀8"],
-            "other": ["后缀9", "后缀10"]
+            "other": ["后缀9", "后缀10"],
+            "framework": ["后缀11", "后缀12"]
         }
         """
         return {
@@ -90,9 +93,26 @@ class ProjectTypeAnalyzer:
         
         # 根据代码文件占比判断项目类型
         code_exts = set(classification.get("code", []))
+        framework_exts = set(classification.get("framework", []))
         total_files = sum(ext_counts.values())
+        
+        # 添加防除零保护
+        if total_files == 0:
+            return "unknown"
+            
         code_files = sum(count for ext, count in ext_counts.items() if ext in code_exts)
         
+        # 优先检测前端框架
+        if ".vue" in framework_exts:
+            return "vue"
+        elif ".svelte" in framework_exts:
+            return "svelte"
+        elif ".jsx" in framework_exts or ".tsx" in framework_exts:
+            return "react"
+        elif ".astro" in framework_exts:
+            return "astro"
+            
+        # 根据代码文件占比判断项目类型
         if code_files / total_files > 0.7:
             if ".py" in code_exts:
                 return "py"
