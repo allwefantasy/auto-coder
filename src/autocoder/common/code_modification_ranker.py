@@ -11,6 +11,7 @@ from byzerllm.utils.str2model import to_model
 from autocoder.utils.llms import get_llm_names, get_model_info
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
 import os
+from autocoder.rag.token_counter import count_tokens
 
 class RankResult(BaseModel):
     rank_result: List[int]
@@ -133,10 +134,8 @@ class CodeModificationRanker:
         else:
             raise Exception(f"Invalid rank strategy: {self.args.rank_strategy}")
 
-        # 计算 query 的 token 数量
-        from autocoder.rag.token_counter import TokenCounter
-        token_counter = TokenCounter(self.args.tokenizer_path)
-        token_count = token_counter.count_tokens(query)
+        # 计算 query 的 token 数量                
+        token_count = count_tokens(query)
         
         # 打印 token 统计信息
         self.printer.print_in_terminal(
