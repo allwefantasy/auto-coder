@@ -133,6 +133,18 @@ class CodeModificationRanker:
         else:
             raise Exception(f"Invalid rank strategy: {self.args.rank_strategy}")
 
+        # 计算 query 的 token 数量
+        from autocoder.rag.token_counter import TokenCounter
+        token_counter = TokenCounter(self.args.tokenizer_path)
+        token_count = token_counter.count_tokens(query)
+        
+        # 打印 token 统计信息
+        self.printer.print_in_terminal(
+            "estimated_input_tokens_in_generate",
+            generate_mode="ranking",
+            estimated_input_tokens=token_count
+        )
+
         input_tokens_count = 0
         generated_tokens_count = 0
         try:
