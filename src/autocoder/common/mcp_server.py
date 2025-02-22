@@ -130,6 +130,12 @@ class McpServer:
 
     def _install_python_package(self, package_name: str) -> None:
         """Install a Python package using pip"""
+        # Check Python version
+        if sys.version_info < (3, 10) and package_name == "@requirements.txt":
+            print(f"\n\033[93mPython version {sys.version_info.major}.{sys.version_info.minor} is less than 3.10. "
+                  f"Skipping installation of {package_name}.\033[0m\n")
+            return
+
         try:
             import importlib
             importlib.import_module(package_name.replace("-", "_"))
