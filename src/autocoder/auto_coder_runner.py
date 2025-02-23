@@ -648,6 +648,7 @@ def revert():
         with redirect_stdout() as output:
             auto_coder_main(["revert", "--file", file_path])
         s = output.getvalue()
+        
         console = Console()
         panel = Panel(
             Markdown(s),
@@ -657,6 +658,7 @@ def revert():
             expand=False
         )
         console.print(panel)
+        
         if "Successfully reverted changes" in s:
             result_manager.append(content=s, meta={"action": "revert","success":False, "input":{                
             }})

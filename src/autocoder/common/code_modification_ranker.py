@@ -140,8 +140,7 @@ class CodeModificationRanker:
         
         # 打印 token 统计信息
         self.printer.print_in_terminal(
-            "estimated_input_tokens_in_generate",
-            generate_mode="ranking",
+            "estimated_input_tokens_in_ranking",            
             estimated_input_tokens=token_count
         )
 
