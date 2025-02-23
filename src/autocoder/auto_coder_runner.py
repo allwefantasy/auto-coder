@@ -645,22 +645,19 @@ def revert():
 
         with redirect_stdout() as output:
             auto_coder_main(["revert", "--file", file_path])
-        s = output.getvalue()
+        s = output.getvalue()        
         print(s, flush=True)
         if "Successfully reverted changes" in s:
             result_manager.append(content=s, meta={"action": "revert","success":False, "input":{                
             }})
-            print(
-                "Reverted the last chat action successfully. Remove the yaml file {file_path}"
-            )
+                        
             os.remove(file_path)
         else:
             result_manager.append(content=s, meta={"action": "revert","success":False, "input":{                
             }})
     else:
         result_manager.append(content="No previous chat action found to revert.", meta={"action": "revert","success":False, "input":{                
-            }})
-        print("No previous chat action found to revert.")
+            }})        
 
 
 def add_files(args: List[str]):
