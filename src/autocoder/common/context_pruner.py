@@ -388,12 +388,17 @@ class PruneContext:
         )
 
         self.printer.print_in_terminal(
+                "sorted_files_message", 
+                files=file_paths
+            )
+
+        self.printer.print_in_terminal(
             "context_pruning_start",
             total_tokens=total_tokens,
             max_tokens=self.max_tokens,
             strategy=strategy
         )
-        
+
         if strategy == "score":            
             return self._score_and_filter_files(file_paths, conversations)
         if strategy == "delete":
