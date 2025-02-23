@@ -168,7 +168,8 @@ MESSAGES = {
         "context_pruning_reason": "Context length exceeds maximum limit ({{ total_tokens }} > {{ max_tokens }}). Pruning is required to fit within the model's context window.",
         "rank_code_modification_title": "{{model_name}} ranking codes",
         "sorted_files_message": "Reordered files:\n{% for file in files %}- {{ file }}\n{% endfor %}",
-        "estimated_input_tokens_in_ranking": "estimate input token {{ estimated_input_tokens }} when ranking"
+        "estimated_input_tokens_in_ranking": "estimate input token {{ estimated_input_tokens }} when ranking",
+        "file_snippet_procesed": "{{ file_path }} processed with tokens: {{ tokens }} => {{ snippet_tokens }}. Current total tokens: {{ total_tokens }}",
         
     },
     "zh": {
@@ -335,7 +336,8 @@ MESSAGES = {
         "index_exclude_files_error": "索引排除文件时出错: {{error}}",
         "rank_code_modification_title": "模型{{model_name}}对代码打分",
         "sorted_files_message": "重新排序后的文件路径:\n{% for file in files %}- {{ file }}\n{% endfor %}",
-        "estimated_input_tokens_in_ranking": "排序预计输入token数: {{ estimated_input_tokens }}"
+        "estimated_input_tokens_in_ranking": "排序预计输入token数: {{ estimated_input_tokens }}",
+        "file_snippet_procesed": "文件 {{ file_path }} 处理后token数: {{ tokens }} => {{ snippet_tokens }} 当前总token数: {{ total_tokens }}"
     }}
 
 

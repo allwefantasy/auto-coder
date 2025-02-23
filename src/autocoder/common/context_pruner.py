@@ -288,6 +288,10 @@ class PruneContext:
                         snippet_tokens = count_tokens(content_snippets)
                         if token_count + snippet_tokens <= self.max_tokens:
                             selected_files.append(SourceCode(module_name=file_path,source_code=content_snippets,tokens=snippet_tokens))
+                            self.printer.print_in_terminal("file_snippet_procesed", file_path=file_path, 
+                                                           total_tokens=token_count, 
+                                                           tokens=tokens, 
+                                                           snippet_tokens=snippet_tokens)
                             token_count += snippet_tokens
                             continue
                         else:
@@ -316,6 +320,10 @@ class PruneContext:
 
                         snippet_tokens = count_tokens(content_snippets)
                         if token_count + snippet_tokens <= self.max_tokens:
+                            self.printer.print_in_terminal("file_snippet_procesed", file_path=file_path, 
+                                                           total_tokens = token_count,
+                                                           tokens=tokens, 
+                                                           snippet_tokens=snippet_tokens)
                             selected_files.append(SourceCode(module_name=file_path,
                                                              source_code=content_snippets,
                                                              tokens=snippet_tokens))
