@@ -1164,6 +1164,7 @@ def mcp(query: str):
         "silence": conf.get("silence", "true") == "true",
         "include_project_structure": conf.get("include_project_structure", "true")
         == "true",
+        "exclude_files": memory.get("exclude_files", []),
     }
     for key, value in conf.items():
         converted_value = convert_config_value(key, value)
@@ -1233,6 +1234,7 @@ def code_next(query: str):
         "silence": conf.get("silence", "true") == "true",
         "include_project_structure": conf.get("include_project_structure", "true")
         == "true",
+        "exclude_files": memory.get("exclude_files", []),
     }
     for key, value in conf.items():
         converted_value = convert_config_value(key, value)
@@ -2295,6 +2297,7 @@ def index_build():
     conf = memory.get("conf", {})
     yaml_config = {
         "include_file": ["./base/base.yml"],
+        "exclude_files": memory.get("exclude_files", []),
     }
 
     for key, value in conf.items():
@@ -2325,6 +2328,7 @@ def get_final_config()->AutoCoderArgs:
         "silence": conf.get("silence", "true") == "true",
         "include_project_structure": conf.get("include_project_structure", "true")
         == "true",
+        "exclude_files": memory.get("exclude_files", []),
     }
     for key, value in conf.items():
         converted_value = convert_config_value(key, value)

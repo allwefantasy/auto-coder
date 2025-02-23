@@ -400,7 +400,7 @@ class IndexManager:
 
         # 删除被排除的文件
         try:
-            exclude_patterns = self.parse_exclude_files(self.args.exclude_files)
+            exclude_patterns = self.parse_exclude_files(self.args.exclude_files)            
             for file_path in index_data:
                 if self.filter_exclude_files(file_path, exclude_patterns):
                     keys_to_remove.append(file_path)
