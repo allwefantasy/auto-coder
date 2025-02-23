@@ -649,14 +649,14 @@ def revert():
             auto_coder_main(["revert", "--file", file_path])
         s = output.getvalue()
         console = Console()
-        console.print(
-            Panel(
-                s,
-                title="Revert Result",
-                border_style="green" if "Successfully reverted changes" in s else "red",
-                padding=(1, 2)
-            )
+        panel = Panel(
+            Markdown(s),
+            title="Revert Result",
+            border_style="green" if "Successfully reverted changes" in s else "red",
+            padding=(1, 2),
+            expand=False
         )
+        console.print(panel)
         if "Successfully reverted changes" in s:
             result_manager.append(content=s, meta={"action": "revert","success":False, "input":{                
             }})
