@@ -1,4 +1,6 @@
 from itertools import product
+from rich.console import Console
+from rich.panel import Panel
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.shortcuts import radiolist_dialog
 from prompt_toolkit import prompt
@@ -645,8 +647,16 @@ def revert():
 
         with redirect_stdout() as output:
             auto_coder_main(["revert", "--file", file_path])
-        s = output.getvalue()        
-        print(s, flush=True)
+        s = output.getvalue()
+        console = Console()
+        console.print(
+            Panel(
+                s,
+                title="Revert Result",
+                border_style="green" if "Successfully reverted changes" in s else "red",
+                padding=(1, 2)
+            )
+        )
         if "Successfully reverted changes" in s:
             result_manager.append(content=s, meta={"action": "revert","success":False, "input":{                
             }})
