@@ -165,7 +165,7 @@ MESSAGES = {
         "file_sliding_window_processing": "File {{ file_path }} is too large ({{ tokens }} tokens), processing with sliding window...",
         "file_snippet_processing": "Processing file {{ file_path }} with code snippet extraction...",
         "context_pruning_start": "⚠️ Context pruning started. Total tokens: {{ total_tokens }} (max allowed: {{ max_tokens }}). Applying strategy: {{ strategy }}.",
-        "context_pruning_reason": "File: {{ file_path }} - Tokens: {{ total_tokens }} (Max: {{ max_tokens }})",
+        "context_pruning_reason": "Context length exceeds maximum limit ({{ total_tokens }} > {{ max_tokens }}). Pruning is required to fit within the model's context window.",
         "rank_code_modification_title": "{{model_name}} ranking codes",
         "sorted_files_message": "Reordered files:\n{% for file in files %}- {{ file }}\n{% endfor %}",
         "estimated_input_tokens_in_ranking": "estimate input token {{ estimated_input_tokens }} when ranking"
@@ -175,7 +175,7 @@ MESSAGES = {
         "file_sliding_window_processing": "文件 {{ file_path }} 过大 ({{ tokens }} tokens)，正在使用滑动窗口处理...",
         "file_snippet_processing": "正在对文件 {{ file_path }} 进行代码片段提取...",
         "context_pruning_start": "⚠️ 开始上下文剪枝。总token数: {{ total_tokens }} (最大允许: {{ max_tokens }})。正在应用策略: {{ strategy }}。",
-        "context_pruning_reason": "文件: {{ file_path }} - Tokens: {{ total_tokens }} (最大: {{ max_tokens }})",
+        "context_pruning_reason": "上下文长度超过最大限制 ({{ total_tokens }} > {{ max_tokens }})。需要进行剪枝以适配模型的上下文窗口。",
         "file_scored_message": "文件评分: {{file_path}} - 分数: {{score}}",
         "invalid_file_pattern": "无效的文件模式: {{file_pattern}}. 例如: regex://.*/package-lock\\.json",
         "conf_not_found": "未找到配置文件: {{path}}",
