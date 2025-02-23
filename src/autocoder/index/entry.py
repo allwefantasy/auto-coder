@@ -295,6 +295,11 @@ def build_index_and_filter_files(
             
         pruned_files = context_pruner.handle_overflow([source.module_name for source in temp_sources], [{"role":"user","content":args.query}], args.context_prune_strategy)
         ## 打印裁剪后的文件路径，以及token数
+        if pruned_files:
+            printer.print_in_terminal(
+                "context_pruned_files",
+                files=pruned_files
+            )
         source_code_list.sources = pruned_files
 
 

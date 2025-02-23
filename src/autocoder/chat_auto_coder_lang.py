@@ -289,3 +289,12 @@ def get_message(key):
 
 def get_message_with_format(msg_key: str, **kwargs):
     return format_str_jinja2(get_message(msg_key), **kwargs)
+
+MESSAGES = {
+    "en": {
+        "context_pruned_files": "Pruned files:\n{% for file in files %}- {{ file.module_name }} ({{ file.tokens }} tokens)\n{% endfor %}",
+    },
+    "zh": {
+        "context_pruned_files": "裁剪后的文件:\n{% for file in files %}- {{ file.module_name }} ({{ file.tokens }} tokens)\n{% endfor %}",
+    }
+}
