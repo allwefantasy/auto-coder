@@ -171,6 +171,7 @@ class CommandAutoTuner:
         当前用户环境信息如下:
         <os_info>
         操作系统: {{ env_info.os_name }} {{ env_info.os_version }}
+        操作系统发行版: {{ os_distribution }}
         Python版本: {{ env_info.python_version }}
         终端类型: {{ env_info.shell_type }}
         终端编码: {{ env_info.shell_encoding }}
@@ -282,7 +283,8 @@ class CommandAutoTuner:
             "env_info": env_info,
             "shell_type": shell_type,
             "shell_encoding": shells.get_terminal_encoding(),
-            "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens
+            "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens,
+            "os_distribution": shells.get_os_distribution()
         }
     
     @byzerllm.prompt()

@@ -12,6 +12,7 @@ def _generate_shell_script(user_input: str) -> str:
     环境信息如下:
 
     操作系统: {{ env_info.os_name }} {{ env_info.os_version }}
+    操作系统发行版: {{ os_distribution }}
     Python版本: {{ env_info.python_version }}
     终端类型: {{ env_info.shell_type }}
     终端编码: {{ env_info.shell_encoding }}
@@ -49,7 +50,8 @@ def _generate_shell_script(user_input: str) -> str:
     return {
         "env_info": env_info,
         "shell_type": shell_type,
-        "shell_encoding": shells.get_terminal_encoding()
+        "shell_encoding": shells.get_terminal_encoding(),
+        "os_distribution": shells.get_os_distribution()
     }
 
 

@@ -305,7 +305,7 @@ def get_terminal_encoding() -> str:
 
 def _get_windows_terminal_encoding() -> str:
     # 添加发行版信息到环境变量
-    os.environ['OS_DISTRIBUTION'] = get_os_distribution()
+    # os.environ['OS_DISTRIBUTION'] = get_os_distribution()
     """Windows 系统编码检测"""
     try:
         # 通过 chcp 命令获取代码页
