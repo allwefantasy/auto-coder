@@ -94,8 +94,10 @@ class AutoCommandTools:
         console.print(question_panel)
 
         # 创建一个自定义提示符
+        from autocoder.common.printer import Printer
+        printer = Printer(console=console)
         prompt = Prompt.ask(
-            "\n[bold green]Your Answer[/bold green]",
+            printer.get_message_from_key_with_format("model_provider_api_key_title"),
             console=console
         )
 
