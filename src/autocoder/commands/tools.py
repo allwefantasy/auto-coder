@@ -28,6 +28,10 @@ from autocoder.utils.queue_communicate import (
 import sys
 import io
 from autocoder.common import files as files_utils
+from autocoder.common.printer import Printer
+from prompt_toolkit import PromptSession
+from prompt_toolkit.styles import Style
+
 
 @byzerllm.prompt()
 def detect_rm_command(command: str) -> Bool:
@@ -56,6 +60,7 @@ class AutoCommandTools:
         self.args = args
         self.llm = llm
         self.result_manager = ResultManager()
+        self.printer = Printer()
 
     def ask_user(self,question:str) -> str:
         '''
@@ -93,14 +98,19 @@ class AutoCommandTools:
         # 显示问题面板
         console.print(question_panel)
 
-        # 创建一个自定义提示符
-        prompt = Prompt.ask(
-            "\n[bold green]Your Answer[/bold green]",
-            console=console
-        )
+        
 
-        # 获取用户的回答
-        answer = prompt
+        # 创建一个自定义提示符
+        # prompt = Prompt.ask(
+        #     f"\n[bold green]{self.printer.get_message_from_key('tool_ask_user')}[/bold green]",
+        #     console=console
+        # )
+
+        session = PromptSession( message=self.printer.get_message_from_key('tool_ask_user'))
+        try:
+            answer = session.prompt()
+        except KeyboardInterrupt:
+            answer = ""
 
         # 显示用户的回答
         answer_text = Text(answer, style="italic")
@@ -120,6 +130,27 @@ class AutoCommandTools:
         })
 
         return answer
+    
+    def response_user(self, response: str):
+        console = Console()
+        answer_text = Text(response, style="italic")
+        answer_panel = Panel(
+            answer_text,
+            title="",
+            border_style="green",
+            expand=False
+        )
+        console.print(answer_panel)
+
+        self.result_manager.append(content=response, meta = {
+            "action": "response_user",
+            "input": {
+                "response": response
+            }
+        })
+
+        return response
+        
 
     def run_python_code(self, code: str) -> str:
         """

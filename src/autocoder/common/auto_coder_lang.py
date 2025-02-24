@@ -170,6 +170,8 @@ MESSAGES = {
         "sorted_files_message": "Reordered files:\n{% for file in files %}- {{ file }}\n{% endfor %}",
         "estimated_input_tokens_in_ranking": "estimate input token {{ estimated_input_tokens }} when ranking",
         "file_snippet_procesed": "{{ file_path }} processed with tokens: {{ tokens }} => {{ snippet_tokens }}. Current total tokens: {{ total_tokens }}",
+        "tool_ask_user": "Your Reply: ",
+        "tool_ask_user_accept":"Your Response received",
         
     },
     "zh": {
@@ -337,7 +339,9 @@ MESSAGES = {
         "rank_code_modification_title": "模型{{model_name}}对代码打分",
         "sorted_files_message": "重新排序后的文件路径:\n{% for file in files %}- {{ file }}\n{% endfor %}",
         "estimated_input_tokens_in_ranking": "排序预计输入token数: {{ estimated_input_tokens }}",
-        "file_snippet_procesed": "文件 {{ file_path }} 处理后token数: {{ tokens }} => {{ snippet_tokens }} 当前总token数: {{ total_tokens }}"
+        "file_snippet_procesed": "文件 {{ file_path }} 处理后token数: {{ tokens }} => {{ snippet_tokens }} 当前总token数: {{ total_tokens }}",
+        "tool_ask_user": "您的回复: ",
+        "tool_ask_user_accept":"收到您的回复",
     }}
 
 

@@ -1193,6 +1193,18 @@ class CommandAutoTuner:
          此时会返回诸如 "ts,py,java,go,js,ts" 这样的字符串，表示项目类型。
         </usage>
         </command>
+
+        <command>
+        <name>response_user</name>
+        <description>响应用户。</description>
+        <usage>
+         如果你需要直接发送信息给用户，那么可以通过 response_user 函数来直接回复用户。
+         
+         比如用户问你是谁？
+         你可以通过如下方式来回答：
+         response_user(response="你好，我是 auto-coder")
+        </usage>
+        </command>
         </commands>
         
         
@@ -1238,7 +1250,9 @@ class CommandAutoTuner:
             "get_project_related_files": self.tools.get_project_related_files,
             "ask_user":self.tools.ask_user,
             "read_file_with_keyword_ranges": self.tools.read_file_with_keyword_ranges,
-            "get_project_type": self.project_type_analyzer.analyze,                                    
+            "get_project_type": self.project_type_analyzer.analyze,
+            "response_user": self.tools.response_user,
+                                    
         }
 
         if command not in command_map:
