@@ -5,6 +5,7 @@ import subprocess
 import platform
 import tempfile
 import uuid
+import re
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
@@ -187,6 +188,71 @@ def _get_windows_terminal_name() -> str:
     # 默认返回 cmd.exe
     return 'cmd'
 
+def get_os_distribution() -> str:
+    """
+    获取操作系统发行版名称
+    
+    Returns:
+        str: 操作系统发行版名称，如 'Ubuntu 22.04', 'CentOS 7', 'Windows 10' 等
+    """
+    system = platform.system()
+    
+    if system == 'Windows':
+        # Windows 系统版本
+        version = sys.getwindowsversion()
+        if version.major == 10 and version.build >= 22000:
+            return 'Windows 11'
+        elif version.major == 10:
+            return 'Windows 10'
+        elif version.major == 6:
+            if version.minor == 3:
+                return 'Windows 8.1'
+            elif version.minor == 2:
+                return 'Windows 8'
+            elif version.minor == 1:
+                return 'Windows 7'
+            elif version.minor == 0:
+                return 'Windows Vista'
+        elif version.major == 5:
+            if version.minor == 2:
+                return 'Windows Server 2003'
+            elif version.minor == 1:
+                return 'Windows XP'
+        return f'Windows {version.major}.{version.minor}'
+    
+    elif system == 'Linux':
+        # Linux 发行版检测
+        try:
+            # 尝试读取 /etc/os-release
+            with open('/etc/os-release', 'r') as f:
+                os_release = f.read()
+            
+            # 解析 NAME 和 VERSION_ID
+            name = re.search(r'NAME="([^"]+)"', os_release)
+            version = re.search(r'VERSION_ID="([^"]+)"', os_release)
+            
+            if name and version:
+                return f"{name.group(1)} {version.group(1)}"
+            
+            # 如果无法解析，尝试 lsb_release
+            try:
+                output = subprocess.check_output(['lsb_release', '-d'], stderr=subprocess.STDOUT)
+                return output.decode('utf-8').split(':')[1].strip()
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                pass
+            
+            # 最后尝试 uname
+            return platform.platform()
+        except Exception:
+            return platform.platform()
+    
+    elif system == 'Darwin':
+        # macOS 版本
+        version = platform.mac_ver()[0]
+        return f'macOS {version}'
+    
+    return platform.platform()
+
 def _get_unix_terminal_name() -> str:
     """Linux/Mac 系统终端检测"""
     # 从环境变量获取终端名称
@@ -238,6 +304,8 @@ def get_terminal_encoding() -> str:
         return _get_unix_terminal_encoding()
 
 def _get_windows_terminal_encoding() -> str:
+    # 添加发行版信息到环境变量
+    os.environ['OS_DISTRIBUTION'] = get_os_distribution()
     """Windows 系统编码检测"""
     try:
         # 通过 chcp 命令获取代码页
