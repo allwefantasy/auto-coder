@@ -29,7 +29,7 @@ MESSAGES = {
         "model_provider_volcano": "Volcano Engine",
         "model_provider_siliconflow": "SiliconFlow AI",
         "model_provider_deepseek": "DeepSeek Official",        
-        "model_provider_api_key_title": "Your Answer",
+        "model_provider_api_key_title": "API Key",
         "model_provider_volcano_api_key_text": "Please enter your Volcano Engine API key:",
         "model_provider_volcano_r1_text": "Please enter your Volcano Engine R1 endpoint (format: ep-20250204215011-vzbsg):",
         "model_provider_volcano_v3_text": "Please enter your Volcano Engine V3 endpoint (format: ep-20250204215011-vzbsg):",
