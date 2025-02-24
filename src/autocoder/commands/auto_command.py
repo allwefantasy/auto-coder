@@ -174,12 +174,17 @@ class CommandAutoTuner:
         Python版本: {{ env_info.python_version }}
         终端类型: {{ env_info.shell_type }}
         终端编码: {{ env_info.shell_encoding }}
+        
+        {%- if shell_type %}
+        脚本类型：{{ shell_type }}
+        {%- endif %}
+
         {%- if env_info.conda_env %}
         Conda环境: {{ env_info.conda_env }}
         {%- endif %}
         {%- if env_info.virtualenv %}
         虚拟环境: {{ env_info.virtualenv }}
-        {%- endif %}  
+        {%- endif %}   
         </os_info>
         
         我们的目标是根据用户输入和当前上下文，组合多个函数来完成用户的需求。
@@ -221,6 +226,7 @@ class CommandAutoTuner:
         每个文件的tokens数，你可以根据这个信息来决定如何读取这个文件。比如对于很小的文件，那么可以直接全部读取，
         而对于分析一个超大文件推荐组合 read_files 带上 line_ranges 参数来读取，或者组合 read_file_withread_file_with_keyword_ranges 等来读取，
         每个函数你还可以使用多次来获取更多信息。
+        9. 根据操作系统，终端类型，脚本类型等各种信息，在涉及到路径或者脚本的时候，需要考虑平台差异性。
         </function_combination_readme>
 
 
@@ -260,7 +266,13 @@ class CommandAutoTuner:
         满足需求。
         """
 
-        env_info = detect_env()            
+        env_info = detect_env() 
+        shell_type = "bash"
+        if shells.is_running_in_cmd():
+            shell_type = "cmd"
+        elif shells.is_running_in_powershell():
+            shell_type = "powershell"
+
         return {
             "user_input": request.user_input,
             "current_files": self.memory_config.memory["current_files"]["files"],            
@@ -268,7 +280,7 @@ class CommandAutoTuner:
             "available_commands": self._command_readme.prompt(),
             "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),        
             "env_info": env_info,
-            "shell_type": shells.get_terminal_name(),
+            "shell_type": shell_type,
             "shell_encoding": shells.get_terminal_encoding(),
             "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens
         }
