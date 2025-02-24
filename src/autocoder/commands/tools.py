@@ -96,31 +96,13 @@ class AutoCommandTools:
         )
 
         # 显示问题面板
-        console.print(question_panel)
-
-        
-
-        # 创建一个自定义提示符
-        # prompt = Prompt.ask(
-        #     f"\n[bold green]{self.printer.get_message_from_key('tool_ask_user')}[/bold green]",
-        #     console=console
-        # )
+        console.print(question_panel)        
 
         session = PromptSession( message=self.printer.get_message_from_key('tool_ask_user'))
         try:
             answer = session.prompt()
         except KeyboardInterrupt:
-            answer = ""
-
-        # 显示用户的回答
-        answer_text = Text(answer, style="italic")
-        answer_panel = Panel(
-            answer_text,
-            title="[bold yellow]Your Response[/bold yellow]",
-            border_style="green",
-            expand=False
-        )
-        console.print(answer_panel)
+            answer = ""        
 
         self.result_manager.append(content=answer, meta = {
             "action": "ask_user",
