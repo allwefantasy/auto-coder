@@ -287,6 +287,7 @@ class QuickFilter():
         当用户提一个需求的时候，我们要找到两种类型的源码文件：
         1. 根据需求需要被修改的文件，我们叫 edited_files
         2. 为了能够完成修改这些文件，还需要的一些额外参考文件, 我们叫 reference_files
+        3. 因为修改了 edited_files 文件，可能有一些依赖 edited_files 的文件也需要被修改，我们叫 dependent_files
 
         现在，给定下面的索引文件：
 
@@ -316,8 +317,8 @@ class QuickFilter():
 
         特别注意:    
         1. 如果用户的query里有 @文件 或者 @@符号，并且他们在索引文件中，那么被@的文件或者@@的符号必须要返回。
-        2. 根据需求以及根据 @文件 或者 @@符号 找到的文件，猜测需要被修改的edited_files文件，然后尝试通过索引文件诸如导入语句等信息找到这些文件依赖的其他文件得到 reference_files。
-        3. file_list 里的文件序号，按被 @ 或者 @@ 文件，edited_files文件，reference_files文件的顺序排列。注意，reference_files 你要根据需求来猜测是否需要，过滤掉不相关的，避免返回文件数过多。
+        2. 根据需求以及根据 @文件 或者 @@符号 找到的文件，猜测需要被修改的edited_files文件，然后尝试通过索引文件诸如导入语句等信息找到这些文件依赖的其他文件得到 reference_files,dependent_files。
+        3. file_list 里的文件序号，按被 @ 或者 @@ 文件，edited_files文件，reference_files,dependent_files文件的顺序排列。注意，reference_files 你要根据需求来猜测是否需要，过滤掉不相关的，避免返回文件数过多。
         4. 如果 query 里是一段历史对话，那么对话里的内容提及的文件路径必须要返回。        
         5. 如果用户需求为空，则直接返回空列表即可。        
         6. 返回的 json格式数据不允许有注释
