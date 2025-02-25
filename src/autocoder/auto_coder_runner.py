@@ -2133,7 +2133,7 @@ def manage_models(query: str):
         # Check duplication
         if any(m["name"] == data_dict["name"] for m in models_data):
             printer.print_in_terminal("models_add_model_exists", style="yellow", name=data_dict["name"])
-            result_manager.add_result(content=printer.get_message_from_key("models_add_model_exists",name=data_dict["name"]),meta={
+            result_manager.add_result(content=printer.get_message_from_key_with_format("models_add_model_exists",name=data_dict["name"]),meta={
                 "action": "models",
                 "input": {
                     "query": query
