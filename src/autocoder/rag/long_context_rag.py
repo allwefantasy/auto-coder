@@ -31,6 +31,8 @@ from tokenizers import Tokenizer
 from autocoder.rag.variable_holder import VariableHolder
 from importlib.metadata import version
 from autocoder.rag.stream_event import event_writer
+from autocoder.rag.relevant_utils import DocFilterResult
+from pydantic import BaseModel
 
 try:        
     from autocoder_pro.rag.llm_compute import LLMComputeEngine
@@ -41,6 +43,24 @@ except ImportError:
     logger.warning("Please install auto-coder-pro to enhance llm compute ability")
     LLMComputeEngine = None
 
+
+class RecallStat(BaseModel):
+    total_input_tokens: int
+    total_generated_tokens: int
+    model_name: str = "unknown"
+class ChunkStat(BaseModel):
+    total_input_tokens: int
+    total_generated_tokens: int            
+    model_name: str = "unknown"
+class AnswerStat(BaseModel):
+    total_input_tokens: int
+    total_generated_tokens: int
+    model_name: str = "unknown"
+
+class RAGStat(BaseModel):
+    recall_stat: RecallStat
+    chunk_stat: ChunkStat
+    answer_stat: AnswerStat
 
 class LongContextRAG:
     def __init__(
@@ -305,7 +325,7 @@ class LongContextRAG:
                 url = ",".join(contexts)
                 return [SourceCode(module_name=f"RAG:{url}", source_code="".join(v))]
 
-    def _filter_docs(self, conversations: List[Dict[str, str]]) -> List[FilterDoc]:
+    def _filter_docs(self, conversations: List[Dict[str, str]]) -> DocFilterResult:
         query = conversations[-1]["content"]
         documents = self._retrieve_documents(options={"query":query})
         return self.doc_filter.filter_docs(
@@ -439,7 +459,32 @@ class LongContextRAG:
 
             logger.info(f"Query: {query} only_contexts: {only_contexts}")
             start_time = time.time()
-            relevant_docs: List[FilterDoc] = self._filter_docs(conversations)            
+
+            rag_stat = RAGStat(
+                recall_stat=RecallStat(
+                    total_input_tokens=0,
+                    total_generated_tokens=0,
+                    model_name=self.llm.default_model_name,
+                ),
+                chunk_stat=ChunkStat(
+                    total_input_tokens=0,
+                    total_generated_tokens=0,
+                    model_name=self.llm.default_model_name,
+                ),
+                answer_stat=AnswerStat(
+                    total_input_tokens=0,
+                    total_generated_tokens=0,
+                    model_name=self.llm.default_model_name,
+                ),
+            )
+
+            doc_filter_result = self._filter_docs(conversations)            
+
+            rag_stat.recall_stat.total_input_tokens += sum(doc_filter_result.input_tokens_counts)
+            rag_stat.recall_stat.total_generated_tokens += sum(doc_filter_result.generated_tokens_counts)
+            rag_stat.recall_stat.model_name = doc_filter_result.model_name
+
+            relevant_docs: List[FilterDoc] = doc_filter_result.docs
             filter_time = time.time() - start_time
 
             # Filter relevant_docs to only include those with is_relevant=True
@@ -468,8 +513,7 @@ class LongContextRAG:
 
             # 将 FilterDoc 转化为 SourceCode 方便后续的逻辑继续做处理
             relevant_docs = [doc.source_code for doc in relevant_docs]
-
-            # 替换 rich Console 和 Table，使用结构化日志输出
+            
             logger.info(f"=== RAG Search Results ===")
             logger.info(f"Query: {query}")
             logger.info(f"Found relevant docs: {len(relevant_docs)}")
@@ -509,11 +553,18 @@ class LongContextRAG:
                     llm=self.llm,
                     disable_segment_reorder=self.args.disable_segment_reorder,
                 )
-                final_relevant_docs = token_limiter.limit_tokens(
+                
+                token_limiter_result = token_limiter.limit_tokens(
                     relevant_docs=relevant_docs,
                     conversations=conversations,
                     index_filter_workers=self.args.index_filter_workers or 5,
                 )
+
+                rag_stat.chunk_stat.total_input_tokens += sum(token_limiter_result.input_tokens_counts)
+                rag_stat.chunk_stat.total_generated_tokens += sum(token_limiter_result.generated_tokens_counts)
+                rag_stat.chunk_stat.model_name = token_limiter_result.model_name
+                
+                final_relevant_docs = token_limiter_result.docs
                 first_round_full_docs = token_limiter.first_round_full_docs
                 second_round_extracted_docs = token_limiter.second_round_extracted_docs
                 sencond_round_time = token_limiter.sencond_round_time

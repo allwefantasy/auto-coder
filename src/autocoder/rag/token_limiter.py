@@ -9,7 +9,7 @@ import byzerllm
 from byzerllm import ByzerLLM
 from autocoder.rag.relevant_utils import TaskTiming
 from byzerllm import MetaHolder
-
+from autocoder.rag.token_limiter_utils import TokenLimiterResult
 
 class TokenLimiter:
     def __init__(
@@ -96,7 +96,7 @@ class TokenLimiter:
         relevant_docs: List[SourceCode],
         conversations: List[Dict[str, str]],
         index_filter_workers: int,
-    ) -> List[SourceCode]:
+    ) -> TokenLimiterResult:
         logger.info(f"=== TokenLimiter Starting ===")
         logger.info(f"Configuration: full_text_limit={self.full_text_limit}, segment_limit={self.segment_limit}, buff_limit={self.buff_limit}")
         logger.info(f"Processing {len(relevant_docs)} source code documents")
@@ -105,6 +105,7 @@ class TokenLimiter:
         final_relevant_docs = []
         token_count = 0
         doc_num_count = 0
+        model_name = self.chunk_llm.default_model_name or "unknown"
 
         reorder_relevant_docs = []
 
@@ -208,6 +209,14 @@ class TokenLimiter:
 
             total_processed = 0
             successful_extractions = 0
+            token_limiter_result = TokenLimiterResult(
+                docs=[],
+                raw_docs=[],
+                input_tokens_counts=[],
+                generated_tokens_counts=[],
+                durations=[],
+                model_name=model_name
+            )
             
             with ThreadPoolExecutor(max_workers=index_filter_workers or 5) as executor:
                 future_to_doc = {}
@@ -228,6 +237,14 @@ class TokenLimiter:
                         
                         if result and remaining_tokens > 0:
                             self.second_round_extracted_docs.append(result)
+                            token_limiter_result.raw_docs.append(result)
+                            
+                            if "rag" in result.metadata and "chunk" in result.metadata["rag"]:
+                                chunk_meta = result.metadata["rag"]["chunk"]
+                                token_limiter_result.input_tokens_counts.append(chunk_meta.get("input_tokens_count", 0))
+                                token_limiter_result.generated_tokens_counts.append(chunk_meta.get("generated_tokens_count", 0))
+                                token_limiter_result.durations.append(chunk_meta.get("duration", 0))
+                            
                             tokens = result.tokens
                             successful_extractions += 1
                             
@@ -291,7 +308,8 @@ class TokenLimiter:
             f"\n  * Documents selected: {len(final_relevant_docs)}/{len(relevant_docs)}"
             f"\n  * Total tokens: {sum(doc.tokens for doc in final_relevant_docs)}"
         )
-        return final_relevant_docs
+        token_limiter_result.docs = final_relevant_docs
+        return token_limiter_result
 
     def process_range_doc(
         self, doc: SourceCode, conversations: List[Dict[str, str]], max_retries=3
@@ -306,6 +324,7 @@ class TokenLimiter:
                     source_code_with_line_number += f"{idx+1} {line}\n"
                 
                 llm = self.chunk_llm
+                model_name = llm.default_model_name or "unknown"
                 meta_holder = MetaHolder()
 
                 extraction_start_time = time.time()
@@ -333,42 +352,42 @@ class TokenLimiter:
                 meta = meta_holder.get_meta_model()
                 
                 input_tokens_count = 0
-                generated_tokens_count = 0
-                reasoning_content = ""
-                finish_reason = ""
-                first_token_time = 0
+                generated_tokens_count = 0                                
 
                 if meta:
                     input_tokens_count = meta.input_tokens_count
-                    generated_tokens_count = meta.generated_tokens_count
-                    reasoning_content = meta.reasoning_content
-                    finish_reason = meta.finish_reason
-                    first_token_time = meta.first_token_time                
+                    generated_tokens_count = meta.generated_tokens_count                    
                 
                 logger.debug(
                     f"Document {doc.module_name} chunk extraction details:"
                     f"\n  - Chunks found: {len(json_objs)}"
                     f"\n  - Input tokens: {input_tokens_count}"
                     f"\n  - Generated tokens: {generated_tokens_count}" 
-                    f"\n  - LLM time: {extraction_duration:.2f}s"
-                    f"\n  - First token time: {first_token_time:.2f}s"
+                    f"\n  - LLM time: {extraction_duration:.2f}s"                    
                     f"\n  - Total processing time: {total_duration:.2f}s"
                 )
+
+                if "rag" not in doc.metadata:
+                    doc.metadata["rag"] = {}
                 
+                doc.metadata["rag"]["chunk"] = {
+                    "original_doc": doc.module_name,
+                    "chunk_ranges": json_objs,
+                    "processing_time": total_duration,
+                    "llm_time": extraction_duration,  
+
+                    "input_tokens_count": input_tokens_count,
+                    "generated_tokens_count": generated_tokens_count,
+                    "duration": extraction_duration,  
+                    "chunk_model":model_name                                                                             
+                }
+                                
                 return SourceCode(
                     module_name=doc.module_name,
                     source_code=content.strip(),
                     tokens=input_tokens_count + generated_tokens_count,
                     metadata={
-                        "original_doc": doc.module_name,
-                        "chunk_ranges": json_objs,
-                        "processing_time": total_duration,
-                        "llm_time": extraction_duration,
-                        "input_tokens_count": input_tokens_count,
-                        "generated_tokens_count": generated_tokens_count,
-                        "reasoning_content": reasoning_content,
-                        "finish_reason": finish_reason,
-                        "first_token_time": first_token_time,
+                        **doc.metadata                        
                     },
                 )
             except Exception as e:

@@ -1,7 +1,7 @@
 from autocoder.common import AutoCoderArgs, SourceCode
 from pydantic import BaseModel
 import re
-from typing import Optional
+from typing import Optional, List
 
 
 class DocRelevance(BaseModel):
@@ -22,6 +22,17 @@ class FilterDoc(BaseModel):
     relevance: DocRelevance
     task_timing: TaskTiming
 
+
+class DocFilterResult(BaseModel):
+    # 注意， docs 只保留最后成功过滤的文档
+    docs: List[FilterDoc]
+    # 注意， raw_docs 保留所有文档
+    raw_docs: List[FilterDoc]
+    input_tokens_counts: List[int]
+    generated_tokens_counts: List[int]
+    durations: List[float] 
+    model_name: str = "unknown"
+    
 
 def parse_relevance(text: Optional[str]) -> Optional[DocRelevance]:    
     if text is None:
