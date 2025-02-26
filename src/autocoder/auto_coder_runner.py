@@ -2177,7 +2177,7 @@ def manage_models(query: str):
         filtered_models = [m for m in models_data if m["name"] != name]
         if len(filtered_models) == len(models_data):
             printer.print_in_terminal("models_add_model_remove", style="yellow", name=name)
-            result_manager.add_result(content=printer.get_message_from_key("models_add_model_remove",name=name),meta={
+            result_manager.add_result(content=printer.get_message_from_key_with_format("models_add_model_remove",name=name),meta={
                 "action": "models",
                 "input": {
                     "query": query
@@ -2186,7 +2186,7 @@ def manage_models(query: str):
             return
         models_module.save_models(filtered_models)
         printer.print_in_terminal("models_add_model_removed", style="green", name=name)
-        result_manager.add_result(content=printer.get_message_from_key("models_add_model_removed",name=name),meta={ 
+        result_manager.add_result(content=printer.get_message_from_key_with_format("models_add_model_removed",name=name),meta={ 
             "action": "models",
             "input": {
                 "query": query
@@ -2194,7 +2194,7 @@ def manage_models(query: str):
         })
     else:
         printer.print_in_terminal("models_unknown_subcmd", style="yellow", subcmd=subcmd)
-        result_manager.add_result(content=printer.get_message_from_key("models_unknown_subcmd",subcmd=subcmd),meta={ 
+        result_manager.add_result(content=printer.get_message_from_key_with_format("models_unknown_subcmd",subcmd=subcmd),meta={ 
             "action": "models",
             "input": {
                 "query": query

@@ -77,16 +77,29 @@ class DocFilter:
         self, conversations: List[Dict[str, str]], documents: List[SourceCode]
     ) -> List[FilterDoc]:
         
+        start_time = time.time()
+        logger.info(f"=== DocFilter Starting ===")
+        logger.info(f"Configuration: relevance_threshold={self.relevant_score}, thread_workers={self.args.index_filter_workers or 5}")
+        
         rag_manager = RagConfigManager(path=self.path)
         rag_config = rag_manager.load_config()
+        
         documents = list(documents)   
-        logger.info(f"Filtering {len(documents)} documents....")
+        logger.info(f"Filtering {len(documents)} documents...")
+        
+        submitted_tasks = 0
+        completed_tasks = 0
+        relevant_count = 0
+        
         with ThreadPoolExecutor(
             max_workers=self.args.index_filter_workers or 5
         ) as executor:
             future_to_doc = {}
+            
+            # 提交所有任务
             for doc in documents:
                 submit_time = time.time()
+                submitted_tasks += 1
 
                 def _run(conversations, docs):
                     submit_time_1 = time.time()
@@ -118,58 +131,99 @@ class DocFilter:
                     [f"##File: {doc.module_name}\n{doc.source_code}"],
                 )
                 future_to_doc[m] = (doc, submit_time)
+                
+            logger.info(f"Submitted {submitted_tasks} document filtering tasks to thread pool")
 
-        relevant_docs = []
-        for future in as_completed(list(future_to_doc.keys())):
-            try:
-                doc, submit_time = future_to_doc[future]
-                end_time = time.time()
-                v, submit_time_1, end_time_2 = future.result()
-                task_timing = TaskTiming(
-                    submit_time=submit_time,
-                    end_time=end_time,
-                    duration=end_time - submit_time,
-                    real_start_time=submit_time_1,
-                    real_end_time=end_time_2,
-                    real_duration=end_time_2 - submit_time_1,
-                )                
-
-                relevance = parse_relevance(v)
-                logger.info(
-                    f"Document filtering progress:\n"
-                    f"  - File: {doc.module_name}\n"
-                    f"  - Relevance: {'Relevant' if relevance and relevance.is_relevant else 'Not Relevant'}\n"
-                    f"  - Score: {relevance.relevant_score if relevance else 'N/A'}\n"
-                    f"  - Score Threshold: {self.relevant_score}\n"
-                    f"  - Raw Response: {v}\n"
-                    f"  - Timing:\n"
-                    f"    * Total Duration: {task_timing.duration:.2f}s\n"
-                    f"    * Real Duration: {task_timing.real_duration:.2f}s\n"
-                    f"    * Queue Time: {(task_timing.real_start_time - task_timing.submit_time):.2f}s"
-                )
-                if (
-                    relevance
-                    # and relevance.is_relevant
-                    and relevance.relevant_score >= self.relevant_score
-                ):
-                    relevant_docs.append(
-                        FilterDoc(
-                            source_code=doc,
-                            relevance=relevance,
-                            task_timing=task_timing,
-                        )
-                    )
-            except Exception as exc:
+            # 处理完成的任务
+            relevant_docs = []
+            for future in as_completed(list(future_to_doc.keys())):
                 try:
                     doc, submit_time = future_to_doc[future]
-                    logger.error(
-                        f"Filtering document generated an exception (doc: {doc.module_name}): {exc}")
-                except Exception as e:
-                    logger.error(
-                        f"Filtering document generated an exception: {exc}")
+                    end_time = time.time()
+                    completed_tasks += 1
+                    progress_percent = (completed_tasks / len(documents)) * 100
+                    
+                    v, submit_time_1, end_time_2 = future.result()
+                    task_timing = TaskTiming(
+                        submit_time=submit_time,
+                        end_time=end_time,
+                        duration=end_time - submit_time,
+                        real_start_time=submit_time_1,
+                        real_end_time=end_time_2,
+                        real_duration=end_time_2 - submit_time_1,
+                    )                
+
+                    relevance = parse_relevance(v)
+                    is_relevant = relevance and relevance.relevant_score >= self.relevant_score
+                    
+                    if is_relevant:
+                        relevant_count += 1
+                        status_text = f"RELEVANT (Score: {relevance.relevant_score:.1f})"
+                    else:
+                        score_text = f"{relevance.relevant_score:.1f}" if relevance else "N/A"
+                        status_text = f"NOT RELEVANT (Score: {score_text})"
+                        
+                    queue_time = task_timing.real_start_time - task_timing.submit_time
+                    
+                    logger.info(
+                        f"Document filtering [{progress_percent:.1f}%] - {completed_tasks}/{len(documents)}:"
+                        f"\n  - File: {doc.module_name}"
+                        f"\n  - Status: {status_text}"
+                        f"\n  - Threshold: {self.relevant_score}"
+                        f"\n  - Response: {v}"
+                        f"\n  - Timing: Duration={task_timing.duration:.2f}s, Processing={task_timing.real_duration:.2f}s, Queue={queue_time:.2f}s"
+                    )
+                    
+                    if is_relevant:
+                        relevant_docs.append(
+                            FilterDoc(
+                                source_code=doc,
+                                relevance=relevance,
+                                task_timing=task_timing,
+                            )
+                        )
+                except Exception as exc:
+                    try:
+                        doc, submit_time = future_to_doc[future]
+                        completed_tasks += 1
+                        progress_percent = (completed_tasks / len(documents)) * 100
+                        logger.error(
+                            f"Document filtering [{progress_percent:.1f}%] - {completed_tasks}/{len(documents)}:"
+                            f"\n  - File: {doc.module_name}"
+                            f"\n  - Error: {exc}"
+                            f"\n  - Duration: {time.time() - submit_time:.2f}s"
+                        )
+                    except Exception as e:
+                        logger.error(
+                            f"Document filtering error in task tracking: {exc}"
+                        )
 
         # Sort relevant_docs by relevance score in descending order
         relevant_docs.sort(
             key=lambda x: x.relevance.relevant_score, reverse=True)
+            
+        total_time = time.time() - start_time
+        
+        avg_processing_time = sum(doc.task_timing.real_duration for doc in relevant_docs) / len(relevant_docs) if relevant_docs else 0
+        avg_queue_time = sum(doc.task_timing.real_start_time - doc.task_timing.submit_time for doc in relevant_docs) / len(relevant_docs) if relevant_docs else 0
+        
+        logger.info(
+            f"=== DocFilter Complete ==="
+            f"\n  * Total time: {total_time:.2f}s"
+            f"\n  * Documents processed: {completed_tasks}/{len(documents)}"
+            f"\n  * Relevant documents: {relevant_count} (threshold: {self.relevant_score})"
+            f"\n  * Average processing time: {avg_processing_time:.2f}s"
+            f"\n  * Average queue time: {avg_queue_time:.2f}s"
+        )
+        
+        if relevant_docs:
+            logger.info(
+                f"Top 5 relevant documents:"
+                + "".join([f"\n  * {doc.source_code.module_name} (Score: {doc.relevance.relevant_score:.1f})" 
+                          for doc in relevant_docs[:5]])
+            )
+        else:
+            logger.warning("No relevant documents found!")
+            
         return relevant_docs
     

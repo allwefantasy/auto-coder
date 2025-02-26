@@ -469,17 +469,16 @@ class LongContextRAG:
             # 将 FilterDoc 转化为 SourceCode 方便后续的逻辑继续做处理
             relevant_docs = [doc.source_code for doc in relevant_docs]
 
-            console = Console()
+            # 替换 rich Console 和 Table，使用结构化日志输出
+            logger.info(f"=== RAG Search Results ===")
+            logger.info(f"Query: {query}")
+            logger.info(f"Found relevant docs: {len(relevant_docs)}")
 
-            # Create a table for the query information
-            query_table = Table(title="Query Information", show_header=False)
-            query_table.add_row("Query", query)
-            query_table.add_row("Relevant docs", str(len(relevant_docs)))
-
-            # Add relevant docs information
+            # 记录相关文档信息
             relevant_docs_info = []
-            for doc in relevant_docs:
-                info = f"- {doc.module_name.replace(self.path,'',1)}"
+            for i, doc in enumerate(relevant_docs):
+                doc_path = doc.module_name.replace(self.path, '', 1)
+                info = f"{i+1}. {doc_path}"
                 if "original_docs" in doc.metadata:
                     original_docs = ", ".join(
                         [
@@ -490,8 +489,11 @@ class LongContextRAG:
                     info += f" (Original docs: {original_docs})"
                 relevant_docs_info.append(info)
 
-            relevant_docs_info = "\n".join(relevant_docs_info)
-            query_table.add_row("Relevant docs list", relevant_docs_info)
+            if relevant_docs_info:
+                logger.info(
+                    f"Relevant documents list:"
+                    + "".join([f"\n  * {info}" for info in relevant_docs_info])
+                )
 
             first_round_full_docs = []
             second_round_extracted_docs = []
@@ -522,56 +524,63 @@ class LongContextRAG:
 
             logger.info(f"Finally send to model: {len(relevant_docs)}")
 
-            query_table.add_row("Only contexts", str(only_contexts))
-            query_table.add_row("Filter time", f"{filter_time:.2f} seconds")
-            query_table.add_row("Final relevant docs", str(len(relevant_docs)))
-            query_table.add_row(
-                "first_round_full_docs", str(len(first_round_full_docs))
-            )
-            query_table.add_row(
-                "second_round_extracted_docs", str(len(second_round_extracted_docs))
-            )
-            query_table.add_row(
-                "Second round time", f"{sencond_round_time:.2f} seconds"
+            # 记录分段处理的统计信息
+            logger.info(
+                f"=== Token Management ===\n"
+                f"  * Only contexts: {only_contexts}\n"
+                f"  * Filter time: {filter_time:.2f} seconds\n" 
+                f"  * Final relevant docs: {len(relevant_docs)}\n"
+                f"  * First round full docs: {len(first_round_full_docs)}\n"
+                f"  * Second round extracted docs: {len(second_round_extracted_docs)}\n"
+                f"  * Second round time: {sencond_round_time:.2f} seconds"
             )
 
-            # Add relevant docs information
+            # 记录最终选择的文档详情
             final_relevant_docs_info = []
-            for doc in relevant_docs:
-                info = f"- {doc.module_name.replace(self.path,'',1)}"
+            for i, doc in enumerate(relevant_docs):
+                doc_path = doc.module_name.replace(self.path, '', 1)
+                info = f"{i+1}. {doc_path}"
+                
+                metadata_info = []
                 if "original_docs" in doc.metadata:
                     original_docs = ", ".join(
                         [
-                            doc.replace(self.path, "", 1)
-                            for doc in doc.metadata["original_docs"]
+                            od.replace(self.path, "", 1)
+                            for od in doc.metadata["original_docs"]
                         ]
                     )
-                    info += f" (Original docs: {original_docs})"
+                    metadata_info.append(f"Original docs: {original_docs}")
+                    
                 if "chunk_ranges" in doc.metadata:
                     chunk_ranges = json.dumps(
                         doc.metadata["chunk_ranges"], ensure_ascii=False
                     )
-                    info += f" (Chunk ranges: {chunk_ranges})"
+                    metadata_info.append(f"Chunk ranges: {chunk_ranges}")
+                    
+                if "processing_time" in doc.metadata:
+                    metadata_info.append(f"Processing time: {doc.metadata['processing_time']:.2f}s")
+                    
+                if metadata_info:
+                    info += f" ({'; '.join(metadata_info)})"
+                    
                 final_relevant_docs_info.append(info)
 
-            final_relevant_docs_info = "\n".join(final_relevant_docs_info)
-            query_table.add_row("Final Relevant docs list", final_relevant_docs_info)
+            if final_relevant_docs_info:
+                logger.info(
+                    f"Final documents to be sent to model:"
+                    + "".join([f"\n  * {info}" for info in final_relevant_docs_info])
+                )
 
-            # Create a panel to contain the table
-            panel = Panel(
-                query_table,
-                title="RAG Search Results",
-                expand=False,
-            )
-
-            # Log the panel using rich
-            console.print(panel)
-
+            # 记录令牌统计
             request_tokens = sum([doc.tokens for doc in relevant_docs])
             target_model = model or self.llm.default_model_name
             logger.info(
-                f"Start to send to model {target_model} with {request_tokens} tokens"
+                f"=== LLM Request ===\n"
+                f"  * Target model: {target_model}\n"
+                f"  * Total tokens: {request_tokens}"
             )
+
+            logger.info(f"Start to send to model {target_model} with {request_tokens} tokens")
 
             if LLMComputeEngine is not None and not self.args.disable_inference_enhance:
                 llm_compute_engine = LLMComputeEngine(

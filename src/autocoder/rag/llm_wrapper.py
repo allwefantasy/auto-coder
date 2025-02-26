@@ -50,7 +50,8 @@ class LLWrapper:
                         role_mapping=None,
                         delta_mode=False,
                         llm_config:Dict[str,Any]={}): 
-        res,contexts = await asyncfy_with_semaphore(lambda: self.rag.stream_chat_oai(conversations,llm_config=llm_config))()                
+        # res,contexts = await asyncfy_with_semaphore(lambda: self.rag.stream_chat_oai(conversations,llm_config=llm_config))()
+        res,contexts = await self.rag.async_stream_chat_oai(conversations,llm_config=llm_config)
         for t in res:                                    
             yield (t,SingleOutputMeta(0,0))
                          

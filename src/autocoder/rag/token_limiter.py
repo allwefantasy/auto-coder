@@ -7,6 +7,8 @@ from autocoder.common import SourceCode
 from byzerllm.utils.client.code_utils import extract_code
 import byzerllm
 from byzerllm import ByzerLLM
+from autocoder.rag.relevant_utils import TaskTiming
+from byzerllm import MetaHolder
 
 
 class TokenLimiter:
@@ -95,6 +97,11 @@ class TokenLimiter:
         conversations: List[Dict[str, str]],
         index_filter_workers: int,
     ) -> List[SourceCode]:
+        logger.info(f"=== TokenLimiter Starting ===")
+        logger.info(f"Configuration: full_text_limit={self.full_text_limit}, segment_limit={self.segment_limit}, buff_limit={self.buff_limit}")
+        logger.info(f"Processing {len(relevant_docs)} source code documents")
+        
+        start_time = time.time()
         final_relevant_docs = []
         token_count = 0
         doc_num_count = 0
@@ -112,6 +119,7 @@ class TokenLimiter:
         ## TODO:
         ##     1. 未来根据参数决定是否开启重排以及重排的策略
         if not self.disable_segment_reorder:
+            logger.info("Document reordering enabled - organizing segments by original document order")
             num_count = 0
             for doc in relevant_docs:
                 num_count += 1
@@ -135,7 +143,10 @@ class TokenLimiter:
                     temp_docs.sort(key=lambda x: x.metadata["chunk_index"])
                     reorder_relevant_docs.extend(temp_docs)
         else:
+            logger.info("Document reordering disabled - using original retrieval order")
             reorder_relevant_docs = relevant_docs
+
+        logger.info(f"After reordering: {len(reorder_relevant_docs)} documents to process")
 
         ## 非窗口分区实现
         for doc in reorder_relevant_docs:
@@ -149,10 +160,15 @@ class TokenLimiter:
 
         ## 如果窗口无法放下所有的相关文档，则需要分区
         if len(final_relevant_docs) < len(reorder_relevant_docs):
+            logger.info(f"Token limit exceeded: {len(final_relevant_docs)}/{len(reorder_relevant_docs)} docs fit in window")
+            logger.info(f"=== Starting First Round: Full Text Loading ===")
+            
             ## 先填充full_text分区
             token_count = 0
             new_token_limit = self.full_text_limit
             doc_num_count = 0
+            first_round_start_time = time.time()
+            
             for doc in reorder_relevant_docs:
                 doc_tokens = self.count_tokens(doc.source_code)
                 doc_num_count += 1
@@ -161,11 +177,18 @@ class TokenLimiter:
                     token_count += doc_tokens
                 else:
                     break
+            
+            first_round_duration = time.time() - first_round_start_time
+            logger.info(
+                f"First round complete: loaded {len(self.first_round_full_docs)} documents"
+                f" ({token_count} tokens) in {first_round_duration:.2f}s"
+            )
 
             if len(self.first_round_full_docs) > 0:
                 remaining_tokens = (
                     self.full_text_limit + self.segment_limit - token_count
                 )
+                logger.info(f"Remaining token budget: {remaining_tokens}")
             else:
                 logger.warning(
                     "Full text area is empty, this is may caused by the single doc is too long"
@@ -175,42 +198,99 @@ class TokenLimiter:
             ## 继续填充segment分区
             sencond_round_start_time = time.time()
             remaining_docs = reorder_relevant_docs[len(self.first_round_full_docs) :]
+            
             logger.info(
-                f"first round docs: {len(self.first_round_full_docs)} remaining docs: {len(remaining_docs)} index_filter_workers: {index_filter_workers}"
+                f"=== Starting Second Round: Chunk Extraction ==="
+                f"\n  * Documents to process: {len(remaining_docs)}"
+                f"\n  * Remaining token budget: {remaining_tokens}"
+                f"\n  * Thread pool size: {index_filter_workers or 5}"
             )
 
+            total_processed = 0
+            successful_extractions = 0
+            
             with ThreadPoolExecutor(max_workers=index_filter_workers or 5) as executor:
-                future_to_doc = {
-                    executor.submit(self.process_range_doc, doc, conversations): doc
-                    for doc in remaining_docs
-                }
+                future_to_doc = {}
+                for doc in remaining_docs:
+                    submit_time = time.time()
+                    future = executor.submit(self.process_range_doc, doc, conversations)
+                    future_to_doc[future] = (doc, submit_time)
 
                 for future in as_completed(future_to_doc):
-                    doc = future_to_doc[future]
+                    doc, submit_time = future_to_doc[future]
+                    end_time = time.time()
+                    total_processed += 1
+                    progress_percent = (total_processed / len(remaining_docs)) * 100
+                    
                     try:
                         result = future.result()
+                        task_duration = end_time - submit_time
+                        
                         if result and remaining_tokens > 0:
                             self.second_round_extracted_docs.append(result)
                             tokens = result.tokens
+                            successful_extractions += 1
+                            
+                            logger.info(
+                                f"Document extraction [{progress_percent:.1f}%] - {total_processed}/{len(remaining_docs)}:"
+                                f"\n  - File: {doc.module_name}"
+                                f"\n  - Chunks: {len(result.metadata.get('chunk_ranges', []))}"
+                                f"\n  - Extracted tokens: {tokens}"
+                                f"\n  - Remaining tokens: {remaining_tokens - tokens if tokens > 0 else remaining_tokens}"
+                                f"\n  - Processing time: {task_duration:.2f}s"
+                            )
+                            
                             if tokens > 0:
                                 remaining_tokens -= tokens
                             else:
                                 logger.warning(
                                     f"Token count for doc {doc.module_name} is 0 or negative"
                                 )
+                        elif result:
+                            logger.info(
+                                f"Document extraction [{progress_percent:.1f}%] - {total_processed}/{len(remaining_docs)}:"
+                                f"\n  - File: {doc.module_name}"
+                                f"\n  - Skipped: Token budget exhausted ({remaining_tokens} remaining)"
+                                f"\n  - Processing time: {task_duration:.2f}s"
+                            )
+                        else:
+                            logger.warning(
+                                f"Document extraction [{progress_percent:.1f}%] - {total_processed}/{len(remaining_docs)}:"
+                                f"\n  - File: {doc.module_name}"
+                                f"\n  - Result: No content extracted"
+                                f"\n  - Processing time: {task_duration:.2f}s"
+                            )
                     except Exception as exc:
                         logger.error(
-                            f"Processing doc {doc.module_name} generated an exception: {exc}"
+                            f"Document extraction [{progress_percent:.1f}%] - {total_processed}/{len(remaining_docs)}:"
+                            f"\n  - File: {doc.module_name}"
+                            f"\n  - Error: {exc}"
+                            f"\n  - Processing time: {end_time - submit_time:.2f}s"
                         )
 
             final_relevant_docs = (
                 self.first_round_full_docs + self.second_round_extracted_docs
             )
             self.sencond_round_time = time.time() - sencond_round_start_time
+            total_time = time.time() - start_time
+            
             logger.info(
-                f"Second round processing time: {self.sencond_round_time:.2f} seconds"
+                f"=== Second round complete ==="
+                f"\n  * Time: {self.sencond_round_time:.2f}s"
+                f"\n  * Documents processed: {total_processed}/{len(remaining_docs)}"
+                f"\n  * Successful extractions: {successful_extractions}"
+                f"\n  * Extracted tokens: {sum(doc.tokens for doc in self.second_round_extracted_docs)}"
             )
-
+        else:
+            logger.info(f"All {len(reorder_relevant_docs)} documents fit within token limits")
+            total_time = time.time() - start_time
+        
+        logger.info(
+            f"=== TokenLimiter Complete ==="
+            f"\n  * Total time: {total_time:.2f}s"
+            f"\n  * Documents selected: {len(final_relevant_docs)}/{len(relevant_docs)}"
+            f"\n  * Total tokens: {sum(doc.tokens for doc in final_relevant_docs)}"
+        )
         return final_relevant_docs
 
     def process_range_doc(
@@ -218,6 +298,7 @@ class TokenLimiter:
     ) -> SourceCode:
         for attempt in range(max_retries):
             content = ""
+            start_time = time.time()
             try:
                 source_code_with_line_number = ""
                 source_code_lines = doc.source_code.split("\n")
@@ -225,14 +306,18 @@ class TokenLimiter:
                     source_code_with_line_number += f"{idx+1} {line}\n"
                 
                 llm = self.chunk_llm
+                meta_holder = MetaHolder()
 
+                extraction_start_time = time.time()
                 extracted_info = (
                     self.extract_relevance_range_from_docs_with_conversation.options(
                         {"llm_config": {"max_length": 100}}
                     )
-                    .with_llm(llm)
+                    .with_llm(llm).with_meta(meta_holder)
                     .run(conversations, [source_code_with_line_number])
                 )
+                extraction_duration = time.time() - extraction_start_time
+                
                 json_str = extract_code(extracted_info)[0][1]
                 json_objs = json.loads(json_str)
 
@@ -242,23 +327,59 @@ class TokenLimiter:
                     chunk = "\n".join(source_code_lines[start_line:end_line])
                     content += chunk + "\n"
 
+                total_duration = time.time() - start_time
+                
+
+                meta = meta_holder.get_meta_model()
+                
+                input_tokens_count = 0
+                generated_tokens_count = 0
+                reasoning_content = ""
+                finish_reason = ""
+                first_token_time = 0
+
+                if meta:
+                    input_tokens_count = meta.input_tokens_count
+                    generated_tokens_count = meta.generated_tokens_count
+                    reasoning_content = meta.reasoning_content
+                    finish_reason = meta.finish_reason
+                    first_token_time = meta.first_token_time                
+                
+                logger.debug(
+                    f"Document {doc.module_name} chunk extraction details:"
+                    f"\n  - Chunks found: {len(json_objs)}"
+                    f"\n  - Input tokens: {input_tokens_count}"
+                    f"\n  - Generated tokens: {generated_tokens_count}" 
+                    f"\n  - LLM time: {extraction_duration:.2f}s"
+                    f"\n  - First token time: {first_token_time:.2f}s"
+                    f"\n  - Total processing time: {total_duration:.2f}s"
+                )
+                
                 return SourceCode(
                     module_name=doc.module_name,
                     source_code=content.strip(),
-                    tokens=self.count_tokens(content),
+                    tokens=input_tokens_count + generated_tokens_count,
                     metadata={
                         "original_doc": doc.module_name,
                         "chunk_ranges": json_objs,
+                        "processing_time": total_duration,
+                        "llm_time": extraction_duration,
+                        "input_tokens_count": input_tokens_count,
+                        "generated_tokens_count": generated_tokens_count,
+                        "reasoning_content": reasoning_content,
+                        "finish_reason": finish_reason,
+                        "first_token_time": first_token_time,
                     },
                 )
             except Exception as e:
+                err_duration = time.time() - start_time
                 if attempt < max_retries - 1:
                     logger.warning(
-                        f"Error processing doc {doc.module_name}, retrying... (Attempt {attempt + 1}) Error: {str(e)}"
+                        f"Error processing doc {doc.module_name}, retrying... (Attempt {attempt + 1}) Error: {str(e)}, duration: {err_duration:.2f}s"
                     )
                 else:
                     logger.error(
-                        f"Failed to process doc {doc.module_name} after {max_retries} attempts: {str(e)}"
+                        f"Failed to process doc {doc.module_name} after {max_retries} attempts: {str(e)}, total duration: {err_duration:.2f}s"
                     )
                     return SourceCode(
                         module_name=doc.module_name, source_code="", tokens=0
