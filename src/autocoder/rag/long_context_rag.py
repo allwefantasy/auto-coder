@@ -513,7 +513,7 @@ class LongContextRAG:
 
             # 将 FilterDoc 转化为 SourceCode 方便后续的逻辑继续做处理
             relevant_docs = [doc.source_code for doc in relevant_docs]
-            
+
             logger.info(f"=== RAG Search Results ===")
             logger.info(f"Query: {query}")
             logger.info(f"Found relevant docs: {len(relevant_docs)}")
@@ -620,7 +620,7 @@ class LongContextRAG:
                 logger.info(
                     f"Final documents to be sent to model:"
                     + "".join([f"\n  * {info}" for info in final_relevant_docs_info])
-                )
+            )
 
             # 记录令牌统计
             request_tokens = sum([doc.tokens for doc in relevant_docs])
@@ -645,17 +645,22 @@ class LongContextRAG:
                 new_conversations = llm_compute_engine.process_conversation(
                     conversations, query, [doc.source_code for doc in relevant_docs]
                 )
-
-                return (
-                    llm_compute_engine.stream_chat_oai(
+                chunks = llm_compute_engine.stream_chat_oai(
                         conversations=new_conversations,
                         model=model,
                         role_mapping=role_mapping,
                         llm_config=llm_config,
                         delta_mode=True,
-                    ),
-                    context,
-                )
+                    )
+                
+                def generate_chunks():
+                    for chunk in chunks:
+                        yield chunk[0]
+                        if chunk[1] is not None:
+                            rag_stat.answer_stat.total_input_tokens += chunk[1].input_tokens_count
+                            rag_stat.answer_stat.total_generated_tokens += chunk[1].generated_tokens_count                      
+                    self._print_rag_stats(rag_stat)        
+                return generate_chunks(), context
 
             new_conversations = conversations[:-1] + [
                 {
@@ -674,5 +679,85 @@ class LongContextRAG:
                 llm_config=llm_config,
                 delta_mode=True,
             )
+            
+            def generate_chunks():
+                for chunk in chunks:
+                    yield chunk[0]
+                    if chunk[1] is not None:
+                        rag_stat.answer_stat.total_input_tokens += chunk[1].input_tokens_count
+                        rag_stat.answer_stat.total_generated_tokens += chunk[1].generated_tokens_count                      
+                self._print_rag_stats(rag_stat)        
+            return generate_chunks(), context
+            
+            
 
-            return (chunk[0] for chunk in chunks), context
+    def _print_rag_stats(self, rag_stat: RAGStat) -> None:
+        """打印RAG执行的详细统计信息"""
+        total_input_tokens = (
+            rag_stat.recall_stat.total_input_tokens +
+            rag_stat.chunk_stat.total_input_tokens +
+            rag_stat.answer_stat.total_input_tokens
+        )
+        total_generated_tokens = (
+            rag_stat.recall_stat.total_generated_tokens +
+            rag_stat.chunk_stat.total_generated_tokens + 
+            rag_stat.answer_stat.total_generated_tokens
+        )
+        total_tokens = total_input_tokens + total_generated_tokens
+        
+        # 避免除以零错误
+        if total_tokens == 0:
+            recall_percent = chunk_percent = answer_percent = 0
+        else:
+            recall_percent = (rag_stat.recall_stat.total_input_tokens + rag_stat.recall_stat.total_generated_tokens) / total_tokens * 100
+            chunk_percent = (rag_stat.chunk_stat.total_input_tokens + rag_stat.chunk_stat.total_generated_tokens) / total_tokens * 100
+            answer_percent = (rag_stat.answer_stat.total_input_tokens + rag_stat.answer_stat.total_generated_tokens) / total_tokens * 100
+        
+        logger.info(
+            f"=== RAG 执行统计信息 ===\n"
+            f"总令牌使用: {total_tokens} 令牌\n"
+            f"  * 输入令牌总数: {total_input_tokens}\n"
+            f"  * 生成令牌总数: {total_generated_tokens}\n"
+            f"\n"
+            f"阶段统计:\n"
+            f"  1. 文档检索阶段:\n"
+            f"     - 模型: {rag_stat.recall_stat.model_name}\n"
+            f"     - 输入令牌: {rag_stat.recall_stat.total_input_tokens}\n"
+            f"     - 生成令牌: {rag_stat.recall_stat.total_generated_tokens}\n"
+            f"     - 阶段总计: {rag_stat.recall_stat.total_input_tokens + rag_stat.recall_stat.total_generated_tokens}\n"
+            f"\n"
+            f"  2. 文档分块阶段:\n"
+            f"     - 模型: {rag_stat.chunk_stat.model_name}\n"
+            f"     - 输入令牌: {rag_stat.chunk_stat.total_input_tokens}\n"
+            f"     - 生成令牌: {rag_stat.chunk_stat.total_generated_tokens}\n"
+            f"     - 阶段总计: {rag_stat.chunk_stat.total_input_tokens + rag_stat.chunk_stat.total_generated_tokens}\n"
+            f"\n"
+            f"  3. 答案生成阶段:\n"
+            f"     - 模型: {rag_stat.answer_stat.model_name}\n"
+            f"     - 输入令牌: {rag_stat.answer_stat.total_input_tokens}\n"
+            f"     - 生成令牌: {rag_stat.answer_stat.total_generated_tokens}\n"
+            f"     - 阶段总计: {rag_stat.answer_stat.total_input_tokens + rag_stat.answer_stat.total_generated_tokens}\n"
+            f"\n"
+            f"令牌分布百分比:\n"
+            f"  - 文档检索: {recall_percent:.1f}%\n"
+            f"  - 文档分块: {chunk_percent:.1f}%\n"
+            f"  - 答案生成: {answer_percent:.1f}%\n"
+        )
+        
+        # 记录原始统计数据，以便调试
+        logger.debug(f"RAG Stat 原始数据: {rag_stat}")
+        
+        # 返回成本估算
+        estimated_cost = self._estimate_token_cost(total_input_tokens, total_generated_tokens)
+        if estimated_cost > 0:
+            logger.info(f"估计成本: 约 ${estimated_cost:.4f} 人民币")
+
+    def _estimate_token_cost(self, input_tokens: int, output_tokens: int) -> float:
+        """估算当前请求的令牌成本（人民币）"""        
+        # 实际应用中，可以根据不同模型设置不同价格
+        input_cost_per_1m = 2.0/1000000   # 每百万输入令牌的成本
+        output_cost_per_1m = 8.0/100000   # 每百万输出令牌的成本
+        
+        cost = (input_tokens * input_cost_per_1m / 1000000) + (output_tokens* output_cost_per_1m/1000000)
+        return cost
+            

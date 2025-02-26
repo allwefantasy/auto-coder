@@ -106,6 +106,14 @@ class TokenLimiter:
         token_count = 0
         doc_num_count = 0
         model_name = self.chunk_llm.default_model_name or "unknown"
+        token_limiter_result = TokenLimiterResult(
+                docs=[],
+                raw_docs=[],
+                input_tokens_counts=[],
+                generated_tokens_counts=[],
+                durations=[],
+                model_name=model_name
+            )
 
         reorder_relevant_docs = []
 
@@ -209,14 +217,7 @@ class TokenLimiter:
 
             total_processed = 0
             successful_extractions = 0
-            token_limiter_result = TokenLimiterResult(
-                docs=[],
-                raw_docs=[],
-                input_tokens_counts=[],
-                generated_tokens_counts=[],
-                durations=[],
-                model_name=model_name
-            )
+            
             
             with ThreadPoolExecutor(max_workers=index_filter_workers or 5) as executor:
                 future_to_doc = {}
