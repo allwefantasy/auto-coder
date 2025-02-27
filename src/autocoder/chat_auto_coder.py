@@ -309,6 +309,9 @@ def main():
                 text = voice_input()
                 new_prompt = "/coding " + text
 
+            elif user_input.startswith("/clear") or user_input.startswith("/cls"):
+                print("\033c")                
+
             elif user_input.startswith("/add_files"):
                 args = user_input[len("/add_files"):].strip().split()
                 add_files(args)
