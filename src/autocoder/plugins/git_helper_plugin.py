@@ -77,16 +77,14 @@ class GitHelperPlugin(Plugin):
             A dictionary mapping command prefixes to completion options
         """
         completions = {
-            "/git": [
-                "status",
-                "commit",
-                "branch",
-                "checkout",
-                "diff",
-                "log",
-                "pull",
-                "push",
-            ],
+            "/git/status": [],
+            "/git/commit": [],
+            "/git/branch": [],
+            "/git/checkout": [],
+            "/git/diff": [],
+            "/git/log": [],
+            "/git/pull": [],
+            "/git/push": [],
         }
 
         # 添加分支补全

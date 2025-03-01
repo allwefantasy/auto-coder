@@ -338,6 +338,11 @@ class PluginManager:
             A dictionary mapping command prefixes to lists of completion options
         """
         completions = {}
+
+        # Add built-in completions for /plugins command
+        completions["/plugins"] = ["list", "load", "unload"]
+
+        # Get completions from plugins
         for plugin in self.plugins.values():
             plugin_completions = plugin.get_completions()
             for prefix, options in plugin_completions.items():
