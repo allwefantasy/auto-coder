@@ -258,7 +258,8 @@ class EnhancedCompleter(Completer):
             # 只提供未输入部分作为补全
             if completion_text.startswith(existing_input):
                 remaining_text = completion_text[len(existing_input) :]
-                start_position = -len(existing_input) if existing_input else 0
+                # 修复：不再使用负值作为 start_position，这样不会覆盖用户已输入的部分
+                start_position = 0
                 yield Completion(
                     remaining_text,
                     start_position=start_position,
@@ -276,9 +277,13 @@ class EnhancedCompleter(Completer):
         # 对于任何命令，当子命令前缀为空或与补全选项匹配时，都显示补全
         for completion in completions:
             if cmd_prefix == "" or completion.startswith(cmd_prefix):
+                # 只提供未输入部分作为补全
+                remaining_text = completion[len(cmd_prefix) :]
+                # 修复：设置 start_position 为 0，这样不会覆盖用户已输入的部分
+                start_position = 0
                 yield Completion(
-                    completion[len(cmd_prefix) :],
-                    start_position=0,
+                    remaining_text,
+                    start_position=start_position,
                     display=completion,
                 )
 
