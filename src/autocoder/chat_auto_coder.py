@@ -341,14 +341,20 @@ def main():
                             display=command,
                         )
 
-                # 处理来自插件的子命令补全
+                # 处理来自插件的子命令补全 - 通用处理所有命令
                 for prefix, completions in plugin_completions_dict.items():
+                    # 检查用户输入是否以某个命令前缀开始，并且输入中包含空格（表示可能需要子命令补全）
                     if current_input.startswith(prefix) and " " in current_input:
-                        # 这是子命令补全
-                        # 例如，当用户输入"/git "时，提供"status", "commit"等
-                        cmd_prefix = current_input.split()[-1]
+                        parts = current_input.split(maxsplit=1)
+                        cmd_prefix = ""
+
+                        # 如果用户输入了部分子命令，提取出来
+                        if len(parts) > 1:
+                            cmd_prefix = parts[1].strip()
+
+                        # 对于任何命令，当子命令前缀为空或与补全选项匹配时，都显示补全
                         for completion in completions:
-                            if completion.startswith(cmd_prefix):
+                            if cmd_prefix == "" or completion.startswith(cmd_prefix):
                                 yield Completion(
                                     completion[len(cmd_prefix) :],
                                     start_position=0,
