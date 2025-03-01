@@ -168,6 +168,129 @@ def show_help():
     print(f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
     print()
 
+    # 显示插件命令
+    if plugin_manager.command_handlers:
+        print("\033[1mPlugin Commands:\033[0m")
+        print("  \033[94mCommand\033[0m - \033[93mDescription\033[0m")
+        for cmd, (_, desc, plugin_name) in plugin_manager.command_handlers.items():
+            print(
+                f"  \033[94m{cmd}\033[0m - \033[92m{desc} (from {plugin_name})\033[0m"
+            )
+        print()
+
+
+class EnhancedCompleter(Completer):
+    """结合内置补全器和插件补全功能的增强补全器"""
+
+    def __init__(self, base_completer, plugin_manager):
+        self.base_completer = base_completer
+        self.plugin_manager = plugin_manager
+
+    def get_completions(self, document, complete_event):
+        # 获取当前输入的文本
+        text_before_cursor = document.text_before_cursor
+
+        # 只有当我们需要处理命令补全时才进行处理
+        if text_before_cursor.lstrip().startswith("/"):
+            # 获取插件命令补全
+            plugin_completions_dict = self.plugin_manager.get_plugin_completions()
+
+            # 获取当前输入的命令前缀
+            current_input = text_before_cursor.lstrip()
+
+            # 检查是否需要动态补全
+            # 先检查特定命令
+            dynamic_cmds = ["/plugins load", "/plugins unload"]
+
+            # 然后检查任何包含子命令的输入
+            if " " in current_input:
+                # 先尝试动态补全特定命令
+                for dynamic_cmd in dynamic_cmds:
+                    if current_input.startswith(dynamic_cmd):
+                        yield from self._process_dynamic_completions(
+                            dynamic_cmd, current_input
+                        )
+                        return
+
+                # 如果不是特定命令，检查一般命令 + 空格的情况
+                cmd_parts = current_input.split(maxsplit=1)
+                base_cmd = cmd_parts[0]
+
+                # 如果命令存在于补全字典中，进行处理
+                if base_cmd in plugin_completions_dict:
+                    yield from self._process_command_completions(
+                        base_cmd, current_input, plugin_completions_dict[base_cmd]
+                    )
+                    return
+
+            # 处理直接命令补全 - 如果输入不包含空格，匹配整个命令
+            plugin_commands = list(self.plugin_manager.command_handlers.keys())
+            for command in plugin_commands:
+                if command.startswith(current_input):
+                    yield Completion(
+                        command[len(current_input) :],
+                        start_position=0,
+                        display=command,
+                    )
+
+        # 获取并返回基础补全器的补全
+        if self.base_completer:
+            for completion in self.base_completer.get_completions(
+                document, complete_event
+            ):
+                yield completion
+
+    def _process_dynamic_completions(self, command, current_input):
+        """处理动态补全命令"""
+        # 使用 PluginManager 的动态补全功能
+        dynamic_completions = self.plugin_manager.get_dynamic_completions(
+            command, current_input
+        )
+
+        for completion_text, display_text in dynamic_completions:
+            # 计算补全的开始位置
+            # 提取用户已输入的部分
+            parts = current_input.split(maxsplit=2)
+            existing_input = ""
+            if len(parts) > 2:
+                existing_input = parts[2]
+
+            # 只提供未输入部分作为补全
+            if completion_text.startswith(existing_input):
+                remaining_text = completion_text[len(existing_input) :]
+                start_position = -len(existing_input) if existing_input else 0
+                yield Completion(
+                    remaining_text,
+                    start_position=start_position,
+                    display=display_text,
+                )
+
+    def _process_command_completions(self, command, current_input, completions):
+        """处理通用命令补全"""
+        # 提取子命令前缀
+        parts = current_input.split(maxsplit=1)
+        cmd_prefix = ""
+        if len(parts) > 1:
+            cmd_prefix = parts[1].strip()
+
+        # 对于任何命令，当子命令前缀为空或与补全选项匹配时，都显示补全
+        for completion in completions:
+            if cmd_prefix == "" or completion.startswith(cmd_prefix):
+                yield Completion(
+                    completion[len(cmd_prefix) :],
+                    start_position=0,
+                    display=completion,
+                )
+
+    async def get_completions_async(self, document, complete_event):
+        """异步获取补全内容。
+
+        这个方法在最新版本的prompt_toolkit中是必需的，
+        它简单地调用同步版本并以异步方式yield结果。
+        """
+        for completion in self.get_completions(document, complete_event):
+            yield completion
+
 
 ARGS = None
 
@@ -193,7 +316,10 @@ def main():
     if os.path.isdir(default_plugin_dir):
         plugin_manager.add_plugin_directory(default_plugin_dir)
 
-    # Load plugin configuration
+    # 加载运行时配置
+    plugin_manager.load_runtime_cfg()
+
+    # Load plugin configuration, specifically from the command line
     plugin_config = {}
     if ARGS.plugin_config and os.path.exists(ARGS.plugin_config):
         try:
@@ -308,74 +434,6 @@ def main():
             f"Plugins: {len(plugin_manager.plugins)}" if plugin_manager.plugins else ""
         )
         return f"Current Dir: {pwd} \nMode: {MODES[mode]}(ctrl+k) | Human as Model: {human_as_model}(ctrl+n) | {plugin_info}"
-
-    # 创建一个继承Completer的类，而不是使用函数
-    class EnhancedCompleter(Completer):
-        """结合内置补全器和插件补全功能的增强补全器"""
-
-        def __init__(self, base_completer, plugin_manager):
-            self.base_completer = base_completer
-            self.plugin_manager = plugin_manager
-
-        def get_completions(self, document, complete_event):
-            # 获取当前输入的文本
-            text_before_cursor = document.text_before_cursor
-
-            # 只有当我们需要处理命令补全时才进行处理
-            if text_before_cursor.lstrip().startswith("/"):
-                # 获取插件命令补全
-                plugin_completions_dict = self.plugin_manager.get_plugin_completions()
-
-                # 获取当前输入的命令前缀
-                current_input = text_before_cursor.lstrip()
-
-                # 添加插件命令到补全列表
-                plugin_commands = list(self.plugin_manager.command_handlers.keys())
-
-                # 处理来自插件的直接命令补全
-                for command in plugin_commands:
-                    if command.startswith(current_input):
-                        yield Completion(
-                            command[len(current_input) :],
-                            start_position=0,
-                            display=command,
-                        )
-
-                # 处理来自插件的子命令补全 - 通用处理所有命令
-                for prefix, completions in plugin_completions_dict.items():
-                    # 检查用户输入是否以某个命令前缀开始，并且输入中包含空格（表示可能需要子命令补全）
-                    if current_input.startswith(prefix) and " " in current_input:
-                        parts = current_input.split(maxsplit=1)
-                        cmd_prefix = ""
-
-                        # 如果用户输入了部分子命令，提取出来
-                        if len(parts) > 1:
-                            cmd_prefix = parts[1].strip()
-
-                        # 对于任何命令，当子命令前缀为空或与补全选项匹配时，都显示补全
-                        for completion in completions:
-                            if cmd_prefix == "" or completion.startswith(cmd_prefix):
-                                yield Completion(
-                                    completion[len(cmd_prefix) :],
-                                    start_position=0,
-                                    display=completion,
-                                )
-
-            # 获取并返回基础补全器的补全
-            if self.base_completer:
-                for completion in self.base_completer.get_completions(
-                    document, complete_event
-                ):
-                    yield completion
-
-        async def get_completions_async(self, document, complete_event):
-            """异步获取补全内容。
-
-            这个方法在最新版本的prompt_toolkit中是必需的，
-            它简单地调用同步版本并以异步方式yield结果。
-            """
-            for completion in self.get_completions(document, complete_event):
-                yield completion
 
     # 创建一个继承Completer的增强补全器
     enhanced_completer = EnhancedCompleter(completer, plugin_manager)
@@ -549,41 +607,10 @@ def main():
                 import_conf(os.getcwd(), import_path)
 
             elif user_input.startswith("/plugins"):
-                # Add a new command to manage plugins
+                # 提取命令参数并交由 plugin_manager 处理
                 args = user_input[len("/plugins") :].strip().split()
-                if not args:
-                    # List all loaded plugins
-                    print("\033[1;34mLoaded Plugins:\033[0m")
-                    for name, plugin in plugin_manager.plugins.items():
-                        print(f"  - {name} (v{plugin.version}): {plugin.description}")
-                elif args[0] == "list":
-                    # List all available plugins
-                    discovered_plugins = plugin_manager.discover_plugins()
-                    print("\033[1;34mAvailable Plugins:\033[0m")
-                    for plugin_class in discovered_plugins:
-                        print(f"  - {plugin_class.__name__}")
-                elif args[0] == "load" and len(args) > 1:
-                    # Load a specific plugin
-                    plugin_name = args[1]
-                    discovered_plugins = {
-                        p.__name__: p for p in plugin_manager.discover_plugins()
-                    }
-                    if plugin_name in discovered_plugins:
-                        if plugin_manager.load_plugin(discovered_plugins[plugin_name]):
-                            print(f"Plugin '{plugin_name}' loaded successfully")
-                    else:
-                        print(f"Plugin '{plugin_name}' not found")
-                elif args[0] == "unload" and len(args) > 1:
-                    # Unload a specific plugin
-                    plugin_name = args[1]
-                    if plugin_name in plugin_manager.plugins:
-                        plugin = plugin_manager.plugins.pop(plugin_name)
-                        plugin.shutdown()
-                        print(f"Plugin '{plugin_name}' unloaded")
-                    else:
-                        print(f"Plugin '{plugin_name}' not loaded")
-                else:
-                    print("Usage: /plugins [list|load <name>|unload <name>]")
+                result = plugin_manager.handle_plugins_command(args)
+                print(result, end="")
 
             elif user_input.startswith("/conf"):
                 conf = user_input[len("/conf") :].strip()
@@ -600,19 +627,6 @@ def main():
                 query = user_input[len("/help") :].strip()
                 if not query:
                     show_help()
-
-                    # Show plugin commands in help
-                    if plugin_manager.command_handlers:
-                        print("\n\033[1m Plugin Commands: \033[0m")
-                        print("  \033[94mCommand\033[0m - \033[93mDescription\033[0m")
-                        for cmd, (
-                            _,
-                            desc,
-                            plugin_name,
-                        ) in plugin_manager.command_handlers.items():
-                            print(
-                                f"  \033[94m{cmd}\033[0m - \033[92m{desc} (from {plugin_name})\033[0m"
-                            )
                 else:
                     help(query)
 
