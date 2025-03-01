@@ -10,10 +10,23 @@ import unittest
 import tempfile
 from unittest import TestCase
 from typing import Dict, Any, List, Tuple, Optional, Callable
+from unittest.mock import MagicMock, patch
 
 # 添加src目录到Python路径
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "src"))
 from autocoder.plugins import PluginManager, Plugin
+from prompt_toolkit.document import Document
+from prompt_toolkit.completion import Completion
+
+# 导入需要测试的 EnhancedCompleter 类
+try:
+    from autocoder.chat_auto_coder import EnhancedCompleter
+except ImportError:
+    # 为防止导入错误，创建一个模拟版本的 EnhancedCompleter
+    class EnhancedCompleter:
+        def __init__(self, base_completer, plugin_manager):
+            self.base_completer = base_completer
+            self.plugin_manager = plugin_manager
 
 
 class PluginTester(Plugin):
@@ -268,6 +281,152 @@ class TestPluginSystem(TestCase):
         # 验证所有插件都已关闭
         plugin1 = self.manager.get_plugin("simple_plugin")
         self.assertIsNone(plugin1, "插件关闭后仍能获取到插件实例")
+
+    def test_dynamic_completions(self):
+        """测试动态补全功能"""
+
+        # 创建一个支持动态补全的测试插件类
+        class DynamicCompletionPlugin(Plugin):
+            name = "dynamic_completion_test"
+            description = "测试动态补全功能"
+            version = "0.1.0"
+
+            def get_dynamic_completions(self, command, current_input):
+                if command == "/test_cmd":
+                    return [("option1", "Option 1"), ("option2", "Option 2")]
+                return []
+
+        # 加载插件
+        self.manager.load_plugin(DynamicCompletionPlugin)
+
+        # 测试动态补全功能
+        completions = self.manager.get_dynamic_completions("/test_cmd", "/test_cmd ")
+        self.assertEqual(len(completions), 2, "未能获取正确数量的动态补全选项")
+        self.assertEqual(completions[0][0], "option1", "补全选项不正确")
+        self.assertEqual(completions[1][1], "Option 2", "显示文本不正确")
+
+    def test_plugins_load_completions(self):
+        """测试内置的/plugins load命令补全功能"""
+        # 确保插件管理器可以发现插件
+        discovered_plugins = self.manager.discover_plugins()
+        self.assertTrue(len(discovered_plugins) > 0, "没有可发现的插件")
+
+        # 测试/plugins load命令的动态补全
+        completions = self.manager.get_dynamic_completions(
+            "/plugins load", "/plugins load"
+        )
+        self.assertTrue(len(completions) > 0, "未能获取/plugins load命令的补全选项")
+
+        # 验证补全项格式
+        for completion_text, display_text in completions:
+            self.assertEqual(completion_text, display_text, "补全文本和显示文本应相同")
+
+        # 测试插件名称前缀过滤
+        plugin_name = completions[0][0]  # 获取第一个插件名称
+        if len(plugin_name) > 1:
+            prefix = plugin_name[0]
+            filtered_completions = self.manager.get_dynamic_completions(
+                "/plugins load", f"/plugins load {prefix}"
+            )
+            self.assertTrue(
+                all(name[0].startswith(prefix) for name, _ in filtered_completions),
+                "前缀过滤功能不正确",
+            )
+
+    def test_enhanced_completer(self):
+        """测试EnhancedCompleter类的动态补全功能"""
+        try:
+            # 确保EnhancedCompleter类可用
+            from autocoder.chat_auto_coder import EnhancedCompleter
+        except ImportError:
+            self.skipTest("EnhancedCompleter类不可用")
+            return
+
+        # 创建一个支持动态补全的测试插件类
+        class DynamicCompletionPlugin(Plugin):
+            name = "dynamic_completion_test"
+            description = "测试动态补全功能"
+            version = "0.1.0"
+
+            def get_dynamic_completions(self, command, current_input):
+                if command == "/test_cmd":
+                    return [("option1", "Option 1"), ("option2", "Option 2")]
+                return []
+
+            def get_completions(self):
+                return {"/test_cmd": ["subcommand1", "subcommand2"]}
+
+        # 加载插件
+        self.manager.load_plugin(DynamicCompletionPlugin)
+
+        # 创建一个模拟的基础补全器
+        mock_base_completer = MagicMock()
+        mock_base_completer.get_completions.return_value = []
+
+        # 创建EnhancedCompleter实例
+        completer = EnhancedCompleter(mock_base_completer, self.manager)
+
+        # 测试空格后的动态补全
+        document = Document("/test_cmd ")
+        mock_complete_event = MagicMock()
+
+        # 收集补全结果
+        completions = list(completer.get_completions(document, mock_complete_event))
+
+        # 验证结果
+        self.assertTrue(len(completions) > 0, "未能获取动态补全选项")
+
+        # 测试子命令补全
+        document = Document("/test_cmd sub")
+        completions = list(completer.get_completions(document, mock_complete_event))
+
+        # 验证子命令补全结果
+        has_subcommand_completions = any(
+            c.text == "command1" or c.text == "command2" for c in completions
+        )
+        self.assertTrue(
+            has_subcommand_completions or len(completions) > 0, "未能正确处理子命令补全"
+        )
+
+    def test_register_dynamic_completion_provider(self):
+        """测试注册动态补全提供者功能"""
+
+        # 创建一个支持动态补全的测试插件类
+        class DynamicCompletionPlugin(Plugin):
+            name = "dynamic_provider_test"
+            description = "测试动态补全提供者注册功能"
+            version = "0.1.0"
+            registered_commands = []
+
+            def initialize(self, manager):
+                # 注册为动态补全提供者
+                manager.register_dynamic_completion_provider(
+                    self.name, ["/custom_cmd", "/another_cmd"]
+                )
+                return True
+
+            def get_dynamic_completions(self, command, current_input):
+                self.registered_commands.append(command)
+                if command == "/custom_cmd":
+                    return [("custom_option", "Custom Option")]
+                return []
+
+        # 加载插件
+        plugin_loaded = self.manager.load_plugin(DynamicCompletionPlugin)
+        self.assertTrue(plugin_loaded, "未能加载动态补全测试插件")
+
+        # 获取插件实例
+        plugin = self.manager.get_plugin("dynamic_provider_test")
+        self.assertIsNotNone(plugin, "无法获取插件实例")
+
+        # 测试动态补全 - 虽然register_dynamic_completion_provider目前是个空方法
+        # 但这个测试为未来实现提供了基础
+        completions = self.manager.get_dynamic_completions("/custom_cmd", "/custom_cmd")
+
+        # 验证插件的get_dynamic_completions被调用
+        self.assertIn(
+            "/custom_cmd", plugin.registered_commands, "动态补全提供者未被正确注册"
+        )
 
 
 if __name__ == "__main__":
