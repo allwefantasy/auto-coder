@@ -1,5 +1,3 @@
-
-
 import argparse
 import os
 from prompt_toolkit import PromptSession
@@ -10,13 +8,15 @@ from prompt_toolkit.styles import Style
 from autocoder.version import __version__
 from autocoder.chat_auto_coder_lang import get_message
 from prompt_toolkit.formatted_text import FormattedText
+from prompt_toolkit.completion import Completer, Completion
+from autocoder.plugins import PluginManager
 from autocoder.auto_coder_runner import (
     auto_command,
     load_memory,
     save_memory,
-    configure,    
+    configure,
     manage_models,
-    print_conf,    
+    print_conf,
     exclude_dirs,
     exclude_files,
     ask,
@@ -35,23 +35,36 @@ from autocoder.auto_coder_runner import (
     mcp,
     revert,
     commit,
-    design,    
+    design,
     voice_input,
     chat,
     gen_and_exec_shell_command,
     execute_shell_command,
     get_mcp_server,
     completer,
-    summon,  
-    get_memory  
+    summon,
+    get_memory,
 )
 
+# Create a global plugin manager
+plugin_manager = PluginManager()
+
+# Create wrapped versions of intercepted functions
+original_functions = {
+    "ask": ask,
+    "coding": coding,
+    "chat": chat,
+    "design": design,
+    "voice_input": voice_input,
+    "auto_command": auto_command,
+    "execute_shell_command": execute_shell_command,
+}
+
+
 def parse_arguments():
-    
 
     parser = argparse.ArgumentParser(description="Chat Auto Coder")
-    parser.add_argument("--debug", action="store_true",
-                        help="Enable debug mode")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
     parser.add_argument(
         "--quick",
         action="store_true",
@@ -73,6 +86,27 @@ def parse_arguments():
 
     parser.add_argument("--lite", action="store_true", help="Lite mode")
     parser.add_argument("--pro", action="store_true", help="Pro mode")
+
+    # Add plugin-related arguments
+    parser.add_argument(
+        "--plugin_dirs",
+        type=str,
+        nargs="+",
+        help="Directories to search for plugins",
+    )
+
+    parser.add_argument(
+        "--plugins",
+        type=str,
+        nargs="+",
+        help="Comma-separated list of plugins to load",
+    )
+
+    parser.add_argument(
+        "--plugin_config",
+        type=str,
+        help="Path to plugin configuration file",
+    )
 
     return parser.parse_args()
 
@@ -103,10 +137,8 @@ def show_help():
     print(
         f"  \033[94m/summon\033[0m \033[93m<query>\033[0m - \033[92m{get_message('summon_desc')}\033[0m"
     )
-    print(
-        f"  \033[94m/revert\033[0m - \033[92m{get_message('revert_desc')}\033[0m")
-    print(
-        f"  \033[94m/commit\033[0m - \033[92m{get_message('commit_desc')}\033[0m")
+    print(f"  \033[94m/revert\033[0m - \033[92m{get_message('revert_desc')}\033[0m")
+    print(f"  \033[94m/commit\033[0m - \033[92m{get_message('commit_desc')}\033[0m")
     print(
         f"  \033[94m/conf\033[0m \033[93m<key>:<value>\033[0m  - \033[92m{get_message('conf_desc')}\033[0m"
     )
@@ -119,8 +151,7 @@ def show_help():
     print(
         f"  \033[94m/list_files\033[0m - \033[92m{get_message('list_files_desc')}\033[0m"
     )
-    print(
-        f"  \033[94m/help\033[0m - \033[92m{get_message('help_desc')}\033[0m")
+    print(f"  \033[94m/help\033[0m - \033[92m{get_message('help_desc')}\033[0m")
     print(
         f"  \033[94m/exclude_dirs\033[0m \033[93m<dir1>,<dir2> ...\033[0m - \033[92m{get_message('exclude_dirs_desc')}\033[0m"
     )
@@ -130,13 +161,13 @@ def show_help():
     print(
         f"  \033[94m/voice_input\033[0m - \033[92m{get_message('voice_input_desc')}\033[0m"
     )
-    print(
-        f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
+    print(f"  \033[94m/mode\033[0m - \033[92m{get_message('mode_desc')}\033[0m")
     print(f"  \033[94m/lib\033[0m - \033[92m{get_message('lib_desc')}\033[0m")
     print(f"  \033[94m/models\033[0m - \033[92m{get_message('models_desc')}\033[0m")
-    print(
-        f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
+    print(f"  \033[94m/plugins\033[0m - \033[92m{get_message('plugins_desc')}\033[0m")
+    print(f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
     print()
+
 
 ARGS = None
 
@@ -150,20 +181,57 @@ def main():
         ARGS.product_mode = "lite"
 
     if ARGS.pro:
-        ARGS.product_mode = "pro" 
+        ARGS.product_mode = "pro"
 
-    if not ARGS.quick:        
-        initialize_system(InitializeSystemRequest(
-            product_mode=ARGS.product_mode,
-            skip_provider_selection=ARGS.skip_provider_selection,
-            debug=ARGS.debug,
-            quick=ARGS.quick,
-            lite=ARGS.lite,
-            pro=ARGS.pro
-        ))
+    # Initialize plugin system
+    if ARGS.plugin_dirs:
+        for directory in ARGS.plugin_dirs:
+            plugin_manager.add_plugin_directory(directory)
+
+    # Add default plugin directory
+    default_plugin_dir = os.path.join(os.path.dirname(__file__), "plugins")
+    if os.path.isdir(default_plugin_dir):
+        plugin_manager.add_plugin_directory(default_plugin_dir)
+
+    # Load plugin configuration
+    plugin_config = {}
+    if ARGS.plugin_config and os.path.exists(ARGS.plugin_config):
+        try:
+            import json
+
+            with open(ARGS.plugin_config, "r") as f:
+                plugin_config = json.load(f)
+            plugin_manager.load_plugins_from_config(plugin_config)
+        except Exception as e:
+            print(f"Error loading plugin configuration: {e}")
+
+    # Load specific plugins if requested
+    if ARGS.plugins:
+        plugin_list = []
+        for plugin_arg in ARGS.plugins:
+            plugin_list.extend(plugin_arg.split(","))
+
+        discovered_plugins = {p.__name__: p for p in plugin_manager.discover_plugins()}
+        for plugin_name in plugin_list:
+            if plugin_name in discovered_plugins:
+                plugin_manager.load_plugin(discovered_plugins[plugin_name])
+            else:
+                print(f"Plugin '{plugin_name}' not found")
+
+    if not ARGS.quick:
+        initialize_system(
+            InitializeSystemRequest(
+                product_mode=ARGS.product_mode,
+                skip_provider_selection=ARGS.skip_provider_selection,
+                debug=ARGS.debug,
+                quick=ARGS.quick,
+                lite=ARGS.lite,
+                pro=ARGS.pro,
+            )
+        )
 
     load_memory()
-    memory = get_memory()    
+    memory = get_memory()
 
     configure(f"product_mode:{ARGS.product_mode}")
 
@@ -218,6 +286,11 @@ def main():
         configure(f"human_as_model:{new_status}", skip_print=True)
         event.app.invalidate()
 
+    # Add plugin keybindings
+    for plugin in plugin_manager.plugins.values():
+        for key_combination, handler, description in plugin.get_keybindings():
+            kb.add(key_combination)(handler)
+
     def get_bottom_toolbar():
         if "mode" not in memory:
             memory["mode"] = "auto_detect"
@@ -225,17 +298,87 @@ def main():
         human_as_model = memory["conf"].get("human_as_model", "false")
         if mode not in MODES:
             mode = "auto_detect"
-        pwd = os.getcwd()    
+        pwd = os.getcwd()
         pwd_parts = pwd.split(os.sep)
         if len(pwd_parts) > 3:
             pwd = os.sep.join(pwd_parts[-3:])
-        return f"Current Dir: {pwd} \nMode: {MODES[mode]}(ctrl+k) | Human as Model: {human_as_model}(ctrl+n) "
+
+        # Add plugin information to toolbar
+        plugin_info = (
+            f"Plugins: {len(plugin_manager.plugins)}" if plugin_manager.plugins else ""
+        )
+        return f"Current Dir: {pwd} \nMode: {MODES[mode]}(ctrl+k) | Human as Model: {human_as_model}(ctrl+n) | {plugin_info}"
+
+    # 创建一个继承Completer的类，而不是使用函数
+    class EnhancedCompleter(Completer):
+        """结合内置补全器和插件补全功能的增强补全器"""
+
+        def __init__(self, base_completer, plugin_manager):
+            self.base_completer = base_completer
+            self.plugin_manager = plugin_manager
+
+        def get_completions(self, document, complete_event):
+            # 获取当前输入的文本
+            text_before_cursor = document.text_before_cursor
+
+            # 只有当我们需要处理命令补全时才进行处理
+            if text_before_cursor.lstrip().startswith("/"):
+                # 获取插件命令补全
+                plugin_completions_dict = self.plugin_manager.get_plugin_completions()
+
+                # 获取当前输入的命令前缀
+                current_input = text_before_cursor.lstrip()
+
+                # 添加插件命令到补全列表
+                plugin_commands = list(self.plugin_manager.command_handlers.keys())
+
+                # 处理来自插件的直接命令补全
+                for command in plugin_commands:
+                    if command.startswith(current_input):
+                        yield Completion(
+                            command[len(current_input) :],
+                            start_position=0,
+                            display=command,
+                        )
+
+                # 处理来自插件的子命令补全
+                for prefix, completions in plugin_completions_dict.items():
+                    if current_input.startswith(prefix) and " " in current_input:
+                        # 这是子命令补全
+                        # 例如，当用户输入"/git "时，提供"status", "commit"等
+                        cmd_prefix = current_input.split()[-1]
+                        for completion in completions:
+                            if completion.startswith(cmd_prefix):
+                                yield Completion(
+                                    completion[len(cmd_prefix) :],
+                                    start_position=0,
+                                    display=completion,
+                                )
+
+            # 获取并返回基础补全器的补全
+            if self.base_completer:
+                for completion in self.base_completer.get_completions(
+                    document, complete_event
+                ):
+                    yield completion
+
+        async def get_completions_async(self, document, complete_event):
+            """异步获取补全内容。
+
+            这个方法在最新版本的prompt_toolkit中是必需的，
+            它简单地调用同步版本并以异步方式yield结果。
+            """
+            for completion in self.get_completions(document, complete_event):
+                yield completion
+
+    # 创建一个继承Completer的增强补全器
+    enhanced_completer = EnhancedCompleter(completer, plugin_manager)
 
     session = PromptSession(
         history=InMemoryHistory(),
         auto_suggest=AutoSuggestFromHistory(),
         enable_history_search=False,
-        completer=completer,
+        completer=enhanced_completer,
         complete_while_typing=True,
         key_bindings=kb,
         bottom_toolbar=get_bottom_toolbar,
@@ -251,6 +394,14 @@ def main():
     \033[0m"""
     )
     print("\033[1;34mType /help to see available commands.\033[0m\n")
+
+    # Add plugin information to startup message
+    if plugin_manager.plugins:
+        print("\033[1;34mLoaded Plugins:\033[0m")
+        for name, plugin in plugin_manager.plugins.items():
+            print(f"  - {name} (v{plugin.version}): {plugin.description}")
+        print()
+
     show_help()
 
     style = Style.from_dict(
@@ -264,6 +415,25 @@ def main():
     )
 
     new_prompt = ""
+
+    # Create wrapped versions of functions that plugins want to intercept
+    wrapped_functions = {}
+    for func_name, original_func in original_functions.items():
+        wrapped_functions[func_name] = plugin_manager.wrap_function(
+            original_func, func_name
+        )
+
+    # Replace original functions with wrapped versions
+    global ask, coding, chat, design, voice_input, auto_command, execute_shell_command
+    ask = wrapped_functions.get("ask", ask)
+    coding = wrapped_functions.get("coding", coding)
+    chat = wrapped_functions.get("chat", chat)
+    design = wrapped_functions.get("design", design)
+    voice_input = wrapped_functions.get("voice_input", voice_input)
+    auto_command = wrapped_functions.get("auto_command", auto_command)
+    execute_shell_command = wrapped_functions.get(
+        "execute_shell_command", execute_shell_command
+    )
 
     while True:
         try:
@@ -281,8 +451,7 @@ def main():
                     FormattedText(prompt_message), default=new_prompt, style=style
                 )
             else:
-                user_input = session.prompt(
-                    FormattedText(prompt_message), style=style)
+                user_input = session.prompt(FormattedText(prompt_message), style=style)
             new_prompt = ""
 
             if "mode" not in memory:
@@ -291,78 +460,127 @@ def main():
             # 处理 user_input 的空格
             if user_input:
                 temp_user_input = user_input.lstrip()  # 去掉左侧空格
-                if temp_user_input.startswith('/'):
+                if temp_user_input.startswith("/"):
                     user_input = temp_user_input
 
-            if (  
-                memory["mode"] == "auto_detect" 
+            # Check if this is a plugin command
+            if user_input.startswith("/"):
+                plugin_result = plugin_manager.process_command(user_input)
+                if plugin_result:
+                    plugin_name, handler, args = plugin_result
+                    if handler:
+                        handler(*args)
+                        continue
+
+            if (
+                memory["mode"] == "auto_detect"
                 and user_input
                 and not user_input.startswith("/")
             ):
-                auto_command(ARGS,user_input)
+                auto_command(ARGS, user_input)
 
             elif memory["mode"] == "voice_input" and not user_input.startswith("/"):
                 text = voice_input()
-                new_prompt = "/coding " + text
+                if text:  # Check if text is not None
+                    new_prompt = "/coding " + text
 
             elif user_input.startswith("/voice_input"):
                 text = voice_input()
-                new_prompt = "/coding " + text
+                if text:  # Check if text is not None
+                    new_prompt = "/coding " + text
 
             elif user_input.startswith("/clear") or user_input.startswith("/cls"):
                 print("\033c")                
 
             elif user_input.startswith("/add_files"):
-                args = user_input[len("/add_files"):].strip().split()
+                args = user_input[len("/add_files") :].strip().split()
                 add_files(args)
             elif user_input.startswith("/remove_files"):
-                file_names = user_input[len(
-                    "/remove_files"):].strip().split(",")
+                file_names = user_input[len("/remove_files") :].strip().split(",")
                 remove_files(file_names)
             elif user_input.startswith("/index/query"):
-                query = user_input[len("/index/query"):].strip()
+                query = user_input[len("/index/query") :].strip()
                 index_query(query)
 
             elif user_input.startswith("/index/build"):
                 index_build()
 
             elif user_input.startswith("/index/export"):
-                export_path = user_input[len("/index/export"):].strip()
-                index_export(export_path)                    
+                export_path = user_input[len("/index/export") :].strip()
+                index_export(export_path)
 
             elif user_input.startswith("/index/import"):
-                import_path  = user_input[len("/index/import"):].strip()
-                index_import(import_path)                    
+                import_path = user_input[len("/index/import") :].strip()
+                index_import(import_path)
 
             elif user_input.startswith("/list_files"):
                 list_files()
 
             elif user_input.startswith("/models"):
-                query = user_input[len("/models"):].strip()
+                query = user_input[len("/models") :].strip()
                 if not query:
                     print("Please enter your query.")
                 else:
-                    manage_models(query) 
+                    manage_models(query)
 
             elif user_input.startswith("/mode"):
-                conf = user_input[len("/mode"):].strip()
+                conf = user_input[len("/mode") :].strip()
                 if not conf:
                     print(memory["mode"])
                 else:
-                    memory["mode"] = conf                    
-            
+                    memory["mode"] = conf
+
             elif user_input.startswith("/conf/export"):
                 from autocoder.common.conf_import_export import export_conf
-                export_path = user_input[len("/conf/export"):].strip()
-                export_conf(os.getcwd(), export_path)                    
-            
+
+                export_path = user_input[len("/conf/export") :].strip()
+                export_conf(os.getcwd(), export_path)
+
             elif user_input.startswith("/conf/import"):
                 from autocoder.common.conf_import_export import import_conf
-                import_path = user_input[len("/conf/import"):].strip()
-                import_conf(os.getcwd(), import_path)                    
-                    
+
+                import_path = user_input[len("/conf/import") :].strip()
+                import_conf(os.getcwd(), import_path)
+
+            elif user_input.startswith("/plugins"):
+                # Add a new command to manage plugins
+                args = user_input[len("/plugins") :].strip().split()
+                if not args:
+                    # List all loaded plugins
+                    print("\033[1;34mLoaded Plugins:\033[0m")
+                    for name, plugin in plugin_manager.plugins.items():
+                        print(f"  - {name} (v{plugin.version}): {plugin.description}")
+                elif args[0] == "list":
+                    # List all available plugins
+                    discovered_plugins = plugin_manager.discover_plugins()
+                    print("\033[1;34mAvailable Plugins:\033[0m")
+                    for plugin_class in discovered_plugins:
+                        print(f"  - {plugin_class.__name__}")
+                elif args[0] == "load" and len(args) > 1:
+                    # Load a specific plugin
+                    plugin_name = args[1]
+                    discovered_plugins = {
+                        p.__name__: p for p in plugin_manager.discover_plugins()
+                    }
+                    if plugin_name in discovered_plugins:
+                        if plugin_manager.load_plugin(discovered_plugins[plugin_name]):
+                            print(f"Plugin '{plugin_name}' loaded successfully")
+                    else:
+                        print(f"Plugin '{plugin_name}' not found")
+                elif args[0] == "unload" and len(args) > 1:
+                    # Unload a specific plugin
+                    plugin_name = args[1]
+                    if plugin_name in plugin_manager.plugins:
+                        plugin = plugin_manager.plugins.pop(plugin_name)
+                        plugin.shutdown()
+                        print(f"Plugin '{plugin_name}' unloaded")
+                    else:
+                        print(f"Plugin '{plugin_name}' not loaded")
+                else:
+                    print("Usage: /plugins [list|load <name>|unload <name>]")
+
             elif user_input.startswith("/conf"):
-                conf = user_input[len("/conf"):].strip()
+                conf = user_input[len("/conf") :].strip()
                 if not conf:
                     print_conf(memory["conf"])
                 else:
@@ -370,26 +588,38 @@ def main():
             elif user_input.startswith("/revert"):
                 revert()
             elif user_input.startswith("/commit"):
-                query = user_input[len("/commit"):].strip()
+                query = user_input[len("/commit") :].strip()
                 commit(query)
             elif user_input.startswith("/help"):
-                query = user_input[len("/help"):].strip()
+                query = user_input[len("/help") :].strip()
                 if not query:
                     show_help()
+
+                    # Show plugin commands in help
+                    if plugin_manager.command_handlers:
+                        print("\n\033[1m Plugin Commands: \033[0m")
+                        print("  \033[94mCommand\033[0m - \033[93mDescription\033[0m")
+                        for cmd, (
+                            _,
+                            desc,
+                            plugin_name,
+                        ) in plugin_manager.command_handlers.items():
+                            print(
+                                f"  \033[94m{cmd}\033[0m - \033[92m{desc} (from {plugin_name})\033[0m"
+                            )
                 else:
                     help(query)
 
             elif user_input.startswith("/exclude_dirs"):
-                dir_names = user_input[len(
-                    "/exclude_dirs"):].strip().split(",")
+                dir_names = user_input[len("/exclude_dirs") :].strip().split(",")
                 exclude_dirs(dir_names)
 
             elif user_input.startswith("/exclude_files"):
-                query = user_input[len("/exclude_files"):].strip()                
+                query = user_input[len("/exclude_files") :].strip()
                 exclude_files(query)
 
             elif user_input.startswith("/ask"):
-                query = user_input[len("/ask"):].strip()
+                query = user_input[len("/ask") :].strip()
                 if not query:
                     print("Please enter your question.")
                 else:
@@ -399,64 +629,64 @@ def main():
                 raise EOFError()
 
             elif user_input.startswith("/coding"):
-                query = user_input[len("/coding"):].strip()
+                query = user_input[len("/coding") :].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
                     continue
                 coding(query)
             elif user_input.startswith("/chat"):
-                query = user_input[len("/chat"):].strip()
+                query = user_input[len("/chat") :].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
                 else:
                     chat(query)
 
             elif user_input.startswith("/design"):
-                query = user_input[len("/design"):].strip()
+                query = user_input[len("/design") :].strip()
                 if not query:
                     print("\033[91mPlease enter your design request.\033[0m")
                 else:
                     design(query)
 
             elif user_input.startswith("/summon"):
-                query = user_input[len("/summon"):].strip()
+                query = user_input[len("/summon") :].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
                 else:
                     summon(query)
 
             elif user_input.startswith("/lib"):
-                args = user_input[len("/lib"):].strip().split()
+                args = user_input[len("/lib") :].strip().split()
                 lib_command(args)
 
             elif user_input.startswith("/mcp"):
-                query = user_input[len("/mcp"):].strip()
+                query = user_input[len("/mcp") :].strip()
                 if not query:
                     print("Please enter your query.")
                 else:
                     mcp(query)
 
             elif user_input.startswith("/auto"):
-                query = user_input[len("/auto"):].strip()
-                auto_command(ARGS,query)
+                query = user_input[len("/auto") :].strip()
+                auto_command(ARGS, query)
             elif user_input.startswith("/debug"):
-                code = user_input[len("/debug"):].strip()
+                code = user_input[len("/debug") :].strip()
                 try:
                     result = eval(code)
                     print(f"Debug result: {result}")
                 except Exception as e:
-                    print(f"Debug error: {str(e)}")            
+                    print(f"Debug error: {str(e)}")
 
             # elif user_input.startswith("/shell"):
             else:
                 command = user_input
-                if user_input.startswith("/shell"):                    
-                    command = user_input[len("/shell"):].strip()
+                if user_input.startswith("/shell"):
+                    command = user_input[len("/shell") :].strip()
                     if not command:
                         print("Please enter a shell command to execute.")
                     else:
                         if command.startswith("/chat"):
-                            command = command[len("/chat"):].strip()
+                            command = command[len("/chat") :].strip()
                             gen_and_exec_shell_command(command)
                         else:
                             execute_shell_command(command)
@@ -465,6 +695,9 @@ def main():
             continue
         except EOFError:
             try:
+                # Shutdown all plugins before exiting
+                plugin_manager.shutdown_all()
+
                 save_memory()
                 try:
                     if get_mcp_server():
