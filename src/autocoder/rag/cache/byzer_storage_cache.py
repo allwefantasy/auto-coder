@@ -364,7 +364,7 @@ class ByzerStorageCache(BaseCacheManager):
         self.trigger_update()
 
         if options is None or "query" not in options:
-            return self.cache
+            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
         
         query = options.get("query", "")
         total_tokens = 0    
