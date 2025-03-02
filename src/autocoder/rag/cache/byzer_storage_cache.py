@@ -62,7 +62,8 @@ class ByzerStorageCache(BaseCacheManager):
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
-        self.storage = ByzerStorage("byzerai_store", "rag", "files")
+        self.rag_build_name = extra_params.rag_build_name
+        self.storage = ByzerStorage("byzerai_store", "rag", self.rag_build_name)
         self.queue = []
         self.chunk_size = 1000
         self._init_schema()
@@ -71,6 +72,7 @@ class ByzerStorageCache(BaseCacheManager):
             raise ValueError("extra_params is required for ByzerStorageCache")
 
         self.max_output_tokens = extra_params.hybrid_index_max_output_tokens
+        
 
         # 设置缓存文件路径
         self.cache_dir = os.path.join(self.path, ".cache")

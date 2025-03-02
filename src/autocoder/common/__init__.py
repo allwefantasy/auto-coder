@@ -320,6 +320,7 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     monitor_mode: bool = False
     enable_hybrid_index: bool = False
+    rag_build_name: Optional[str] = None
     disable_auto_window: bool = False
     filter_batch_size: Optional[int] = 5
     disable_segment_reorder: bool = False

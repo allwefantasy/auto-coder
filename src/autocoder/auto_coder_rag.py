@@ -17,6 +17,7 @@ import shlex
 from rich.console import Console
 from rich.table import Table
 import os
+import hashlib
 from loguru import logger
 import asyncio
 from datetime import datetime
@@ -30,6 +31,21 @@ if platform.system() == "Windows":
     from colorama import init
 
     init()
+
+
+def generate_unique_name_from_path(path: str) -> str:
+    """
+    Generate a unique name (MD5 hash) from a path after normalizing it.
+    For Linux/Unix systems, trailing path separators are removed.
+    """
+    if not path:
+        return ""
+    
+    # Normalize the path (resolve absolute path and remove trailing separators)
+    normalized_path = os.path.normpath(os.path.abspath(path))
+    
+    # Generate MD5 hash from the normalized path
+    return hashlib.md5(normalized_path.encode("utf-8")).hexdigest()
 
 
 def initialize_system(args):
@@ -491,6 +507,10 @@ def main(input_args: Optional[List[str]] = None):
             }
         )
 
+        # Generate unique name for RAG build if doc_dir exists
+        if server_args.doc_dir:
+            auto_coder_args.rag_build_name = generate_unique_name_from_path(server_args.doc_dir)
+            logger.info(f"Generated RAG build name: {auto_coder_args.rag_build_name}")
 
         if auto_coder_args.enable_hybrid_index and args.product_mode == "lite":
             raise Exception("Hybrid index is not supported in lite mode")
@@ -500,7 +520,7 @@ def main(input_args: Optional[List[str]] = None):
             try:
                 from byzerllm.apps.byzer_storage.simple_api import ByzerStorage
 
-                storage = ByzerStorage("byzerai_store", "rag", "files")
+                storage = ByzerStorage("byzerai_store", "rag", auto_coder_args.rag_build_name)
                 storage.retrieval.cluster_info("byzerai_store")
             except Exception as e:
                 logger.error(
@@ -611,6 +631,7 @@ def main(input_args: Optional[List[str]] = None):
 
         if server_args.doc_dir:
             auto_coder_args.rag_type = "simple"
+            auto_coder_args.rag_build_name = generate_unique_name_from_path(server_args.doc_dir)
             rag = RAGFactory.get_rag(
                 llm=llm,
                 args=auto_coder_args,
@@ -618,6 +639,7 @@ def main(input_args: Optional[List[str]] = None):
                 tokenizer_path=server_args.tokenizer_path,
             )
         else:
+            auto_coder_args.rag_build_name = generate_unique_name_from_path("")
             rag = RAGFactory.get_rag(llm=llm, args=auto_coder_args, path="")
 
         llm_wrapper = LLWrapper(llm=llm, rag=rag)
@@ -648,6 +670,11 @@ def main(input_args: Optional[List[str]] = None):
             }
         )
 
+        # Generate unique name for RAG build if doc_dir exists
+        if args.doc_dir:
+            auto_coder_args.rag_build_name = generate_unique_name_from_path(args.doc_dir)
+            logger.info(f"Generated RAG build name: {auto_coder_args.rag_build_name}")
+
         auto_coder_args.enable_hybrid_index = True
         auto_coder_args.rag_type = "simple"
 
@@ -675,6 +702,7 @@ def main(input_args: Optional[List[str]] = None):
                 return
             llm.setup_default_emb_model_name("emb")
 
+        auto_coder_args.rag_build_name = generate_unique_name_from_path(args.doc_dir)
         rag = RAGFactory.get_rag(
             llm=llm,
             args=auto_coder_args,
