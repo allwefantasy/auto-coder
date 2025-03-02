@@ -45,13 +45,15 @@ class MyPlugin(Plugin):
     description = "我的自定义插件"
     version = "0.1.0"
     
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, manager, config=None, config_path=None):
+        super().__init__(manager, config, config_path)
         # 初始化您的插件
     
-    def initialize(self, manager):
-        # 注册函数拦截
-        manager.register_function_interception(self.name, "ask")
+    def initialize(self):
+        # 此方法用于插件自身的初始化
+        # 您可以在这里设置资源、注册事件处理程序或执行任何启动任务
+        # 下面的register_function_interception只是一个示例，说明您可能在这里做什么
+        self.manager.register_function_interception(self.name, "ask")
         return True
     
     def get_commands(self):
@@ -83,6 +85,11 @@ class MyPlugin(Plugin):
         # 根据需要修改结果
         return result
     
+    def export_config(self, config_path=None):
+        # 导出插件配置用于持久化存储
+        # 如果不需要配置，返回 None
+        return self.config
+    
     def shutdown(self):
         # 清理资源
         pass
@@ -98,23 +105,36 @@ class MyPlugin(Plugin):
         "src/autocoder/plugins",
         "user_plugins"
     ],
-    "plugins": {
-        "MyPlugin": {
-            "setting1": "value1",
-            "setting2": 42
-        }
-    }
+    "plugins": [
+        "autocoder.plugins.sample_plugin.SamplePlugin",
+        "user_plugins.my_plugin.MyPlugin"
+    ]
 }
 ```
 
-配置将传递给插件的构造函数。
+每个插件的配置单独存储在项目的 `.auto-coder/plugins/{plugin_id}/config.json` 目录中。插件管理器负责加载和保存这些配置。
 
 ## 内置插件
 
 Chat Auto Coder 包含以下插件：
 
 - `SamplePlugin`：演示基本功能的示例插件
+- `DynamicCompletionExamplePlugin`：演示动态命令补全功能的插件
 - `GitHelperPlugin`：Git 命令插件
+
+
+## 插件标识
+
+每个插件通过 `id_name()` 类方法获取完整的模块和类名作为唯一标识符：
+
+```python
+@classmethod
+def id_name(cls) -> str:
+    """返回插件的唯一标识符，包括模块路径"""
+    return f"{cls.__module__}.{cls.__name__}"
+```
+
+此标识符用于插件注册、加载和配置管理。
 
 ## 插件 API 参考
 
@@ -125,13 +145,15 @@ Chat Auto Coder 包含以下插件：
 - `name`：插件名称（字符串）
 - `description`：插件描述（字符串）
 - `version`：插件版本（字符串）
-- `initialize(manager)`：插件加载时调用
+- `initialize()`：插件加载时调用。用于插件自身初始化，例如设置资源、连接服务或任何其他启动任务。初始化成功返回`True`，否则返回`False`。
 - `get_commands()`：返回插件提供的命令字典
 - `get_keybindings()`：返回插件提供的按键绑定列表
 - `get_completions()`：返回命令补全字典
+- `get_dynamic_completions(command, current_input)`：根据输入上下文返回动态补全选项
 - `intercept_command(command, args)`：拦截并可能修改命令
 - `intercept_function(func_name, args, kwargs)`：拦截并可能修改函数调用
 - `post_function(func_name, result)`：处理函数结果
+- `export_config(config_path)`：导出插件配置
 - `shutdown()`：插件卸载或应用程序退出时调用
 
 ### PluginManager 类
@@ -148,4 +170,7 @@ Chat Auto Coder 包含以下插件：
 - `register_function_interception(plugin_name, func_name)`：注册插件对拦截函数的兴趣
 - `get_all_commands()`：获取所有插件的所有命令
 - `get_plugin_completions()`：获取所有插件的命令补全
+- `get_dynamic_completions(command, current_input)`：根据当前输入获取动态补全选项
+- `load_runtime_cfg()`：加载插件的运行时配置
+- `save_runtime_cfg()`：保存插件的运行时配置
 - `shutdown_all()`：关闭所有插件 

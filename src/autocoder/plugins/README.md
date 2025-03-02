@@ -45,13 +45,15 @@ class MyPlugin(Plugin):
     description = "My custom plugin"
     version = "0.1.0"
     
-    def __init__(self, config=None):
-        super().__init__(config)
+    def __init__(self, manager, config=None, config_path=None):
+        super().__init__(manager, config, config_path)
         # Initialize your plugin
     
-    def initialize(self, manager):
-        # Register function interceptions
-        manager.register_function_interception(self.name, "ask")
+    def initialize(self):
+        # This method is for plugin self-initialization
+        # You can set up resources, register event handlers, or perform any startup tasks
+        # The register_function_interception below is just an example of what you might do here
+        self.manager.register_function_interception(self.name, "ask")
         return True
     
     def get_commands(self):
@@ -83,6 +85,11 @@ class MyPlugin(Plugin):
         # Modify result if needed
         return result
     
+    def export_config(self, config_path=None):
+        # Export plugin configuration for persistence
+        # Return None if no configuration is needed
+        return self.config
+    
     def shutdown(self):
         # Clean up resources
         pass
@@ -98,23 +105,36 @@ Plugins can be configured using a JSON file. Example:
         "src/autocoder/plugins",
         "user_plugins"
     ],
-    "plugins": {
-        "MyPlugin": {
-            "setting1": "value1",
-            "setting2": 42
-        }
-    }
+    "plugins": [
+        "autocoder.plugins.sample_plugin.SamplePlugin",
+        "user_plugins.my_plugin.MyPlugin"
+    ]
 }
 ```
 
-The configuration will be passed to the plugin's constructor.
+The configuration for each plugin is stored separately in the project's `.auto-coder/plugins/{plugin_id}/config.json` directory. The plugin manager takes care of loading and saving these configurations.
 
 ## Built-in Plugins
 
 The following plugins are included with Chat Auto Coder:
 
 - `SamplePlugin`: A demonstration plugin showing basic functionality
+- `DynamicCompletionExamplePlugin`: A plugin demonstrating dynamic command completion functionality
 - `GitHelperPlugin`: A git command plugin
+
+
+## Plugin Identification
+
+Each plugin is uniquely identified by its full module and class name through the `id_name()` class method:
+
+```python
+@classmethod
+def id_name(cls) -> str:
+    """Return the unique identifier for the plugin including module path"""
+    return f"{cls.__module__}.{cls.__name__}"
+```
+
+This identifier is used for plugin registration, loading, and configuration management.
 
 ## Plugin API Reference
 
@@ -125,13 +145,15 @@ Base class for all plugins:
 - `name`: Plugin name (string)
 - `description`: Plugin description (string)
 - `version`: Plugin version (string)
-- `initialize(manager)`: Called when the plugin is loaded
+- `initialize()`: Called when the plugin is loaded. Used for plugin self-initialization such as setting up resources, connecting to services, or any other startup tasks. Return `True` if initialization is successful, `False` otherwise.
 - `get_commands()`: Returns a dictionary of commands provided by the plugin
 - `get_keybindings()`: Returns a list of keybindings provided by the plugin
 - `get_completions()`: Returns a dictionary of command completions
+- `get_dynamic_completions(command, current_input)`: Returns dynamic completions based on input context
 - `intercept_command(command, args)`: Intercept and potentially modify commands
 - `intercept_function(func_name, args, kwargs)`: Intercept and potentially modify function calls
 - `post_function(func_name, result)`: Process function results
+- `export_config(config_path)`: Export plugin configuration
 - `shutdown()`: Called when the plugin is unloaded or the application is exiting
 
 ### PluginManager Class
@@ -148,4 +170,7 @@ Manages plugins for the Chat Auto Coder:
 - `register_function_interception(plugin_name, func_name)`: Register a plugin's interest in intercepting a function
 - `get_all_commands()`: Get all commands from all plugins
 - `get_plugin_completions()`: Get command completions from all plugins
+- `get_dynamic_completions(command, current_input)`: Get dynamic completions based on current input
+- `load_runtime_cfg()`: Load runtime configuration for plugins
+- `save_runtime_cfg()`: Save runtime configuration for plugins
 - `shutdown_all()`: Shutdown all plugins 
