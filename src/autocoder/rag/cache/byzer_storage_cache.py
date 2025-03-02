@@ -2,6 +2,8 @@ from autocoder.rag.cache.base_cache import (
     BaseCacheManager,
     DeleteEvent,
     AddOrUpdateEvent,
+    FileInfo,
+    CacheItem
 )
 from typing import Generator, List, Dict, Any, Optional, Tuple
 from autocoder.common import SourceCode
@@ -32,20 +34,7 @@ if platform.system() != "Windows":
 else:
     fcntl = None
 
-# New model class for file information
-class FileInfo(BaseModel):
-    file_path: str
-    relative_path: str
-    modify_time: float
-    file_md5: str
 
-# New model class for cache items
-class CacheItem(BaseModel):
-    file_path: str
-    relative_path: str
-    content: List[Dict[str, Any]]  # Serialized SourceCode objects
-    modify_time: float
-    md5: str
 
 def generate_file_md5(file_path: str) -> str:
     md5_hash = hashlib.md5()
@@ -191,6 +180,9 @@ class ByzerStorageCache(BaseCacheManager):
                     # 释放文件锁
                     fcntl.flock(lockf, fcntl.LOCK_UN)
 
+    def fileinfo_to_tuple(self, file_info: FileInfo) -> Tuple[str, float, str]:
+        return (file_info.file_path, file_info.modify_time, file_info.file_md5)
+
     def build_cache(self):
         """Build the cache by reading files and storing in Byzer Storage"""
         logger.info(f"Building cache for path: {self.path}")
@@ -213,7 +205,10 @@ class ByzerStorageCache(BaseCacheManager):
             initializer=initialize_tokenizer,
             initargs=(VariableHolder.TOKENIZER_PATH,),
         ) as pool:
-            results = pool.map(process_file_in_multi_process, files_to_process)
+            target_files_to_process = []
+            for file_info in files_to_process:
+                target_files_to_process.append(self.fileinfo_to_tuple(file_info))
+            results = pool.map(process_file_in_multi_process, target_files_to_process)
 
         items = []
         for file_info, result in zip(files_to_process, results):            
@@ -330,7 +325,7 @@ class ByzerStorageCache(BaseCacheManager):
                 for file_info in file_list.file_infos:
                     logger.info(f"{file_info.file_path} is detected to be updated")
                     # 处理文件并创建 CacheItem
-                    content = process_file_local(file_info)
+                    content = process_file_local(self.fileinfo_to_tuple(file_info))
                     self.cache[file_info.file_path] = CacheItem(
                         file_path=file_info.file_path,
                         relative_path=file_info.relative_path,
@@ -402,11 +397,11 @@ class ByzerStorageCache(BaseCacheManager):
         for file_path in file_paths:
             if file_path in self.cache:
                 cached_data = self.cache[file_path]
-                for doc in cached_data["content"]:                    
+                for doc in cached_data.content:                    
                     if total_tokens + doc["tokens"] > self.max_output_tokens:
                         return result
                     total_tokens += doc["tokens"]
-                result[file_path] = cached_data
+                result[file_path] = cached_data.model_dump()
 
         return result
 
@@ -440,6 +435,9 @@ class ByzerStorageCache(BaseCacheManager):
                 relative_path = os.path.relpath(file_path, self.path)
                 modify_time = os.path.getmtime(file_path)
                 file_md5 = generate_file_md5(file_path)
-                all_files.append(FileInfo(file_path=file_path, relative_path=relative_path, modify_time=modify_time, file_md5=file_md5))
+                all_files.append(FileInfo(file_path=file_path, 
+                                          relative_path=relative_path, 
+                                          modify_time=modify_time, 
+                                          file_md5=file_md5))
 
         return all_files
