@@ -157,6 +157,78 @@ class IndexManager:
         3. 用途的长度不能超过100字符
         4. 导入语句的分隔符为^^
 
+        一些根据指定条件需要遵守的特殊规则：
+        - 当你遇到文件.jsp文件, 导入语句中需要包含 jsp:include 标签中的文件
+
+        下面是一段示例：
+
+        ## 输入
+        下列是文件 /test.py 的源码：
+
+        import os
+        import time
+        from loguru import logger
+        import byzerllm
+
+        a = ""
+
+        @byzerllm.prompt(render="jinja")
+        def auto_implement_function_template(instruction:str, content:str)->str:
+
+        ## 输出
+        用途：主要用于提供自动实现函数模板的功能。
+        函数：auto_implement_function_template
+        变量：a
+        类：
+        导入语句：import os^^import time^^from loguru import logger^^import byzerllm
+
+        现在，让我们开始一个新的任务:
+
+        ## 输入
+        下列是文件 {{ path }} 的源码：
+
+        {{ code }}
+
+        ## 输出
+        """    
+
+    @byzerllm.prompt()
+    def jsp_get_all_file_symbols(self, path: str, code: str) -> str:
+        """
+        你的目标是从给定的jsp代码中获取代码里的符号，需要获取的符号类型包括：
+
+        1. 函数
+        2. 类
+        3. 变量
+        4. 所有导入语句
+
+        如果没有任何符号,返回空字符串就行。
+        如果有符号，按如下格式返回:
+
+        ```
+        用途：主要用于提供自动实现函数模板的功能。
+        {符号类型}: {符号名称}, {符号名称}, ...
+        ```
+
+        注意：
+        1. 直接输出结果，不要尝试使用任何代码
+        2. 不要分析代码的内容和目的
+        3. 用途的长度不能超过100字符
+        4. 导入语句的分隔符为^^
+        5. 导入语句中需要包含 jsp:include 整个标签，类似 <jsp:include page="/jspf/prelude.jspf" />
+        6. 导入语句中需要包含 form 标签，类似 <form name="ActionPlanLinkedForm" action="/ri/ActionPlanController.do" method="post">
+        7. 导入语句中需要包含 有 src 属性的 script 标签。比如 <script language="script" src="xxx">        
+        8. 导入语句中需要包含 有 src 属性的 link 标签。 比如 <link rel="stylesheet" type="text/css" href="/ri/ui/styles/xptheme.css">
+        9. 导入语句中需要包含 ajax 请求里的url,比如 $.ajax({  
+        type : "post",  
+        url : "admWorkingDay!updateAdmWorkingDayList.action",  中，那么对应的为 <ajax method="post" url="admWorkingDay!updateAdmWorkingDayList.action">
+        10. 导入语句中需要包含超连接，比如 <a href="admRiskLimits!queryAdmRiskLimitsById.action?admRiskLimits.id=${fn:escapeXml(item.id)}">${fn:escapeXml(item.classification)}， 对应的为 <a href="admRiskLimits!queryAdmRiskLimitsById.action"}
+        11. 导入语句中需要包含一些js函数里的值，比如 window.onbeforeunload = function()  {
+	var actionType = document.ap_ActionPlanForm.action.value;
+	if(typeof(window.opener.reloadApCount)!="undefined"&&(actionType&&actionType!='Discard')){
+		}
+}  对应为 <window.onbeforeunload url="from 表单名字为ap_ActionPlanForm的action的值">
+        
         下面是一段示例：
 
         ## 输入
@@ -291,8 +363,15 @@ class IndexManager:
                 symbols = "\n".join(symbols)
             else:
                 meta_holder = byzerllm.MetaHolder()
-                symbols = self.get_all_file_symbols.with_llm(
-                    self.index_llm).with_meta(meta_holder).run(source.module_name, source_code)
+                ext = os.path.splitext(file_path)[1].lower()
+                ## 需要有特殊prompt
+                if ext == ".jsp":
+                    symbols = self.jsp_get_all_file_symbols.with_llm(
+                        self.index_llm).with_meta(meta_holder).run(source.module_name, source_code)
+                else:
+                    symbols = self.get_all_file_symbols.with_llm(
+                        self.index_llm).with_meta(meta_holder).run(source.module_name, source_code)
+                
                 time.sleep(self.anti_quota_limit)
 
                 if meta_holder.get_meta():
