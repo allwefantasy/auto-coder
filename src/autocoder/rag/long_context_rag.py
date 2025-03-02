@@ -631,7 +631,7 @@ class LongContextRAG:
 
             # 记录令牌统计
             request_tokens = sum([doc.tokens for doc in relevant_docs])
-            target_model = model or self.llm.default_model_name
+            target_model = target_llm.default_model_name
             logger.info(
                 f"=== LLM Request ===\n"
                 f"  * Target model: {target_model}\n"
