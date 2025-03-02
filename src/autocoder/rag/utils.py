@@ -11,7 +11,7 @@ import traceback
 
 
 def process_file_in_multi_process(
-    file_info: Tuple[str, str, float]
+    file_info: Tuple[str, str, float, str]
 ) -> List[SourceCode]:
     start_time = time.time()
     file_path, relative_path, _, _ = file_info

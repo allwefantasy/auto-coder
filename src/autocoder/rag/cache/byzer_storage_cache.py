@@ -180,8 +180,8 @@ class ByzerStorageCache(BaseCacheManager):
                     # 释放文件锁
                     fcntl.flock(lockf, fcntl.LOCK_UN)
 
-    def fileinfo_to_tuple(self, file_info: FileInfo) -> Tuple[str, float, str]:
-        return (file_info.file_path, file_info.modify_time, file_info.file_md5)
+    def fileinfo_to_tuple(self, file_info: FileInfo) -> Tuple[str, str, float, str]:
+        return (file_info.file_path, file_info.relative_path, file_info.modify_time, file_info.file_md5)
 
     def build_cache(self):
         """Build the cache by reading files and storing in Byzer Storage"""
