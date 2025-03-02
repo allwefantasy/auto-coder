@@ -384,6 +384,7 @@ class ByzerStorageCache(BaseCacheManager):
         results = query_builder.execute()
 
         # Group results by file_path and reconstruct documents while preserving order
+        # 这里还可以有排序优化，综合考虑一篇内容出现的次数以及排序位置
         file_paths = []
         seen = set()
         for result in results:

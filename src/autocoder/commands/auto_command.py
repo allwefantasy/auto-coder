@@ -175,6 +175,7 @@ class CommandAutoTuner:
         Python版本: {{ env_info.python_version }}
         终端类型: {{ env_info.shell_type }}
         终端编码: {{ env_info.shell_encoding }}
+        当前用户: {{ current_user }}
         
         {%- if shell_type %}
         脚本类型：{{ shell_type }}
@@ -284,7 +285,8 @@ class CommandAutoTuner:
             "shell_type": shell_type,
             "shell_encoding": shells.get_terminal_encoding(),
             "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens,
-            "os_distribution": shells.get_os_distribution()
+            "os_distribution": shells.get_os_distribution(),
+            "current_user": shells.get_current_username()
         }
     
     @byzerllm.prompt()

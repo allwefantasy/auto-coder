@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from rich.live import Live
+import getpass
 
 from autocoder.common.result_manager import ResultManager
 
@@ -548,3 +549,24 @@ set PYTHONIOENCODING=utf-8
                 os.unlink(temp_file.name)
             except Exception:
                 pass
+
+def get_current_username():
+    """
+    Get the current username across different operating systems.
+    
+    Returns:
+        str: The current username.
+    """
+    try:
+        # getpass.getuser() works on Windows, macOS, and Linux
+        username = getpass.getuser()
+        return username
+    except Exception:
+        # Fallback methods if getpass.getuser() fails
+        try:
+            if platform.system() == 'Windows':
+                return os.environ.get('USERNAME', '')
+            else:  # macOS/Linux
+                return os.environ.get('USER', '')
+        except Exception:
+            return ''
