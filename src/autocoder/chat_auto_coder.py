@@ -333,9 +333,6 @@ def main():
     if os.path.isdir(default_plugin_dir):
         plugin_manager.add_plugin_directory(default_plugin_dir)
 
-    # 加载运行时配置
-    plugin_manager.load_runtime_cfg()
-
     # Load plugin configuration, specifically from the command line
     plugin_config = {}
     if ARGS.plugin_config and os.path.exists(ARGS.plugin_config):
@@ -361,6 +358,8 @@ def main():
             else:
                 print(f"Plugin '{plugin_name}' not found")
 
+    # 加载保存的运行时配置
+    plugin_manager.load_runtime_cfg()
 
     load_memory()
     memory = get_memory()
