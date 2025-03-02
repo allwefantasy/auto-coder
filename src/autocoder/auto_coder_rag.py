@@ -658,10 +658,7 @@ def main(input_args: Optional[List[str]] = None):
             logger.warning(f"Failed to save service info: {str(e)}")
         
         serve(llm=llm_wrapper, args=server_args)
-    elif args.command == "build_hybrid_index":
-        if not args.quick:
-            initialize_system()
-
+    elif args.command == "build_hybrid_index":        
         auto_coder_args = AutoCoderArgs(
             **{
                 arg: getattr(args, arg)
