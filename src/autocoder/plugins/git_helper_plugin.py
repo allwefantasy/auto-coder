@@ -17,11 +17,10 @@ class GitHelperPlugin(Plugin):
     description = "Git helper plugin providing Git commands and status"
     version = "0.1.0"
 
-    def __init__(self, config=None):
+    def __init__(self, manager: PluginManager, config: Optional[Dict[str, Any]] = None, config_path: Optional[str] = None):
         """Initialize the Git helper plugin."""
-        super().__init__(config)
+        super().__init__(manager, config, config_path)
         self.git_available = self._check_git_available()
-        self.config = config or {}
         self.default_branch = self.config.get("default_branch", "main")
 
     def _check_git_available(self) -> bool:
@@ -37,11 +36,8 @@ class GitHelperPlugin(Plugin):
         except Exception:
             return False
 
-    def initialize(self, manager: PluginManager) -> bool:
+    def initialize(self) -> bool:
         """Initialize the plugin.
-
-        Args:
-            manager: The plugin manager instance
 
         Returns:
             True if initialization was successful

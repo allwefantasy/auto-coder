@@ -8,6 +8,7 @@ import inspect
 import os
 import sys
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
+from autocoder.plugins.utils import load_json_file, save_json_file
 
 
 class Plugin:
@@ -16,6 +17,7 @@ class Plugin:
     name: str = "base_plugin" # 插件名称
     description: str = "Base plugin class" # 插件描述
     version: str = "0.1.0" # 插件版本
+    manager: "PluginManager"  # 插件管理器
     
 
     @classmethod
@@ -28,20 +30,26 @@ class Plugin:
         """返回插件的名称，不包括插件目录和插件文件名"""
         return cls.__name__
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, manager: "PluginManager", config: Optional[Dict[str, Any]] = None, config_path: Optional[str] = None):
         """Initialize the plugin.
 
         Args:
+            manager: The plugin manager instance
             config: Optional configuration dictionary for the plugin
+            config_path: Optional path to the configuration file
         """
         self.config = config or {}
+        self.config_path = config_path
+        self.manager = manager
 
-    def initialize(self, manager: "PluginManager") -> bool:
-        """Initialize the plugin. Called when the plugin is loaded.
 
-        Args:
-            manager: The plugin manager instance
-
+    def initialize(self) -> bool:
+        """Initialize the plugin.
+        
+        This method is called after the plugin instance is created but before
+        it is registered with the plugin manager. Override this method to
+        perform any initialization tasks.
+        
         Returns:
             True if initialization was successful, False otherwise
         """
@@ -71,16 +79,80 @@ class Plugin:
         """
         return {}
 
-    def export_config(self) -> Optional[Dict[str, Any]]:
+    def load_config(self, config_path: Optional[str] = None) -> bool:
+        """加载插件配置。
+
+        Args:
+            config_path: 配置文件路径。如果提供，将覆盖插件的 config_path 属性。
+
+        Returns:
+            加载成功返回 True，否则返回 False
+        """
+        # 如果提供了新的配置路径，则更新 self.config_path
+        if config_path:
+            self.config_path = config_path
+            
+        # 如果没有配置路径，则无法加载
+        if not self.config_path:
+            return False
+            
+        # 尝试从文件加载配置
+        try:
+            import json
+            import os
+            
+            if os.path.exists(self.config_path):
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    self.config = json.load(f)
+                return True
+            else:
+                # 配置文件不存在，但路径有效，视为成功
+                return True
+        except Exception as e:
+            print(f"Error loading plugin config from {self.config_path}: {e}")
+            return False
+
+    def export_config(self, config_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """导出插件配置，用于持久化存储。
 
-        默认实现会返回插件的 self.config 属性。
+        默认实现会返回插件的 self.config 属性，并将配置保存到 self.config_path 或提供的 config_path。
         子类可以覆盖此方法，以提供自定义的配置导出逻辑。
+
+        Args:
+            config_path: 配置文件保存路径。如果提供，将覆盖插件的 config_path 属性。
 
         Returns:
             包含插件配置的字典，如果没有配置需要导出则返回 None
         """
-        return self.config if self.config else None
+        # 如果没有配置，则返回 None
+        if not self.config:
+            return None
+            
+        # 更新配置路径（如果提供）
+        if config_path:
+            self.config_path = config_path
+            
+        # 通过插件管理器获取插件配置路径
+        config_path = self.manager.get_plugin_config_path(self.id_name())
+        if config_path:
+            self.config_path = config_path
+        
+        # 如果有配置路径，则保存至文件
+        if self.config_path:
+            try:
+                import json
+                import os
+                
+                # 确保目录存在
+                os.makedirs(os.path.dirname(os.path.abspath(self.config_path)), exist_ok=True)
+                
+                # 保存配置到文件
+                with open(self.config_path, 'w', encoding='utf-8') as f:
+                    json.dump(self.config, f, indent=2, ensure_ascii=False)
+            except Exception as e:
+                print(f"Error saving plugin config to {self.config_path}: {e}")
+                
+        return self.config
 
     def get_dynamic_completions(
         self, command: str, current_input: str
@@ -160,7 +232,6 @@ class PluginManager:
             {}
         )  # function_name -> [plugin_names]
         self.plugin_dirs: List[str] = []
-        self.runtime_cfg_path = None
         self._discover_plugins_cache: List[Type[Plugin]] = None  # type: ignore
 
     @property
@@ -179,8 +250,7 @@ class PluginManager:
             self.plugin_dirs.append(directory)
             if directory not in sys.path:
                 sys.path.append(directory)
-            # 当目录变化时保存配置
-            self.save_runtime_cfg()
+            # 当目录变化时，清空缓存
             self._discover_plugins_cache = None  # type: ignore
 
     def discover_plugins(self) -> List[Type[Plugin]]:
@@ -242,19 +312,33 @@ class PluginManager:
             True if the plugin was loaded successfully, False otherwise
         """
         try:
-            plugin = plugin_class(config)
-            plugin_name = plugin.plugin_name()
-            if plugin.initialize(self):
-                self.plugins[plugin_name] = plugin
+            # 获取插件名称和插件ID
+            # plugin_name = plugin_class.plugin_name()
+            plugin_id = plugin_class.id_name()
+            
+            # 获取插件配置路径
+            config_path = self.get_plugin_config_path(plugin_id)
+            
+            # 创建插件实例，传入 manager(self) 作为第一个参数
+            plugin = plugin_class(self, config, config_path)
+            
+            # 如果未提供配置但配置路径存在，尝试加载配置
+            if not config and config_path:
+                plugin.load_config()
+                
+            # 调用插件的 initialize 方法，只有成功初始化的插件才会被添加
+            if not plugin.initialize():
+                print(f"Plugin {plugin_id} initialization failed")
+                return False
+            
+            # 将插件添加到已加载插件字典中
+            self.plugins[plugin_id] = plugin
 
-                # Register commands
-                for cmd, (handler, desc) in plugin.get_commands().items():
-                    self.command_handlers[f"/{cmd}"] = (handler, desc, plugin_name)
+            # Register commands
+            for cmd, (handler, desc) in plugin.get_commands().items():
+                self.command_handlers[f"/{cmd}"] = (handler, desc, plugin_id)
 
-                # 当插件加载成功时保存配置
-                self.save_runtime_cfg()
-                return True
-            return False
+            return True
         except Exception as e:
             print(f"Error loading plugin {plugin_class.__name__}: {e}")
             return False
@@ -270,25 +354,35 @@ class PluginManager:
                 self.add_plugin_directory(directory)
 
         if "plugins" in config:
-            discovered_plugins = {p.plugin_name(): p for p in self.discover_plugins()}
-            for plugin_name, plugin_config in config["plugins"].items():
-                if plugin_name in discovered_plugins:
-                    self.load_plugin(discovered_plugins[plugin_name], plugin_config)
+            discovered_plugins = {p.id_name(): p for p in self.cached_discover_plugins}
+            
+            for plugin_id in config["plugins"]:
+                if plugin_id in discovered_plugins:
+                    self.load_plugin(discovered_plugins[plugin_id])
 
     def get_plugin(self, name: str) -> Optional[Plugin]:
-        """Get a plugin by name.
+        """Get a plugin by name or full class name.
 
         Args:
-            name: The name of the plugin
+            name: The name or full class name of the plugin
 
         Returns:
             The plugin instance, or None if not found
         """
-        return self.plugins.get(name)
+        # 直接通过全类名查找 (优先), name 是 plugin_id
+        if name in self.plugins:
+            return self.plugins[name]
+            
+        # 如果没找到，尝试通过简单名称查找
+        for plugin in self.plugins.values():
+            if plugin.plugin_name() == name or plugin.name == name:
+                return plugin
+                
+        return None
 
     def process_command(
         self, full_command: str
-    ) -> Optional[Tuple[str, Callable, List[str]]]:
+    ) -> Optional[Tuple[str, Optional[Callable], List[str]]]:
         """Process a command, allowing plugins to intercept it.
 
         Args:
@@ -315,8 +409,8 @@ class PluginManager:
             if not should_continue:
                 if modified_command and modified_command in self.command_handlers:
                     handler, _, handler_plugin = self.command_handlers[modified_command]
-                    return handler_plugin, handler, [modified_args]
-                return plugin_name, None, [modified_command, modified_args]
+                    return handler_plugin, handler, [modified_args] if modified_args is not None else [""]
+                return plugin_name, None, [modified_command or "", modified_args or ""]
 
         # Check if this is a registered plugin command
         if command in self.command_handlers:
@@ -436,12 +530,25 @@ class PluginManager:
                 plugin_prefix = parts[2]
 
             # 获取所有可用的插件
-            discovered_plugins = {p.plugin_name(): p for p in self.cached_discover_plugins}
+            discovered_plugins = self.cached_discover_plugins
+            
+            # 记录已经添加的显示名称，避免重复
+            added_display_names = set()
 
             # 过滤出与前缀匹配的插件名称
-            for plugin_name in discovered_plugins.keys():
-                if plugin_name.startswith(plugin_prefix):
-                    completions.append((plugin_name, plugin_name))
+            for plugin_class in discovered_plugins:
+                plugin_name = plugin_class.name
+                plugin_class_name = plugin_class.plugin_name()
+                display_name = f"{plugin_class_name} ({plugin_name})"
+                
+                # 首先尝试匹配插件短名称
+                if plugin_name.startswith(plugin_prefix) and display_name not in added_display_names:
+                    completions.append((plugin_name, display_name))
+                    added_display_names.add(display_name)
+                # 如果类名与短名称不同，也尝试匹配类名
+                elif plugin_class_name.startswith(plugin_prefix) and plugin_class_name != plugin_name and display_name not in added_display_names:
+                    completions.append((plugin_class_name, display_name))
+                    added_display_names.add(display_name)
 
         elif command == "/plugins unload":
             # 提供已加载插件列表作为补全选项
@@ -449,22 +556,32 @@ class PluginManager:
             if len(parts) > 2:
                 plugin_prefix = parts[2]
 
+            # 记录已经添加的显示名称，避免重复
+            added_display_names = set()
+                
             # 获取所有已加载的插件
-            for plugin_name in self.plugins.keys():
-                if plugin_name.startswith(plugin_prefix):
-                    completions.append((plugin_name, plugin_name))
+            for plugin_id, plugin in self.plugins.items():
+                plugin_name = plugin.name
+                plugin_class_name = plugin.plugin_name()
+                display_name = f"{plugin_class_name} ({plugin_name})"
+                
+                # 首先尝试匹配插件短名称
+                if plugin_name.startswith(plugin_prefix) and display_name not in added_display_names:
+                    completions.append((plugin_name, display_name))
+                    added_display_names.add(display_name)
+                # 如果类名与短名称不同，也尝试匹配类名
+                elif plugin_class_name.startswith(plugin_prefix) and plugin_class_name != plugin_name and display_name not in added_display_names:
+                    completions.append((plugin_class_name, display_name))
+                    added_display_names.add(display_name)
 
         # 检查是否有插件提供了此命令的动态补全
         for plugin in self.plugins.values():
-            # 检查插件是否有 get_dynamic_completions 方法
-            if hasattr(plugin, "get_dynamic_completions") and callable(
-                getattr(plugin, "get_dynamic_completions")
-            ):
-                plugin_completions = plugin.get_dynamic_completions(
-                    command, current_input
-                )
-                if plugin_completions:
-                    completions.extend(plugin_completions)
+            # 检查插件是否有 dynamic_completions
+            plugin_completions = plugin.get_dynamic_completions(
+                command, current_input
+            )
+            if plugin_completions:
+                completions.extend(plugin_completions)
 
         # 更多命令的动态补全逻辑可以在这里添加
         # 例如：处理 "/git/checkout" 提供分支名补全等
@@ -485,107 +602,74 @@ class PluginManager:
         pass
     
     def project_root(self) -> Optional[str]:
-        """检查当前是否在项目根目录。如果是，返回目录，否则返回None"""
+        """检查当前是否在项目根目录。如果是,返回目录,否则返回None"""
         current_dir = os.getcwd()
         _root = os.path.join(current_dir, ".auto-coder")
         if os.path.exists(_root):
             return _root
         return None
 
-    def load_runtime_cfg(self, cfg_path: Optional[str] = None) -> None:
-        """从指定路径或默认路径加载运行时配置。
-
-        Args:
-            cfg_path: 配置文件路径，默认为项目根目录下的 .auto-coder/plugins.json
+    def load_runtime_cfg(self) -> None:
+        """从项目根目录加载运行时配置。
+        
+        只加载插件目录和插件列表信息，具体配置由插件自行加载。
         """
-        import json
-        import os
-
-        if cfg_path:
-            self.runtime_cfg_path = cfg_path
-        else:
-            # 如果当前在项目根目录，则使用项目根目录下的 .auto-coder/plugins.json
-            project_root = self.project_root()
-            if project_root:
-                self.runtime_cfg_path = os.path.join(project_root, "plugins.json")
-                os.makedirs(os.path.dirname(self.runtime_cfg_path), exist_ok=True)
-
-        if not self.runtime_cfg_path:
+        # 检查是否有项目根目录
+        project_root = self.project_root()
+        if not project_root:
             return
-
-        # 如果配置文件存在，则加载它
-        if os.path.exists(self.runtime_cfg_path):
-            try:
-                with open(self.runtime_cfg_path, "r") as f:
-                    config = json.load(f)
-
-                # 添加插件目录
-                if "plugin_dirs" in config:
-                    for directory in config["plugin_dirs"]:
-                        if os.path.isdir(directory):
-                            self.add_plugin_directory(directory)
-
-                # 加载插件
-                if "plugins" in config:
-                    discovered_plugins = {
-                        p.plugin_name(): p for p in self.discover_plugins()
-                    }
-                    print(f"Loaded plugin configuration from {self.runtime_cfg_path}")
-                    print(f'discovered_plugins: {discovered_plugins}')
-                    print(f'config["plugins"]: {config["plugins"]}')
-                    
-                    for plugin_name in config["plugins"]:
-                        if (
-                            plugin_name in discovered_plugins
-                            and plugin_name not in self.plugins
-                        ):
-                            config_key = discovered_plugins[plugin_name].id_name()
-                            plugin_config = config.get("plugin_config", {}).get(
-                                config_key, {}
-                            )
-                            self.load_plugin(
-                                discovered_plugins[plugin_name], plugin_config
-                            )
-
-                print(f"Loaded plugin configuration from {self.runtime_cfg_path}")
-            except Exception as e:
-                print(f"Error loading plugin configuration: {e}")
-        else:
-            print(f"No plugin configuration found at {self.runtime_cfg_path}")
-
-    def save_runtime_cfg(self) -> None:
-        """将当前插件配置保存到运行时配置文件。"""
-        import json
-        import os
-
-        if not self.runtime_cfg_path:
+        # 加载插件列表和目录
+        plugins_json_path = os.path.join(project_root, "plugins.json")
+        if not os.path.exists(plugins_json_path):
             return
-
-        # 构建配置字典
-        config = {
-            "plugin_dirs": self.plugin_dirs,
-            "plugins": list(self.plugins.keys()),
-            "plugin_config": {},
-        }
-
-        # 添加插件配置（如果插件提供了配置导出功能）
-        for name, plugin in self.plugins.items():
-            if hasattr(plugin, "export_config") and callable(
-                getattr(plugin, "export_config")
-            ):
-                try:
-                    plugin_config = plugin.export_config()
-                    config_key = plugin.id_name()
-                    if plugin_config:
-                        config["plugin_config"][config_key] = plugin_config
-                except Exception as e:
-                    print(f"Error exporting config for plugin {name}: {e}")
 
         try:
-            with open(self.runtime_cfg_path, "w") as f:
-                json.dump(config, f, indent=2)
+            config = load_json_file(plugins_json_path)
+
+            # 添加插件目录
+            if "plugin_dirs" in config:
+                for directory in config["plugin_dirs"]:
+                    if os.path.isdir(directory):
+                        self.add_plugin_directory(directory)
+
+            # 加载插件 - 在 load_plugin 方法中会自动加载插件的配置
+            if "plugins" in config:
+                discovered_plugins = {
+                    p.id_name(): p for p in self.cached_discover_plugins
+                }
+                
+                for plugin_id in config["plugins"]:
+                    if plugin_id in discovered_plugins and plugin_id not in self.plugins:
+                        # 加载插件 - 配置会在 load_plugin 方法中处理
+                        self.load_plugin(discovered_plugins[plugin_id])
+                # print(f"Successfully loaded plugins: {list(self.plugins.keys())}")
         except Exception as e:
-            print(f"Error saving plugin configuration: {e}")
+            print(f"Error loading plugin configuration: {e}")
+
+    def save_runtime_cfg(self) -> None:
+        """将当前插件配置保存到运行时配置文件。
+        
+        只保存插件目录和插件列表信息，具体配置由插件自行保存。
+        """
+        # 检查是否有项目根目录
+        project_root = self.project_root()
+        if not project_root:
+            return
+
+        # 保存插件目录和加载的插件列表
+        plugins_json_path = os.path.join(project_root, "plugins.json")
+        config = {
+            "plugin_dirs": self.plugin_dirs,
+            "plugins": list(self.plugins.keys())
+        }
+        
+        try:
+            save_json_file(plugins_json_path, config)
+            # 提示插件保存其配置
+            for plugin in self.plugins.values():
+                plugin.export_config()
+        except Exception as e:
+            print(f"Error saving plugins list: {e}")
 
     def shutdown_all(self) -> None:
         """Shutdown all plugins."""
@@ -616,9 +700,9 @@ class PluginManager:
         if not args:
             # 列出所有已加载的插件
             print("\033[1;34mLoaded Plugins:\033[0m", file=output)
-            for name, plugin in self.plugins.items():
+            for plugin_id, plugin in self.plugins.items():
                 print(
-                    f"  - {name} (v{plugin.version}): {plugin.description}", file=output
+                    f"  - {plugin.name} (v{plugin.version}): {plugin.description}", file=output
                 )
 
         elif args[0] == "list":
@@ -626,31 +710,46 @@ class PluginManager:
             discovered_plugins = self.discover_plugins()
             print("\033[1;34mAvailable Plugins:\033[0m", file=output)
             for plugin_class in discovered_plugins:
-                print(f"  - {plugin_class.__name__}", file=output)
+                # 显示插件的短名称而不是完整ID
+                print(f"  - {plugin_class.plugin_name()} ({plugin_class.name}): {plugin_class.description}", file=output)
 
         elif args[0] == "load" and len(args) > 1:
             # 加载特定的插件
             plugin_name = args[1]
-            discovered_plugins = {p.__name__: p for p in self.cached_discover_plugins}
-            if plugin_name in discovered_plugins:
-                if self.load_plugin(discovered_plugins[plugin_name]):
-                    print(f"Plugin '{plugin_name}' loaded successfully", file=output)
-                    # 加载插件后已在 load_plugin 方法中保存配置
-                else:
-                    print(f"Failed to load plugin '{plugin_name}'", file=output)
-            else:
+            discovered_plugins = self.cached_discover_plugins
+            
+            # 使用简短名称查找插件
+            found = False
+            for plugin_class in discovered_plugins:
+                if plugin_class.plugin_name() == plugin_name or plugin_class.name == plugin_name:
+                    if self.load_plugin(plugin_class):
+                        print(f"Plugin '{plugin_name}' loaded successfully", file=output)
+                        # 加载插件后已在 load_plugin 方法中保存配置
+                    else:
+                        print(f"Failed to load plugin '{plugin_name}'", file=output)
+                    found = True
+                    break
+            
+            if not found:
                 print(f"Plugin '{plugin_name}' not found", file=output)
 
         elif args[0] == "unload" and len(args) > 1:
             # 卸载特定的插件
             plugin_name = args[1]
-            if plugin_name in self.plugins:
-                plugin = self.plugins.pop(plugin_name)
-                plugin.shutdown()
-                print(f"Plugin '{plugin_name}' unloaded", file=output)
-                # 卸载插件后保存配置
-                self.save_runtime_cfg()
-            else:
+            found = False
+            
+            # 使用简短名称查找插件
+            for plugin_id, plugin in list(self.plugins.items()):
+                if plugin.plugin_name() == plugin_name or plugin.name == plugin_name:
+                    plugin = self.plugins.pop(plugin_id)
+                    plugin.shutdown()
+                    print(f"Plugin '{plugin_name}' unloaded", file=output)
+                    # 卸载插件后保存配置
+                    self.save_runtime_cfg()
+                    found = True
+                    break
+            
+            if not found:
                 print(f"Plugin '{plugin_name}' not loaded", file=output)
 
         else:
@@ -683,3 +782,22 @@ class PluginManager:
                     print(f"Error applying keybinding '{key_combination}' from plugin '{plugin_key}': {e}")
         
         return
+
+    def get_plugin_config_path(self, plugin_id: str) -> Optional[str]:
+        """获取插件配置文件的路径。
+
+        Args:
+            plugin_id: 插件的唯一标识符 (plugin.id_name())
+
+        Returns:
+            配置文件路径，如果项目根目录不存在则返回 None
+        """
+        # 检查是否有项目根目录
+        project_root = self.project_root()
+        if not project_root:
+            return None
+            
+        # 创建配置目录和文件路径
+        config_dir = os.path.join(project_root, "plugins", plugin_id)
+        os.makedirs(config_dir, exist_ok=True)
+        return os.path.join(config_dir, "config.json")

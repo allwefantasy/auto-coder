@@ -17,16 +17,13 @@ class SamplePlugin(Plugin):
     description = "A sample plugin demonstrating the plugin system features"
     version = "0.1.0"
 
-    def __init__(self, config=None):
+    def __init__(self, manager: PluginManager, config: Optional[Dict[str, Any]] = None, config_path: Optional[str] = None):
         """Initialize the sample plugin."""
-        super().__init__(config)
+        super().__init__(manager, config, config_path)
         self.counter = 0
 
-    def initialize(self, manager: PluginManager) -> bool:
+    def initialize(self) -> bool:
         """Initialize the plugin.
-
-        Args:
-            manager: The plugin manager instance
 
         Returns:
             True if initialization was successful
@@ -34,8 +31,8 @@ class SamplePlugin(Plugin):
         print(f"[{self.name}] Initializing sample plugin")
 
         # Register interest in intercepting functions
-        manager.register_function_interception(self.name, "ask")
-        manager.register_function_interception(self.name, "coding")
+        self.manager.register_function_interception(self.name, "ask")
+        self.manager.register_function_interception(self.name, "coding")
 
         return True
 

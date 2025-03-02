@@ -13,29 +13,28 @@ class DynamicCompletionExamplePlugin(Plugin):
     description = "Demonstrates the dynamic completion feature"
     version = "0.1.0"
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        """Initialize the plugin.
-
-        Args:
-            config: Optional configuration dictionary for the plugin
-        """
-        super().__init__(config)
-        self.items = ["item1", "item2", "item3", "custom_item"]
-
-    def initialize(self, manager: PluginManager) -> bool:
+    def __init__(self, manager: PluginManager, config: Optional[Dict[str, Any]] = None, config_path: Optional[str] = None):
         """Initialize the plugin.
 
         Args:
             manager: The plugin manager instance
+            config: Optional configuration dictionary for the plugin
+            config_path: Optional path to the configuration file
+        """
+        super().__init__(manager, config, config_path)
+        self.items = ["item1", "item2", "item3", "custom_item"]
+
+    def initialize(self) -> bool:
+        """Initialize the plugin.
 
         Returns:
             True if initialization was successful, False otherwise
         """
         # Register for function interception if needed
-        # manager.register_function_interception(self.name, "ask")
+        # self.manager.register_function_interception(self.name, "ask")
 
         # Register as a dynamic completion provider
-        manager.register_dynamic_completion_provider(self.name, ["/example"])
+        self.manager.register_dynamic_completion_provider(self.name, ["/example"])
 
         return True
 
