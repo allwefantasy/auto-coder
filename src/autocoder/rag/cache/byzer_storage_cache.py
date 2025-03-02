@@ -191,7 +191,7 @@ class ByzerStorageCache(BaseCacheManager):
         for file_info in self.get_all_files():            
             if (
                 file_info.file_path not in self.cache                
-                or self.cache[file_info.file_path]["md5"] != file_info.file_md5
+                or self.cache[file_info.file_path].md5 != file_info.file_md5
             ):
                 files_to_process.append(file_info)
                 
