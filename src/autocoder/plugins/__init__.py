@@ -638,3 +638,28 @@ class PluginManager:
             print("Usage: /plugins [list|load <name>|unload <name>]", file=output)
 
         return output.getvalue()
+
+    def apply_keybindings(self, kb) -> None:
+        """将所有插件的键盘绑定应用到提供的键盘绑定器对象。
+        
+        此方法迭代所有已加载的插件，获取它们的键盘绑定，并将这些绑定应用到键盘绑定器。
+        这样可以将键盘绑定的处理逻辑集中在 PluginManager 中，减少外部代码的耦合。
+        
+        Args:
+            kb: 键盘绑定器对象，必须有一个 add 方法，该方法返回一个可调用对象用于注册处理程序
+        """
+        # 检查键盘绑定器是否有 add 方法
+        if not hasattr(kb, 'add') or not callable(getattr(kb, 'add')):
+            raise ValueError("键盘绑定器必须有一个可调用的 add 方法")
+        
+        # 迭代所有插件
+        for plugin_key, plugin in self.plugins.items():
+            # 获取插件的键盘绑定
+            for key_combination, handler, description in plugin.get_keybindings():
+                # 应用键盘绑定
+                try:
+                    kb.add(key_combination)(handler)
+                except Exception as e:
+                    print(f"Error applying keybinding '{key_combination}' from plugin '{plugin_key}': {e}")
+        
+        return

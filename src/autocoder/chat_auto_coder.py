@@ -311,6 +311,18 @@ def main():
     if ARGS.pro:
         ARGS.product_mode = "pro"
 
+    if not ARGS.quick:
+        initialize_system(
+            InitializeSystemRequest(
+                product_mode=ARGS.product_mode,
+                skip_provider_selection=ARGS.skip_provider_selection,
+                debug=ARGS.debug,
+                quick=ARGS.quick,
+                lite=ARGS.lite,
+                pro=ARGS.pro,
+            )
+        )
+
     # Initialize plugin system
     if ARGS.plugin_dirs:
         for directory in ARGS.plugin_dirs:
@@ -349,17 +361,6 @@ def main():
             else:
                 print(f"Plugin '{plugin_name}' not found")
 
-    if not ARGS.quick:
-        initialize_system(
-            InitializeSystemRequest(
-                product_mode=ARGS.product_mode,
-                skip_provider_selection=ARGS.skip_provider_selection,
-                debug=ARGS.debug,
-                quick=ARGS.quick,
-                lite=ARGS.lite,
-                pro=ARGS.pro,
-            )
-        )
 
     load_memory()
     memory = get_memory()
@@ -417,10 +418,8 @@ def main():
         configure(f"human_as_model:{new_status}", skip_print=True)
         event.app.invalidate()
 
-    # Add plugin keybindings
-    for plugin in plugin_manager.plugins.values():
-        for key_combination, handler, description in plugin.get_keybindings():
-            kb.add(key_combination)(handler)
+    # 应用插件的键盘绑定
+    plugin_manager.apply_keybindings(kb)
 
     def get_bottom_toolbar():
         if "mode" not in memory:
