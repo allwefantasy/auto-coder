@@ -1,0 +1,33 @@
+{
+    "plugin_dirs": [
+        "src/autocoder/plugins",
+        "user_plugins"
+    ],
+    "plugins": {
+        "SamplePlugin": {
+            "initial_counter": 0,
+            "enabled_features": [
+                "logging",
+                "command_interception"
+            ],
+            "custom_settings": {
+                "prefix": "[Enhanced] ",
+                "logging_level": "info"
+            }
+        },
+        "GitHelperPlugin": {
+            "default_branch": "main",
+            "auto_push": false,
+            "enabled_features": [
+                "status",
+                "commit",
+                "branch",
+                "checkout",
+                "diff",
+                "log",
+                "pull",
+                "push"
+            ]
+        }
+    }
+}

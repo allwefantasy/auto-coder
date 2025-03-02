@@ -131,16 +131,18 @@ MESSAGES = {
         "files_removed": "Files Removed",
         "models_api_key_empty": "Warning : {{name}} API key is empty. Please set a valid API key.",
         "commit_generating": "{{ model_name }} Generating commit message...",
-        "auto_command_reasoning_title": "Reply", 
+        "auto_command_reasoning_title": "Reply",
         "commit_message": "{{ model_name }} Generated commit message: {{ message }}",
         "commit_failed": "{{ model_name }} Failed to generate commit message: {{ error }}",
         "confirm_execute": "Do you want to execute this script?",
         "official_doc": "Official Documentation: https://uelng8wukz.feishu.cn/wiki/NhPNwSRcWimKFIkQINIckloBncI",
+        "plugins_desc": "Manage plugins",
+        "plugins_usage": "Usage: /plugins <command>\nAvailable subcommands:\n  /list - List all plugins\n  /add <name> - Add a plugin\n  /remove <name> - Remove a plugin\n  /enable <name> - Enable a plugin\n  /disable <name> - Disable a plugin\n  /reload - Reload all plugins\n  /help - Show this help message",
     },
     "zh": {
         "auto_command_analyzing": "正在分析命令请求",
         "commit_generating": "{{ model_name }} 正在生成提交信息...",
-        "auto_command_reasoning_title": "回复", 
+        "auto_command_reasoning_title": "回复",
         "commit_message": "{{ model_name }} 生成的提交信息: {{ message }}",
         "commit_failed": "{{ model_name }} 生成提交信息失败: {{ error }}",
         "mcp_remove_error": "移除 MCP 服务器时出错:{error}",
@@ -271,7 +273,9 @@ MESSAGES = {
         "models_api_key_empty": "警告:  {{name}}  API key 为空。请设置一个有效的 API key。",
         "confirm_execute": "是否执行此脚本?",
         "official_doc": "官方文档: https://uelng8wukz.feishu.cn/wiki/NhPNwSRcWimKFIkQINIckloBncI",
-    }
+        "plugins_desc": "管理插件",
+        "plugins_usage": "用法: /plugins <命令>\n可用的子命令:\n  /list - 列出所有插件\n  /add <名称> - 添加一个插件\n  /remove <名称> - 移除一个插件\n  /enable <名称> - 启用一个插件\n  /disable <名称> - 禁用一个插件\n  /reload - 重新加载所有插件\n  /help - 显示此帮助消息",
+    },
 }
 
 
@@ -279,12 +283,12 @@ def get_system_language():
     try:
         return locale.getdefaultlocale()[0][:2]
     except:
-        return 'en'
+        return "en"
 
 
 def get_message(key):
     lang = get_system_language()
-    return MESSAGES.get(lang, MESSAGES['en']).get(key, MESSAGES['en'][key])
+    return MESSAGES.get(lang, MESSAGES["en"]).get(key, MESSAGES["en"][key])
 
 
 def get_message_with_format(msg_key: str, **kwargs):
