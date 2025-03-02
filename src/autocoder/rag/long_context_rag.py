@@ -71,15 +71,21 @@ class LongContextRAG:
         tokenizer_path: Optional[str] = None,
     ) -> None:
         self.llm = llm
-        self.args = args
-        if args.product_mode == "pro":
-            self.index_model = byzerllm.ByzerLLM()
-            self.index_model.setup_default_model_name(
-                args.index_model or self.llm.default_model_name
-            )
-        else:
-            self.index_model = self.llm
+        self.recall_llm = self.llm
+        self.chunk_llm = self.llm
+        self.qa_llm = self.llm
 
+        if self.llm.get_sub_client("qa_model"):
+            self.qa_llm = self.llm.get_sub_client("qa_model")
+
+        if self.llm.get_sub_client("recall_model"):
+            self.recall_llm = self.llm.get_sub_client("recall_model")
+
+        if self.llm.get_sub_client("chunk_model"):
+            self.chunk_llm = self.llm.get_sub_client("chunk_model")
+
+        self.args = args
+        
         self.path = path
         self.relevant_score = self.args.rag_doc_filter_relevance or 5
 
@@ -162,7 +168,7 @@ class LongContextRAG:
         )
 
         self.doc_filter = DocFilter(
-            self.index_model, self.args, on_ray=self.on_ray, path=self.path
+            self.llm, self.args, on_ray=self.on_ray, path=self.path
         )
 
         doc_num = 0
@@ -459,22 +465,23 @@ class LongContextRAG:
 
             logger.info(f"Query: {query} only_contexts: {only_contexts}")
             start_time = time.time()
+            
 
             rag_stat = RAGStat(
                 recall_stat=RecallStat(
                     total_input_tokens=0,
                     total_generated_tokens=0,
-                    model_name=self.llm.default_model_name,
+                    model_name=self.recall_llm.default_model_name,
                 ),
                 chunk_stat=ChunkStat(
                     total_input_tokens=0,
                     total_generated_tokens=0,
-                    model_name=self.llm.default_model_name,
+                    model_name=self.chunk_llm.default_model_name,
                 ),
                 answer_stat=AnswerStat(
                     total_input_tokens=0,
                     total_generated_tokens=0,
-                    model_name=self.llm.default_model_name,
+                    model_name=self.qa_llm.default_model_name,
                 ),
             )
 
