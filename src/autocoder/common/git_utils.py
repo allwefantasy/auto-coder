@@ -118,7 +118,8 @@ def revert_changes(repo_path: str, message: str) -> bool:
             return False
 
         # 通过message定位到commit_hash
-        commit = repo.git.log("--all", f"--grep={message}", "--format=%H", "-n", "1")
+        # --grep 默认只搜索第一行 -F 参数将搜索模式视为固定字符串而非正则表达式
+        commit = repo.git.log("--all", f"--grep={message}", "-F", "--format=%H", "-n", "1")
         if not commit:
             logger.warning(f"No commit found with message: {message}")
             return False
@@ -170,7 +171,8 @@ def revert_change(repo_path: str, message: str) -> bool:
     repo = get_repo(repo_path)
     if repo is None:
         return False
-    commit = repo.git.log("--all", f"--grep={message}", "--format=%H", "-n", "1")
+    # --grep 默认只搜索第一行 -F 参数将搜索模式视为固定字符串而非正则表达式
+    commit = repo.git.log("--all", f"--grep={message}", "-F", "--format=%H", "-n", "1")
     if commit:
         repo.git.revert(commit, no_edit=True)
         logger.info(f"Reverted changes with commit message: {message}")
@@ -618,7 +620,9 @@ def generate_commit_message(changes_report: str) -> str:
 def get_commit_by_message(repo_path: str, message: str):
     repo = get_repo(repo_path)
     try:
-        commit_hash = repo.git.log("--all", f"--grep={message}", "--format=%H", "-n", "1")
+        commit_hash = repo.git.log(
+            "--all", f"--grep={message}", "-F", "--format=%H", "-n", "1"
+        )
         if not commit_hash:
             return None
         return repo.commit(commit_hash.strip())
