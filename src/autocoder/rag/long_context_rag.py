@@ -344,6 +344,7 @@ class LongContextRAG:
         model: Optional[str] = None,
         role_mapping=None,
         llm_config: Dict[str, Any] = {},
+        extra_request_params: Dict[str, Any] = {}
     ):
         try:
             return self._stream_chat_oai(
@@ -351,6 +352,7 @@ class LongContextRAG:
                 model=model,
                 role_mapping=role_mapping,
                 llm_config=llm_config,
+                extra_request_params=extra_request_params
             )
         except Exception as e:
             logger.error(f"Error in stream_chat_oai: {str(e)}")
@@ -363,6 +365,7 @@ class LongContextRAG:
         model: Optional[str] = None,
         role_mapping=None,
         llm_config: Dict[str, Any] = {},
+        extra_request_params: Dict[str, Any] = {}
     ):
         if self.client:
             model = model or self.args.model
@@ -370,7 +373,8 @@ class LongContextRAG:
                 model=model,
                 messages=conversations,
                 stream=True,
-                max_tokens=self.args.rag_params_max_tokens
+                max_tokens=self.args.rag_params_max_tokens,
+                extra_body=extra_request_params
             )
 
             def response_generator():
@@ -401,6 +405,7 @@ class LongContextRAG:
                     role_mapping=role_mapping,
                     llm_config=llm_config,
                     delta_mode=True,
+                    extra_request_params=extra_request_params
                 )
                 return (chunk[0] for chunk in chunks), context
             
@@ -448,6 +453,7 @@ class LongContextRAG:
                         role_mapping=role_mapping,
                         llm_config=llm_config,
                         delta_mode=True,
+                        extra_request_params=extra_request_params
                     ),
                     context,
                 )
@@ -685,6 +691,7 @@ class LongContextRAG:
                 role_mapping=role_mapping,
                 llm_config=llm_config,
                 delta_mode=True,
+                extra_request_params=extra_request_params
             )
             
             def generate_chunks():
