@@ -38,12 +38,17 @@ class LLWrapper:
                  extra_request_params: Dict[str, Any] = {}
                  ) -> Union[List[LLMResponse], List[LLMFunctionCallResponse], List[LLMClassResponse]]:
         res, contexts = self.rag.stream_chat_oai(
-            conversations, llm_config=llm_config,extra_request_params=extra_request_params)
-        metadata = None
+            conversations, llm_config=llm_config, extra_request_params=extra_request_params)
+        metadata = {"request_id":""}
         output = ""
         for chunk in res:
             output += chunk[0]
-            metadata = chunk[1]        
+            metadata["input_tokens_count"] = chunk[1].input_tokens_count
+            metadata["generated_tokens_count"] = chunk[1].generated_tokens_count
+            metadata["reasoning_content"] = chunk[1].reasoning_content
+            metadata["finish_reason"] = chunk[1].finish_reason
+            metadata["first_token_time"] = chunk[1].first_token_time
+            
         return [LLMResponse(output=output, metadata=metadata, input="")]
 
     def stream_chat_oai(self, conversations,
@@ -53,21 +58,28 @@ class LLWrapper:
                         llm_config: Dict[str, Any] = {},
                         extra_request_params: Dict[str, Any] = {}
                         ):
-        res, contexts = self.rag.stream_chat_oai(
-            conversations, llm_config=llm_config,extra_request_params=extra_request_params)
-        
-        if isinstance(res,tuple):
-            for (t,metadata) in res:
-                yield (t, SingleOutputMeta(
-                    input_tokens_count=metadata.get("input_tokens_count",0),
-                  generated_tokens_count=metadata.get("generated_tokens_count",0),
-                  reasoning_content=metadata.get("reasoning_content",""),
-                  finish_reason=metadata.get("finish_reason","stop"),
-                    first_token_time=metadata.get("first_token_time",0)
-                ))
-        else:
-            for t in res:
-                yield (t, SingleOutputMeta(0, 0))
+        try:
+            res, contexts = self.rag.stream_chat_oai(
+                conversations, llm_config=llm_config, extra_request_params=extra_request_params)
+
+            if isinstance(res, tuple):
+                for (t, metadata) in res:
+                    yield (t, SingleOutputMeta(
+                        input_tokens_count=metadata.get("input_tokens_count", 0),
+                        generated_tokens_count=metadata.get(
+                            "generated_tokens_count", 0),
+                        reasoning_content=metadata.get("reasoning_content", ""),
+                        finish_reason=metadata.get("finish_reason", "stop"),
+                        first_token_time=metadata.get("first_token_time", 0)
+                    ))
+            else:
+                for t in res:
+                    yield (t, SingleOutputMeta(0, 0))
+        except Exception as e:
+            import traceback
+            traceback.format_exc()
+            logger.error(f"stream_chat_oai error: {e}")            
+            yield ("error", SingleOutputMeta(0, 0))
 
     async def async_stream_chat_oai(self, conversations,
                                     model: Optional[str] = None,
@@ -76,20 +88,9 @@ class LLWrapper:
                                     llm_config: Dict[str, Any] = {},
                                     extra_request_params: Dict[str, Any] = {}
                                     ):
-        res, contexts = await asyncfy_with_semaphore(lambda: self.rag.stream_chat_oai(conversations, llm_config=llm_config,extra_request_params=extra_request_params))()
+        res, contexts = await asyncfy_with_semaphore(lambda: self.rag.stream_chat_oai(conversations, llm_config=llm_config, extra_request_params=extra_request_params))()
         # res,contexts = await self.llm.async_stream_chat_oai(conversations,llm_config=llm_config)
-        if isinstance(res,tuple):
-            for (t,metadata) in res:
-                yield (t, SingleOutputMeta(
-                    input_tokens_count=metadata.get("input_tokens_count",0),
-                    generated_tokens_count=metadata.get("generated_tokens_count",0),
-                    reasoning_content=metadata.get("reasoning_content",""),
-                    finish_reason=metadata.get("finish_reason","stop"),
-                    first_token_time=metadata.get("first_token_time",0)
-                    ))
-        else:
-            for t in res:
-                yield (t, SingleOutputMeta(0, 0))
+        return res
 
     def __getattr__(self, name):
         return getattr(self.llm, name)
