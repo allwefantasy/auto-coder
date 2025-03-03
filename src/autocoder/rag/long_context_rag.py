@@ -717,7 +717,7 @@ class LongContextRAG:
             delta_mode=True,
             extra_request_params=extra_request_params
         )
-        
+                
         def generate_chunks():
             for chunk in chunks:
                 yield chunk

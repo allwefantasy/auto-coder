@@ -234,9 +234,9 @@ def run_rag_demo(source_dir: str, model_name: str = "v3_chat", use_pro_mode: boo
         # 处理流式结果
         full_response = ""
         logger.info("接收流式响应:")
-        for chunk in chunks_generator:
-            print(chunk, end="", flush=True)
-            full_response += chunk
+        for chunk in chunks_generator:            
+            print(chunk[0], end="", flush=True)
+            full_response += chunk[0]
         print("\n")
         
         # 输出上下文信息
