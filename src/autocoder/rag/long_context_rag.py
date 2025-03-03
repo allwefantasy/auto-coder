@@ -515,217 +515,218 @@ class LongContextRAG:
             ),
         )
 
-        doc_filter_result = self._filter_docs(conversations)            
+        context = []
+        def generate_sream():
+            nonlocal context
+            doc_filter_result = self._filter_docs(conversations)            
 
-        rag_stat.recall_stat.total_input_tokens += sum(doc_filter_result.input_tokens_counts)
-        rag_stat.recall_stat.total_generated_tokens += sum(doc_filter_result.generated_tokens_counts)
-        rag_stat.recall_stat.model_name = doc_filter_result.model_name
+            rag_stat.recall_stat.total_input_tokens += sum(doc_filter_result.input_tokens_counts)
+            rag_stat.recall_stat.total_generated_tokens += sum(doc_filter_result.generated_tokens_counts)
+            rag_stat.recall_stat.model_name = doc_filter_result.model_name
 
-        relevant_docs: List[FilterDoc] = doc_filter_result.docs
-        filter_time = time.time() - start_time
+            relevant_docs: List[FilterDoc] = doc_filter_result.docs
+            filter_time = time.time() - start_time
 
-        # Filter relevant_docs to only include those with is_relevant=True
-        highly_relevant_docs = [
-            doc for doc in relevant_docs if doc.relevance.is_relevant
-        ]
+            # Filter relevant_docs to only include those with is_relevant=True
+            highly_relevant_docs = [
+                doc for doc in relevant_docs if doc.relevance.is_relevant
+            ]
 
-        if highly_relevant_docs:
-            relevant_docs = highly_relevant_docs
-            logger.info(f"Found {len(relevant_docs)} highly relevant documents")            
+            if highly_relevant_docs:
+                relevant_docs = highly_relevant_docs
+                logger.info(f"Found {len(relevant_docs)} highly relevant documents")            
 
-        logger.info(
-            f"Filter time: {filter_time:.2f} seconds with {len(relevant_docs)} docs"
-        )
-
-        if only_contexts:
-            final_docs = []
-            for doc in relevant_docs:
-                final_docs.append(doc.model_dump())
-            return [json.dumps(final_docs,ensure_ascii=False)], []                
-
-        if not relevant_docs:
-            return ["没有找到相关的文档来回答这个问题。"], []
-
-        context = [doc.source_code.module_name for doc in relevant_docs]
-
-        # 将 FilterDoc 转化为 SourceCode 方便后续的逻辑继续做处理
-        relevant_docs = [doc.source_code for doc in relevant_docs]
-
-        logger.info(f"=== RAG Search Results ===")
-        logger.info(f"Query: {query}")
-        logger.info(f"Found relevant docs: {len(relevant_docs)}")
-
-        # 记录相关文档信息
-        relevant_docs_info = []
-        for i, doc in enumerate(relevant_docs):
-            doc_path = doc.module_name.replace(self.path, '', 1)
-            info = f"{i+1}. {doc_path}"
-            if "original_docs" in doc.metadata:
-                original_docs = ", ".join(
-                    [
-                        doc.replace(self.path, "", 1)
-                        for doc in doc.metadata["original_docs"]
-                    ]
-                )
-                info += f" (Original docs: {original_docs})"
-            relevant_docs_info.append(info)
-
-        if relevant_docs_info:
             logger.info(
-                f"Relevant documents list:"
-                + "".join([f"\n  * {info}" for info in relevant_docs_info])
+                f"Filter time: {filter_time:.2f} seconds with {len(relevant_docs)} docs"
             )
 
-        first_round_full_docs = []
-        second_round_extracted_docs = []
-        sencond_round_time = 0
+            if only_contexts:
+                final_docs = []
+                for doc in relevant_docs:
+                    final_docs.append(doc.model_dump())
+                return [json.dumps(final_docs,ensure_ascii=False)], []                
 
-        if self.tokenizer is not None:
+            if not relevant_docs:
+                return ["没有找到相关的文档来回答这个问题。"], []
 
-            token_limiter = TokenLimiter(
-                count_tokens=self.count_tokens,
-                full_text_limit=self.full_text_limit,
-                segment_limit=self.segment_limit,
-                buff_limit=self.buff_limit,
-                llm=self.llm,
-                disable_segment_reorder=self.args.disable_segment_reorder,
-            )
-            
-            token_limiter_result = token_limiter.limit_tokens(
-                relevant_docs=relevant_docs,
-                conversations=conversations,
-                index_filter_workers=self.args.index_filter_workers or 5,
-            )
+            context = [doc.source_code.module_name for doc in relevant_docs]
 
-            rag_stat.chunk_stat.total_input_tokens += sum(token_limiter_result.input_tokens_counts)
-            rag_stat.chunk_stat.total_generated_tokens += sum(token_limiter_result.generated_tokens_counts)
-            rag_stat.chunk_stat.model_name = token_limiter_result.model_name
-            
-            final_relevant_docs = token_limiter_result.docs
-            first_round_full_docs = token_limiter.first_round_full_docs
-            second_round_extracted_docs = token_limiter.second_round_extracted_docs
-            sencond_round_time = token_limiter.sencond_round_time
+            # 将 FilterDoc 转化为 SourceCode 方便后续的逻辑继续做处理
+            relevant_docs = [doc.source_code for doc in relevant_docs]
 
-            relevant_docs = final_relevant_docs
-        else:
-            relevant_docs = relevant_docs[: self.args.index_filter_file_num]
+            logger.info(f"=== RAG Search Results ===")
+            logger.info(f"Query: {query}")
+            logger.info(f"Found relevant docs: {len(relevant_docs)}")
 
-        logger.info(f"Finally send to model: {len(relevant_docs)}")
+            # 记录相关文档信息
+            relevant_docs_info = []
+            for i, doc in enumerate(relevant_docs):
+                doc_path = doc.module_name.replace(self.path, '', 1)
+                info = f"{i+1}. {doc_path}"
+                if "original_docs" in doc.metadata:
+                    original_docs = ", ".join(
+                        [
+                            doc.replace(self.path, "", 1)
+                            for doc in doc.metadata["original_docs"]
+                        ]
+                    )
+                    info += f" (Original docs: {original_docs})"
+                relevant_docs_info.append(info)
 
-        # 记录分段处理的统计信息
-        logger.info(
-            f"=== Token Management ===\n"
-            f"  * Only contexts: {only_contexts}\n"
-            f"  * Filter time: {filter_time:.2f} seconds\n" 
-            f"  * Final relevant docs: {len(relevant_docs)}\n"
-            f"  * First round full docs: {len(first_round_full_docs)}\n"
-            f"  * Second round extracted docs: {len(second_round_extracted_docs)}\n"
-            f"  * Second round time: {sencond_round_time:.2f} seconds"
-        )
-
-        # 记录最终选择的文档详情
-        final_relevant_docs_info = []
-        for i, doc in enumerate(relevant_docs):
-            doc_path = doc.module_name.replace(self.path, '', 1)
-            info = f"{i+1}. {doc_path}"
-            
-            metadata_info = []
-            if "original_docs" in doc.metadata:
-                original_docs = ", ".join(
-                    [
-                        od.replace(self.path, "", 1)
-                        for od in doc.metadata["original_docs"]
-                    ]
+            if relevant_docs_info:
+                logger.info(
+                    f"Relevant documents list:"
+                    + "".join([f"\n  * {info}" for info in relevant_docs_info])
                 )
-                metadata_info.append(f"Original docs: {original_docs}")
-                
-            if "chunk_ranges" in doc.metadata:
-                chunk_ranges = json.dumps(
-                    doc.metadata["chunk_ranges"], ensure_ascii=False
-                )
-                metadata_info.append(f"Chunk ranges: {chunk_ranges}")
-                
-            if "processing_time" in doc.metadata:
-                metadata_info.append(f"Processing time: {doc.metadata['processing_time']:.2f}s")
-                
-            if metadata_info:
-                info += f" ({'; '.join(metadata_info)})"
-                
-            final_relevant_docs_info.append(info)
 
-        if final_relevant_docs_info:
+            first_round_full_docs = []
+            second_round_extracted_docs = []
+            sencond_round_time = 0
+
+            if self.tokenizer is not None:
+
+                token_limiter = TokenLimiter(
+                    count_tokens=self.count_tokens,
+                    full_text_limit=self.full_text_limit,
+                    segment_limit=self.segment_limit,
+                    buff_limit=self.buff_limit,
+                    llm=self.llm,
+                    disable_segment_reorder=self.args.disable_segment_reorder,
+                )
+                
+                token_limiter_result = token_limiter.limit_tokens(
+                    relevant_docs=relevant_docs,
+                    conversations=conversations,
+                    index_filter_workers=self.args.index_filter_workers or 5,
+                )
+
+                rag_stat.chunk_stat.total_input_tokens += sum(token_limiter_result.input_tokens_counts)
+                rag_stat.chunk_stat.total_generated_tokens += sum(token_limiter_result.generated_tokens_counts)
+                rag_stat.chunk_stat.model_name = token_limiter_result.model_name
+                
+                final_relevant_docs = token_limiter_result.docs
+                first_round_full_docs = token_limiter.first_round_full_docs
+                second_round_extracted_docs = token_limiter.second_round_extracted_docs
+                sencond_round_time = token_limiter.sencond_round_time
+
+                relevant_docs = final_relevant_docs
+            else:
+                relevant_docs = relevant_docs[: self.args.index_filter_file_num]
+
+            logger.info(f"Finally send to model: {len(relevant_docs)}")
+
+            # 记录分段处理的统计信息
             logger.info(
-                f"Final documents to be sent to model:"
-                + "".join([f"\n  * {info}" for info in final_relevant_docs_info])
-        )
-
-        # 记录令牌统计
-        request_tokens = sum([doc.tokens for doc in relevant_docs])
-        target_model = target_llm.default_model_name
-        logger.info(
-            f"=== LLM Request ===\n"
-            f"  * Target model: {target_model}\n"
-            f"  * Total tokens: {request_tokens}"
-        )
-
-        logger.info(f"Start to send to model {target_model} with {request_tokens} tokens")
-
-        if LLMComputeEngine is not None and not self.args.disable_inference_enhance:
-            llm_compute_engine = LLMComputeEngine(
-                llm=target_llm,
-                inference_enhance=not self.args.disable_inference_enhance,
-                inference_deep_thought=self.args.inference_deep_thought,
-                precision=self.args.inference_compute_precision,
-                data_cells_max_num=self.args.data_cells_max_num,
-                debug=False,
+                f"=== Token Management ===\n"
+                f"  * Only contexts: {only_contexts}\n"
+                f"  * Filter time: {filter_time:.2f} seconds\n" 
+                f"  * Final relevant docs: {len(relevant_docs)}\n"
+                f"  * First round full docs: {len(first_round_full_docs)}\n"
+                f"  * Second round extracted docs: {len(second_round_extracted_docs)}\n"
+                f"  * Second round time: {sencond_round_time:.2f} seconds"
             )
-            new_conversations = llm_compute_engine.process_conversation(
-                conversations, query, [doc.source_code for doc in relevant_docs]
+
+            # 记录最终选择的文档详情
+            final_relevant_docs_info = []
+            for i, doc in enumerate(relevant_docs):
+                doc_path = doc.module_name.replace(self.path, '', 1)
+                info = f"{i+1}. {doc_path}"
+                
+                metadata_info = []
+                if "original_docs" in doc.metadata:
+                    original_docs = ", ".join(
+                        [
+                            od.replace(self.path, "", 1)
+                            for od in doc.metadata["original_docs"]
+                        ]
+                    )
+                    metadata_info.append(f"Original docs: {original_docs}")
+                    
+                if "chunk_ranges" in doc.metadata:
+                    chunk_ranges = json.dumps(
+                        doc.metadata["chunk_ranges"], ensure_ascii=False
+                    )
+                    metadata_info.append(f"Chunk ranges: {chunk_ranges}")
+                    
+                if "processing_time" in doc.metadata:
+                    metadata_info.append(f"Processing time: {doc.metadata['processing_time']:.2f}s")
+                    
+                if metadata_info:
+                    info += f" ({'; '.join(metadata_info)})"
+                    
+                final_relevant_docs_info.append(info)
+
+            if final_relevant_docs_info:
+                logger.info(
+                    f"Final documents to be sent to model:"
+                    + "".join([f"\n  * {info}" for info in final_relevant_docs_info])
             )
-            chunks = llm_compute_engine.stream_chat_oai(
-                    conversations=new_conversations,
-                    model=model,
-                    role_mapping=role_mapping,
-                    llm_config=llm_config,
-                    delta_mode=True,
+
+            # 记录令牌统计
+            request_tokens = sum([doc.tokens for doc in relevant_docs])
+            target_model = target_llm.default_model_name
+            logger.info(
+                f"=== LLM Request ===\n"
+                f"  * Target model: {target_model}\n"
+                f"  * Total tokens: {request_tokens}"
+            )
+
+            logger.info(f"Start to send to model {target_model} with {request_tokens} tokens")
+
+            if LLMComputeEngine is not None and not self.args.disable_inference_enhance:
+                llm_compute_engine = LLMComputeEngine(
+                    llm=target_llm,
+                    inference_enhance=not self.args.disable_inference_enhance,
+                    inference_deep_thought=self.args.inference_deep_thought,
+                    precision=self.args.inference_compute_precision,
+                    data_cells_max_num=self.args.data_cells_max_num,
+                    debug=False,
                 )
-            
-            def generate_chunks():
+                new_conversations = llm_compute_engine.process_conversation(
+                    conversations, query, [doc.source_code for doc in relevant_docs]
+                )
+                chunks = llm_compute_engine.stream_chat_oai(
+                        conversations=new_conversations,
+                        model=model,
+                        role_mapping=role_mapping,
+                        llm_config=llm_config,
+                        delta_mode=True,
+                    )
+                                
                 for chunk in chunks:
                     yield chunk
                     if chunk[1] is not None:
                         rag_stat.answer_stat.total_input_tokens += chunk[1].input_tokens_count
                         rag_stat.answer_stat.total_generated_tokens += chunk[1].generated_tokens_count                      
                 self._print_rag_stats(rag_stat)        
-            return generate_chunks(), context
-
-        new_conversations = conversations[:-1] + [
-            {
-                "role": "user",
-                "content": self._answer_question.prompt(
-                    query=query,
-                    relevant_docs=[doc.source_code for doc in relevant_docs],
-                ),
-            }
-        ]
-        
-        chunks = target_llm.stream_chat_oai(
-            conversations=new_conversations,
-            model=model,
-            role_mapping=role_mapping,
-            llm_config=llm_config,
-            delta_mode=True,
-            extra_request_params=extra_request_params
-        )
+            else:    
+                new_conversations = conversations[:-1] + [
+                    {
+                        "role": "user",
+                        "content": self._answer_question.prompt(
+                            query=query,
+                            relevant_docs=[doc.source_code for doc in relevant_docs],
+                        ),
+                    }
+                ]
                 
-        def generate_chunks():
-            for chunk in chunks:
-                yield chunk
-                if chunk[1] is not None:
-                    rag_stat.answer_stat.total_input_tokens += chunk[1].input_tokens_count
-                    rag_stat.answer_stat.total_generated_tokens += chunk[1].generated_tokens_count                      
-            self._print_rag_stats(rag_stat)        
-        return generate_chunks(), context
+                chunks = target_llm.stream_chat_oai(
+                    conversations=new_conversations,
+                    model=model,
+                    role_mapping=role_mapping,
+                    llm_config=llm_config,
+                    delta_mode=True,
+                    extra_request_params=extra_request_params
+                )
+                                    
+                for chunk in chunks:
+                    yield chunk
+                    if chunk[1] is not None:
+                        rag_stat.answer_stat.total_input_tokens += chunk[1].input_tokens_count
+                        rag_stat.answer_stat.total_generated_tokens += chunk[1].generated_tokens_count                      
+                self._print_rag_stats(rag_stat)        
+
+        return generate_sream(),context
             
             
 
