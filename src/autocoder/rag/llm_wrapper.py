@@ -39,8 +39,12 @@ class LLWrapper:
                  ) -> Union[List[LLMResponse], List[LLMFunctionCallResponse], List[LLMClassResponse]]:
         res, contexts = self.rag.stream_chat_oai(
             conversations, llm_config=llm_config,extra_request_params=extra_request_params)
-        s = "".join(res)
-        return [LLMResponse(output=s, metadata={}, input="")]
+        metadata = None
+        output = ""
+        for chunk in res:
+            output += chunk[0]
+            metadata = chunk[1]        
+        return [LLMResponse(output=output, metadata=metadata, input="")]
 
     def stream_chat_oai(self, conversations,
                         model: Optional[str] = None,
@@ -51,8 +55,14 @@ class LLWrapper:
                         ):
         res, contexts = self.rag.stream_chat_oai(
             conversations, llm_config=llm_config,extra_request_params=extra_request_params)
-        for t in res:
-            yield (t, SingleOutputMeta(0, 0))
+        for (t,metadata) in res:
+            yield (t, SingleOutputMeta(
+                  input_tokens_count=metadata.get("input_tokens_count",0),
+                  generated_tokens_count=metadata.get("generated_tokens_count",0),
+                  reasoning_content=metadata.get("reasoning_content",""),
+                  finish_reason=metadata.get("finish_reason","stop"),
+                  first_token_time=metadata.get("first_token_time",0)
+                ))
 
     async def async_stream_chat_oai(self, conversations,
                                     model: Optional[str] = None,
@@ -63,8 +73,14 @@ class LLWrapper:
                                     ):
         res, contexts = await asyncfy_with_semaphore(lambda: self.rag.stream_chat_oai(conversations, llm_config=llm_config,extra_request_params=extra_request_params))()
         # res,contexts = await self.llm.async_stream_chat_oai(conversations,llm_config=llm_config)
-        for t in res:
-            yield (t, SingleOutputMeta(0, 0))
+        for (t,metadata) in res:
+            yield (t, SingleOutputMeta(
+                  input_tokens_count=metadata.get("input_tokens_count",0),
+                  generated_tokens_count=metadata.get("generated_tokens_count",0),
+                  reasoning_content=metadata.get("reasoning_content",""),
+                  finish_reason=metadata.get("finish_reason","stop"),
+                  first_token_time=metadata.get("first_token_time",0)
+                ))
 
     def __getattr__(self, name):
         return getattr(self.llm, name)
