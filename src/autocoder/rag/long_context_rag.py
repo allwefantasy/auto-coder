@@ -398,7 +398,7 @@ class LongContextRAG:
         role_mapping=None,
         llm_config: Dict[str, Any] = {},
         extra_request_params: Dict[str, Any] = {}
-    ):        
+    ):                
         if self.client:
             model = model or self.args.model
             response = self.client.chat.completions.create(
