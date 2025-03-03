@@ -58,28 +58,22 @@ class LLWrapper:
                         llm_config: Dict[str, Any] = {},
                         extra_request_params: Dict[str, Any] = {}
                         ):
-        try:
-            res, contexts = self.rag.stream_chat_oai(
+        res, contexts = self.rag.stream_chat_oai(
                 conversations, llm_config=llm_config, extra_request_params=extra_request_params)
 
-            if isinstance(res, tuple):
-                for (t, metadata) in res:
-                    yield (t, SingleOutputMeta(
-                        input_tokens_count=metadata.get("input_tokens_count", 0),
-                        generated_tokens_count=metadata.get(
-                            "generated_tokens_count", 0),
-                        reasoning_content=metadata.get("reasoning_content", ""),
-                        finish_reason=metadata.get("finish_reason", "stop"),
-                        first_token_time=metadata.get("first_token_time", 0)
-                    ))
-            else:
-                for t in res:
-                    yield (t, SingleOutputMeta(0, 0))
-        except Exception as e:
-            import traceback
-            traceback.format_exc()
-            logger.error(f"stream_chat_oai error: {e}")            
-            yield ("error", SingleOutputMeta(0, 0))
+        if isinstance(res, tuple):
+            for (t, metadata) in res:
+                yield (t, SingleOutputMeta(
+                    input_tokens_count=metadata.get("input_tokens_count", 0),
+                    generated_tokens_count=metadata.get(
+                        "generated_tokens_count", 0),
+                    reasoning_content=metadata.get("reasoning_content", ""),
+                    finish_reason=metadata.get("finish_reason", "stop"),
+                    first_token_time=metadata.get("first_token_time", 0)
+                ))
+        else:
+            for t in res:
+                yield (t, SingleOutputMeta(0, 0))
 
     async def async_stream_chat_oai(self, conversations,
                                     model: Optional[str] = None,
@@ -90,7 +84,8 @@ class LLWrapper:
                                     ):
         res, contexts = await asyncfy_with_semaphore(lambda: self.rag.stream_chat_oai(conversations, llm_config=llm_config, extra_request_params=extra_request_params))()
         # res,contexts = await self.llm.async_stream_chat_oai(conversations,llm_config=llm_config)
-        return res
+        for t in res:
+            yield t
 
     def __getattr__(self, name):
         return getattr(self.llm, name)
