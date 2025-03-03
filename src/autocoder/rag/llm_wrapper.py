@@ -8,12 +8,13 @@ from byzerllm import ByzerLLM
 from byzerllm.utils.client import LLMResponse
 from byzerllm.utils.types import SingleOutputMeta
 from autocoder.rag.simple_rag import SimpleRAG
+from autocoder.rag.long_context_rag import LongContextRAG
 from loguru import logger
 from byzerllm.utils.langutil import asyncfy_with_semaphore
 
 class LLWrapper:
 
-    def __init__(self,llm:ByzerLLM,rag:SimpleRAG):
+    def __init__(self,llm:ByzerLLM,rag:Union[SimpleRAG, LongContextRAG]):
         self.llm = llm
         self.rag = rag
 
