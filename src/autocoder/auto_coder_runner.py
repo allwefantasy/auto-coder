@@ -571,7 +571,10 @@ def load_memory():
     memory_path = os.path.join(base_persist_dir, "memory.json")
     if os.path.exists(memory_path):
         with open(memory_path, "r", encoding="utf-8") as f:
-            memory = json.load(f)
+            _memory = json.load(f)
+        # clear memory
+        memory.clear()
+        memory.update(_memory)
     completer.update_current_files(memory["current_files"]["files"])
 
 def get_memory():
