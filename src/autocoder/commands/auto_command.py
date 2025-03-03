@@ -23,6 +23,7 @@ from autocoder.rag.token_counter import count_tokens
 from autocoder.common.global_cancel import global_cancel
 from autocoder.common.auto_configure import config_readme
 from autocoder.utils.auto_project_type import ProjectTypeAnalyzer
+from rich.text import Text
 
 class CommandMessage(BaseModel):
     role: str
@@ -435,8 +436,10 @@ class CommandAutoTuner:
                     "command_execution_result", 
                     action=action
                 )
+                # 转义内容，避免Rich将内容中的[]解释为markup语法                
+                text_content = Text(truncated_content)
                 console.print(Panel(
-                    truncated_content,
+                    text_content,
                     title=title,
                     border_style="blue",
                     padding=(1, 2)

@@ -11,6 +11,9 @@ from rich.panel import Panel
 from rich.text import Text
 from rich.live import Live
 import getpass
+from rich.markup import escape
+import threading
+import queue
 
 from autocoder.common.result_manager import ResultManager
 
@@ -356,7 +359,7 @@ def _win_code_page_to_encoding(code_page: str) -> str:
 
 def execute_shell_command(command: str):
     """
-    Execute a shell command with cross-platform encoding support.
+    Execute a shell command with cross-platform encoding support and streaming output.
     
     Args:
         command (str): The shell command to execute
@@ -446,81 +449,95 @@ set PYTHONIOENCODING=utf-8
             encoding='utf-8',  # 直接指定 UTF-8 编码
             errors='replace',  # 处理无法解码的字符
             env=env,          # 传递修改后的环境变量
-            startupinfo=startupinfo
+            startupinfo=startupinfo,
+            bufsize=1,        # Line buffering for immediate flushing
+            universal_newlines=True  # Use text mode to handle platform line endings
         )
 
         # Safe decoding helper (for binary output)
-        def safe_decode(byte_stream, encoding):
-            if isinstance(byte_stream, str):
-                return byte_stream.strip()
+        def safe_decode(text, encoding):
+            if isinstance(text, str):
+                return text.strip()
             try:
-                # 首先尝试 UTF-8
-                return byte_stream.decode('utf-8').strip()
+                # Try UTF-8 first
+                return text.decode('utf-8').strip()
             except UnicodeDecodeError:
                 try:
-                    # 如果失败，尝试 GBK
-                    return byte_stream.decode('gbk').strip()
+                    # If that fails, try GBK
+                    return text.decode('gbk').strip()
                 except UnicodeDecodeError:
-                    # 最后使用替换模式
-                    return byte_stream.decode(encoding, errors='replace').strip()
+                    # Finally use replacement mode
+                    return text.decode(encoding, errors='replace').strip()
 
         output = []
-        with Live(console=console, refresh_per_second=4) as live:
-            while True:
-                # Read output streams
-                output_bytes = process.stdout.readline()
-                error_bytes = process.stderr.readline()
-
-                # Handle standard output
-                if output_bytes:
-                    output_line = safe_decode(output_bytes, encoding)
-                    output.append(output_line)
-                    live.update(
-                        Panel(
-                            Text("\n".join(output[-20:])),
-                            title="Shell Output",
-                            border_style="green",
-                        )
-                    )
-
-                # Handle error output
-                if error_bytes:
-                    error_line = safe_decode(error_bytes, encoding)
-                    output.append(f"ERROR: {error_line}")
-                    live.update(
-                        Panel(
-                            Text("\n".join(output[-20:])),
-                            title="Shell Output",
-                            border_style="red",
-                        )
-                    )
-
-                # Check if process has ended
-                if process.poll() is not None:
-                    break
-
-        # Get remaining output
-        remaining_out, remaining_err = process.communicate()
-        if remaining_out:
-            output.append(safe_decode(remaining_out, encoding))
-        if remaining_err:
-            output.append(f"ERROR: {safe_decode(remaining_err, encoding)}")
+        # Use direct printing for streaming output, not a Live object
+        console.print(f"[bold blue]Running command:[/bold blue] {command}")
+        console.print("[bold blue]Output streaming:[/bold blue]")                
+                
+        output_queue = queue.Queue()
         
-        result_manager.add_result(content="\n".join(output),meta={
+        def read_stream(stream, stream_name):
+            """Read data from stream and put in queue"""
+            for line in stream:
+                line = line.rstrip() if isinstance(line, str) else safe_decode(line, encoding)
+                prefix = "[ERROR] " if stream_name == "stderr" else ""
+                output_queue.put((stream_name, f"{prefix}{line}"))
+            output_queue.put((stream_name, None))  # Mark stream end
+            
+        # Create threads to read stdout and stderr
+        stdout_thread = threading.Thread(target=read_stream, args=(process.stdout, "stdout"))
+        stderr_thread = threading.Thread(target=read_stream, args=(process.stderr, "stderr"))
+        stdout_thread.daemon = True
+        stderr_thread.daemon = True
+        stdout_thread.start()
+        stderr_thread.start()
+        
+        # Track number of active streams
+        active_streams = 2
+        
+        # Process output from queue
+        while active_streams > 0:
+            try:
+                stream_name, line = output_queue.get(timeout=0.1)
+                if line is None:
+                    active_streams -= 1
+                    continue
+                    
+                output.append(line)
+                # Print each line directly for true streaming output
+                if stream_name == "stderr":
+                    console.print(f"[red]{line}[/red]")
+                else:
+                    console.print(line)
+                    
+            except queue.Empty:
+                # Check if process is still running
+                if process.poll() is not None and active_streams == 2:
+                    # If process ended but threads are still running, may have no output
+                    break
+                continue
+                
+        # Wait for threads to finish
+        stdout_thread.join()
+        stderr_thread.join()
+        
+        # Wait for process to end and get return code
+        return_code = process.wait()
+        
+        # Compile results
+        result_content = "\n".join(output)
+        result_manager.add_result(content=result_content, meta={
             "action": "execute_shell_command",
             "input": {
                 "command": command
-            }
+            },
+            "return_code": return_code
         })
-        # Show final output
-        console.print(
-            Panel(
-                Text("\n".join(output)),
-                title="Final Output",
-                border_style="blue",
-                subtitle=f"Encoding: {encoding} | OS: {sys.platform}"
-            )
-        )
+        
+        # Show command completion info
+        completion_message = f"Command completed with return code: {return_code}"
+        style = "green" if return_code == 0 else "red"
+        console.print(f"[bold {style}]{escape(completion_message)}[/bold {style}]")
 
     except FileNotFoundError:
         result_manager.add_result(content=f"[bold red]Command not found:[/bold red] [yellow]{command}[/yellow]",meta={
