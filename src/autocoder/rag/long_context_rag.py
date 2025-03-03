@@ -398,7 +398,7 @@ class LongContextRAG:
         role_mapping=None,
         llm_config: Dict[str, Any] = {},
         extra_request_params: Dict[str, Any] = {}
-    ):
+    ):        
         if self.client:
             model = model or self.args.model
             response = self.client.chat.completions.create(
@@ -437,7 +437,7 @@ class LongContextRAG:
                     yield chunk
             return generate_chunks(), context
         
-        try:
+        try:                        
             request_params = json.loads(query)
             if "request_id" in request_params:                    
                 request_id = request_params["request_id"]
