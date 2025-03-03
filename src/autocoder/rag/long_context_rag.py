@@ -285,6 +285,7 @@ class LongContextRAG:
     def build(self):
         pass
 
+
     def search(self, query: str) -> List[SourceCode]:
         target_query = query
         only_contexts = False
@@ -431,7 +432,10 @@ class LongContextRAG:
                 delta_mode=True,
                 extra_request_params=extra_request_params
             )
-            return chunks, context
+            def generate_chunks():
+                for chunk in chunks:
+                    yield chunk
+            return generate_chunks(), context
         
         try:
             request_params = json.loads(query)
@@ -469,16 +473,21 @@ class LongContextRAG:
             new_conversations = llm_compute_engine.process_conversation(
                 conversations, query, []
             )
-
-            return (
-                llm_compute_engine.stream_chat_oai(
+            chunks = llm_compute_engine.stream_chat_oai(
                     conversations=new_conversations,
                     model=model,
                     role_mapping=role_mapping,
                     llm_config=llm_config,
                     delta_mode=True,
                     extra_request_params=extra_request_params
-                ),
+                )
+            
+            def generate_chunks():
+                for chunk in chunks:
+                    yield chunk
+
+            return (
+                generate_chunks(),
                 context,
             )
 
