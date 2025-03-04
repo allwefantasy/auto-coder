@@ -240,18 +240,57 @@ class PluginManager:
             self._discover_plugins_cache = self.discover_plugins()
         return self._discover_plugins_cache
 
-    def add_plugin_directory(self, directory: str) -> None:
+    def add_plugin_directory(self, directory: str) -> Tuple[bool, str]:
         """Add a directory to search for plugins.
 
         Args:
             directory: The directory path
+
+        Returns:
+            Tuple of (success: bool, message: str)
         """
-        if os.path.isdir(directory) and directory not in self.plugin_dirs:
-            self.plugin_dirs.append(directory)
-            if directory not in sys.path:
-                sys.path.append(directory)
-            # 当目录变化时，清空缓存
-            self._discover_plugins_cache = None  # type: ignore
+        normalized_dir = os.path.normpath(directory)
+        if os.path.isdir(normalized_dir):
+            if normalized_dir not in self.plugin_dirs:
+                self.plugin_dirs.append(normalized_dir)
+                if normalized_dir not in sys.path:
+                    sys.path.append(normalized_dir)
+                self._discover_plugins_cache = None
+                return True, f"Added directory: {normalized_dir}"
+            return False, f"Directory already exists: {normalized_dir}"
+        return False, f"Invalid directory: {normalized_dir}"
+
+    def remove_plugin_directory(self, directory: str) -> str:
+        """Remove a plugin directory.
+
+        Args:
+            directory: The directory path to remove
+
+        Returns:
+            Result message
+        """
+        normalized_dir = os.path.normpath(directory)
+        if normalized_dir in self.plugin_dirs:
+            self.plugin_dirs.remove(normalized_dir)
+            if normalized_dir in sys.path:
+                sys.path.remove(normalized_dir)
+            self._discover_plugins_cache = None
+            return f"Removed directory: {normalized_dir}"
+        return f"Directory not found: {normalized_dir}"
+
+    def clear_plugin_directories(self) -> str:
+        """Clear all plugin directories.
+
+        Returns:
+            Result message
+        """
+        count = len(self.plugin_dirs)
+        for directory in self.plugin_dirs:
+            if directory in sys.path:
+                sys.path.remove(directory)
+        self.plugin_dirs.clear()
+        self._discover_plugins_cache = None
+        return f"Cleared all directories ({count} removed)"
 
     def discover_plugins(self) -> List[Type[Plugin]]:
         """Discover available plugins in the plugin directories.
@@ -484,15 +523,10 @@ class PluginManager:
         Returns:
             A dictionary mapping command prefixes to lists of completion options
         """
-        completions = {}
-
-        # Add built-in completions for commands
-        # 为内置命令和子命令添加补全选项
-        completions["/plugins"] = ["list", "load", "unload"]
-
-        # 可以在这里添加更多内置命令的补全
-        # 例如: completions["/conf"] = ["export", "import"]
-        # 例如: completions["/index"] = ["query", "build", "export", "import"]
+        completions = {
+            "/plugins": ["dirs", "list", "load", "unload"],
+            "/plugins dirs": ["add", "remove", "clear"]
+        }
 
         # Get completions from plugins
         for plugin in self.plugins.values():
@@ -574,6 +608,14 @@ class PluginManager:
                     completions.append((plugin_class_name, display_name))
                     added_display_names.add(display_name)
 
+        elif command == "/plugins dirs remove":
+            # 提供已存在的插件目录作为补全选项
+            if len(parts) > 2:
+                prefix = parts[2]
+                for directory in self.plugin_dirs:
+                    if directory.startswith(prefix):
+                        completions.append((directory, directory))
+
         # 检查是否有插件提供了此命令的动态补全
         for plugin in self.plugins.values():
             # 检查插件是否有 dynamic_completions
@@ -582,9 +624,6 @@ class PluginManager:
             )
             if plugin_completions:
                 completions.extend(plugin_completions)
-
-        # 更多命令的动态补全逻辑可以在这里添加
-        # 例如：处理 "/git/checkout" 提供分支名补全等
 
         return completions
 
@@ -752,9 +791,34 @@ class PluginManager:
             if not found:
                 print(f"Plugin '{plugin_name}' not loaded", file=output)
 
+        elif args[0] == "dirs":
+            if len(args) < 2:
+                # 列出所有插件目录
+                print("\033[1;34mPlugin Directories:\033[0m", file=output)
+                for idx, directory in enumerate(self.plugin_dirs, 1):
+                    status = "\033[32m✓\033[0m" if os.path.exists(directory) else "\033[31m✗\033[0m"
+                    print(f"  {idx}. {status} {directory}", file=output)
+                return output.getvalue()
+            
+            subcmd = args[1]
+            if subcmd == "add" and len(args) > 2:
+                path = " ".join(args[2:])
+                success, msg = self.add_plugin_directory(path)
+                status = "\033[32mSUCCESS\033[0m" if success else "\033[31mFAILED\033[0m"
+                print(f"{status}: {msg}", file=output)
+            elif subcmd == "remove" and len(args) > 2:
+                path = " ".join(args[2:])
+                msg = self.remove_plugin_directory(path)
+                print(f"\033[33m{msg}\033[0m", file=output)
+            elif subcmd == "clear":
+                msg = self.clear_plugin_directories()
+                print(f"\033[33m{msg}\033[0m", file=output)
+            else:
+                print("Usage: /plugins dirs [add <path>|remove <path>|clear]", file=output)
+
         else:
             # 在找不到命令的情况下显示用法信息
-            print("Usage: /plugins [list|load <name>|unload <name>]", file=output)
+            print("Usage: /plugins [list|load <name>|unload <name>|dirs ...]", file=output)
 
         return output.getvalue()
 
