@@ -34,6 +34,16 @@ class DocFilterResult(BaseModel):
     model_name: str = "unknown"
     
 
+class ProgressUpdate:
+    """表示处理过程中的进度更新"""
+    def __init__(self, phase: str, completed: int, total: int, relevant_count: int, message: str):
+        self.phase = phase  # 当前处理阶段：doc_filter, token_check 等
+        self.completed = completed  # 已完成的任务数
+        self.total = total  # 总任务数
+        self.relevant_count = relevant_count  # 找到的相关文档数
+        self.message = message  # 进度消息
+
+
 def parse_relevance(text: Optional[str]) -> Optional[DocRelevance]:    
     if text is None:
         return None

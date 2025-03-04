@@ -1,13 +1,15 @@
 import time
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Generator, Tuple
 from loguru import logger
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from autocoder.rag.lang import get_message_with_format_and_newline
 
 from autocoder.rag.relevant_utils import (
     parse_relevance,
     FilterDoc,
     TaskTiming,
-    DocFilterResult
+    DocFilterResult,
+    ProgressUpdate
 )
 
 from autocoder.common import SourceCode, AutoCoderArgs
@@ -49,6 +51,7 @@ def _check_relevance_with_conversation(
     其中， <relevant> 是你认为文档中和问题的相关度，0-10之间的数字，数字越大表示相关度越高。
     """
 
+
 class DocFilter:
     def __init__(
         self,
@@ -73,10 +76,10 @@ class DocFilter:
     ) -> DocFilterResult:
         return self.filter_docs_with_threads(conversations, documents)
 
-    def filter_docs_with_threads(
+    def filter_docs_with_progress(
         self, conversations: List[Dict[str, str]], documents: List[SourceCode]
-    ) -> DocFilterResult:
-
+    ) -> Generator[Tuple[ProgressUpdate, Optional[DocFilterResult]], None, DocFilterResult]:
+        """使用线程过滤文档，同时产生进度更新"""
         start_time = time.time()
         logger.info(f"=== DocFilter Starting ===")
         logger.info(
@@ -92,6 +95,16 @@ class DocFilter:
         completed_tasks = 0
         relevant_count = 0
         model_name = self.recall_llm.default_model_name or "unknown"
+
+        doc_filter_result = DocFilterResult(
+            docs=[],
+            raw_docs=[],
+            input_tokens_counts=[],
+            generated_tokens_counts=[],
+            durations=[],
+            model_name=model_name
+        )
+        relevant_docs = doc_filter_result.docs
 
         with ThreadPoolExecutor(
             max_workers=self.args.index_filter_workers or 5
@@ -141,16 +154,19 @@ class DocFilter:
             logger.info(
                 f"Submitted {submitted_tasks} document filtering tasks to thread pool")
 
+            # 发送初始进度更新
+            yield (ProgressUpdate(
+                phase="doc_filter",
+                completed=0,
+                total=len(documents),
+                relevant_count=0,
+                message=get_message_with_format_and_newline(
+                    "doc_filter_start",
+                    total=len(documents)
+                )
+            ), None)
+
             # 处理完成的任务
-            doc_filter_result = DocFilterResult(
-                docs=[],
-                raw_docs=[],
-                input_tokens_counts=[],
-                generated_tokens_counts=[],
-                durations=[],
-                model_name=model_name
-            )            
-            relevant_docs = doc_filter_result.docs
             for future in as_completed(list(future_to_doc.keys())):
                 try:
                     doc, submit_time = future_to_doc[future]
@@ -194,32 +210,50 @@ class DocFilter:
                         f"\n  - Timing: Duration={task_timing.duration:.2f}s, Processing={task_timing.real_duration:.2f}s, Queue={queue_time:.2f}s"
                         f"\n  - Response: {v}"
                     )
-                    
+
                     if "rag" not in doc.metadata:
                         doc.metadata["rag"] = {}
                     doc.metadata["rag"]["recall"] = {
                         "input_tokens_count": input_tokens_count,
                         "generated_tokens_count": generated_tokens_count,
                         "recall_model": model_name,
-                        "duration": task_timing.real_duration                                                                                                            
+                        "duration": task_timing.real_duration
                     }
-                    
-                    doc_filter_result.input_tokens_counts.append(input_tokens_count)
-                    doc_filter_result.generated_tokens_counts.append(generated_tokens_count)
-                    doc_filter_result.durations.append(task_timing.real_duration)
-                    
+
+                    doc_filter_result.input_tokens_counts.append(
+                        input_tokens_count)
+                    doc_filter_result.generated_tokens_counts.append(
+                        generated_tokens_count)
+                    doc_filter_result.durations.append(
+                        task_timing.real_duration)
+
                     new_filter_doc = FilterDoc(
-                            source_code=doc,
-                            relevance=relevance,
-                            task_timing=task_timing,
-                        )
-                    
+                        source_code=doc,
+                        relevance=relevance,
+                        task_timing=task_timing,
+                    )
+
                     doc_filter_result.raw_docs.append(new_filter_doc)
 
                     if is_relevant:
                         relevant_docs.append(
                             new_filter_doc
                         )
+
+                    # 产生进度更新
+                    yield (ProgressUpdate(
+                        phase="doc_filter",
+                        completed=completed_tasks,
+                        total=len(documents),
+                        relevant_count=relevant_count,
+                        message=get_message_with_format_and_newline(
+                            "doc_filter_progress",
+                            progress_percent=progress_percent,
+                            relevant_count=relevant_count,
+                            total=len(documents)
+                        )
+                    ), None)
+
                 except Exception as exc:
                     try:
                         doc, submit_time = future_to_doc[future]
@@ -236,13 +270,25 @@ class DocFilter:
                             FilterDoc(
                                 source_code=doc,
                                 relevance=None,
-                                task_timing=TaskTiming(),                                
+                                task_timing=TaskTiming(),
                             )
                         )
                     except Exception as e:
                         logger.error(
                             f"Document filtering error in task tracking: {exc}"
                         )
+
+                    # 报告错误进度
+                    yield (ProgressUpdate(
+                        phase="doc_filter",
+                        completed=completed_tasks,
+                        total=len(documents),
+                        relevant_count=relevant_count,
+                        message=get_message_with_format_and_newline(
+                            "doc_filter_error",
+                            error=str(exc)
+                        )
+                    ), None)
 
         # Sort relevant_docs by relevance score in descending order
         relevant_docs.sort(
@@ -254,7 +300,7 @@ class DocFilter:
             doc.task_timing.real_duration for doc in relevant_docs) / len(relevant_docs) if relevant_docs else 0
         avg_queue_time = sum(doc.task_timing.real_start_time -
                              doc.task_timing.submit_time for doc in relevant_docs) / len(relevant_docs) if relevant_docs else 0
-        
+
         total_input_tokens = sum(doc_filter_result.input_tokens_counts)
         total_generated_tokens = sum(doc_filter_result.generated_tokens_counts)
 
@@ -278,4 +324,33 @@ class DocFilter:
         else:
             logger.warning("No relevant documents found!")
 
-        return doc_filter_result
+        # 返回最终结果
+        yield (ProgressUpdate(
+            phase="doc_filter",
+            completed=len(documents),
+            total=len(documents),
+            relevant_count=relevant_count,
+            message=get_message_with_format_and_newline(
+                "doc_filter_complete",
+                total_time=total_time,
+                relevant_count=relevant_count
+            )
+        ), doc_filter_result)
+
+    def filter_docs_with_threads(
+        self, conversations: List[Dict[str, str]], documents: List[SourceCode]
+    ) -> DocFilterResult:
+        # 保持兼容性的接口
+        for _, result in self.filter_docs_with_progress(conversations, documents):
+            if result is not None:
+                return result
+
+        # 这是一个应急情况，不应该到达这里
+        return DocFilterResult(
+            docs=[],
+            raw_docs=[],
+            input_tokens_counts=[],
+            generated_tokens_counts=[],
+            durations=[],
+            model_name=self.recall_llm.default_model_name or "unknown"
+        )

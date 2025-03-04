@@ -23,6 +23,8 @@ from autocoder.rag.relevant_utils import (
     FilterDoc,
     TaskTiming,
     parse_relevance,
+    ProgressUpdate,
+    DocFilterResult
 )
 from autocoder.rag.token_checker import check_token_limit
 from autocoder.rag.token_counter import RemoteTokenCounter, TokenCounter
@@ -34,7 +36,7 @@ from autocoder.rag.stream_event import event_writer
 from autocoder.rag.relevant_utils import DocFilterResult
 from pydantic import BaseModel
 from byzerllm.utils.types import SingleOutputMeta
-from autocoder.rag.lang import get_message_with_format
+from autocoder.rag.lang import get_message_with_format_and_newline
 
 try:
     from autocoder_pro.rag.llm_compute import LLMComputeEngine
@@ -543,13 +545,34 @@ class LongContextRAG:
 
             yield ("", SingleOutputMeta(input_tokens_count=0,
                                         generated_tokens_count=0,
-                                        reasoning_content=get_message_with_format(
+                                        reasoning_content=get_message_with_format_and_newline(
                                             "rag_searching_docs",
                                             model=rag_stat.recall_stat.model_name
-                                            )
+                                        )
                                         ))
 
-            doc_filter_result = self._filter_docs(conversations)
+            doc_filter_result = DocFilterResult(
+                docs=[],
+                raw_docs=[],
+                input_tokens_counts=[],
+                generated_tokens_counts=[],
+                durations=[],
+                model_name=rag_stat.recall_stat.model_name
+            )
+            query = conversations[-1]["content"]
+            documents = self._retrieve_documents(options={"query": query})
+
+            # 使用带进度报告的过滤方法
+            for progress_update, result in self.doc_filter.filter_docs_with_progress(conversations, documents):
+                if result is not None:
+                    doc_filter_result = result
+                else:
+                    # 生成进度更新
+                    yield ("", SingleOutputMeta(
+                        input_tokens_count=rag_stat.recall_stat.total_input_tokens,
+                        generated_tokens_count=rag_stat.recall_stat.total_generated_tokens,
+                        reasoning_content=f"{progress_update.message} ({progress_update.completed}/{progress_update.total})"
+                    ))
 
             rag_stat.recall_stat.total_input_tokens += sum(
                 doc_filter_result.input_tokens_counts)
@@ -562,7 +585,7 @@ class LongContextRAG:
 
             yield ("", SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens,
                                         generated_tokens_count=rag_stat.recall_stat.total_generated_tokens,
-                                        reasoning_content=get_message_with_format(
+                                        reasoning_content=get_message_with_format_and_newline(
                                             "rag_docs_filter_result",
                                             filter_time=filter_time,
                                             docs_num=len(relevant_docs),
@@ -626,7 +649,7 @@ class LongContextRAG:
                 )
 
             yield ("", SingleOutputMeta(generated_tokens_count=0,
-                                        reasoning_content=get_message_with_format(
+                                        reasoning_content=get_message_with_format_and_newline(
                                             "dynamic_chunking_start",
                                             model=rag_stat.chunk_stat.model_name
                                         )
@@ -682,7 +705,7 @@ class LongContextRAG:
             yield ("", SingleOutputMeta(generated_tokens_count=rag_stat.chunk_stat.total_generated_tokens + rag_stat.recall_stat.total_generated_tokens,
                                         input_tokens_count=rag_stat.chunk_stat.total_input_tokens +
                                         rag_stat.recall_stat.total_input_tokens,
-                                        reasoning_content=get_message_with_format(
+                                        reasoning_content=get_message_with_format_and_newline(
                                             "dynamic_chunking_result",
                                             model=rag_stat.chunk_stat.model_name,
                                             docs_num=len(relevant_docs),
@@ -749,7 +772,7 @@ class LongContextRAG:
             yield ("", SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
                                         generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
                                         rag_stat.chunk_stat.total_generated_tokens,
-                                        reasoning_content=get_message_with_format(
+                                        reasoning_content=get_message_with_format_and_newline(
                                             "send_to_model",
                                             model=target_model,
                                             tokens=request_tokens
