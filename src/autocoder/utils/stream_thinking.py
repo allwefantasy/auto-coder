@@ -17,7 +17,7 @@ def stream_with_thinking(response):
     
     for chunk in response:
         # 如果有常规内容
-        if chunk.choices[0].delta.content:
+        if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
             # 如果我们之前在输出思考内容，需要先结束思考部分
             if is_thinking:
                 yield end_mark
@@ -26,7 +26,7 @@ def stream_with_thinking(response):
             yield chunk.choices[0].delta.content
         
         # 如果有思考内容
-        elif chunk.choices[0].delta.reasoning_content:
+        elif hasattr(chunk.choices[0].delta, 'reasoning_content') and chunk.choices[0].delta.reasoning_content:
             # 如果这是第一次输出思考内容，打印开始标记
             if not is_thinking:
                 yield start_mark
@@ -55,7 +55,7 @@ async def stream_with_thinking_async(response):
     
     async for chunk in response:
         # 如果有常规内容
-        if chunk.choices[0].delta.content:
+        if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
             # 如果我们之前在输出思考内容，需要先结束思考部分
             if is_thinking:
                 yield end_mark
@@ -64,7 +64,7 @@ async def stream_with_thinking_async(response):
             yield chunk.choices[0].delta.content
         
         # 如果有思考内容
-        elif chunk.choices[0].delta.reasoning_content:
+        elif hasattr(chunk.choices[0].delta, 'reasoning_content') and chunk.choices[0].delta.reasoning_content:
             # 如果这是第一次输出思考内容，打印开始标记
             if not is_thinking:
                 yield start_mark
@@ -130,10 +130,10 @@ def separate_stream_thinking(response):
         
         for chunk in response:
             # If we have thinking content
-            if chunk.choices[0].delta.reasoning_content:
+            if hasattr(chunk.choices[0].delta, 'reasoning_content') and chunk.choices[0].delta.reasoning_content:
                 yield chunk.choices[0].delta.reasoning_content
             # If we have regular content, store it but don't consume more than one chunk
-            elif chunk.choices[0].delta.content:
+            elif hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
                 pending_content_chunk = chunk
                 break
     
@@ -170,10 +170,10 @@ async def separate_stream_thinking_async(response):
         
         async for chunk in response:
             # If we have thinking content
-            if chunk.choices[0].delta.reasoning_content:
+            if hasattr(chunk.choices[0].delta, 'reasoning_content') and chunk.choices[0].delta.reasoning_content:
                 yield chunk.choices[0].delta.reasoning_content
             # If we have regular content, store it but don't consume more than one chunk
-            elif chunk.choices[0].delta.content:
+            elif hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
                 pending_content_chunk = chunk
                 break
     
