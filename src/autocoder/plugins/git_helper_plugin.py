@@ -64,6 +64,7 @@ class GitHelperPlugin(Plugin):
             "git/log": (self.git_log, "显示提交历史"),
             "git/pull": (self.git_pull, "拉取远程更改"),
             "git/push": (self.git_push, "推送本地更改到远程"),
+            "git/reset": (self.handle_reset, "重置当前分支到指定状态 (hard/soft/mixed)"),
         }
 
     def get_completions(self) -> Dict[str, List[str]]:
@@ -81,6 +82,7 @@ class GitHelperPlugin(Plugin):
             "/git/log": [],
             "/git/pull": [],
             "/git/push": [],
+            "/git/reset": ["hard", "soft", "mixed"],
         }
 
         # 添加分支补全
@@ -217,6 +219,31 @@ class GitHelperPlugin(Plugin):
         code, stdout, stderr = self._run_git_command(["push"] + args_list)
         if code == 0:
             print(f"\n{stdout}")
+        else:
+            print(f"Error: {stderr}")
+
+    def handle_reset(self, args: str) -> None:
+        """Handle the git/reset command.
+        
+        Args:
+            args: The reset mode (hard/soft/mixed) and optional commit hash
+        """
+        if not args:
+            print("请提供重置模式 (hard/soft/mixed) 和可选的提交哈希")
+            return
+            
+        args_list = args.split()
+        mode = args_list[0]
+        commit = args_list[1] if len(args_list) > 1 else "HEAD"
+        
+        if mode not in ["hard", "soft", "mixed"]:
+            print(f"错误: 无效的重置模式 '{mode}'，必须是 hard/soft/mixed 之一")
+            return
+            
+        code, stdout, stderr = self._run_git_command(["reset", f"--{mode}", commit])
+        if code == 0:
+            print(f"\n{stdout}")
+            print(f"成功将仓库重置为 {mode} 模式到 {commit}")
         else:
             print(f"Error: {stderr}")
 
