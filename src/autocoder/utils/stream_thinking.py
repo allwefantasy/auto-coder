@@ -111,3 +111,83 @@ async def print_streaming_response_async(response):
     """
     async for text in stream_with_thinking_async(response):
         print(text, end="", flush=True)
+
+def separate_stream_thinking(response):
+    """
+    Process an OpenAI streaming response and return two separate generators:
+    one for thinking content and one for normal content.
+    
+    Args:
+        response: An OpenAI streaming response (generator)
+        
+    Returns:
+        tuple: (thinking_generator, content_generator)
+    """
+    pending_content_chunk = None
+    
+    def thinking_generator():
+        nonlocal pending_content_chunk
+        
+        for chunk in response:
+            # If we have thinking content
+            if chunk.choices[0].delta.reasoning_content:
+                yield chunk.choices[0].delta.reasoning_content
+            # If we have regular content, store it but don't consume more than one chunk
+            elif chunk.choices[0].delta.content:
+                pending_content_chunk = chunk
+                break
+    
+    def content_generator():
+        nonlocal pending_content_chunk
+        
+        # First yield any pending content chunk from the thinking generator
+        if pending_content_chunk is not None:
+            yield pending_content_chunk.choices[0].delta.content
+            pending_content_chunk = None
+        
+        # Continue with the rest of the response
+        for chunk in response:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+    
+    return thinking_generator(), content_generator()
+
+async def separate_stream_thinking_async(response):
+    """
+    Process an OpenAI async streaming response and return two separate async generators:
+    one for thinking content and one for normal content.
+    
+    Args:
+        response: An OpenAI async streaming response
+        
+    Returns:
+        tuple: (thinking_generator, content_generator)
+    """
+    pending_content_chunk = None
+    
+    async def thinking_generator():
+        nonlocal pending_content_chunk
+        
+        async for chunk in response:
+            # If we have thinking content
+            if chunk.choices[0].delta.reasoning_content:
+                yield chunk.choices[0].delta.reasoning_content
+            # If we have regular content, store it but don't consume more than one chunk
+            elif chunk.choices[0].delta.content:
+                pending_content_chunk = chunk
+                break
+    
+    async def content_generator():
+        nonlocal pending_content_chunk
+        
+        # First yield any pending content chunk from the thinking generator
+        if pending_content_chunk is not None:
+            yield pending_content_chunk.choices[0].delta.content
+            pending_content_chunk = None
+        
+        # Continue with the rest of the response
+        async for chunk in response:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+    
+    return thinking_generator(), content_generator()

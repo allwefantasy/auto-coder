@@ -1,7 +1,7 @@
 from openai import OpenAI, AsyncOpenAI
 import inspect
 import asyncio
-from autocoder.utils.stream_with_thinking import print_streaming_response_async
+from autocoder.utils.stream_thinking import print_streaming_response_async
 
 # client = OpenAI(api_key="xxxx", base_url="http://127.0.0.1:8106/v1")
 
