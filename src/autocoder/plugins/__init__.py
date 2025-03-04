@@ -224,6 +224,8 @@ class PluginManager:
 
     def __init__(self):
         """Initialize the plugin manager."""
+        import threading
+        self._lock = threading.RLock()
         self.plugins: Dict[str, Plugin] = {}
         self.command_handlers: Dict[str, Tuple[Callable, str, str]] = (
             {}
@@ -249,7 +251,7 @@ class PluginManager:
         Returns:
             Tuple of (success: bool, message: str)
         """
-        normalized_dir = os.path.normpath(directory)
+        normalized_dir = os.path.abspath(os.path.normpath(directory))
         if os.path.isdir(normalized_dir):
             if normalized_dir not in self.plugin_dirs:
                 self.plugin_dirs.append(normalized_dir)
@@ -333,7 +335,7 @@ class PluginManager:
                                 and obj is not Plugin
                             ):
                                 discovered_plugins.append(obj)
-                    except (ImportError, AttributeError) as e:
+                    except Exception as e:
                         print(f"Error loading plugin module {module_name}: {e}")
 
         return discovered_plugins
@@ -615,6 +617,15 @@ class PluginManager:
                 for directory in self.plugin_dirs:
                     if directory.startswith(prefix):
                         completions.append((directory, directory))
+        elif command == "/plugins dirs add":
+            # 提供文件系统路径补全
+            if len(parts) > 2:
+                prefix = parts[2]
+                if os.path.isdir(prefix):
+                    for entry in os.listdir(prefix):
+                        full_path = os.path.join(prefix, entry)
+                        if os.path.isdir(full_path):
+                            completions.append((full_path, entry))
 
         # 检查是否有插件提供了此命令的动态补全
         for plugin in self.plugins.values():
@@ -703,10 +714,9 @@ class PluginManager:
         }
         
         try:
-            save_json_file(plugins_json_path, config)
-            # 提示插件保存其配置
-            for plugin in self.plugins.values():
-                plugin.export_config()
+            # 仅当有插件配置变化时保存
+            if any(plugin.export_config() for plugin in self.plugins.values()):
+                save_json_file(plugins_json_path, config)
         except Exception as e:
             print(f"Error saving plugins list: {e}")
 
