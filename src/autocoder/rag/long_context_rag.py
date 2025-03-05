@@ -844,6 +844,7 @@ class LongContextRAG:
                         chunk[1].generated_tokens_count = rag_stat.recall_stat.total_generated_tokens + \
                             rag_stat.chunk_stat.total_generated_tokens + \
                             rag_stat.answer_stat.total_generated_tokens
+                        
                     yield chunk
 
                 self._print_rag_stats(rag_stat)

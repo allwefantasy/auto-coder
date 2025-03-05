@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 from loguru import logger
 from autocoder.rag.token_counter import count_tokens
-from autocoder.common import AutoCoderArgs,SourceCode
+from autocoder.common import AutoCoderArgs, SourceCode
 from byzerllm.utils.client.code_utils import extract_code
 from autocoder.index.types import VerifyFileRelevance
 import byzerllm
@@ -12,6 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from autocoder.common.printer import Printer
 from autocoder.common.auto_coder_lang import get_message_with_format
+
 
 class PruneContext:
     def __init__(self, max_tokens: int, args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
@@ -22,12 +23,12 @@ class PruneContext:
 
     def _split_content_with_sliding_window(self, content: str, window_size=100, overlap=20) -> List[Tuple[int, int, str]]:
         """使用滑动窗口分割大文件内容，返回包含行号信息的文本块
-        
+
         Args:
             content: 要分割的文件内容
             window_size: 每个窗口包含的行数
             overlap: 相邻窗口的重叠行数
-            
+
         Returns:
             List[Tuple[int, int, str]]: 返回元组列表，每个元组包含:
                 - 起始行号(从1开始)，在原始文件的绝对行号
@@ -38,42 +39,42 @@ class PruneContext:
         lines = content.splitlines()
         chunks = []
         start = 0
-        
+
         while start < len(lines):
             # 计算当前窗口的结束位置
             end = min(start + window_size, len(lines))
-            
+
             # 计算实际的起始位置(考虑重叠)
             actual_start = max(0, start - overlap)
-            
+
             # 提取当前窗口的行
             chunk_lines = lines[actual_start:end]
-            
+
             # 为每一行添加行号
             # 行号从actual_start+1开始，保持与原文件的绝对行号一致
             chunk_content = "\n".join([
                 f"{i+1} {line}" for i, line in enumerate(chunk_lines, start=actual_start)
             ])
-            
+
             # 保存分块信息：(起始行号, 结束行号, 带行号的内容)
             # 行号从1开始计数
             chunks.append((actual_start + 1, end, chunk_content))
-            
+
             # 移动到下一个窗口的起始位置
             # 减去overlap确保窗口重叠
             start += (window_size - overlap)
-            
+
         return chunks
 
     def _merge_overlapping_snippets(self, snippets: List[dict]) -> List[dict]:
         """合并重叠或相邻的代码片段
-        
+
         Args:
             snippets: 代码片段列表，每个片段是包含start_line和end_line的字典
-            
+
         Returns:
             List[dict]: 合并后的代码片段列表
-            
+
         示例:
             输入: [
                 {"start_line": 1, "end_line": 5},
@@ -92,10 +93,10 @@ class PruneContext:
         sorted_snippets = sorted(snippets, key=lambda x: x["start_line"])
 
         merged = [sorted_snippets[0]]
-        
+
         for current in sorted_snippets[1:]:
             last = merged[-1]
-            
+
             # 判断是否需要合并:
             # 1. 如果当前片段的起始行小于等于上一个片段的结束行+1
             # 2. +1是为了合并相邻的片段，比如1-5和6-8应该合并为1-8
@@ -112,33 +113,31 @@ class PruneContext:
                 merged.append(current)
 
         return merged
-     
 
-    def _delete_overflow_files(self, file_paths: List[str]) -> List[SourceCode]:
+    def _delete_overflow_files(self, file_sources: List[SourceCode]) -> List[SourceCode]:
         """直接删除超出 token 限制的文件"""
         total_tokens = 0
         selected_files = []
         token_count = 0
-        for file_path in file_paths:
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    token_count = count_tokens(content)
-                    if total_tokens + token_count <= self.max_tokens:
-                        total_tokens += token_count
-                        print(f"{file_path} {token_count} {content}")
-                        selected_files.append(SourceCode(module_name=file_path,source_code=content,tokens=token_count))
-                    else:
-                        break
+        for file_source in file_sources:
+            try:                
+                token_count = file_source.tokens
+                if token_count <= 0:
+                    token_count = count_tokens(file_source.source_code)                    
+
+                if total_tokens + token_count <= self.max_tokens:
+                    total_tokens += token_count
+                    print(f"{file_source.module_name} {token_count}")
+                    selected_files.append(file_source)
+                else:
+                    break
             except Exception as e:
-                logger.error(f"Failed to read file {file_path}: {e}")
-                selected_files.append(SourceCode(module_name=file_path,source_code=content,tokens=token_count))
+                logger.error(f"Failed to read file {file_source.module_name}: {e}")
+                selected_files.append(file_source)
 
         return selected_files
-    
-    
 
-    def _extract_code_snippets(self, file_paths: List[str], conversations: List[Dict[str, str]]) -> List[SourceCode]:
+    def _extract_code_snippets(self, file_sources: List[SourceCode], conversations: List[Dict[str, str]]) -> List[SourceCode]:
         """抽取关键代码片段策略"""
         token_count = 0
         selected_files = []
@@ -236,108 +235,110 @@ class PruneContext:
 
             输出格式:
             严格的JSON数组，不包含其他文字或解释。           
-            
+
             ```json
             [
                 {"start_line": 第一个代码段的起始行号, "end_line": 第一个代码段的结束行号},
                 {"start_line": 第二个代码段的起始行号, "end_line": 第二个代码段的结束行号}
             ]
             ``` 
-                       
+
             """
-            
 
-        for file_path in file_paths:
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
+        for file_source in file_sources:
+            try:                
+                # 完整文件优先
+                tokens = file_source.tokens
+                if token_count + tokens <= full_file_tokens:
+                    selected_files.append(SourceCode(
+                        module_name=file_source.module_name, source_code=file_source.source_code, tokens=tokens))
+                    token_count += tokens
+                    continue
 
-                    # 完整文件优先
-                    tokens = count_tokens(content)
-                    if token_count + tokens <= full_file_tokens:
-                        selected_files.append(SourceCode(module_name=file_path,source_code=content,tokens=tokens))
-                        token_count += tokens
+                # 如果单个文件太大，那么先按滑动窗口分割，然后对窗口抽取代码片段
+                if tokens > self.max_tokens:
+                    self.printer.print_in_terminal(
+                        "file_sliding_window_processing", file_path=file_source.module_name, tokens=tokens)
+                    chunks = self._split_content_with_sliding_window(file_source.source_code,
+                                                                        self.args.context_prune_sliding_window_size,
+                                                                        self.args.context_prune_sliding_window_overlap)
+                    all_snippets = []
+                    for chunk_start, chunk_end, chunk_content in chunks:
+                        extracted = extract_code_snippets.with_llm(self.llm).run(
+                            conversations=conversations,
+                            content=chunk_content,
+                            is_partial_content=True
+                        )
+                        if extracted:
+                            json_str = extract_code(extracted)[0][1]
+                            snippets = json.loads(json_str)
+
+                            # 获取到的本来就是在原始文件里的绝对行号
+                            # 后续在构建代码片段内容时，会为了适配数组操作修改行号，这里无需处理
+                            adjusted_snippets = [{
+                                "start_line": snippet["start_line"],
+                                "end_line": snippet["end_line"]
+                            } for snippet in snippets]
+                            all_snippets.extend(adjusted_snippets)
+                    merged_snippets = self._merge_overlapping_snippets(
+                        all_snippets)
+                    content_snippets = self._build_snippet_content(
+                        file_source.module_name, file_source.source_code, merged_snippets)
+                    snippet_tokens = count_tokens(content_snippets)
+                    if token_count + snippet_tokens <= self.max_tokens:
+                        selected_files.append(SourceCode(
+                            module_name=file_source.module_name, source_code=content_snippets, tokens=snippet_tokens))
+                        token_count += snippet_tokens
+                        self.printer.print_in_terminal("file_snippet_procesed", file_path=file_source.module_name,
+                                                        total_tokens=token_count,
+                                                        tokens=tokens,
+                                                        snippet_tokens=snippet_tokens)
                         continue
-                    
-                    ## 如果单个文件太大，那么先按滑动窗口分割，然后对窗口抽取代码片段
-                    if tokens > self.max_tokens:
-                        self.printer.print_in_terminal("file_sliding_window_processing", file_path=file_path, tokens=tokens)
-                        chunks = self._split_content_with_sliding_window(content, 
-                                                                         self.args.context_prune_sliding_window_size, 
-                                                                         self.args.context_prune_sliding_window_overlap)                        
-                        all_snippets = [] 
-                        for chunk_start, chunk_end, chunk_content in chunks: 
-                            extracted = extract_code_snippets.with_llm(self.llm).run( 
-                                conversations=conversations, 
-                                content=chunk_content, 
-                                is_partial_content=True 
-                            )
-                            if extracted:
-                                json_str = extract_code(extracted)[0][1]
-                                snippets = json.loads(json_str)  
+                    else:
+                        break
 
-                                # 获取到的本来就是在原始文件里的绝对行号  
-                                # 后续在构建代码片段内容时，会为了适配数组操作修改行号，这里无需处理
-                                adjusted_snippets = [{
-                                    "start_line": snippet["start_line"],
-                                    "end_line": snippet["end_line"]
-                                } for snippet in snippets]                                
-                                all_snippets.extend(adjusted_snippets)                                                                
-                        merged_snippets = self._merge_overlapping_snippets(all_snippets)                        
-                        content_snippets = self._build_snippet_content(file_path, content, merged_snippets)
-                        snippet_tokens = count_tokens(content_snippets)
-                        if token_count + snippet_tokens <= self.max_tokens:
-                            selected_files.append(SourceCode(module_name=file_path,source_code=content_snippets,tokens=snippet_tokens))                            
-                            token_count += snippet_tokens
-                            self.printer.print_in_terminal("file_snippet_procesed", file_path=file_path, 
-                                                           total_tokens=token_count, 
-                                                           tokens=tokens, 
-                                                           snippet_tokens=snippet_tokens)
-                            continue
-                        else:
-                            break
-                        
-                    # 抽取关键片段
-                    lines = content.splitlines()
-                    new_content = ""
+                # 抽取关键片段
+                lines = file_source.source_code.splitlines()
+                new_content = ""
 
-                    ## 将文件内容按行编号
-                    for index,line in enumerate(lines):                        
-                        new_content += f"{index+1} {line}\n"
+                # 将文件内容按行编号
+                for index, line in enumerate(lines):
+                    new_content += f"{index+1} {line}\n"
 
-                    ## 抽取代码片段
-                    self.printer.print_in_terminal("file_snippet_processing", file_path=file_path)
-                    extracted = extract_code_snippets.with_llm(self.llm).run(
-                        conversations=conversations, 
-                        content=new_content
-                    )                
+                # 抽取代码片段
+                self.printer.print_in_terminal(
+                    "file_snippet_processing", file_path=file_source.module_name)
+                extracted = extract_code_snippets.with_llm(self.llm).run(
+                    conversations=conversations,
+                    content=new_content
+                )
 
-                    ## 构建代码片段内容
-                    if extracted:
-                        json_str = extract_code(extracted)[0][1]
-                        snippets = json.loads(json_str)
-                        content_snippets = self._build_snippet_content(file_path, content, snippets)
+                # 构建代码片段内容
+                if extracted:
+                    json_str = extract_code(extracted)[0][1]
+                    snippets = json.loads(json_str)
+                    content_snippets = self._build_snippet_content(
+                        file_source.module_name, file_source.source_code, snippets)
 
-                        snippet_tokens = count_tokens(content_snippets)
-                        if token_count + snippet_tokens <= self.max_tokens:                            
-                            selected_files.append(SourceCode(module_name=file_path,
-                                                             source_code=content_snippets,
-                                                             tokens=snippet_tokens))
-                            token_count += snippet_tokens
-                            self.printer.print_in_terminal("file_snippet_procesed", file_path=file_path, 
-                                                           total_tokens = token_count,
-                                                           tokens=tokens, 
-                                                           snippet_tokens=snippet_tokens)
-                        else:
-                            break
+                    snippet_tokens = count_tokens(content_snippets)
+                    if token_count + snippet_tokens <= self.max_tokens:
+                        selected_files.append(SourceCode(module_name=file_source.module_name,
+                                                            source_code=content_snippets,
+                                                            tokens=snippet_tokens))
+                        token_count += snippet_tokens
+                        self.printer.print_in_terminal("file_snippet_procesed", file_path=file_source.module_name,
+                                                        total_tokens=token_count,
+                                                        tokens=tokens,
+                                                        snippet_tokens=snippet_tokens)
+                    else:
+                        break
             except Exception as e:
-                logger.error(f"Failed to process {file_path}: {e}")
+                logger.error(f"Failed to process {file_source.module_name}: {e}")
                 continue
 
         return selected_files
-    
 
-    def _merge_overlapping_snippets(self, snippets: List[dict]) -> List[dict]: 
+    def _merge_overlapping_snippets(self, snippets: List[dict]) -> List[dict]:
         if not snippets:
             return []
 
@@ -367,27 +368,29 @@ class PruneContext:
         for snippet in snippets:
             start = max(0, snippet["start_line"] - 1)
             end = min(len(lines), snippet["end_line"])
-            content.append(f"# Lines {start+1}-{end} ({snippet.get('reason','')})")
+            content.append(
+                f"# Lines {start+1}-{end} ({snippet.get('reason','')})")
             content.extend(lines[start:end])
 
         return header + "\n".join(content)
 
     def handle_overflow(
         self,
-        file_paths: List[str],
+        file_sources: List[SourceCode],
         conversations: List[Dict[str, str]],
-        strategy: str = "score"        
+        strategy: str = "score"
     ) -> List[SourceCode]:
         """
         处理超出 token 限制的文件
-        :param file_paths: 要处理的文件路径列表
+        :param file_sources: 要处理的文件
         :param conversations: 对话上下文（用于提取策略）
         :param strategy: 处理策略 (delete/extract/score)        
         """
-        total_tokens,sources = self._count_tokens(file_paths)
+        file_paths = [file_source.module_name for file_source in file_sources]
+        total_tokens, sources = self._count_tokens(file_sources=file_sources)
         if total_tokens <= self.max_tokens:
             return sources
-        
+
         self.printer.print_in_terminal(
             "context_pruning_reason",
             total_tokens=total_tokens,
@@ -396,9 +399,9 @@ class PruneContext:
         )
 
         self.printer.print_in_terminal(
-                "sorted_files_message", 
-                files=file_paths
-            )
+            "sorted_files_message",
+            files=file_paths
+        )
 
         self.printer.print_in_terminal(
             "context_pruning_start",
@@ -407,35 +410,39 @@ class PruneContext:
             strategy=strategy
         )
 
-        if strategy == "score":            
-            return self._score_and_filter_files(file_paths, conversations)
+        if strategy == "score":
+            return self._score_and_filter_files(sources, conversations)
         if strategy == "delete":
-            return self._delete_overflow_files(file_paths)
+            return self._delete_overflow_files(sources)
         elif strategy == "extract":
-            return self._extract_code_snippets(file_paths, conversations)
+            return self._extract_code_snippets(sources, conversations)
         else:
             raise ValueError(f"无效策略: {strategy}. 可选值: delete/extract/score")
 
-    def _count_tokens(self, file_paths: List[str]) -> int:
+    def _count_tokens(self, file_sources: List[SourceCode]) -> int:
         """计算文件总token数"""
         total_tokens = 0
         sources = []
-        for file_path in file_paths:
+        for file_source in file_sources:
             try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    sources.append(SourceCode(module_name=file_path,source_code=content,tokens=count_tokens(content)))
-                    total_tokens += count_tokens(content)
-            except Exception as e:
-                logger.error(f"Failed to read file {file_path}: {e}")
-                total_tokens += 0
-        return total_tokens,sources
+                if file_sources.tokens > 0:
+                    total_tokens += file_source.tokens
+                else:
+                    tokens = count_tokens(file_source.source_code)
+                    sources.append(SourceCode(module_name=file_source.module_name,
+                                   source_code=file_source.source_code, tokens=tokens))
+                    total_tokens += tokens
 
-    def _score_and_filter_files(self, file_paths: List[str], conversations: List[Dict[str, str]]) -> List[SourceCode]:
+            except Exception as e:
+                logger.error(f"Failed to count tokens for {file_source.module_name}: {e}")
+                total_tokens += 0
+        return total_tokens, sources
+
+    def _score_and_filter_files(self, file_sources: List[SourceCode], conversations: List[Dict[str, str]]) -> List[SourceCode]:
         """根据文件相关性评分过滤文件，直到token数大于max_tokens 停止追加"""
         selected_files = []
         total_tokens = 0
-        scored_files = []        
+        scored_files = []
 
         @byzerllm.prompt()
         def verify_file_relevance(file_content: str, conversations: List[Dict[str, str]]) -> str:
@@ -463,30 +470,28 @@ class PruneContext:
             ```
             """
 
-        def _score_file(file_path: str) -> dict:
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read()
-                    tokens = count_tokens(content)
-                    result = verify_file_relevance.with_llm(self.llm).with_return_type(VerifyFileRelevance).run(
-                        file_content=content,
-                        conversations=conversations
-                    )
-                    return {
-                        "file_path": file_path,
-                        "score": result.relevant_score,
-                        "tokens": tokens,
-                        "content": content
-                    }
+        def _score_file(file_source: SourceCode) -> dict:
+            try:                
+                result = verify_file_relevance.with_llm(self.llm).with_return_type(VerifyFileRelevance).run(
+                    file_content=file_source.source_code,
+                    conversations=conversations
+                )
+                return {
+                    "file_path": file_source.module_name,
+                    "score": result.relevant_score,
+                    "tokens": file_source.tokens,
+                    "content": file_source.source_code
+                }
             except Exception as e:
-                logger.error(f"Failed to score file {file_path}: {e}")
+                logger.error(f"Failed to score file {file_source.module_name}: {e}")
                 return None
 
         # 使用线程池并行打分
         with ThreadPoolExecutor() as executor:
-            futures = [executor.submit(_score_file, file_path) for file_path in file_paths]
+            futures = [executor.submit(_score_file, file_source)
+                       for file_source in file_sources]
             for future in as_completed(futures):
-                result = future.result()                
+                result = future.result()
                 if result:
                     self.printer.print_str_in_terminal(
                         get_message_with_format(
