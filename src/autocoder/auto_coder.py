@@ -1345,7 +1345,8 @@ def main(input_args: Optional[List[str]] = None):
                 v = learner.learn_from_commit(query=args.query,conversations=loaded_conversations)
             else:                
                 # 预估token数量
-                estimated_input_tokens = count_tokens(json.dumps(loaded_conversations, ensure_ascii=False))
+                dumped_conversations = json.dumps(loaded_conversations, ensure_ascii=False)                
+                estimated_input_tokens = count_tokens(dumped_conversations)
                 printer = Printer()
                 printer.print_in_terminal("estimated_chat_input_tokens", style="yellow",
                                   estimated_input_tokens=estimated_input_tokens
