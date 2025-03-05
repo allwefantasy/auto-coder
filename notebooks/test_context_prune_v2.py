@@ -9,6 +9,7 @@ from tokenizers import Tokenizer
 import pkg_resources
 import os
 from autocoder.common import SourceCode
+from autocoder.rag.token_counter import count_tokens
 
 try:
     tokenizer_path = pkg_resources.resource_filename(
@@ -83,6 +84,11 @@ class Calculator:
         f.write(content)
     return os.path.abspath(file_path)
 
+def file_path_to_source_code(file_path: str) -> SourceCode:
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    return SourceCode(module_name=file_path, source_code=content, tokens=count_tokens(content))
+
 def test_extract_large_file():
     """测试从大文件中抽取相关代码片段的功能"""
     # 创建测试文件
@@ -118,7 +124,7 @@ def test_extract_large_file():
 
     # 处理文件
     pruned_files = context_pruner.handle_overflow(
-        [large_file_path],
+        [file_path_to_source_code(large_file_path)],
         conversations,
         args.context_prune_strategy
     )
@@ -149,14 +155,19 @@ def test_extract_with_sliding_window():
         '''Operation {i}'''
         result = a + b * {i}
         return result
-        
+            
+"""
+    content += """
+    def add(self, a: int, b: int) -> int:
+            '''加法'''
+            return a + b
 """
     
     with open(file_path, "w", encoding="utf-8") as f:
         f.write(content)
         
     file_path = os.path.abspath(file_path)
-
+    file_source = file_path_to_source_code(file_path)
     # 配置参数
     args = AutoCoderArgs(
         source_dir=".",
@@ -185,7 +196,7 @@ def test_extract_with_sliding_window():
 
     # 处理文件
     pruned_files = context_pruner.handle_overflow(
-        [file_path],
+        [file_source],
         conversations,
         args.context_prune_strategy
     )
@@ -207,5 +218,5 @@ if __name__ == "__main__":
     print("测试1: 提取相关代码片段")
     test_extract_large_file()
     
-    # print("\n测试2: 滑动窗口处理超大文件")
-    # test_extract_with_sliding_window()
+    print("\n测试2: 滑动窗口处理超大文件")
+    test_extract_with_sliding_window()

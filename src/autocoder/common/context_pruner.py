@@ -212,11 +212,12 @@ class PruneContext:
                 if tokens > self.max_tokens:
                     self.printer.print_in_terminal(
                         "file_sliding_window_processing", file_path=file_source.module_name, tokens=tokens)
+                                        
                     chunks = self._split_content_with_sliding_window(file_source.source_code,
                                                                         self.args.context_prune_sliding_window_size,
                                                                         self.args.context_prune_sliding_window_overlap)
                     all_snippets = []
-                    for chunk_start, chunk_end, chunk_content in chunks:
+                    for chunk_start, chunk_end, chunk_content in chunks:                        
                         extracted = extract_code_snippets.with_llm(self.llm).run(
                             conversations=conversations,
                             content=chunk_content,
@@ -379,12 +380,14 @@ class PruneContext:
         for file_source in file_sources:
             try:
                 if file_source.tokens > 0:
+                    tokens = file_source.tokens
                     total_tokens += file_source.tokens
                 else:
-                    tokens = count_tokens(file_source.source_code)
-                    sources.append(SourceCode(module_name=file_source.module_name,
-                                   source_code=file_source.source_code, tokens=tokens))
+                    tokens = count_tokens(file_source.source_code)                    
                     total_tokens += tokens
+
+                sources.append(SourceCode(module_name=file_source.module_name,
+                                   source_code=file_source.source_code, tokens=tokens))    
 
             except Exception as e:
                 logger.error(f"Failed to count tokens for {file_source.module_name}: {e}")
