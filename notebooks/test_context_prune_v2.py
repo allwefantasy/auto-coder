@@ -104,8 +104,8 @@ def test_extract_large_file():
 
     # 创建PruneContext实例
     context_pruner = PruneContext(
-        max_tokens=args.conversation_prune_safe_zone_tokens,
-        args=args,
+        max_tokens=args.conversation_prune_safe_zone_tokens, 
+        args=args, 
         llm=llm
     )
 
@@ -171,8 +171,8 @@ def test_extract_with_sliding_window():
 
     # 创建PruneContext实例
     context_pruner = PruneContext(
-        max_tokens=args.conversation_prune_safe_zone_tokens,
-        args=args,
+        max_tokens=args.conversation_prune_safe_zone_tokens, 
+        args=args, 
         llm=llm
     )
 
