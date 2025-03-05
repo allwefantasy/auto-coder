@@ -65,54 +65,7 @@ class PruneContext:
             start += (window_size - overlap)
 
         return chunks
-
-    def _merge_overlapping_snippets(self, snippets: List[dict]) -> List[dict]:
-        """合并重叠或相邻的代码片段
-
-        Args:
-            snippets: 代码片段列表，每个片段是包含start_line和end_line的字典
-
-        Returns:
-            List[dict]: 合并后的代码片段列表
-
-        示例:
-            输入: [
-                {"start_line": 1, "end_line": 5},
-                {"start_line": 4, "end_line": 8},
-                {"start_line": 10, "end_line": 12}
-            ]
-            输出: [
-                {"start_line": 1, "end_line": 8},
-                {"start_line": 10, "end_line": 12}
-            ]
-        """
-        if not snippets:
-            return []
-
-        # 按起始行排序
-        sorted_snippets = sorted(snippets, key=lambda x: x["start_line"])
-
-        merged = [sorted_snippets[0]]
-
-        for current in sorted_snippets[1:]:
-            last = merged[-1]
-
-            # 判断是否需要合并:
-            # 1. 如果当前片段的起始行小于等于上一个片段的结束行+1
-            # 2. +1是为了合并相邻的片段，比如1-5和6-8应该合并为1-8
-            if current["start_line"] <= last["end_line"] + 1:
-                # 合并区间:
-                # - 起始行取两者最小值
-                # - 结束行取两者最大值
-                merged[-1] = {
-                    "start_line": min(last["start_line"], current["start_line"]),
-                    "end_line": max(last["end_line"], current["end_line"])
-                }
-            else:
-                # 如果不重叠且不相邻，则作为新片段添加
-                merged.append(current)
-
-        return merged
+    
 
     def _delete_overflow_files(self, file_sources: List[SourceCode]) -> List[SourceCode]:
         """直接删除超出 token 限制的文件"""
@@ -425,7 +378,7 @@ class PruneContext:
         sources = []
         for file_source in file_sources:
             try:
-                if file_sources.tokens > 0:
+                if file_source.tokens > 0:
                     total_tokens += file_source.tokens
                 else:
                     tokens = count_tokens(file_source.source_code)
@@ -435,7 +388,8 @@ class PruneContext:
 
             except Exception as e:
                 logger.error(f"Failed to count tokens for {file_source.module_name}: {e}")
-                total_tokens += 0
+                sources.append(SourceCode(module_name=file_source.module_name,
+                                   source_code=file_source.source_code, tokens=0))
         return total_tokens, sources
 
     def _score_and_filter_files(self, file_sources: List[SourceCode], conversations: List[Dict[str, str]]) -> List[SourceCode]:
