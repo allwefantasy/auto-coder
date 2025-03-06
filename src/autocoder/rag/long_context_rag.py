@@ -173,10 +173,11 @@ class LongContextRAG:
 
         self.token_limit = self.args.rag_context_window_limit or 120000
         retriever_class = self._get_document_retriever_class()
-        
+
         if self.args.enable_hybrid_index and not self.on_ray:
             if self.emb_llm is None:
-                raise ValueError("emb_llm is required for local byzer storage cache")
+                raise ValueError(
+                    "emb_llm is required for local byzer storage cache")
 
         self.document_retriever = retriever_class(
             self.path,
@@ -626,9 +627,22 @@ class LongContextRAG:
                 return [json.dumps(final_docs, ensure_ascii=False)], []
 
             if not relevant_docs:
-                return ["没有找到相关的文档来回答这个问题。"], []
+                yield ("没有找到可以回答你问题的相关文档", SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
+                                                            generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
+                                                            rag_stat.chunk_stat.total_generated_tokens,
+                                                            ))
+                return
 
             context = [doc.source_code.module_name for doc in relevant_docs]
+
+            yield ("", SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
+                                        generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
+                                        rag_stat.chunk_stat.total_generated_tokens,
+                                        reasoning_content=get_message_with_format_and_newline(
+                                            "context_docs_names",
+                                            context_docs_names=",".join(
+                                                context))
+                                        ))
 
             # 将 FilterDoc 转化为 SourceCode 方便后续的逻辑继续做处理
             relevant_docs = [doc.source_code for doc in relevant_docs]
@@ -788,7 +802,7 @@ class LongContextRAG:
                                             tokens=request_tokens
                                         )
                                         ))
-            
+
             yield ("", SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
                                         generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
                                         rag_stat.chunk_stat.total_generated_tokens,
@@ -860,7 +874,7 @@ class LongContextRAG:
                         chunk[1].generated_tokens_count = rag_stat.recall_stat.total_generated_tokens + \
                             rag_stat.chunk_stat.total_generated_tokens + \
                             rag_stat.answer_stat.total_generated_tokens
-                        
+
                     yield chunk
 
                 self._print_rag_stats(rag_stat)

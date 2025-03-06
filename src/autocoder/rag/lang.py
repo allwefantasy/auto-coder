@@ -13,7 +13,8 @@ MESSAGES = {
         "doc_filter_start": "Document filtering start, total {{total}} documents",
         "doc_filter_progress": "Document filtering progress: {{progress_percent}}% processed {{relevant_count}}/{{total}} documents",
         "doc_filter_error": "Document filtering error: {{error}}",
-        "doc_filter_complete": "Document filtering complete, cost {{total_time}} seconds, found {{relevant_count}} relevant documents"
+        "doc_filter_complete": "Document filtering complete, cost {{total_time}} seconds, found {{relevant_count}} relevant documents",
+        "context_docs_names": "The following are the documents related to the user's question: {{context_docs_names}}",
     },
     "zh": {
         "rag_error_title": "RAG 错误",
@@ -26,7 +27,8 @@ MESSAGES = {
         "doc_filter_start": "开始过滤文档，共 {{total}} 个文档",
         "doc_filter_progress": "文档过滤进度：{{progress_percent}}%，处理了 {{relevant_count}}/{{total}} 个文档",
         "doc_filter_error": "文档过滤错误：{{error}}",
-        "doc_filter_complete": "文档过滤完成，耗时 {{total_time}} 秒，找到 {{relevant_count}} 个相关文档"
+        "doc_filter_complete": "文档过滤完成，耗时 {{total_time}} 秒，找到 {{relevant_count}} 个相关文档",
+        "context_docs_names": "以下是和用户问题相关的文档：{{context_docs_names}}",
     }
 }
 
