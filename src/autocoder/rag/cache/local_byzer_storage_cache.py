@@ -66,13 +66,15 @@ class LocalByzerStorageCache(BaseCacheManager):
         required_exts,
         extra_params: Optional[AutoCoderArgs] = None,
         emb_llm: Union[ByzerLLM, SimpleByzerLLM] = None,
+        host: str = "127.0.0.1",
+        port: int = 33333,
     ):
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
         self.rag_build_name = extra_params.rag_build_name
         self.storage = LocalByzerStorage("byzerai_store",
-            "rag_test", self.rag_build_name, host="127.0.0.1", port=33333,emb_llm=emb_llm)
+            "rag_test", self.rag_build_name, host=host, port=port,emb_llm=emb_llm)
         self.queue = []
         self.chunk_size = 1000
         self._init_schema()
