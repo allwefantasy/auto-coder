@@ -1,51 +1,19 @@
-import json
-import os
-import platform
-import time
-import traceback
-
 import threading
-from multiprocessing import Pool
-from typing import Dict, Generator, List, Tuple, Any, Optional
+from typing import Dict, Generator, List, Tuple, Any, Optional,Union
 
-import ray
+from byzerllm import ByzerLLM, SimpleByzerLLM
+
 from loguru import logger
-from pydantic import BaseModel
-
 from autocoder.common import SourceCode
 from uuid import uuid4
-from autocoder.rag.variable_holder import VariableHolder
 from abc import ABC, abstractmethod
-from autocoder.rag.cache.base_cache import BaseCacheManager
 from autocoder.rag.cache.simple_cache import AutoCoderRAGAsyncUpdateQueue
 from autocoder.rag.cache.file_monitor_cache import AutoCoderRAGDocListener
 from autocoder.rag.cache.byzer_storage_cache import ByzerStorageCache
-from autocoder.rag.utils import process_file_in_multi_process, process_file_local
+from autocoder.rag.cache.local_byzer_storage_cache import LocalByzerStorageCache
 from autocoder.common import AutoCoderArgs
 
 cache_lock = threading.Lock()
-
-
-def get_or_create_actor(path: str, ignore_spec, required_exts: list, cacher={}):
-    with cache_lock:
-        # 处理路径名
-        actor_name = "AutoCoderRAGAsyncUpdateQueue_" + path.replace(
-            os.sep, "_"
-        ).replace(" ", "")
-        try:
-            actor = ray.get_actor(actor_name)
-        except ValueError:
-            actor = None
-        if actor is None:
-            actor = (
-                ray.remote(AutoCoderRAGAsyncUpdateQueue)
-                .options(name=actor_name, num_cpus=0)
-                .remote(path, ignore_spec, required_exts)
-            )
-            ray.get(actor.load_first.remote())
-        cacher[actor_name] = actor
-        return actor
-
 
 class BaseDocumentRetriever(ABC):
     """Abstract base class for document retrieval."""
@@ -77,6 +45,7 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
         disable_auto_window: bool = False,
         enable_hybrid_index: bool = False,
         extra_params: Optional[AutoCoderArgs] = None,
+        emb_llm: Union[ByzerLLM, SimpleByzerLLM] = None,
     ) -> None:
         self.path = path
         self.ignore_spec = ignore_spec
@@ -91,23 +60,26 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
         # 合并后的最大文件大小
         self.small_file_merge_limit = self.single_file_token_limit / 2
 
-        self.on_ray = on_ray
-        if self.on_ray:
-            self.cacher = get_or_create_actor(path, ignore_spec, required_exts)
-        else:
-            if self.enable_hybrid_index:
+        self.on_ray = on_ray        
+        if self.enable_hybrid_index:
+            if self.on_ray:
                 self.cacher = ByzerStorageCache(
                     path, ignore_spec, required_exts, extra_params
                 )
+            else:                                
+                self.cacher = LocalByzerStorageCache(
+                    path, ignore_spec, required_exts, extra_params,
+                    emb_llm = emb_llm
+                )
+        else:
+            if self.monitor_mode:
+                self.cacher = AutoCoderRAGDocListener(
+                    path, ignore_spec, required_exts
+                )
             else:
-                if self.monitor_mode:
-                    self.cacher = AutoCoderRAGDocListener(
-                        path, ignore_spec, required_exts
-                    )
-                else:
-                    self.cacher = AutoCoderRAGAsyncUpdateQueue(
-                        path, ignore_spec, required_exts
-                    )
+                self.cacher = AutoCoderRAGAsyncUpdateQueue(
+                    path, ignore_spec, required_exts
+                )
 
         logger.info(f"DocumentRetriever initialized with:")
         logger.info(f"  Path: {self.path}")
@@ -123,10 +95,7 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
             )
 
     def get_cache(self, options: Optional[Dict[str, Any]] = None):
-        if self.on_ray:
-            return ray.get(self.cacher.get_cache.remote())
-        else:
-            return self.cacher.get_cache(options=options)
+        return self.cacher.get_cache(options=options)
 
     def retrieve_documents(
         self, options: Optional[Dict[str, Any]] = None

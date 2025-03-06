@@ -377,6 +377,12 @@ def main(input_args: Optional[List[str]] = None):
         help="The model used for question answering",
     )
 
+    serve_parser.add_argument(
+        "--emb_model",
+        default="",
+        help="The model used for embedding documents",
+    )
+
     # Benchmark command
     benchmark_parser = subparsers.add_parser(
         "benchmark", help="Benchmark LLM client performance"
@@ -555,14 +561,20 @@ def main(input_args: Optional[List[str]] = None):
                 qa_model.skip_nontext_check = True
                 llm.setup_sub_client("qa_model", qa_model)
 
+            if args.emb_model:
+                emb_model = byzerllm.ByzerLLM()
+                emb_model.setup_default_model_name(args.emb_model)
+                emb_model.skip_nontext_check = True
+                llm.setup_sub_client("emb_model", emb_model)
+
             # 当启用hybrid_index时,检查必要的组件
             if auto_coder_args.enable_hybrid_index:
-                if not llm.is_model_exist("emb"):
+                if not args.emb_model and not llm.is_model_exist("emb"):
                     logger.error(
                         "When enable_hybrid_index is true, an 'emb' model must be deployed"
                     )
                     return
-                llm.setup_default_emb_model_name("emb")
+                llm.setup_default_emb_model_name(args.emb_model or "emb")
 
         elif args.product_mode == "lite":
             from autocoder import models as models_module
@@ -628,6 +640,25 @@ def main(input_args: Optional[List[str]] = None):
                     }
                 )
                 llm.setup_sub_client("qa_model", qa_model)
+
+            if args.emb_model:
+                emb_model = byzerllm.SimpleByzerLLM(default_model_name=args.emb_model)
+                emb_model.deploy(
+                    model_path="",
+                    pretrained_model_type=model_info["model_type"],
+                    udf_name=args.emb_model,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": False
+                    }
+                )
+                llm.setup_sub_client("emb_model", emb_model)
+
+            if args.enable_hybrid_index:
+                if not args.emb_model:
+                    raise Exception("When enable_hybrid_index is true, an 'emb' model must be specified")                
 
         if server_args.doc_dir:
             auto_coder_args.rag_type = "simple"

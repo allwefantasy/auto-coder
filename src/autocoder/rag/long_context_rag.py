@@ -86,6 +86,7 @@ class LongContextRAG:
         self.recall_llm = self.llm
         self.chunk_llm = self.llm
         self.qa_llm = self.llm
+        self.emb_llm = None
 
         if self.llm.get_sub_client("qa_model"):
             self.qa_llm = self.llm.get_sub_client("qa_model")
@@ -95,6 +96,9 @@ class LongContextRAG:
 
         if self.llm.get_sub_client("chunk_model"):
             self.chunk_llm = self.llm.get_sub_client("chunk_model")
+
+        if self.llm.get_sub_client("emb_model"):
+            self.emb_llm = self.llm.get_sub_client("emb_model")
 
         self.args = args
 
@@ -169,6 +173,11 @@ class LongContextRAG:
 
         self.token_limit = self.args.rag_context_window_limit or 120000
         retriever_class = self._get_document_retriever_class()
+        
+        if self.args.enable_hybrid_index and not self.on_ray:
+            if self.emb_llm is None:
+                raise ValueError("emb_llm is required for local byzer storage cache")
+
         self.document_retriever = retriever_class(
             self.path,
             self.ignore_spec,
@@ -179,7 +188,8 @@ class LongContextRAG:
             single_file_token_limit=self.full_text_limit - 100,
             disable_auto_window=self.args.disable_auto_window,
             enable_hybrid_index=self.args.enable_hybrid_index,
-            extra_params=self.args
+            extra_params=self.args,
+            emb_llm=self.emb_llm
         )
 
         self.doc_filter = DocFilter(
