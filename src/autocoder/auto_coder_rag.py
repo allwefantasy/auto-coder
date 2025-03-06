@@ -186,6 +186,15 @@ def main(input_args: Optional[List[str]] = None):
     build_index_parser.add_argument(
         "--model", default="v3_chat", help=desc["model"]
     )
+
+    build_index_parser.add_argument(
+        "--emb_model", default="", help="The model used for embedding documents"
+    )
+
+    build_index_parser.add_argument(
+        "--on_ray", action="store_true", help="Run on Ray"
+    )
+
     build_index_parser.add_argument(
         "--index_model", default="", help=desc["index_model"]
     )
@@ -642,6 +651,7 @@ def main(input_args: Optional[List[str]] = None):
                 llm.setup_sub_client("qa_model", qa_model)
 
             if args.emb_model:
+                model_info = models_module.get_model_by_name(args.emb_model)
                 emb_model = byzerllm.SimpleByzerLLM(default_model_name=args.emb_model)
                 emb_model.deploy(
                     model_path="",
@@ -706,31 +716,62 @@ def main(input_args: Optional[List[str]] = None):
         auto_coder_args.enable_hybrid_index = True
         auto_coder_args.rag_type = "simple"
 
-        try:
-            from byzerllm.apps.byzer_storage.simple_api import ByzerStorage
+        if args.on_ray:
 
-            storage = ByzerStorage("byzerai_store", "rag", "files")
-            storage.retrieval.cluster_info("byzerai_store")
-        except Exception as e:
-            logger.error(
-                "When enable_hybrid_index is true, ByzerStorage must be started"
-            )
-            logger.error("Please run 'byzerllm storage start' first")
-            return
+            try:
+                from byzerllm.apps.byzer_storage.simple_api import ByzerStorage
 
-        llm = byzerllm.ByzerLLM()
-        llm.setup_default_model_name(args.model)
-
-        # 当启用hybrid_index时,检查必要的组件
-        if auto_coder_args.enable_hybrid_index:
-            if not llm.is_model_exist("emb"):
+                storage = ByzerStorage("byzerai_store", "rag", "files")
+                storage.retrieval.cluster_info("byzerai_store")
+            except Exception as e:
                 logger.error(
-                    "When enable_hybrid_index is true, an 'emb' model must be deployed"
+                    "When enable_hybrid_index is true, ByzerStorage must be started"
                 )
+                logger.error("Please run 'byzerllm storage start' first")
                 return
-            llm.setup_default_emb_model_name("emb")
 
-        auto_coder_args.rag_build_name = generate_unique_name_from_path(args.doc_dir)
+            llm = byzerllm.ByzerLLM()
+            llm.setup_default_model_name(args.model)
+
+            # 当启用hybrid_index时,检查必要的组件
+            if auto_coder_args.enable_hybrid_index:
+                if not llm.is_model_exist("emb"):
+                    logger.error(
+                        "When enable_hybrid_index is true, an 'emb' model must be deployed"
+                    )
+                    return
+                llm.setup_default_emb_model_name("emb")
+        else:
+            from autocoder import models as models_module
+            model_info = models_module.get_model_by_name(args.model)
+            llm = byzerllm.SimpleByzerLLM(default_model_name=args.model)
+            llm.deploy(
+                model_path="",
+                pretrained_model_type=model_info["model_type"],
+                udf_name=args.model,
+                infer_params={
+                    "saas.base_url": model_info["base_url"],
+                    "saas.api_key": model_info["api_key"],
+                    "saas.model": model_info["model_name"],
+                    "saas.is_reasoning": model_info["is_reasoning"]
+                }
+            )
+            
+            model_info = models_module.get_model_by_name(args.emb_model)
+            emb_model = byzerllm.SimpleByzerLLM(default_model_name=args.emb_model)
+            emb_model.deploy(
+                model_path="",
+                pretrained_model_type=model_info["model_type"],
+                udf_name=args.emb_model,
+                infer_params={
+                    "saas.base_url": model_info["base_url"],
+                    "saas.api_key": model_info["api_key"],
+                    "saas.model": model_info["model_name"],
+                    "saas.is_reasoning": False
+                }
+            )
+            llm.setup_sub_client("emb_model", emb_model)
+        
         rag = RAGFactory.get_rag(
             llm=llm,
             args=auto_coder_args,
