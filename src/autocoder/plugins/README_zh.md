@@ -145,6 +145,7 @@ def id_name(cls) -> str:
 - `name`：插件名称（字符串）
 - `description`：插件描述（字符串）
 - `version`：插件版本（字符串）
+- `dynamic_cmds`：需要动态补全的命令列表（字符串列表）。此列表指定哪些命令应该根据当前上下文使用动态补全。例如，插件可以将其设置为 `["/my_command"]` 来表示 `/my_command` 应该有动态补全。
 - `initialize()`：插件加载时调用。用于插件自身初始化，例如设置资源、连接服务或任何其他启动任务。初始化成功返回`True`，否则返回`False`。
 - `get_commands()`：返回插件提供的命令字典
 - `get_keybindings()`：返回插件提供的按键绑定列表

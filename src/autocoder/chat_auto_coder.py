@@ -87,27 +87,6 @@ def parse_arguments():
     parser.add_argument("--lite", action="store_true", help="Lite mode")
     parser.add_argument("--pro", action="store_true", help="Pro mode")
 
-    # Add plugin-related arguments
-    parser.add_argument(
-        "--plugin_dirs",
-        type=str,
-        nargs="+",
-        help="Directories to search for plugins",
-    )
-
-    parser.add_argument(
-        "--plugins",
-        type=str,
-        nargs="+",
-        help="Comma-separated list of plugins to load",
-    )
-
-    parser.add_argument(
-        "--plugin_config",
-        type=str,
-        help="Path to plugin configuration file",
-    )
-
     return parser.parse_args()
 
 
@@ -201,16 +180,23 @@ class EnhancedCompleter(Completer):
 
             # 检查是否需要动态补全
             # 先检查特定命令
-            dynamic_cmds = ["/plugins load", "/plugins unload"]
+            dynamic_cmds = self.plugin_manager.get_dynamic_cmds()
 
             # 然后检查任何包含子命令的输入
             if " " in current_input:
                 # 先尝试动态补全特定命令
                 for dynamic_cmd in dynamic_cmds:
                     if current_input.startswith(dynamic_cmd):
-                        yield from self._process_dynamic_completions(
+                        # 直接使用 PluginManager 处理动态补全
+                        completions = self.plugin_manager.process_dynamic_completions(
                             dynamic_cmd, current_input
                         )
+                        for completion_text, display_text in completions:
+                            yield Completion(
+                                completion_text,
+                                start_position=0,
+                                display=display_text,
+                            )
                         return
 
                 # 如果不是特定命令，检查一般命令 + 空格的情况
@@ -240,32 +226,6 @@ class EnhancedCompleter(Completer):
                 document, complete_event
             ):
                 yield completion
-
-    def _process_dynamic_completions(self, command, current_input):
-        """处理动态补全命令"""
-        # 使用 PluginManager 的动态补全功能
-        dynamic_completions = self.plugin_manager.get_dynamic_completions(
-            command, current_input
-        )
-
-        for completion_text, display_text in dynamic_completions:
-            # 计算补全的开始位置
-            # 提取用户已输入的部分
-            parts = current_input.split(maxsplit=2)
-            existing_input = ""
-            if len(parts) > 2:
-                existing_input = parts[2]
-
-            # 只提供未输入部分作为补全
-            if completion_text.startswith(existing_input):
-                remaining_text = completion_text[len(existing_input) :]
-                # 修复：不再使用负值作为 start_position，这样不会覆盖用户已输入的部分
-                start_position = 0
-                yield Completion(
-                    remaining_text,
-                    start_position=start_position,
-                    display=display_text,
-                )
 
     def _process_command_completions(self, command, current_input, completions):
         """处理通用命令补全"""
@@ -325,39 +285,10 @@ def main():
         )
 
     # Initialize plugin system
-    if ARGS.plugin_dirs:
-        for directory in ARGS.plugin_dirs:
-            plugin_manager.add_plugin_directory(directory)
-
     # Add default plugin directory
     default_plugin_dir = os.path.join(os.path.dirname(__file__), "plugins")
     if os.path.isdir(default_plugin_dir):
         plugin_manager.add_plugin_directory(default_plugin_dir)
-
-    # Load plugin configuration, specifically from the command line
-    plugin_config = {}
-    if ARGS.plugin_config and os.path.exists(ARGS.plugin_config):
-        try:
-            import json
-
-            with open(ARGS.plugin_config, "r") as f:
-                plugin_config = json.load(f)
-            plugin_manager.load_plugins_from_config(plugin_config)
-        except Exception as e:
-            print(f"Error loading plugin configuration: {e}")
-
-    # Load specific plugins if requested
-    if ARGS.plugins:
-        plugin_list = []
-        for plugin_arg in ARGS.plugins:
-            plugin_list.extend(plugin_arg.split(","))
-
-        discovered_plugins = {p.__name__: p for p in plugin_manager.discover_plugins()}
-        for plugin_name in plugin_list:
-            if plugin_name in discovered_plugins:
-                plugin_manager.load_plugin(discovered_plugins[plugin_name])
-            else:
-                print(f"Plugin '{plugin_name}' not found")
 
     # 加载保存的运行时配置
     plugin_manager.load_runtime_cfg()

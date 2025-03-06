@@ -145,6 +145,7 @@ Base class for all plugins:
 - `name`: Plugin name (string)
 - `description`: Plugin description (string)
 - `version`: Plugin version (string)
+- `dynamic_cmds`: List of commands that require dynamic completion (list of strings). This list specifies which commands should use dynamic completion based on the current context. For example, a plugin might set this to `["/my_command"]` to indicate that `/my_command` should have dynamic completions.
 - `initialize()`: Called when the plugin is loaded. Used for plugin self-initialization such as setting up resources, connecting to services, or any other startup tasks. Return `True` if initialization is successful, `False` otherwise.
 - `get_commands()`: Returns a dictionary of commands provided by the plugin
 - `get_keybindings()`: Returns a list of keybindings provided by the plugin
