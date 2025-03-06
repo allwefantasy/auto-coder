@@ -221,8 +221,7 @@ def main(input_args: Optional[List[str]] = None):
     )
     serve_parser.add_argument("--file", default="", help=desc["file"])
     serve_parser.add_argument("--model", default="v3_chat", help=desc["model"])
-    serve_parser.add_argument("--index_model", default="", help=desc["index_model"])
-    serve_parser.add_argument("--emb_model", default="", help=desc["emb_model"])
+    serve_parser.add_argument("--index_model", default="", help=desc["index_model"])    
     serve_parser.add_argument("--ray_address", default="auto", help=desc["ray_address"])
     serve_parser.add_argument(
         "--index_filter_workers",
@@ -521,10 +520,7 @@ def main(input_args: Optional[List[str]] = None):
         # Generate unique name for RAG build if doc_dir exists
         if server_args.doc_dir:
             auto_coder_args.rag_build_name = generate_unique_name_from_path(server_args.doc_dir)
-            logger.info(f"Generated RAG build name: {auto_coder_args.rag_build_name}")
-
-        if auto_coder_args.enable_hybrid_index and args.product_mode == "lite":
-            raise Exception("Hybrid index is not supported in lite mode")
+            logger.info(f"Generated RAG build name: {auto_coder_args.rag_build_name}")        
 
         if auto_coder_args.enable_hybrid_index and args.product_mode == "pro":
             # 尝试连接storage
@@ -581,7 +577,7 @@ def main(input_args: Optional[List[str]] = None):
                     return
                 llm.setup_default_emb_model_name(args.emb_model or "emb")
 
-        elif args.product_mode == "lite":
+        if args.product_mode == "lite":
             from autocoder import models as models_module
             model_info = models_module.get_model_by_name(args.model)
             llm = byzerllm.SimpleByzerLLM(default_model_name=args.model)
