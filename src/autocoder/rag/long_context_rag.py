@@ -37,6 +37,7 @@ from autocoder.rag.relevant_utils import DocFilterResult
 from pydantic import BaseModel
 from byzerllm.utils.types import SingleOutputMeta
 from autocoder.rag.lang import get_message_with_format_and_newline
+from autocoder.rag.qa_conversation_strategy import get_qa_strategy
 
 try:
     from autocoder_pro.rag.llm_compute import LLMComputeEngine
@@ -256,36 +257,7 @@ class LongContextRAG:
         请根据提供的文档内容、用户对话历史以及最后一个问题，提取并总结文档中与问题相关的重要信息。
         如果文档中没有相关信息，请回复"该文档中没有与问题相关的信息"。
         提取的信息尽量保持和原文中的一样，并且只输出这些信息。
-        """
-
-    @byzerllm.prompt()
-    def _answer_question(
-        self, query: str, relevant_docs: List[str]
-    ) -> Generator[str, None, None]:
-        """        
-        文档：
-        <documents>
-        {% for doc in relevant_docs %}
-        {{ doc }}
-        {% endfor %}
-        </documents>
-
-        使用以上文档来回答用户的问题。回答要求：
-
-        1. 严格基于文档内容回答        
-        - 如果文档提供的信息无法回答问题,请明确回复:"抱歉,文档中没有足够的信息来回答这个问题。" 
-        - 不要添加、推测或扩展文档未提及的信息
-
-        2. 格式如 ![image](./path.png) 的 Markdown 图片处理
-        - 根据Markdown 图片前后文本内容推测改图片与问题的相关性，有相关性则在回答中输出该Markdown图片路径
-        - 根据相关图片在文档中的位置，自然融入答复内容,保持上下文连贯
-        - 完整保留原始图片路径,不省略任何部分
-
-        3. 回答格式要求
-        - 使用markdown格式提升可读性
-
-        问题：{{ query }}
-        """
+        """    
 
     def _get_document_retriever_class(self):
         """Get the document retriever class based on configuration."""
@@ -844,16 +816,12 @@ class LongContextRAG:
 
                 self._print_rag_stats(rag_stat)
             else:
-                new_conversations = conversations[:-1] + [
-                    {
-                        "role": "user",
-                        "content": self._answer_question.prompt(
-                            query=query,
-                            relevant_docs=[
-                                doc.source_code for doc in relevant_docs],
-                        ),
-                    }
-                ]
+                
+                qa_strategy = get_qa_strategy(self.args.rag_qa_conversation_strategy)
+                new_conversations = qa_strategy.create_conversation(
+                    documents=[doc.source_code for doc in relevant_docs],
+                    conversations=conversations
+                )                
 
                 chunks = target_llm.stream_chat_oai(
                     conversations=new_conversations,

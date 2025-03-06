@@ -295,7 +295,13 @@ class AutoCoderArgs(pydantic.BaseModel):
     rag_type: Optional[str] = "storage"   
     rag_params_max_tokens: Optional[int] = 4096 
     rag_doc_filter_relevance: Optional[int] = 5
-    rag_context_window_limit: Optional[int] = 120000    
+    rag_context_window_limit: Optional[int] = 120000 
+    
+    # 回答用户问题时，使用哪种对话历史策略
+    # single_round: 单轮对话
+    # multi_round: 多轮对话
+    rag_qa_conversation_strategy: Optional[str] = "multi_round"
+
     verify_file_relevance_score: int = 6
     enable_rag_search: Optional[Union[bool, str]] = False
     enable_rag_context: Optional[Union[bool, str]] = False
