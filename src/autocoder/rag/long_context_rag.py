@@ -788,6 +788,12 @@ class LongContextRAG:
                                             tokens=request_tokens
                                         )
                                         ))
+            
+            yield ("", SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
+                                        generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
+                                        rag_stat.chunk_stat.total_generated_tokens,
+                                        reasoning_content="qa_model_thinking"
+                                        ))
 
             if LLMComputeEngine is not None and not self.args.disable_inference_enhance:
                 llm_compute_engine = LLMComputeEngine(
