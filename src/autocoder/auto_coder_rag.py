@@ -22,7 +22,7 @@ from loguru import logger
 import asyncio
 from datetime import datetime
 
-from autocoder.rag.document_retriever import process_file_local
+from autocoder.rag.utils import process_file_local
 import pkg_resources
 from autocoder.rag.token_counter import TokenCounter
 from autocoder.rag.types import RAGServiceInfo
@@ -186,11 +186,7 @@ def main(input_args: Optional[List[str]] = None):
     build_index_parser.add_argument(
         "--model", default="v3_chat", help=desc["model"]
     )
-
-    build_index_parser.add_argument(
-        "--emb_model", default="", help="The model used for embedding documents"
-    )
-
+    
     build_index_parser.add_argument(
         "--on_ray", action="store_true", help="Run on Ray"
     )
@@ -756,7 +752,7 @@ def main(input_args: Optional[List[str]] = None):
                     "saas.is_reasoning": model_info["is_reasoning"]
                 }
             )
-            
+
             model_info = models_module.get_model_by_name(args.emb_model)
             emb_model = byzerllm.SimpleByzerLLM(default_model_name=args.emb_model)
             emb_model.deploy(
