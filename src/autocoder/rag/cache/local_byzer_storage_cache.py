@@ -399,6 +399,27 @@ class LocalByzerStorageCache(BaseCacheManager):
 
         results = query_builder.execute()
 
+        logger.info(f"从缓存获取: {len(results)} 条数据")
+        # Preview first 5 results with all fields but limited content size
+        preview_results = []
+        for r in results[:5]:
+            # Create a copy of the entire result
+            preview = r.copy()            
+            # Similarly limit raw_content if it exists
+            if "raw_content" in preview and isinstance(preview["raw_content"], str):
+                preview["raw_content"] = preview["raw_content"][:100] + "..." if len(preview["raw_content"]) > 100 else preview["raw_content"]
+            preview_results.append(preview)
+        logger.info(f"预览前5条数据:")
+        
+        for r in preview_results:
+            logger.info(f"文件路径: {r['file_path']}")            
+            logger.info(f"原始内容: {r['raw_content']}")
+            # 打印其他字段
+            for k, v in r.items():
+                if k not in ["file_path", "raw_content"]:
+                    logger.info(f"{k}: {v}")
+            logger.info("-"*100)
+
         # Group results by file_path and reconstruct documents while preserving order
         # 这里还可以有排序优化，综合考虑一篇内容出现的次数以及排序位置
         file_paths = []
@@ -416,10 +437,12 @@ class LocalByzerStorageCache(BaseCacheManager):
                 cached_data = self.cache[file_path]
                 for doc in cached_data.content:
                     if total_tokens + doc["tokens"] > self.max_output_tokens:
+                        logger.info(f"用户tokens设置为:{self.max_output_tokens}，累计tokens: {total_tokens} 当前文件: {file_path} tokens: {doc['tokens']}，数据条数变化: {len(results)} -> {len(result)}")
                         return result
                     total_tokens += doc["tokens"]
                 result[file_path] = cached_data.model_dump()
-
+        
+        logger.info(f"用户tokens设置为:{self.max_output_tokens}，累计tokens: {total_tokens}，数据条数变化: {len(results)} -> {len(result)}")
         return result
 
     def get_all_files(self) -> List[FileInfo]:

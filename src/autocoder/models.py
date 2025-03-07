@@ -286,3 +286,61 @@ def update_model_with_api_key(name: str, api_key: str) -> Dict:
     
     return found_model
 
+def update_model(name: str, model_data: Dict) -> Dict:
+    """
+    更新模型信息
+    
+    Args:
+        name: 要更新的模型名称
+        model_data: 包含模型新信息的字典，可以包含以下字段:
+            - name: 模型名称
+            - description: 模型描述
+            - model_name: 模型实际名称
+            - model_type: 模型类型
+            - base_url: 基础URL
+            - api_key: API密钥
+            - is_reasoning: 是否为推理模型
+            - input_price: 输入价格
+            - output_price: 输出价格
+            
+    Returns:
+        Dict: 更新后的模型信息，如果未找到则返回None
+    """
+    models = load_models()
+    
+    # 查找要更新的模型
+    found = False
+    for i, model in enumerate(models):
+        if model["name"] == name:
+            # 更新模型字段
+            if "description" in model_data:
+                model["description"] = model_data["description"]
+            if "model_name" in model_data:
+                model["model_name"] = model_data["model_name"]
+            if "model_type" in model_data:
+                model["model_type"] = model_data["model_type"]
+            if "base_url" in model_data:
+                model["base_url"] = model_data["base_url"]
+            if "is_reasoning" in model_data:
+                model["is_reasoning"] = model_data["is_reasoning"]
+            if "input_price" in model_data:
+                model["input_price"] = float(model_data["input_price"])
+            if "output_price" in model_data:
+                model["output_price"] = float(model_data["output_price"])
+            
+            # 保存更新后的模型
+            models[i] = model
+            found = True
+            
+            # 如果提供了API密钥，则更新
+            if "api_key" in model_data and model_data["api_key"]:
+                update_model_with_api_key(name, model_data["api_key"])
+            
+            break
+    
+    if found:
+        save_models(models)
+        return models[i]
+    
+    return None
+

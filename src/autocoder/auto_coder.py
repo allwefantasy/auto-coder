@@ -1321,8 +1321,8 @@ def main(input_args: Optional[List[str]] = None):
                 args.enable_rag_context = False
                 rag = RAGFactory.get_rag(llm=chat_llm, args=args, path="")
                 response = rag.stream_chat_oai(
-                    conversations=[{"role": "user", "content": args.query}])[0]                                                
-                v = ([item, None] for item in response)
+                    conversations=loaded_conversations)[0]                                                
+                v = ([item[0], None] for item in response)
                 
             elif "mcp" in args.action: 
                 from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest                               
