@@ -320,16 +320,16 @@ class TestPluginSystem(TestCase):
         self.assertEqual(completions[1][1], "Option 2", "显示文本不正确")
 
     def test_plugins_load_completions(self):
-        """测试内置的/plugins load命令补全功能"""
+        """测试内置的/plugins /load命令补全功能"""
         # 确保插件管理器可以发现插件
         discovered_plugins = self.manager.discover_plugins()
         self.assertTrue(len(discovered_plugins) > 0, "没有可发现的插件")
 
-        # 测试/plugins load命令的动态补全
+        # 测试/plugins /load命令的动态补全
         completions = self.manager.get_dynamic_completions(
-            "/plugins load", "/plugins load"
+            "/plugins /load", "/plugins /load"
         )
-        self.assertTrue(len(completions) > 0, "未能获取/plugins load命令的补全选项")
+        self.assertTrue(len(completions) > 0, "未能获取/plugins /load命令的补全选项")
 
         # 验证补全项格式
         for completion_text, display_text in completions:
@@ -341,7 +341,7 @@ class TestPluginSystem(TestCase):
         if len(plugin_name) > 1:
             prefix = plugin_name[0]
             filtered_completions = self.manager.get_dynamic_completions(
-                "/plugins load", f"/plugins load {prefix}"
+                "/plugins /load", f"/plugins /load {prefix}"
             )
             if filtered_completions:  # 如果有匹配项
                 self.assertTrue(

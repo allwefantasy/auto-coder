@@ -137,7 +137,7 @@ MESSAGES = {
         "confirm_execute": "Do you want to execute this script?",
         "official_doc": "Official Documentation: https://uelng8wukz.feishu.cn/wiki/NhPNwSRcWimKFIkQINIckloBncI",
         "plugins_desc": "Manage plugins",
-        "plugins_usage": "Usage: /plugins <command>\nAvailable subcommands:\n  /list - List all plugins\n  /add <name> - Add a plugin\n  /remove <name> - Remove a plugin\n  /enable <name> - Enable a plugin\n  /disable <name> - Disable a plugin\n  /reload - Reload all plugins\n  /help - Show this help message",
+        "plugins_usage": "Usage: /plugins <command>\nAvailable subcommands:\n  /plugins /list - List all available plugins\n  /plugins /load <name> - Load a plugin\n  /plugins /unload <name> - Unload a plugin\n  /plugins/dirs - List plugin directories\n  /plugins/dirs /add <path> - Add a plugin directory\n  /plugins/dirs /remove <path> - Remove a plugin directory\n  /plugins/dirs /clear - Clear all plugin directories",
     },
     "zh": {
         "auto_command_analyzing": "正在分析命令请求",
@@ -274,7 +274,7 @@ MESSAGES = {
         "confirm_execute": "是否执行此脚本?",
         "official_doc": "官方文档: https://uelng8wukz.feishu.cn/wiki/NhPNwSRcWimKFIkQINIckloBncI",
         "plugins_desc": "管理插件",
-        "plugins_usage": "用法: /plugins <命令>\n可用的子命令:\n  /list - 列出所有插件\n  /add <名称> - 添加一个插件\n  /remove <名称> - 移除一个插件\n  /enable <名称> - 启用一个插件\n  /disable <名称> - 禁用一个插件\n  /reload - 重新加载所有插件\n  /help - 显示此帮助消息",
+        "plugins_usage": "用法: /plugins <命令>\n可用的子命令:\n  /plugins /list - 列出所有可用插件\n  /plugins /load <名称> - 加载一个插件\n  /plugins /unload <名称> - 卸载一个插件\n  /plugins/dirs - 列出插件目录\n  /plugins/dirs /add <路径> - 添加一个插件目录\n  /plugins/dirs /remove <路径> - 移除一个插件目录\n  /plugins/dirs /clear - 清除所有插件目录",
     },
 }
 
