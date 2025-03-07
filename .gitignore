@@ -58,3 +58,5 @@ notebooks/generated_image.png
 **/*.egg-info
 
 .cache/
+/file*.py
+/notebooks/output*

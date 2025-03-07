@@ -11,6 +11,9 @@ from spire.doc import Document
 from spire.doc import ImageType
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
+from byzerllm.utils.client import code_utils
+
 class ImageInfo(pydantic.BaseModel):
     """
     图片信息
@@ -35,7 +38,10 @@ class Anything2Img:
         keep_conversion: bool = False,                
     ):
         self.llm = llm
-        self.vl_model = llm.get_sub_client("vl_model")
+        if llm.get_sub_client("vl_model"):
+            self.vl_model = llm.get_sub_client("vl_model")
+        else:
+            self.vl_model = self.llm
         self.args = args
         self.output_dir = args.output
         os.makedirs(self.output_dir, exist_ok=True)
@@ -45,28 +51,59 @@ class Anything2Img:
     def analyze_image(self, image_path: str) -> str:
         """
         {{ image }}
-        图片中一般包含文字，图片，图表。分析图片，返回该图片包含的文本内容以及图片位置信息。
-        请遵循以下格式返回：
+        图片中一般可能包含文字，图片，图表三种元素,给出每种元素的bounding box坐标。
+        bouding box 使用 (xmin, ymin, xmax, ymax) 来表示，其中xmin, ymin： 表示矩形左上角的坐标
+        xmax, ymax： 表示矩形右下角的坐标
 
+        最后按如下格式返回：
         ```json
         {
-            "text": "页面的文本内容",
-            "images": [
+            "objects": [
                 {
-                    "coordinates": [x1, y1, x2, y2],
-                    "text": "对图片的描述"                    
+                    "type": "image",
+                    "bounding_box": [xmin, ymin, xmax, ymax],
+                    "text": "图片描述"
+                },
+                {
+                    "type": "text",
+                    "bounding_box": [xmin, ymin, xmax, ymax],
+                    "text": "文本内容"
                 }
-            ],
-            "width": 页面宽度,
-            "height": 页面高度
+                ,
+                {
+                    "type": "table",
+                    "bounding_box": [xmin, ymin, xmax, ymax],
+                    "text": "表格的markdown格式"
+                }
+                ...
+            ]
         }
         ```
+        """
+        image = byzerllm.Image.load_image_from_path(image_path)
+        return {"image": image}
 
-        注意：
-        1. 其中x1,y1是左上角坐标，x2,y2是右下角坐标，使用绝对坐标，也就是图片的像素坐标。
-        2. 文本内容应保持原有的段落格式
-        3. width和height是页面宽度，高度,要求整数类型
-        4. 格局图片中文本和图片的位置关系，在文本中使用 <image_placeholder> 来表示图片。
+    @byzerllm.prompt()
+    def detect_objects(self, image_path: str) -> str:
+        """
+        {{ image }}
+        请分析这张图片，识别图片中图片，并给出每个图片的bounding box坐标。
+        bouding box 使用 (xmin, ymin, xmax, ymax) 来表示，其中xmin, ymin： 表示矩形左上角的坐标
+        xmax, ymax： 表示矩形右下角的坐标
+
+        最后按如下格式返回：
+        ```json
+        {
+            "objects": [
+                {
+                    "bounding_box": [xmin, ymin, xmax, ymax],
+                    "text": "图片描述"
+                },
+                ...
+            ]
+        }
+        ```
+        
         """
         image = byzerllm.Image.load_image_from_path(image_path)
         return {"image": image}
@@ -141,12 +178,12 @@ class Anything2Img:
         else:
             image_paths = self.convert(file_path)[0:size]
         
-        pages: List[Page] = []
+        pages_results = []
         # 使用线程池并行分析图片
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
                 executor.submit(
-                    self.analyze_image.with_llm(self.vl_model).with_return_type(Page).run,
+                    self.analyze_image.with_llm(self.vl_model).run,
                     image_path
                 ): image_path for image_path in image_paths
             }
@@ -155,7 +192,11 @@ class Anything2Img:
                 image_path = futures[future]
                 try:
                     result = future.result()
-                    pages.append(result)
+                    # 解析JSON结果
+                    result_json = code_utils.extract_code(result)[-1][1]
+                    result_dict = json.loads(result_json)
+                    # 存储结果和对应的图像路径
+                    pages_results.append((result_dict, image_path))
                     logger.info(f"Analyzed {image_path}")
                 except Exception as e:
                     logger.error(f"Failed to analyze {image_path}: {str(e)}")
@@ -163,34 +204,63 @@ class Anything2Img:
         # 生成Markdown内容
         markdown_content = []
         
-        # 遍历每个页面和对应的图片路径
-        for page, image_path in zip(pages, image_paths):
-            # 处理页面中的每个图片
-            for img in page.images:                                
-                # 打开原始图片
-                original_image = Image.open(image_path)                
-                
-                # 获得坐标
-                x1 = img.coordinates[0]
-                y1 = img.coordinates[1]
-                x2 = img.coordinates[2]
-                y2 = img.coordinates[3]
-                
-                # 截取图片
-                cropped_image = original_image.crop((x1, y1, x2, y2))
-                
-                # 保存截取后的图片
-                cropped_image_path = os.path.join(images_dir, f"cropped_{os.path.basename(image_path)}")
-                cropped_image.save(cropped_image_path)
-                
-                # 将图片路径转换为Markdown格式
-                image_markdown = f"![{img.text}]({cropped_image_path})"
-                
-                # 替换文本中的<image_placeholder>为实际的图片Markdown
-                page.text = page.text.replace("<image_placeholder>", image_markdown, 1)
+        # 遍历每个页面的分析结果
+        for page_result, image_path in pages_results:
+            page_markdown = []
             
-            # 将处理后的页面文本添加到Markdown内容中
-            markdown_content.append(page.text)
+            # 按照对象类型分别处理文本、图片和表格
+            text_objects = []
+            image_objects = []
+            table_objects = []
+            
+            for obj in page_result.get("objects", []):
+                obj_type = obj.get("type", "")
+                if obj_type == "text":
+                    text_objects.append(obj)
+                elif obj_type == "image":
+                    image_objects.append(obj)
+                elif obj_type == "table":
+                    table_objects.append(obj)
+            
+            # 按照垂直位置排序所有对象
+            all_objects = text_objects + image_objects + table_objects
+            all_objects.sort(key=lambda x: x.get("bounding_box", [0, 0, 0, 0])[1])  # 按y坐标排序
+            
+            # 处理所有对象并生成markdown
+            for obj in all_objects:
+                obj_type = obj.get("type", "")
+                bbox = obj.get("bounding_box", [0, 0, 0, 0])
+                content = obj.get("text", "")
+                
+                if obj_type == "text":
+                    # 直接添加文本内容
+                    page_markdown.append(content)
+                
+                elif obj_type == "image":
+                    # 处理图片
+                    original_image = Image.open(image_path)
+                    
+                    # 提取图片区域
+                    x1, y1, x2, y2 = [int(coord) for coord in bbox]
+                    cropped_image = original_image.crop((x1, y1, x2, y2))
+                    
+                    # 生成唯一文件名
+                    image_filename = f"img_{os.path.basename(image_path)}_{x1}_{y1}_{x2}_{y2}.png"
+                    cropped_image_path = os.path.join(images_dir, image_filename)
+                    cropped_image.save(cropped_image_path)
+                    
+                    # 添加图片的markdown
+                    image_markdown = f"![{content}]({cropped_image_path})"
+                    page_markdown.append(image_markdown)
+                
+                elif obj_type == "table":
+                    # 对表格内容进行处理，它已经是markdown格式
+                    page_markdown.append(content)
+            
+            # 将页面内容合并为字符串
+            page_content = "\n\n".join(page_markdown)
+            markdown_content.append(page_content)
         
         # 将所有页面内容合并为一个Markdown文档
-        return '\n\n'.join(markdown_content)
+        return '\n\n---\n\n'.join(markdown_content)
+    
