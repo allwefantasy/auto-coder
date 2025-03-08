@@ -203,4 +203,48 @@ Manages plugins for the Chat Auto Coder:
 - `get_dynamic_completions(command, current_input)`: Get dynamic completions based on current input
 - `load_runtime_cfg()`: Load runtime configuration for plugins
 - `save_runtime_cfg()`: Save runtime configuration for plugins
-- `shutdown_all()`: Shutdown all plugins 
+- `shutdown_all()`: Shutdown all plugins
+
+### Module-Level Functions
+
+The `autocoder.plugins` module also provides the following functions:
+
+- `register_global_plugin_dir(directory)`: Register a directory as a global plugin directory during plugin installation. This is a convenience function for plugin installation scripts.
+
+## Plugin Installation and Registration
+
+When creating installation scripts for plugins, you can use the `register_global_plugin_dir` module-level function to automatically register your plugin's directory as a global plugin directory. This makes the plugin available to all projects on the user's machine.
+
+### Example: Plugin Installation Script
+
+```python
+#!/usr/bin/env python3
+import os
+import sys
+from pathlib import Path
+
+def install_plugin():
+    """Install the plugin and register it globally."""
+    # Get the current directory (where your plugin code is located)
+    plugin_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    try:
+        # Import the plugin manager module
+        sys.path.insert(0, str(Path(plugin_dir).parent))
+        from autocoder.plugins import register_global_plugin_dir
+        
+        # Register the plugin directory globally using the module function
+        register_global_plugin_dir(plugin_dir)
+        print(f"✅ Successfully registered plugin directory: {plugin_dir}")
+        print(f"The plugin is now available in all Chat Auto Coder projects.")
+            
+        return True
+    except Exception as e:
+        print(f"❌ Error during plugin installation: {str(e)}")
+        return False
+
+if __name__ == "__main__":
+    if install_plugin():
+        print("Installation completed successfully!")
+    else:
+        print("Installation failed. Please check the error messages above.") 

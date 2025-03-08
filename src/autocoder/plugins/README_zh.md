@@ -203,4 +203,48 @@ def id_name(cls) -> str:
 - `get_dynamic_completions(command, current_input)`：根据当前输入获取动态补全选项
 - `load_runtime_cfg()`：加载插件的运行时配置
 - `save_runtime_cfg()`：保存插件的运行时配置
-- `shutdown_all()`：关闭所有插件 
+- `shutdown_all()`：关闭所有插件
+
+### 模块级别函数
+
+`autocoder.plugins` 模块还提供以下函数：
+
+- `register_global_plugin_dir(directory)`：在插件安装过程中将目录注册为全局插件目录。这是为插件安装脚本提供的便捷函数。
+
+## 插件安装与注册
+
+在创建插件安装脚本时，您可以使用 `register_global_plugin_dir` 模块级别函数自动将插件目录注册为全局插件目录。这使得插件对用户机器上的所有项目都可用。
+
+### 示例：插件安装脚本
+
+```python
+#!/usr/bin/env python3
+import os
+import sys
+from pathlib import Path
+
+def install_plugin():
+    """安装插件并全局注册。"""
+    # 获取当前目录（插件代码所在位置）
+    plugin_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    try:
+        # 导入插件管理器模块
+        sys.path.insert(0, str(Path(plugin_dir).parent))
+        from autocoder.plugins import register_global_plugin_dir
+        
+        # 使用模块函数将插件目录全局注册
+        register_global_plugin_dir(plugin_dir)
+        print(f"✅ 成功注册插件目录：{plugin_dir}")
+        print(f"该插件现在可用于所有 Chat Auto Coder 项目。")
+            
+        return True
+    except Exception as e:
+        print(f"❌ 插件安装过程中出错：{str(e)}")
+        return False
+
+if __name__ == "__main__":
+    if install_plugin():
+        print("安装成功完成！")
+    else:
+        print("安装失败。请查看上面的错误信息。") 

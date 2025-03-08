@@ -1106,3 +1106,18 @@ class PluginManager:
                 processed_completions.append((remaining_text, display_text))
 
         return processed_completions
+
+
+def register_global_plugin_dir(plugin_dir: str) -> None:
+    """注册一个全局插件目录。
+
+    Args:
+        plugin_dir: 插件目录路径
+    """
+    plugin_dir = os.path.abspath(os.path.normpath(plugin_dir))
+    if not os.path.exists(plugin_dir):
+        print(f"Plugin directory does not exist: {plugin_dir}")
+        return
+    plugin_manager = PluginManager()
+    plugin_manager.add_global_plugin_directory(plugin_dir)
+    print(f"Registered global plugin directory: {plugin_dir}")
