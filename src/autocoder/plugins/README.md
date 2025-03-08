@@ -13,19 +13,7 @@ This directory contains the plugin system for Chat Auto Coder, which allows exte
 
 ## Using Plugins
 
-You can load plugins in several ways:
-
-1. Command line arguments:
-   ```
-   python -m autocoder.chat_auto_coder --plugin_dirs /path/to/plugins --plugins PluginClass1,PluginClass2
-   ```
-
-2. Configuration file:
-   ```
-   python -m autocoder.chat_auto_coder --plugin_config /path/to/config.json
-   ```
-
-3. At runtime using the `/plugins` command:
+At runtime using the `/plugins` command:
    ```
    /plugins list              # List available plugins
    /plugins load PluginClass  # Load a specific plugin

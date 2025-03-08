@@ -13,19 +13,7 @@
 
 ## 使用插件
 
-您可以通过以下几种方式加载插件：
-
-1. 命令行参数：
-   ```
-   python -m autocoder.chat_auto_coder --plugin_dirs /path/to/plugins --plugins PluginClass1,PluginClass2
-   ```
-
-2. 配置文件：
-   ```
-   python -m autocoder.chat_auto_coder --plugin_config /path/to/config.json
-   ```
-
-3. 在运行时使用 `/plugins` 命令：
+在运行时使用 `/plugins` 命令：
    ```
    /plugins list              # 列出可用插件
    /plugins load PluginClass  # 加载特定插件
