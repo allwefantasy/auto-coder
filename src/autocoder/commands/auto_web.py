@@ -25,6 +25,16 @@ class WebAction(pydantic.BaseModel):
     action: str
     parameters: Dict[str, Any] = {}
     description: Optional[str] = None
+    expected_outcome: Optional[str] = None  # 新增: 期望的操作结果
+
+
+class ActionResult(pydantic.BaseModel):
+    """Action执行结果"""
+    success: bool
+    action: WebAction
+    screenshot_path: Optional[str] = None
+    result: Dict[str, Any] = {}
+    error: Optional[str] = None
 
 
 class AutoWebRequest(pydantic.BaseModel):
@@ -40,6 +50,7 @@ class AutoWebResponse(pydantic.BaseModel):
     explanation: Optional[str] = None
     additional_info: Optional[str] = None
     suggested_next_steps: Optional[List[str]] = None
+    overall_status: Optional[str] = None  # 新增: 整体任务状态
 
 
 class AutoWebTuner:
@@ -47,7 +58,7 @@ class AutoWebTuner:
     基于大模型的网页自动化工具
     
     该类使用ComputerUse工具集实现浏览器操作，从用户指令中自动解析需要执行的操作，
-    并生成详细的执行步骤，最后执行并返回结果。
+    并生成详细的执行步骤，验证每一步执行结果，最后执行并返回结果。
     """
     
     def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs):
@@ -64,6 +75,9 @@ class AutoWebTuner:
         
         # 初始化ComputerUse工具
         self.computer = ComputerUse(llm=llm, args=args)
+        
+        # 记录执行历史
+        self.execution_history = []
     
     @byzerllm.prompt()
     def _command_readme(self) -> Dict[str, str]:
@@ -144,8 +158,8 @@ class AutoWebTuner:
         </description>
         <usage>
          该方法需要以下参数：
-         1. image_path: 图片路径，如果为None则自动截图
-         2. element_desc: 元素的文本描述，例如"登录按钮"、"搜索框"等
+         1. element_desc: 元素的文本描述，例如"登录按钮"、"搜索框"等
+         2. image_path: 图片路径，如果为None则自动截图
          
          使用例子：
          find_and_click(element_desc="登录按钮")  # 自动截图并查找点击
@@ -255,29 +269,35 @@ class AutoWebTuner:
         </command>
 
         <command>
-        <name>run_workflow</name>
+        <name>ask_user</name>
         <description>
-          执行一系列预定义的操作步骤。适用于需要执行多个连续操作的场景。
+          向用户提问并获取回答。适用于需要用户输入信息或确认的场景。
         </description>
         <usage>
-         该方法接受一个steps参数，是一个包含操作步骤的列表。
-         每个步骤是一个字典，包含action字段和相应的参数。
-         
-         支持的action类型与前面介绍的命令相同。
+         该方法需要一个question参数，指定要向用户提出的问题。
          
          使用例子：
-         run_workflow(steps=[
-             {"action": "screenshot", "filename": "start.png"},
-             {"action": "find_and_click", "element_desc": "搜索框"},
-             {"action": "type_text", "text": "自动化测试"},
-             {"action": "press_key", "key": "enter", "wait": 2},
-             {"action": "screenshot", "filename": "result.png"}
-         ])
-         
-         每个步骤都可以包含wait字段，指定操作后的等待时间（秒）。
+         ask_user(question="请输入您的用户名")
+         ask_user(question="是否继续操作？(yes/no)")
          
          返回值：
-         包含每个步骤执行结果的列表
+         用户输入的文本内容
+        </usage>
+        </command>
+
+        <command>
+        <name>response_user</name>
+        <description>
+          向用户显示消息。适用于需要向用户提供反馈或信息的场景，但不需要用户响应。
+        </description>
+        <usage>
+         该方法需要一个response参数，指定要向用户显示的消息内容。
+         
+         使用例子：
+         response_user(response="正在搜索网页...")
+         response_user(response="操作完成，请等待页面加载")
+         
+         该方法不等待用户输入，只是显示信息。
         </usage>
         </command>
         </commands>
@@ -286,6 +306,9 @@ class AutoWebTuner:
     @byzerllm.prompt()
     def analyze_task(self, request: AutoWebRequest) -> Dict[str, str]:
         """
+        图片是当前屏幕截图。
+        {{ image }}
+
         我需要你帮我分析用户的网页自动化任务请求，并生成可执行的步骤。
         
         用户请求：{{request.user_input}}
@@ -293,15 +316,12 @@ class AutoWebTuner:
         {% if request.context %}
         上下文信息：{{request.context}}
         {% endif %}
-        
-        {% if request.screenshot_path %}
-        用户提供了当前屏幕截图路径：{{request.screenshot_path}}
-        {% endif %}
+                
         
         请分析用户的请求，并生成一系列浏览器自动化操作步骤。支持的操作类型包括：
         
         <commands>
-        {{ self._command_readme() }}
+        {{ web_tools_readme }}
         </commands>
         
         请返回以下JSON格式的响应：
@@ -314,7 +334,8 @@ class AutoWebTuner:
                         "参数1": "值1",
                         "参数2": "值2"
                     },
-                    "description": "该步骤的描述"
+                    "description": "该步骤的描述",
+                    "expected_outcome": "执行该操作后期望看到的结果"
                 }
             ],
             "explanation": "对整体方案的解释",
@@ -329,248 +350,409 @@ class AutoWebTuner:
         3. 在点击或输入前确认元素位置
         4. 添加适当的等待时间（通过wait参数）
         5. 包含足够详细的描述，帮助用户理解每一步
+        6. 为每个步骤提供明确的expected_outcome，描述执行该操作后期望看到的结果，方便验证
         
         如果无法确定具体坐标，请使用find_and_click操作通过文本描述查找元素。
-                
+        
+        请确保每个步骤都有一个合理的期望结果，以便我们可以验证操作是否成功。
         """
+        image = byzerllm.Image.load_image_from_path(request.screenshot_path)
         return {
-            "task": request,
-            "web_tools_readme": self._command_readme.prompt()
+            "request": request,
+            "web_tools_readme": self._command_readme.prompt(),
+            "image": image
         }
 
     @byzerllm.prompt()
-    def analyze_execution_result(self, content: str) -> Dict[str, str]:
+    def verify_action_result(self, action: WebAction, result: Dict[str, Any], screenshot_path: str) -> Dict[str, str]:
         """
-        我刚刚执行了以下网页自动化操作：
+        图片是当前屏幕截图。
+        {{ image }}
         
-        {{content}}
-        
-        请根据执行结果分析当前状态，并生成下一步操作建议。你可以提供以下几种响应：
-        
-        1. 如果需要继续执行更多步骤以完成用户请求，请提供详细的操作步骤
-        2. 如果任务已经完成，请提供结果总结和分析
-        3. 如果执行过程中遇到问题，请分析问题并提供解决方案
-        
-        请使用与之前相同的JSON格式：
+        我需要验证一个Web自动化操作的执行结果是否符合预期。
+
+        执行的操作:
+        ```json
+        {{ action_json }}
+        ```
+
+        操作的期望结果:
+        {{ action.expected_outcome }}
+
+        操作的实际执行结果:
+        ```json
+        {{ result_json }}
+        ```        
+
+        请分析操作的实际执行结果和当前屏幕状态，判断操作是否达成了预期效果。
+
+        返回以下JSON格式的验证结果:
         ```json
         {
-            "actions": [...],
-            "explanation": "...",
-            "additional_info": "...",
-            "suggested_next_steps": [...]
+            "success": true或false,                  // 操作是否成功达成预期效果
+            "analysis": "详细分析当前屏幕和操作结果",  // 分析当前屏幕和操作结果
+            "reason": "成功或失败的原因",             // 操作成功或失败的原因
+            "suggestion": "如果失败，建议的下一步操作"  // 如果操作失败，建议的下一步操作
+        }
+        ```
+        """
+        image = byzerllm.Image.load_image_from_path(screenshot_path)
+        return {
+            "action_json": json.dumps(action.model_dump(), ensure_ascii=False, indent=2),
+            "action": action,
+            "result_json": json.dumps(result, ensure_ascii=False, indent=2),
+            "image": image
+        }
+
+    @byzerllm.prompt()
+    def analyze_execution_result(self, task: AutoWebRequest, execution_history: List[Dict], screenshot_path: str) -> Dict[str, str]:
+        """
+        图片是当前屏幕截图。
+        {{ image }}
+
+        我需要你分析网页自动化任务的执行历史和当前屏幕状态，确定下一步行动计划。
+        
+        原始任务:
+        {{ task.user_input }}
+        
+        执行历史:
+        ```json
+        {{ execution_history_json }}
+        ```        
+        请根据执行历史和当前屏幕状态，分析目前的情况并确定接下来的步骤。
+        
+        返回以下JSON格式的响应:
+        ```json
+        {
+            "current_status": "当前任务进展状态",
+            "analysis": "详细分析当前情况",
+            "completed": true或false,  // 任务是否已完成
+            "actions": [  // 如果任务未完成，需要执行的后续操作
+                {
+                    "action": "操作类型",
+                    "parameters": {
+                        "参数1": "值1",
+                        "参数2": "值2"
+                    },
+                    "description": "该步骤的描述",
+                    "expected_outcome": "执行该操作后期望看到的结果"
+                }
+            ],
+            "explanation": "对后续计划的解释",
+            "overall_status": "总体任务状态评估"
         }
         ```
         
-        如果任务已完成，请将actions数组留空。
-        
+        请确保:
+        1. 准确评估当前任务进展
+        2. 如果遇到错误或意外情况，提供恢复策略
+        3. 如果任务已完成，明确说明完成的标志
+        4. 提供清晰的后续操作步骤（如果需要）
         """
-        return {"content": content}
+        image = byzerllm.Image.load_image_from_path(screenshot_path)
+        return {
+            "task": task,
+            "execution_history_json": json.dumps(execution_history, ensure_ascii=False, indent=2),
+            "image": image
+        }
 
-    def analyze_web_task(self, request: AutoWebRequest) -> AutoWebResponse:
+    def execute_action(self, action: WebAction) -> ActionResult:
         """
-        分析网页自动化任务并生成操作步骤
+        执行单个网页自动化操作
         
         Args:
-            request: 自动化任务请求
-             
+            action: 要执行的操作
+            
         Returns:
-            生成的响应，包含操作步骤
+            操作执行结果
         """
-        # 准备提示
-        prompt = self.analyze_task.with_llm(self.llm).run(request=request)
-        conversations = [{"role": "user", "content": prompt}]
-        
-        # 使用LLM分析任务
         self.printer.print_in_terminal(
-            "auto_web_analyzing",
-            style="blue"
+            "executing_web_action",
+            style="blue",
+            action=action.action,
+            description=action.description or ""
         )
         
-        model_name = ",".join(llms_utils.get_llm_names(self.llm))
-        result, _ = stream_out(
-            self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
-            model_name=model_name,
-            title="正在分析网页自动化任务...",
-            final_title="网页自动化任务分析完成",
-            display_func=lambda content: "正在分析用户的网页自动化需求..."
-        )
-        
-        # 保存对话
-        conversations.append({"role": "assistant", "content": result})
-        
-        # 解析返回的JSON
         try:
-            json_content = code_utils.extract_code(result)
-            if json_content and len(json_content) > 0:
-                json_str = json_content[-1][1]
-                response_dict = json.loads(json_str)
-                response = AutoWebResponse(**response_dict)
-            else:
-                # 无法提取JSON，创建一个带有错误解释的响应
-                response = AutoWebResponse(
-                    explanation="无法从LLM响应中提取有效的JSON格式。请尝试重新描述您的请求。"
+            # 特殊处理ask_user操作
+            if action.action == "ask_user":
+                question = action.parameters.get("question", "")
+                answer = self.ask_user(question)
+                screenshot_path = self.computer.screenshot(f"after_ask_user_{int(time.time())}.png")
+                return ActionResult(
+                    success=True,
+                    action=action,
+                    screenshot_path=screenshot_path,
+                    result={"success": True, "answer": answer}
                 )
+            
+            # 特殊处理response_user操作
+            if action.action == "response_user":
+                message = action.parameters.get("response", "")
+                self.response_user(message)
+                screenshot_path = self.computer.screenshot(f"after_response_user_{int(time.time())}.png")
+                return ActionResult(
+                    success=True,
+                    action=action,
+                    screenshot_path=screenshot_path,
+                    result={"success": True, "message": message}
+                )
+            
+            # 构建工作流步骤
+            step = {
+                "action": action.action,
+                **action.parameters
+            }
+            
+            # 执行步骤并获取结果
+            step_results = self.computer.run_workflow([step])
+            
+            # 执行后截图
+            screenshot_path = self.computer.screenshot(f"after_{action.action}_{int(time.time())}.png")
+            
+            if step_results and len(step_results) > 0:
+                result = step_results[0]
+                return ActionResult(
+                    success=result.get("success", True),
+                    action=action,
+                    screenshot_path=screenshot_path,
+                    result=result
+                )
+            else:
+                return ActionResult(
+                    success=False,
+                    action=action,
+                    screenshot_path=screenshot_path,
+                    error="执行步骤返回空结果"
+                )
+                
         except Exception as e:
-            logger.error(f"解析LLM响应时出错: {str(e)}")
-            response = AutoWebResponse(
-                explanation=f"解析响应时出错: {str(e)}。请尝试重新描述您的请求。"
+            logger.error(f"执行操作 {action.action} 时出错: {str(e)}")
+            # 尝试截图记录错误状态
+            try:
+                screenshot_path = self.computer.screenshot(f"error_{action.action}_{int(time.time())}.png")
+            except:
+                screenshot_path = None
+                
+            return ActionResult(
+                success=False,
+                action=action,
+                screenshot_path=screenshot_path,
+                error=str(e)
             )
-        
-        # 保存对话记录到记忆文件
-        self.save_to_memory_file(
-            query=request.user_input,
-            response=response.model_dump_json(indent=2)
-        )
-        
-        return response
-    
-    def execute_web_actions(self, actions: List[WebAction]) -> List[Dict[str, Any]]:
+
+    def verify_result(self, action_result: ActionResult) -> Dict[str, Any]:
         """
-        执行网页自动化操作步骤
+        验证操作结果是否符合预期
         
         Args:
-            actions: 要执行的操作列表
-              
+            action_result: 操作执行结果
+            
         Returns:
-            执行结果列表
+            验证结果
         """
-        results = []
+        # 如果操作已经失败，不需要验证
+        if not action_result.success:
+            return {
+                "success": False,
+                "analysis": f"操作执行失败: {action_result.error}",
+                "reason": action_result.error,
+                "suggestion": "检查操作参数或尝试不同的方法"
+            }
+        
+        # 如果没有预期结果或截图，则无法验证
+        if not action_result.action.expected_outcome or not action_result.screenshot_path:
+            return {
+                "success": True,
+                "analysis": "无法验证结果，缺少预期结果或截图",
+                "reason": "缺少验证所需信息",
+                "suggestion": "继续执行下一步"
+            }
+        
+        # 使用 LLM 验证结果
+        verification = self.verify_action_result.with_llm(self.llm).run(
+            action=action_result.action,
+            result=action_result.result,
+            screenshot_path=action_result.screenshot_path
+        )
+        
+        # 解析验证结果
+        try:
+            verification_json = code_utils.extract_code(verification)[-1][1]
+            return json.loads(verification_json)
+        except Exception as e:
+            logger.error(f"解析验证结果时出错: {str(e)}")
+            return {
+                "success": True,  # 默认继续执行
+                "analysis": "无法解析验证结果",
+                "reason": str(e),
+                "suggestion": "继续执行下一步"
+            }
+
+    def run_adaptive_flow(self, request: AutoWebRequest, max_iterations: int = 10) -> AutoWebResponse:
+        """
+        运行自适应的自动化流程，根据执行结果动态调整后续计划
+        
+        Args:
+            request: 初始请求
+            max_iterations: 最大迭代次数，防止无限循环
+            
+        Returns:
+            最终响应结果
+        """
         console = Console()
         
-        for i, action in enumerate(actions):
+        # 初始状态：获取当前屏幕截图
+        initial_screenshot = self.computer.screenshot("initial_state.png")
+        if not request.screenshot_path:
+            request.screenshot_path = initial_screenshot
+        
+        # 分析任务并生成初始计划
+        response = self.analyze_task.with_llm(self.llm).run(request=request)
+        try:
+            json_content = code_utils.extract_code(response)[-1][1]
+            plan = AutoWebResponse.model_validate_json(json_content)
+        except Exception as e:
+            logger.error(f"解析任务分析结果时出错: {str(e)}")
+            console.print(Panel(
+                Text(f"解析任务分析结果时出错: {str(e)}", style="red"),
+                title="❌ 错误",
+                border_style="red"
+            ))
+            return AutoWebResponse(
+                explanation=f"解析任务分析结果时出错: {str(e)}",
+                overall_status="failed"
+            )
+        
+        # 执行历史
+        execution_history = []
+        iterations = 0
+        
+        while iterations < max_iterations:
+            iterations += 1
+            
             if global_cancel.cancelled:
                 self.printer.print_in_terminal(
                     "operation_cancelled",
                     style="yellow"
                 )
-                break
-                
-            description = action.description or f"步骤 {i+1}"
-            self.printer.print_in_terminal(
-                "executing_web_action",
-                style="blue",
-                action=action.action,
-                description=description
-            )
+                return AutoWebResponse(
+                    explanation="操作已取消",
+                    overall_status="cancelled",
+                    actions=[]
+                )
             
-            try:
-                # 构建工作流步骤
-                step = {
-                    "action": action.action,
-                    **action.parameters
-                }
-                
-                # 执行步骤并获取结果
-                step_results = self.computer.run_workflow([step])
-                
-                if step_results and len(step_results) > 0:
-                    result = step_results[0]
-                    results.append({
-                        "step": i+1,
-                        "action": action.action,
-                        "success": result.get("success", True),
-                        "result": result,
-                        "description": action.description
-                    })
-                else:
-                    results.append({
-                        "step": i+1,
-                        "action": action.action,
-                        "success": False,
-                        "result": None,
-                        "description": action.description,
-                        "error": "执行步骤返回空结果"
-                    })
-            except Exception as e:
-                logger.error(f"执行操作 {action.action} 时出错: {str(e)}")
-                results.append({
-                    "step": i+1,
-                    "action": action.action,
-                    "success": False,
-                    "error": str(e),
-                    "description": action.description
-                })
-        
-        return results
-    
-    def run_continuous_flow(self, request: AutoWebRequest, max_iterations: int = 5) -> AutoWebResponse:
-        """
-        运行连续的自动化流程，根据结果自动调整后续步骤
-        
-        Args:
-            request: 初始请求
-            max_iterations: 最大迭代次数，防止无限循环
-             
-        Returns:
-            最终响应结果
-        """
-        response = self.analyze_web_task.with_llm(self.llm).return_type(AutoWebResponse).run(request=request)
-        iterations = 1
-        
-        # 检查是否需要继续
-        while response.actions and iterations < max_iterations:
-            iterations += 1
+            # 如果没有更多操作，认为任务完成
+            if not plan.actions:
+                console.print(Panel(
+                    Text(plan.explanation or "任务完成", style="green"),
+                    title="✅ 完成",
+                    border_style="green"
+                ))
+                plan.overall_status = "completed"
+                return plan
+            
+            # 执行当前计划中的第一个操作
+            action = plan.actions[0]
+            self.printer.print_in_terminal(
+                "executing_step",
+                style="blue",
+                step=iterations,
+                description=action.description or action.action
+            )
             
             # 执行操作
-            results = self.execute_web_actions(response.actions)
-            result_content = json.dumps(results, ensure_ascii=False, indent=2)
+            action_result = self.execute_action(action)
             
-            # 准备新的上下文
-            prompt = self.analyze_execution_result.with_llm(self.llm).run(content=result_content)
-            conversations = [{"role": "user", "content": prompt}]
+            # 验证结果
+            verification = self.verify_result(action_result)
             
-            # 获取LLM对执行结果的分析和下一步建议
-            printer = Printer()
-            title = printer.get_message_from_key("analyzing_results")
-            final_title = printer.get_message_from_key("next_steps_determined")
+            # 记录执行历史
+            execution_record = {
+                "step": iterations,
+                "action": action.model_dump(),
+                "result": action_result.model_dump(exclude={"action"}),
+                "verification": verification
+            }
+            execution_history.append(execution_record)
             
-            model_name = ",".join(llms_utils.get_llm_names(self.llm))
-            result, _ = stream_out(
-                self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
-                model_name=model_name,
-                title=title,
-                final_title=final_title,
-                display_func=lambda content: "分析执行结果..."
-            )
-            
-            # 解析LLM的响应
-            try:
-                json_content = code_utils.extract_code(result)
-                if not json_content or len(json_content) == 0:
-                    break
+            # 如果验证失败，需要重新规划
+            if not verification.get("success", False):
+                self.printer.print_in_terminal(
+                    "action_verification_failed",
+                    style="yellow",
+                    action=action.action,
+                    reason=verification.get("reason", "未知原因")
+                )
+                
+                # 获取当前屏幕状态
+                current_screenshot = action_result.screenshot_path or self.computer.screenshot("current_state.png")
+                
+                # 基于执行历史和当前状态进行分析
+                analysis_result = self.analyze_execution_result.with_llm(self.llm).run(
+                    task=request,
+                    execution_history=execution_history,
+                    screenshot_path=current_screenshot
+                )
+                
+                try:
+                    # 解析分析结果
+                    analysis_json = code_utils.extract_code(analysis_result)[-1][1]
+                    new_plan = json.loads(analysis_json)
                     
-                json_str = json_content[-1][1]
-                new_response_dict = json.loads(json_str)
-                new_response = AutoWebResponse(**new_response_dict)
+                    # 更新计划
+                    if new_plan.get("completed", False):
+                        # 任务已完成
+                        console.print(Panel(
+                            Text(new_plan.get("analysis", "任务已完成"), style="green"),
+                            title="✅ 完成",
+                            border_style="green"
+                        ))
+                        return AutoWebResponse(
+                            explanation=new_plan.get("analysis", "任务已完成"),
+                            overall_status="completed",
+                            actions=[]
+                        )
+                    else:
+                        # 继续执行新计划
+                        plan = AutoWebResponse(
+                            actions=[WebAction.model_validate(a) for a in new_plan.get("actions", [])],
+                            explanation=new_plan.get("explanation", ""),
+                            additional_info=new_plan.get("analysis", ""),
+                            overall_status=new_plan.get("current_status", "in_progress")
+                        )
+                        
+                        self.printer.print_in_terminal(
+                            "replanned_actions",
+                            style="blue",
+                            count=len(plan.actions)
+                        )
                 
-                # 如果没有更多操作，结束循环
-                if not new_response.actions:
-                    console = Console()
-                    console.print(Panel(
-                        Text(new_response.explanation or "任务完成"),
-                        title="✅ 完成",
-                        border_style="green",
-                        padding=(1, 2)
-                    ))
-                    response = new_response
-                    break
-                
-                # 更新响应和操作
-                response = new_response
-                
-            except Exception as e:
-                logger.error(f"解析LLM响应时出错: {str(e)}")
-                break
+                except Exception as e:
+                    logger.error(f"解析分析结果时出错: {str(e)}")
+                    # 如果无法解析，默认继续执行下一个操作
+                    plan.actions = plan.actions[1:]
+            else:
+                # 验证成功，移除已执行的操作
+                plan.actions = plan.actions[1:]
+                self.printer.print_in_terminal(
+                    "action_succeeded",
+                    style="green",
+                    action=action.action
+                )
         
-        # 如果达到最大迭代次数
-        if iterations >= max_iterations:
-            self.printer.print_in_terminal(
-                "max_iterations_reached",
-                style="yellow",
-                max_iterations=max_iterations
-            )
+        # 达到最大迭代次数
+        self.printer.print_in_terminal(
+            "max_iterations_reached",
+            style="yellow",
+            max_iterations=max_iterations
+        )
         
-        return response
+        return AutoWebResponse(
+            explanation=f"达到最大迭代次数 ({max_iterations})，未能完成任务",
+            overall_status="max_iterations_reached",
+            actions=[]
+        )
 
     def save_to_memory_file(self, query: str, response: str):
         """保存对话到记忆文件"""
@@ -602,17 +784,95 @@ class AutoWebTuner:
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(existing_conv, f, ensure_ascii=False, indent=2)
 
+    def ask_user(self, question: str) -> str:
+        """
+        向用户提问，获取用户输入
+        
+        Args:
+            question: 问题内容
+            
+        Returns:
+            用户的回答
+        """
+        console = Console()
+        
+        # 创建一个醒目的问题面板
+        question_text = Text(question, style="bold cyan")
+        question_panel = Panel(
+            question_text,
+            title="[bold yellow]Web Automation Question[/bold yellow]",
+            border_style="blue",
+            expand=False
+        )
+        
+        # 显示问题面板
+        console.print(question_panel)
+        
+        # 获取用户输入
+        try:
+            from prompt_toolkit import PromptSession
+            session = PromptSession(message=self.printer.get_message_from_key('web_automation_ask_user', default="Your answer: "))
+            answer = session.prompt()
+        except (ImportError, KeyboardInterrupt):
+            # 降级到标准输入或处理中断
+            answer = input("Your answer: ")
+        
+        # 记录交互
+        self.save_to_memory_file(
+            query=question,
+            response=answer
+        )
+        
+        return answer
+
+    def response_user(self, response: str) -> str:
+        """
+        直接向用户显示消息，无需等待用户输入
+        
+        Args:
+            response: 要显示的消息内容
+            
+        Returns:
+            显示的消息内容
+        """
+        console = Console()
+        
+        # 创建一个醒目的消息面板
+        message_text = Text(response, style="italic")
+        message_panel = Panel(
+            message_text,
+            title="",
+            border_style="green",
+            expand=False
+        )
+        
+        # 显示消息面板
+        console.print(message_panel)
+        
+        # 记录交互
+        self.save_to_memory_file(
+            query="system_message",
+            response=response
+        )
+        
+        return response
+
 
 # 消息配置
 MESSAGES = {
     "auto_web_analyzing": "正在分析网页自动化任务...",
     "auto_web_analyzed": "网页自动化任务分析完成",
     "executing_web_action": "执行操作: {action} - {description}",
+    "executing_step": "执行步骤 {step}: {description}",
     "operation_cancelled": "操作已取消",
     "element_not_found": "未找到元素: {element}",
     "analyzing_results": "分析执行结果...",
     "next_steps_determined": "已确定下一步操作",
-    "max_iterations_reached": "已达到最大迭代次数 ({max_iterations})"
+    "max_iterations_reached": "已达到最大迭代次数 ({max_iterations})",
+    "action_verification_failed": "操作验证失败: {action} - {reason}",
+    "action_succeeded": "操作成功: {action}",
+    "replanned_actions": "已重新规划 {count} 个操作",
+    "web_automation_ask_user": "您的回答: "  # 新增消息
 }
 
 # 注册消息
@@ -649,7 +909,7 @@ def auto_web(user_input: str, screenshot_path: Optional[str] = None, context: Op
     # 初始化自动化工具
     tuner = AutoWebTuner(llm=llm, args=args)
     
-    # 执行连续的自动化流程
-    response = tuner.run_continuous_flow(request)
+    # 执行自适应的自动化流程
+    response = tuner.run_adaptive_flow(request)
     
     return response 
