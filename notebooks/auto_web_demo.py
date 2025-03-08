@@ -13,8 +13,8 @@ python auto_web_demo.py --task "打开浏览器并搜索Python自动化"
 # 提供截图路径
 python auto_web_demo.py --task "点击页面上的登录按钮" --screenshot "path/to/screenshot.png"
 
-# 提供上下文信息
-python auto_web_demo.py --task "填写表单并提交" --context "我正在尝试注册一个新账户"
+# 启用调试模式，每步操作需要确认
+python auto_web_demo.py --task "填写表单并提交" --debug
 
 参数:
 ----
@@ -25,132 +25,112 @@ python auto_web_demo.py --task "填写表单并提交" --context "我正在尝�
 --model_name: 使用的LLM模型名称，默认为doubao
 --max_iterations: 最大迭代次数，默认为10
 --product_mode: 产品模式 [pro|lite]，默认为lite
---verbose: 启用详细输出模式
+--debug: 启用详细输出模式
 """
 
 import os
 import sys
 import argparse
 import json
+import time
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from rich.table import Table
 
+import byzerllm
 from autocoder.commands.auto_web import auto_web
 from autocoder.common import AutoCoderArgs
 from autocoder.common.computer_use import ComputerUse
 from autocoder.utils.llms import get_single_llm
 
-def main():
-    parser = argparse.ArgumentParser(description='执行网页自动化操作')
-    parser.add_argument('--task', type=str, required=True,
-                        help='要执行的自动化任务描述')
-    parser.add_argument('--screenshot', type=str, default=None,
-                        help='可选的当前屏幕截图路径')
-    parser.add_argument('--context', type=str, default=None,
-                        help='可选的上下文信息')
-    parser.add_argument('--output_dir', type=str, default='./output',
-                        help='输出目录，用于保存截图和结果')
-    parser.add_argument('--model_name', type=str, default='doubao_vl',
-                        help='使用的LLM模型名称')
-    parser.add_argument('--max_iterations', type=int, default=10,
-                        help='最大迭代次数')
-    parser.add_argument('--product_mode', type=str, default='lite',
-                        choices=['pro', 'lite'], help='产品模式')
-    parser.add_argument('--verbose', action='store_true',
-                        help='启用详细输出模式')
+def parse_args():
+    parser = argparse.ArgumentParser(description="执行网页自动化操作")
+    parser.add_argument("--task", required=True, help="要执行的自动化任务描述")
+    parser.add_argument("--screenshot", help="可选的截图路径，如果未提供，将自动截图")
+    parser.add_argument("--context", help="可选的上下文信息")
+    parser.add_argument("--output-dir", default="./output", help="输出目录")
+    parser.add_argument("--model", default="doubao_vl", help="要使用的LLM模型名称")
+    parser.add_argument("--product-mode", default="lite", choices=["pro", "lite"], help="产品模式 (pro|lite)")
+    parser.add_argument("--debug", action="store_true", help="启用调试模式，每步操作需要确认")
     
-    args = parser.parse_args()
-    console = Console()
+    return parser.parse_args()
+
+def main():
+    # 解析命令行参数
+    args = parse_args()
     
     # 创建输出目录
     os.makedirs(args.output_dir, exist_ok=True)
     
-    # 准备AutoCoderArgs
-    autocoder_args = AutoCoderArgs(
-        output=args.output_dir,
-        product_mode=args.product_mode,
-        model=args.model_name
+    # 准备控制台显示
+    console = Console()
+    console.print(f"🤖 [bold green]Auto Web Demo[/bold green]", style="bold")
+    console.print(f"任务: [bold cyan]{args.task}[/bold cyan]", style="dim")
+    
+    # 初始化byzerllm
+    console.print("初始化LLM...", style="italic")
+    llm = get_single_llm(args.model,product_mode="lite")
+    # 创建配置
+    auto_coder_args = AutoCoderArgs(
+        output=args.output_dir
     )
     
-    # 如果没有提供截图但需要进行屏幕操作，先截个图
-    screenshot_path = args.screenshot
-    if not screenshot_path:
-        console.print("未提供截图，正在截取当前屏幕...", style="yellow")
-        try:
-            # 获取LLM
-            llm = get_single_llm(autocoder_args.model,"lite")
-            
-            # 使用ComputerUse截图
-            computer = ComputerUse(llm=llm, args=autocoder_args)
-            screenshot_path = computer.screenshot()
-            console.print(f"已截取当前屏幕: {screenshot_path}", style="green")
-        except Exception as e:
-            console.print(f"截图失败: {str(e)}", style="red")
-            console.print("继续执行，但可能无法进行某些屏幕操作", style="yellow")
+    # 执行自动化任务
+    start_time = time.time()
+    console.print("开始执行自动化任务...", style="bold blue")
     
-    # 显示任务信息
-    console.print(Panel(
-        Text(args.task, style="bold"),
-        title="📋 自动化任务",
-        border_style="blue"
-    ))
-    
-    # 调用auto_web函数
+    # 添加调试模式参数
     response = auto_web(
-        user_input=args.task, 
-        screenshot_path=screenshot_path,
+        llm=llm,
+        user_input=args.task,
+        screenshot_path=args.screenshot,
         context=args.context,
-        args=autocoder_args
+        args=auto_coder_args,
+        debug=args.debug
     )
     
-    # 输出任务结果
-    status_style = {
-        "completed": "green",
-        "failed": "red",
-        "cancelled": "yellow",
-        "in_progress": "blue",
-        "max_iterations_reached": "yellow"
-    }.get(response.overall_status, "white")
+    execution_time = time.time() - start_time
+    console.print(f"任务执行完成，总耗时: {execution_time:.2f}秒", style="green")
     
-    # 显示任务执行总结
-    if response.explanation:
-        console.print(Panel(
-            Text(response.explanation, style="italic"),
-            title=f"✨ 任务执行总结 ({response.overall_status})",
-            border_style=status_style
-        ))
-    
-    # 显示额外信息
-    if response.additional_info and args.verbose:
-        console.print(Panel(
-            Text(response.additional_info),
-            title="ℹ️ 额外信息",
-            border_style="cyan"
-        ))
-    
-    # 显示建议的后续步骤
-    if response.suggested_next_steps:
-        suggestions = "\n".join([f"• {step}" for step in response.suggested_next_steps])
-        console.print(Panel(
-            Text(suggestions),
-            title="👉 建议的后续步骤",
-            border_style="green"
-        ))
-    
-    # 显示剩余操作（如果有）
-    if response.actions:
-        table = Table(title="⏭️ 未执行的操作")
-        table.add_column("序号", style="dim")
-        table.add_column("操作", style="cyan")
-        table.add_column("描述", style="green")
+    # 展示结果
+    if response.overall_status:
+        status_color = {
+            "completed": "green",
+            "failed": "red",
+            "in_progress": "yellow",
+            "max_iterations_reached": "yellow",
+            "cancelled": "red"
+        }.get(response.overall_status, "white")
         
-        for i, action in enumerate(response.actions, 1):
+        console.print(f"\n状态: [bold {status_color}]{response.overall_status}[/bold {status_color}]")
+    
+    if response.explanation:
+        console.print("\n说明:")
+        console.print(response.explanation)
+    
+    if response.additional_info:
+        console.print("\n附加信息:")
+        console.print(response.additional_info)
+    
+    if response.suggested_next_steps:
+        console.print("\n建议的下一步:")
+        for step in response.suggested_next_steps:
+            console.print(f"- {step}")
+    
+    # 展示执行的操作
+    if response.actions:
+        console.print("\n剩余未执行的操作:", style="bold")
+        table = Table(show_header=True, header_style="bold magenta")
+        table.add_column("序号")
+        table.add_column("操作")
+        table.add_column("描述")
+        
+        for i, action in enumerate(response.actions):
             table.add_row(
-                str(i),
+                str(i+1),
                 action.action,
-                action.description or "无描述"
+                action.description or ""
             )
         
         console.print(table)

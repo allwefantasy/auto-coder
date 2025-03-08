@@ -1,7 +1,7 @@
 import os
 import time
 import json
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Union
 import pydantic
 from loguru import logger
 from rich.console import Console
@@ -12,13 +12,13 @@ import byzerllm
 from autocoder.common import AutoCoderArgs
 from autocoder.common.computer_use import ComputerUse
 from autocoder.common.printer import Printer
-from autocoder.utils import llms as llms_utils
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common.result_manager import ResultManager
 from autocoder.common import git_utils
 from autocoder.common.global_cancel import global_cancel
 from byzerllm.utils.client import code_utils
-
+from autocoder.common import detect_env
+from autocoder.common import shells
 
 class WebAction(pydantic.BaseModel):
     """网页自动化操作"""
@@ -80,7 +80,7 @@ class AutoWebTuner:
         self.execution_history = []
     
     @byzerllm.prompt()
-    def _command_readme(self) -> Dict[str, str]:
+    def _command_readme(self) -> str:
         '''
         你有如下函数可供使用：
         
@@ -105,16 +105,16 @@ class AutoWebTuner:
         </command>
 
         <command>
-        <name>detect_objects</name>
+        <name>detect</name>
         <description>
           分析图片，检测其中的各种界面元素（如按钮、输入框、链接等）并返回它们的位置和描述。
           对于需要点击或与特定界面元素交互的场景非常有用。
         </description>
         <usage>
-         该方法需要一个图片路径参数，通常是通过 screenshot() 函数获取的截图。
+         该方法需要一个image_path参数，通常是通过 screenshot() 函数获取的截图。
          
          使用例子：
-         detect_objects(image_path="screenshot.png")
+         detect(image_path="screenshot.png")
          
          返回值：
          JSON格式的检测结果，包含检测到的界面元素列表及其边界框坐标和描述：
@@ -171,7 +171,7 @@ class AutoWebTuner:
         </command>
 
         <command>
-        <name>type_text</name>
+        <name>type</name>
         <description>
           模拟键盘输入文本。适用于需要在输入框中输入内容的场景。
         </description>
@@ -181,18 +181,18 @@ class AutoWebTuner:
          2. interval (可选): 每个字符之间的时间间隔，默认为0.05秒
          
          使用例子：
-         type_text(text="Hello World")
-         type_text(text="慢速输入", interval=0.2)  # 较慢的输入速度
+         type(text="Hello World")
+         type(text="慢速输入", interval=0.2)  # 较慢的输入速度
         </usage>
         </command>
 
         <command>
-        <name>press_key</name>
+        <name>press</name>
         <description>
-          按下指定的键盘按键。适用于需要按特殊键(如回车、Tab等)的场景。
+          按下指定的键盘按键
         </description>
         <usage>
-         该方法需要一个key参数，指定要按下的键名称。
+         该方法需要一个key参数，支持数组和字符串。如果是字符串相当于直接输入该字符串，如果是数组相当于按下组合键。
          
          支持的键包括:
          - 'enter', 'return'
@@ -205,9 +205,10 @@ class AutoWebTuner:
          - 组合键: 'ctrl+c', 'ctrl+v', 'alt+tab'等
          
          使用例子：
-         press_key(key="enter")  # 按回车键
-         press_key(key="ctrl+a")  # 全选
-         press_key(key="alt+tab")  # 切换窗口
+         press(key="text")  # 输入 text 文本
+         press(key=["enter"])  # 按回车键
+         press(key=["ctrl", "a"])  # 全选
+         press(key=["alt", "tab"])  # 切换窗口
         </usage>
         </command>
 
@@ -269,6 +270,26 @@ class AutoWebTuner:
         </command>
 
         <command>
+        <name>wait_loading</name>
+        <description>
+        给定一个目标，等待目标出现。
+        </description>
+        <usage>
+         该方法需要以下参数：           
+         1. target: 执行完动作后，用户期待看到的东西。
+         
+         使用例子：
+         wait_loading(
+             target="搜索列表页面"
+         )
+         
+         该函数无返回。
+         
+         此功能特别适用于执行完点击等需要等待一会的函数，避免操作完后立马就校验结果但系统还处于加载状态而导致误判。
+        </usage>
+        </command>
+
+        <command>
         <name>ask_user</name>
         <description>
           向用户提问并获取回答。适用于需要用户输入信息或确认的场景。
@@ -300,71 +321,160 @@ class AutoWebTuner:
          该方法不等待用户输入，只是显示信息。
         </usage>
         </command>
+
+        <command>
+        <name>open_browser</name>
+        <description>
+          打开指定的浏览器并
+        </description>
+        <usage>
+         该方法支持以下参数：
+         1. browser_name: 浏览器名称，默认为"chrome"，也支持"firefox"和"edge"等         
+
+         推荐统一使用chrome浏览器。
+         
+         使用例子：
+         open_browser(browser_name="chrome")
+         open_browser(browser_name="firefox")
+        </usage>
+        </command>
+
+        <command>
+        <name>focus_app</name>
+        <description>
+          查找并聚焦指定的应用程序窗口。
+          这在需要确保某个应用程序处于活跃状态后才能进行后续操作时非常有用。
+        </description>
+        <usage>
+          该方法需要一个app_name参数，表示要聚焦的应用程序名称或窗口标题的一部分。
+          可选的retry_count参数表示重试次数，默认为3。
+          
+          使用例子：
+          focus_app(app_name="Chrome")  # 聚焦Chrome浏览器
+          focus_app(app_name="记事本", retry_count=5)  # 聚焦记事本，并增加重试次数
+          
+          返回值：
+          布尔值，表示是否成功聚焦应用
+        </usage>
+        </command>
         </commands>
         '''        
 
     @byzerllm.prompt()
-    def analyze_task(self, request: AutoWebRequest) -> Dict[str, str]:
+    def analyze_task(self, request: AutoWebRequest) -> str:
         """
         图片是当前屏幕截图。
-        {{ image }}
-
-        我需要你帮我分析用户的网页自动化任务请求，并生成可执行的步骤。
+        {{ screenshot }}
         
-        用户请求：{{request.user_input}}
+        我是一个专业的网页自动化助手。我能帮助用户执行各种网页操作，包括点击按钮、输入文本、导航网页等。
+        
+        当前用户环境信息如下:
+        <os_info>
+        操作系统: {{ env_info.os_name }} {{ env_info.os_version }}
+        操作系统发行版: {{ os_distribution }}
+        Python版本: {{ env_info.python_version }}
+        终端类型: {{ env_info.shell_type }}
+        终端编码: {{ env_info.shell_encoding }}
+        当前用户: {{ current_user }}
+        
+        {%- if shell_type %}
+        脚本类型：{{ shell_type }}
+        {%- endif %}
+
+        {%- if env_info.conda_env %}
+        Conda环境: {{ env_info.conda_env }}
+        {%- endif %}
+        {%- if env_info.virtualenv %}
+        虚拟环境: {{ env_info.virtualenv }}
+        {%- endif %}   
+        </os_info>
+
+        你有如下函数可供使用：
+        {{ command_readme }}
+
+        <guide>
+        通常交互都有一些标准的流程。比如如果希望从Google搜索某个内容，在 Darwin 系统下一般的函数调用顺序为：
+        1. 打开 chrome 浏览器 open_browser(browser_name="chrome")
+        2. 截取当前屏幕图片 screenshot()
+        3. 等待浏览器打开 wait_loading(screenshot_path="", target="浏览器是否出现")        
+        4. 聚焦浏览器 focus_app(app_name="chrome")
+        5. 快捷键 press(key=["command", "l"]) 定位到浏览器地址栏
+        6. 输入网址 type(text="https://www.google.com")
+        7. 按回车 press(key=["enter"])     
+        8. 截取当前屏幕图片 screenshot()
+        9. 等待页面加载 wait_loading(screenshot_path="", target="等待出现google搜索首页")
+        10. 截取当前屏幕图片 screenshot()
+        11. 找到搜索框 find_and_click(image_path="", element_desc="搜索框")
+        12. 输入搜索内容 type(text="搜索内容")
+        13. 按回车 press(key=["enter"])   
+        14. 截取当前屏幕图片 screenshot()
+        15. 等待页面加载 wait_loading(screenshot_path="", target="等待出现Google搜索结果页")
+        </guide>
+        
+        用户请求:
+        {{ request.user_input }}
         
         {% if request.context %}
-        上下文信息：{{request.context}}
+        上下文信息:
+        {{ request.context }}
         {% endif %}
-                
         
-        请分析用户的请求，并生成一系列浏览器自动化操作步骤。支持的操作类型包括：
+        请我为用户制定一个详细的自动化操作计划，包括每一步需要执行的具体动作。
         
-        <commands>
-        {{ web_tools_readme }}
-        </commands>
-        
-        请返回以下JSON格式的响应：
+        对于每个操作，我需要提供:
+        1. 要执行的动作类型
+        2. 动作的参数（如坐标、文本内容等）
+        3. 动作的目的描述
+        4. 期望的结果
+        5. 如果需要用户交互，请使用ask_user或response_user操作。
+        我的回答必须以下面的JSON格式返回:
         ```json
         {
+            "explanation": "对整体任务的简要解释",
             "actions": [
                 {
-                    "action": "操作类型",
+                    "action": "动作类型",
                     "parameters": {
                         "参数1": "值1",
                         "参数2": "值2"
                     },
-                    "description": "该步骤的描述",
-                    "expected_outcome": "执行该操作后期望看到的结果"
+                    "description": "这个动作的目的描述",
+                    "expected_outcome": "执行此动作后预期看到的结果"
+                },
+                {
+                    "action": "第二个动作",
+                    ...
                 }
             ],
-            "explanation": "对整体方案的解释",
-            "additional_info": "任何其他相关信息",
-            "suggested_next_steps": ["建议的后续步骤1", "建议的后续步骤2"]
+            "additional_info": "任何额外信息或建议",
+            "suggested_next_steps": ["完成当前任务后可能的后续步骤1", "后续步骤2"]
         }
         ```
-        
-        为了更好地完成用户请求，请确保：
-        1. 操作步骤是逻辑合理的
-        2. 必要时包含截图和检测步骤，以便获取页面状态
-        3. 在点击或输入前确认元素位置
-        4. 添加适当的等待时间（通过wait参数）
-        5. 包含足够详细的描述，帮助用户理解每一步
-        6. 为每个步骤提供明确的expected_outcome，描述执行该操作后期望看到的结果，方便验证
-        
-        如果无法确定具体坐标，请使用find_and_click操作通过文本描述查找元素。
-        
-        请确保每个步骤都有一个合理的期望结果，以便我们可以验证操作是否成功。
         """
-        image = byzerllm.Image.load_image_from_path(request.screenshot_path)
-        return {
-            "request": request,
-            "web_tools_readme": self._command_readme.prompt(),
-            "image": image
+        env_info = detect_env() 
+        shell_type = "bash"
+        if shells.is_running_in_cmd():
+            shell_type = "cmd"
+        elif shells.is_running_in_powershell():
+            shell_type = "powershell"
+            
+        data = {
+            "command_readme": self._command_readme.prompt(),
+            "user_input": request.user_input,            
+            "available_commands": self._command_readme.prompt(),            
+            "env_info": env_info,
+            "shell_type": shell_type,
+            "shell_encoding": shells.get_terminal_encoding(),            
+            "os_distribution": shells.get_os_distribution(),
+            "current_user": shells.get_current_username()
         }
+        if request.screenshot_path:
+            image = byzerllm.Image.load_image_from_path(request.screenshot_path)
+            data["screenshot"] = image
+        return {"request": request, **data}
 
     @byzerllm.prompt()
-    def verify_action_result(self, action: WebAction, result: Dict[str, Any], screenshot_path: str) -> Dict[str, str]:
+    def verify_action_result(self, action: WebAction, result: Dict[str, Any], screenshot_path: str) -> str:
         """
         图片是当前屏幕截图。
         {{ image }}
@@ -403,58 +513,114 @@ class AutoWebTuner:
             "result_json": json.dumps(result, ensure_ascii=False, indent=2),
             "image": image
         }
+    
 
     @byzerllm.prompt()
-    def analyze_execution_result(self, task: AutoWebRequest, execution_history: List[Dict], screenshot_path: str) -> Dict[str, str]:
+    def analyze_execution_result(self, task: AutoWebRequest, execution_history: list, screenshot_path: str) -> str:
         """
+        {{ screenshot }}
+        
         图片是当前屏幕截图。
-        {{ image }}
 
-        我需要你分析网页自动化任务的执行历史和当前屏幕状态，确定下一步行动计划。
+        当前用户环境信息如下:
+        <os_info>
+        操作系统: {{ env_info.os_name }} {{ env_info.os_version }}
+        操作系统发行版: {{ os_distribution }}
+        Python版本: {{ env_info.python_version }}
+        终端类型: {{ env_info.shell_type }}
+        终端编码: {{ env_info.shell_encoding }}
+        当前用户: {{ current_user }}
+        
+        {%- if shell_type %}
+        脚本类型：{{ shell_type }}
+        {%- endif %}
+
+        {%- if env_info.conda_env %}
+        Conda环境: {{ env_info.conda_env }}
+        {%- endif %}
+        {%- if env_info.virtualenv %}
+        虚拟环境: {{ env_info.virtualenv }}
+        {%- endif %}   
+        </os_info>
+
+        你有如下函数可供使用：
+        {{ command_readme }}
+
+        <guide>
+        通常交互都有一些标准的流程。比如如果希望从Google搜索某个内容，在 Darwin 系统下一般的函数调用顺序为：
+        1. 打开 chrome 浏览器 open_browser(browser_name="chrome")
+        2. 截取当前屏幕图片 screenshot()
+        3. 等待浏览器打开 wait_loading(target="浏览器是否出现")        
+        4. 聚焦浏览器 focus_app(app_name="chrome")
+        5. 快捷键 press(key=["command", "l"]) 定位到浏览器地址栏
+        6. 输入网址 type(text="https://www.google.com")
+        7. 按回车 press(key=["enter"])     
+        8. 截取当前屏幕图片 screenshot()
+        9. 等待页面加载 wait_loading(target="等待出现google搜索首页")
+        10. 截取当前屏幕图片 screenshot()
+        11. 找到搜索框 find_and_click(image_path="", element_desc="搜索框")
+        12. 输入搜索内容 type(text="搜索内容")
+        13. 按回车 press(key=["enter"])   
+        14. 截取当前屏幕图片 screenshot()
+        15. 等待页面加载 wait_loading(target="等待出现Google搜索结果页")
+        </guide>
+        
+        我需要分析当前的网页自动化执行情况并确定后续步骤。
         
         原始任务:
         {{ task.user_input }}
         
         执行历史:
-        ```json
-        {{ execution_history_json }}
-        ```        
-        请根据执行历史和当前屏幕状态，分析目前的情况并确定接下来的步骤。
+        {% for record in execution_history %}
+        步骤 {{ record.step }}:
+        - 动作: {{ record.action.action }}
+        - 描述: {{ record.action.description or "无描述" }}
+        - 结果: {{ "成功" if record.result.success else "失败" }}
+        {% if not record.result.success and record.result.error %}
+        - 错误: {{ record.result.error }}
+        {% endif %}
+        {% if record.verification %}
+        - 验证: {{ "通过" if record.verification.success else "未通过" }}
+        - 原因: {{ record.verification.reason }}
+        {% endif %}
         
-        返回以下JSON格式的响应:
+        {% endfor %}
+        
+        请根据当前屏幕状态和执行历史，分析任务完成情况并确定下一步骤。
+        
+        如果任务已经完成，请明确说明。如果任务未完成，请提供新的操作计划。
+        
+        请以JSON格式返回结果:
         ```json
         {
-            "current_status": "当前任务进展状态",
-            "analysis": "详细分析当前情况",
-            "completed": true或false,  // 任务是否已完成
-            "actions": [  // 如果任务未完成，需要执行的后续操作
+            "completed": true或false,
+            "current_status": "任务当前状态描述",
+            "analysis": "详细分析",
+            "actions": [
                 {
-                    "action": "操作类型",
+                    "action": "动作类型",
                     "parameters": {
                         "参数1": "值1",
                         "参数2": "值2"
                     },
-                    "description": "该步骤的描述",
-                    "expected_outcome": "执行该操作后期望看到的结果"
+                    "description": "这个动作的目的描述",
+                    "expected_outcome": "执行此动作后预期看到的结果"
                 }
-            ],
-            "explanation": "对后续计划的解释",
-            "overall_status": "总体任务状态评估"
+            ]
         }
         ```
-        
-        请确保:
-        1. 准确评估当前任务进展
-        2. 如果遇到错误或意外情况，提供恢复策略
-        3. 如果任务已完成，明确说明完成的标志
-        4. 提供清晰的后续操作步骤（如果需要）
         """
-        image = byzerllm.Image.load_image_from_path(screenshot_path)
-        return {
-            "task": task,
-            "execution_history_json": json.dumps(execution_history, ensure_ascii=False, indent=2),
-            "image": image
+        data = {
+            "env_info": detect_env(),
+            "shell_type": "bash",
+            "shell_encoding": shells.get_terminal_encoding(),
+            "os_distribution": shells.get_os_distribution(),
+            "current_user": shells.get_current_username()
         }
+        if screenshot_path:
+            image = byzerllm.Image.load_image_from_path(screenshot_path)
+            data["screenshot"] = image
+        return {"task": task, "execution_history": execution_history, **data}
 
     def execute_action(self, action: WebAction) -> ActionResult:
         """
@@ -507,6 +673,34 @@ class AutoWebTuner:
             # 执行步骤并获取结果
             step_results = self.computer.run_workflow([step])
             
+            # 检查是否需要用户交互的特殊处理
+            if step_results and len(step_results) > 0:
+                result = step_results[0]
+                
+                # 如果需要ask_user操作
+                if result.get("action_required") == "ask_user":
+                    question = result.get("question", "")
+                    answer = self.ask_user(question)
+                    screenshot_path = self.computer.screenshot(f"after_ask_user_{int(time.time())}.png")
+                    return ActionResult(
+                        success=True,
+                        action=action,
+                        screenshot_path=screenshot_path,
+                        result={"success": True, "answer": answer}
+                    )
+                    
+                # 如果需要response_user操作
+                if result.get("action_required") == "response_user":
+                    message = result.get("response", "")
+                    self.response_user(message)
+                    screenshot_path = self.computer.screenshot(f"after_response_user_{int(time.time())}.png")
+                    return ActionResult(
+                        success=True,
+                        action=action,
+                        screenshot_path=screenshot_path,
+                        result={"success": True, "message": message}
+                    )
+            
             # 执行后截图
             screenshot_path = self.computer.screenshot(f"after_{action.action}_{int(time.time())}.png")
             
@@ -541,101 +735,88 @@ class AutoWebTuner:
                 error=str(e)
             )
 
-    def verify_result(self, action_result: ActionResult) -> Dict[str, Any]:
+    def run_adaptive_flow(self, request: AutoWebRequest, max_iterations: int = 10, debug: bool = False) -> AutoWebResponse:
         """
-        验证操作结果是否符合预期
+        运行自适应的网页自动化流程
         
         Args:
-            action_result: 操作执行结果
+            request: 自动化请求
+            max_iterations: 最大迭代次数
+            debug: 是否开启调试模式，设为True时每一步会要求用户确认
             
         Returns:
-            验证结果
-        """
-        # 如果操作已经失败，不需要验证
-        if not action_result.success:
-            return {
-                "success": False,
-                "analysis": f"操作执行失败: {action_result.error}",
-                "reason": action_result.error,
-                "suggestion": "检查操作参数或尝试不同的方法"
-            }
-        
-        # 如果没有预期结果或截图，则无法验证
-        if not action_result.action.expected_outcome or not action_result.screenshot_path:
-            return {
-                "success": True,
-                "analysis": "无法验证结果，缺少预期结果或截图",
-                "reason": "缺少验证所需信息",
-                "suggestion": "继续执行下一步"
-            }
-        
-        # 使用 LLM 验证结果
-        verification = self.verify_action_result.with_llm(self.llm).run(
-            action=action_result.action,
-            result=action_result.result,
-            screenshot_path=action_result.screenshot_path
-        )
-        
-        # 解析验证结果
-        try:
-            verification_json = code_utils.extract_code(verification)[-1][1]
-            return json.loads(verification_json)
-        except Exception as e:
-            logger.error(f"解析验证结果时出错: {str(e)}")
-            return {
-                "success": True,  # 默认继续执行
-                "analysis": "无法解析验证结果",
-                "reason": str(e),
-                "suggestion": "继续执行下一步"
-            }
-
-    def run_adaptive_flow(self, request: AutoWebRequest, max_iterations: int = 10) -> AutoWebResponse:
-        """
-        运行自适应的自动化流程，根据执行结果动态调整后续计划
-        
-        Args:
-            request: 初始请求
-            max_iterations: 最大迭代次数，防止无限循环
-            
-        Returns:
-            最终响应结果
+            操作响应
         """
         console = Console()
+        self.printer.print_in_terminal("auto_web_analyzing", style="blue")
         
-        # 初始状态：获取当前屏幕截图
-        initial_screenshot = self.computer.screenshot("initial_state.png")
+        # 获取初始截图
         if not request.screenshot_path:
-            request.screenshot_path = initial_screenshot
+            logger.info("获取初始屏幕截图")
+            screenshot_path = self.computer.screenshot()
+            request.screenshot_path = screenshot_path
+            logger.info(f"初始截图保存至: {screenshot_path}")
         
-        # 分析任务并生成初始计划
-        response = self.analyze_task.with_llm(self.llm).run(request=request)
+        # 记录执行历史
+        execution_history = []
+        
+        # 添加时间统计
+        start_time = time.time()
+        
+        # 使用LLM分析任务并生成操作计划
+        logger.info(f"开始分析任务: '{request.user_input}'")
+        console.print("正在分析任务，请稍候...", style="italic blue")
+        analysis = self.analyze_task.with_llm(self.llm).run(request)
+        logger.info(f"LLM分析任务结果: {analysis}")
+        
+        # 打印LLM分析任务的耗时
+        analysis_time = time.time() - start_time
+        logger.info(f"任务分析完成，LLM耗时: {analysis_time:.2f}s")
+        console.print(f"任务分析完成，LLM耗时: {analysis_time:.2f}s", style="green")
+        
         try:
-            json_content = code_utils.extract_code(response)[-1][1]
-            plan = AutoWebResponse.model_validate_json(json_content)
-        except Exception as e:
-            logger.error(f"解析任务分析结果时出错: {str(e)}")
+            # 解析JSON结果
+            analysis_json = code_utils.extract_code(analysis)[-1][1]
+            plan_dict = json.loads(analysis_json)
+            logger.debug(f"解析后的操作计划: {json.dumps(plan_dict, ensure_ascii=False, indent=2)}")
+            
+            # 转换为AutoWebResponse对象
+            plan = AutoWebResponse(
+                explanation=plan_dict.get("explanation", ""),
+                actions=[WebAction.model_validate(a) for a in plan_dict.get("actions", [])],
+                additional_info=plan_dict.get("additional_info", ""),
+                suggested_next_steps=plan_dict.get("suggested_next_steps", []),
+                overall_status="in_progress"
+            )
+            
+            logger.info(f"生成的操作计划包含 {len(plan.actions)} 个步骤")
+            for i, action in enumerate(plan.actions):
+                logger.info(f"步骤 {i+1}: {action.action} - {action.description}")
+            
+            self.printer.print_in_terminal("auto_web_analyzed", style="green")
             console.print(Panel(
-                Text(f"解析任务分析结果时出错: {str(e)}", style="red"),
-                title="❌ 错误",
-                border_style="red"
+                Text(plan.explanation, style="italic"),
+                title="📋 自动化计划",
+                border_style="blue"
             ))
+            
+        except Exception as e:
+            logger.error(f"解析LLM响应失败: {str(e)}")
             return AutoWebResponse(
-                explanation=f"解析任务分析结果时出错: {str(e)}",
+                explanation=f"无法解析LLM响应: {str(e)}",
                 overall_status="failed"
             )
         
-        # 执行历史
-        execution_history = []
+        # 开始执行操作
         iterations = 0
-        
         while iterations < max_iterations:
             iterations += 1
+            logger.info(f"开始执行迭代 {iterations}/{max_iterations}")
             
-            if global_cancel.cancelled:
-                self.printer.print_in_terminal(
-                    "operation_cancelled",
-                    style="yellow"
-                )
+            # 检查是否需要取消操作
+            if global_cancel.requested:
+                logger.info("检测到取消请求，停止操作")
+                self.printer.print_in_terminal("operation_cancelled", style="yellow")
                 return AutoWebResponse(
                     explanation="操作已取消",
                     overall_status="cancelled",
@@ -644,6 +825,7 @@ class AutoWebTuner:
             
             # 如果没有更多操作，认为任务完成
             if not plan.actions:
+                logger.info("没有更多操作，任务完成")
                 console.print(Panel(
                     Text(plan.explanation or "任务完成", style="green"),
                     title="✅ 完成",
@@ -654,6 +836,10 @@ class AutoWebTuner:
             
             # 执行当前计划中的第一个操作
             action = plan.actions[0]
+            logger.info(f"准备执行动作: {action.action}")
+            logger.info(f"动作描述: {action.description}")
+            logger.info(f"动作参数: {json.dumps(action.parameters, ensure_ascii=False)}")
+            
             self.printer.print_in_terminal(
                 "executing_step",
                 style="blue",
@@ -661,11 +847,63 @@ class AutoWebTuner:
                 description=action.description or action.action
             )
             
+            # 调试模式：如果开启调试，在每一步询问用户是否继续
+            if debug:
+                question = f"是否执行步骤 {iterations}: {action.action} - {action.description}? (yes/no/quit)"
+                answer = self.computer.ask_user(question)
+                
+                if answer.lower() == "quit":
+                    logger.info("用户选择退出调试模式")
+                    return AutoWebResponse(
+                        explanation="用户在调试模式中选择退出",
+                        overall_status="cancelled",
+                        actions=[]
+                    )
+                elif answer.lower() != "yes":
+                    # 用户选择跳过当前步骤
+                    logger.info(f"用户选择跳过步骤: {action.action}")
+                    plan.actions = plan.actions[1:]
+                    continue
+                
+                logger.info("用户确认执行当前步骤")
+            
             # 执行操作
+            logger.info(f"开始执行动作: {action.action}")
+            action_start = time.time()
             action_result = self.execute_action(action)
+            action_time = time.time() - action_start
+            logger.info(f"动作执行完成，耗时: {action_time:.2f}s")
+            logger.info(f"执行结果: {'成功' if action_result.success else '失败'}")
+            
+            if action_result.screenshot_path:
+                logger.info(f"执行后截图: {action_result.screenshot_path}")
+            
+            if action_result.error:
+                logger.error(f"执行错误: {action_result.error}")
             
             # 验证结果
-            verification = self.verify_result(action_result)
+            logger.info("开始验证执行结果")
+            verification_start = time.time()
+            verification_result = self.verify_action_result.with_llm(self.llm).run(
+                action=action,
+                result=action_result.result,
+                screenshot_path=action_result.screenshot_path
+            )
+            verification_time = time.time() - verification_start
+            logger.info(f"结果验证完成，LLM耗时: {verification_time:.2f}s")
+            logger.debug(f"验证结果: {verification_result}")
+            
+            console.print(f"结果验证完成，LLM耗时: {verification_time:.2f}s", style="cyan")
+            
+            try:
+                verification_json = code_utils.extract_code(verification_result)[-1][1]
+                verification = json.loads(verification_json)
+                logger.info(f"验证结果: {'成功' if verification.get('success', False) else '失败'}")
+                if 'reason' in verification:
+                    logger.info(f"验证理由: {verification['reason']}")
+            except Exception as e:
+                logger.error(f"解析验证结果失败: {str(e)}")
+                verification = {"success": False, "reason": f"验证结果解析失败: {str(e)}"}
             
             # 记录执行历史
             execution_record = {
@@ -675,9 +913,11 @@ class AutoWebTuner:
                 "verification": verification
             }
             execution_history.append(execution_record)
+            logger.debug(f"已添加执行记录 #{iterations}")
             
             # 如果验证失败，需要重新规划
             if not verification.get("success", False):
+                logger.info(f"验证失败: {verification.get('reason', '未知原因')}")
                 self.printer.print_in_terminal(
                     "action_verification_failed",
                     style="yellow",
@@ -686,23 +926,34 @@ class AutoWebTuner:
                 )
                 
                 # 获取当前屏幕状态
+                logger.info("获取当前屏幕状态")
                 current_screenshot = action_result.screenshot_path or self.computer.screenshot("current_state.png")
+                logger.info(f"当前状态截图: {current_screenshot}")
                 
                 # 基于执行历史和当前状态进行分析
+                logger.info("开始重新规划")
+                analysis_start = time.time()
                 analysis_result = self.analyze_execution_result.with_llm(self.llm).run(
                     task=request,
                     execution_history=execution_history,
                     screenshot_path=current_screenshot
                 )
+                analysis_time = time.time() - analysis_start
+                logger.info(f"重新规划完成，LLM耗时: {analysis_time:.2f}s")
+                logger.debug(f"重新规划结果: {analysis_result}")
+                
+                console.print(f"重新规划完成，LLM耗时: {analysis_time:.2f}s", style="magenta")
                 
                 try:
                     # 解析分析结果
                     analysis_json = code_utils.extract_code(analysis_result)[-1][1]
                     new_plan = json.loads(analysis_json)
+                    logger.debug(f"新计划: {json.dumps(new_plan, ensure_ascii=False, indent=2)}")
                     
                     # 更新计划
                     if new_plan.get("completed", False):
                         # 任务已完成
+                        logger.info("分析结果: 任务已完成")
                         console.print(Panel(
                             Text(new_plan.get("analysis", "任务已完成"), style="green"),
                             title="✅ 完成",
@@ -715,12 +966,17 @@ class AutoWebTuner:
                         )
                     else:
                         # 继续执行新计划
+                        logger.info("更新操作计划")
                         plan = AutoWebResponse(
                             actions=[WebAction.model_validate(a) for a in new_plan.get("actions", [])],
                             explanation=new_plan.get("explanation", ""),
                             additional_info=new_plan.get("analysis", ""),
                             overall_status=new_plan.get("current_status", "in_progress")
                         )
+                        
+                        logger.info(f"新计划包含 {len(plan.actions)} 个步骤")
+                        for i, action in enumerate(plan.actions):
+                            logger.info(f"新步骤 {i+1}: {action.action} - {action.description}")
                         
                         self.printer.print_in_terminal(
                             "replanned_actions",
@@ -731,17 +987,25 @@ class AutoWebTuner:
                 except Exception as e:
                     logger.error(f"解析分析结果时出错: {str(e)}")
                     # 如果无法解析，默认继续执行下一个操作
+                    logger.info("无法解析新计划，默认移除当前操作并继续")
                     plan.actions = plan.actions[1:]
             else:
                 # 验证成功，移除已执行的操作
+                logger.info("验证成功，继续执行下一步")
                 plan.actions = plan.actions[1:]
                 self.printer.print_in_terminal(
                     "action_succeeded",
                     style="green",
                     action=action.action
                 )
+            
+            # 调试模式：添加手动暂停
+            if debug:
+                self.computer.response_user(f"完成步骤 {iterations}，按Enter继续...")
+                input()
         
         # 达到最大迭代次数
+        logger.warning(f"达到最大迭代次数 ({max_iterations})，未能完成任务")
         self.printer.print_in_terminal(
             "max_iterations_reached",
             style="yellow",
@@ -784,120 +1048,22 @@ class AutoWebTuner:
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(existing_conv, f, ensure_ascii=False, indent=2)
 
-    def ask_user(self, question: str) -> str:
-        """
-        向用户提问，获取用户输入
-        
-        Args:
-            question: 问题内容
-            
-        Returns:
-            用户的回答
-        """
-        console = Console()
-        
-        # 创建一个醒目的问题面板
-        question_text = Text(question, style="bold cyan")
-        question_panel = Panel(
-            question_text,
-            title="[bold yellow]Web Automation Question[/bold yellow]",
-            border_style="blue",
-            expand=False
-        )
-        
-        # 显示问题面板
-        console.print(question_panel)
-        
-        # 获取用户输入
-        try:
-            from prompt_toolkit import PromptSession
-            session = PromptSession(message=self.printer.get_message_from_key('web_automation_ask_user', default="Your answer: "))
-            answer = session.prompt()
-        except (ImportError, KeyboardInterrupt):
-            # 降级到标准输入或处理中断
-            answer = input("Your answer: ")
-        
-        # 记录交互
-        self.save_to_memory_file(
-            query=question,
-            response=answer
-        )
-        
-        return answer
-
-    def response_user(self, response: str) -> str:
-        """
-        直接向用户显示消息，无需等待用户输入
-        
-        Args:
-            response: 要显示的消息内容
-            
-        Returns:
-            显示的消息内容
-        """
-        console = Console()
-        
-        # 创建一个醒目的消息面板
-        message_text = Text(response, style="italic")
-        message_panel = Panel(
-            message_text,
-            title="",
-            border_style="green",
-            expand=False
-        )
-        
-        # 显示消息面板
-        console.print(message_panel)
-        
-        # 记录交互
-        self.save_to_memory_file(
-            query="system_message",
-            response=response
-        )
-        
-        return response
+    
+    
 
 
-# 消息配置
-MESSAGES = {
-    "auto_web_analyzing": "正在分析网页自动化任务...",
-    "auto_web_analyzed": "网页自动化任务分析完成",
-    "executing_web_action": "执行操作: {action} - {description}",
-    "executing_step": "执行步骤 {step}: {description}",
-    "operation_cancelled": "操作已取消",
-    "element_not_found": "未找到元素: {element}",
-    "analyzing_results": "分析执行结果...",
-    "next_steps_determined": "已确定下一步操作",
-    "max_iterations_reached": "已达到最大迭代次数 ({max_iterations})",
-    "action_verification_failed": "操作验证失败: {action} - {reason}",
-    "action_succeeded": "操作成功: {action}",
-    "replanned_actions": "已重新规划 {count} 个操作",
-    "web_automation_ask_user": "您的回答: "  # 新增消息
-}
-
-# 注册消息
-Printer.register_messages(MESSAGES)
-
-
-def auto_web(user_input: str, screenshot_path: Optional[str] = None, context: Optional[str] = None, args: Optional[AutoCoderArgs] = None):
+def auto_web(llm:Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], user_input: str, screenshot_path: Optional[str] = None, context: Optional[str] = None, args: Optional[AutoCoderArgs] = None, debug: bool = False):
     """
     执行网页自动化操作的入口函数
     
     Args:
+        llm: ByzerLLM实例，用于分析和生成操作
         user_input: 用户输入的指令
         screenshot_path: 可选的截图路径
         context: 可选的上下文信息
         args: 可选的配置参数
-    """
-    from autocoder.utils.llms import get_default_llm
-    
-    # 使用默认参数或提供的参数
-    if args is None:
-        from autocoder.common.cli_args import default_autocoder_args
-        args = default_autocoder_args()
-    
-    # 初始化LLM
-    llm = get_default_llm(args)
+        debug: 是否开启调试模式，设为True时每一步会要求用户确认
+    """                    
     
     # 创建请求
     request = AutoWebRequest(
@@ -910,6 +1076,6 @@ def auto_web(user_input: str, screenshot_path: Optional[str] = None, context: Op
     tuner = AutoWebTuner(llm=llm, args=args)
     
     # 执行自适应的自动化流程
-    response = tuner.run_adaptive_flow(request)
+    response = tuner.run_adaptive_flow(request, debug=debug)
     
     return response 

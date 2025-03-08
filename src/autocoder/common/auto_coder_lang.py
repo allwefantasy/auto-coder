@@ -172,6 +172,20 @@ MESSAGES = {
         "file_snippet_procesed": "{{ file_path }} processed with tokens: {{ tokens }} => {{ snippet_tokens }}. Current total tokens: {{ total_tokens }}",
         "tool_ask_user": "Your Reply: ",
         "tool_ask_user_accept":"Your Response received",
+        "auto_web_analyzing": "Analyzing web automation task...",
+        "auto_web_analyzed": "Web automation task analysis completed",
+        "executing_web_action": "Executing action: {{action}} - {{description}}",
+        "executing_step": "Executing step {{step}}: {{description}}",
+        "operation_cancelled": "Operation cancelled",
+        "element_not_found": "Element not found: {{element}}",
+        "analyzing_results": "Analyzing execution results...",
+        "next_steps_determined": "Next steps determined",
+        "max_iterations_reached": "Max iterations reached ({max_iterations})",
+        "action_verification_failed": "Action verification failed: {{action}} - {{reason}}",
+        "action_succeeded": "Action succeeded: {{action}}",
+        "replanned_actions": "Replanned {{count}} actions",
+        "web_automation_ask_user": "Your answer: "  # 新增消息
+        
         
     },
     "zh": {
@@ -342,6 +356,19 @@ MESSAGES = {
         "file_snippet_procesed": "文件 {{ file_path }} 处理后token数: {{ tokens }} => {{ snippet_tokens }} 当前总token数: {{ total_tokens }}",
         "tool_ask_user": "您的回复: ",
         "tool_ask_user_accept":"收到您的回复",
+        "auto_web_analyzing": "正在分析网页自动化任务...",
+        "auto_web_analyzed": "网页自动化任务分析完成",
+        "executing_web_action": "执行操作: {{action}} - {{description}}",
+        "executing_step": "执行步骤 {{step}}: {{description}}",
+        "operation_cancelled": "操作已取消",
+        "element_not_found": "未找到元素: {{element}}",
+        "analyzing_results": "分析执行结果...",
+        "next_steps_determined": "已确定下一步操作",
+        "max_iterations_reached": "已达到最大迭代次数 {{max_iterations}}",
+        "action_verification_failed": "操作验证失败: {{action}} - {{reason}}",
+        "action_succeeded": "操作成功: {{action}}",
+        "replanned_actions": "已重新规划 {{count}} 个操作",
+        "web_automation_ask_user": "您的回答: "  # 新增消息
     }}
 
 
