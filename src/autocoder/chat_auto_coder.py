@@ -162,32 +162,28 @@ def show_help():
 class EnhancedCompleter(Completer):
     """结合内置补全器和插件补全功能的增强补全器"""
 
-    def __init__(self, base_completer, plugin_manager):
-        self.base_completer = base_completer
-        self.plugin_manager = plugin_manager
+    def __init__(self, base_completer: Completer, plugin_manager: PluginManager):
+        self.base_completer: Completer = base_completer
+        self.plugin_manager: PluginManager = plugin_manager
 
     def get_completions(self, document, complete_event):
         # 获取当前输入的文本
-        text_before_cursor = document.text_before_cursor
+        text_before_cursor = document.text_before_cursor.lstrip()
 
         # 只有当我们需要处理命令补全时才进行处理
-        if text_before_cursor.lstrip().startswith("/"):
-            # 获取插件命令补全
-            plugin_completions_dict = self.plugin_manager.get_plugin_completions()
+        if text_before_cursor.startswith("/"):
 
             # 获取当前输入的命令前缀
-            current_input = text_before_cursor.lstrip()
-
+            current_input = text_before_cursor
             # 检查是否需要动态补全
-            # 先检查特定命令
-            dynamic_cmds = self.plugin_manager.get_dynamic_cmds()
-
-            # 然后检查任何包含子命令的输入
             if " " in current_input:
+                # 将连续的空格替换为单个空格
+                _input_one_space = " ".join(current_input.split())
                 # 先尝试动态补全特定命令
+                dynamic_cmds = self.plugin_manager.get_dynamic_cmds()
                 for dynamic_cmd in dynamic_cmds:
-                    if current_input.startswith(dynamic_cmd):
-                        # 直接使用 PluginManager 处理动态补全
+                    if _input_one_space.startswith(dynamic_cmd):
+                        # 使用 PluginManager 处理动态补全，通常是用于命令或子命令动态的参数值列表的补全
                         completions = self.plugin_manager.process_dynamic_completions(
                             dynamic_cmd, current_input
                         )
@@ -199,9 +195,12 @@ class EnhancedCompleter(Completer):
                             )
                         return
 
-                # 如果不是特定命令，检查一般命令 + 空格的情况
+                # 如果不是特定命令，检查一般命令 + 空格的情况, 通常是用于固定的下级子命令列表的补全
                 cmd_parts = current_input.split(maxsplit=1)
                 base_cmd = cmd_parts[0]
+
+                # 获取插件命令补全
+                plugin_completions_dict = self.plugin_manager.get_plugin_completions()
 
                 # 如果命令存在于补全字典中，进行处理
                 if base_cmd in plugin_completions_dict:
@@ -209,16 +208,13 @@ class EnhancedCompleter(Completer):
                         base_cmd, current_input, plugin_completions_dict[base_cmd]
                     )
                     return
-
             # 处理直接命令补全 - 如果输入不包含空格，匹配整个命令
-            plugin_commands = list(self.plugin_manager.command_handlers.keys())
-            for command in plugin_commands:
-                if command.startswith(current_input):
-                    yield Completion(
-                        command[len(current_input) :],
-                        start_position=0,
-                        display=command,
-                    )
+            for command in self.plugin_manager.get_all_commands_with_prefix(current_input):
+                yield Completion(
+                    command[len(current_input) :],
+                    start_position=0,
+                    display=command,
+                )
 
         # 获取并返回基础补全器的补全
         if self.base_completer:

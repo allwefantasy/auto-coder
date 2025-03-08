@@ -115,7 +115,6 @@ commands = [
     "/conf/export",
     "/conf/import",
     "/exclude_dirs",
-    "/plugins",
 ]
 
 def load_tokenizer():

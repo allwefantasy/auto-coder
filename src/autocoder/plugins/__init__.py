@@ -242,11 +242,18 @@ class PluginManager:
         self.plugin_dirs: List[str] = []
         self._discover_plugins_cache: List[Type[Plugin]] = None  # type: ignore
 
+        # built-in commands
+        self._builtin_commands = [
+            "/plugins",
+            "/plugins/dirs",
+        ]
         # 内置的动态命令列表
         self._builtin_dynamic_cmds = [
             "/plugins /load",
             "/plugins /unload",
-            "/plugins/dirs",
+            "/plugins/dirs /add",
+            "/plugins/dirs /remove",
+            "/plugins/dirs /clear",
         ]
 
     @property
@@ -536,6 +543,20 @@ class PluginManager:
             for cmd, (_, desc, plugin) in self.command_handlers.items()
         }
 
+    def get_all_commands_with_prefix(self, prefix: str) :
+        """Get all commands from all plugins and built-in commands match the prefix.
+
+        Args:
+            prefix: The prefix to match
+
+        Returns:
+            A list of command names
+        """
+        # check prefix of built-in commands + plugin commands
+        for cmd in (self._builtin_commands + list(self.command_handlers.keys())):
+            if cmd.startswith(prefix):
+                yield cmd
+
     def get_plugin_completions(self) -> Dict[str, List[str]]:
         """Get command completions from all plugins.
 
@@ -543,7 +564,8 @@ class PluginManager:
             A dictionary mapping command prefixes to lists of completion options
         """
         completions = {
-            "/plugins": ["/dirs", "/list", "/load", "/unload"],
+            "/plugins": ["/list", "/load", "/unload"],
+            "/plugins/dirs": ["/add", "/remove", "/clear"],
         }
 
         # Get completions from plugins
@@ -564,18 +586,36 @@ class PluginManager:
         dynamic options based on the current state or user input.
 
         Args:
-            command: The base command (e.g., "/plugins load")
+            command: The base command (e.g., "/plugins /load")
             current_input: The full current input including the command
 
         Returns:
             A list of tuples containing (completion_text, display_text)
         """
+        # print(f'command: {command}')
+
+        command = command.strip()
+        completions = self._get_manager_dynamic_completions(command, current_input)
+
+        # 检查是否有插件提供了此命令的动态补全
+        for plugin in self.plugins.values():
+            # 检查插件是否有 dynamic_completions
+            plugin_completions = plugin.get_dynamic_completions(command, current_input)
+            if plugin_completions:
+                completions.extend(plugin_completions)
+
+        return completions
+
+    def _get_manager_dynamic_completions(self, command: str, current_input: str) -> List[Tuple[str, str]]:
+        """获取插件管理器的动态补全。
+
+        Args:
+            command: 当前命令
+            current_input: 当前输入
+        """
         # Split the input to analyze command parts
         parts = current_input.split(maxsplit=2)
         completions = []
-
-        # print(f'command: {command}')
-        command = command.strip()
 
         # Handle built-in /plugins subcommands
         if command == "/plugins /load":
@@ -666,20 +706,15 @@ class PluginManager:
                     for cmd in matching_cmds:
                         completions.append((cmd, cmd))
                 else:
-                    input_parts = current_input.split()
-                    subcmd = input_parts[2]
-                    if len(input_parts) > 3:
-                        prefix = " ".join(input_parts[3:])
-                    else:
-                        prefix = ""
+                    subcmd_without_slash = subcmd.lstrip("/")
                     # 如果子命令已经完整输入，处理后续参数
-                    if subcmd == "/add":
+                    if subcmd == "/add" or subcmd_without_slash == "add":
                         # 如果没有前缀，从当前目录开始补全
-                        if not prefix:
-                            prefix = "."
+                        prefix = ""
+                        if len(parts) > 3:
+                            prefix = " ".join(parts[3:])
 
-                        # 获取父目录
-                        parent_dir = os.path.dirname(prefix) if prefix else "."
+                        parent_dir = os.path.dirname(prefix) if prefix and prefix != '.' else "."
                         # 获取文件名前缀
                         file_prefix = os.path.basename(prefix)
 
@@ -691,8 +726,12 @@ class PluginManager:
                                     file_prefix
                                 ):
                                     completions.append((full_path, entry))
-                    elif subcmd == "/remove":
+                    elif subcmd == "/remove" or subcmd_without_slash == "remove":
                         # 如果没有前缀，显示所有插件目录
+                        prefix = ""
+                        if len(parts) > 3:
+                            prefix = " ".join(parts[3:])
+
                         if not prefix:
                             for directory in self.plugin_dirs:
                                 completions.append((directory, directory))
@@ -700,14 +739,47 @@ class PluginManager:
                             # 如果有前缀，过滤匹配的目录
                             for directory in self.plugin_dirs:
                                 if directory.startswith(prefix):
-                                    # 如果目录以 prefix 开头，添加到补全列表, HERE
+                                    # 如果目录以 prefix 开头，添加到补全列表
                                     completions.append((directory, directory))
-        # 检查是否有插件提供了此命令的动态补全
-        for plugin in self.plugins.values():
-            # 检查插件是否有 dynamic_completions
-            plugin_completions = plugin.get_dynamic_completions(command, current_input)
-            if plugin_completions:
-                completions.extend(plugin_completions)
+
+        elif command == "/plugins/dirs /add":
+            # 如果没有前缀，从当前目录开始补全
+            prefix = ""
+            if len(parts) > 3:
+                prefix = " ".join(parts[3:])
+
+            prefix = prefix.lstrip()
+
+            # 获取父目录
+            if not prefix:
+                prefix = "."
+                parent_dir = "."
+            else:
+                parent_dir = os.path.dirname(prefix) if prefix !='.' else '.'
+            # 获取文件名前缀
+            file_prefix = os.path.basename(prefix) if prefix and prefix != '.' else ""
+            # 如果父目录存在，列出其内容
+            if os.path.isdir(parent_dir):
+                for entry in os.listdir(parent_dir):
+                    full_path = os.path.join(parent_dir, entry)
+                    if os.path.isdir(full_path) and entry.startswith(file_prefix):
+                        completions.append((full_path, entry))
+
+        elif command == "/plugins/dirs /remove":
+            # 如果没有前缀，显示所有插件目录
+            prefix = ""
+            if len(parts) > 3:
+                prefix = " ".join(parts[3:])
+
+            if not prefix:
+                for directory in self.plugin_dirs:
+                    completions.append((directory, directory))
+            else:
+                # 如果有前缀，过滤匹配的目录
+                for directory in self.plugin_dirs:
+                    if directory.startswith(prefix):
+                        # 如果目录以 prefix 开头，添加到补全列表
+                        completions.append((directory, directory))
 
         return completions
 
@@ -853,7 +925,11 @@ class PluginManager:
                     file=output,
                 )
 
-        elif args[0] == "load" and len(args) > 1:
+        elif args[0] == "load" or args[0] == "/load":
+            if len(args) <= 1:
+                print("Usage: /plugins /load <plugin_name>", file=output)
+                return output.getvalue()
+
             # 加载特定的插件
             plugin_name = args[1]
             discovered_plugins = self.cached_discover_plugins
@@ -878,32 +954,11 @@ class PluginManager:
             if not found:
                 print(f"Plugin '{plugin_name}' not found", file=output)
 
-        elif args[0] == "/load" and len(args) > 1:
-            # 加载特定的插件
-            plugin_name = args[1]
-            discovered_plugins = self.cached_discover_plugins
+        elif args[0] == "unload" or args[0] == "/unload":
+            if len(args) <= 1:
+                print("Usage: /plugins /unload <plugin_name>", file=output)
+                return output.getvalue()
 
-            # 使用简短名称查找插件
-            found = False
-            for plugin_class in discovered_plugins:
-                if (
-                    plugin_class.plugin_name() == plugin_name
-                    or plugin_class.name == plugin_name
-                ):
-                    if self.load_plugin(plugin_class):
-                        print(
-                            f"Plugin '{plugin_name}' loaded successfully", file=output
-                        )
-                        # 加载插件后已在 load_plugin 方法中保存配置
-                    else:
-                        print(f"Failed to load plugin '{plugin_name}'", file=output)
-                    found = True
-                    break
-
-            if not found:
-                print(f"Plugin '{plugin_name}' not found", file=output)
-
-        elif args[0] == "unload" and len(args) > 1:
             # 卸载特定的插件
             plugin_name = args[1]
             found = False
@@ -922,26 +977,7 @@ class PluginManager:
             if not found:
                 print(f"Plugin '{plugin_name}' not loaded", file=output)
 
-        elif args[0] == "/unload" and len(args) > 1:
-            # 卸载特定的插件
-            plugin_name = args[1]
-            found = False
-
-            # 使用简短名称查找插件
-            for plugin_id, plugin in list(self.plugins.items()):
-                if plugin.plugin_name() == plugin_name or plugin.name == plugin_name:
-                    plugin = self.plugins.pop(plugin_id)
-                    plugin.shutdown()
-                    print(f"Plugin '{plugin_name}' unloaded", file=output)
-                    # 卸载插件后保存配置
-                    self.save_runtime_cfg()
-                    found = True
-                    break
-
-            if not found:
-                print(f"Plugin '{plugin_name}' not loaded", file=output)
-
-        elif args[0] == "dirs":
+        elif args[0] == "dirs" or args[0] == "/dirs":
             if len(args) < 2:
                 # 列出所有插件目录
                 print("\033[1;34mPlugin Directories:\033[0m", file=output)
@@ -955,51 +991,18 @@ class PluginManager:
                 return output.getvalue()
 
             subcmd = args[1]
-            if subcmd == "add" and len(args) > 2:
+            if (subcmd == "add" or subcmd == "/add") and len(args) > 2:
                 path = " ".join(args[2:])
                 success, msg = self.add_plugin_directory(path)
                 status = (
                     "\033[32mSUCCESS\033[0m" if success else "\033[31mFAILED\033[0m"
                 )
                 print(f"{status}: {msg}", file=output)
-            elif subcmd == "remove" and len(args) > 2:
+            elif (subcmd == "remove" or subcmd == "/remove") and len(args) > 2:
                 path = " ".join(args[2:])
                 msg = self.remove_plugin_directory(path)
                 print(f"\033[33m{msg}\033[0m", file=output)
-            elif subcmd == "clear":
-                msg = self.clear_plugin_directories()
-                print(f"\033[33m{msg}\033[0m", file=output)
-            else:
-                print(
-                    "Usage: /plugins dirs [add <path>|remove <path>|clear]", file=output
-                )
-
-        elif args[0] == "/dirs":
-            if len(args) < 2:
-                # 列出所有插件目录
-                print("\033[1;34mPlugin Directories:\033[0m", file=output)
-                for idx, directory in enumerate(self.plugin_dirs, 1):
-                    status = (
-                        "\033[32m✓\033[0m"
-                        if os.path.exists(directory)
-                        else "\033[31m✗\033[0m"
-                    )
-                    print(f"  {idx}. {status} {directory}", file=output)
-                return output.getvalue()
-
-            subcmd = args[1]
-            if subcmd == "/add" and len(args) > 2:
-                path = " ".join(args[2:])
-                success, msg = self.add_plugin_directory(path)
-                status = (
-                    "\033[32mSUCCESS\033[0m" if success else "\033[31mFAILED\033[0m"
-                )
-                print(f"{status}: {msg}", file=output)
-            elif subcmd == "/remove" and len(args) > 2:
-                path = " ".join(args[2:])
-                msg = self.remove_plugin_directory(path)
-                print(f"\033[33m{msg}\033[0m", file=output)
-            elif subcmd == "/clear":
+            elif subcmd == "clear" or subcmd == "/clear":
                 msg = self.clear_plugin_directories()
                 print(f"\033[33m{msg}\033[0m", file=output)
             else:
@@ -1010,7 +1013,7 @@ class PluginManager:
         else:
             # 在找不到命令的情况下显示用法信息
             print(
-                "Usage: /plugins [/list|/load <n>|/unload <n>|/dirs ...]", file=output
+                "Usage: /plugins [/list|/load <name>|/unload <name>|/dirs ...]", file=output
             )
 
         return output.getvalue()
