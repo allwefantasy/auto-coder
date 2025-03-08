@@ -459,6 +459,7 @@ class ComputerUse:
                     filename = step.get('filename')
                     path = self.screenshot(filename)
                     result['path'] = path
+                    result["should_verify"] = False
 
                 elif action == 'focus_app':
                     app_name = step.get('app_name')
@@ -590,6 +591,7 @@ class ComputerUse:
                         result['reason'] = wait_analysis.reason
                     result['should_wait'] = wait_analysis.should_wait
                     result['reason'] = wait_analysis.reason
+                    result["should_verify"] = False
                         
                 
                 else:
@@ -859,19 +861,10 @@ class ComputerUse:
         
         for attempt in range(retry_count):
             # 截取当前屏幕
-            screenshot_path = self.screenshot(f"focus_app_{int(time.time())}.png")
-            
-            # 尝试查找应用窗口
-            window_elements = [
-                f"标题栏包含 '{app_name}' 的窗口",
-                f"{app_name} 应用的图标或标题",
-                f"任务栏上的 {app_name} 图标",
-                f"应用 {app_name}"
-            ]
+            screenshot_path = self.screenshot(f"focus_app_{int(time.time())}.png")                        
                                                             
             # 查找元素并获取位置
-            response = self.find_elements.with_llm(self.vl_model).run(screenshot_path, window_elements)
-            
+            response = self.find_elements.with_llm(self.vl_model).run(screenshot_path, f"应用 {app_name},是否在屏幕上，比如标题栏，任务栏亦或者当前活动窗口")            
             try:
                 result_json = code_utils.extract_code(response)[-1][1]
                 result = json.loads(result_json)
@@ -896,7 +889,7 @@ class ComputerUse:
                         
                         # 再次截图以验证是否聚焦成功
                         verification_screenshot = self.screenshot(f"focus_app_verification_{int(time.time())}.png")
-                        if self.element_exists(verification_screenshot, f"活跃窗口 {app_name}"):
+                        if self.element_exists(verification_screenshot, f"应用 {app_name} 是否在当前桌面"):
                             logger.info(f"成功聚焦应用: {app_name}")
                             return True
             except Exception as e:
