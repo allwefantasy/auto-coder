@@ -281,10 +281,9 @@ def main():
         )
 
     # Initialize plugin system
-    # Add default plugin directory
-    default_plugin_dir = os.path.join(os.path.dirname(__file__), "plugins")
-    if os.path.isdir(default_plugin_dir):
-        plugin_manager.add_plugin_directory(default_plugin_dir)
+    # Add default plugin directory into global plugin dirs
+    plugin_manager.load_global_plugin_dirs()
+    plugin_manager.add_global_plugin_directory(os.path.join(os.path.dirname(__file__), "plugins"))
 
     # 加载保存的运行时配置
     plugin_manager.load_runtime_cfg()

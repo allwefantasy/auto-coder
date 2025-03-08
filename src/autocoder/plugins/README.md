@@ -33,6 +33,28 @@ You can load plugins in several ways:
    /plugins                   # Show loaded plugins
    ```
 
+## Plugin Directories
+
+Chat Auto Coder supports two types of plugin directories:
+
+1. **Project-specific plugin directories**: Only available in the current project.
+2. **Global plugin directories**: Available across all projects for the current user.
+
+### Managing Plugin Directories
+
+You can manage plugin directories using the `/plugins/dirs` command:
+
+```
+/plugins/dirs                # List all plugin directories (both global and project-specific)
+/plugins/dirs /add <path>    # Add a project-specific plugin directory
+/plugins/dirs /remove <path> # Remove a project-specific plugin directory
+/plugins/dirs /clear         # Clear all project-specific plugin directories
+```
+
+Global plugin directories are stored in `~/.auto-coder/plugins/global_plugin_dirs` and are automatically loaded when Chat Auto Coder starts. They remain available across all your projects.
+
+To add a global plugin directory, you'll need to edit the global plugin directories file directly, or use the API from code.
+
 ## Creating Plugins
 
 To create a plugin, subclass the `Plugin` class from `autocoder.plugins`:
@@ -114,6 +136,8 @@ Plugins can be configured using a JSON file. Example:
 
 The configuration for each plugin is stored separately in the project's `.auto-coder/plugins/{plugin_id}/config.json` directory. The plugin manager takes care of loading and saving these configurations.
 
+Global plugin directories are stored in `~/.auto-coder/plugins/global_plugin_dirs` and are automatically loaded for all projects.
+
 ## Built-in Plugins
 
 The following plugins are included with Chat Auto Coder:
@@ -161,7 +185,12 @@ Base class for all plugins:
 
 Manages plugins for the Chat Auto Coder:
 
-- `add_plugin_directory(directory)`: Add a directory to search for plugins
+- `add_plugin_directory(directory)`: Add a directory to search for plugins (project-specific)
+- `add_global_plugin_directory(directory)`: Add a global directory to search for plugins (available in all projects)
+- `remove_plugin_directory(directory)`: Remove a project-specific plugin directory
+- `clear_plugin_directories()`: Clear all project-specific plugin directories
+- `load_global_plugin_dirs()`: Load global plugin directories from ~/.auto-coder/plugins/global_plugin_dirs
+- `save_global_plugin_dirs()`: Save global plugin directories to ~/.auto-coder/plugins/global_plugin_dirs
 - `discover_plugins()`: Discover available plugins in plugin directories
 - `load_plugin(plugin_class, config)`: Load and initialize a plugin
 - `load_plugins_from_config(config)`: Load plugins based on configuration

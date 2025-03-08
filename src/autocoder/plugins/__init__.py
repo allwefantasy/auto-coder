@@ -239,6 +239,7 @@ class PluginManager:
         self.intercepted_functions: Dict[str, List[str]] = (
             {}
         )  # function_name -> [plugin_names]
+        self.global_plugin_dirs: List[str] = []
         self.plugin_dirs: List[str] = []
         self._discover_plugins_cache: List[Type[Plugin]] = None  # type: ignore
 
@@ -262,6 +263,46 @@ class PluginManager:
             self._discover_plugins_cache = self.discover_plugins()
         return self._discover_plugins_cache
 
+    def load_global_plugin_dirs(self) -> None:
+        """Read global plugin dirs from ~/.auto-coder/plugins/global_plugin_dirs"""
+        global_plugin_dirs_path = os.path.expanduser("~/.auto-coder/plugins/global_plugin_dirs")
+        if os.path.exists(global_plugin_dirs_path):
+            with open(global_plugin_dirs_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    ok, msg = self.add_global_plugin_directory(line.strip())
+                    if not ok:
+                        print(f"🚫 Error adding global plugin directory: {msg}")
+
+    def save_global_plugin_dirs(self) -> None:
+        """Save global plugin dirs to ~/.auto-coder/plugins/global_plugin_dirs"""
+        global_plugin_dirs_path = os.path.expanduser("~/.auto-coder/plugins/global_plugin_dirs")
+        # 确保目录存在
+        os.makedirs(os.path.dirname(global_plugin_dirs_path), exist_ok=True)
+        with open(global_plugin_dirs_path, "w", encoding="utf-8") as f:
+            for plugin_dir in self.global_plugin_dirs:
+                f.write(plugin_dir + "\n")
+        print(f"Saved global plugin dirs to {global_plugin_dirs_path}")
+
+    def add_global_plugin_directory(self, directory: str) -> Tuple[bool, str]:
+        """Add a directory to search for plugins.
+
+        Args:
+            directory: The directory path
+
+        Returns:
+            Tuple of (success: bool, message: str)
+        """
+        normalized_dir = os.path.abspath(os.path.normpath(directory))
+        if os.path.isdir(normalized_dir):
+            if normalized_dir not in self.global_plugin_dirs:
+                self.global_plugin_dirs.append(normalized_dir)
+                if normalized_dir not in sys.path:
+                    sys.path.append(normalized_dir)
+                self._discover_plugins_cache = None  # type: ignore
+                self.save_global_plugin_dirs()
+            return True, f"Added global directory: {normalized_dir}"
+        return False, f"Invalid directory: {normalized_dir}"
+
     def add_plugin_directory(self, directory: str) -> Tuple[bool, str]:
         """Add a directory to search for plugins.
 
@@ -273,7 +314,7 @@ class PluginManager:
         """
         normalized_dir = os.path.abspath(os.path.normpath(directory))
         if os.path.isdir(normalized_dir):
-            if normalized_dir not in self.plugin_dirs:
+            if normalized_dir not in self.plugin_dirs and normalized_dir not in self.global_plugin_dirs:
                 self.plugin_dirs.append(normalized_dir)
                 if normalized_dir not in sys.path:
                     sys.path.append(normalized_dir)
@@ -322,7 +363,10 @@ class PluginManager:
         """
         discovered_plugins: List[Type[Plugin]] = []
 
-        for plugin_dir in self.plugin_dirs:
+        plugin_dirs = set(self.plugin_dirs)
+        plugin_dirs.update(self.global_plugin_dirs)
+
+        for plugin_dir in plugin_dirs:
             for filename in os.listdir(plugin_dir):
                 if filename.endswith(".py") and not filename.startswith("_"):
                     module_name = filename[:-3]
@@ -919,6 +963,17 @@ class PluginManager:
             if len(args) < 2:
                 # 列出所有插件目录
                 print("\033[1;34mPlugin Directories:\033[0m", file=output)
+                # global plugin dirs
+                print("\033[33mGlobal Plugin Directories:\033[0m", file=output)
+                for idx, directory in enumerate(self.global_plugin_dirs, 1):
+                    status = (
+                        "\033[32m✓\033[0m"
+                        if os.path.exists(directory)
+                        else "\033[31m✗\033[0m"
+                    )
+                    print(f"  {idx}. {status} {directory}", file=output)
+                # project plugin dirs
+                print("\033[1;34mProject Plugin Directories:\033[0m", file=output)
                 for idx, directory in enumerate(self.plugin_dirs, 1):
                     status = (
                         "\033[32m✓\033[0m"

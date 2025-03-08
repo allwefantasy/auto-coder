@@ -33,6 +33,28 @@
    /plugins                   # 显示已加载插件
    ```
 
+## 插件目录
+
+Chat Auto Coder 支持两种类型的插件目录：
+
+1. **项目特定插件目录**：仅在当前项目中可用。
+2. **全局插件目录**：对当前用户的所有项目都可用。
+
+### 管理插件目录
+
+您可以使用 `/plugins/dirs` 命令管理插件目录：
+
+```
+/plugins/dirs                # 列出所有插件目录（全局和项目特定）
+/plugins/dirs /add <path>    # 添加项目特定插件目录
+/plugins/dirs /remove <path> # 删除项目特定插件目录
+/plugins/dirs /clear         # 清除所有项目特定插件目录
+```
+
+全局插件目录存储在 `~/.auto-coder/plugins/global_plugin_dirs` 文件中，并在 Chat Auto Coder 启动时自动加载。它们在所有项目中保持可用。
+
+要添加全局插件目录，您需要直接编辑全局插件目录文件，或使用代码中的API。
+
 ## 创建插件
 
 要创建插件，需要继承 `autocoder.plugins` 中的 `Plugin` 类：
@@ -114,6 +136,8 @@ class MyPlugin(Plugin):
 
 每个插件的配置单独存储在项目的 `.auto-coder/plugins/{plugin_id}/config.json` 目录中。插件管理器负责加载和保存这些配置。
 
+全局插件目录存储在 `~/.auto-coder/plugins/global_plugin_dirs` 文件中，并对所有项目自动加载。
+
 ## 内置插件
 
 Chat Auto Coder 包含以下插件：
@@ -161,7 +185,12 @@ def id_name(cls) -> str:
 
 管理 Chat Auto Coder 的插件：
 
-- `add_plugin_directory(directory)`：添加用于搜索插件的目录
+- `add_plugin_directory(directory)`：添加用于搜索插件的目录（项目特定）
+- `add_global_plugin_directory(directory)`：添加用于搜索插件的全局目录（对所有项目可用）
+- `remove_plugin_directory(directory)`：删除项目特定插件目录
+- `clear_plugin_directories()`：清除所有项目特定插件目录
+- `load_global_plugin_dirs()`：从 ~/.auto-coder/plugins/global_plugin_dirs 加载全局插件目录
+- `save_global_plugin_dirs()`：保存全局插件目录到 ~/.auto-coder/plugins/global_plugin_dirs
 - `discover_plugins()`：在插件目录中发现可用插件
 - `load_plugin(plugin_class, config)`：加载并初始化插件
 - `load_plugins_from_config(config)`：基于配置加载插件
