@@ -129,30 +129,57 @@ class ComputerUse:
     def find_elements(self, image_path: str, element_desc: str) -> str:
         """
         {{ image }}
-        
-        请在屏幕截图中找到以下描述的元素:
+    
+        请在屏幕截图中找到所有符合以下描述的用户界面元素:
         <element_desc>
         {{ element_desc }}
         </element_desc>
         
-        如果找到了，请返回该元素的bounding box坐标，
-        bouding box 使用 (xmin, ymin, xmax, ymax) 来表示，其中xmin, ymin： 表示矩形左上角的坐标
-        xmax, ymax： 表示矩形右下角的坐标
-                        
-        最后按如下格式返回：
+        请考虑各种类型的UI元素，包括但不限于:
+        - 按钮(button)
+        - 输入框(input)
+        - 下拉菜单(dropdown)
+        - 复选框(checkbox)
+        - 单选按钮(radio)
+        - 标签(label)
+        - 图标(icon)
+        - 菜单项(menu item)
+        - 导航栏(navigation)
+        - 滑块(slider)
+        
+        请注意以下几点:
+        1. 即使元素仅部分匹配描述，也请返回
+        2. 对于文本元素，请尝试识别包含相似或相关文本的元素
+        3. 考虑元素在界面中的上下文和位置关系
+        4. 适应不同的视觉样式(包括深色/浅色主题)
+        5. 如果找到多个匹配项，请全部返回并按置信度排序
+        
+        对于每个找到的元素，请提供以下信息:
+        - bounding box坐标 (xmin, ymin, xmax, ymax)，表示元素的矩形框
+        - 元素类型(如按钮、输入框等)
+        - 元素上的文本或描述
+        - 匹配的置信度(0-1之间)
+        
+        最后按如下JSON格式返回:
         ```json
         {               
             "objects": [
                 {
+                    "type": "button",  // 元素类型
                     "bounding_box": [xmin, ymin, xmax, ymax],
                     "text": "元素上的文字或描述",
-                    "confidence": 0.95  # 置信度
-                }
-                ...
+                    "confidence": 0.95  // 置信度，值越高表示匹配越确定
+                },
+                // 更多元素...
             ]
         }
         ```
-        如果没有，请确保返回的objects为空列表。
+        
+        如果完全没有找到匹配的元素，请返回空objects数组:
+        ```json
+        {
+            "objects": []
+        }
         """
         image = byzerllm.Image.load_image_from_path(image_path)
         return {"image": image, "element_desc": element_desc}
