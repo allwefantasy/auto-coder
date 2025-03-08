@@ -683,85 +683,23 @@ class PluginManager:
                     completions.append((plugin_class_name, display_name))
                     added_display_names.add(display_name)
 
-        elif command == "/plugins/dirs":
-            if len(parts) == 2:
-                # 显示所有可用的子命令
-                subcommands = ["/add", "/remove", "/clear"]
-                for cmd in subcommands:
-                    completions.append((cmd, cmd))
-            elif len(parts) > 2:
-                subcmd = parts[2]
-                # 获取所有可用的子命令
-                subcommands = ["/add", "/remove", "/clear"]
-                # 过滤出匹配的子命令
-                matching_cmds = [
-                    cmd
-                    for cmd in subcommands
-                    if cmd.startswith(subcmd) and cmd != subcmd
-                ]
-                # print(f'matching_cmds: {matching_cmds}\nsubcmd: {subcmd}')
-
-                if matching_cmds:
-                    # 如果还有匹配的子命令，显示它们
-                    for cmd in matching_cmds:
-                        completions.append((cmd, cmd))
-                else:
-                    subcmd_without_slash = subcmd.lstrip("/")
-                    # 如果子命令已经完整输入，处理后续参数
-                    if subcmd == "/add" or subcmd_without_slash == "add":
-                        # 如果没有前缀，从当前目录开始补全
-                        prefix = ""
-                        if len(parts) > 3:
-                            prefix = " ".join(parts[3:])
-
-                        parent_dir = os.path.dirname(prefix) if prefix and prefix != '.' else "."
-                        # 获取文件名前缀
-                        file_prefix = os.path.basename(prefix)
-
-                        # 如果父目录存在，列出其内容
-                        if os.path.isdir(parent_dir):
-                            for entry in os.listdir(parent_dir):
-                                full_path = os.path.join(parent_dir, entry)
-                                if os.path.isdir(full_path) and entry.startswith(
-                                    file_prefix
-                                ):
-                                    completions.append((full_path, entry))
-                    elif subcmd == "/remove" or subcmd_without_slash == "remove":
-                        # 如果没有前缀，显示所有插件目录
-                        prefix = ""
-                        if len(parts) > 3:
-                            prefix = " ".join(parts[3:])
-
-                        if not prefix:
-                            for directory in self.plugin_dirs:
-                                completions.append((directory, directory))
-                        else:
-                            # 如果有前缀，过滤匹配的目录
-                            for directory in self.plugin_dirs:
-                                if directory.startswith(prefix):
-                                    # 如果目录以 prefix 开头，添加到补全列表
-                                    completions.append((directory, directory))
-
         elif command == "/plugins/dirs /add":
             # 如果没有前缀，从当前目录开始补全
             prefix = ""
-            if len(parts) > 3:
-                prefix = " ".join(parts[3:])
+            if len(parts) > 2:
+                prefix = " ".join(parts[2:])
+                prefix = prefix.strip()
 
-            prefix = prefix.lstrip()
-
-            # 获取父目录
-            if not prefix:
-                prefix = "."
-                parent_dir = "."
-            else:
-                parent_dir = os.path.dirname(prefix) if prefix !='.' else '.'
+            # 获取搜索目标目录，如果 prefix 为空，则从当前目录开始搜索
+            target_dir = "."
+            if prefix:
+                target_dir = os.path.dirname(prefix)
             # 获取文件名前缀
-            file_prefix = os.path.basename(prefix) if prefix and prefix != '.' else ""
+            file_prefix = os.path.basename(prefix) if prefix else ""
             # 如果父目录存在，列出其内容
-            if os.path.isdir(parent_dir):
-                for entry in os.listdir(parent_dir):
-                    full_path = os.path.join(parent_dir, entry)
+            if os.path.isdir(target_dir):
+                for entry in os.listdir(target_dir):
+                    full_path = os.path.join(target_dir, entry)
                     if os.path.isdir(full_path) and entry.startswith(file_prefix):
                         completions.append((full_path, entry))
 
