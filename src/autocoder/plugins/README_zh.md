@@ -107,21 +107,6 @@ class MyPlugin(Plugin):
 
 ## 插件配置
 
-插件可以使用 JSON 文件进行配置。示例：
-
-```json
-{
-    "plugin_dirs": [
-        "src/autocoder/plugins",
-        "user_plugins"
-    ],
-    "plugins": [
-        "autocoder.plugins.sample_plugin.SamplePlugin",
-        "user_plugins.my_plugin.MyPlugin"
-    ]
-}
-```
-
 每个插件的配置单独存储在项目的 `.auto-coder/plugins/{plugin_id}/config.json` 目录中。插件管理器负责加载和保存这些配置。
 
 全局插件目录存储在 `~/.auto-coder/plugins/global_plugin_dirs` 文件中，并对所有项目自动加载。

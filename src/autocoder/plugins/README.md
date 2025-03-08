@@ -107,21 +107,6 @@ class MyPlugin(Plugin):
 
 ## Plugin Configuration
 
-Plugins can be configured using a JSON file. Example:
-
-```json
-{
-    "plugin_dirs": [
-        "src/autocoder/plugins",
-        "user_plugins"
-    ],
-    "plugins": [
-        "autocoder.plugins.sample_plugin.SamplePlugin",
-        "user_plugins.my_plugin.MyPlugin"
-    ]
-}
-```
-
 The configuration for each plugin is stored separately in the project's `.auto-coder/plugins/{plugin_id}/config.json` directory. The plugin manager takes care of loading and saving these configurations.
 
 Global plugin directories are stored in `~/.auto-coder/plugins/global_plugin_dirs` and are automatically loaded for all projects.
