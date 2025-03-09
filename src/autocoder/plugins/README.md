@@ -15,9 +15,9 @@ This directory contains the plugin system for Chat Auto Coder, which allows exte
 
 At runtime using the `/plugins` command:
    ```
-   /plugins list              # List available plugins
-   /plugins load PluginClass  # Load a specific plugin
-   /plugins unload PluginName # Unload a plugin
+   /plugins /list              # List available plugins
+   /plugins /load PluginClass  # Load a specific plugin
+   /plugins /unload PluginName # Unload a plugin
    /plugins                   # Show loaded plugins
    ```
 
