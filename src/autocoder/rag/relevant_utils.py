@@ -19,7 +19,7 @@ class TaskTiming(BaseModel):
     
 class FilterDoc(BaseModel):
     source_code: SourceCode
-    relevance: DocRelevance
+    relevance: Optional[DocRelevance]
     task_timing: TaskTiming
 
 
