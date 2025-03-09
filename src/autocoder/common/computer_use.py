@@ -155,7 +155,7 @@ class ComputerUse:
         5. 如果找到多个匹配项，请全部返回并按置信度排序
         
         对于每个找到的元素，请提供以下信息:
-        - bounding box坐标 (xmin, ymin, xmax, ymax)，表示元素的矩形框
+        - bounding box坐标 (xmin, ymin, xmax, ymax),其中 xmin,ymin表示左上角坐标，xmax,ymax表示右下角坐标。
         - 元素类型(如按钮、输入框等)
         - 元素上的文本或描述
         - 匹配的置信度(0-1之间)

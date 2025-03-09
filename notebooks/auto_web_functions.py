@@ -24,7 +24,8 @@ def main():
         
     #doubao_vl
     #qvq_72b
-    llm = get_single_llm("qvq_72b",product_mode="lite")
+    #or_sonnet37_chat 
+    llm = get_single_llm("doubao_vl",product_mode="lite")
     # 创建配置
     auto_coder_args = AutoCoderArgs(
         output="./output"
@@ -32,7 +33,7 @@ def main():
     
     computer_use = ComputerUse(llm,auto_coder_args,screenshot_dir="./output/screenshots")
     path = computer_use.screenshot()
-    response = computer_use.find_elements.with_llm(llm).run(path, "cursor的关闭按钮")
+    response = computer_use.find_elements.with_llm(llm).run(path, "当前vscode Chat面板的输入框")
     result_json = code_utils.extract_code(response)[-1][1]
     print(response)
     result = json.loads(result_json)
