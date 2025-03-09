@@ -329,8 +329,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     rag_build_name: Optional[str] = None
     disable_auto_window: bool = False
     filter_batch_size: Optional[int] = 5
-    disable_segment_reorder: bool = False
-    rag_doc_filter_relevance: int = 5
+    disable_segment_reorder: bool = False    
     tokenizer_path: Optional[str] = None
     skip_confirm: Optional[bool] = False
     silence: Optional[bool] = False
