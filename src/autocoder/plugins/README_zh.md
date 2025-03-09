@@ -15,9 +15,9 @@
 
 在运行时使用 `/plugins` 命令：
    ```
-   /plugins list              # 列出可用插件
-   /plugins load PluginClass  # 加载特定插件
-   /plugins unload PluginName # 卸载插件
+   /plugins /list              # 列出可用插件
+   /plugins /load PluginClass  # 加载特定插件
+   /plugins /unload PluginName # 卸载插件
    /plugins                   # 显示已加载插件
    ```
 
