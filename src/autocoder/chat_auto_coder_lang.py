@@ -131,16 +131,18 @@ MESSAGES = {
         "files_removed": "Files Removed",
         "models_api_key_empty": "Warning : {{name}} API key is empty. Please set a valid API key.",
         "commit_generating": "{{ model_name }} Generating commit message...",
-        "auto_command_reasoning_title": "Reply", 
+        "auto_command_reasoning_title": "Reply",
         "commit_message": "{{ model_name }} Generated commit message: {{ message }}",
         "commit_failed": "{{ model_name }} Failed to generate commit message: {{ error }}",
         "confirm_execute": "Do you want to execute this script?",
         "official_doc": "Official Documentation: https://uelng8wukz.feishu.cn/wiki/NhPNwSRcWimKFIkQINIckloBncI",
+        "plugins_desc": "Manage plugins",
+        "plugins_usage": "Usage: /plugins <command>\nAvailable subcommands:\n  /plugins /list - List all available plugins\n  /plugins /load <name> - Load a plugin\n  /plugins /unload <name> - Unload a plugin\n  /plugins/dirs - List plugin directories\n  /plugins/dirs /add <path> - Add a plugin directory\n  /plugins/dirs /remove <path> - Remove a plugin directory\n  /plugins/dirs /clear - Clear all plugin directories",
     },
     "zh": {
         "auto_command_analyzing": "正在分析命令请求",
         "commit_generating": "{{ model_name }} 正在生成提交信息...",
-        "auto_command_reasoning_title": "回复", 
+        "auto_command_reasoning_title": "回复",
         "commit_message": "{{ model_name }} 生成的提交信息: {{ message }}",
         "commit_failed": "{{ model_name }} 生成提交信息失败: {{ error }}",
         "mcp_remove_error": "移除 MCP 服务器时出错:{error}",
@@ -271,7 +273,9 @@ MESSAGES = {
         "models_api_key_empty": "警告:  {{name}}  API key 为空。请设置一个有效的 API key。",
         "confirm_execute": "是否执行此脚本?",
         "official_doc": "官方文档: https://uelng8wukz.feishu.cn/wiki/NhPNwSRcWimKFIkQINIckloBncI",
-    }
+        "plugins_desc": "管理插件",
+        "plugins_usage": "用法: /plugins <命令>\n可用的子命令:\n  /plugins /list - 列出所有可用插件\n  /plugins /load <名称> - 加载一个插件\n  /plugins /unload <名称> - 卸载一个插件\n  /plugins/dirs - 列出插件目录\n  /plugins/dirs /add <路径> - 添加一个插件目录\n  /plugins/dirs /remove <路径> - 移除一个插件目录\n  /plugins/dirs /clear - 清除所有插件目录",
+    },
 }
 
 
@@ -279,12 +283,12 @@ def get_system_language():
     try:
         return locale.getdefaultlocale()[0][:2]
     except:
-        return 'en'
+        return "en"
 
 
 def get_message(key):
     lang = get_system_language()
-    return MESSAGES.get(lang, MESSAGES['en']).get(key, MESSAGES['en'][key])
+    return MESSAGES.get(lang, MESSAGES["en"]).get(key, MESSAGES["en"][key])
 
 
 def get_message_with_format(msg_key: str, **kwargs):
