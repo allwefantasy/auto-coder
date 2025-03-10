@@ -4,7 +4,7 @@ import uvicorn
 from fastapi import Request
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse, Response
+from fastapi.responses import JSONResponse, StreamingResponse, Response, FileResponse
 
 from byzerllm.log import init_logger
 from byzerllm.utils import random_uuid
@@ -165,6 +165,25 @@ async def embed(body: EmbeddingCompletionRequest):
         id=embedding_id
     )
 
+@router_app.get("/images/{path:path}")
+async def get_image(path: str):
+    """
+    提供图片文件服务
+    """
+    doc_dir = getattr(router_app.state, "doc_dir", "")
+    if not doc_dir:
+        return Response(status_code=404, content="Doc directory not configured")
+    
+    # 构建完整的文件路径
+    file_path = os.path.join(doc_dir, path)
+    
+    # 检查文件是否存在
+    if not os.path.exists(file_path) or not os.path.isfile(file_path):
+        return Response(status_code=404, content=f"File not found: {path}")
+    
+    # 返回文件
+    return FileResponse(file_path)
+
 class ServerArgs(BaseModel):
     host: str = None
     port: int = 8000
@@ -194,6 +213,9 @@ def serve(llm:ByzerLLM, args: ServerArgs):
         allow_methods=args.allowed_methods,
         allow_headers=args.allowed_headers,
     )
+    
+    # Store doc_dir in app state for access by endpoints
+    router_app.state.doc_dir = args.doc_dir
     
     if token := os.environ.get("BYZERLLM_API_KEY") or args.api_key:
 
