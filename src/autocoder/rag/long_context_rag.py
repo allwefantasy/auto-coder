@@ -500,6 +500,9 @@ class LongContextRAG:
         except json.JSONDecodeError:
             pass
 
+        if not only_contexts and extra_request_params.get("only_contexts",False):
+            only_contexts = True
+
         logger.info(f"Query: {query} only_contexts: {only_contexts}")
         start_time = time.time()
 
@@ -596,7 +599,11 @@ class LongContextRAG:
                 final_docs = []
                 for doc in relevant_docs:
                     final_docs.append(doc.model_dump())
-                return [json.dumps(final_docs, ensure_ascii=False)], []
+                yield (json.dumps(final_docs, ensure_ascii=False), SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
+                                                            generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
+                                                            rag_stat.chunk_stat.total_generated_tokens,
+                                                            ))
+                return
 
             if not relevant_docs:
                 yield ("没有找到可以回答你问题的相关文档", SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
