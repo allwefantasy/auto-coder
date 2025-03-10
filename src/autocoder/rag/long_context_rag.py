@@ -38,7 +38,7 @@ from pydantic import BaseModel
 from byzerllm.utils.types import SingleOutputMeta
 from autocoder.rag.lang import get_message_with_format_and_newline
 from autocoder.rag.qa_conversation_strategy import get_qa_strategy
-
+from autocoder.rag.searchable import SearchableResults
 try:
     from autocoder_pro.rag.llm_compute import LLMComputeEngine
     pro_version = version("auto-coder-pro")
@@ -257,7 +257,7 @@ class LongContextRAG:
         请根据提供的文档内容、用户对话历史以及最后一个问题，提取并总结文档中与问题相关的重要信息。
         如果文档中没有相关信息，请回复"该文档中没有与问题相关的信息"。
         提取的信息尽量保持和原文中的一样，并且只输出这些信息。
-        """    
+        """
 
     def _get_document_retriever_class(self):
         """Get the document retriever class based on configuration."""
@@ -500,7 +500,7 @@ class LongContextRAG:
         except json.JSONDecodeError:
             pass
 
-        if not only_contexts and extra_request_params.get("only_contexts",False):
+        if not only_contexts and extra_request_params.get("only_contexts", False):
             only_contexts = True
 
         logger.info(f"Query: {query} only_contexts: {only_contexts}")
@@ -596,13 +596,18 @@ class LongContextRAG:
             )
 
             if only_contexts:
-                final_docs = []
-                for doc in relevant_docs:
-                    final_docs.append(doc.model_dump())
-                yield (json.dumps(final_docs, ensure_ascii=False), SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
-                                                            generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
-                                                            rag_stat.chunk_stat.total_generated_tokens,
-                                                            ))
+                try:
+                    searcher = SearchableResults()
+                    result = searcher.reorder(docs=relevant_docs)
+                    yield (json.dumps(result.model_dump(), ensure_ascii=False), SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
+                                                                                                 generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
+                                                                                                 rag_stat.chunk_stat.total_generated_tokens,
+                                                                                                 ))
+                except Exception as e:
+                    yield (str(e), SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
+                                                    generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
+                                                    rag_stat.chunk_stat.total_generated_tokens,
+                                                    ))
                 return
 
             if not relevant_docs:
@@ -823,12 +828,13 @@ class LongContextRAG:
 
                 self._print_rag_stats(rag_stat)
             else:
-                
-                qa_strategy = get_qa_strategy(self.args.rag_qa_conversation_strategy)
+
+                qa_strategy = get_qa_strategy(
+                    self.args.rag_qa_conversation_strategy)
                 new_conversations = qa_strategy.create_conversation(
                     documents=[doc.source_code for doc in relevant_docs],
                     conversations=conversations
-                )                
+                )
 
                 chunks = target_llm.stream_chat_oai(
                     conversations=new_conversations,
