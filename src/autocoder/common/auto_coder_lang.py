@@ -184,9 +184,14 @@ MESSAGES = {
         "action_verification_failed": "Action verification failed: {{action}} - {{reason}}",
         "action_succeeded": "Action succeeded: {{action}}",
         "replanned_actions": "Replanned {{count}} actions",
-        "web_automation_ask_user": "Your answer: "  # 新增消息
-        
-        
+        "web_automation_ask_user": "Your answer: ",
+        "filter_mode_normal": "Using normal filter mode for index processing...",
+        "filter_mode_big": "Index file is large ({{ tokens_len }} tokens), using big_filter mode for processing...",
+        "filter_mode_super_big": "Index file is very large ({{ tokens_len }} tokens), using super_big_filter mode for processing...",
+        "super_big_filter_failed": "❌ Super big filter failed: {{ error }}.",
+        "super_big_filter_stats": "{{ model_names }} Super big filter completed in {{ elapsed_time }} seconds, input tokens: {{ input_tokens }}, output tokens: {{ output_tokens }}, input cost: {{ input_cost }}, output cost: {{ output_cost }}, speed: {{ speed }} tokens/s, chunk_index: {{ chunk_index }}",
+        "super_big_filter_splitting": "⚠️ Index file is extremely large ({{ tokens_len }}/{{ max_tokens }}). The query will be split into {{ split_size }} chunks for processing.",
+        "super_big_filter_title": "{{ model_name }} is analyzing how to filter extremely large context..."
     },
     "zh": {
         "file_sliding_window_processing": "文件 {{ file_path }} 过大 ({{ tokens }} tokens)，正在使用滑动窗口处理...",
@@ -368,7 +373,14 @@ MESSAGES = {
         "action_verification_failed": "操作验证失败: {{action}} - {{reason}}",
         "action_succeeded": "操作成功: {{action}}",
         "replanned_actions": "已重新规划 {{count}} 个操作",
-        "web_automation_ask_user": "您的回答: "  # 新增消息
+        "web_automation_ask_user": "您的回答: ",
+        "filter_mode_normal": "正在使用普通过滤模式处理索引...",
+        "filter_mode_big": "索引文件较大 ({{ tokens_len }} tokens)，正在使用 big_filter 模式处理...",
+        "filter_mode_super_big": "索引文件非常大 ({{ tokens_len }} tokens)，正在使用 super_big_filter 模式处理...",
+        "super_big_filter_failed": "❌ 超大过滤器失败: {{ error }}.",
+        "super_big_filter_stats": "{{ model_names }} 超大过滤器完成耗时 {{ elapsed_time }} 秒，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}, 输入成本: {{ input_cost }}, 输出成本: {{ output_cost }}, 速度: {{ speed }} tokens/秒, 块索引: {{ chunk_index }}",
+        "super_big_filter_splitting": "⚠️ 索引文件极其庞大 ({{ tokens_len }}/{{ max_tokens }})。查询将被分成 {{ split_size }} 个部分进行处理。",
+        "super_big_filter_title": "{{ model_name }} 正在分析如何过滤极大规模上下文..."
     }}
 
 

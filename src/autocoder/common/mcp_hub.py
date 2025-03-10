@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from mcp import ClientSession
 from mcp.client.stdio import stdio_client, StdioServerParameters
+from mcp.client.sse import sse_client
 import mcp.types as mcp_types
 from loguru import logger
 from contextlib import AsyncExitStack
@@ -186,20 +187,35 @@ class McpHub:
         server = McpServer(
             name=name, config=json.dumps(config), status="connecting"
         )
-        try:
+        transport_config = config.get("transport", {
+            "type": "stdio",
+            "endpoint":""
+        })
+
+        if transport_config["type"] not in ["stdio", "sse"]:
+            raise ValueError(f"Invalid transport type: {transport_config['type']}")
+        
+        if transport_config["type"] == "stdio":            
             # Setup transport parameters
             server_params = StdioServerParameters(
                 command=config["command"],
                 args=config.get("args", []),
                 env={**config.get("env", {}),
-                     "PATH": os.environ.get("PATH", "")},
+                    "PATH": os.environ.get("PATH", "")},
             )
 
             # Create transport using context manager
-            stdio_transport = await exit_stack.enter_async_context(stdio_client(server_params))
-            stdio, write = stdio_transport
+            transport = await exit_stack.enter_async_context(stdio_client(server_params))
+        
+        if transport_config["type"] == "sse":
+            url = transport_config["endpoint"]
+            transport = await exit_stack.enter_async_context(sse_client(url))
+        
+        
+        try:
+            stdio, write = transport
             session = await exit_stack.enter_async_context(
-                ClientSession(stdio, write, read_timeout_seconds=timedelta(seconds=30)))
+                ClientSession(stdio, write, read_timeout_seconds=timedelta(seconds=60)))
             await session.initialize()
             connection = McpConnection(server, session)
             self.connections[name] = connection
@@ -209,6 +225,7 @@ class McpHub:
             server.resources = await self._fetch_resources(name)
             server.resource_templates = await self._fetch_resource_templates(name)
             return server
+        
         except Exception as e:
             error_msg = str(e)
             logger.error(f"Failed to connect to server {name}: {error_msg}")
@@ -217,18 +234,29 @@ class McpHub:
                 self.connections[name].server.error = error_msg
             return server
 
+        
+
+
+
+
     async def delete_connection(self, name: str) -> None:
         """
         Close and remove a server connection with proper cleanup
         """
         if name in self.connections:
+            
+            try:                
+                del self.connections[name]
+            except Exception as e:
+                logger.error(f"Error closing connection to {name}: {e}")
+
             try:
                 exit_stack = self.exit_stacks[name]
                 await exit_stack.aclose()
                 del self.exit_stacks[name]
-                del self.connections[name]
             except Exception as e:
-                logger.error(f"Error closing connection to {name}: {e}")
+                logger.error(f"Error cleaning up to {name}: {e}")
+                        
 
     async def refresh_server_connection(self, name: str) -> None:
         """

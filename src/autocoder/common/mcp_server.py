@@ -158,6 +158,21 @@ class McpServer:
                 print(f"We have already updated the server configuration in ~/.autocoder/mcp/settings.json.\n")
                 print(f"After installation, you can restart the auto-coder.chat using the server.\033[0m\n")
 
+    def _deep_merge_dicts(self, dict1, dict2):
+        """
+        深度合并两个字典，包括嵌套的字典
+        dict1是基础字典，dict2是优先字典（当有冲突时保留dict2的值）
+        """
+        result = dict1.copy()
+        for key, value in dict2.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                # 如果两个字典都包含相同的键，并且两个值都是字典，则递归合并
+                result[key] = self._deep_merge_dicts(result[key], value)
+            else:
+                # 否则，使用dict2的值覆盖或添加到结果
+                result[key] = value
+        return result
+
     def _parse_command_line_args(self, server_name_or_config: str) -> tuple[str, dict]:
         """Parse command-line style arguments into name and config"""
         name = ""
@@ -186,15 +201,50 @@ class McpServer:
                         config["env"][key] = value
                     i += 1
             else:
-                i += 1
+                i += 1                
         
-        if not config.get("args"):
-            config["args"] = ["-y", "-g", name]
-        # Install package if needed
-        if name.startswith("@") or config.get("command") in ["npx", "npm"]:            
-            self._install_node_package(name)
+        template_config = {}
+        
+        if name in MCP_BUILD_IN_SERVERS:
+            template_config = MCP_BUILD_IN_SERVERS[name]
         else:
-            self._install_python_package(name)
+            # 查找外部server
+            external_servers = get_mcp_external_servers()
+            for s in external_servers:
+                if s.name == name:
+                    if s.runtime == "python":
+                        self._install_python_package(name)
+                        template_config = {
+                            "command": "python",
+                            "args": [
+                                "-m", name.replace("-", "_")
+                            ],
+                        }
+                    elif s.runtime == "node":
+                        self._install_node_package(name)
+                        template_config = {
+                            "command": "npx",
+                            "args": [
+                                "-y",
+                                "-g",
+                                name
+                            ]
+                        }
+                    break  
+
+        # 深度合并两个配置，以用户配置为主
+        config = self._deep_merge_dicts(template_config, config)
+
+        if not config.get("args") and (name.startswith("@") or config.get("command") in ["npx", "npm"]):
+            config["args"] = ["-y", "-g", name]            
+        
+        ## 如果有模板，则无需再次安装，处理模板的时候会自动安装
+        if not template_config:    
+            # Install package if needed
+            if name.startswith("@") or config.get("command") in ["npx", "npm"]:            
+                self._install_node_package(name)
+            else:
+                self._install_python_package(name)
             
         return name, config
         
@@ -216,40 +266,7 @@ class McpServer:
             self._install_python_package(name)
             
         return name, config
-        
-    def _parse_server_name(self, server_name: str) -> tuple[str, dict]:
-        """Parse a simple server name into name and config"""
-        name = server_name.strip()
-        config = {}
-        
-        if name in MCP_BUILD_IN_SERVERS:
-            config = MCP_BUILD_IN_SERVERS[name]
-        else:
-            # 查找外部server
-            external_servers = get_mcp_external_servers()
-            for s in external_servers:
-                if s.name == name:
-                    if s.runtime == "python":
-                        self._install_python_package(name)
-                        config = {
-                            "command": "python",
-                            "args": [
-                                "-m", name.replace("-", "_")
-                            ],
-                        }
-                    elif s.runtime == "node":
-                        self._install_node_package(name)
-                        config = {
-                            "command": "npx",
-                            "args": [
-                                "-y",
-                                "-g",
-                                name
-                            ]
-                        }
-                    break
-                    
-        return name, config
+            
 
     async def _install_server(self, request: McpInstallRequest, hub: McpHub) -> McpResponse:
         """Install an MCP server with module dependency check"""
@@ -267,8 +284,8 @@ class McpServer:
                     # Try parsing as JSON
                     name, config = self._parse_json_config(server_name_or_config)
                 except json.JSONDecodeError:
-                    # Try as simple server name
-                    name, config = self._parse_server_name(server_name_or_config)
+                    logger.error(f"Failed to parse JSON config: {server_name_or_config}")
+                    pass
             
             if not name:
                 raise ValueError(
@@ -322,8 +339,7 @@ class McpServer:
 
                         # Combine results
                         all_servers = builtin_servers + external_list
-                        result = get_message_with_format("mcp_list_builtin_title") + "\n" + \
-                            "\n".join(all_servers)
+                        result =  "\n".join(all_servers)
 
                         await self._response_queue.put(McpResponse(result=result))
                     except Exception as e:
@@ -334,7 +350,7 @@ class McpServer:
                     try:
                         running_servers = "\n".join(
                             [f"- {server.name}" for server in hub.get_servers()])
-                        result = get_message_with_format("mcp_list_running_title") + "\n" + running_servers if running_servers else ""
+                        result = running_servers if running_servers else ""
                         await self._response_queue.put(McpResponse(result=result))
                     except Exception as e:
                         await self._response_queue.put(McpResponse(

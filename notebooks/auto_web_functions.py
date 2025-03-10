@@ -24,8 +24,9 @@ def main():
         
     #doubao_vl
     #qvq_72b
+    #qwen_vl
     #or_sonnet37_chat 
-    llm = get_single_llm("doubao_vl",product_mode="lite")
+    llm = get_single_llm("qwen_vl",product_mode="lite")
     # 创建配置
     auto_coder_args = AutoCoderArgs(
         output="./output"
@@ -42,7 +43,7 @@ def main():
         # 找到匹配度最高的元素
         best_match = sorted(objects, key=lambda x: x.get("confidence", 0), reverse=True)[0]
         bbox = best_match.get("bounding_box", [])        
-        v  = computer_use.draw_bounding_box(path, bbox, "Cursor软件的关闭按钮")
+        v  = computer_use.draw_bounding_box(path, bbox, "切换到 Chat 聊天框")
         print(v)
 
 if __name__ == "__main__":
