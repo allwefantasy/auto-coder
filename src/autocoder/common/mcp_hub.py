@@ -2,7 +2,7 @@ import os
 import json
 import asyncio
 import aiohttp
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Set, Optional
 from pathlib import Path
 from pydantic import BaseModel, Field
@@ -171,6 +171,15 @@ class McpHub:
         """Get list of all configured servers"""
         return [conn.server for conn in self.connections.values()]
 
+    async def _monitor_process(self, process, task_to_cancel):
+        """Monitor process health and cancel task if process dies"""
+        while True:
+            if process.returncode is not None:
+                logger.warning(f"MCP server process exited with code {process.returncode}")
+                task_to_cancel.cancel()
+                return
+            await asyncio.sleep(0.1)
+
     async def connect_to_server(self, name: str, config: dict) -> None:
         """
         Establish connection to an MCP server with proper resource management
@@ -178,12 +187,11 @@ class McpHub:
         # Remove existing connection if present
         if name in self.connections:
             await self.delete_connection(name)
-
-        try:
-            server = McpServer(
+        
+        server = McpServer(
                 name=name, config=json.dumps(config), status="connecting"
             )
-
+        try:            
             # Setup transport parameters
             server_params = StdioServerParameters(
                 command=config["command"],
@@ -196,8 +204,22 @@ class McpHub:
             transport_manager = stdio_client(server_params)
             transport = await transport_manager.__aenter__()
             try:
-                session = await ClientSession(transport[0], transport[1]).__aenter__()
+                from datetime import timedelta
+                # Use timeout for session operations
+                session = await ClientSession(
+                    transport[0], 
+                    transport[1],
+                    read_timeout_seconds=timedelta(seconds=30)
+                ).__aenter__()
+                
                 await session.initialize()
+                # # Add explicit timeout for initialization
+                # try:
+                #     await asyncio.wait_for(session.initialize(), timeout=40.0)
+                # except asyncio.TimeoutError:
+                #     server.status = "disconnected"
+                #     server.error = "Connection timeout during initialization"
+                #     raise RuntimeError("Connection timeout during initialization")
 
                 # Store connection with transport manager
                 connection = McpConnection(server, session, transport_manager)
@@ -208,12 +230,12 @@ class McpHub:
                 server.tools = await self._fetch_tools(name)                
                 server.resources = await self._fetch_resources(name)                
                 server.resource_templates = await self._fetch_resource_templates(name)
+                return server
 
-            except Exception as e:
+            except Exception as e:                
                 # Clean up transport if session initialization fails
-
-                await transport_manager.__aexit__(None, None, None)
-                raise
+                await transport_manager.__aexit__(None, None, None)                
+                raise e
 
         except Exception as e:
             error_msg = str(e)
@@ -221,7 +243,7 @@ class McpHub:
             if name in self.connections:
                 self.connections[name].server.status = "disconnected"
                 self.connections[name].server.error = error_msg
-            raise
+            return server                
 
     async def delete_connection(self, name: str) -> None:
         """
@@ -273,13 +295,19 @@ class McpHub:
 
                 if not current_conn:
                     # New server
-                    await self.connect_to_server(name, config)
-                    logger.info(f"Connected to new MCP server: {name}")
+                    server = await self.connect_to_server(name, config)
+                    if server.status == "connected":
+                        logger.info(f"Connected to new MCP server: {name}")
+                    else:
+                        logger.error(f"Failed to connect to new MCP server: {name}")
+
                 elif current_conn.server.config != json.dumps(config):
                     # Updated configuration
-                    await self.connect_to_server(name, config)
-                    logger.info(
-                        f"Reconnected MCP server with updated config: {name}")
+                    server = await self.connect_to_server(name, config)
+                    if server.status == "connected":
+                        logger.info(f"Reconnected MCP server with updated config: {name}")
+                    else:
+                        logger.error(f"Failed to reconnected MCP server with updated config: {name}")
 
         finally:
             self.is_connecting = False

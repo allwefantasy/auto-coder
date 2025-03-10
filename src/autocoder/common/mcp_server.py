@@ -157,55 +157,122 @@ class McpServer:
                 print(f"We have already updated the server configuration in ~/.autocoder/mcp/settings.json.\n")
                 print(f"After installation, you can restart the auto-coder.chat using the server.\033[0m\n")
 
+    def _parse_command_line_args(self, server_name_or_config: str) -> tuple[str, dict]:
+        """Parse command-line style arguments into name and config"""
+        name = ""
+        config = {}
+        args = server_name_or_config.strip().split()
+        i = 0
+        while i < len(args):
+            if args[i] == "--name" and i + 1 < len(args):
+                name = args[i + 1]
+                i += 2
+            elif args[i] == "--command" and i + 1 < len(args):
+                config["command"] = args[i + 1]
+                i += 2
+            elif args[i] == "--args":
+                config["args"] = []
+                i += 1
+                while i < len(args) and not args[i].startswith("--"):
+                    config["args"].append(args[i])
+                    i += 1
+            elif args[i] == "--env":
+                config["env"] = {}
+                i += 1
+                while i < len(args) and not args[i].startswith("--"):
+                    if "=" in args[i]:
+                        key, value = args[i].split("=", 1)
+                        config["env"][key] = value
+                    i += 1
+            else:
+                i += 1
+        
+        # Install package if needed
+        if name.startswith("@") or config.get("command") in ["npx", "npm"]:
+            for item in config.get("args", []):
+                if name in item:
+                    self._install_node_package(item)
+                    break
+            else:
+                # If name not found in args, assume it's the package to install
+                self._install_node_package(name)
+        else:
+            self._install_python_package(name)
+            
+        return name, config
+        
+    def _parse_json_config(self, server_name_or_config: str) -> tuple[str, dict]:
+        """Parse JSON configuration into name and config"""
+        raw_config = json.loads(server_name_or_config)
+        # 用户给了一个完整的配置
+        if "mcpServers" in raw_config:
+            raw_config = raw_config["mcpServers"]
+
+        # 取第一个server 配置
+        config = list(raw_config.values())[0]
+        name = list(raw_config.keys())[0]
+        if name.startswith("@") or config["command"] in ["npx", "npm"]:
+            for item in config["args"]:
+                if name in item:
+                    self._install_node_package(item)                    
+        else:
+            self._install_python_package(name)
+            
+        return name, config
+        
+    def _parse_server_name(self, server_name: str) -> tuple[str, dict]:
+        """Parse a simple server name into name and config"""
+        name = server_name.strip()
+        config = {}
+        
+        if name in MCP_BUILD_IN_SERVERS:
+            config = MCP_BUILD_IN_SERVERS[name]
+        else:
+            # 查找外部server
+            external_servers = get_mcp_external_servers()
+            for s in external_servers:
+                if s.name == name:
+                    if s.runtime == "python":
+                        self._install_python_package(name)
+                        config = {
+                            "command": "python",
+                            "args": [
+                                "-m", name.replace("-", "_")
+                            ],
+                        }
+                    elif s.runtime == "node":
+                        self._install_node_package(name)
+                        config = {
+                            "command": "npx",
+                            "args": [
+                                "-y",
+                                "-g",
+                                name
+                            ]
+                        }
+                    break
+                    
+        return name, config
+
     async def _install_server(self, request: McpInstallRequest, hub: McpHub) -> McpResponse:
         """Install an MCP server with module dependency check"""
         name = ""
         config = {}
         try:
             server_name_or_config = request.server_name_or_config
-            try:
-                raw_config = json.loads(server_name_or_config)
-                # 用户给了一个完整的配置
-                if "mcpServers" in raw_config:
-                    raw_config = raw_config["mcpServers"]
-
-                # 取第一个server 配置
-                config = list(raw_config.values())[0]
-                name = list(raw_config.keys())[0]
-                if name.startswith("@") or config["command"] in ["npx","npm"]:
-                    for item in config["args"]:
-                        if name in item:
-                            self._install_node_package(item)                    
-                else:
-                    self._install_python_package(name)
-            except json.JSONDecodeError:
-                name = server_name_or_config.strip()
-                if name not in MCP_BUILD_IN_SERVERS:
-                    # 查找外部server
-                    external_servers = get_mcp_external_servers()
-                    for s in external_servers:
-                        if s.name == name:
-                            if s.runtime == "python":
-                                self._install_python_package(name)
-                                config = {
-                                    "command": "python",
-                                    "args": [
-                                        "-m", name.replace("-", "_")
-                                    ],
-                                }
-                            elif s.runtime == "node":
-                                self._install_node_package(name)
-                                config = {
-                                    "command": "npx",
-                                    "args": [
-                                        "-y",
-                                        "-g",
-                                        name
-                                    ]
-                                }
-                            break
-                else:
-                    config = MCP_BUILD_IN_SERVERS[name]
+            
+            # Try different parsing methods
+            if server_name_or_config.strip().startswith("--"):
+                # Command-line style arguments
+                name, config = self._parse_command_line_args(server_name_or_config)
+            else:
+                try:
+                    # Try parsing as JSON
+                    name, config = self._parse_json_config(server_name_or_config)
+                except json.JSONDecodeError:
+                    # Try as simple server name
+                    name, config = self._parse_server_name(server_name_or_config)
+            
             if not name:
                 raise ValueError(
                     "MCP server name is not available in MCP_BUILD_IN_SERVERS or external servers")
