@@ -13,6 +13,7 @@ from pydantic import BaseModel
 import sys
 from loguru import logger
 from autocoder.utils.llms import get_single_llm
+from autocoder.chat_auto_coder_lang import get_message_with_format
 
 @dataclass
 class McpRequest:
@@ -187,15 +188,11 @@ class McpServer:
             else:
                 i += 1
         
+        if not config.get("args"):
+            config["args"] = ["-y", "-g", name]
         # Install package if needed
-        if name.startswith("@") or config.get("command") in ["npx", "npm"]:
-            for item in config.get("args", []):
-                if name in item:
-                    self._install_node_package(item)
-                    break
-            else:
-                # If name not found in args, assume it's the package to install
-                self._install_node_package(name)
+        if name.startswith("@") or config.get("command") in ["npx", "npm"]:            
+            self._install_node_package(name)
         else:
             self._install_python_package(name)
             
@@ -281,10 +278,13 @@ class McpServer:
             if not config:
                 raise ValueError(f"MCP server {name} config is not available")
 
-            await hub.add_server_config(name, config)
-            return McpResponse(result=f"Successfully installed MCP server: {request.server_name_or_config}")
+            is_success = await hub.add_server_config(name, config)
+            if is_success:
+                return McpResponse(result=get_message_with_format("mcp_install_success", result=request.server_name_or_config))
+            else:
+                return McpResponse(result="", error=get_message_with_format("mcp_install_error", error="Failed to establish connection"))
         except Exception as e:
-            return McpResponse(result="", error=f"Failed to install MCP server: {str(e)}")
+            return McpResponse(result="", error=get_message_with_format("mcp_install_error", error=str(e)))
 
     async def _process_request(self):
         hub = McpHub()
@@ -303,9 +303,11 @@ class McpServer:
                 elif isinstance(request, McpRemoveRequest):
                     try:
                         await hub.remove_server_config(request.server_name)
-                        await self._response_queue.put(McpResponse(result=f"Successfully removed MCP server: {request.server_name}"))
+                        await self._response_queue.put(McpResponse(
+                            result=get_message_with_format("mcp_remove_success", result=request.server_name)))
                     except Exception as e:
-                        await self._response_queue.put(McpResponse(result="", error=f"Failed to remove MCP server: {str(e)}"))
+                        await self._response_queue.put(McpResponse(
+                            result="", error=get_message_with_format("mcp_remove_error", error=str(e))))
 
                 elif isinstance(request, McpListRequest):
                     try:
@@ -320,20 +322,23 @@ class McpServer:
 
                         # Combine results
                         all_servers = builtin_servers + external_list
-                        result = "Available MCP servers:\n" + \
+                        result = get_message_with_format("mcp_list_builtin_title") + "\n" + \
                             "\n".join(all_servers)
 
                         await self._response_queue.put(McpResponse(result=result))
                     except Exception as e:
-                        await self._response_queue.put(McpResponse(result="", error=f"Failed to list servers: {str(e)}"))
+                        await self._response_queue.put(McpResponse(
+                            result="", error=get_message_with_format("mcp_list_builtin_error", error=str(e))))
 
                 elif isinstance(request, McpListRunningRequest):
                     try:
                         running_servers = "\n".join(
                             [f"- {server.name}" for server in hub.get_servers()])
-                        await self._response_queue.put(McpResponse(result=running_servers))
+                        result = get_message_with_format("mcp_list_running_title") + "\n" + running_servers if running_servers else ""
+                        await self._response_queue.put(McpResponse(result=result))
                     except Exception as e:
-                        await self._response_queue.put(McpResponse(result="", error=f"Failed to list running servers: {str(e)}"))
+                        await self._response_queue.put(McpResponse(
+                            result="", error=get_message_with_format("mcp_list_running_error", error=str(e))))
 
                 elif isinstance(request, McpRefreshRequest):
                     try:
@@ -341,23 +346,36 @@ class McpServer:
                             await hub.refresh_server_connection(request.name)
                         else:
                             await hub.initialize()
-                        await self._response_queue.put(McpResponse(result="Successfully refreshed MCP server connections"))
+                        await self._response_queue.put(McpResponse(
+                            result=get_message_with_format("mcp_refresh_success")))
                     except Exception as e:
-                        await self._response_queue.put(McpResponse(result="", error=f"Failed to refresh MCP servers: {str(e)}"))
+                        await self._response_queue.put(McpResponse(
+                            result="", error=get_message_with_format("mcp_refresh_error", error=str(e))))
 
                 else:
-                    llm = get_single_llm(request.model,product_mode=request.product_mode)
+                    if not request.query.strip():
+                        await self._response_queue.put(McpResponse(
+                            result="", error=get_message_with_format("mcp_query_empty")))
+                        continue
+                        
+                    llm = get_single_llm(request.model, product_mode=request.product_mode)
                     mcp_executor = McpExecutor(hub, llm)
                     conversations = [
                         {"role": "user", "content": request.query}]
                     _, results = await mcp_executor.run(conversations)
+                    
                     if not results:
-                        await self._response_queue.put(McpResponse(result="[No Result]", error="No results"))
-                    results_str = "\n\n".join(
-                        mcp_executor.format_mcp_result(result) for result in results)
-                    await self._response_queue.put(McpResponse(result=results_str))
+                        await self._response_queue.put(McpResponse(
+                            result=get_message_with_format("mcp_error_title"), 
+                            error="No results"))
+                    else:
+                        results_str = "\n\n".join(
+                            mcp_executor.format_mcp_result(result) for result in results)
+                        await self._response_queue.put(McpResponse(
+                            result=get_message_with_format("mcp_response_title") + "\n" + results_str))
             except Exception as e:
-                await self._response_queue.put(McpResponse(result="", error=str(e)))
+                await self._response_queue.put(McpResponse(
+                    result="", error=get_message_with_format("mcp_error_title") + ": " + str(e)))
 
     def send_request(self, request: McpRequest) -> McpResponse:
         async def _send():
