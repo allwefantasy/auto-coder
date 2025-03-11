@@ -64,6 +64,69 @@ class ByzerStorageCache(BaseCacheManager):
         required_exts,
         extra_params: Optional[AutoCoderArgs] = None,
     ):
+        """
+        初始化基于云端 Byzer Storage 的 RAG 缓存管理器。
+        
+        参数:
+            path: 需要索引的代码库根目录
+            ignore_spec: 指定哪些文件/目录应被忽略的规则
+            required_exts: 需要处理的文件扩展名列表
+            extra_params: 额外的配置参数，包含向量索引相关设置
+            
+        缓存结构 (self.cache):
+            self.cache 是一个字典，键为文件路径，值为 CacheItem 对象:
+            {
+                "file_path1": CacheItem(
+                    file_path: str,              # 文件的绝对路径
+                    relative_path: str,          # 相对于项目根目录的路径
+                    content: List[Dict],         # 文件内容的结构化表示，每个元素是 SourceCode 对象的序列化
+                    modify_time: float,          # 文件最后修改时间的时间戳
+                    md5: str                     # 文件内容的 MD5 哈希值，用于检测变更
+                ),
+                "file_path2": CacheItem(...),
+                ...
+            }
+            
+            这个缓存有两层存储:
+            1. 本地文件缓存: 保存在项目根目录的 .cache/byzer_storage_speedup.jsonl 文件中
+               - 用于跟踪文件变更和快速加载
+               - 使用 JSONL 格式存储，每行是一个 CacheItem 的 JSON 表示
+            
+            2. 云端 Byzer Storage 向量数据库:
+               - 存储文件内容的分块和向量嵌入
+               - 每个文件被分割成大小为 chunk_size 的文本块
+               - 每个块都会生成向量嵌入，用于语义搜索
+               - 存储结构包含: 文件路径、内容块、原始内容、向量嵌入、修改时间
+        
+        源代码处理流程:
+            在缓存更新过程中使用了两个关键函数:
+            
+            1. process_file_in_multi_process: 在多进程环境中处理文件
+               - 参数: file_info (文件信息元组)
+               - 返回值: List[SourceCode] 或 None
+               - 用途: 在初始构建缓存时并行处理多个文件
+            
+            2. process_file_local: 在当前进程中处理单个文件
+               - 参数: file_path (文件路径)
+               - 返回值: List[SourceCode] 或 None
+               - 用途: 在检测到文件更新时处理单个文件
+            
+            文件处理后，会:
+            1. 更新内存中的缓存 (self.cache)
+            2. 将缓存持久化到本地文件
+            3. 将内容分块并更新到 Byzer Storage 向量数据库
+        
+        更新机制:
+            - 通过单独的线程异步处理文件变更
+            - 使用 MD5 哈希值检测文件是否发生变化
+            - 支持文件添加、更新和删除事件
+            - 使用向量数据库进行语义检索，支持相似度搜索
+            
+        与 LocalByzerStorageCache 的区别:
+            - 使用云端 ByzerStorage 而非本地存储
+            - 适用于需要远程访问和共享索引的场景
+            - 支持大规模分布式检索和更高级的查询功能
+        """
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
