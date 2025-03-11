@@ -2,6 +2,9 @@ import os
 from typing import Dict, Any, Optional, Union, List, Tuple, Dict
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import glob
+import json
+from datetime import datetime
 
 import byzerllm
 
@@ -13,7 +16,7 @@ logger = logging.getLogger(__name__)
 class FileUsage(BaseModel):
     description: str
 
-class FileMeta:
+class RAGFileMeta:
     """
     A class that generates short descriptions for files.
     """
@@ -151,3 +154,102 @@ class FileMeta:
             all_results.update(batch_results)
             
         return all_results
+
+def build_meta(doc_path: str, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], batch_size: int = 10, max_workers: Optional[int] = None) -> str:
+    """
+    构建文件元数据信息。
+    
+    此函数会：
+    1. 查找 doc 目录下 .cache 目录中文件名包含 cache 的 jsonl 文件
+    2. 找出最新的文件并读取内容
+    3. 为每个文件生成用途描述
+    4. 将结果保存到 meta.jsonl 文件
+    
+    参数:
+        doc_path: 文档根目录路径
+        llm: ByzerLLM 实例，用于生成文件描述
+        batch_size: 批处理大小，默认为 10
+        max_workers: 最大线程数，默认为 None（使用 ThreadPoolExecutor 的默认值）
+        
+    返回:
+        生成的元数据文件路径
+    """
+    # 确保 .cache 目录存在
+    cache_dir = os.path.join(doc_path, ".cache")
+    if not os.path.exists(cache_dir):
+        logger.warning(f"Cache directory not found: {cache_dir}")
+        return ""
+    
+    # 查找文件名包含 cache 的 jsonl 文件
+    cache_files = glob.glob(os.path.join(cache_dir, "*cache*.jsonl"))
+    if not cache_files:
+        logger.warning(f"No cache files found in {cache_dir}")
+        return ""
+    
+    # 根据修改时间排序，找出最新的文件
+    latest_cache_file = max(cache_files, key=os.path.getmtime)
+    logger.info(f"Using latest cache file: {latest_cache_file}")
+    
+    # 读取缓存文件内容
+    file_contents = []
+    file_md5_map = {}  # 用于存储文件路径到MD5的映射
+    
+    try:
+        with open(latest_cache_file, 'r', encoding='utf-8') as f:
+            for line in f:
+                try:
+                    data = json.loads(line.strip())
+                    file_path = data.get("file_path", "")
+                    
+                    # 提取MD5值
+                    file_md5 = data.get("md5", "")
+                    if file_path and file_md5:
+                        file_md5_map[file_path] = file_md5
+                    
+                    if file_path and "content" in data:
+                        # 提取文件内容
+                        file_content = ""
+                        for content_item in data["content"]:
+                            if "source_code" in content_item:
+                                file_content += content_item["source_code"] + "\n"
+                        
+                        if file_content:
+                            file_contents.append((file_path, file_content))
+                except json.JSONDecodeError:
+                    logger.warning(f"Invalid JSON line in {latest_cache_file}")
+                    continue
+    except Exception as e:
+        logger.error(f"Error reading cache file {latest_cache_file}: {str(e)}")
+        return ""
+    
+    if not file_contents:
+        logger.warning(f"No valid file contents found in {latest_cache_file}")
+        return ""
+    
+    # 使用 RAGFileMeta 生成文件描述
+    rag_file_meta = RAGFileMeta(llm)
+    file_usages = rag_file_meta.describe_files_batch(
+        files=file_contents, 
+        batch_size=batch_size,
+        max_workers=max_workers
+    )
+    
+    # 保存元数据到 meta.jsonl 文件
+    meta_file_path = os.path.join(cache_dir, "meta.jsonl")
+    try:
+        with open(meta_file_path, 'w', encoding='utf-8') as f:
+            for file_path, file_usage in file_usages.items():
+                meta_entry = {
+                    "file_path": file_path,
+                    "usage": file_usage.description,
+                    "md5": file_md5_map.get(file_path, ""),  # 添加MD5值
+                    "timestamp": datetime.now().isoformat()
+                }
+                f.write(json.dumps(meta_entry, ensure_ascii=False) + "\n")
+        
+        logger.info(f"Metadata saved to {meta_file_path}")
+    except Exception as e:
+        logger.error(f"Error writing metadata file {meta_file_path}: {str(e)}")
+        return ""
+    
+    return meta_file_path
