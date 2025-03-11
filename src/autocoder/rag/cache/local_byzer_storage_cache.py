@@ -463,15 +463,9 @@ class LocalByzerStorageCache(BaseCacheManager):
                 self.queue.append(AddOrUpdateEvent(
                     file_infos=files_to_process))
 
-    def get_cache(self, options: Dict[str, Any]) -> Dict[str, Dict]:
+    def get_single_cache(self, query: str, options: Dict[str, Any]) -> Dict[str, Dict]:
         """Search cached documents using query"""
-
-        self.trigger_update()
-
-        if options is None or "query" not in options:
-            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
-
-        query = options.get("query", "")
+        
         total_tokens = 0
 
         # Build query with both vector search and text search
@@ -532,7 +526,23 @@ class LocalByzerStorageCache(BaseCacheManager):
                 result[file_path] = cached_data.model_dump()
         
         logger.info(f"用户tokens设置为:{self.max_output_tokens}，累计tokens: {total_tokens}，数据条数变化: {len(results)} -> {len(result)}")
-        return result
+        return result                        
+
+
+    def get_cache(self, options: Dict[str, Any]) -> Dict[str, Dict]:
+        """Search cached documents using queries"""
+
+        self.trigger_update()
+
+        if options is None or "queries" not in options:
+            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
+        
+        ## 当前暂时只支持一个query
+        queries = options.get("queries", [])
+        query = queries[0]
+
+        return self.get_single_cache(query, options)
+        
 
     def get_all_files(self) -> List[FileInfo]:
         all_files = []

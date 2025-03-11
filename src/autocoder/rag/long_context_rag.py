@@ -39,6 +39,7 @@ from byzerllm.utils.types import SingleOutputMeta
 from autocoder.rag.lang import get_message_with_format_and_newline
 from autocoder.rag.qa_conversation_strategy import get_qa_strategy
 from autocoder.rag.searchable import SearchableResults
+from autocoder.rag.conversation_to_queries import extract_search_queries
 try:
     from autocoder_pro.rag.llm_compute import LLMComputeEngine
     pro_version = version("auto-coder-pro")
@@ -333,7 +334,8 @@ class LongContextRAG:
 
     def _filter_docs(self, conversations: List[Dict[str, str]]) -> DocFilterResult:
         query = conversations[-1]["content"]
-        documents = self._retrieve_documents(options={"query": query})
+        queries = extract_search_queries(conversations, self.llm)        
+        documents = self._retrieve_documents(options={"queries": [query] + queries })
         return self.doc_filter.filter_docs(
             conversations=conversations, documents=documents
         )
@@ -546,7 +548,8 @@ class LongContextRAG:
                 model_name=rag_stat.recall_stat.model_name
             )
             query = conversations[-1]["content"]
-            documents = self._retrieve_documents(options={"query": query})
+            queries = extract_search_queries(conversations, self.llm)
+            documents = self._retrieve_documents(options={"queries": [query] + queries})
 
             # 使用带进度报告的过滤方法
             for progress_update, result in self.doc_filter.filter_docs_with_progress(conversations, documents):

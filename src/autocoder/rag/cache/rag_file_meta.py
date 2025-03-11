@@ -1,4 +1,3 @@
-import os
 from typing import Dict, Any, Optional, Union, List, Tuple, Dict
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -6,6 +5,7 @@ import glob
 import json
 from datetime import datetime
 import time
+import os
 
 import byzerllm
 
@@ -87,8 +87,50 @@ class RAGFileMeta:
         }
         ```
         """
-
         
+    @byzerllm.prompt()
+    def answer_with_file_meta(self, file_meta_list: List[FileMetaItem], conversations: List[Dict[str, Any]]) -> str:
+        """
+        根据文件元数据上下文回答用户问题。
+        
+        参数:
+            file_meta_list: 文件元数据列表
+            conversations: 历史对话
+            
+        返回:
+            基于文件元数据的回答
+            
+        任务说明:
+        你是一个了解知识库结构的助手。你的任务是基于提供的文件元数据信息来回答用户的问题。
+        元数据包含了每个文件的路径、用途描述和其他相关信息。
+        
+        要求:
+        1. 根据文件元数据的用途描述，找出与用户问题最相关的文件
+        2. 提供准确、有帮助的回答，引用相关文件的信息
+        3. 如果用户询问特定功能，尝试找到实现该功能的文件并解释其作用
+        4. 如果用户询问项目结构，根据文件路径和用途提供概述
+        5. 回答应该直接明了，提供有价值的信息
+        6. 如果元数据中没有足够信息，坦诚说明并提供尽可能有用的回应
+        
+        ---
+        
+        项目文件元数据:
+        <file_meta_list>
+        {% for item in file_meta_list %}
+        - 文件: <path>{{ item.file_path }}</path>
+          用途: {{ item.usage }}
+        {% endfor %}
+        </file_meta_list>
+        
+        历史对话:
+        <conversations>
+        {% for msg in conversations %}
+        <{{ msg.role }}>: {{ msg.content }}
+        {% endfor %}
+        </conversations>
+        
+        请根据上述文件元数据，根据历史对话，回答用户最后一个问题。
+        """
         
     def describe_file(self, file_path: str, content: str) -> FileUsage:
         """
@@ -107,6 +149,32 @@ class RAGFileMeta:
         except Exception as e:
             logger.error(f"Error generating description for {file_path}: {str(e)}")
             return FileUsage(description="未知用途文件")
+    
+    def answer_query(self, file_meta_items: List[FileMetaItem], query: str) -> str:
+        """
+        根据文件元数据回答用户查询。
+        
+        参数:
+            file_meta_items: FileMetaItem 对象列表，包含文件元数据
+            query: 用户的问题或查询
+            
+        返回:
+            基于文件元数据的回答
+        """
+        try:
+            # 将 FileMetaItem 对象转换为字典列表，以便在提示中使用
+            file_meta_dicts = [item.model_dump() for item in file_meta_items]
+            
+            # 使用 prompt 函数生成回答
+            response = self.answer_with_file_meta.with_llm(self.llm).run(
+                file_meta_list=file_meta_dicts,
+                query=query
+            )
+            
+            return response
+        except Exception as e:
+            logger.error(f"Error answering query with file metadata: {str(e)}")
+            return f"抱歉，无法处理您的查询: {str(e)}"
     
     def describe_files(self, files: List[Tuple[str, str]], max_workers: Optional[int] = None) -> Dict[str, FileUsage]:
         """
@@ -373,3 +441,54 @@ def build_meta(doc_path: str, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzer
         return ""
     
     return meta_file_path
+
+def get_meta(doc_path: str, llm: Optional[Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]] = None) -> List[FileMetaItem]:
+    """
+    获取文件元数据信息。
+    
+    此函数会读取 meta.jsonl 文件并返回解析后的 FileMetaItem 列表。
+    如果文件不存在且提供了 llm 参数，将尝试通过调用 build_meta 生成元数据文件。
+    
+    参数:
+        doc_path: 文档根目录路径
+        llm: 可选的 ByzerLLM 实例，用于在元数据不存在时生成
+        
+    返回:
+        FileMetaItem 对象列表
+    """
+    # 确保 .cache 目录存在
+    cache_dir = os.path.join(doc_path, ".cache")
+    meta_file_path = os.path.join(cache_dir, "meta.jsonl")
+    meta_items = []
+    
+    # 如果元数据文件不存在，尝试构建
+    if not os.path.exists(meta_file_path):
+        if llm is not None:
+            logger.info(f"Meta file not found, trying to build: {meta_file_path}")
+            build_meta(doc_path, llm)
+        else:
+            logger.warning(f"Meta file not found and no LLM provided: {meta_file_path}")
+            return []
+    
+    # 读取元数据文件
+    if os.path.exists(meta_file_path):
+        try:
+            with open(meta_file_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    try:
+                        # 解析 FileMetaItem
+                        meta_item = FileMetaItem.model_validate_json(line.strip())
+                        # 标准化文件路径
+                        meta_item.file_path = os.path.normpath(meta_item.file_path)
+                        meta_items.append(meta_item)
+                    except json.JSONDecodeError:
+                        logger.warning(f"Invalid JSON line in {meta_file_path}")
+                        continue
+                    except Exception as e:
+                        logger.warning(f"Error processing line in meta file: {str(e)}")
+                        continue
+            logger.info(f"Loaded {len(meta_items)} metadata entries from {meta_file_path}")
+        except Exception as e:
+            logger.error(f"Error reading meta file {meta_file_path}: {str(e)}")
+    
+    return meta_items

@@ -421,15 +421,8 @@ class ByzerStorageCache(BaseCacheManager):
             with self.lock:
                 self.queue.append(AddOrUpdateEvent(file_infos=files_to_process))
 
-    def get_cache(self, options: Dict[str, Any]) -> Dict[str, Dict]:
+    def get_single_cache(self, query: str,options: Dict[str, Any]) -> Dict[str, Dict]:
         """Search cached documents using query"""
-
-        self.trigger_update()
-
-        if options is None or "query" not in options:
-            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
-        
-        query = options.get("query", "")
         total_tokens = 0    
 
         # Build query with both vector search and text search
@@ -468,6 +461,20 @@ class ByzerStorageCache(BaseCacheManager):
                 result[file_path] = cached_data.model_dump()
 
         return result
+        
+
+    def get_cache(self, options: Dict[str, Any]) -> Dict[str, Dict]:
+        """Search cached documents using query"""
+
+        self.trigger_update()
+
+        if options is None or "queries" not in options:
+            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
+        
+        queries = options.get("queries", [])
+        query = queries[0]
+
+        return self.get_single_cache(query, options)
 
                 
 
