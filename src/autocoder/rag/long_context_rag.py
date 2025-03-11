@@ -833,7 +833,7 @@ class LongContextRAG:
                     self.args.rag_qa_conversation_strategy)
                 new_conversations = qa_strategy.create_conversation(
                     documents=[doc.source_code for doc in relevant_docs],
-                    conversations=conversations
+                    conversations=conversations, local_image_host=self.args.local_image_host
                 )
 
                 chunks = target_llm.stream_chat_oai(
