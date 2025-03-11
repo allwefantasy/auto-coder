@@ -168,6 +168,7 @@ async def embed(body: EmbeddingCompletionRequest):
 class ServerArgs(BaseModel):
     host: str = None
     port: int = 8000
+    workers: int = 4
     uvicorn_log_level: str = "info"
     allow_credentials: bool = False
     allowed_origins: List[str] = ["*"]  
@@ -231,6 +232,7 @@ def serve(llm:ByzerLLM, args: ServerArgs):
         router_app,
         host=args.host,
         port=args.port,
+        workers=args.workers,
         log_level=args.uvicorn_log_level,
         timeout_keep_alive=TIMEOUT_KEEP_ALIVE,
         ssl_keyfile=args.ssl_keyfile,

@@ -262,6 +262,7 @@ def main(input_args: Optional[List[str]] = None):
     serve_parser.add_argument("--source_dir", default=".", help="")
     serve_parser.add_argument("--host", default="", help="")
     serve_parser.add_argument("--port", type=int, default=8000, help="")
+    serve_parser.add_argument("--workers", type=int, default=4, help="")
     serve_parser.add_argument("--uvicorn_log_level", default="info", help="")
     serve_parser.add_argument("--allow_credentials", action="store_true", help="")
     serve_parser.add_argument("--allowed_origins", default=["*"], help="")
