@@ -467,7 +467,7 @@ class LocalByzerStorageCache(BaseCacheManager):
         """Search cached documents using query"""
         
         total_tokens = 0
-
+        logger.info(f"查询缓存 query: {query}")
         # Build query with both vector search and text search
         query_builder = self.storage.query_builder()
         query_builder.set_limit(100000)
