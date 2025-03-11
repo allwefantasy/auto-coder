@@ -1,37 +1,3 @@
-"""
-缓存结果合并策略模块
-
-本模块提供了多种合并搜索结果的策略，用于处理多查询场景下的结果整合。
-
-主要包括：
-1. 简单扩展 (SIMPLE_EXTEND): 直接合并所有结果列表
-2. 频率排序 (FREQUENCY_RANK): 根据文件路径出现频率排序
-3. 加权排序 (WEIGHTED_RANK): 考虑结果排名位置的加权排序
-4. 交错合并 (INTERLEAVE): 交错合并多个查询结果
-5. 去重合并 (DEDUPLICATE): 合并结果并去除重复文件
-6. 查询加权 (QUERY_WEIGHTED): 考虑查询重要性的加权排序
-
-使用示例:
-```python
-from cache_result_merge import CacheResultMerger, MergeStrategy
-
-# 创建合并器
-merger = CacheResultMerger(max_results=100)
-
-# 假设有多个查询结果
-query_results = [
-    ("query1", [result1, result2, ...]),
-    ("query2", [result3, result4, ...])
-]
-
-# 使用特定策略合并
-merged_results = merger.merge(
-    query_results, 
-    strategy=MergeStrategy.WEIGHTED_RANK
-)
-```
-"""
-
 from typing import List, Dict, Any, Optional, Set, Tuple
 import logging
 from enum import Enum
@@ -50,7 +16,39 @@ class MergeStrategy(str, Enum):
 
 
 class CacheResultMerger:
-    """缓存结果合并器，提供多种结果合并策略"""
+    """
+    缓存结果合并策略模块
+
+    本模块提供了多种合并搜索结果的策略，用于处理多查询场景下的结果整合。
+
+    主要包括：
+    1. 简单扩展 (SIMPLE_EXTEND): 直接合并所有结果列表
+    2. 频率排序 (FREQUENCY_RANK): 根据文件路径出现频率排序
+    3. 加权排序 (WEIGHTED_RANK): 考虑结果排名位置的加权排序
+    4. 交错合并 (INTERLEAVE): 交错合并多个查询结果
+    5. 去重合并 (DEDUPLICATE): 合并结果并去除重复文件
+    6. 查询加权 (QUERY_WEIGHTED): 考虑查询重要性的加权排序
+
+    使用示例:
+    ```python
+    from cache_result_merge import CacheResultMerger, MergeStrategy
+
+    # 创建合并器
+    merger = CacheResultMerger(max_results=100)
+
+    # 假设有多个查询结果
+    query_results = [
+        ("query1", [result1, result2, ...]),
+        ("query2", [result3, result4, ...])
+    ]
+
+    # 使用特定策略合并
+    merged_results = merger.merge(
+        query_results, 
+        strategy=MergeStrategy.WEIGHTED_RANK
+    )
+    ```
+    """
     
     def __init__(self, max_results: int = None):
         """

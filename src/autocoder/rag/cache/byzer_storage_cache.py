@@ -28,7 +28,7 @@ import platform
 import hashlib
 from typing import Union
 from pydantic import BaseModel
-from .cache_result_merge import CacheResultMerger, MergeStrategy
+from autocoder.rag.cache.cache_result_merge import CacheResultMerger, MergeStrategy
 
 if platform.system() != "Windows":
     import fcntl

@@ -28,8 +28,7 @@ import platform
 import hashlib
 from typing import Union
 from byzerllm import SimpleByzerLLM, ByzerLLM
-from .rag_file_meta import FileInfo
-from .cache_result_merge import CacheResultMerger, MergeStrategy
+from autocoder.rag.cache.cache_result_merge import CacheResultMerger, MergeStrategy
 
 if platform.system() != "Windows":
     import fcntl
@@ -520,7 +519,7 @@ class LocalByzerStorageCache(BaseCacheManager):
         self.trigger_update()        
 
         # 如果没有查询参数，则返回所有缓存
-        if "query" not in options and "queries" not in options:
+        if options is None or "queries" not in options:
             return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
         
         queries = options.get("queries", [])
