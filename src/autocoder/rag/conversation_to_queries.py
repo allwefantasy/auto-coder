@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Optional, Union
 import logging
 import byzerllm
 from pydantic import BaseModel
+from autocoder.common import AutoCoderArgs
 
 logger = logging.getLogger(__name__)
 
@@ -113,8 +114,9 @@ class ConversationToQueries:
 
 def extract_search_queries(
     conversations: List[Dict[str, Any]], 
+    args:AutoCoderArgs,
     llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],
-    max_queries: int = 3
+    max_queries: int = 3,    
 ) -> List[SearchQuery]:
     """
     从对话历史中提取搜索查询的便捷函数。
@@ -127,6 +129,8 @@ def extract_search_queries(
     返回:
         SearchQuery 对象列表
     """
+    if max_queries == 0:
+        return []
     try:    
         extractor = ConversationToQueries(llm)
         return extractor.extract_queries(conversations, max_queries) 

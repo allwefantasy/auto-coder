@@ -334,8 +334,9 @@ class LongContextRAG:
 
     def _filter_docs(self, conversations: List[Dict[str, str]]) -> DocFilterResult:
         query = conversations[-1]["content"]
-        queries = extract_search_queries(conversations, self.llm)        
-        documents = self._retrieve_documents(options={"queries": [query] + queries })
+        queries = extract_search_queries(conversations=conversations, args=self.args, llm=self.llm, max_queries=self.args.rag_recall_max_queries)
+        documents = self._retrieve_documents(
+            options={"queries": [query] + queries})
         return self.doc_filter.filter_docs(
             conversations=conversations, documents=documents
         )
@@ -548,8 +549,10 @@ class LongContextRAG:
                 model_name=rag_stat.recall_stat.model_name
             )
             query = conversations[-1]["content"]
-            queries = extract_search_queries(conversations, self.llm)
-            documents = self._retrieve_documents(options={"queries": [query] + queries})
+            queries = extract_search_queries(
+                conversations=conversations, args=self.args, llm=self.llm, max_queries=self.args.rag_recall_max_queries)
+            documents = self._retrieve_documents(
+                options={"queries": [query] + queries})
 
             # 使用带进度报告的过滤方法
             for progress_update, result in self.doc_filter.filter_docs_with_progress(conversations, documents):
