@@ -28,6 +28,7 @@ import platform
 import hashlib
 from typing import Union
 from pydantic import BaseModel
+from .cache_result_merge import CacheResultMerger, MergeStrategy
 
 if platform.system() != "Windows":
     import fcntl
@@ -443,6 +444,10 @@ class ByzerStorageCache(BaseCacheManager):
 
 
     def _process_search_results(self, results):
+        """处理搜索结果，提取文件路径并构建结果字典"""
+        # 记录被处理的总tokens数
+        total_tokens = 0
+        
         # Group results by file_path and reconstruct documents while preserving order
         # 这里还可以有排序优化，综合考虑一篇内容出现的次数以及排序位置
         file_paths = []
@@ -460,45 +465,70 @@ class ByzerStorageCache(BaseCacheManager):
                 cached_data = self.cache[file_path]
                 for doc in cached_data.content:                    
                     if total_tokens + doc["tokens"] > self.max_output_tokens:
+                        logger.info(f"用户tokens设置为:{self.max_output_tokens}，累计tokens: {total_tokens} 当前文件: {file_path} tokens: {doc['tokens']}，数据条数变化: {len(results)} -> {len(result)}")
                         return result
                     total_tokens += doc["tokens"]
                 result[file_path] = cached_data.model_dump()
-
+        
+        logger.info(f"用户tokens设置为:{self.max_output_tokens}，累计tokens: {total_tokens}，数据条数变化: {len(results)} -> {len(result)}")
         return result
         
 
     def get_cache(self, options: Dict[str, Any]) -> Dict[str, Dict]:
-        """Search cached documents using query"""
+        """
+        获取缓存中的文档信息
+        
+        如果options中包含query，则根据query搜索；否则返回所有缓存
+        """
+        # options是一个词典，词典的key是搜索参数，value是具体值
 
+        # 触发更新
         self.trigger_update()
 
         if options is None or "queries" not in options:
             return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
         
         queries = options.get("queries", [])
-         # 如果没有查询或只有一个查询，使用原来的方法
+        
+        # 如果没有查询或只有一个查询，使用原来的方法
         if not queries:
             return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
         elif len(queries) == 1:
             results = self.get_single_cache(queries[0], options)
             return self._process_search_results(results)
         
+        # 获取合并策略
+        merge_strategy_name = options.get("merge_strategy", MergeStrategy.WEIGHTED_RANK.value)
+        try:
+            merge_strategy = MergeStrategy(merge_strategy_name)
+        except ValueError:
+            logger.warning(f"未知的合并策略: {merge_strategy_name}，使用默认策略")
+            merge_strategy = MergeStrategy.WEIGHTED_RANK
+        
+        # 限制最大结果数
+        max_results = options.get("max_results", None)
+        merger = CacheResultMerger(max_results=max_results)
+        
         # 并发处理多个查询
-        all_results = []
+        query_results = []
         with ThreadPoolExecutor(max_workers=min(len(queries), 10)) as executor:
             future_to_query = {executor.submit(self.get_single_cache, query, options): query for query in queries}
             for future in as_completed(future_to_query):
                 query = future_to_query[future]
                 try:
-                    query_results = future.result()
-                    logger.info(f"查询 '{query}' 返回 {len(query_results)} 条结果")
-                    all_results.extend(query_results)
+                    query_result = future.result()
+                    logger.info(f"查询 '{query}' 返回 {len(query_result)} 条结果")
+                    query_results.append((query, query_result))
                 except Exception as e:
                     logger.error(f"处理查询 '{query}' 时出错: {str(e)}")
         
-        logger.info(f"所有查询共返回 {len(all_results)} 条结果")
+        logger.info(f"所有查询共返回 {sum(len(r) for _, r in query_results)} 条结果")
+        logger.info(f"使用合并策略: {merge_strategy}")
         
-        return self._process_search_results(all_results)
+        # 使用策略合并结果
+        merged_results = merger.merge(query_results, strategy=merge_strategy)
+        
+        return self._process_search_results(merged_results)
 
                 
 
