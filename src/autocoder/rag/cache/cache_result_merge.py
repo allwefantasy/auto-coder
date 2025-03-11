@@ -2,9 +2,7 @@ from typing import List, Dict, Any, Optional, Set, Tuple
 import logging
 from enum import Enum
 from collections import defaultdict, Counter
-
-logger = logging.getLogger(__name__)
-
+from loguru import logger
 class MergeStrategy(str, Enum):
     """合并策略枚举类"""
     SIMPLE_EXTEND = "simple_extend"  # 简单扩展（当前实现）
