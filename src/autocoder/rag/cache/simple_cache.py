@@ -1,7 +1,10 @@
-
 from multiprocessing import Pool
 from autocoder.common import SourceCode
-from autocoder.rag.cache.base_cache import BaseCacheManager, DeleteEvent, AddOrUpdateEvent
+from autocoder.rag.cache.base_cache import (
+    BaseCacheManager, DeleteEvent, AddOrUpdateEvent,
+    FileInfo,
+    CacheItem
+)
 from typing import Dict, List, Tuple, Any, Optional, Union
 import os
 import threading
@@ -16,6 +19,7 @@ from loguru import logger
 from autocoder.rag.utils import process_file_in_multi_process, process_file_local
 from autocoder.rag.variable_holder import VariableHolder
 import hashlib
+
 
 default_ignore_dirs = [
     "__pycache__",
@@ -42,11 +46,52 @@ def generate_content_md5(content: Union[str, bytes]) -> str:
 
 class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
     def __init__(self, path: str, ignore_spec, required_exts: list):
+        """
+        初始化异步更新队列，用于管理代码文件的缓存。
+        
+        参数:
+            path: 需要索引的代码库根目录
+            ignore_spec: 指定哪些文件/目录应被忽略的规则
+            required_exts: 需要处理的文件扩展名列表
+            
+        缓存结构 (self.cache):
+            self.cache 是一个字典，其结构如下:
+            {
+                "file_path1": {                    # 键为文件的绝对路径
+                    "file_path": str,              # 文件的绝对路径
+                    "relative_path": str,          # 相对于项目根目录的路径
+                    "content": List[Dict],         # 文件内容的结构化表示，每个元素是 SourceCode 对象的序列化
+                    "modify_time": float,          # 文件最后修改时间的时间戳
+                    "md5": str                     # 文件内容的 MD5 哈希值，用于检测变更
+                },
+                "file_path2": { ... },
+                ...
+            }
+            
+            这个缓存保存在项目根目录的 .cache/cache.jsonl 文件中，采用 JSONL 格式存储。
+            每次启动时从磁盘加载，并在文件变更时异步更新。
+            
+        源代码处理函数:
+            在缓存更新过程中使用了两个关键函数:
+            
+            1. process_file_in_multi_process: 在多进程环境中处理文件
+               - 参数: file_info (文件信息元组)
+               - 返回值: List[SourceCode] 或 None
+               - 用途: 在初始加载时并行处理多个文件
+            
+            2. process_file_local: 在当前进程中处理单个文件
+               - 参数: file_path (文件路径)
+               - 返回值: List[SourceCode] 或 None
+               - 用途: 在检测到文件更新时处理单个文件
+            
+            这两个函数返回的 SourceCode 对象列表会通过 model_dump() 方法序列化为字典，
+            然后存储在缓存的 "content" 字段中。如果返回为空，则跳过缓存更新。
+        """
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
         self.queue = []
-        self.cache = {}
+        self.cache = {}  # 初始化为空字典，稍后通过 read_cache() 填充
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
         self.thread = threading.Thread(target=self._process_queue)
@@ -202,6 +247,25 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
     def update_cache(
         self, file_info: Tuple[str, str, float, str], content: List[SourceCode]
     ):
+        """
+        更新缓存中的文件信息。
+        
+        参数:
+            file_info: 包含文件信息的元组 (file_path, relative_path, modify_time, file_md5)
+            content: 解析后的文件内容，SourceCode 对象列表
+            
+        说明:
+            此方法将文件的最新内容更新到缓存中。缓存项的结构为:
+            {
+                "file_path": str,              # 文件的绝对路径
+                "relative_path": str,          # 相对于项目根目录的路径
+                "content": List[Dict],         # 文件内容的结构化表示，每个元素是 SourceCode 对象的序列化结果
+                "modify_time": float,          # 文件最后修改时间的时间戳
+                "md5": str                     # 文件内容的 MD5 哈希值，用于检测变更
+            }
+            
+            该方法不会立即写入磁盘，需调用 write_cache() 方法将更新后的缓存持久化。
+        """
         file_path, relative_path, modify_time, file_md5 = file_info
         self.cache[file_path] = {
             "file_path": file_path,

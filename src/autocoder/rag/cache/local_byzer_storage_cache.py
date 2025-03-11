@@ -69,6 +69,67 @@ class LocalByzerStorageCache(BaseCacheManager):
         host: str = "127.0.0.1",
         port: int = 33333,
     ):
+        """
+        初始化基于 Byzer Storage 的 RAG 缓存管理器。
+        
+        参数:
+            path: 需要索引的代码库根目录
+            ignore_spec: 指定哪些文件/目录应被忽略的规则
+            required_exts: 需要处理的文件扩展名列表
+            extra_params: 额外的配置参数，包含向量索引相关设置
+            emb_llm: 用于生成文本向量嵌入的 ByzerLLM 实例
+            host: Byzer Storage 服务的主机地址
+            port: Byzer Storage 服务的端口
+            
+        缓存结构 (self.cache):
+            self.cache 是一个字典，键为文件路径，值为 CacheItem 对象:
+            {
+                "file_path1": CacheItem(
+                    file_path: str,              # 文件的绝对路径
+                    relative_path: str,          # 相对于项目根目录的路径
+                    content: List[Dict],         # 文件内容的结构化表示，每个元素是 SourceCode 对象的序列化
+                    modify_time: float,          # 文件最后修改时间的时间戳
+                    md5: str                     # 文件内容的 MD5 哈希值，用于检测变更
+                ),
+                "file_path2": CacheItem(...),
+                ...
+            }
+            
+            这个缓存有两层存储:
+            1. 本地文件缓存: 保存在项目根目录的 .cache/byzer_storage_speedup.jsonl 文件中
+               - 用于跟踪文件变更和快速加载
+               - 使用 JSONL 格式存储，每行是一个 CacheItem 的 JSON 表示
+            
+            2. Byzer Storage 向量数据库:
+               - 存储文件内容的分块和向量嵌入
+               - 每个文件被分割成大小为 chunk_size 的文本块
+               - 每个块都会生成向量嵌入，用于语义搜索
+               - 存储结构包含: 文件路径、内容块、原始内容、向量嵌入、修改时间
+        
+        源代码处理流程:
+            在缓存更新过程中使用了两个关键函数:
+            
+            1. process_file_in_multi_process: 在多进程环境中处理文件
+               - 参数: file_info (文件信息元组)
+               - 返回值: List[SourceCode] 或 None
+               - 用途: 在初始构建缓存时并行处理多个文件
+            
+            2. process_file_local: 在当前进程中处理单个文件
+               - 参数: file_path (文件路径)
+               - 返回值: List[SourceCode] 或 None
+               - 用途: 在检测到文件更新时处理单个文件
+            
+            文件处理后，会:
+            1. 更新内存中的缓存 (self.cache)
+            2. 将缓存持久化到本地文件
+            3. 将内容分块并更新到 Byzer Storage 向量数据库
+        
+        更新机制:
+            - 通过单独的线程异步处理文件变更
+            - 使用 MD5 哈希值检测文件是否发生变化
+            - 支持文件添加、更新和删除事件
+            - 使用向量数据库进行语义检索，支持相似度搜索
+        """
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
@@ -288,6 +349,34 @@ class LocalByzerStorageCache(BaseCacheManager):
             self.storage.commit()
 
     def update_storage(self, file_info: FileInfo, is_delete: bool):
+        """
+        更新 Byzer Storage 向量数据库中的文件内容。
+        
+        参数:
+            file_info: 包含文件路径、相对路径、修改时间和MD5哈希的文件信息对象
+            is_delete: 是否为删除操作，True表示从数据库中删除该文件的所有记录
+            
+        处理流程:
+            1. 首先查询并删除向量数据库中该文件路径的所有现有记录
+            2. 如果不是删除操作:
+               a. 从本地缓存获取文件的解析内容 (SourceCode 对象列表)
+               b. 遍历每个 SourceCode 对象
+               c. 将其源代码分成固定大小 (chunk_size) 的文本块
+               d. 为每个块创建包含以下内容的项:
+                  - ID: 由模块名和块索引组成
+                  - 文件路径
+                  - 内容文本
+                  - 原始内容 (用于搜索)
+                  - 向量表示 (由 ByzerLLM 生成的嵌入)
+                  - 修改时间
+            3. 将所有项写入 Byzer Storage，并设置向量和搜索字段
+            4. 提交更改以确保数据持久化
+            
+        注意:
+            - 该方法在删除文件前会先从数据库中删除所有相关记录，避免残留
+            - 文件内容会被分块处理，每个块独立存储和索引
+            - 向量字段用于相似度搜索，content字段用于全文搜索
+        """
         query = self.storage.query_builder()
         query.and_filter().add_condition("file_path", file_info.file_path).build()
         results = query.execute()
