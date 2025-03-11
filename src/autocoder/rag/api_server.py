@@ -274,11 +274,11 @@ def serve(llm:ByzerLLM, args: ServerArgs):
         prompt_template=args.prompt_template
     )
 
+    # 如果使用workers>1或reload=True，必须使用导入字符串而不是应用实例    
     uvicorn.run(
         router_app,
         host=args.host,
         port=args.port,
-        workers=args.workers,
         log_level=args.uvicorn_log_level,
         timeout_keep_alive=TIMEOUT_KEEP_ALIVE,
         ssl_keyfile=args.ssl_keyfile,
