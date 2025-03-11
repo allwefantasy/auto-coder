@@ -503,6 +503,48 @@ class LocalByzerStorageCache(BaseCacheManager):
                     logger.info(f"{k}: {v}")
             logger.info("-"*100)
 
+        return results                       
+
+
+    def get_cache(self, options: Dict[str, Any]) -> Dict[str, Dict]:
+        """Search cached documents using queries"""
+
+        self.trigger_update()
+
+        if options is None or "queries" not in options:
+            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
+        
+        queries = options.get("queries", [])
+        
+        # 如果没有查询或只有一个查询，使用原来的方法
+        if not queries:
+            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
+        elif len(queries) == 1:
+            results = self.get_single_cache(queries[0], options)
+            return self._process_search_results(results)
+        
+        # 并发处理多个查询
+        all_results = []
+        with ThreadPoolExecutor(max_workers=min(len(queries), 10)) as executor:
+            future_to_query = {executor.submit(self.get_single_cache, query, options): query for query in queries}
+            for future in as_completed(future_to_query):
+                query = future_to_query[future]
+                try:
+                    query_results = future.result()
+                    logger.info(f"查询 '{query}' 返回 {len(query_results)} 条结果")
+                    all_results.extend(query_results)
+                except Exception as e:
+                    logger.error(f"处理查询 '{query}' 时出错: {str(e)}")
+        
+        logger.info(f"所有查询共返回 {len(all_results)} 条结果")
+        
+        return self._process_search_results(all_results)
+    
+    def _process_search_results(self, results):
+        """处理搜索结果，提取文件路径并构建结果字典"""
+        # 记录被处理的总tokens数
+        total_tokens = 0
+        
         # Group results by file_path and reconstruct documents while preserving order
         # 这里还可以有排序优化，综合考虑一篇内容出现的次数以及排序位置
         file_paths = []
@@ -526,23 +568,7 @@ class LocalByzerStorageCache(BaseCacheManager):
                 result[file_path] = cached_data.model_dump()
         
         logger.info(f"用户tokens设置为:{self.max_output_tokens}，累计tokens: {total_tokens}，数据条数变化: {len(results)} -> {len(result)}")
-        return result                        
-
-
-    def get_cache(self, options: Dict[str, Any]) -> Dict[str, Dict]:
-        """Search cached documents using queries"""
-
-        self.trigger_update()
-
-        if options is None or "queries" not in options:
-            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
-        
-        ## 当前暂时只支持一个query
-        queries = options.get("queries", [])
-        query = queries[0]
-
-        return self.get_single_cache(query, options)
-        
+        return result
 
     def get_all_files(self) -> List[FileInfo]:
         all_files = []
