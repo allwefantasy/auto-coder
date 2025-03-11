@@ -296,6 +296,9 @@ class AutoCoderArgs(pydantic.BaseModel):
     rag_params_max_tokens: Optional[int] = 4096 
     rag_doc_filter_relevance: Optional[int] = 5
     rag_context_window_limit: Optional[int] = 120000 
+
+    # rag 本地图床地址
+    local_image_host: Optional[str] = ""
     
     # 回答用户问题时，使用哪种对话历史策略
     # single_round: 单轮对话

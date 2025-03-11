@@ -275,6 +275,7 @@ def main(input_args: Optional[List[str]] = None):
     serve_parser.add_argument("--ssl_certfile", default="", help="")
     serve_parser.add_argument("--response_role", default="assistant", help="")
     serve_parser.add_argument("--doc_dir", default="", help="")
+    serve_parser.add_argument("--enable_local_image_host", action="store_true", help=" enable local image host for local Chat app")
     serve_parser.add_argument("--tokenizer_path", default=tokenizer_path, help="")
     serve_parser.add_argument(
         "--collections", default="", help="Collection name for indexing"
@@ -517,6 +518,12 @@ def main(input_args: Optional[List[str]] = None):
                 if hasattr(args, arg)
             }
         )
+        # 设置本地图床的地址
+        if args.enable_local_image_host:
+            host = server_args.host or "127.0.0.1"
+            port = str(server_args.port)
+            auto_coder_args.local_image_host = f"{host}:{port}"
+
 
         # Generate unique name for RAG build if doc_dir exists
         if server_args.doc_dir:
