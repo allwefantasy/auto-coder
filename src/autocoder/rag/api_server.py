@@ -1,5 +1,6 @@
 import os
 import time
+import aiofiles
 import uvicorn
 from fastapi import Request
 from fastapi import FastAPI
@@ -122,49 +123,6 @@ async def create_chat_completion(
         return JSONResponse(content=generator.model_dump())
 
 
-@router_app.get("/{full_path:path}")
-async def serve_image(full_path: str, request: Request):
-        
-    allowed_file_type = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
-    
-    if any(full_path.endswith(ext) for ext in allowed_file_type):
-        try:
-            # 获取文件的完整路径，并进行URL解码
-            file_path = unquote(full_path)
-            # 使用 os.path.normpath 来标准化路径，自动处理不同操作系统的路径分隔符
-            file_path = os.path.normpath(file_path)
-            if not os.path.isabs(file_path):
-                file_path = os.path.join("/", file_path)
-            
-            # 检查文件是否存在
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(f"File not found: {file_path}")
-                
-            # 读取文件内容
-            with open(file_path, "rb") as f:
-                content = f.read()
-            
-            # 获取文件的 MIME 类型
-            content_type = mimetypes.guess_type(file_path)[0]
-            if not content_type:
-                content_type = "application/octet-stream"
-                
-            # 返回文件内容
-            return Response(content=content, media_type=content_type)
-        except FileNotFoundError as e:
-            logger.error(f"Image not found: {str(e)}")
-            raise HTTPException(status_code=404, detail=f"Image not found: {str(e)}")
-        except PermissionError as e:
-            logger.error(f"Permission denied: {str(e)}")
-            raise HTTPException(status_code=403, detail=f"Permission denied: {str(e)}")
-        except Exception as e:
-            logger.error(f"Error serving image: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Error serving image: {str(e)}")
-    
-    # 如果路径中没有图片, 返回 404
-    raise HTTPException(status_code=404, detail="Only images are supported")
-
-
 @router_app.post("/v1/embeddings")
 async def embed(body: EmbeddingCompletionRequest):
     """Generate embeddings for given input text.
@@ -210,6 +168,48 @@ async def embed(body: EmbeddingCompletionRequest):
         created=int(time.time()),
         id=embedding_id
     )
+
+@router_app.get("/static/{full_path:path}")
+async def serve_image(full_path: str, request: Request):
+    
+    allowed_file_type = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
+    
+    if any(full_path.endswith(ext) for ext in allowed_file_type):
+        try:
+            # 获取文件的完整路径，并进行URL解码
+            file_path = unquote(full_path)
+            # 使用 os.path.normpath 来标准化路径，自动处理不同操作系统的路径分隔符
+            file_path = os.path.normpath(file_path)
+            if not os.path.isabs(file_path):
+                file_path = os.path.join("/", file_path)
+            
+            # 检查文件是否存在
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"File not found: {file_path}")
+                
+            # 异步读取文件内容
+            async with aiofiles.open(file_path, "rb") as f:
+                content = await f.read()
+            
+            # 获取文件的 MIME 类型
+            content_type = mimetypes.guess_type(file_path)[0]
+            if not content_type:
+                content_type = "application/octet-stream"
+                
+            # 返回文件内容
+            return Response(content=content, media_type=content_type)
+        except FileNotFoundError as e:
+            logger.error(f"Image not found: {str(e)}")
+            raise HTTPException(status_code=404, detail=f"Image not found: {str(e)}")
+        except PermissionError as e:
+            logger.error(f"Permission denied: {str(e)}")
+            raise HTTPException(status_code=403, detail=f"Permission denied: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error serving image: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error serving image: {str(e)}")
+    
+    # 如果路径中没有图片, 返回 404
+    raise HTTPException(status_code=404, detail="Only images are supported")
 
 class ServerArgs(BaseModel):
     host: str = None
