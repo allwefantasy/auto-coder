@@ -87,7 +87,7 @@ async def handle_list_tools() -> list[types.Tool]:
 async def handle_call_tool(
     name: str, arguments: dict
 ) -> list[types.TextContent | types.ImageContent | types.EmbeddedResource]:
-    if name != "ask_gpt4o_mini_search":
+    if name != "gpt4o_mini_search":
         raise ValueError(f"Unknown tool: {name}")
 
     # Extract user messages
