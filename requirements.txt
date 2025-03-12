@@ -57,6 +57,7 @@ protobuf
 azure-cognitiveservices-speech
 real_agent
 
+duckdb
 python-docx
 docx2txt
 pdf2image

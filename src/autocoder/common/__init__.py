@@ -293,7 +293,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     rag_url: Optional[str] = ""
     rag_token: Optional[str] = ""
     rag_type: Optional[str] = "storage"
-    rag_storage_type: Optional[str] = "duckdb"  # 向量化存储类型 lucene | duckdb
+    rag_storage_type: Optional[str] = "duckdb"  # 向量化存储类型 byzer-storage | duckdb
     rag_params_max_tokens: Optional[int] = 4096 
     rag_doc_filter_relevance: Optional[int] = 5
     rag_context_window_limit: Optional[int] = 120000
