@@ -241,6 +241,7 @@ class CommandAutoTuner:
         而对于分析一个超大文件推荐组合 read_files 带上 line_ranges 参数来读取，或者组合 read_file_withread_file_with_keyword_ranges 等来读取，
         每个函数你还可以使用多次来获取更多信息。
         9. 根据操作系统，终端类型，脚本类型等各种信息，在涉及到路径或者脚本的时候，需要考虑平台差异性。
+        10. 使用 read_files 时，一次性读取文件数量不要超过1个,每次只读取200行。如果发现读取的内容不够，则继续读取下面200行。
         </function_combination_readme>
 
 
@@ -1057,7 +1058,8 @@ class CommandAutoTuner:
 
         你可以使用 get_project_structure 函数获取项目结构后，然后再通过 get_project_map 函数获取某个文件的用途，符号列表，以及
         文件大小（tokens数）,最后再通过 read_files 函数来读取文件内容，从而帮你做更好的决策。如果需要读取的文件过大，
-        你可以通过指定行范围来读取文件内容，从而避免读取过多的内容，你可以多次用行范围来调用 read_files,直到你看到满意的内容为止。
+        
+        特别注意：使用 read_files 时，一次性读取文件数量不要超过1个,每次只读取200行。如果发现读取的内容不够，则继续读取下面200行。
         
         </usage>
         </command>
