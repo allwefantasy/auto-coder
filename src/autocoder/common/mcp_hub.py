@@ -87,7 +87,7 @@ def _generate_server_configs() -> Tuple[Dict[str, Any], Dict[str, str]]:
             base_name = name.split(".")[-1]
             if base_name.startswith("mcp_server_"):
                 # Generate a friendly server name
-                friendly_name = base_name[11:].replace("_", "-")
+                friendly_name = base_name[11:]
                                 
                 # Create env dictionary with placeholders
                 env_dict = {}

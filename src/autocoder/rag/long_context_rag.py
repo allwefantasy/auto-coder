@@ -210,22 +210,22 @@ class LongContextRAG:
 
         avg_tokens = statistics.mean(token_counts) if token_counts else 0
         median_tokens = statistics.median(token_counts) if token_counts else 0
-
-        logger.info(
-            "RAG Configuration:\n"
-            f"  Total docs:        {doc_num}\n"
-            f"  Total tokens:      {token_num}\n"
-            f"  Tokenizer path:    {self.tokenizer_path}\n"
-            f"  Relevant score:    {self.relevant_score}\n"
-            f"  Token limit:       {self.token_limit}\n"
-            f"  Full text limit:   {self.full_text_limit}\n"
-            f"  Segment limit:     {self.segment_limit}\n"
-            f"  Buff limit:        {self.buff_limit}\n"
-            f"  Max doc tokens:    {max(token_counts) if token_counts else 0}\n"
-            f"  Min doc tokens:    {min(token_counts) if token_counts else 0}\n"
-            f"  Avg doc tokens:    {avg_tokens:.2f}\n"
-            f"  Median doc tokens: {median_tokens:.2f}\n"
-        )
+        if not self.client:
+            logger.info(
+                "RAG Configuration:\n"
+                f"  Total docs:        {doc_num}\n"
+                f"  Total tokens:      {token_num}\n"
+                f"  Tokenizer path:    {self.tokenizer_path}\n"
+                f"  Relevant score:    {self.relevant_score}\n"
+                f"  Token limit:       {self.token_limit}\n"
+                f"  Full text limit:   {self.full_text_limit}\n"
+                f"  Segment limit:     {self.segment_limit}\n"
+                f"  Buff limit:        {self.buff_limit}\n"
+                f"  Max doc tokens:    {max(token_counts) if token_counts else 0}\n"
+                f"  Min doc tokens:    {min(token_counts) if token_counts else 0}\n"
+                f"  Avg doc tokens:    {avg_tokens:.2f}\n"
+                f"  Median doc tokens: {median_tokens:.2f}\n"
+            )
 
     def count_tokens(self, text: str) -> int:
         if self.tokenizer is None:
