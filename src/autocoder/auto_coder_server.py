@@ -34,6 +34,14 @@ import sys
 import io
 from autocoder.utils.log_capture import LogCapture
 
+# If support dotenv, use it
+if os.path.exists(".env"):
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
 def convert_yaml_config_to_str(yaml_config):
     yaml_content = yaml.safe_dump(
         yaml_config,
