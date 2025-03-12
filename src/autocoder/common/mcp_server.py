@@ -53,6 +53,12 @@ class McpRefreshRequest:
     """Request to refresh MCP server connections"""
     name: Optional[str] = None
 
+@dataclass
+class McpServerInfoRequest:
+    """Request to get MCP server info"""
+    model: Optional[str] = None
+    product_mode: Optional[str] = None
+
 
 @dataclass
 class McpExternalServer(BaseModel):
@@ -345,6 +351,18 @@ class McpServer:
                     except Exception as e:
                         await self._response_queue.put(McpResponse(
                             result="", error=get_message_with_format("mcp_list_builtin_error", error=str(e))))
+
+                elif isinstance(request, McpServerInfoRequest):
+                    try:
+                        llm = get_single_llm(request.model, product_mode=request.product_mode)
+                        mcp_executor = McpExecutor(hub, llm)
+                        result = mcp_executor.get_connected_servers_info()
+                        await self._response_queue.put(McpResponse(result=result))
+                    except Exception as e:
+                        import traceback
+                        traceback.print_exc()
+                        await self._response_queue.put(McpResponse(
+                            result="", error=get_message_with_format("mcp_server_info_error", error=str(e))))
 
                 elif isinstance(request, McpListRunningRequest):
                     try:

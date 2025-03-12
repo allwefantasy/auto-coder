@@ -62,6 +62,28 @@ class AutoCommandTools:
         self.result_manager = ResultManager()
         self.printer = Printer()
 
+    def execute_mcp_server(self, query: str) -> str:
+        from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest                               
+        mcp_server = get_mcp_server()
+        response = mcp_server.send_request(
+            McpRequest(
+                query=query,
+                model=self.args.inference_model or self.args.model,
+                product_mode=self.args.product_mode
+            )
+        )
+        
+        result = response.result
+        
+        self.result_manager.append(content=result, meta = {
+            "action": "execute_mcp_server",
+            "input": {
+                "query": query
+            }
+        })
+        return result
+
+
     def ask_user(self,question:str) -> str:
         '''
         如果你对用户的问题有什么疑问，或者你想从用户收集一些额外信息，可以调用此方法。

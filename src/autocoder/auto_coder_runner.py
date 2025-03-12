@@ -39,7 +39,7 @@ import git
 from autocoder.common import git_utils
 from autocoder.chat_auto_coder_lang import get_message
 from autocoder.agent.auto_guess_query import AutoGuessQuery
-from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest
+from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest,McpServerInfoRequest
 import byzerllm
 from byzerllm.utils import format_str_jinja2
 from autocoder.common.memory_manager import get_global_memory_file_paths 
@@ -1133,7 +1133,7 @@ def mcp(query: str):
             printer.print_in_terminal("mcp_list_builtin_title")
             printer.print_str_in_terminal(response.result)
         return
-
+        
     # Handle refresh command
     if query.startswith("/refresh"):
         server_name = query.replace("/refresh", "", 1).strip()    
@@ -1183,7 +1183,21 @@ def mcp(query: str):
         if os.path.exists(temp_yaml):
             os.remove(temp_yaml)
 
-    mcp_server = get_mcp_server()    
+    mcp_server = get_mcp_server()   
+
+
+    if query.startswith("/info"):
+        response = mcp_server.send_request(McpServerInfoRequest(
+            model=args.inference_model or args.model,
+            product_mode=args.product_mode
+        ))
+        if response.error:
+            printer.print_in_terminal("mcp_server_info_error", style="red", error=response.error)
+        else:
+            printer.print_in_terminal("mcp_server_info_title")
+            printer.print_str_in_terminal(response.result)
+        return
+
     response = mcp_server.send_request(
         McpRequest(
             query=query,

@@ -24,6 +24,7 @@ from autocoder.common.global_cancel import global_cancel
 from autocoder.common.auto_configure import config_readme
 from autocoder.utils.auto_project_type import ProjectTypeAnalyzer
 from rich.text import Text
+from autocoder.common.mcp_server import get_mcp_server,McpServerInfoRequest
 
 class CommandMessage(BaseModel):
     role: str
@@ -159,7 +160,16 @@ class CommandAutoTuner:
         self.memory_config = memory_config
         self.command_config = command_config
         self.tools = AutoCommandTools(args=args, llm=self.llm)
-        self.project_type_analyzer = ProjectTypeAnalyzer(args=args, llm=self.llm)        
+        self.project_type_analyzer = ProjectTypeAnalyzer(args=args, llm=self.llm) 
+        try:
+            self.mcp_server = get_mcp_server()
+            self.mcp_server_info = self.mcp_server.send_request(McpServerInfoRequest(
+                model=args.inference_model or args.model,
+                product_mode=args.product_mode
+            ))
+        except Exception as e:
+            logger.error(f"Error getting MCP server info: {str(e)}")
+            self.mcp_server_info = ""
     
     def get_conversations(self) -> List[CommandMessage]:
         """Get conversation history from memory file"""
@@ -1210,12 +1220,30 @@ class CommandAutoTuner:
          response_user(response="你好，我是 auto-coder")
         </usage>
         </command>
-        </commands>
+        
+        <% if mcp_server_info  %>
+        <command>
+        <name>execute_mcp_server</name>
+        <description>执行MCP服务器</description>
+        <usage>
+         该函数接受一个参数 query, 为要执行的MCP服务器查询字符串。
+
+         你可以根据下面已经连接的 mcp server 信息，来决定个是否调用该函数，注意该函数会更具你的 query 
+         自动选择合适的 mcp server 来执行。如果你想某个特定的 server 来执行，你可以在 query 中说明你想哪个 server 执行。
+
+         <mcp_server_info>
+         {{ mcp_server_info }}
+         </mcp_server_info>
+         
+        </usage>
+        </command>
+        <% endif %>
         
         
         '''
         return {
-            "config_readme": config_readme.prompt()
+            "config_readme": config_readme.prompt(),
+            "mcp_server_info": self.mcp_server_info
         }
 
     def execute_auto_command(self, command: str, parameters: Dict[str, Any]) -> None:
@@ -1257,6 +1285,7 @@ class CommandAutoTuner:
             "read_file_with_keyword_ranges": self.tools.read_file_with_keyword_ranges,
             "get_project_type": self.project_type_analyzer.analyze,
             "response_user": self.tools.response_user,
+            "execute_mcp_server": self.tools.execute_mcp_server,
                                     
         }
 

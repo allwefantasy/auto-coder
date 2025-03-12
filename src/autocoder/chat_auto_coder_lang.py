@@ -138,6 +138,8 @@ MESSAGES = {
         "official_doc": "Official Documentation: https://uelng8wukz.feishu.cn/wiki/NhPNwSRcWimKFIkQINIckloBncI",
         "plugins_desc": "Manage plugins",
         "plugins_usage": "Usage: /plugins <command>\nAvailable subcommands:\n  /plugins /list - List all available plugins\n  /plugins /load <name> - Load a plugin\n  /plugins /unload <name> - Unload a plugin\n  /plugins/dirs - List plugin directories\n  /plugins/dirs /add <path> - Add a plugin directory\n  /plugins/dirs /remove <path> - Remove a plugin directory\n  /plugins/dirs /clear - Clear all plugin directories",
+        "mcp_server_info_error": "Error getting MCP server info: {{ error }}",
+        "mcp_server_info_title": "Connected MCP Server Info",
     },
     "zh": {
         "auto_command_analyzing": "正在分析命令请求",
@@ -275,6 +277,8 @@ MESSAGES = {
         "official_doc": "官方文档: https://uelng8wukz.feishu.cn/wiki/NhPNwSRcWimKFIkQINIckloBncI",
         "plugins_desc": "管理插件",
         "plugins_usage": "用法: /plugins <命令>\n可用的子命令:\n  /plugins /list - 列出所有可用插件\n  /plugins /load <名称> - 加载一个插件\n  /plugins /unload <名称> - 卸载一个插件\n  /plugins/dirs - 列出插件目录\n  /plugins/dirs /add <路径> - 添加一个插件目录\n  /plugins/dirs /remove <路径> - 移除一个插件目录\n  /plugins/dirs /clear - 清除所有插件目录",
+        "mcp_server_info_error": "获取MCP服务器信息时出错: {{ error }}",
+        "mcp_server_info_title": "已连接的MCP服务器信息",
     },
 }
 
