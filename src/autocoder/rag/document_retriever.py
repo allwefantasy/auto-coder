@@ -73,7 +73,7 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
                         path, ignore_spec, required_exts, extra_params,
                         emb_llm=emb_llm
                     )
-                elif extra_params.rag_storage_type == "lucene":
+                elif extra_params.rag_storage_type in ["byzer-storage", "byzer_storage"]:
                     self.cacher = LocalByzerStorageCache(
                         path, ignore_spec, required_exts, extra_params,
                         emb_llm=emb_llm

@@ -111,6 +111,9 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         self.stop_event.set()
         self.thread.join()
 
+    def fileinfo_to_tuple(self, file_info: FileInfo) -> Tuple[str, str, float, str]:
+        return (file_info.file_path, file_info.relative_path, file_info.modify_time, file_info.file_md5)    
+
     def __del__(self):
         self.stop()
 
@@ -172,7 +175,12 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         if files_to_process:
             with self.lock:
                 self.queue.append(AddOrUpdateEvent(
-                    file_infos=files_to_process))
+                    file_infos=[FileInfo(
+                        file_path=item[0],
+                        relative_path=item[1],
+                        modify_time=item[2],
+                        file_md5=item[3]
+                    ) for item in files_to_process]))
 
     def process_queue(self):
         while self.queue:
@@ -183,13 +191,13 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                     del self.cache[item]
             elif isinstance(file_list, AddOrUpdateEvent):
                 for file_info in file_list.file_infos:
-                    logger.info(f"{file_info[0]} is detected to be updated")
+                    logger.info(f"{file_info.file_path} is detected to be updated")
                     try:
-                        result = process_file_local(file_info[0])
+                        result = process_file_local(file_info.file_path)
                         if result:  # 只有当result不为空时才更新缓存
-                            self.update_cache(file_info, result)
+                            self.update_cache(self.fileinfo_to_tuple(file_info), result)
                         else:
-                            logger.warning(f"Empty result for file: {file_info[0]}, skipping cache update")
+                            logger.warning(f"Empty result for file: {file_info.file_path}, skipping cache update")
                     except Exception as e:
                         logger.error(
                             f"SimpleCache Error in process_queue: {e}")

@@ -293,13 +293,13 @@ class AutoCoderArgs(pydantic.BaseModel):
     rag_url: Optional[str] = ""
     rag_token: Optional[str] = ""
     rag_type: Optional[str] = "storage"
-    rag_storage_type: Optional[str] = "duckdb"  # 向量化存储类型 lucene | duckdb
-    rag_params_max_tokens: Optional[int] = 4096 
-    rag_doc_filter_relevance: Optional[int] = 5
+    rag_storage_type: Optional[str] = "duckdb"  # 向量化存储类型 byzer-storage | duckdb
+    rag_params_max_tokens: Optional[int] = 500000 
+    rag_doc_filter_relevance: Optional[int] = 2
     rag_context_window_limit: Optional[int] = 120000
     rag_duckdb_vector_dim: Optional[int] = 1024  # DuckDB 向量化存储的维度
-    rag_duckdb_query_similarity: Optional[float] = 0.7  # DuckDB 向量化检索 相似度 阈值
-    rag_duckdb_query_top_k: Optional[int] = 100  # DuckDB 向量化检索 返回 TopK个结果(且大于相似度)
+    rag_duckdb_query_similarity: Optional[float] = 0.1  # DuckDB 向量化检索 相似度 阈值
+    rag_duckdb_query_top_k: Optional[int] = 10000  # DuckDB 向量化检索 返回 TopK个结果(且大于相似度)
     # rag 本地图床地址
     local_image_host: Optional[str] = ""
     rag_recall_max_queries: Optional[int] = 5

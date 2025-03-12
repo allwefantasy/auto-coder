@@ -31,6 +31,14 @@ from byzerllm.utils.client.entrypoints.openai.protocol import (
 from pydantic import BaseModel
 from typing import List,Optional
 
+# If support dotenv, use it
+if os.path.exists(".env"):
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
 logger = init_logger(__name__)
 
 llm_client: ByzerLLM = None

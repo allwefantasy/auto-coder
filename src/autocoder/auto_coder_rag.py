@@ -179,6 +179,14 @@ def main(input_args: Optional[List[str]] = None):
     build_index_parser = subparsers.add_parser(
         "build_hybrid_index", help="Build hybrid index for RAG"
     )
+
+    build_index_parser.add_argument(
+        "--rag_storage_type",
+        type=str,
+        default="duckdb",
+        help="The storage type of the RAG, duckdb or byzer-storage",
+    )
+
     build_index_parser.add_argument(
         "--quick", action="store_true", help="Skip system initialization"
     )
@@ -329,6 +337,14 @@ def main(input_args: Optional[List[str]] = None):
         action="store_true",
         help="Enable hybrid index",
     )
+
+    serve_parser.add_argument(
+        "--rag_storage_type",
+        type=str,
+        default="duckdb",
+        help="The storage type of the RAG, duckdb or byzer-storage",
+    )    
+
     serve_parser.add_argument(
         "--hybrid_index_max_output_tokens",
         type=int,

@@ -7,10 +7,14 @@ import threading
 from multiprocessing import Pool
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Optional, Tuple, Union
-
-import duckdb
 import numpy as np
 from loguru import logger
+
+try:
+    import duckdb
+except ImportError:
+    logger.error("DuckDB is not installed, please install it using 'pip install duckdb'")
+    raise
 
 from autocoder.common import AutoCoderArgs
 from autocoder.common import SourceCode
@@ -299,7 +303,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
 
         # 设置缓存文件路径
         self.cache_dir = os.path.join(self.path, ".cache")
-        self.cache_file = os.path.join(self.cache_dir, "byzer_storage_speedup.jsonl")
+        self.cache_file = os.path.join(self.cache_dir, "duckdb_storage_speedup.jsonl")
         self.cache: Dict[str, CacheItem] = {}
         # 创建缓存目录
         if not os.path.exists(self.cache_dir):
