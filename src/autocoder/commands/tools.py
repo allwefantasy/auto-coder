@@ -450,6 +450,8 @@ class AutoCommandTools:
                     content = "".join(lines[start:end])
                     filtered_lines.extend(f"##File: {absolute_path}\n##Line: {start}-{end}\n\n{content}")
                 source_code = "".join(filtered_lines)
+                # Add source_code to source_code_str
+                source_code_str += source_code
             else:
                 # Read entire file if no range specified
                 content = files_utils.read_file(absolute_path)
