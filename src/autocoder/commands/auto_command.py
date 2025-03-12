@@ -163,10 +163,11 @@ class CommandAutoTuner:
         self.project_type_analyzer = ProjectTypeAnalyzer(args=args, llm=self.llm) 
         try:
             self.mcp_server = get_mcp_server()
-            self.mcp_server_info = self.mcp_server.send_request(McpServerInfoRequest(
+            mcp_server_info_response = self.mcp_server.send_request(McpServerInfoRequest(
                 model=args.inference_model or args.model,
                 product_mode=args.product_mode
             ))
+            self.mcp_server_info = mcp_server_info_response.result
         except Exception as e:
             logger.error(f"Error getting MCP server info: {str(e)}")
             self.mcp_server_info = ""
@@ -1220,8 +1221,7 @@ class CommandAutoTuner:
          response_user(response="你好，我是 auto-coder")
         </usage>
         </command>
-        
-        <% if has_mcp_server_info  %>
+                
         <command>
         <name>execute_mcp_server</name>
         <description>执行MCP服务器</description>
@@ -1236,15 +1236,11 @@ class CommandAutoTuner:
          </mcp_server_info>
          
         </usage>
-        </command>
-        <% endif %>
-        
-        
+        </command>                        
         '''
         return {
             "config_readme": config_readme.prompt(),
-            "mcp_server_info": self.mcp_server_info,
-            "has_mcp_server_info": "No MCP servers currently connected" not in self.mcp_server_info
+            "mcp_server_info": self.mcp_server_info            
         }
 
     def execute_auto_command(self, command: str, parameters: Dict[str, Any]) -> None:
