@@ -63,6 +63,7 @@ class MultiRoundStrategy(QAConversationStrategy):
         {% if local_image_host %}
         4. 图片路径处理
         - 图片地址需返回绝对路径, 
+        - 对于Windows风格的路径，需要转换为Linux风格， 例如：C:\Users\user\Desktop\image.png 转换为 C:/Users/user/Desktop/image.png
         - 为请求图片资源 需增加 http://{{ local_image_host }}/static/ 作为前缀
         例如：/path/to/images/image.png， 返回 http://{{ local_image_host }}/static/path/to/images/image.png
         {% endif %}
@@ -114,6 +115,7 @@ class SingleRoundStrategy(QAConversationStrategy):
         {% if local_image_host %}
         4. 图片路径处理
         - 图片地址需返回绝对路径, 
+        - 对于Windows风格的路径，需要转换为Linux风格， 例如：C:\Users\user\Desktop\image.png 转换为 C:/Users/user/Desktop/image.png
         - 为请求图片资源 需增加 http://{{ local_image_host }}/static/ 作为前缀
         例如：/path/to/images/image.png， 返回 http://{{ local_image_host }}/static/path/to/images/image.png
         {% endif %}
