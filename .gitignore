@@ -60,3 +60,5 @@ notebooks/generated_image.png
 .cache/
 /file*.py
 /notebooks/output*
+/notebooks/cache_test
+
