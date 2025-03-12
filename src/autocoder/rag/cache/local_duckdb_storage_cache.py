@@ -75,7 +75,8 @@ class DuckDBLocalContext:
 class LocalDuckdbStorage:
 
     def __init__(
-            self, llm: Union[ByzerLLM, SimpleByzerLLM] = None, database_name: str = ":memory:", table_name: str = "documents",
+            self, llm: Union[ByzerLLM, SimpleByzerLLM] = None, database_name: str = ":memory:",
+            table_name: str = "documents",
             embed_dim: Optional[int] = None, persist_dir: str = "./storage"
     ) -> None:
         self.llm = llm
@@ -406,9 +407,9 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         from autocoder.rag.token_counter import initialize_tokenizer
 
         with Pool(
-            processes=os.cpu_count(),
-            initializer=initialize_tokenizer,
-            initargs=(VariableHolder.TOKENIZER_PATH,),
+                processes=os.cpu_count(),
+                initializer=initialize_tokenizer,
+                initargs=(VariableHolder.TOKENIZER_PATH,),
         ) as pool:
             target_files_to_process = []
             for file_info in files_to_process:
@@ -447,23 +448,66 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         self.write_cache()
 
         if items:
-            logger.info("Clear cache from Byzer DuckDB Storage")
+            logger.info("[BUILD CACHE] Clearing existing cache from Byzer DuckDB Storage")
             self.storage.truncate_table()
-            logger.info("Save new cache to Byzer DuckDB Storage")
+            logger.info(f"[BUILD CACHE] Preparing to write to Byzer DuckDB Storage, "
+                        f"total chunks: {len(items)}, total files: {len(files_to_process)}")
 
-            total_chunks = len(items)
-            completed_chunks = 0
+            # Use a fixed optimal batch size instead of dividing by worker count
+            batch_size = 100  # Optimal batch size for Byzer Storage
+            item_batches = [items[i:i + batch_size] for i in range(0, len(items), batch_size)]
 
-            logger.info(f"进度: 已完成 {0}/{total_chunks} 个文本块")
+            total_batches = len(item_batches)
+            completed_batches = 0
 
-            for _chunk in items:
-                try:
-                    self.storage.add_doc(_chunk, dim=self.extra_params.rag_duckdb_vector_dim)
-                    completed_chunks += 1
-                    logger.info(f"进度: 已完成 {completed_chunks}/{total_chunks} 个文本块")
-                    time.sleep(self.extra_params.anti_quota_limit)
-                except Exception as err:
-                    logger.error(f"Error in saving chunk: {str(err)}")
+            logger.info(f"[BUILD CACHE] Starting to write to Byzer Storage using {batch_size} items per batch, "
+                        f"total batches: {total_batches}")
+            start_time = time.time()
+
+            # Use more workers to process the smaller batches efficiently
+            max_workers = min(10, total_batches)  # Cap at 10 workers or total batch count
+            logger.info(f"[BUILD CACHE] Using {max_workers} parallel workers for processing")
+
+            def batch_add_doc(_batch):
+                for b in _batch:
+                    self.storage.add_doc(b, dim=self.extra_params.rag_duckdb_vector_dim)
+
+            with (ThreadPoolExecutor(max_workers=max_workers) as executor):
+                futures = []
+                # Submit all batches to the executor upfront (non-blocking)
+                for batch in item_batches:
+                    futures.append(
+                        executor.submit(
+                            batch_add_doc, batch
+                        )
+                    )
+
+                # Wait for futures to complete
+                for future in as_completed(futures):
+                    try:
+                        future.result()
+                        completed_batches += 1
+                        elapsed = time.time() - start_time
+                        estimated_total = elapsed / completed_batches * total_batches if completed_batches > 0 else 0
+                        remaining = estimated_total - elapsed
+
+                        # Only log progress at reasonable intervals to reduce log spam
+                        if ((completed_batches == 1) or
+                                (completed_batches == total_batches) or
+                                (completed_batches % max(1, total_batches // 10) == 0)):
+                            logger.info(
+                                f"[BUILD CACHE] Progress: {completed_batches}/{total_batches} batches completed "
+                                f"({(completed_batches / total_batches * 100):.1f}%) "
+                                f"Estimated time remaining: {remaining:.1f}s"
+                            )
+                    except Exception as e:
+                        logger.error(f"[BUILD CACHE] Error saving batch: {str(e)}")
+                        # Add more detailed error information
+                        logger.error(f"[BUILD CACHE] Error details: batch size: "
+                                     f"{len(batch) if 'batch' in locals() else 'unknown'}")
+
+            total_time = time.time() - start_time
+            logger.info(f"[BUILD CACHE] All chunks written, total time: {total_time:.2f}s")
 
     def update_storage(self, file_info: FileInfo, is_delete: bool):
         results = self.storage.query_by_path(file_info.file_path)
