@@ -377,7 +377,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     rank_strategy: Optional[str] = "file"
 
     action: List[str] = []
-    enable_global_memory: Optional[bool] = True  
+    enable_global_memory: Optional[bool] = False  
     product_mode: Optional[str] = "lite"
 
     keep_reasoning_content: Optional[bool] = False
