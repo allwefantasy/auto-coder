@@ -521,6 +521,8 @@ def main(input_args: Optional[List[str]] = None):
         # 设置本地图床的地址
         if args.enable_local_image_host:
             host = server_args.host or "127.0.0.1"
+            if host == "0.0.0.0":
+                host = "127.0.0.1"
             port = str(server_args.port)
             auto_coder_args.local_image_host = f"{host}:{port}"
 
