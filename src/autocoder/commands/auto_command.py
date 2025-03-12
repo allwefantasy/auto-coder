@@ -1221,7 +1221,7 @@ class CommandAutoTuner:
         </usage>
         </command>
         
-        <% if mcp_server_info  %>
+        <% if has_mcp_server_info  %>
         <command>
         <name>execute_mcp_server</name>
         <description>执行MCP服务器</description>
@@ -1243,7 +1243,8 @@ class CommandAutoTuner:
         '''
         return {
             "config_readme": config_readme.prompt(),
-            "mcp_server_info": self.mcp_server_info
+            "mcp_server_info": self.mcp_server_info,
+            "has_mcp_server_info": "No MCP servers currently connected" not in self.mcp_server_info
         }
 
     def execute_auto_command(self, command: str, parameters: Dict[str, Any]) -> None:
