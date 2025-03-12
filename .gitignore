@@ -62,4 +62,5 @@ notebooks/generated_image.png
 /notebooks/output*
 /notebooks/cache_test
 /notebooks/sample_code
+/notebooks/sample_code_byzer
 
