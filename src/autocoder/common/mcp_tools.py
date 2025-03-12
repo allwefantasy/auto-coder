@@ -1,14 +1,19 @@
 from typing import Dict, Any, List, Optional, Union
 from byzerllm import prompt
-from ..common.mcp_hub import McpHub
 import json
 import byzerllm
 import re
 from pydantic import BaseModel, Field
 from loguru import logger
-import mcp.types as mcp_types
 import os
 import time
+try:    
+    import mcp.types as mcp_types    
+except ImportError:
+    mcp_types = None
+    logger.error("mcp is not installed(which requires python>=3.11), please install it by `pip install mcp`")
+from autocoder.common.mcp_hub import McpHub    
+
 
 class McpToolCall(BaseModel):
     server_name: str = Field(..., description="The name of the MCP server")

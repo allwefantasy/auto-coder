@@ -10,15 +10,21 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Set, Optional, Tuple
 from pathlib import Path
 from pydantic import BaseModel, Field
-
-from mcp import ClientSession
-from mcp.client.stdio import stdio_client, StdioServerParameters
-from mcp.client.sse import sse_client
-import mcp.types as mcp_types
 from loguru import logger
 from contextlib import AsyncExitStack
 from datetime import timedelta
 
+try:
+    from mcp import ClientSession
+    from mcp.client.stdio import stdio_client, StdioServerParameters
+    from mcp.client.sse import sse_client
+    import mcp.types as mcp_types
+except ImportError:
+    mcp_types = None
+    stdio_client = None
+    sse_client = None   
+    ClientSession = None
+    logger.error("mcp is not installed(which requires python>=3.11), please install it by `pip install mcp`")
 
 class McpTool(BaseModel):
     """Represents an MCP tool configuration"""
