@@ -452,9 +452,9 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         self.write_cache()
 
         if items:
-            logger.info("[BUILD CACHE] Clearing existing cache from Byzer DuckDB Storage")
+            logger.info("[BUILD CACHE] Clearing existing cache from DuckDB  Storage")
             self.storage.truncate_table()
-            logger.info(f"[BUILD CACHE] Preparing to write to Byzer DuckDB Storage, "
+            logger.info(f"[BUILD CACHE] Preparing to write to DuckDB  Storage, "
                         f"total chunks: {len(items)}, total files: {len(files_to_process)}")
 
             # Use a fixed optimal batch size instead of dividing by worker count
@@ -464,7 +464,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             total_batches = len(item_batches)
             completed_batches = 0
 
-            logger.info(f"[BUILD CACHE] Starting to write to Byzer Storage using {batch_size} items per batch, "
+            logger.info(f"[BUILD CACHE] Starting to write to DuckDB Storage using {batch_size} items per batch, "
                         f"total batches: {total_batches}")
             start_time = time.time()
 
