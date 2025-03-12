@@ -11,6 +11,7 @@ from autocoder.rag.cache.simple_cache import AutoCoderRAGAsyncUpdateQueue
 from autocoder.rag.cache.file_monitor_cache import AutoCoderRAGDocListener
 from autocoder.rag.cache.byzer_storage_cache import ByzerStorageCache
 from autocoder.rag.cache.local_byzer_storage_cache import LocalByzerStorageCache
+from autocoder.rag.cache.local_duckdb_storage_cache import LocalDuckDBStorageCache
 from autocoder.common import AutoCoderArgs
 
 cache_lock = threading.Lock()
@@ -66,11 +67,17 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
                 self.cacher = ByzerStorageCache(
                     path, ignore_spec, required_exts, extra_params
                 )
-            else:                                
-                self.cacher = LocalByzerStorageCache(
-                    path, ignore_spec, required_exts, extra_params,
-                    emb_llm = emb_llm
-                )
+            else:
+                if extra_params.rag_storage_type == "duckdb":
+                    self.cacher = LocalDuckDBStorageCache(
+                        path, ignore_spec, required_exts, extra_params,
+                        emb_llm=emb_llm
+                    )
+                elif extra_params.rag_storage_type == "lucene":
+                    self.cacher = LocalByzerStorageCache(
+                        path, ignore_spec, required_exts, extra_params,
+                        emb_llm=emb_llm
+                    )
         else:
             if self.monitor_mode:
                 self.cacher = AutoCoderRAGDocListener(
