@@ -5,13 +5,10 @@ import httpx
 import json
 from loguru import logger
 
-try:
-    import mcp.server.stdio
-    import mcp.types as types
-    from mcp.server import NotificationOptions, Server
-    from mcp.server.models import InitializationOptions
-except ImportError:
-    logger.error("mcp is not installed(which requires python>=3.11), please install it by `pip install mcp`")
+import mcp.server.stdio
+import mcp.types as types
+from mcp.server import NotificationOptions, Server
+from mcp.server.models import InitializationOptions
 
 PERPLEXITY_API_KEY = getenv("PERPLEXITY_API_KEY")
 PERPLEXITY_API_BASE_URL = "https://api.perplexity.ai"

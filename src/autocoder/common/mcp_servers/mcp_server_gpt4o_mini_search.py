@@ -4,18 +4,11 @@ import sys
 import json
 from openai import OpenAI
 from loguru import logger
-try:
-    import mcp.server.stdio
-    import mcp.types as types
-    from mcp.server import NotificationOptions, Server
-    from mcp.server.models import InitializationOptions
-except ImportError:
-    mcp_server_stdio = None
-    mcp_types = None    
-    NotificationOptions = None
-    Server = None
-    InitializationOptions = None
-    logger.error("mcp is not installed(which requires python>=3.11), please install it by `pip install mcp`")
+import mcp.server.stdio
+import mcp.types as types
+from mcp.server import NotificationOptions, Server
+from mcp.server.models import InitializationOptions
+
 
 
 OPENAI_API_KEY = getenv("OPENAI_API_KEY")
