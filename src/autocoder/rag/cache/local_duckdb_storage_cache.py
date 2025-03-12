@@ -655,9 +655,9 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             # results = self.storage.vector_search(query, similarity_value=0.7, similarity_top_k=200)
             search_results = self.storage.vector_search(
                 query,
-                similarity_value=self.extra_params.duckdb_query_similarity,
-                similarity_top_k=self.extra_params.duckdb_query_top_k,
-                query_dim=self.extra_params.duckdb_vector_dim
+                similarity_value=self.extra_params.rag_duckdb_query_similarity,
+                similarity_top_k=self.extra_params.rag_duckdb_query_top_k,
+                query_dim=self.extra_params.rag_duckdb_vector_dim
             )
             results.extend(search_results)
 
