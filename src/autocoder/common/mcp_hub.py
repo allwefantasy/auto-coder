@@ -2,8 +2,12 @@ import os
 import json
 import asyncio
 import aiohttp
+import importlib
+import pkgutil
+import re
+import inspect
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Set, Optional
+from typing import Dict, List, Optional, Any, Set, Optional, Tuple
 from pathlib import Path
 from pydantic import BaseModel, Field
 
@@ -62,23 +66,53 @@ class McpConnection:
         self.session = session        
 
 
-MCP_PERPLEXITY_SERVER = '''
-{
-    "perplexity": {
-        "command": "python",
-        "args": [
-            "-m", "autocoder.common.mcp_servers.mcp_server_perplexity"
-        ],
-        "env": {
-            "PERPLEXITY_API_KEY": "{{PERPLEXITY_API_KEY}}"
-        }
-    }
-}
-'''
+def _generate_server_configs() -> Tuple[Dict[str, Any], Dict[str, str]]:
+    """
+    Scan the autocoder.common.mcp_servers directory for mcp_server_*.py files
+    and generate server configurations.
+    
+    Returns:
+        Tuple of (built-in servers dict, JSON templates dict)
+    """
+    servers = {}
+    templates = {}
+    
+    try:
+        package_name = "autocoder.common.mcp_servers"
+        package = importlib.import_module(package_name)
+        
+        # Find all modules in the package
+        for _, name, _ in pkgutil.iter_modules(package.__path__, package.__name__ + "."):
+            # Only process modules that start with "mcp_server_"
+            base_name = name.split(".")[-1]
+            if base_name.startswith("mcp_server_"):
+                # Generate a friendly server name
+                friendly_name = base_name[11:].replace("_", "-")
+                                
+                # Create env dictionary with placeholders
+                env_dict = {}
+                
+                # Create server configuration
+                config = {
+                    "command": "python",
+                    "args": ["-m", name],
+                    "env": env_dict
+                }                                
+                
+                # Store in dictionaries
+                servers[friendly_name] = config
+                templates[friendly_name] = json.dumps({friendly_name: config}, indent=4)
+                
+                logger.info(f"Detected MCP server: {friendly_name}")
+    
+    except Exception as e:
+        logger.error(f"Error generating server configs: {e}")
+    
+    return servers, templates
 
-MCP_BUILD_IN_SERVERS = {
-    "perplexity": json.loads(MCP_PERPLEXITY_SERVER)["perplexity"]
-}
+
+# Automatically generate server configurations
+MCP_BUILD_IN_SERVERS, MCP_SERVER_TEMPLATES = _generate_server_configs()
 
 
 class McpHub:
@@ -422,3 +456,10 @@ class McpHub:
         """
         for name in list(self.connections.keys()):
             await self.delete_connection(name)
+
+    @classmethod
+    def get_server_templates(cls) -> Dict[str, str]:
+        """
+        Get all available server templates as JSON strings
+        """
+        return MCP_SERVER_TEMPLATES
