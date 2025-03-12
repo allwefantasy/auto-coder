@@ -139,12 +139,7 @@ class DataProcessor:
 
 def main():
     # 设置基本目录
-    base_dir = "sample_code"
-    cache_dir = "cache_test"
-    
-    # 清理之前的测试目录（如果存在）
-    if os.path.exists(cache_dir):
-        shutil.rmtree(cache_dir)
+    base_dir = "sample_code"    
     
     # 创建示例代码文件
     create_sample_files(base_dir)
@@ -154,7 +149,7 @@ def main():
         source_dir=base_dir,
         conversation_prune_safe_zone_tokens=4000,
         rag_duckdb_vector_dim=None,  # 使用默认的嵌入维度
-        rag_duckdb_query_similarity=0.7,  # 向量搜索相似度阈值
+        rag_duckdb_query_similarity=0.1,  # 向量搜索相似度阈值
         rag_duckdb_query_top_k=20,        # 返回的最多相似文档数
         hybrid_index_max_output_tokens=10000,  # 最大输出token数        
     )
@@ -171,7 +166,7 @@ def main():
     # 初始化缓存管理器
     logger.info(f"初始化DuckDB缓存管理器...")
     cache_manager = LocalDuckDBStorageCache(
-        path=cache_dir,
+        path=base_dir,
         ignore_spec=None,
         required_exts=required_exts,
         extra_params=args,
@@ -180,7 +175,7 @@ def main():
     
     # 构建缓存
     logger.info("开始构建缓存...")
-    cache_manager.build_cache()
+    # cache_manager.build_cache()
     
     # 执行查询示例
     queries = [
