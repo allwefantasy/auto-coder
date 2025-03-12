@@ -640,10 +640,11 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         """Search cached documents using query"""
         self.trigger_update()  # 检查更新
 
-        if options is None or "query" not in options:
+        if options is None or "queries" not in options:
             return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
 
-        query = options.get("query", "")
+        queries = options.get("queries", "")
+        query = queries[0]
         logger.info(f"正在使用向量搜索检索数据, 你的问题: {query}")
         total_tokens = 0
         results = []
