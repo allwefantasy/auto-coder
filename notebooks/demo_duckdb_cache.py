@@ -175,7 +175,7 @@ def main():
     
     # 构建缓存
     logger.info("开始构建缓存...")
-    # cache_manager.build_cache()
+    cache_manager.build_cache()
     
     # 执行查询示例
     queries = [
@@ -266,9 +266,9 @@ class Calculator:
             logger.info(f"代码预览: {preview}")
     
     # 清理测试文件
-    logger.info("\n清理测试文件...")
-    if os.path.exists(base_dir):
-        shutil.rmtree(base_dir)
+    # logger.info("\n清理测试文件...")
+    # if os.path.exists(base_dir):
+    #     shutil.rmtree(base_dir)
     
     logger.info("演示完成!")
 
