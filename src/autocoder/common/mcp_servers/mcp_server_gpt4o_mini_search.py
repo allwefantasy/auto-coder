@@ -30,7 +30,7 @@ client = OpenAI(
 async def handle_list_tools() -> list[types.Tool]:
     return [
         types.Tool(
-            name="ask_gpt4o_mini_search",
+            name="gpt4o_mini_search",
             description=dedent(
                 """
                 GPT-4o mini with search enables agents to gather information from the internet 
