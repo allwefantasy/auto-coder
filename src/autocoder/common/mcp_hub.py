@@ -107,9 +107,7 @@ def _generate_server_configs() -> Tuple[Dict[str, Any], Dict[str, str]]:
                 
                 # Store in dictionaries
                 servers[friendly_name] = config
-                templates[friendly_name] = json.dumps({friendly_name: config}, indent=4)
-                
-                logger.info(f"Detected MCP server: {friendly_name}")
+                templates[friendly_name] = json.dumps({friendly_name: config}, indent=4)                                
     
     except Exception as e:
         logger.error(f"Error generating server configs: {e}")
