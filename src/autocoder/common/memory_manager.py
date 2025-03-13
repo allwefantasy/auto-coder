@@ -40,7 +40,11 @@ def save_to_memory_file(ask_conversation,query:str,response:str):
     
     # Save memory
     with open(memory_file, 'w') as f:
-        json.dump(memory_data, f, ensure_ascii=False, indent=2)   
+        json.dump(memory_data, f, ensure_ascii=False, indent=2) 
+
+    get_global_memory_file_paths()          
+    tmp_dir = os.path.join(memory_dir, ".tmp")
+    return tmp_dir
 
 def load_from_memory_file() -> List[MemoryEntry]:
     """Load memory data from file and return as list of MemoryEntry objects"""

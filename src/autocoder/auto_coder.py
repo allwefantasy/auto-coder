@@ -1419,11 +1419,11 @@ def main(input_args: Optional[List[str]] = None):
                     print("pyperclip not installed or clipboard is not supported, instruction will not be copied to clipboard.")
 
             if "save" in args.action:
-                save_to_memory_file(ask_conversation=chat_history["ask_conversation"],
+                tmp_dir = save_to_memory_file(ask_conversation=chat_history["ask_conversation"],
                                     query=args.query,
                                     response=assistant_response)  
                 printer = Printer()
-                printer.print_in_terminal("memory_save_success")                      
+                printer.print_in_terminal("memory_save_success", style="green", path=tmp_dir)                      
             return
 
         else:
