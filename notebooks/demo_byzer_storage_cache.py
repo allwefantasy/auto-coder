@@ -206,7 +206,7 @@ def main():
     logger.info("\n开始多查询合并测试...")
     multi_query_results = cache_manager.get_cache({
         "queries": ["计算平均值和中位数", "字符串处理函数"],
-        "merge_strategy": "WEIGHTED_RANK",  # 使用加权排名策略合并结果
+        "merge_strategy": "weighted_rank",  # 使用加权排名策略合并结果
         "max_results": 5,  # 限制返回结果数量
         "enable_vector_search": True
     })

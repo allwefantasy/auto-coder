@@ -47,7 +47,7 @@ aiofiles
 
 # camelot-py
 # llama_index
-byzerllm[saas]>=0.1.174
+byzerllm[saas]>=0.1.176
 patch
 diff_match_patch
 GitPython

@@ -133,15 +133,31 @@ class LocalDuckdbStorage:
         return reduced
 
     def _embedding(self, context: str, norm: bool = True, dim: int | None = None) -> List[float]:
-        embedding = self.llm.emb_query(context)[0].output
-
-        if dim:
-            embedding = self._apply_pca(embedding, target_dim=dim)  # 降维后形状 (1024,)
-
-        if norm:
-            embedding = embedding / np.linalg.norm(embedding)
-
-        return embedding.tolist()
+        max_retries = 3
+        retry_count = 0
+        
+        while retry_count < max_retries:
+            try:
+                embedding = self.llm.emb_query(context)[0].output
+                
+                if dim:
+                    embedding = self._apply_pca(embedding, target_dim=dim)  # 降维后形状 (1024,)
+                
+                if norm:
+                    embedding = embedding / np.linalg.norm(embedding)
+                
+                return embedding.tolist()
+            except Exception as e:
+                retry_count += 1
+                if retry_count >= max_retries:
+                    logger.error(f"Failed to get embedding after {max_retries} attempts: {str(e)}")
+                    raise
+                
+                # Sleep between 1-5 seconds before retrying
+                sleep_time = 1 + (retry_count * 1.5)
+                logger.warning(f"Embedding API call failed (attempt {retry_count}/{max_retries}). "
+                              f"Error: {str(e)}. Retrying in {sleep_time:.1f} seconds...")
+                time.sleep(sleep_time)
 
     def _initialize(self) -> None:
         if self.embed_dim is None:
