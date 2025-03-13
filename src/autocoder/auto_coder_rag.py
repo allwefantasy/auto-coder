@@ -190,7 +190,7 @@ def main(input_args: Optional[List[str]] = None):
     build_index_parser.add_argument(
         "--rag_index_build_workers",
         type=int,
-        default=10,
+        default=5,
         help="The number of workers to build the RAG index",
     )
 

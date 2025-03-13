@@ -652,40 +652,68 @@ class LocalDuckDBStorageCache(BaseCacheManager):
 
         return all_files
 
-    def get_cache(self, options: Optional[Dict[str, Any]] = None) -> Dict[str, Dict]:
-        """Search cached documents using query"""
-        self.trigger_update()  # 检查更新
-
-        if options is None or "queries" not in options:
-            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
-
-        queries = options.get("queries", "")
-        query = queries[0]
+    def _get_single_cache(self, query: str, options: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        使用单个查询检索缓存文档
+        
+        参数:
+            query: 查询字符串
+            options: 包含查询选项的字典
+            
+        返回:
+            包含文档信息的字典列表，每个字典包含_id、file_path、mtime和score字段
+        """
         logger.info(f"正在使用向量搜索检索数据, 你的问题: {query}")
-        total_tokens = 0
         results = []
 
         # Add vector search if enabled
         if options.get("enable_vector_search", True):
             # 返回值包含  [(_id, file_path, mtime, score,),]
-            # results = self.storage.vector_search(query, similarity_value=0.7, similarity_top_k=200)
             search_results = self.storage.vector_search(
                 query,
                 similarity_value=self.extra_params.rag_duckdb_query_similarity,
                 similarity_top_k=self.extra_params.rag_duckdb_query_top_k,
                 query_dim=self.extra_params.rag_duckdb_vector_dim
             )
-            results.extend(search_results)
-
+            
+            # Convert tuples to dictionaries for the merger
+            for _id, file_path, mtime, score in search_results:
+                results.append({
+                    "_id": _id,
+                    "file_path": file_path,
+                    "mtime": mtime,
+                    "score": score
+                })
+        
+        logger.info(f"查询 '{query}' 返回 {len(results)} 条记录")
+        return results
+        
+    def _process_search_results(self, results: List[Dict[str, Any]]) -> Dict[str, Dict]:
+        """
+        处理搜索结果，提取文件路径并构建结果字典
+        
+        参数:
+            results: 搜索结果列表，每项包含文档信息的字典
+            
+        返回:
+            匹配文档的字典，键为文件路径，值为文件内容
+            
+        说明:
+            该方法会根据查询结果从缓存中提取文件内容，并记录累计token数，
+            当累计token数超过max_output_tokens时，将停止处理并返回已处理的结果。
+        """
+        # 记录被处理的总tokens数
+        total_tokens = 0
+        
         # Group results by file_path and reconstruct documents while preserving order
         # 这里还可以有排序优化，综合考虑一篇内容出现的次数以及排序位置
         file_paths = []
         seen = set()
         for result in results:
-            _id, _file_path, _mtime, _score = result
-            if _file_path not in seen:
-                seen.add(_file_path)
-                file_paths.append(_file_path)
+            file_path = result["file_path"]
+            if file_path not in seen:
+                seen.add(file_path)
+                file_paths.append(file_path)
 
         # 从缓存中获取文件内容
         result = {}
@@ -706,3 +734,69 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             f"累计tokens: {total_tokens}, "
             f"经过向量搜索共检索出 {len(result.keys())} 个文档, 共 {len(self.cache.keys())} 个文档")
         return result
+
+    def get_cache(self, options: Optional[Dict[str, Any]] = None) -> Dict[str, Dict]:
+        """
+        获取缓存中的文档信息
+        
+        参数:
+            options: 包含查询参数的字典，可以包含以下键：
+                - queries: 查询列表，可以是单个查询或多个查询
+                - enable_vector_search: 是否启用向量搜索，默认为True
+                - merge_strategy: 多查询时的合并策略，默认为WEIGHTED_RANK
+                - max_results: 最大结果数，默认为None表示不限制
+                
+        返回:
+            匹配文档的字典，键为文件路径，值为文件内容
+        """
+        self.trigger_update()  # 检查更新
+
+        if options is None or "queries" not in options:
+            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
+
+        queries = options.get("queries", [])
+        
+        # 如果没有查询或只有一个查询，使用原来的方法
+        if not queries:
+            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
+        elif len(queries) == 1:
+            results = self._get_single_cache(queries[0], options)
+            return self._process_search_results(results)
+        
+        # 导入合并策略
+        from autocoder.rag.cache.cache_result_merge import CacheResultMerger, MergeStrategy
+        
+        # 获取合并策略
+        merge_strategy_name = options.get("merge_strategy", MergeStrategy.WEIGHTED_RANK.value)
+        try:
+            merge_strategy = MergeStrategy(merge_strategy_name)
+        except ValueError:
+            logger.warning(f"未知的合并策略: {merge_strategy_name}, 使用默认策略 WEIGHTED_RANK")
+            merge_strategy = MergeStrategy.WEIGHTED_RANK
+        
+        # 限制最大结果数
+        max_results = options.get("max_results", None)
+        merger = CacheResultMerger(max_results=max_results)
+        
+        # 并发处理多个查询
+        logger.info(f"处理多查询请求，查询数量: {len(queries)}, 合并策略: {merge_strategy}")
+        query_results = []
+        with ThreadPoolExecutor(max_workers=min(len(queries), 10)) as executor:
+            future_to_query = {executor.submit(self._get_single_cache, query, options): query for query in queries}
+            for future in as_completed(future_to_query):
+                query = future_to_query[future]
+                try:
+                    query_result = future.result()
+                    logger.info(f"查询 '{query}' 返回 {len(query_result)} 条记录")
+                    query_results.append((query, query_result))
+                except Exception as e:
+                    logger.error(f"处理查询 '{query}' 时出错: {str(e)}")
+        
+        logger.info(f"所有查询共返回 {sum(len(r) for _, r in query_results)} 条记录")
+        
+        # 使用策略合并结果
+        merged_results = merger.merge(query_results, strategy=merge_strategy)
+        logger.info(f"合并后的结果共 {len(merged_results)} 条记录")
+        
+        # 处理合并后的结果
+        return self._process_search_results(merged_results)
