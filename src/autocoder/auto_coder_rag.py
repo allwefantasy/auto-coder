@@ -289,7 +289,11 @@ def main(input_args: Optional[List[str]] = None):
     serve_parser.add_argument("--ssl_keyfile", default="", help="")
     serve_parser.add_argument("--ssl_certfile", default="", help="")
     serve_parser.add_argument("--response_role", default="assistant", help="")
-    serve_parser.add_argument("--doc_dir", default="", help="")
+    serve_parser.add_argument(
+        "--doc_dir", 
+        default="", 
+        help="Document directory path, also used as the root directory for serving static files"
+    )
     serve_parser.add_argument("--enable_local_image_host", action="store_true", help=" enable local image host for local Chat app")
     serve_parser.add_argument("--tokenizer_path", default=tokenizer_path, help="")
     serve_parser.add_argument(
@@ -305,7 +309,12 @@ def main(input_args: Optional[List[str]] = None):
         action="store_true",
         help="Monitor mode for the doc update",
     )
-
+    serve_parser.add_argument(
+        "--max_static_path_length", 
+        type=int,
+        default=3000,
+        help="Maximum length allowed for static file paths"
+    )
     serve_parser.add_argument(
         "--disable_auto_window",
         action="store_true",
