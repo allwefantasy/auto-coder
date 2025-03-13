@@ -157,6 +157,12 @@ def config_readme() -> str:
     3. 代码文件后缀名列表（比如.java,.py,.go,.js,.ts），多个按逗号分割    
 
     推荐使用 3 选项，因为项目类型通常为多种后缀名混合。
+
+    ## include_project_structure: 是否包含项目结构
+    是否包含项目结构。推荐设置为 true。默认为true,但是项目结构也可能很大，如果项目结构很大，那么可以设置为 false。
+
+    ## conversation_prune_safe_zone_tokens: 对话剪枝安全区token数量
+    在对话剪枝时，会根据对话的token数量，如果token数量超过该值，那么会剪枝掉一部分对话。
     """
 
 class ConfigAutoTuner:

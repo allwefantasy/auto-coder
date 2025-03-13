@@ -31,6 +31,7 @@ from autocoder.common import files as files_utils
 from autocoder.common.printer import Printer
 from prompt_toolkit import PromptSession
 from prompt_toolkit.styles import Style
+from autocoder.rag.token_counter import count_tokens
 
 
 @byzerllm.prompt()
@@ -284,6 +285,16 @@ class AutoCommandTools:
             if file_path and file_path in k["module_name"]:
                 final_result.append(value)
         v = json.dumps(final_result, ensure_ascii=False)
+        tokens = count_tokens(v)
+        if tokens > self.args.conversation_prune_safe_zone_tokens/2.0:
+            result = f"The project map is too large to return. (tokens: {tokens}). Try to use another function."
+            self.result_manager.add_result(content=result, meta = {
+                "action": "get_project_map",
+                "input": {                
+                }
+            })
+            return result
+
         self.result_manager.add_result(content=v, meta = {
             "action": "get_project_map",
             "input": {                
@@ -478,6 +489,17 @@ class AutoCommandTools:
             pp = SuffixProject(args=self.args, llm=self.llm, file_filter=None)
         pp.run()
         s = pp.get_tree_like_directory_structure()
+        
+        tokens = count_tokens(s)
+        if tokens > self.args.conversation_prune_safe_zone_tokens / 2.0:
+            result = f"The project structure is too large to return. (tokens: {tokens}). Try to use another function."
+            self.result_manager.add_result(content=result, meta = {
+                "action": "get_project_structure",
+                "input": {
+                }
+            })
+            return result
+
         self.result_manager.add_result(content=s, meta = {
             "action": "get_project_structure",
             "input": {
@@ -509,6 +531,23 @@ class AutoCommandTools:
             }
         })
         return v
+    
+    def count_file_tokens(self, file_path: str) -> int:
+        """
+        该工具用于计算指定文件的token数量。
+        输入参数 file_path: 文件路径
+        返回值是文件的token数量。
+        """
+        content = files_utils.read_file(file_path)
+        return count_tokens(content)
+
+    def count_string_tokens(self, text: str) -> int:
+        """
+        该工具用于计算指定字符串的token数量。
+        输入参数 text: 要计算的文本
+        返回值是字符串的token数量。
+        """
+        return count_tokens(text)
 
     def find_files_by_content(self, keyword: str) -> str:
         """

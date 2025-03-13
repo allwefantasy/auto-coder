@@ -1223,6 +1223,36 @@ class CommandAutoTuner:
          response_user(response="你好，我是 auto-coder")
         </usage>
         </command>
+
+        <command>
+        <name>count_file_tokens</name>
+        <description>计算指定文件的token数量。</description>
+        <usage>
+         该函数接受一个参数 file_path, 为要计算的文件路径。
+
+         使用例子：
+         count_file_tokens(file_path="full")
+         
+         注意：
+         - 返回值为int类型，表示文件的token数量。
+         
+        </usage>
+        </command>
+
+        <command>
+        <name>count_string_tokens</name>
+        <description>计算指定字符串的token数量。</description>
+        <usage>
+         该函数接受一个参数 text, 为要计算的文本。
+
+         使用例子：
+         count_string_tokens(text="你好，世界")
+         
+         注意：
+         - 返回值为int类型，表示文本的token数量。
+         
+        </usage>
+        </command>
                 
         <command>
         <name>execute_mcp_server</name>
@@ -1285,6 +1315,8 @@ class CommandAutoTuner:
             "get_project_type": self.project_type_analyzer.analyze,
             "response_user": self.tools.response_user,
             "execute_mcp_server": self.tools.execute_mcp_server,
+            "count_file_tokens": self.tools.count_file_tokens,
+            "count_string_tokens": self.tools.count_string_tokens,
                                     
         }
 
