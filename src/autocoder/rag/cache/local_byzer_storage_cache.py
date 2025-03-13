@@ -338,7 +338,7 @@ class LocalByzerStorageCache(BaseCacheManager):
             start_time = time.time()
 
             # Use more workers to process the smaller batches efficiently
-            max_workers = min(10, total_batches)  # Cap at 10 workers or total batch count
+            max_workers = min(self.extra_params.rag_index_build_workers, total_batches)  # Cap at 10 workers or total batch count
             logger.info(f"[BUILD CACHE] Using {max_workers} parallel workers for processing")
 
             with ThreadPoolExecutor(max_workers=max_workers) as executor:

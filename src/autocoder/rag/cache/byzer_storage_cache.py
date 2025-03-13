@@ -132,6 +132,7 @@ class ByzerStorageCache(BaseCacheManager):
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
+        self.extra_params = extra_params
         self.rag_build_name = extra_params.rag_build_name
         self.storage = ByzerStorage("byzerai_store", "rag", self.rag_build_name)
         self.queue = []
@@ -329,7 +330,7 @@ class ByzerStorageCache(BaseCacheManager):
             start_time = time.time()
             
             # Use more workers to process the smaller batches efficiently
-            max_workers = min(10, total_batches)  # Cap at 10 workers or total batch count
+            max_workers = min(self.extra_params.rag_index_build_workers, total_batches)  # Cap at 10 workers or total batch count
             logger.info(f"[BUILD CACHE] Using {max_workers} parallel workers for processing")
             
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
