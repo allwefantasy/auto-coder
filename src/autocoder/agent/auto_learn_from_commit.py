@@ -43,10 +43,8 @@ class AutoLearnFromCommit:
 
     @byzerllm.prompt()
     def learn(self, querie_with_urls_and_changes: List[Tuple[str, List[str], Dict[str, Tuple[str, str]]]], query: str) -> Generator[str,None,None]:
-        """
-        请根据下面的代码变更，总结出通用的代码调整模式，以帮助实现类似的需求。
-
-        下面用户对本次的目标以及你需要总结的要求：
+        """        
+        下面是触发这次代码变更的原始任务需求：
         <goal>
         {{ query }}
         </goal>
@@ -77,18 +75,14 @@ class AutoLearnFromCommit:
         {% endfor %}
         {% endfor %}
         </changes>
+        
+        你的目标是，总结出这次修改重现步骤，要尽可能详细，达到当用户重新提交相同的需求，系统可以根据你这个流程，可以重新实现这一次修改。
+        
+        在描述中，如果涉及到文件请用如下示例的格式：        
+        @src/autocoder/utils/_markitdown.py
+        如果涉及到符号，比如函数名，变量名，类名等等，请用如下示例的格式：
+        @@DocxConverter(location: src/autocoder/utils/_markitdown.py) 
 
-        请总结以下内容：
-        1. 代码调整模式：描述为了实现这个目标，通常需要对代码做出哪些通用调整
-        2. 关键修改点：指出本次提交中最关键或最具代表性的修改点
-        3. 潜在扩展：基于这些修改，未来类似需求可能需要进行哪些扩展
-        4. 注意事项：在实现类似功能时需要注意哪些问题
-
-        总结要求：
-        1. 总结应该抽象化，不要局限于具体实现细节
-        2. 对于每个模式都应该提供明确的适用场景
-        3. 应该考虑代码的可维护性和可扩展性
-        4. 应该指出在不同技术栈或框架下的通用性
         """
         pass
 
@@ -194,7 +188,7 @@ class AutoLearnFromCommit:
         # 调用LLM进行代码学习
         try:
             # 获取 prompt 内容            
-            query = self.learn.prompt(changes, query)
+            query = self.learn.prompt(changes, query)                        
             new_conversations = conversations.copy()[0:-1]
             new_conversations.append({"role": "user", "content": query})
             # 构造对话消息            
