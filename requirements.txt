@@ -32,6 +32,7 @@ tabulate
 jupyter_client
 prompt-toolkit
 tokenizers
+aiofiles
 
 # dependencies only for stable_diffusion
 # safetensors
