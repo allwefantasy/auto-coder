@@ -190,8 +190,22 @@ async def serve_static_file(full_path: str, request: Request):
         # 检查文件是否存在
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
+        
+        # 如果启用了Nginx X-Accel-Redirect，使用X-Accel特性
+        if hasattr(request.app.state, "enable_nginx_x_accel") and request.app.state.enable_nginx_x_accel:
+            # 获取文件的 MIME 类型
+            content_type = mimetypes.guess_type(file_path)[0]
+            if not content_type:
+                content_type = "application/octet-stream"
+                
+            # 返回带X-Accel-Redirect头的响应
+            # 通过添加X-Accel-Redirect头告诉Nginx直接提供该文件
+            # 注意：Nginx配置必须正确设置内部路径映射
+            response = Response(content="", media_type=content_type)
+            response.headers["X-Accel-Redirect"] = f"/internal{file_path}"
+            return response
             
-        # 异步读取文件内容
+        # 默认行为：异步读取文件内容
         async with aiofiles.open(file_path, "rb") as f:
             content = await f.read()
         
@@ -230,6 +244,7 @@ class ServerArgs(BaseModel):
     doc_dir: str = ""  # Document directory path, also used as the root directory for serving static files
     tokenizer_path: Optional[str] = None
     max_static_path_length: int = int(os.environ.get("BYZERLLM_MAX_STATIC_PATH_LENGTH", 3000))  # Maximum length allowed for static file paths (larger value to better support Chinese characters)
+    enable_nginx_x_accel: bool = False  # Enable Nginx X-Accel-Redirect for static file serving
 
 def serve(llm:ByzerLLM, args: ServerArgs):
     
@@ -239,6 +254,11 @@ def serve(llm:ByzerLLM, args: ServerArgs):
     # 设置静态文件路径长度限制
     max_path_length = args.max_static_path_length
     logger.info(f"Maximum static file path length: {max_path_length}")
+    
+    # 存储Nginx X-Accel设置到应用状态
+    router_app.state.enable_nginx_x_accel = args.enable_nginx_x_accel
+    if args.enable_nginx_x_accel:
+        logger.info("Nginx X-Accel-Redirect enabled for static file serving")
     
     # 确定允许访问的静态文件目录
     # 优先级：1. 环境变量 BYZERLLM_ALLOWED_STATIC_DIR

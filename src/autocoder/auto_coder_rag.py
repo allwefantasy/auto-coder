@@ -313,7 +313,12 @@ def main(input_args: Optional[List[str]] = None):
         "--max_static_path_length", 
         type=int,
         default=3000,
-        help="Maximum length allowed for static file paths"
+        help="Maximum length allowed for static file paths (larger value to better support Chinese characters)"
+    )
+    serve_parser.add_argument(
+        "--enable_nginx_x_accel",
+        action="store_true",
+        help="Enable Nginx X-Accel-Redirect for static file serving when behind Nginx"
     )
     serve_parser.add_argument(
         "--disable_auto_window",
