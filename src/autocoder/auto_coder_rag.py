@@ -188,6 +188,13 @@ def main(input_args: Optional[List[str]] = None):
     )
 
     build_index_parser.add_argument(
+        "--rag_index_build_workers",
+        type=int,
+        default=10,
+        help="The number of workers to build the RAG index",
+    )
+
+    build_index_parser.add_argument(
         "--quick", action="store_true", help="Skip system initialization"
     )
     build_index_parser.add_argument("--file", default="", help=desc["file"])
