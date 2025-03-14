@@ -120,12 +120,9 @@ def main(input_args: Optional[List[str]] = None):
     if raw_args.command == "revert":
         repo_path = args.source_dir
 
-        file_content = open(args.file).read()
-        md5 = hashlib.md5(file_content.encode("utf-8")).hexdigest()
         file_name = os.path.basename(args.file)
-
         revert_result = git_utils.revert_changes(
-            repo_path, f"auto_coder_{file_name}_{md5}"
+            repo_path, f"auto_coder_{file_name}"
         )
         if revert_result:
             print(f"Successfully reverted changes for {args.file}")
