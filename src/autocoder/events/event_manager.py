@@ -47,7 +47,7 @@ class EventManager:
         store = JsonlEventStore(file_path)
         return cls(store)
     
-    def write_result(self, content: Dict[str, Any]) -> Event:
+    def write_result(self, content: Union[Dict[str, Any], Any]) -> Event:
         """
         Write a result event.
         
@@ -57,11 +57,13 @@ class EventManager:
         Returns:
             The created event
         """
+        if not isinstance(content, dict):
+            content = content.to_dict()
         event = Event(event_type=EventType.RESULT, content=content)
         self.event_store.append_event(event)
         return event
     
-    def write_stream(self, content: Dict[str, Any]) -> Event:
+    def write_stream(self, content: Union[Dict[str, Any], Any]) -> Event:
         """
         Write a stream event.
         
@@ -71,6 +73,8 @@ class EventManager:
         Returns:
             The created event
         """
+        if not isinstance(content, dict):
+            content = content.to_dict()
         event = Event(event_type=EventType.STREAM, content=content)
         self.event_store.append_event(event)
         return event
