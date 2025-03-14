@@ -84,7 +84,7 @@ memory = {
 
 project_root = os.getcwd()
 
-_ = get_event_manager(os.path.join(project_root,".auto-coder", "auto-coder.web", "events.jsonl")
+_ = get_event_manager(os.path.join(project_root,".auto-coder", "auto-coder.web", "events.jsonl"))
 
 base_persist_dir = os.path.join(project_root,".auto-coder", "plugins", "chat-auto-coder")
 
