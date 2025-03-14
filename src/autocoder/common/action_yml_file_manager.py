@@ -269,11 +269,11 @@ class ActionYmlFileManager:
             
         try:
             # auto_coder_000000001926_chat_action.yml_88614d5bd4046a068786c252fbc39c13
-            parts = commit_id.split("_")
-            # 去掉第一部分 "auto_coder_" 和最后一部分 hash 值
-            if len(parts) >= 3:
-                file_name_parts = parts[1:-1]
-                return "_".join(file_name_parts)
+            # auto_coder_000000001926_chat_action.yml
+            if commit_id.endswith("_chat_action.yml"):
+                return commit_id[len("auto_coder_"):]
+            else:
+                return "_".join(commit_id[len("auto_coder_"):].split("_")[0:-1])
             return None
         except Exception:
             return None

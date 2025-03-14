@@ -156,13 +156,18 @@ def config_readme() -> str:
     2. py
     3. 代码文件后缀名列表（比如.java,.py,.go,.js,.ts），多个按逗号分割    
 
-    推荐使用 3 选项，因为项目类型通常为多种后缀名混合。
-
-    ## include_project_structure: 是否包含项目结构
-    是否包含项目结构。推荐设置为 true。默认为true,但是项目结构也可能很大，如果项目结构很大，那么可以设置为 false。
+    推荐使用 3 选项，因为项目类型通常为多种后缀名混合。    
 
     ## conversation_prune_safe_zone_tokens: 对话剪枝安全区token数量
     在对话剪枝时，会根据对话的token数量，如果token数量超过该值，那么会剪枝掉一部分对话。
+
+    ## enable_task_history
+    该参数对 /auto 指令有效， 当你使用 /auto 指令的时候，系统会自动将近期对项目的变更(commit) 信息给到大模型，方便大模型对用户的需求有更好的理解。
+    默认为 false
+
+    ## include_project_structure
+    使用 /chat , /coding 等指令时，是否将项目的目录结构也放到上下文中。
+    默认为true, 如果你项目很大，请设置为 false
     """
 
 class ConfigAutoTuner:

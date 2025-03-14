@@ -38,7 +38,7 @@ class ExtendedCommandMessage(BaseModel):
 
 class CommandConversation(BaseModel):
     history: Dict[str, ExtendedCommandMessage]
-    current_conversation: List[CommandMessage]
+    current_conversation: List[ExtendedCommandMessage]
 
 
 def load_memory_file(args: AutoCoderArgs) -> CommandConversation:
@@ -50,7 +50,6 @@ def load_memory_file(args: AutoCoderArgs) -> CommandConversation:
         with open(file_path, "r", encoding="utf-8") as f:
             try:
                 conversation = CommandConversation.model_validate_json(f.read())
-                conversation.current_conversation = conversation.current_conversation
                 return conversation
             except Exception:
                 return CommandConversation(history={}, current_conversation=[])
@@ -58,7 +57,7 @@ def load_memory_file(args: AutoCoderArgs) -> CommandConversation:
 
 
 class TimeBasedStrategy:
-    def __init__(self, max_idle_time=3600):  # 1 hour in seconds
+    def __init__(self, max_idle_time=3600*24):  # 24 hour in seconds
         self.max_idle_time = max_idle_time
 
     def should_archive(self, last_message_time):
