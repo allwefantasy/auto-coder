@@ -32,6 +32,11 @@ from autocoder.common.printer import Printer
 from prompt_toolkit import PromptSession
 from prompt_toolkit.styles import Style
 from autocoder.rag.token_counter import count_tokens
+from autocoder.index.symbols_utils import (
+    extract_symbols,
+    SymbolType,
+    symbols_info_to_str,
+)
 
 
 @byzerllm.prompt()
@@ -252,6 +257,22 @@ class AutoCommandTools:
         })
         return v
     
+
+    def _get_sources(self):
+        if self.args.project_type == "ts":
+            pp = TSProject(args=self.args, llm=self.llm)
+        elif self.args.project_type == "py":
+            pp = PyProject(args=self.args, llm=self.llm)
+        else:
+            pp = SuffixProject(args=self.args, llm=self.llm, file_filter=None)
+        pp.run()
+        return pp.sources
+
+    def _get_index(self):        
+        sources = self._get_sources()
+        index_manager = IndexManager(llm=self.llm, sources=sources, args=self.args)
+        return index_manager
+    
     def get_project_map(self, file_paths: Optional[str] = None) -> str:
         """
         该工具会返回项目中所有已经被构建索引的文件以及该文件的信息，诸如该文件的用途，导入的包，定义的类，函数，变量等信息。
@@ -263,17 +284,8 @@ class AutoCommandTools:
 
         注意，这个工具无法返回所有文件的信息，因为有些文件可能没有被索引。
         尽量避免使用该工具。
-        """
-        if self.args.project_type == "ts":
-            pp = TSProject(args=self.args, llm=self.llm)
-        elif self.args.project_type == "py":
-            pp = PyProject(args=self.args, llm=self.llm)
-        else:
-            pp = SuffixProject(args=self.args, llm=self.llm, file_filter=None)
-        pp.run()
-        sources = pp.sources
-
-        index_manager = IndexManager(llm=self.llm, sources=sources, args=self.args)
+        """        
+        index_manager = self._get_index()
         s = index_manager.read_index_as_str()
         index_data = json.loads(s)
 
@@ -497,6 +509,97 @@ class AutoCommandTools:
             }
         })
         return source_code_str
+
+    def find_symbol_definition(self, symbol: str) -> str:
+        """
+        该工具用于查找指定符号的定义。
+        输入参数 symbol: 要查找的符号
+        返回值是符号的定义所在的文件路径列表，以逗号分隔。
+        """
+        index_manager = self._get_index()
+        result = []
+        index_items = index_manager.read_index()
+        
+        for item in index_items:
+            symbols = extract_symbols(item.symbols)
+            for symbol_info in symbols:
+                # 进行精确匹配和模糊匹配
+                if (symbol_info.name == symbol or 
+                    symbol.lower() in symbol_info.name.lower()):
+                    # 检查是否已经添加过该文件路径
+                    if symbol_info.module_name not in result:
+                        result.append(symbol_info.module_name)
+        
+        # 生成以逗号分隔的文件路径列表
+        file_paths = ",".join(result)
+        
+        # 如果没有找到任何匹配项，返回提示信息
+        if not file_paths:
+            file_paths = f"未找到符号 '{symbol}' 的定义"
+        
+        # 记录操作结果
+        self.result_manager.add_result(content=file_paths, meta={
+            "action": "find_symbols_definition",
+            "input": {
+                "symbol": symbol
+            }
+        })
+        
+        return file_paths
+
+    def list_files(self, path: str) -> str:
+        """
+        该工具用于列出指定目录下的所有文件（不包括子目录中的文件）。
+        输入参数 path: 要列出文件的目录路径
+        返回值是目录下所有文件的列表，以逗号分隔。
+        """
+        # 处理绝对路径和相对路径
+        target_path = path
+        if not os.path.isabs(path):
+            # 如果是相对路径，将其转换为绝对路径
+            target_path = os.path.join(self.args.source_dir, path)
+        
+        # 确保路径存在且是目录
+        if not os.path.exists(target_path):
+            result = f"目录不存在: {target_path}"
+            self.result_manager.add_result(content=result, meta={
+                "action": "list_files",
+                "input": {
+                    "path": path
+                }
+            })
+            return result
+        
+        if not os.path.isdir(target_path):
+            result = f"指定路径不是目录: {target_path}"
+            self.result_manager.add_result(content=result, meta={
+                "action": "list_files",
+                "input": {
+                    "path": path
+                }
+            })
+            return result
+        
+        # 只收集当前目录下的文件，不递归子目录
+        file_list = []
+        for item in os.listdir(target_path):
+            item_path = os.path.join(target_path, item)
+            # 只添加文件，不添加目录
+            if os.path.isfile(item_path):
+                file_list.append(item_path)
+        
+        # 生成以逗号分隔的文件列表
+        result = ",".join(file_list)
+        
+        # 记录结果
+        self.result_manager.add_result(content=result, meta={
+            "action": "list_files",
+            "input": {
+                "path": path
+            }
+        })
+        
+        return result
 
     def get_project_structure(self) -> str:        
         if self.args.project_type == "ts":

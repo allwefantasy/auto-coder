@@ -295,7 +295,7 @@ class CommandAutoTuner:
         
         ### 如何了解当前项目
 
-        通常可以自己通过调用 get_project_structure 函数来获取项目结构，然后通过 get_project_map 函数来获取某几个文件的用途，符号列表，以及
+        通常可以自己通过调用 get_project_structure 函数来获取项目结构(如果项目结构太大，该函数会拒绝返回，你可以选择 list_files 函数来查看目录)，然后通过 get_project_map 函数来获取某几个文件的用途，符号列表，以及
         文件大小（tokens数）,最后再通过 read_files/read_file_with_keyword_ranges 函数来读取文件内容,从而更好的结合当前项目理解用户的需求。
         
         ### 复杂需求，先做讨论设计
@@ -318,8 +318,9 @@ class CommandAutoTuner:
         根据操作系统，终端类型，脚本类型等各种信息，在涉及到路径或者脚本的时候，需要考虑平台差异性。
 
         ## 其他一些注意事项
-        使用 read_files 时，一次性读取文件数量不要超过1个,每次只读取200行。如果发现读取的内容不够，则继续读取下面200行。
-        最后，灵活组合和使用各个函数，发挥自己的想象力，尽可能的完成用户的需求。
+        1. 使用 read_files 时，一次性读取文件数量不要超过1个,每次只读取200行。如果发现读取的内容不够，则继续读取下面200行。
+        2. 确实有必要才使用 get_project_structure 函数，否则可以多使用 list_files 函数来查看目录。
+        3. 最后，不要局限在我们前面描述的使用说明中，根据各个函数的说明，灵活组合和使用各个函数，发挥自己的想象力，尽可能的完成用户的需求。
         </function_combination_readme>
         """        
     
@@ -1278,7 +1279,7 @@ class CommandAutoTuner:
          - 返回值为int类型，表示文本的token数量。
          
         </usage>
-        </command>
+        </command>        
                 
         <command>
         <name>execute_mcp_server</name>
@@ -1332,6 +1333,7 @@ class CommandAutoTuner:
             "get_related_files_by_symbols": self.tools.get_related_files_by_symbols,
             "get_project_map": self.tools.get_project_map,
             "get_project_structure": self.tools.get_project_structure,
+            "list_files": self.tools.list_files,
             "read_files": self.tools.read_files,
             "find_files_by_name": self.tools.find_files_by_name,
             "find_files_by_content": self.tools.find_files_by_content,        
