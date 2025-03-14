@@ -252,10 +252,14 @@ class AutoCommandTools:
         })
         return v
     
-    def get_project_map(self, file_path: Optional[str] = None) -> str:
+    def get_project_map(self, file_paths: Optional[str] = None) -> str:
         """
         该工具会返回项目中所有已经被构建索引的文件以及该文件的信息，诸如该文件的用途，导入的包，定义的类，函数，变量等信息。
         返回的是json格式文本。
+
+        参数说明:
+        file_paths (Optional[str]): 可选参数，以逗号分隔的文件路径列表，用于筛选特定文件。
+                                  例如："main.py,utils.py"或"/path/to/main.py,/path/to/utils.py"
 
         注意，这个工具无法返回所有文件的信息，因为有些文件可能没有被索引。
         尽量避免使用该工具。
@@ -274,6 +278,12 @@ class AutoCommandTools:
         index_data = json.loads(s)
 
         final_result = []
+        
+        # 解析文件路径列表（如果提供了）
+        file_path_list = []
+        if file_paths:
+            file_path_list = [path.strip() for path in file_paths.split(",")]
+        
         for k in index_data.values():
             value = {}
             value["file_name"] = k["module_name"]
@@ -282,22 +292,30 @@ class AutoCommandTools:
             value["index_tokens"] = k.get("generated_tokens_count", -1)
             value["file_tokens_cost"] = k.get("input_tokens_cost", -1)
             value["index_tokens_cost"] = k.get("generated_tokens_cost", -1)
-            if file_path and file_path in k["module_name"]:
+            
+            # 如果提供了文件路径列表，检查当前文件是否匹配任何一个路径
+            if file_path_list:
+                if any(path in k["module_name"] for path in file_path_list):
+                    final_result.append(value)
+            else:
                 final_result.append(value)
+                
         v = json.dumps(final_result, ensure_ascii=False)
         tokens = count_tokens(v)
         if tokens > self.args.conversation_prune_safe_zone_tokens/2.0:
             result = f"The project map is too large to return. (tokens: {tokens}). Try to use another function."
             self.result_manager.add_result(content=result, meta = {
                 "action": "get_project_map",
-                "input": {                
+                "input": {
+                    "file_paths": file_paths
                 }
             })
             return result
 
         self.result_manager.add_result(content=v, meta = {
             "action": "get_project_map",
-            "input": {                
+            "input": {
+                "file_paths": file_paths
             }
         })
         return v

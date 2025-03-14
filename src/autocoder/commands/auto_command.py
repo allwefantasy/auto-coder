@@ -180,7 +180,7 @@ class CommandAutoTuner:
     @byzerllm.prompt()
     def _analyze(self, request: AutoCommandRequest) -> str:
         """
-        当前用户环境信息如下:
+        ## 当前用户环境信息如下:
         <os_info>
         操作系统: {{ env_info.os_name }} {{ env_info.os_version }}
         操作系统发行版: {{ os_distribution }}
@@ -204,7 +204,7 @@ class CommandAutoTuner:
         我们的目标是根据用户输入和当前上下文，组合多个函数来完成用户的需求。
         
         {% if current_files %}
-        当前活跃区文件列表：
+        ## 当前活跃区文件列表：
         <current_files>
         {% for file in current_files %}
         - {{ file }}
@@ -213,41 +213,22 @@ class CommandAutoTuner:
         {% endif %}
 
 
-        当前用户的配置选项如下:
+        ## 当前用户的配置选项如下:
         <current_conf>
         {{ current_conf }}
         </current_conf>
         
-        可用函数列表:
+        ## 可用函数列表:
         {{ available_commands }}
 
-        函数组合说明：        
-        <function_combination_readme>
-        如果用户是一个编码需求，你可以先简单观察当前活跃区文件列表：
-        0. 关注下当前软件的配置，诸如索引开启关闭。如果有觉得不合理的可以通过 help 函数来修改。
-        1. 如果你觉得这些文件不够满足用户的需求，而当前的索引配置关闭的，那么你可以通过help("将skip_filter_index 和 skip_build_index 设置为 false") 让
-        chat,coding 函数来获取更多文件，或者你也可以自己通过调用 get_project_structure 函数来获取项目结构，然后通过 get_project_map 函数来获取某个文件的用途，符号列表，以及
-        文件大小（tokens数）,最后再通过 read_files/read_file_with_keyword_ranges 函数来读取文件内容, 最后通过 add_files 函数来添加文件到活跃区。
-        确保 chat,coding 函数能够正常使用。
-        2. 对于一个比较复杂的代码需求，你可以先通过 chat 函数来获得一些设计，根据chat返回的结果，你可以选择多次调用chat调整最后的设计。最后，当你满意后，可以通过 coding("/apply 根据历史对话实现代码，请不要有遗漏") 来完成最后的编码。
-        3. 注意，为了防止对话过长，你可以使用 chat("/new") 来创新新的会话。然后接着正常再次调用 chat 函数。 即可
-        4. 当用户询问项目，比如询问什么什么功能在哪里的时候，或者哪个文件实现了什么功能，推荐的工具组合是 get_project_map 和 get_project_structure。可以直通过 get_project_map 查看整个项目文件的索引（该索引包含了文件列表，每个文件的用途和符号列表），也可以
-        通过 get_project_structure 来获取项目结构，然后通过 get_project_map 来获取你想看的某个文件的用途，符号列表，最后再通过 read_files/read_file_with_keyword_ranges 函数来读取文件内容,确认对应的功能是否在相关的文件里。
-        5. 调用 coding 函数的时候，尽可能多的 @文件和@@符号，让需求更加清晰明了，建议多描述具体怎么完成对应的需求。
-        6. 对于代码需求设计，尽可能使用 chat 函数。
-        7. 如果成功执行了 coding 函数，最好再调用一次 chat("/review /commit")    
-        8. 我们所有的对话不能超过 {{ conversation_safe_zone_tokens }} 个tokens,当你读取索引文件 (get_project_map) 的时候，你可以看到
-        每个文件的tokens数，你可以根据这个信息来决定如何读取这个文件。比如对于很小的文件，那么可以直接全部读取，
-        而对于分析一个超大文件推荐组合 read_files 带上 line_ranges 参数来读取，或者组合 read_file_withread_file_with_keyword_ranges 等来读取，
-        每个函数你还可以使用多次来获取更多信息。
-        9. 根据操作系统，终端类型，脚本类型等各种信息，在涉及到路径或者脚本的时候，需要考虑平台差异性。
-        10. 使用 read_files 时，一次性读取文件数量不要超过1个,每次只读取200行。如果发现读取的内容不够，则继续读取下面200行。
-        </function_combination_readme>
+        ## 当前大模型窗口安全值
+        {{ conversation_safe_zone_tokens }}
 
-
+        ## 函数组合说明：        
+        {{ command_combination_readme }}
 
         {% if conversation_history %}
-        历史对话:
+        ## 历史对话:
         <conversation_history>
         {% for conv in conversation_history %}
         ({{ conv.role }}): {{ conv.content }}
@@ -255,7 +236,7 @@ class CommandAutoTuner:
         </conversation_history>
         {% endif %}
 
-        用户需求: 
+        ## 用户需求: 
         <user_input>
         {{ user_input }}
         </user_input>
@@ -299,8 +280,48 @@ class CommandAutoTuner:
             "shell_encoding": shells.get_terminal_encoding(),
             "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens,
             "os_distribution": shells.get_os_distribution(),
-            "current_user": shells.get_current_username()
+            "current_user": shells.get_current_username(),
+            "command_combination_readme": self._command_combination_readme.prompt()
         }
+    
+
+    def _command_combination_readme(self) -> str:
+        """
+        <function_combination_readme>
+        如果用户是一个编码需求，你可以先简单观察当前活跃区文件列表：
+
+        ### 是否根据需求动态修改auto-coder软件配置
+        关注下当前软件的配置，结合当前用户的需求，如果觉得不合理的地方，可以通过 ask_user 函数来询问用户，是否要通过 help 函数修改一些配置。
+        
+        ### 如何了解当前项目
+
+        通常可以自己通过调用 get_project_structure 函数来获取项目结构，然后通过 get_project_map 函数来获取某几个文件的用途，符号列表，以及
+        文件大小（tokens数）,最后再通过 read_files/read_file_with_keyword_ranges 函数来读取文件内容,从而更好的结合当前项目理解用户的需求。
+        
+        ### 复杂需求，先做讨论设计
+        对于一个比较复杂的代码需求，你可以先通过 chat 函数来获得一些设计，根据chat返回的结果，你可以选择多次调用chat调整最后的设计。最后，当你满意后，可以通过 coding("/apply") 来完成最后的编码。
+        注意，为了防止对话过长，你可以使用 chat("/new") 来创新新的会话。然后接着正常再次调用 chat 函数。 即可。
+        尽可通过了解项目后，多用 @文件和@@符号，这样 chat 函数可以更清晰的理解你关注的代码，文档和意图。
+        
+        ### 调用 coding 函数应该注意的事项
+        调用 coding 函数的时候，尽可能多的 @文件和@@符号，让需求更加清晰明了，建议多描述具体怎么完成对应的需求。
+        对于代码需求设计，尽可能使用 chat 函数。如果成功执行了 coding 函数， 最好再调用一次 chat("/review /commit")，方便总结这次代码变更。
+        注意，review 完后，需要询问用户是否要做啥调整不，如果用户说不用，那么就停止。否则根据意图进行后续操作。
+        
+        ### 关于对话大小的问题
+        我们对话历史以及查看的内容累计不能超过 {{ conversation_safe_zone_tokens }} 个tokens,当你读取索引文件 (get_project_map) 的时候，你可以看到
+        每个文件的tokens数，你可以根据这个信息来决定如何读取这个文件。如果不确定，使用 count_file_tokens 函数来获取文件的tokens数,再决定如何读取。
+        而对于分析一个超大文件推荐组合 read_files 带上 line_ranges 参数来读取，或者组合 read_file_withread_file_with_keyword_ranges 等来读取，
+        每个函数你还可以使用多次来获取更多信息。
+        
+        ### 善用脚本完成一些基本的操作
+        根据操作系统，终端类型，脚本类型等各种信息，在涉及到路径或者脚本的时候，需要考虑平台差异性。
+
+        ## 其他一些注意事项
+        使用 read_files 时，一次性读取文件数量不要超过1个,每次只读取200行。如果发现读取的内容不够，则继续读取下面200行。
+        最后，灵活组合和使用各个函数，发挥自己的想象力，尽可能的完成用户的需求。
+        </function_combination_readme>
+        """        
     
     @byzerllm.prompt()
     def _execute_command_result(self, result:str) -> str:
@@ -1004,11 +1025,16 @@ class CommandAutoTuner:
         <name>get_project_map</name>
         <description>返回项目中指定文件包括文件用途、导入的包、定义的类、函数、变量等。</description>
         <usage>
-         该命令接受一个参数 file_path，为文件路径（文件名或者文件路径的一部分）
+         该命令接受一个参数 file_paths，路径list,或者是以逗号分割的多个文件路径。
+         路径支持相对路径和绝对路径。
          
          使用例子：
          
-         get_project_map(file_path="main.py")
+         get_project_map(file_paths=["full/path/to/main.py","partial/path/to/utils.py"])，
+         
+         或者：
+         
+         get_project_map(file_paths="full/path/to/main.py,partial/path/to/utils.py")
 
          该函数特别适合你想要了解某个文件的用途，以及该文件的导入的包，定义的类，函数，变量等信息。
          同时，你还能看到文件的大小（tokens数），以及索引的大小（tokens数），以及构建索引花费费用等信息。
