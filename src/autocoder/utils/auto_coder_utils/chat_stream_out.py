@@ -7,12 +7,15 @@ from rich.layout import Layout
 from threading import Thread, Lock
 from queue import Queue, Empty
 from typing import Generator, List, Dict, Any, Optional, Tuple, Callable
+from autocoder.events.event_types import EventType
 from autocoder.utils.request_queue import RequestValue, RequestOption, StreamValue
 from autocoder.utils.request_queue import request_queue
 import time
 from byzerllm.utils.types import SingleOutputMeta
 from autocoder.common import AutoCoderArgs
 from autocoder.common.global_cancel import global_cancel
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events import event_content as EventContentCreator
 
 MAX_HISTORY_LINES = 40  # 最大保留历史行数
 
@@ -184,6 +187,7 @@ def stream_out(
     final_panel_title = final_title if final_title is not None else title
     first_token_time = 0.0
     first_token_time_start = time.time()
+    sequence = 0
     try:        
         with Live(
             Panel("", title=panel_title, border_style="green"),
@@ -246,6 +250,14 @@ def stream_out(
                 # 构建显示内容 = 历史行 + 当前行
                 display_content = "\n".join(lines_buffer[-MAX_HISTORY_LINES:] + [current_line])
                 
+                
+                content = EventContentCreator.create_stream_thinking(
+                    content=display_content,
+                    sequence=sequence
+                )
+                get_event_manager().write_stream(content.to_dict())
+                sequence += 1
+                
                 if request_id and request_queue:
                     request_queue.add_request(
                         request_id,
@@ -272,6 +284,11 @@ def stream_out(
             final_display_content = assistant_response
             if display_func:
                 final_display_content = display_func(assistant_response)
+
+            content = EventContentCreator.create_result(
+                content=final_display_content                
+            )
+            get_event_manager().write_result(content.to_dict())
 
             live.update(
                 Panel(

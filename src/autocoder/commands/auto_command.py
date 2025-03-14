@@ -24,8 +24,12 @@ from autocoder.common.global_cancel import global_cancel
 from autocoder.common.auto_configure import config_readme
 from autocoder.utils.auto_project_type import ProjectTypeAnalyzer
 from rich.text import Text
-from autocoder.common.mcp_server import get_mcp_server,McpServerInfoRequest
+from autocoder.common.mcp_server import get_mcp_server, McpServerInfoRequest
 from autocoder.common.action_yml_file_manager import ActionYmlFileManager
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events import event_content as EventContentCreator
+
+
 class CommandMessage(BaseModel):
     role: str
     content: str
@@ -42,14 +46,15 @@ class CommandConversation(BaseModel):
 
 
 def load_memory_file(args: AutoCoderArgs) -> CommandConversation:
-    """Load command conversations from memory file"""    
-    
+    """Load command conversations from memory file"""
+
     memory_dir = os.path.join(".auto-coder", "memory")
     file_path = os.path.join(memory_dir, "command_chat_history.json")
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             try:
-                conversation = CommandConversation.model_validate_json(f.read())
+                conversation = CommandConversation.model_validate_json(
+                    f.read())
                 return conversation
             except Exception:
                 return CommandConversation(history={}, current_conversation=[])
@@ -65,12 +70,13 @@ class TimeBasedStrategy:
         current_time = time.time()
         return current_time - last_message_time > self.max_idle_time
 
+
 def save_to_memory_file(query: str, response: str):
     """Save command conversation to memory file using CommandConversation structure"""
     memory_dir = os.path.join(".auto-coder", "memory")
     os.makedirs(memory_dir, exist_ok=True)
     file_path = os.path.join(memory_dir, "command_chat_history.json")
-    
+
     # Initialize time-based strategy
     time_strategy = TimeBasedStrategy()
 
@@ -96,7 +102,8 @@ def save_to_memory_file(query: str, response: str):
                     f.read())
                 # Check if we should archive current conversation
                 if existing_conv.current_conversation:
-                    last_message_time = float(existing_conv.current_conversation[-1].timestamp)
+                    last_message_time = float(
+                        existing_conv.current_conversation[-1].timestamp)
                     if time_strategy.should_archive(last_message_time):
                         # Move current conversation to history
                         timestamp = str(int(last_message_time))
@@ -126,13 +133,14 @@ class CommandSuggestion(BaseModel):
     confidence: float
     reasoning: str
 
+
 class AutoCommandResponse(BaseModel):
     suggestions: List[CommandSuggestion]
     reasoning: Optional[str] = None
 
 
 class AutoCommandRequest(BaseModel):
-    user_input: str     
+    user_input: str
 
 
 class MemoryConfig(BaseModel):
@@ -172,7 +180,6 @@ class CommandConfig(BaseModel):
     index_import: SkipValidation[Callable]
     exclude_files: SkipValidation[Callable]
 
-    
 
 class CommandAutoTuner:
     def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],
@@ -184,7 +191,8 @@ class CommandAutoTuner:
         self.memory_config = memory_config
         self.command_config = command_config
         self.tools = AutoCommandTools(args=args, llm=self.llm)
-        self.project_type_analyzer = ProjectTypeAnalyzer(args=args, llm=self.llm) 
+        self.project_type_analyzer = ProjectTypeAnalyzer(
+            args=args, llm=self.llm)
         try:
             self.mcp_server = get_mcp_server()
             mcp_server_info_response = self.mcp_server.send_request(McpServerInfoRequest(
@@ -195,7 +203,7 @@ class CommandAutoTuner:
         except Exception as e:
             logger.error(f"Error getting MCP server info: {str(e)}")
             self.mcp_server_info = ""
-    
+
     def get_conversations(self) -> List[CommandMessage]:
         """Get conversation history from memory file"""
         conversation = load_memory_file(args=self.args)
@@ -212,7 +220,7 @@ class CommandAutoTuner:
         终端类型: {{ env_info.shell_type }}
         终端编码: {{ env_info.shell_encoding }}
         当前用户: {{ current_user }}
-        
+
         {%- if shell_type %}
         脚本类型：{{ shell_type }}
         {%- endif %}
@@ -224,9 +232,9 @@ class CommandAutoTuner:
         虚拟环境: {{ env_info.virtualenv }}
         {%- endif %}   
         </os_info>
-        
+
         我们的目标是根据用户输入和当前上下文，组合多个函数来完成用户的需求。
-        
+
         {% if current_files %}
         ## 当前活跃区文件列表：
         <current_files>
@@ -241,7 +249,7 @@ class CommandAutoTuner:
         <current_conf>
         {{ current_conf }}
         </current_conf>
-        
+
         ## 可用函数列表:
         {{ available_commands }}
 
@@ -267,7 +275,7 @@ class CommandAutoTuner:
 
         请分析用户意图，组合一个或者多个函数，帮助用户完成需求。
         返回格式必须是严格的JSON格式：
-        
+
         ```json
         {
             "suggestions": [
@@ -286,7 +294,7 @@ class CommandAutoTuner:
         满足需求。
         """
 
-        env_info = detect_env() 
+        env_info = detect_env()
         shell_type = "bash"
         if shells.is_running_in_cmd():
             shell_type = "cmd"
@@ -295,10 +303,10 @@ class CommandAutoTuner:
 
         return {
             "user_input": request.user_input,
-            "current_files": self.memory_config.memory["current_files"]["files"],            
+            "current_files": self.memory_config.memory["current_files"]["files"],
             "conversation_history": self.get_conversations(),
             "available_commands": self._command_readme.prompt(),
-            "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),        
+            "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),
             "env_info": env_info,
             "shell_type": shell_type,
             "shell_encoding": shells.get_terminal_encoding(),
@@ -307,7 +315,7 @@ class CommandAutoTuner:
             "current_user": shells.get_current_username(),
             "command_combination_readme": self._command_combination_readme.prompt()
         }
-    
+
     @byzerllm.prompt()
     def _command_combination_readme(self) -> str:
         """
@@ -316,28 +324,28 @@ class CommandAutoTuner:
 
         ### 是否根据需求动态修改auto-coder软件配置
         关注下当前软件的配置，结合当前用户的需求，如果觉得不合理的地方，可以通过 ask_user 函数来询问用户，是否要通过 help 函数修改一些配置。
-        
+
         ### 如何了解当前项目
 
         通常可以自己通过调用 get_project_structure 函数来获取项目结构(如果项目结构太大，该函数会拒绝返回，你可以选择 list_files 函数来查看目录)，然后通过 get_project_map 函数来获取某几个文件的用途，符号列表，以及
         文件大小（tokens数）,最后再通过 read_files/read_file_with_keyword_ranges 函数来读取文件内容,从而更好的结合当前项目理解用户的需求。
-        
+
         ### 复杂需求，先做讨论设计
         对于一个比较复杂的代码需求，你可以先通过 chat 函数来获得一些设计，根据chat返回的结果，你可以选择多次调用chat调整最后的设计。最后，当你满意后，可以通过 coding("/apply") 来完成最后的编码。
         注意，为了防止对话过长，你可以使用 chat("/new") 来创新新的会话。然后接着正常再次调用 chat 函数。 即可。
         尽可通过了解项目后，多用 @文件和@@符号，这样 chat 函数可以更清晰的理解你关注的代码，文档和意图。
-        
+
         ### 调用 coding 函数应该注意的事项
         调用 coding 函数的时候，尽可能多的 @文件和@@符号，让需求更加清晰明了，建议多描述具体怎么完成对应的需求。
         对于代码需求设计，尽可能使用 chat 函数。如果成功执行了 coding 函数， 最好再调用一次 chat("/review /commit")，方便总结这次代码变更。
         注意，review 完后，需要询问用户是否要做啥调整不，如果用户说不用，那么就停止。否则根据意图进行后续操作。
-        
+
         ### 关于对话大小的问题
         我们对话历史以及查看的内容累计不能超过 {{ conversation_safe_zone_tokens }} 个tokens,当你读取索引文件 (get_project_map) 的时候，你可以看到
         每个文件的tokens数，你可以根据这个信息来决定如何读取这个文件。如果不确定，使用 count_file_tokens 函数来获取文件的tokens数,再决定如何读取。
         而对于分析一个超大文件推荐组合 read_files 带上 line_ranges 参数来读取，或者组合 read_file_with_keyword_ranges 等来读取，
         每个函数你还可以使用多次来获取更多信息。
-        
+
         ### 善用脚本完成一些基本的操作
         根据操作系统，终端类型，脚本类型等各种信息，在涉及到路径或者脚本的时候，需要考虑平台差异性。
 
@@ -347,51 +355,52 @@ class CommandAutoTuner:
 
         如果你没有明确目标，需要单纯查看这个文件获取必要的信息，可以先通过 count_file_tokens 函数来获取文件的tokens数，如果数目小于安全对话窗口的tokens数的1/2, 那么可以直接用
         read_files 函数来读取，否则建议一次读取200-600行，多次读取直到找到合适的信息。
-        
+
         ## 其他一些注意事项
         1. 使用 read_files 时，一次性读取文件数量不要超过1个,每次只读取200行。如果发现读取的内容不够，则继续读取下面200行。
         2. 确实有必要才使用 get_project_structure 函数，否则可以多使用 list_files 函数来查看目录。
         3. 最后，不要局限在我们前面描述的使用说明中，根据各个函数的说明，灵活组合和使用各个函数，发挥自己的想象力，尽可能的完成用户的需求。
         </function_combination_readme>
-        """        
-    
+        """
+
     @byzerllm.prompt()
-    def _execute_command_result(self, result:str) -> str:
+    def _execute_command_result(self, result: str) -> str:
         '''
         根据函数执行结果，返回下一个函数。
 
         下面是我们上一个函数执行结果: 
-        
+
         <function_result>
         {{ result }}
         </function_result>                
 
         请根据命令执行结果以及前面的对话，返回下一个函数。
-        
+
         *** 非常非常重要的提示 ***
         1. 如果已经满足要求，则不要返回任何函数,确保 suggestions 为空。
         2. 你最多尝试 {{ auto_command_max_iterations }} 次，如果 {{ auto_command_max_iterations }} 次都没有满足要求，则不要返回任何函数，确保 suggestions 为空。
-        '''   
+        '''
         return {
             "auto_command_max_iterations": self.args.auto_command_max_iterations,
             "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens
-        } 
-    
+        }
+
     def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
         # 获取 prompt 内容
         prompt = self._analyze.prompt(request)
-        
+
         # 获取对当前项目变更的最近8条历史人物
         action_yml_file_manager = ActionYmlFileManager(self.args.source_dir)
         history_tasks = action_yml_file_manager.to_tasks_prompt(limit=8)
         new_messages = []
         if self.args.enable_task_history:
             new_messages.append({"role": "user", "content": history_tasks})
-            new_messages.append({"role": "assistant", "content": "好的，我知道最近的任务对项目的变更了，我会参考这些来更好的理解你的需求。"})
-        
+            new_messages.append(
+                {"role": "assistant", "content": "好的，我知道最近的任务对项目的变更了，我会参考这些来更好的理解你的需求。"})
+
         # 构造对话上下文
         conversations = new_messages + [{"role": "user", "content": prompt}]
-        
+
         # 使用 stream_out 进行输出
         printer = Printer()
         title = printer.get_message_from_key("auto_command_analyzing")
@@ -400,116 +409,136 @@ class CommandAutoTuner:
         def extract_command_response(content: str) -> str:
             # 提取 JSON 并转换为 AutoCommandResponse
             try:
-                response = to_model(content, AutoCommandResponse)  
-                if response.suggestions:                    
+                response = to_model(content, AutoCommandResponse)
+                if response.suggestions:
                     command = response.suggestions[0].command
-                    parameters = response.suggestions[0].parameters                    
+                    parameters = response.suggestions[0].parameters
                     if parameters:
-                        params_str = ", ".join([f"{k}={v}" for k, v in parameters.items()])
+                        params_str = ", ".join(
+                            [f"{k}={v}" for k, v in parameters.items()])
                     else:
-                        params_str = ""                    
+                        params_str = ""
                     return f"{command}({params_str})"
                 else:
-                    return printer.get_message_from_key("satisfied_prompt")                    
-            except Exception as e:                
+                    return printer.get_message_from_key("satisfied_prompt")
+            except Exception as e:
                 logger.error(f"Error extracting command response: {str(e)}")
                 return content
-            
+
         model_name = ",".join(llms_utils.get_llm_names(self.llm))
         start_time = time.monotonic()
         result, last_meta = stream_out(
-            self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
+            self.llm.stream_chat_oai(
+                conversations=conversations, delta_mode=True),
             model_name=model_name,
             title=title,
             final_title=final_title,
-            display_func= extract_command_response
+            display_func=extract_command_response
         )
-                
+
         if last_meta:
-            elapsed_time = time.monotonic() - start_time            
+            elapsed_time = time.monotonic() - start_time
             speed = last_meta.generated_tokens_count / elapsed_time
-            
+
             # Get model info for pricing
             from autocoder.utils import llms as llm_utils
-            model_info = llm_utils.get_model_info(model_name, self.args.product_mode) or {}
-            input_price = model_info.get("input_price", 0.0) if model_info else 0.0
-            output_price = model_info.get("output_price", 0.0) if model_info else 0.0
-            
+            model_info = llm_utils.get_model_info(
+                model_name, self.args.product_mode) or {}
+            input_price = model_info.get(
+                "input_price", 0.0) if model_info else 0.0
+            output_price = model_info.get(
+                "output_price", 0.0) if model_info else 0.0
+
             # Calculate costs
-            input_cost = (last_meta.input_tokens_count * input_price) / 1000000  # Convert to millions
-            output_cost = (last_meta.generated_tokens_count * output_price) / 1000000  # Convert to millions
-            
-            printer.print_in_terminal("stream_out_stats", 
-                                model_name=",".join(llms_utils.get_llm_names(self.llm)),
-                                elapsed_time=elapsed_time,
-                                first_token_time=last_meta.first_token_time,
-                                input_tokens=last_meta.input_tokens_count,
-                                output_tokens=last_meta.generated_tokens_count,
-                                input_cost=round(input_cost, 4),
-                                output_cost=round(output_cost, 4),
-                                speed=round(speed, 2))
+            input_cost = (last_meta.input_tokens_count *
+                          input_price) / 1000000  # Convert to millions
+            output_cost = (last_meta.generated_tokens_count *
+                           output_price) / 1000000  # Convert to millions
 
-        ## 这里打印
+            temp_content = printer.get_message_from_key_with_format("stream_out_stats",
+                                                                    model_name=",".join(
+                                                                        llms_utils.get_llm_names(self.llm)),
+                                                                    elapsed_time=elapsed_time,
+                                                                    first_token_time=last_meta.first_token_time,
+                                                                    input_tokens=last_meta.input_tokens_count,
+                                                                    output_tokens=last_meta.generated_tokens_count,
+                                                                    input_cost=round(
+                                                                        input_cost, 4),
+                                                                    output_cost=round(
+                                                                        output_cost, 4),
+                                                                    speed=round(speed, 2))
+            printer.print_str_in_terminal(temp_content)
+            get_event_manager().write_result(
+                EventContentCreator.create_result(content=temp_content))
 
-        conversations.append({"role": "assistant", "content": result})    
-        # 提取 JSON 并转换为 AutoCommandResponse            
-        response = to_model(result, AutoCommandResponse)         
-        
+        # 这里打印
+
+        conversations.append({"role": "assistant", "content": result})
+        # 提取 JSON 并转换为 AutoCommandResponse
+        response = to_model(result, AutoCommandResponse)
+
         # 保存对话记录
         save_to_memory_file(
             query=request.user_input,
             response=response.model_dump_json(indent=2)
         )
         result_manager = ResultManager()
-        
+
         while True:
             if global_cancel.requested:
                 printer = Printer(console)
-                printer.print_in_terminal("generation_cancelled")                    
+                printer.print_in_terminal("generation_cancelled")
                 break
             # 执行命令
             command = response.suggestions[0].command
             parameters = response.suggestions[0].parameters
-            
-            # 打印正在执行的命令            
-            self.printer.print_in_terminal(
-                "auto_command_executing", 
-                style="blue", 
-                command=command
-            )
-            
-            self.execute_auto_command(command, parameters)            
+
+            # 打印正在执行的命令
+            temp_content = printer.get_message_from_key_with_format("auto_command_executing",                                                                    
+                                                                    command=command
+                                                                    )
+            printer.print_str_in_terminal(temp_content,style="blue")
+            get_event_manager().write_result(
+                EventContentCreator.create_result(content=temp_content))
+
+            self.execute_auto_command(command, parameters)
             content = ""
             last_result = result_manager.get_last()
             if last_result:
-                action = last_result.meta["action"] 
-                if action == "coding":                    
+                action = last_result.meta["action"]
+                if action == "coding":
                     # 如果上一步是 coding，则需要把上一步的更改前和更改后的内容作为上下文
-                    changes = git_utils.get_changes_by_commit_message("", last_result.meta["commit_message"])
+                    changes = git_utils.get_changes_by_commit_message(
+                        "", last_result.meta["commit_message"])
                     if changes.success:
                         for file_path, change in changes.changes.items():
                             if change:
                                 content += f"## File: {file_path}[更改前]\n{change.before or 'New File'}\n\nFile: {file_path}\n\n[更改后]\n{change.after or 'Deleted File'}\n\n"
                     else:
-                        content = printer.get_message_from_key_with_format("no_changes_made")            
+                        content = printer.get_message_from_key("no_changes_made")
                 else:
                     # 其他的直接获取执行结果
                     content = last_result.content
 
                 if action != command:
                     # command 和 action 不一致，则认为命令执行失败，退出
-                    printer.print_in_terminal("auto_command_action_break", style="yellow", command=command, action=action)
+                    temp_content = printer.get_message_from_key_with_format(
+                        "auto_command_action_break", command=command, action=action)
+                    printer.print_str_in_terminal(temp_content,style="yellow")
+                    get_event_manager().write_result(
+                        EventContentCreator.create_result(content=temp_content))
                     break
 
                 # 打印执行结果
                 console = Console()
                 # 截取content前后200字符
-                truncated_content = content[:200] + "\n...\n" + content[-200:] if len(content) > 400 else content
+                truncated_content = content[:200] + "\n...\n" + \
+                    content[-200:] if len(content) > 400 else content
                 title = printer.get_message_from_key_with_format(
-                    "command_execution_result", 
+                    "command_execution_result",
                     action=action
                 )
-                # 转义内容，避免Rich将内容中的[]解释为markup语法                
+                # 转义内容，避免Rich将内容中的[]解释为markup语法
                 text_content = Text(truncated_content)
                 console.print(Panel(
                     text_content,
@@ -517,88 +546,105 @@ class CommandAutoTuner:
                     border_style="blue",
                     padding=(1, 2)
                 ))
+                get_event_manager().write_result(
+                    EventContentCreator.create_result(content=f"{title}\n{content}"))
                 # 保持原content不变，继续后续处理
-                
+
                 # 添加新的对话内容
                 new_content = self._execute_command_result.prompt(content)
                 conversations.append({"role": "user", "content": new_content})
-                
-                # 统计 token 数量                
-                total_tokens = count_tokens(json.dumps(conversations,ensure_ascii=False))                
+
+                # 统计 token 数量
+                total_tokens = count_tokens(json.dumps(
+                    conversations, ensure_ascii=False))
 
                 # 如果对话过长，使用默认策略进行修剪
                 if total_tokens > self.args.conversation_prune_safe_zone_tokens:
                     self.printer.print_in_terminal(
-                        "conversation_pruning_start", 
+                        "conversation_pruning_start",
                         style="yellow",
                         total_tokens=total_tokens,
                         safe_zone=self.args.conversation_prune_safe_zone_tokens
                     )
                     from autocoder.common.conversation_pruner import ConversationPruner
                     pruner = ConversationPruner(self.args, self.llm)
-                    conversations = pruner.prune_conversations(conversations)                    
+                    conversations = pruner.prune_conversations(conversations)
 
                 title = printer.get_message_from_key("auto_command_analyzing")
                 model_name = ",".join(llms_utils.get_llm_names(self.llm))
-                
+
                 start_time = time.monotonic()
                 result, last_meta = stream_out(
-                    self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
+                    self.llm.stream_chat_oai(
+                        conversations=conversations, delta_mode=True),
                     model_name=model_name,
                     title=title,
                     final_title=final_title,
-                    display_func= extract_command_response
-                )                
-                
+                    display_func=extract_command_response
+                )
+
                 if last_meta:
                     elapsed_time = time.monotonic() - start_time
                     printer = Printer()
                     speed = last_meta.generated_tokens_count / elapsed_time
-                    
+
                     # Get model info for pricing
                     from autocoder.utils import llms as llm_utils
-                    model_info = llm_utils.get_model_info(model_name, self.args.product_mode) or {}
-                    input_price = model_info.get("input_price", 0.0) if model_info else 0.0
-                    output_price = model_info.get("output_price", 0.0) if model_info else 0.0
-                    
+                    model_info = llm_utils.get_model_info(
+                        model_name, self.args.product_mode) or {}
+                    input_price = model_info.get(
+                        "input_price", 0.0) if model_info else 0.0
+                    output_price = model_info.get(
+                        "output_price", 0.0) if model_info else 0.0
+
                     # Calculate costs
-                    input_cost = (last_meta.input_tokens_count * input_price) / 1000000  # Convert to millions
-                    output_cost = (last_meta.generated_tokens_count * output_price) / 1000000  # Convert to millions
-                    
-                    printer.print_in_terminal("stream_out_stats", 
-                                        model_name=model_name,
-                                        elapsed_time=elapsed_time,
-                                        first_token_time=last_meta.first_token_time,
-                                        input_tokens=last_meta.input_tokens_count,
-                                        output_tokens=last_meta.generated_tokens_count,
-                                        input_cost=round(input_cost, 4),
-                                        output_cost=round(output_cost, 4),
-                                        speed=round(speed, 2))
-                    
-                conversations.append({"role": "assistant", "content": result})    
-                # 提取 JSON 并转换为 AutoCommandResponse            
-                response = to_model(result, AutoCommandResponse)  
-                if not response or  not response.suggestions:
-                    break                
+                    input_cost = (last_meta.input_tokens_count *
+                                  input_price) / 1000000  # Convert to millions
+                    # Convert to millions
+                    output_cost = (
+                        last_meta.generated_tokens_count * output_price) / 1000000
+
+                    temp_content = printer.get_message_from_key_with_format("stream_out_stats",
+                                              model_name=model_name,
+                                              elapsed_time=elapsed_time,
+                                              first_token_time=last_meta.first_token_time,
+                                              input_tokens=last_meta.input_tokens_count,
+                                              output_tokens=last_meta.generated_tokens_count,
+                                              input_cost=round(input_cost, 4),
+                                              output_cost=round(
+                                                  output_cost, 4),
+                                              speed=round(speed, 2))
+                    printer.print_str_in_terminal(temp_content)
+                    get_event_manager().write_result(
+                        EventContentCreator.create_result(content=temp_content))
+
+                conversations.append({"role": "assistant", "content": result})
+                # 提取 JSON 并转换为 AutoCommandResponse
+                response = to_model(result, AutoCommandResponse)
+                if not response or not response.suggestions:
+                    break
                 # 保存对话记录
                 save_to_memory_file(
                     query=request.user_input,
                     response=response.model_dump_json(indent=2)
                 )
 
-            else:                               
-                self.printer.print_in_terminal("auto_command_break", style="yellow", command=command)
-                break            
-        
-        return response        
-    
+            else:
+                temp_content = printer.get_message_from_key_with_format("auto_command_break",  command=command)
+                printer.print_str_in_terminal(temp_content,style="yellow")
+                get_event_manager().write_result(
+                    EventContentCreator.create_result(content=temp_content))
+                break
+
+        return response
+
     @byzerllm.prompt()
     def _command_readme(self) -> str:
         '''
         你有如下函数可供使用：
-        
+
         <commands>
-        
+
         <command>
         <name>add_files</name>
         <description>
@@ -712,7 +758,7 @@ class CommandAutoTuner:
          - 如果没有可撤销的操作会提示错误
         </usage>
         </command>
-        
+
         <command>
         <name>help</name>
         <description>
@@ -730,7 +776,7 @@ class CommandAutoTuner:
          help(query="")
 
          ## 帮助用户执行特定的配置
-         
+
          help(query="关闭索引")
 
          这条命令会触发:
@@ -742,7 +788,7 @@ class CommandAutoTuner:
         常见的一些配置选项示例：
 
         {{ config_readme }}
-                
+
         比如你想开启索引，则可以执行：
 
         help(query="开启索引")
@@ -753,7 +799,7 @@ class CommandAutoTuner:
 
         </usage>
         </command>        
-        
+
         <command>
         <name>chat</name>
         <description>进入聊天模式，与AI进行交互对话。支持多轮对话和上下文理解。</description>
@@ -816,7 +862,7 @@ class CommandAutoTuner:
          使用例子：
 
          coding(query="创建一个处理用户登录的函数")
-         
+
 
          ## 和 chat 搭配使用
          当你用过 chat 之后，继续使用 coding 时，可以添加 /apply 来带上 chat 的对话内容。         
@@ -857,7 +903,7 @@ class CommandAutoTuner:
          使用例子：
 
          lib(args=["/add", "byzer-llm"])
-        
+
 
          ## 移除库
          使用 /remove 移除库
@@ -899,7 +945,7 @@ class CommandAutoTuner:
         <description>模型控制面板命令，用于管理和控制AI模型。</description>
         <usage>
         该命令用于管理和控制AI模型的配置和运行。 包含一个参数：query，字符串类型。
-         
+
         ## 罗列模型模板
 
         models(query="/list")
@@ -910,11 +956,11 @@ class CommandAutoTuner:
         ##添加模型模板
 
         比如我想添加 open router 或者硅基流动的模型，则可以通过如下方式：
-        
+
         models(query="/add_model name=openrouter-sonnet-3.5 base_url=https://openrouter.ai/api/v1")
-        
+
         这样就能添加自定义模型: openrouter-sonnet-3.5
-        
+
 
         如果你想添加添加硅基流动deepseek 模型的方式为：
 
@@ -965,7 +1011,7 @@ class CommandAutoTuner:
         models(query="/add_model name=tencent_v3_chat base_url=https://tencent.ai.qq.com/v1 model_name=deepseek-v3")                
 
         *** 特别注意 ***
-        
+
         在使用本函数时，如果添加的模型用户在需求中没有提供像推理点名称，激活时的 api key，以及模型名称等,从而导致添加模型会发生不确定性，
         你务必需要先通过函数 ask_user 来获取,之后得到完整信息再来执行 models 相关的操作。
 
@@ -975,8 +1021,8 @@ class CommandAutoTuner:
         models(query="/add_model name=ark_r1_chat base_url=https://ark.cn-beijing.volces.com/api/v3 model_name=<收集到的推理点名称> is_reasoning=true")
 
         models(query="/activate ark_r1_chat <收集到的API key>")
-        
-        
+
+
         </usage>
         </command>
 
@@ -990,10 +1036,10 @@ class CommandAutoTuner:
         </description>
         <usage>
          该命令接受一个参数 question，为需要向用户询问的问题字符串。
-         
+
          使用例子：
          ask_user(question="请输入火山引擎的 R1 模型推理点")
-         
+
         </command>
 
         <command>
@@ -1001,11 +1047,11 @@ class CommandAutoTuner:
         <description>运行指定的Python代码。主要用于执行一些Python脚本或测试代码。</description>
         <usage>
          该命令接受一个参数 code，为要执行的Python代码字符串。
-         
+
          使用例子：
-         
+
          run_python(code="print('Hello World')")
-         
+
          注意：
          - 代码将在项目根目录下执行
          - 可以访问项目中的所有文件
@@ -1018,12 +1064,12 @@ class CommandAutoTuner:
         <description>运行指定的Shell脚本。主要用于编译、运行、测试等任务。</description>
         <usage>
          该命令接受一个参数 command，为要执行的Shell脚本字符串。
-         
-         
+
+
          使用例子：
-         
+
          execute_shell_command(command="ls -l")
-         
+
          注意：
          - 脚本将在项目根目录下执行
          - 禁止执行包含 rm 命令的脚本
@@ -1050,14 +1096,14 @@ class CommandAutoTuner:
         <description>返回当前项目结构</description>
         <usage>
          该命令不需要参数。返回一个目录树结构（类似 tree 命令的输出）
-         
+
          使用例子：
-         
+
          get_project_structure()
-         
+
          该函数特别适合你通过目录结构来了解这个项目是什么类型的项目，有什么文件，如果你对一些文件
          感兴趣，可以配合 read_files 函数来读取文件内容，从而帮你做更好的决策
-             
+
         </usage>
         </command>        
 
@@ -1067,19 +1113,19 @@ class CommandAutoTuner:
         <usage>
          该命令接受一个参数 file_paths，路径list,或者是以逗号分割的多个文件路径。
          路径支持相对路径和绝对路径。
-         
+
          使用例子：
-         
+
          get_project_map(file_paths=["full/path/to/main.py","partial/path/to/utils.py"])，
-         
+
          或者：
-         
+
          get_project_map(file_paths="full/path/to/main.py,partial/path/to/utils.py")
 
          该函数特别适合你想要了解某个文件的用途，以及该文件的导入的包，定义的类，函数，变量等信息。
          同时，你还能看到文件的大小（tokens数），以及索引的大小（tokens数），以及构建索引花费费用等信息。
          如果你觉得该文件确实是你关注的，你可以通过 read_files 函数来读取文件完整内容，从而帮你做更好的决策。
-         
+
          注意：
          - 返回值为JSON格式文本
          - 只能返回已被索引的文件
@@ -1124,9 +1170,9 @@ class CommandAutoTuner:
 
         你可以使用 get_project_structure 函数获取项目结构后，然后再通过 get_project_map 函数获取某个文件的用途，符号列表，以及
         文件大小（tokens数）,最后再通过 read_files 函数来读取文件内容，从而帮你做更好的决策。如果需要读取的文件过大，
-        
+
         特别注意：使用 read_files 时，一次性读取文件数量不要超过1个,每次只读取200行。如果发现读取的内容不够，则继续读取下面200行。
-        
+
         </usage>
         </command>
 
@@ -1135,11 +1181,11 @@ class CommandAutoTuner:
         <description>根据文件名中的关键字搜索文件。</description>
         <usage>
          该命令接受一个参数 keyword，为要搜索的关键字字符串。
-         
+
          使用例子：
-         
+
          find_files_by_name(keyword="test")
-         
+
          注意：
          - 搜索不区分大小写
          - 返回所有匹配的文件路径，逗号分隔
@@ -1151,11 +1197,11 @@ class CommandAutoTuner:
         <description>根据文件内容中的关键字搜索文件。</description>
         <usage>
          该命令接受一个参数 keyword，为要搜索的关键字字符串。
-         
+
          使用例子：
-         
+
          find_files_by_content(keyword="TODO")
-         
+
          注意：
          - 搜索不区分大小写
          - 如果结果过多，只返回前10个匹配项
@@ -1180,7 +1226,7 @@ class CommandAutoTuner:
            ```
            ##File: /path/to/file.py
            ##Line: 10-20
-           
+
            内容
            ```
 
@@ -1198,10 +1244,10 @@ class CommandAutoTuner:
         <description>配置管理命令，用于管理和控制配置。</description>
         <usage>
          该命令导出当前软件的配置，并保存到指定路径。
-         
+
          使用例子：         
          conf_export(path="导出路径,通常是.json文件")
-         
+
         </usage>
         </command>
 
@@ -1210,10 +1256,10 @@ class CommandAutoTuner:
         <description>配置管理命令，用于管理和控制配置。</description>
         <usage>
          该命令导入指定路径的配置文件到当前软件。
-         
+
          使用例子：         
          conf_import(path="导入路径,通常是.json文件")
-         
+
         </usage>
         </command>
 
@@ -1222,10 +1268,10 @@ class CommandAutoTuner:
         <description>索引管理命令，用于管理和控制索引。</description>
         <usage>
          该命令导出当前软件的索引，并保存到指定路径。
-         
+
          使用例子：         
          index_export(path="导出路径,通常是.json文件")
-         
+
         </usage>
         </command>
 
@@ -1234,10 +1280,10 @@ class CommandAutoTuner:
         <description>索引管理命令，用于管理和控制索引。</description>
         <usage>
          该命令导入指定路径的索引文件到当前软件。
-         
+
          使用例子：         
          index_import(path="导入路径，通常最后是.json文件")
-         
+
         </usage>
         </command>
 
@@ -1246,11 +1292,11 @@ class CommandAutoTuner:
         <description>排除指定文件。</description>
         <usage>
          该命令接受一个参数 query, 为要排除的文件模式字符串,多个文件模式用逗号分隔。
-         
+
          使用例子,比如你想要排除 package-lock.json 文件，你可以这样调用：
-        
+
          exclude_files(query="regex://.*/package-lock\.json")
-         
+
          注意：
          - 文件模式字符串必须以 regex:// 开头
          - regex:// 后面部分是标准的正则表达式         
@@ -1283,7 +1329,7 @@ class CommandAutoTuner:
         <description>响应用户。</description>
         <usage>
          如果你需要直接发送信息给用户，那么可以通过 response_user 函数来直接回复用户。
-         
+
          比如用户问你是谁？
          你可以通过如下方式来回答：
          response_user(response="你好，我是 auto-coder")
@@ -1298,10 +1344,10 @@ class CommandAutoTuner:
 
          使用例子：
          count_file_tokens(file_path="full")
-         
+
          注意：
          - 返回值为int类型，表示文件的token数量。
-         
+
         </usage>
         </command>
 
@@ -1313,10 +1359,10 @@ class CommandAutoTuner:
 
          使用例子：
          count_string_tokens(text="你好，世界")
-         
+
          注意：
          - 返回值为int类型，表示文本的token数量。
-         
+
         </usage>
         </command>
 
@@ -1329,15 +1375,15 @@ class CommandAutoTuner:
          使用例子：
          find_symbol_definition(symbol="MyClass")
          find_symbol_definition(symbol="process_data")
-         
+
          注意：
          - 返回值为字符串，包含符号定义所在的文件路径列表，以逗号分隔
          - 支持精确匹配和模糊匹配（不区分大小写）
          - 如果未找到匹配项，会返回提示信息
-         
+
         </usage>
         </command>        
-                
+
         <command>
         <n>execute_mcp_server</n>
         <description>执行MCP服务器</description>
@@ -1350,13 +1396,13 @@ class CommandAutoTuner:
          <mcp_server_info>
          {{ mcp_server_info }}
          </mcp_server_info>
-         
+
         </usage>
         </command>                        
         '''
         return {
             "config_readme": config_readme.prompt(),
-            "mcp_server_info": self.mcp_server_info            
+            "mcp_server_info": self.mcp_server_info
         }
 
     def execute_auto_command(self, command: str, parameters: Dict[str, Any]) -> None:
@@ -1366,7 +1412,7 @@ class CommandAutoTuner:
         command_map = {
             "add_files": self.command_config.add_files,
             "remove_files": self.command_config.remove_files,
-            "list_files": self.command_config.list_files,            
+            "list_files": self.command_config.list_files,
             "revert": self.command_config.revert,
             "commit": self.command_config.commit,
             "help": self.command_config.help,
@@ -1386,16 +1432,16 @@ class CommandAutoTuner:
             "index_import": self.command_config.index_import,
             "exclude_files": self.command_config.exclude_files,
 
-            "run_python": self.tools.run_python_code,            
+            "run_python": self.tools.run_python_code,
             "get_related_files_by_symbols": self.tools.get_related_files_by_symbols,
             "get_project_map": self.tools.get_project_map,
             "get_project_structure": self.tools.get_project_structure,
             "list_files": self.tools.list_files,
             "read_files": self.tools.read_files,
             "find_files_by_name": self.tools.find_files_by_name,
-            "find_files_by_content": self.tools.find_files_by_content,        
+            "find_files_by_content": self.tools.find_files_by_content,
             "get_project_related_files": self.tools.get_project_related_files,
-            "ask_user":self.tools.ask_user,
+            "ask_user": self.tools.ask_user,
             "read_file_with_keyword_ranges": self.tools.read_file_with_keyword_ranges,
             "get_project_type": self.project_type_analyzer.analyze,
             "response_user": self.tools.response_user,
@@ -1403,7 +1449,7 @@ class CommandAutoTuner:
             "count_file_tokens": self.tools.count_file_tokens,
             "count_string_tokens": self.tools.count_string_tokens,
             "find_symbol_definition": self.tools.find_symbol_definition,
-                                    
+
         }
 
         if command not in command_map:
@@ -1416,7 +1462,7 @@ class CommandAutoTuner:
             if parameters:
                 command_map[command](**parameters)
             else:
-                command_map[command]()            
+                command_map[command]()
 
         except Exception as e:
             error_msg = str(e)
