@@ -374,9 +374,10 @@ def build_index_and_filter_files(
         )
     
     if args.file:
-        update_yaml_success = action_yml_file_manager.update_yaml_field(args.file, "dynamic_urls", args.dynamic_urls)    
+        action_file_name = os.path.basename(args.file)
+        update_yaml_success = action_yml_file_manager.update_yaml_field(action_file_name, "dynamic_urls", args.dynamic_urls)    
         if not update_yaml_success:        
             printer = Printer()
-            printer.print_in_terminal("yaml_save_error", style="red", yaml_file=args.file)
+            printer.print_in_terminal("yaml_save_error", style="red", yaml_file=action_file_name)  
     
     return source_code_list
