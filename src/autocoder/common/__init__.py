@@ -406,6 +406,8 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     dynamic_urls: List[str] = []
 
+    add_updated_urls: List[str] = []
+
     class Config:
         protected_namespaces = ()
 

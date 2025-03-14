@@ -10,6 +10,7 @@ import hashlib
 from autocoder.common import files as FileUtils
 from autocoder.common.printer import Printer
 from autocoder.common.auto_coder_lang import get_message
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 
 class PathAndCode(pydantic.BaseModel):
     path: str
@@ -197,4 +198,17 @@ class CodeAutoMerge:
         self.printer.print_in_terminal("files_merged", total=total)
         if not force_skip_git and not self.args.skip_commit:
             commit_result = git_utils.commit_changes(self.args.source_dir, f"{self.args.query}\nauto_coder_{file_name}_{md5}")
+            
+            action_yml_file_manager = ActionYmlFileManager(self.args.source_dir)
+            action_file_name = os.path.basename(self.args.file)
+            add_updated_urls = []
+            commit_result.changed_files
+            for file in commit_result.changed_files:
+                add_updated_urls.append(os.path.join(self.args.source_dir, file))
+
+            self.args.add_updated_urls = add_updated_urls
+            update_yaml_success = action_yml_file_manager.update_yaml_field(action_file_name, "add_updated_urls", add_updated_urls)
+            if not update_yaml_success:                        
+                self.printer.print_in_terminal("yaml_save_error", style="red", yaml_file=action_file_name)  
+            
             git_utils.print_commit_info(commit_result=commit_result)

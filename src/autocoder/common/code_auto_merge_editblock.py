@@ -1,6 +1,7 @@
 import os
 from byzerllm.utils.client import code_utils
 from autocoder.common import AutoCoderArgs, git_utils
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 from autocoder.common.text import TextSimilarity
 from autocoder.utils.queue_communicate import (
     queue_communicate,
@@ -428,6 +429,19 @@ class CodeAutoMergeEditBlock:
                         self.args.source_dir,
                         f"{self.args.query}\nauto_coder_{file_name}_{md5}",
                     )
+                    
+                    action_yml_file_manager = ActionYmlFileManager(self.args.source_dir)
+                    action_file_name = os.path.basename(self.args.file)
+                    add_updated_urls = []
+                    commit_result.changed_files
+                    for file in commit_result.changed_files:
+                        add_updated_urls.append(os.path.join(self.args.source_dir, file))
+
+                    self.args.add_updated_urls = add_updated_urls
+                    update_yaml_success = action_yml_file_manager.update_yaml_field(action_file_name, "add_updated_urls", add_updated_urls)
+                    if not update_yaml_success:                        
+                        self.printer.print_in_terminal("yaml_save_error", style="red", yaml_file=action_file_name)  
+
                     git_utils.print_commit_info(commit_result=commit_result)
                 except Exception as e:
                     self.printer.print_str_in_terminal(
