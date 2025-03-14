@@ -268,16 +268,13 @@ class ActionYmlFileManager:
             return None
             
         try:
-            # 移除前缀 'auto_coder_'
-            remaining = commit_id[len("auto_coder_"):]
-            
-            # 按最后下划线分割
-            parts = remaining.rsplit("_", 1)
-            
-            # 如果最后部分是32位哈希则去除，否则保留完整文件名
-            if len(parts) == 2 and len(parts[1]) == 32 and all(c in "0123456789abcdef" for c in parts[1]):
-                return parts[0]
-            return remaining
+            # auto_coder_000000001926_chat_action.yml_88614d5bd4046a068786c252fbc39c13
+            parts = commit_id.split("_")
+            # 去掉第一部分 "auto_coder_" 和最后一部分 hash 值
+            if len(parts) >= 3:
+                file_name_parts = parts[1:-1]
+                return "_".join(file_name_parts)
+            return None
         except Exception:
             return None
     
