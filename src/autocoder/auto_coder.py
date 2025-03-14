@@ -1336,9 +1336,12 @@ def main(input_args: Optional[List[str]] = None):
             elif "mcp" in commands_info: 
                 from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest                               
                 mcp_server = get_mcp_server()
+                
+                pos_args = commands_info["mcp"].get("args", [])
+                final_query = pos_args[0] if pos_args else args.query                
                 response = mcp_server.send_request(
                     McpRequest(
-                        query=args.query,
+                        query=final_query,
                         model=args.inference_model or args.model,
                         product_mode=args.product_mode
                     )
@@ -1355,7 +1358,9 @@ def main(input_args: Optional[List[str]] = None):
             elif "learn" in commands_info:
                 from autocoder.agent.auto_learn_from_commit import AutoLearnFromCommit
                 learner = AutoLearnFromCommit(llm=chat_llm, args=args)
-                v = learner.learn_from_commit(query=args.query,conversations=loaded_conversations)
+                pos_args = commands_info["learn"].get("args", [])
+                final_query = pos_args[0] if pos_args else args.query
+                v = learner.learn_from_commit(query=final_query,conversations=loaded_conversations)
             else:                
                 # 预估token数量
                 dumped_conversations = json.dumps(loaded_conversations, ensure_ascii=False)                

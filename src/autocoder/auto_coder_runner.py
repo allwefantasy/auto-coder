@@ -1614,7 +1614,13 @@ def chat(query: str):
             query = temp_query
 
     is_new = "new" in commands_infos
-        
+
+    if "learn" in commands_infos:
+        commands_infos["no_context"] = {}
+
+    if "review" in commands_infos:
+        commands_infos["no_context"] = {}
+
     yaml_config["action"] = commands_infos            
     
     for key, value in conf.items():
