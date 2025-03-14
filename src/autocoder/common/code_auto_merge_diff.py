@@ -580,7 +580,7 @@ class CodeAutoMergeDiff:
 
         self.printer.print_in_terminal("files_merged_total", total=total)
         if not force_skip_git and not self.args.skip_commit:
-            commit_result = git_utils.commit_changes(self.args.source_dir, f"{self.args.query}\nauto_coder_{file_name}_{md5}")
+            commit_result = git_utils.commit_changes(self.args.source_dir, f"{self.args.query}\nauto_coder_{file_name}")
 
             action_yml_file_manager = ActionYmlFileManager(self.args.source_dir)
             action_file_name = os.path.basename(self.args.file)

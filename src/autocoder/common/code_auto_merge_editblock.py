@@ -427,7 +427,7 @@ class CodeAutoMergeEditBlock:
                 try:
                     commit_result = git_utils.commit_changes(
                         self.args.source_dir,
-                        f"{self.args.query}\nauto_coder_{file_name}_{md5}",
+                        f"{self.args.query}\nauto_coder_{file_name}",
                     )
                     
                     action_yml_file_manager = ActionYmlFileManager(self.args.source_dir)

@@ -1402,7 +1402,7 @@ def commit(query: str):
             md5 = hashlib.md5(file_content.encode("utf-8")).hexdigest()
             file_name = os.path.basename(execute_file)
             commit_result = git_utils.commit_changes(
-                ".", f"{commit_message}\nauto_coder_{file_name}_{md5}"
+                ".", f"{commit_message}\nauto_coder_{file_name}"
             )
             git_utils.print_commit_info(commit_result=commit_result)
             if commit_message:

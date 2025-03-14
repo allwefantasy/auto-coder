@@ -249,7 +249,7 @@ class ActionYmlFileManager:
             with open(yaml_path, 'r', encoding='utf-8') as f:
                 yaml_content = f.read()
             file_md5 = hashlib.md5(yaml_content.encode("utf-8")).hexdigest()
-            return f"auto_coder_{file_name}_{file_md5}"
+            return f"auto_coder_{file_name}"
         except Exception as e:
             logger.error(f"Failed to calculate commit ID: {e}")
             return None
