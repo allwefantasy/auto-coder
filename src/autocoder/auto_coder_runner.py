@@ -1542,7 +1542,7 @@ def coding(query: str):
             cmd = ["--file", execute_file]
             auto_coder_main(cmd)
             result_manager = ResultManager()
-            result_manager.append(content="", meta={"commit_message": f"auto_coder_{latest_yaml_file}_{md5}","action": "coding", "input":{
+            result_manager.append(content="", meta={"commit_message": f"auto_coder_{latest_yaml_file}","action": "coding", "input":{
                 "query": query
             }})
 
