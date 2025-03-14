@@ -375,6 +375,13 @@ def build_index_and_filter_files(
     
     if args.file:
         action_file_name = os.path.basename(args.file)
+        dynamic_urls = []
+        
+        for file in source_code_list.sources:
+            dynamic_urls.append(file.module_name)
+        
+        args.dynamic_urls = dynamic_urls
+
         update_yaml_success = action_yml_file_manager.update_yaml_field(action_file_name, "dynamic_urls", args.dynamic_urls)    
         if not update_yaml_success:        
             printer = Printer()
