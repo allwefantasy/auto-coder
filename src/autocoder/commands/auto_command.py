@@ -57,22 +57,36 @@ def load_memory_file(args: AutoCoderArgs) -> CommandConversation:
     return CommandConversation(history={}, current_conversation=[])
 
 
+class TimeBasedStrategy:
+    def __init__(self, max_idle_time=3600):  # 1 hour in seconds
+        self.max_idle_time = max_idle_time
+
+    def should_archive(self, last_message_time):
+        """Check if the conversation should be archived based on last message time"""
+        current_time = time.time()
+        return current_time - last_message_time > self.max_idle_time
+
 def save_to_memory_file(query: str, response: str):
     """Save command conversation to memory file using CommandConversation structure"""
     memory_dir = os.path.join(".auto-coder", "memory")
     os.makedirs(memory_dir, exist_ok=True)
     file_path = os.path.join(memory_dir, "command_chat_history.json")
+    
+    # Initialize time-based strategy
+    time_strategy = TimeBasedStrategy()
+
     # Create new message objects
+    current_time = time.time()
     user_msg = CommandMessage(role="user", content=query)
     assistant_msg = CommandMessage(role="assistant", content=response)
 
     extended_user_msg = ExtendedCommandMessage(
         message=user_msg,
-        timestamp=str(int(time.time()))
+        timestamp=str(int(current_time))
     )
     extended_assistant_msg = ExtendedCommandMessage(
         message=assistant_msg,
-        timestamp=str(int(time.time()))
+        timestamp=str(int(current_time))
     )
 
     # Load existing conversation or create new
@@ -81,6 +95,14 @@ def save_to_memory_file(query: str, response: str):
             try:
                 existing_conv = CommandConversation.model_validate_json(
                     f.read())
+                # Check if we should archive current conversation
+                if existing_conv.current_conversation:
+                    last_message_time = float(existing_conv.current_conversation[-1].timestamp)
+                    if time_strategy.should_archive(last_message_time):
+                        # Move current conversation to history
+                        timestamp = str(int(last_message_time))
+                        existing_conv.history[timestamp] = existing_conv.current_conversation
+                        existing_conv.current_conversation = []
             except Exception:
                 existing_conv = CommandConversation(
                     history={},
