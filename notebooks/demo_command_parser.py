@@ -232,12 +232,11 @@ def main():
     demo_multiple_commands()
     demo_command_extraction()
     demo_quoted_values()
-    demo_practical_application()
-
-    # print(parse_query("output"))
-    
+    demo_practical_application()    
     print("\n" + "=" * 80)
     print("演示结束！")
+
+    print(parse_query('/save "/tmp/test.txt'))
 
 
 if __name__ == "__main__":

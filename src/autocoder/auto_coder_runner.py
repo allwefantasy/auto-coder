@@ -1610,13 +1610,11 @@ def chat(query: str):
             for (command,command_info) in commands_infos.items():
                 if command_info["args"]:
                     temp_query = command_info["args"][-1]
-                    break
-
-            if temp_query:
-                query = temp_query
+                    break            
+            query = temp_query
 
     is_new = "new" in commands_infos
-
+        
     yaml_config["action"] = commands_infos            
     
     for key, value in conf.items():

@@ -14,13 +14,18 @@ class CommandParser:
     6. /command1 /command2 key=value
     7. /command key="value with spaces"
     8. /command key='value with spaces'
+    
+    注意：路径参数（如/path/to/file）不会被识别为命令。
     """
 
     def __init__(self):
-        # 匹配命令和参数的正则表达式
-        self.command_pattern = r'/(\w+)'
+        # 匹配命令的正则表达式 - 必须是以/开头，后跟单词字符，且不能后跟/或.
+        # (?<!\S) 确保命令前是字符串开头或空白字符
+        self.command_pattern = r'(?<!\S)/(\w+)(?!/|\.)'
         # 匹配键值对参数的正则表达式，支持带引号的值
         self.key_value_pattern = r'(\w+)=(?:"([^"]*?)"|\'([^\']*?)\'|([^\s"\']+))(?:\s|$)'
+        # 匹配路径模式的正则表达式
+        self.path_pattern = r'/\w+(?:/[^/\s]+)+'
 
     def parse(self, query: str) -> Dict[str, Any]:
         """
@@ -45,14 +50,26 @@ class CommandParser:
         if not query or not query.strip():
             return {}
 
+        # 预处理：标记路径参数，避免被识别为命令
+        processed_query = query
+        path_matches = re.finditer(self.path_pattern, query)
+        placeholders = {}
+        
+        for i, match in enumerate(path_matches):
+            path = match.group(0)
+            placeholder = f"__PATH_PLACEHOLDER_{i}__"
+            placeholders[placeholder] = path
+            processed_query = processed_query.replace(path, placeholder, 1)
+
         # 找出所有命令
-        commands = re.findall(self.command_pattern, query)
+        commands = re.findall(self.command_pattern, processed_query)
         if not commands:
             return {}
 
         # 将查询字符串按命令分割
-        parts = re.split(self.command_pattern, query)
-        # 第一个元素是空字符串，移除它
+        parts = re.split(self.command_pattern, processed_query)
+        # 第一个元素是空字符串或之前的非命令内容，保留它
+        first_part = parts[0]
         parts = parts[1:]
 
         result = {}
@@ -63,6 +80,10 @@ class CommandParser:
             
             # 获取此命令的参数部分
             params_str = parts[i+1].strip() if i+1 < len(parts) else ""
+            
+            # 恢复路径参数的原始值
+            for placeholder, path in placeholders.items():
+                params_str = params_str.replace(placeholder, path)
             
             # 解析参数
             args, kwargs = self._parse_params(params_str)
@@ -239,6 +260,12 @@ if __name__ == "__main__":
         # 带引号的值
         '/learn msg="hello world" /commit message="Fix bug #123"',
         "/learn 'quoted arg' key='value with spaces' /commit",
+        # 路径参数测试
+        "/learn /path/to/file.txt",
+        "/commit message='Added /path/to/file.txt'",
+        "Check /path/to/file.txt and also /another/path/file.md",
+        "/clone /path/to/repo /checkout branch",
+        "Use the file at /usr/local/bin/python with /learn"
     ]
     
     for query in test_queries:
