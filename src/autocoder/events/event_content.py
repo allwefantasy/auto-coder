@@ -203,6 +203,31 @@ class ErrorContent(BaseEventContent):
     )
 
 
+class CompletionContent(BaseEventContent):
+    """
+    完成内容模型
+    用于表示事件或操作正常完成的情况
+    """
+    success_code: str
+    success_message: str
+    result: Optional[Any] = None
+    details: Optional[Dict[str, Any]] = None
+    completion_time: float = Field(default_factory=lambda: datetime.now().timestamp())
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "success_code": "S1001",
+                "success_message": "操作成功完成",
+                "result": {"items_processed": 50, "warnings": 0},
+                "details": {"operation": "data_sync", "duration": 120.5},
+                "timestamp": 1626888000.0,
+                "completion_time": 1626888000.0
+            }
+        }
+    )
+
+
 # 工厂函数，便于创建各种内容
 def create_stream_thinking(content: str, sequence: int = 0) -> StreamContent:
     """创建思考中的流式内容"""
@@ -245,4 +270,44 @@ def create_user_response(response: str, original_prompt: str = None) -> UserResp
     return UserResponseContent(
         response=response,
         original_prompt=original_prompt
+    )
+
+
+def create_completion(success_code: str, success_message: str, result: Any = None, details: Dict[str, Any] = None) -> CompletionContent:
+    """
+    创建完成内容
+    
+    Args:
+        success_code: 成功代码
+        success_message: 成功信息
+        result: 操作结果
+        details: 详细信息
+        
+    Returns:
+        CompletionContent 实例
+    """
+    return CompletionContent(
+        success_code=success_code,
+        success_message=success_message,
+        result=result,
+        details=details or {}
+    )
+
+
+def create_error(error_code: str, error_message: str, details: Dict[str, Any] = None) -> ErrorContent:
+    """
+    创建错误内容
+    
+    Args:
+        error_code: 错误代码
+        error_message: 错误信息
+        details: 详细错误信息
+        
+    Returns:
+        ErrorContent 实例
+    """
+    return ErrorContent(
+        error_code=error_code,
+        error_message=error_message,
+        details=details or {}
     ) 

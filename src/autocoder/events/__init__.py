@@ -10,9 +10,10 @@ from .event_manager_singleton import EventManagerSingleton, get_event_manager
 from .event_content import (
     BaseEventContent, StreamContent, ResultContent, 
     AskUserContent, UserResponseContent, CodeContent,
-    MarkdownContent, ErrorContent, ContentType, StreamState,
+    MarkdownContent, ErrorContent, CompletionContent, ContentType, StreamState,
     create_stream_thinking, create_stream_content,
-    create_result, create_ask_user, create_user_response
+    create_result, create_ask_user, create_user_response,
+    create_completion, create_error
 )
 
 __all__ = [
@@ -39,6 +40,7 @@ __all__ = [
     "CodeContent",
     "MarkdownContent",
     "ErrorContent",
+    "CompletionContent",
     
     # Enums
     "ContentType",
@@ -49,5 +51,7 @@ __all__ = [
     "create_stream_content",
     "create_result",
     "create_ask_user",
-    "create_user_response"
+    "create_user_response",
+    "create_completion",
+    "create_error"
 ] 

@@ -41,7 +41,7 @@ class Event:
     
     def to_json(self) -> str:
         """Convert event to JSON string"""
-        return json.dumps(self.to_dict())
+        return json.dumps(self.to_dict(),ensure_ascii=False)
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Event":
