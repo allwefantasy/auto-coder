@@ -5,7 +5,7 @@ import git
 from typing import List, Dict, Tuple, Optional, Union, Any
 from loguru import logger
 from autocoder.common.printer import Printer
-
+import byzerllm
 
 class ActionYmlFileManager:
     """
@@ -19,15 +19,15 @@ class ActionYmlFileManager:
     - 处理 commit 消息与 YAML 文件的关联
     """
     
-    def __init__(self, source_dir: str):
+    def __init__(self, source_dir: Optional[str] = None):
         """
         初始化 ActionYmlFileManager
         
         Args:
             source_dir: 项目根目录
         """
-        self.source_dir = source_dir
-        self.actions_dir = os.path.join(source_dir, "actions")
+        self.source_dir = source_dir or os.getcwd()
+        self.actions_dir = os.path.join(self.source_dir, "actions")
         self.printer = Printer()
         
     def ensure_actions_dir(self) -> bool:
@@ -365,3 +365,68 @@ class ActionYmlFileManager:
                 history_tasks.append(yaml_content)
         
         return history_tasks 
+    
+    @byzerllm.prompt()
+    def _to_tasks_prompt(self, history_tasks: List[Dict]) -> str:
+        """       
+        <history_tasks>                
+        最近的任务历史记录，从最新到最旧排序：
+        
+        {% for task in history_tasks %}
+        ## 任务 {{ loop.index }}: {{ task.file_name }}
+        
+        {% if task.query %}
+        **用户需求**: {{ task.query }}
+        {% endif %}
+        
+        {% if task.urls %}
+        **用户提供的相关文件**:
+        {% if task.urls is string %}
+        - {{ task.urls }}
+        {% else %}
+        {% for url in task.urls %}
+        - {{ url }}
+        {% endfor %}
+        {% endif %}
+        {% endif %}
+        
+        {% if task.dynamic_urls %}
+        **系统提取的相关文件**:
+        {% if task.dynamic_urls is string %}
+        - {{ task.dynamic_urls }}
+        {% else %}
+        {% for url in task.dynamic_urls %}
+        - {{ url }}
+        {% endfor %}
+        {% endif %}
+        {% endif %}
+        
+        {% if task.add_updated_urls %}
+        **变更的文件**:
+        {% if task.add_updated_urls is string %}
+        - {{ task.add_updated_urls }}
+        {% else %}
+        {% for url in task.add_updated_urls %}
+        - {{ url }}
+        {% endfor %}
+        {% endif %}
+        {% endif %}
+        
+        {% if task.how_to_reproduce %}
+        **变更过程**:
+        ```
+        {{ task.how_to_reproduce }}
+        ```
+        {% endif %}
+        
+        {% if not loop.last %}
+        ---
+        {% endif %}
+        {% endfor %}
+        </history_tasks>
+        请注意上述历史任务记录，以便更好地理解当前用户需求的上下文和连续性。
+        """
+    
+    def to_tasks_prompt(self, limit: int = 5) -> str:
+        history_tasks = self.parse_history_tasks(limit)
+        return self._to_tasks_prompt.prompt(history_tasks)

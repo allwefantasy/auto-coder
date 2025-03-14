@@ -408,6 +408,8 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     add_updated_urls: List[str] = []
 
+    enable_task_history: Optional[bool] = False
+
     class Config:
         protected_namespaces = ()
 

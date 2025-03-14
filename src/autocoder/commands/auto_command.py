@@ -25,7 +25,7 @@ from autocoder.common.auto_configure import config_readme
 from autocoder.utils.auto_project_type import ProjectTypeAnalyzer
 from rich.text import Text
 from autocoder.common.mcp_server import get_mcp_server,McpServerInfoRequest
-
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 class CommandMessage(BaseModel):
     role: str
     content: str
@@ -41,17 +41,26 @@ class CommandConversation(BaseModel):
     current_conversation: List[CommandMessage]
 
 
-def load_memory_file() -> CommandConversation:
+def load_memory_file(args: AutoCoderArgs) -> CommandConversation:
     """Load command conversations from memory file"""
+    action_yml_file_manager = ActionYmlFileManager(args.source_dir)
+    history_tasks = action_yml_file_manager.to_tasks_prompt(limit=args.enable_task_history)
+    new_messages = []
+    if args.enable_task_history:
+        new_messages.append(CommandMessage(role="user", content=history_tasks))
+        new_messages.append(CommandMessage(role="assistant", content="好的，我会参考历史任务来更好的理解你的需求。"))
+    
     memory_dir = os.path.join(".auto-coder", "memory")
     file_path = os.path.join(memory_dir, "command_chat_history.json")
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             try:
-                return CommandConversation.model_validate_json(f.read())
+                conversation = CommandConversation.model_validate_json(f.read())
+                conversation.current_conversation = new_messages + conversation.current_conversation
+                return conversation
             except Exception:
-                return CommandConversation(history={}, current_conversation=[])
-    return CommandConversation(history={}, current_conversation=[])
+                return CommandConversation(history={}, current_conversation=new_messages)
+    return CommandConversation(history={}, current_conversation=new_messages)
 
 
 def save_to_memory_file(query: str, response: str):
@@ -174,8 +183,8 @@ class CommandAutoTuner:
     
     def get_conversations(self) -> List[CommandMessage]:
         """Get conversation history from memory file"""
-        conversation = load_memory_file()
-        return [extended_msg for extended_msg in conversation.current_conversation]
+        conversation = load_memory_file(args=self.args)
+        return [command_message for command_message in conversation.current_conversation]
 
     @byzerllm.prompt()
     def _analyze(self, request: AutoCommandRequest) -> str:
