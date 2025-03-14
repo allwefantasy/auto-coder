@@ -42,13 +42,7 @@ class CommandConversation(BaseModel):
 
 
 def load_memory_file(args: AutoCoderArgs) -> CommandConversation:
-    """Load command conversations from memory file"""
-    action_yml_file_manager = ActionYmlFileManager(args.source_dir)
-    history_tasks = action_yml_file_manager.to_tasks_prompt(limit=args.enable_task_history)
-    new_messages = []
-    if args.enable_task_history:
-        new_messages.append(CommandMessage(role="user", content=history_tasks))
-        new_messages.append(CommandMessage(role="assistant", content="好的，我会参考历史任务来更好的理解你的需求。"))
+    """Load command conversations from memory file"""    
     
     memory_dir = os.path.join(".auto-coder", "memory")
     file_path = os.path.join(memory_dir, "command_chat_history.json")
@@ -56,11 +50,11 @@ def load_memory_file(args: AutoCoderArgs) -> CommandConversation:
         with open(file_path, "r", encoding="utf-8") as f:
             try:
                 conversation = CommandConversation.model_validate_json(f.read())
-                conversation.current_conversation = new_messages + conversation.current_conversation
+                conversation.current_conversation = conversation.current_conversation
                 return conversation
             except Exception:
-                return CommandConversation(history={}, current_conversation=new_messages)
-    return CommandConversation(history={}, current_conversation=new_messages)
+                return CommandConversation(history={}, current_conversation=[])
+    return CommandConversation(history={}, current_conversation=[])
 
 
 def save_to_memory_file(query: str, response: str):
@@ -359,8 +353,16 @@ class CommandAutoTuner:
         # 获取 prompt 内容
         prompt = self._analyze.prompt(request)
         
+        # 获取对当前项目变更的最近8条历史人物
+        action_yml_file_manager = ActionYmlFileManager(self.args.source_dir)
+        history_tasks = action_yml_file_manager.to_tasks_prompt(limit=8)
+        new_messages = []
+        if self.args.enable_task_history:
+            new_messages.append(CommandMessage(role="user", content=history_tasks))
+            new_messages.append(CommandMessage(role="assistant", content="好的，我直到这些历史任务对项目的变更了，我也会参考历史任务来更好的理解你的需求。"))
+        
         # 构造对话上下文
-        conversations = [{"role": "user", "content": prompt}]
+        conversations = new_messages + [{"role": "user", "content": prompt}]
         
         # 使用 stream_out 进行输出
         printer = Printer()
