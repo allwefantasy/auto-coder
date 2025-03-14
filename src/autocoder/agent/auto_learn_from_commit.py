@@ -86,7 +86,7 @@ class AutoLearnFromCommit:
         """
         pass
 
-    def parse_history_tasks(self) -> List[Dict]:
+    def parse_history_tasks(self, commit_file_name: Optional[str] = None) -> List[Dict]:
         """
         解析历史任务信息
 
@@ -99,14 +99,17 @@ class AutoLearnFromCommit:
             if f[:3].isdigit() and "_" in f and f.endswith('.yml')
         ]
 
-        # 按序号排序
-        def get_seq(name):
-            return int(name.split("_")[0])
+        if commit_file_name:
+            action_files = [f for f in action_files if f == commit_file_name]
+        else:
+            # 按序号排序
+            def get_seq(name):
+                return int(name.split("_")[0])
 
-        # 获取最新的action文件列表
-        action_files = sorted(action_files, key=get_seq)
-        action_files.reverse()        
-
+            # 获取最新的action文件列表
+            action_files = sorted(action_files, key=get_seq)
+            action_files.reverse()   
+        
         action_file = action_files[0]
 
         querie_with_urls_and_changes = []
@@ -170,17 +173,104 @@ class AutoLearnFromCommit:
 
         return querie_with_urls_and_changes
     
+    def get_commit_changes(self, commit_id: str) -> List[Tuple[str, List[str], Dict[str, Tuple[str, str]]]]:
+        """
+        直接从Git仓库获取指定commit的变更
 
-    def learn_from_commit(self,query: str, conversations: List[Dict]) -> Generator[str,None,None]:
+        Args:
+            commit_id: Git commit的ID
+
+        Returns:
+            List[Tuple[str, List[str], Dict[str, Tuple[str, str]]]]: 与parse_history_tasks格式相同的结果
+        """
+        printer = Printer()
+        querie_with_urls_and_changes = []
+        changes = {}
+        modified_files = []
+        query = f"Review commit: {commit_id}"
+
+        try:
+            repo = git.Repo(self.project_dir)
+            commit = repo.commit(commit_id)
+            
+            if not commit.parents:
+                # 这是首次提交
+                printer.print_in_terminal("commit_is_initial", style="yellow", commit_id=commit_id)
+                # 获取首次提交的所有文件
+                for item in commit.tree.traverse():
+                    if item.type == 'blob':  # 只处理文件，不处理目录
+                        file_path = item.path
+                        modified_files.append(file_path)
+                        # 首次提交前没有内容
+                        before_content = None
+                        # 获取提交后的内容
+                        after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
+                        changes[file_path] = (before_content, after_content)
+            else:
+                # 获取parent commit
+                parent = commit.parents[0]
+                # 获取变更的文件列表
+                for diff_item in parent.diff(commit):
+                    file_path = diff_item.a_path if diff_item.a_path else diff_item.b_path
+                    modified_files.append(file_path)
+                    
+                    # 获取变更前内容
+                    before_content = None
+                    try:
+                        if diff_item.a_blob:
+                            before_content = repo.git.show(f"{parent.hexsha}:{file_path}")
+                    except git.exc.GitCommandError:
+                        pass  # 文件可能是新增的
+
+                    # 获取变更后内容
+                    after_content = None
+                    try:
+                        if diff_item.b_blob:
+                            after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
+                    except git.exc.GitCommandError:
+                        pass  # 文件可能被删除
+
+                    changes[file_path] = (before_content, after_content)
+            
+            # 使用commit消息作为查询内容
+            query = commit.message
+            querie_with_urls_and_changes.append((query, modified_files, changes))
+            
+        except git.exc.GitCommandError as e:
+            printer.print_in_terminal("git_command_error", style="red", error=str(e))
+        except Exception as e:
+            printer.print_in_terminal("get_commit_changes_error", style="red", error=str(e))
+            
+        return querie_with_urls_and_changes
+
+    def learn_from_commit(self,query: str, conversations: List[Dict],commit_id: Optional[str] = None) -> Generator[str,None,None]:
         """
         从最新的代码提交中学习通用模式
+
+        Args:
+            query: 用户的查询/要求
+            conversations: 之前的对话历史
+            commit_id: 可选的指定commit ID，如果提供则直接学习该commit
 
         Returns:
             Optional[Generator]: 学习结果生成器，如果出错则返回None
         """
         printer = Printer()
+        commit_file_name = None
+        if commit_id:
+            repo = git.Repo(self.project_dir)
+            commit = repo.commit(commit_id)
+            # auto_coder_000000001926_chat_action.yml_88614d5bd4046a068786c252fbc39c13
+            msg = commit.message
+            commit_file_info = msg.split("_")[0]
+            if commit_file_info.startswith("auto_coder_"):
+                commit_file_name = "_".join(msg.split("_",)[0:-1]) 
+
+            if not commit_file_name:
+                raise ValueError(printer.get_message_from_key_with_format("no_commit_file_name",commit_id=commit_id))
+        
         # 获取最新的提交信息
-        changes = self.parse_history_tasks()
+        changes = self.parse_history_tasks(commit_file_name=commit_file_name)
         if not changes:            
             printer.print_in_terminal("no_latest_commit", style="red")
             return None

@@ -1062,6 +1062,15 @@ def main(input_args: Optional[List[str]] = None):
 
         elif raw_args.agent_command == "chat":
             
+            # 统一格式
+            # {"command1": {"args": ["arg1", "arg2"], "kwargs": {"key1": "value1", "key2": "value2"}}}
+            if isinstance(args.action, dict):
+                commands_info = args.action
+            else:
+                commands_info = {}
+                for command in args.action:
+                    commands_info[command] = {}
+            
             memory_dir = os.path.join(args.source_dir, ".auto-coder", "memory")
             os.makedirs(memory_dir, exist_ok=True)
             memory_file = os.path.join(memory_dir, "chat_history.json")
@@ -1167,7 +1176,7 @@ def main(input_args: Optional[List[str]] = None):
                                                file_path=source.module_name, 
                                                model_name=",".join(get_llm_names(chat_llm)))
             
-            if "no_context" not in args.action:
+            if "no_context" not in commands_info:
                 s = build_index_and_filter_files(
                     llm=llm, args=args, sources=filtered_sources).to_str()                        
                 
@@ -1304,7 +1313,7 @@ def main(input_args: Optional[List[str]] = None):
                     ),
                 )
 
-                if "save" in args.action:
+                if "save" in commands_info:
                     save_to_memory_file(ask_conversation=chat_history["ask_conversation"],
                                         query=args.query,
                                         response=result)
@@ -1315,7 +1324,7 @@ def main(input_args: Optional[List[str]] = None):
             # 计算耗时            
             start_time = time.time()    
                         
-            if "rag" in args.action:
+            if "rag" in commands_info:
                 from autocoder.rag.rag_entry import RAGFactory
                 args.enable_rag_search = True
                 args.enable_rag_context = False
@@ -1324,7 +1333,7 @@ def main(input_args: Optional[List[str]] = None):
                     conversations=loaded_conversations)[0]                                                
                 v = (item for item in response)
                 
-            elif "mcp" in args.action: 
+            elif "mcp" in commands_info: 
                 from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest                               
                 mcp_server = get_mcp_server()
                 response = mcp_server.send_request(
@@ -1335,11 +1344,15 @@ def main(input_args: Optional[List[str]] = None):
                     )
                 )
                 v = [[response.result,None]]
-            elif "review_commit" in args.action:
-                from autocoder.agent.auto_review_commit import AutoReviewCommit
+            elif "review" in commands_info:
+                from autocoder.agent.auto_review_commit import AutoReviewCommit                
                 reviewer = AutoReviewCommit(llm=chat_llm, args=args)
-                v = reviewer.review_commit(query=args.query,conversations=loaded_conversations)
-            elif "learn_from_commit" in args.action:
+                pos_args = commands_info["review"].get("args", [])
+                final_query = pos_args[0] if pos_args else args.query
+                kwargs = commands_info["review"].get("kwargs", {})
+                commit_id = kwargs.get("commit", None)
+                v = reviewer.review_commit(query=final_query, conversations=loaded_conversations, commit_id=commit_id)
+            elif "learn" in commands_info:
                 from autocoder.agent.auto_learn_from_commit import AutoLearnFromCommit
                 learner = AutoLearnFromCommit(llm=chat_llm, args=args)
                 v = learner.learn_from_commit(query=args.query,conversations=loaded_conversations)
@@ -1410,7 +1423,7 @@ def main(input_args: Optional[List[str]] = None):
             with open(memory_file, "w",encoding="utf-8") as f:
                 json.dump(chat_history, f, ensure_ascii=False)
 
-            if "copy" in args.action:
+            if "copy" in commands_info:
                 #copy assistant_response to clipboard
                 import pyperclip
                 try:
@@ -1418,12 +1431,17 @@ def main(input_args: Optional[List[str]] = None):
                 except:
                     print("pyperclip not installed or clipboard is not supported, instruction will not be copied to clipboard.")
 
-            if "save" in args.action:
+            if "save" in commands_info:                
                 tmp_dir = save_to_memory_file(ask_conversation=chat_history["ask_conversation"],
                                     query=args.query,
                                     response=assistant_response)  
                 printer = Printer()
                 printer.print_in_terminal("memory_save_success", style="green", path=tmp_dir)                      
+
+                if len(commands_info["save"]["args"]) > 0:
+                    # 保存到指定文件
+                    with open(commands_info["save"]["args"][0], "w",encoding="utf-8") as f:
+                        f.write(assistant_response)
             return
 
         else:

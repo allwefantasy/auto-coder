@@ -377,7 +377,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     # block:给定每个文件修改的代码块 file: 给定每个文件修改前后内容
     rank_strategy: Optional[str] = "file"
 
-    action: List[str] = []
+    action: Union[List[str], Dict[str, Any]] = []
     enable_global_memory: Optional[bool] = False  
     product_mode: Optional[str] = "lite"
 

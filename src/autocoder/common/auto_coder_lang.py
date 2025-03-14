@@ -194,6 +194,7 @@ MESSAGES = {
         "super_big_filter_title": "{{ model_name }} is analyzing how to filter extremely large context...",
         "mcp_server_info_error": "Error getting MCP server info: {{ error }}",
         "mcp_server_info_title": "Connected MCP Server Info",
+        "no_commit_file_name": "Cannot get the file name of the commit_id in the actions directory: {{commit_id}}",
     },
     "zh": {
         "file_sliding_window_processing": "文件 {{ file_path }} 过大 ({{ tokens }} tokens)，正在使用滑动窗口处理...",
@@ -385,6 +386,7 @@ MESSAGES = {
         "super_big_filter_title": "{{ model_name }} 正在分析如何过滤极大规模上下文...",
         "mcp_server_info_error": "获取MCP服务器信息时出错: {{ error }}",
         "mcp_server_info_title": "已连接的MCP服务器信息",
+        "no_commit_file_name": "无法获取commit_id关联的actions 目录下的文件名: {{commit_id}}",
     }}
 
 

@@ -51,6 +51,7 @@ from autocoder.common.printer import Printer
 from autocoder.utils.thread_utils import run_in_raw_thread
 from autocoder.common.command_completer import CommandCompleter,FileSystemModel as CCFileSystemModel,MemoryConfig as CCMemoryModel
 from autocoder.common.conf_validator import ConfigValidator
+from autocoder import command_parser as CommandParser
 
 class SymbolItem(BaseModel):
     symbol_name: str
@@ -1598,48 +1599,19 @@ def chat(query: str):
     if "emb_model" in conf:
         yaml_config["emb_model"] = conf["emb_model"]
 
-    is_new = "/new" in query
-    if is_new:
-        query = query.replace("/new", "", 1).strip()
+    # 解析命令        
+    commands_info = CommandParser.parse_query(query)
+    # 获取最后一个command 的最后一个位置参数作为默认query 
+    if len(commands_info) > 0:
+        if "query" in commands_info:
+            query = commands_info["query"]["args"][-1]
+        else:
+            query = commands_info[-1]["args"][-1]
 
-    yaml_config["action"] = []    
+    is_new = "new" in commands_info
 
-    if "/mcp " in query:
-        yaml_config["action"].append("mcp")
-        query = query.replace("/mcp ", "", 1).strip()
-
-    if "/rag " in query:
-        yaml_config["action"].append("rag")
-        query = query.replace("/rag ", "", 1).strip()
-
-    if "/copy" in query:
-        yaml_config["action"].append("copy")
-        query = query.replace("/copy", "", 1).strip()   
-
-    if "/save" in query:
-        yaml_config["action"].append("save")
-        query = query.replace("/save", "", 1).strip()        
-
-    if "/review" in query and "/commit" in query:
-        yaml_config["action"].append("review_commit")
-        query = query.replace("/review", "", 1).replace("/commit", "", 1).strip()
-    elif "/learn" in query and "/commit" in query:
-        yaml_config["action"].append("learn_from_commit")
-        query = query.replace("/learn", "", 1).replace("/commit", "", 1).strip()
-    else:    
-        is_review = query.strip().startswith("/review")
-        if is_review:
-            query = query.replace("/review", "", 1).strip()
-            if "prompt_review" in conf:
-                query = format_str_jinja2(conf["prompt_review"], query=query)
-            else:
-                query = code_review.prompt(query)
-
-    is_no_context = "/no_context" in query.strip()
-    if is_no_context:
-        query = query.replace("/no_context", "", 1).strip()
-        yaml_config["action"].append("no_context")
-
+    yaml_config["action"] = commands_info            
+    
     for key, value in conf.items():
         converted_value = convert_config_value(key, value)
         if converted_value is not None:
