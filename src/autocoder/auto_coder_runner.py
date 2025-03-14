@@ -1600,17 +1600,24 @@ def chat(query: str):
         yaml_config["emb_model"] = conf["emb_model"]
 
     # 解析命令        
-    commands_info = CommandParser.parse_query(query)
-    # 获取最后一个command 的最后一个位置参数作为默认query 
-    if len(commands_info) > 0:
-        if "query" in commands_info:
-            query = commands_info["query"]["args"][-1]
+    commands_infos = CommandParser.parse_query(query)    
+    if len(commands_infos) > 0:
+        if "query" in commands_infos:
+            query = commands_infos["query"]["args"][-1]
         else:
-            query = commands_info[-1]["args"][-1]
+            # 获取第一个command 的最后一个位置参数作为默认query 
+            temp_query = ""
+            for (command,command_info) in commands_infos.items():
+                if command_info["args"]:
+                    temp_query = command_info["args"][-1]
+                    break
 
-    is_new = "new" in commands_info
+            if temp_query:
+                query = temp_query
 
-    yaml_config["action"] = commands_info            
+    is_new = "new" in commands_infos
+
+    yaml_config["action"] = commands_infos            
     
     for key, value in conf.items():
         converted_value = convert_config_value(key, value)
