@@ -25,10 +25,13 @@ from autocoder.index.index import IndexManager
 from loguru import logger
 from autocoder.common import SourceCodeList
 from autocoder.common.context_pruner import PruneContext
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 
 def build_index_and_filter_files(
     llm, args: AutoCoderArgs, sources: List[SourceCode]
 ) -> SourceCodeList:
+    
+    action_yml_file_manager = ActionYmlFileManager(args.source_dir)
     # Initialize timing and statistics
     total_start_time = time.monotonic()
     stats = {
@@ -370,4 +373,5 @@ def build_index_and_filter_files(
             )
         )
 
+    action_yml_file_manager.update_yaml_field(args.file, "dynamic_urls", args.dynamic_urls)
     return source_code_list

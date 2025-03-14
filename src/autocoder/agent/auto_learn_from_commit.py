@@ -157,7 +157,7 @@ class AutoLearnFromCommit:
 
             querie_with_urls_and_changes.append((query, urls, changes))
 
-        return querie_with_urls_and_changes
+        return querie_with_urls_and_changes,action_file
     
     def get_commit_changes(self, commit_id: str) -> List[Tuple[str, List[str], Dict[str, Tuple[str, str]]]]:
         """
@@ -227,7 +227,7 @@ class AutoLearnFromCommit:
         except Exception as e:
             printer.print_in_terminal("get_commit_changes_error", style="red", error=str(e))
             
-        return querie_with_urls_and_changes
+        return querie_with_urls_and_changes,None
 
     def learn_from_commit(self,query: str, conversations: List[Dict],commit_id: Optional[str] = None) -> Generator[str,None,None]:
         """
@@ -251,7 +251,8 @@ class AutoLearnFromCommit:
                 raise ValueError(printer.get_message_from_key_with_format("no_commit_file_name", commit_id=commit_id))
         
         # 获取最新的提交信息
-        changes = self.parse_history_tasks(commit_file_name=commit_file_name)
+        changes,tmp_file_name = self.parse_history_tasks(commit_file_name=commit_file_name)
+        commit_file_name = tmp_file_name
         if not changes:            
             printer.print_in_terminal("no_latest_commit", style="red")
             return None, None

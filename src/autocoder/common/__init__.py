@@ -404,6 +404,8 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     how_to_reproduce: Optional[str] = None
 
+    dynamic_urls: List[str] = []
+
     class Config:
         protected_namespaces = ()
 

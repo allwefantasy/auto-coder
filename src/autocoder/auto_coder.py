@@ -1327,7 +1327,8 @@ def main(input_args: Optional[List[str]] = None):
                 learner = AutoLearnFromCommit(llm=chat_llm, args=args)
                 pos_args = commands_info["learn"].get("args", [])
                 final_query = pos_args[0] if pos_args else args.query
-                v,commit_file_name = learner.learn_from_commit(query=final_query,conversations=loaded_conversations)
+                v,tmp_file_name = learner.learn_from_commit(query=final_query,conversations=loaded_conversations)
+                commit_file_name = tmp_file_name
             else:                
                 # 预估token数量
                 dumped_conversations = json.dumps(loaded_conversations, ensure_ascii=False)                
@@ -1362,9 +1363,9 @@ def main(input_args: Optional[List[str]] = None):
                 }
             }) 
 
-            if "learn" in commands_info:
-                if commit_file_name:
-                    # 使用 ActionYmlFileManager 更新 YAML 文件
+            if "learn" in commands_info:                
+                if commit_file_name:                    
+                    # 使用 ActionYmlFileManager 更新 YAML 文件                    
                     action_manager = ActionYmlFileManager(args.source_dir)
                     if not action_manager.update_yaml_field(commit_file_name, 'how_to_reproduce', assistant_response):
                         printer = Printer()
