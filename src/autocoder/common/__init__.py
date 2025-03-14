@@ -402,6 +402,8 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     enable_beta: Optional[bool] = False
 
+    how_to_reproduce: Optional[str] = None
+
     class Config:
         protected_namespaces = ()
 

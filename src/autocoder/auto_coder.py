@@ -5,6 +5,7 @@ from autocoder.dispacher import Dispacher
 from autocoder.common import git_utils, code_auto_execute
 from autocoder.utils.llm_client_interceptors import token_counter_interceptor
 from autocoder.db.store import Store
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 
 from autocoder.utils.llms import get_llm_names
 from autocoder.utils.queue_communicate import (
@@ -196,59 +197,25 @@ def main(input_args: Optional[List[str]] = None):
         return
 
     if raw_args.command == "next":
-        actions_dir = os.path.join(os.getcwd(), "actions")
-        if not os.path.exists(actions_dir):
-            print("Current directory does not have an actions directory")
-            return
-
-        action_files = [
-            f for f in os.listdir(actions_dir) if f[:3].isdigit() and "_" in f and f.endswith(".yml")
-        ]
-
-        def get_old_seq(name):
-            return name.split("_")[0]
-
-        if not action_files:
-            max_seq = 0
-        else:
-            seqs = [int(get_old_seq(f)) for f in action_files]
-            max_seq = max(seqs)
-
-        new_seq = str(max_seq + 1).zfill(12)
-        prev_files = [f for f in action_files if int(
-            get_old_seq(f)) < int(new_seq)]
-
+        # 使用 ActionYmlFileManager 创建下一个 action 文件
+        action_manager = ActionYmlFileManager(args.source_dir)
+        
         if raw_args.from_yaml:
-            # If --from_yaml is specified, copy content from the matching YAML file
-            from_files = [
-                f for f in action_files if f.startswith(raw_args.from_yaml)]
-            if from_files:
-                from_file = from_files[0]  # Take the first match
-                with open(os.path.join(actions_dir, from_file), "r",encoding="utf-8") as f:
-                    content = f.read()
-                new_file = os.path.join(
-                    actions_dir, f"{new_seq}_{raw_args.name}.yml")
-                with open(new_file, "w",encoding="utf-8") as f:
-                    f.write(content)
-            else:
-                print(
-                    f"No YAML file found matching prefix: {raw_args.from_yaml}")
+            # 基于指定的 yaml 文件创建新文件
+            new_file = action_manager.create_next_action_file(
+                name=raw_args.name,
+                from_yaml=raw_args.from_yaml
+            )
+            if not new_file:
+                print(f"No YAML file found matching prefix: {raw_args.from_yaml}")
                 return
         else:
-            # If --from_yaml is not specified, use the previous logic
-            if not prev_files:
-                new_file = os.path.join(
-                    actions_dir, f"{new_seq}_{raw_args.name}.yml")
-                with open(new_file, "w",encoding="utf-8") as f:
-                    pass
-            else:
-                prev_file = sorted(prev_files)[-1]  # 取序号最大的文件
-                with open(os.path.join(actions_dir, prev_file), "r",encoding="utf-8") as f:
-                    content = f.read()
-                new_file = os.path.join(
-                    actions_dir, f"{new_seq}_{raw_args.name}.yml")
-                with open(new_file, "w",encoding="utf-8") as f:
-                    f.write(content)        
+            # 创建新的 action 文件
+            new_file = action_manager.create_next_action_file(name=raw_args.name)
+            if not new_file:
+                print("Failed to create new action file")
+                return
+        
         # open_yaml_file_in_editor(new_file)
         return
 
@@ -883,7 +850,6 @@ def main(input_args: Optional[List[str]] = None):
             #             os.path.join(args.source_dir, "actions")
             #         )
             #     )
-            # )
             return
         elif raw_args.agent_command == "project_reader":
                         
@@ -1323,6 +1289,7 @@ def main(input_args: Optional[List[str]] = None):
 
             # 计算耗时            
             start_time = time.time()    
+            commit_file_name = None
                         
             if "rag" in commands_info:
                 from autocoder.rag.rag_entry import RAGFactory
@@ -1360,7 +1327,7 @@ def main(input_args: Optional[List[str]] = None):
                 learner = AutoLearnFromCommit(llm=chat_llm, args=args)
                 pos_args = commands_info["learn"].get("args", [])
                 final_query = pos_args[0] if pos_args else args.query
-                v = learner.learn_from_commit(query=final_query,conversations=loaded_conversations)
+                v,commit_file_name = learner.learn_from_commit(query=final_query,conversations=loaded_conversations)
             else:                
                 # 预估token数量
                 dumped_conversations = json.dumps(loaded_conversations, ensure_ascii=False)                
@@ -1393,7 +1360,15 @@ def main(input_args: Optional[List[str]] = None):
                 "input": {
                     "query": args.query
                 }
-            })                                                           
+            }) 
+
+            if "learn" in commands_info:
+                if commit_file_name:
+                    # 使用 ActionYmlFileManager 更新 YAML 文件
+                    action_manager = ActionYmlFileManager(args.source_dir)
+                    if not action_manager.update_yaml_field(commit_file_name, 'how_to_reproduce', assistant_response):
+                        printer = Printer()
+                        printer.print_in_terminal("yaml_save_error", style="red", yaml_file=commit_file_name)
             
             # 打印耗时和token统计            
             if last_meta:

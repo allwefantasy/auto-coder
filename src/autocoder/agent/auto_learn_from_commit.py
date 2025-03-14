@@ -8,6 +8,7 @@ from rich.console import Console
 from autocoder.common.printer import Printer
 from autocoder.common import AutoCoderArgs
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 import hashlib
 
 
@@ -40,6 +41,7 @@ class AutoLearnFromCommit:
         self.llm = llm        
         self.skip_diff = skip_diff
         self.console = console or Console()
+        self.action_manager = ActionYmlFileManager(args.source_dir)
 
     @byzerllm.prompt()
     def learn(self, querie_with_urls_and_changes: List[Tuple[str, List[str], Dict[str, Tuple[str, str]]]], query: str) -> Generator[str,None,None]:
@@ -93,51 +95,35 @@ class AutoLearnFromCommit:
         Returns:
             List[Dict]: 每个字典包含一个历史任务的信息
         """
-        # 获取所有YAML文件
-        action_files = [
-            f for f in os.listdir(self.actions_dir)
-            if f[:3].isdigit() and "_" in f and f.endswith('.yml')
-        ]
-
+        # 使用 ActionManager 获取文件
         if commit_file_name:
-            action_files = [f for f in action_files if f == commit_file_name]
+            action_file = commit_file_name
         else:
-            # 按序号排序
-            def get_seq(name):
-                return int(name.split("_")[0])
-
-            # 获取最新的action文件列表
-            action_files = sorted(action_files, key=get_seq)
-            action_files.reverse()   
-        
-        action_file = action_files[0]
+            action_file = self.action_manager.get_latest_action_file()
+            if not action_file:
+                return []
 
         querie_with_urls_and_changes = []
         repo = git.Repo(self.project_dir)
 
         # 收集所有query、urls和对应的文件变化
-        for yaml_file in [action_file]:
-            yaml_path = os.path.join(self.actions_dir, yaml_file)
-            config = load_yaml_config(yaml_path)
+        yaml_content = self.action_manager.load_yaml_content(action_file)
+        
+        if not yaml_content:
+            return []
 
-            if not config:
-                continue
+        query = yaml_content.get('query', '')
+        urls = yaml_content.get('urls', [])
 
-            query = config.get('query', '')
-            urls = config.get('urls', [])
-
-            if query:
-                changes = {}
-                if not self.skip_diff:
-                    # 计算文件的MD5用于匹配commit   
-                    with open(yaml_path, 'r', encoding='utf-8') as f:
-                        yaml_content = f.read()                 
-                        file_md5 = hashlib.md5(yaml_content.encode("utf-8")).hexdigest()
-                    response_id = f"auto_coder_{yaml_file}_{file_md5}"
-                    # 查找对应的commit                   
+        if query:
+            changes = {}
+            if not self.skip_diff:
+                # 使用 ActionManager 获取 commit ID
+                commit_id = self.action_manager.get_commit_id_from_file(action_file)
+                if commit_id:
                     try:
                         for commit in repo.iter_commits():
-                            if response_id in commit.message:
+                            if commit_id in commit.message:
                                 if commit.parents:
                                     parent = commit.parents[0]
                                     # 获取所有文件的前后内容
@@ -169,7 +155,7 @@ class AutoLearnFromCommit:
                         printer = Printer()
                         printer.print_in_terminal("get_commit_changes_error", style="red", error=str(e))
 
-                querie_with_urls_and_changes.append((query, urls, changes))
+            querie_with_urls_and_changes.append((query, urls, changes))
 
         return querie_with_urls_and_changes
     
@@ -258,22 +244,17 @@ class AutoLearnFromCommit:
         printer = Printer()
         commit_file_name = None
         if commit_id:
-            repo = git.Repo(self.project_dir)
-            commit = repo.commit(commit_id)
-            # auto_coder_000000001926_chat_action.yml_88614d5bd4046a068786c252fbc39c13
-            msg = commit.message
-            commit_file_info = msg.split("_")[0]
-            if commit_file_info.startswith("auto_coder_"):
-                commit_file_name = "_".join(msg.split("_",)[0:-1]) 
-
+            # 使用 ActionManager 从 commit ID 获取文件名
+            commit_file_name = self.action_manager.get_file_name_from_commit_id(commit_id)
+            
             if not commit_file_name:
-                raise ValueError(printer.get_message_from_key_with_format("no_commit_file_name",commit_id=commit_id))
+                raise ValueError(printer.get_message_from_key_with_format("no_commit_file_name", commit_id=commit_id))
         
         # 获取最新的提交信息
         changes = self.parse_history_tasks(commit_file_name=commit_file_name)
         if not changes:            
             printer.print_in_terminal("no_latest_commit", style="red")
-            return None
+            return None, None
 
         # 调用LLM进行代码学习
         try:
@@ -287,7 +268,7 @@ class AutoLearnFromCommit:
                     conversations=new_conversations,
                     llm_config={}
             )
-            return v
+            return v, commit_file_name
         except Exception as e:            
             printer.print_in_terminal("code_learn_error", style="red", error=str(e))
-            return None
+            return None, commit_file_name
