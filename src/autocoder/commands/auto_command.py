@@ -1279,10 +1279,28 @@ class CommandAutoTuner:
          - 返回值为int类型，表示文本的token数量。
          
         </usage>
+        </command>
+
+        <command>
+        <n>find_symbol_definition</n>
+        <description>查找指定符号的定义所在的文件路径。</description>
+        <usage>
+         该函数接受一个参数 symbol, 为要查找的符号名称。
+
+         使用例子：
+         find_symbol_definition(symbol="MyClass")
+         find_symbol_definition(symbol="process_data")
+         
+         注意：
+         - 返回值为字符串，包含符号定义所在的文件路径列表，以逗号分隔
+         - 支持精确匹配和模糊匹配（不区分大小写）
+         - 如果未找到匹配项，会返回提示信息
+         
+        </usage>
         </command>        
                 
         <command>
-        <name>execute_mcp_server</name>
+        <n>execute_mcp_server</n>
         <description>执行MCP服务器</description>
         <usage>
          该函数接受一个参数 query, 为要执行的MCP服务器查询字符串。
@@ -1345,6 +1363,7 @@ class CommandAutoTuner:
             "execute_mcp_server": self.tools.execute_mcp_server,
             "count_file_tokens": self.tools.count_file_tokens,
             "count_string_tokens": self.tools.count_string_tokens,
+            "find_symbol_definition": self.tools.find_symbol_definition,
                                     
         }
 
