@@ -6,6 +6,7 @@ This module provides a way for two systems to communicate through events.
 from .event_store import EventStore, JsonlEventStore
 from .event_types import Event, EventType, ResponseEvent
 from .event_manager import EventManager
+from .event_manager_singleton import EventManagerSingleton, get_event_manager
 from .event_content import (
     BaseEventContent, StreamContent, ResultContent, 
     AskUserContent, UserResponseContent, CodeContent,
@@ -24,6 +25,10 @@ __all__ = [
     "EventType",
     "ResponseEvent",
     "EventManager",
+    
+    # Singleton
+    "EventManagerSingleton",
+    "get_event_manager",
     
     # Content models
     "BaseEventContent",

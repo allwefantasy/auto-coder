@@ -1,4 +1,7 @@
 import byzerllm
+import yaml
+import os
+import time
 from typing import List, Dict, Any, Optional
 from autocoder.common import AutoCoderArgs
 from autocoder.dispacher import Dispacher
@@ -14,9 +17,6 @@ from autocoder.utils.queue_communicate import (
     CommunicateEventType,
 )
 
-import yaml
-import os
-import time
 from byzerllm.utils.client import EventCallbackResult, EventName
 from prompt_toolkit import prompt
 from prompt_toolkit.formatted_text import FormattedText

@@ -52,6 +52,7 @@ from autocoder.utils.thread_utils import run_in_raw_thread
 from autocoder.common.command_completer import CommandCompleter,FileSystemModel as CCFileSystemModel,MemoryConfig as CCMemoryModel
 from autocoder.common.conf_validator import ConfigValidator
 from autocoder import command_parser as CommandParser
+from autocoder.events.event_manager_singleton import get_event_manager
 
 class SymbolItem(BaseModel):
     symbol_name: str
@@ -83,7 +84,9 @@ memory = {
 
 project_root = os.getcwd()
 
-base_persist_dir = os.path.join(".auto-coder", "plugins", "chat-auto-coder")
+get_event_manager().set_default_event_file(os.path.join(project_root,".auto-coder", "auto-coder.web", "events.jsonl"))
+
+base_persist_dir = os.path.join(project_root,".auto-coder", "plugins", "chat-auto-coder")
 
 defaut_exclude_dirs = [".git", "node_modules", "dist", "build", "__pycache__"]
 
