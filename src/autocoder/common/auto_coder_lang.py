@@ -195,7 +195,7 @@ MESSAGES = {
         "mcp_server_info_error": "Error getting MCP server info: {{ error }}",
         "mcp_server_info_title": "Connected MCP Server Info",
         "no_commit_file_name": "Cannot get the file name of the commit_id in the actions directory: {{commit_id}}",
-        "yaml_update_success": "✅ Successfully updated YAML file: {{yaml_file}} with how_to_reproduce field",
+        "yaml_update_success": "✅ Successfully updated YAML file: {{yaml_file}}",
         "yaml_save_error": "❌ Error saving YAML file {{yaml_file}}: {{error}}",
     },
     "zh": {
@@ -389,7 +389,7 @@ MESSAGES = {
         "mcp_server_info_error": "获取MCP服务器信息时出错: {{ error }}",
         "mcp_server_info_title": "已连接的MCP服务器信息",
         "no_commit_file_name": "无法获取commit_id关联的actions 目录下的文件名: {{commit_id}}",
-        "yaml_update_success": "✅ 成功更新YAML文件: {{yaml_file}}，添加了how_to_reproduce字段",
+        "yaml_update_success": "✅ 成功更新YAML文件: {{yaml_file}}",
         "yaml_save_error": "❌ 保存YAML文件出错 {{yaml_file}}: {{error}}",
     }}
 

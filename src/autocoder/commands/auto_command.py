@@ -178,7 +178,7 @@ class CommandAutoTuner:
     def get_conversations(self) -> List[CommandMessage]:
         """Get conversation history from memory file"""
         conversation = load_memory_file(args=self.args)
-        return [command_message for command_message in conversation.current_conversation]
+        return [command_message.message for command_message in conversation.current_conversation]
 
     @byzerllm.prompt()
     def _analyze(self, request: AutoCommandRequest) -> str:
@@ -287,7 +287,7 @@ class CommandAutoTuner:
             "command_combination_readme": self._command_combination_readme.prompt()
         }
     
-
+    @byzerllm.prompt()
     def _command_combination_readme(self) -> str:
         """
         <function_combination_readme>
@@ -314,12 +314,19 @@ class CommandAutoTuner:
         ### 关于对话大小的问题
         我们对话历史以及查看的内容累计不能超过 {{ conversation_safe_zone_tokens }} 个tokens,当你读取索引文件 (get_project_map) 的时候，你可以看到
         每个文件的tokens数，你可以根据这个信息来决定如何读取这个文件。如果不确定，使用 count_file_tokens 函数来获取文件的tokens数,再决定如何读取。
-        而对于分析一个超大文件推荐组合 read_files 带上 line_ranges 参数来读取，或者组合 read_file_withread_file_with_keyword_ranges 等来读取，
+        而对于分析一个超大文件推荐组合 read_files 带上 line_ranges 参数来读取，或者组合 read_file_with_keyword_ranges 等来读取，
         每个函数你还可以使用多次来获取更多信息。
         
         ### 善用脚本完成一些基本的操作
         根据操作系统，终端类型，脚本类型等各种信息，在涉及到路径或者脚本的时候，需要考虑平台差异性。
 
+        ### 关于查看文件的技巧
+        在使用 read_files 之前，如果你有明确的目标，比如查看这个文件某个函数在这个文件的实现，你可以先用 read_file_with_keyword_ranges 函数来大致定位,该函数会返回你看到的
+        内容的行号范围，你可以通过拓展这个行号范围继续使用 read_file_with_line_ranges 来查看完整函数信息，或者使用 read_files 函数带上 line_ranges 参数来精确读取。 
+
+        如果你没有明确目标，需要单纯查看这个文件获取必要的信息，可以先通过 count_file_tokens 函数来获取文件的tokens数，如果数目小于安全对话窗口的tokens数的1/2, 那么可以直接用
+        read_files 函数来读取，否则建议一次读取200-600行，多次读取直到找到合适的信息。
+        
         ## 其他一些注意事项
         1. 使用 read_files 时，一次性读取文件数量不要超过1个,每次只读取200行。如果发现读取的内容不够，则继续读取下面200行。
         2. 确实有必要才使用 get_project_structure 函数，否则可以多使用 list_files 函数来查看目录。
@@ -358,8 +365,8 @@ class CommandAutoTuner:
         history_tasks = action_yml_file_manager.to_tasks_prompt(limit=8)
         new_messages = []
         if self.args.enable_task_history:
-            new_messages.append(CommandMessage(role="user", content=history_tasks))
-            new_messages.append(CommandMessage(role="assistant", content="好的，我直到这些历史任务对项目的变更了，我也会参考历史任务来更好的理解你的需求。"))
+            new_messages.append({"role": "user", "content": history_tasks})
+            new_messages.append({"role": "assistant", "content": "好的，我知道最近的任务对项目的变更了，我会参考这些来更好的理解你的需求。"})
         
         # 构造对话上下文
         conversations = new_messages + [{"role": "user", "content": prompt}]
