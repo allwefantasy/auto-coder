@@ -153,7 +153,8 @@ def stream_out(
     title: Optional[str] = None,
     final_title: Optional[str] = None,
     args: Optional[AutoCoderArgs] = None,
-    display_func: Optional[Callable] = None
+    display_func: Optional[Callable] = None,
+    extra_meta: Dict[str, Any] = {}
 ) -> Tuple[str, Optional[SingleOutputMeta]]:
     """
     处理流式输出事件并在终端中展示
@@ -255,7 +256,12 @@ def stream_out(
                     content=display_delta,
                     sequence=sequence
                 )
-                get_event_manager(args.event_file).write_stream(content.to_dict())
+                get_event_manager(args.event_file).write_stream(content.to_dict(),
+                    metadata={
+                        "stream_out_type": extra_meta.get("stream_out_type", ""),
+                        "is_streaming":True,
+                        "output":"delta"
+                    })
                 sequence += 1
                 
                 if request_id and request_queue:
@@ -288,7 +294,11 @@ def stream_out(
             content = EventContentCreator.create_markdown_result(
                 content=final_display_content                
             )
-            get_event_manager(args.event_file).write_result(content.to_dict())
+            get_event_manager(args.event_file).write_result(content.to_dict(), metadata={
+                "stream_out_type": extra_meta.get("stream_out_type", ""),
+                "is_streaming":True,
+                "output":"result"
+            })
 
             live.update(
                 Panel(

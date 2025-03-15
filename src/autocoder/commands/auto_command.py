@@ -1,3 +1,4 @@
+from enum import Enum
 import json
 import os
 import time
@@ -29,8 +30,7 @@ from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
 from autocoder.run_context import get_run_context
-
-
+from autocoder.common.stream_out_type import AutoCommandStreamOutType
 class CommandMessage(BaseModel):
     role: str
     content: str
@@ -435,7 +435,10 @@ class CommandAutoTuner:
             title=title,
             final_title=final_title,
             display_func=extract_command_response,
-            args=self.args
+            args=self.args,
+            extra_meta={
+                "stream_out_type": AutoCommandStreamOutType.COMMAND_SUGGESTION.value
+            }
         )
 
         if last_meta:
@@ -509,7 +512,8 @@ class CommandAutoTuner:
                                                                     command=command
                                                                     )
             printer.print_str_in_terminal(temp_content,style="blue")
-            get_event_manager(self.args.event_file).write_result(EventContentCreator.create_markdown_result(content=
+
+            get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(content=
                                                            EventContentCreator.ResultCommandPrepareStatContent(
                                                                command=command,
                                                                parameters=parameters
@@ -598,7 +602,10 @@ class CommandAutoTuner:
                     title=title,
                     final_title=final_title,
                     display_func=extract_command_response,
-                    args=self.args
+                    args=self.args,
+                    extra_meta={
+                        "stream_out_type": AutoCommandStreamOutType.COMMAND_SUGGESTION.value
+                    }
                 )
 
                 if last_meta:

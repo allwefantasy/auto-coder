@@ -29,7 +29,8 @@ class StreamState(str, Enum):
 
 class BaseEventContent(BaseModel):
     """所有事件内容的基础模型"""
-    timestamp: float = Field(default_factory=lambda: datetime.now().timestamp())
+    timestamp: float = Field(default_factory=lambda: datetime.now().timestamp()) 
+    metadata: Dict[str, Any] = Field(default_factory=dict)   
     
     model_config = ConfigDict(
         extra="allow",  # 允许额外的字段
@@ -86,8 +87,7 @@ class ResultContent(BaseEventContent):
     用于表示处理完成的结果
     """
     content: Any
-    content_type: ContentType = ContentType.TEXT
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    content_type: ContentType = ContentType.TEXT    
     
     model_config = ConfigDict(
         json_schema_extra={
@@ -307,23 +307,25 @@ class CompletionContent(BaseEventContent):
 
 
 # 工厂函数，便于创建各种内容
-def create_stream_thinking(content: str, sequence: int = 0) -> StreamContent:
+def create_stream_thinking(content: str, sequence: int = 0, metadata: Dict[str, Any] = {}) -> StreamContent:
     """创建思考中的流式内容"""
     return StreamContent(
         state=StreamState.THINKING,
         content=content,
         sequence=sequence,
-        is_thinking=True
+        is_thinking=True,
+        metadata=metadata
     )
 
 
-def create_stream_content(content: str, sequence: int = 0) -> StreamContent:
+def create_stream_content(content: str, sequence: int = 0, metadata: Dict[str, Any] = {}) -> StreamContent:
     """创建正式的流式内容"""
     return StreamContent(
         state=StreamState.CONTENT,
         content=content,
         sequence=sequence,
-        is_thinking=False
+        is_thinking=False,
+        metadata=metadata
     )
 
 

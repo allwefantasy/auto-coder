@@ -9,7 +9,6 @@ import uuid
 import time
 import json
 
-
 class EventType(Enum):
     """Event types supported by the system"""
     RESULT = auto()  # 结果数据
@@ -29,14 +28,16 @@ class Event:
     timestamp: float = field(default_factory=time.time)
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     content: Dict[str, Any] = field(default_factory=dict)
-    
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert event to dictionary for serialization"""
         return {
             "event_id": self.event_id,
             "event_type": self.event_type.name,
             "timestamp": self.timestamp,
-            "content": self.content
+            "content": self.content,
+            "metadata": self.metadata
         }
     
     def to_json(self) -> str:
@@ -51,7 +52,8 @@ class Event:
             event_type=event_type,
             event_id=data.get("event_id", str(uuid.uuid4())),
             timestamp=data.get("timestamp", time.time()),
-            content=data.get("content", {})
+            content=data.get("content", {}),
+            metadata=data.get("metadata", {})
         )
     
     @classmethod
