@@ -387,7 +387,7 @@ def build_index_and_filter_files(
 
     get_event_manager(args.event_file).write_result(
         EventContentCreator.create_result(
-            content=EventContentCreator.create_result_context_used(
+            content=EventContentCreator.ResultContextUsedContent(
                 files=final_filenames,
                 title="Files Used as Context",
                 description=""
