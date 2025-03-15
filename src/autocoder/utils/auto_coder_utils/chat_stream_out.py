@@ -255,7 +255,7 @@ def stream_out(
                     content=display_delta,
                     sequence=sequence
                 )
-                get_event_manager().write_stream(content.to_dict())
+                get_event_manager(args.event_file).write_stream(content.to_dict())
                 sequence += 1
                 
                 if request_id and request_queue:
@@ -288,7 +288,7 @@ def stream_out(
             content = EventContentCreator.create_markdown_result(
                 content=final_display_content                
             )
-            get_event_manager().write_result(content.to_dict())
+            get_event_manager(args.event_file).write_result(content.to_dict())
 
             live.update(
                 Panel(

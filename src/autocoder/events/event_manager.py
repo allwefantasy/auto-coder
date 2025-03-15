@@ -302,4 +302,26 @@ class EventManager:
         
         # Close the event store
         if isinstance(self.event_store, JsonlEventStore):
-            self.event_store.close() 
+            self.event_store.close()
+
+    def truncate(self) -> None:
+        """
+        Clear all events from the event store.
+        This truncates the underlying file and resets the last read event ID.
+        
+        Warning: This operation cannot be undone and will permanently delete all events.
+        """
+        if not hasattr(self.event_store, 'truncate'):
+            raise NotImplementedError("The current event store does not support truncation")
+        
+        # Reset the last read event ID
+        self._last_read_event_id = None
+        
+        # Clear blocking events and callbacks
+        self._blocking_events.clear()
+        self._response_callbacks.clear()
+        
+        # Truncate the store
+        self.event_store.truncate()
+        
+        logger.debug("Event store has been truncated") 

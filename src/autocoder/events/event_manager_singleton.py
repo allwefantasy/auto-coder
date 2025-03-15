@@ -17,35 +17,31 @@ class EventManagerSingleton:
     EventManager的单例包装器。确保整个应用程序中只有一个EventManager实例。
     默认使用.auto-coder/auto-coder.web/events.jsonl文件存储事件。
     """
-    _instance: Optional[EventManager] = None
-    _lock = threading.Lock()
-    _default_event_file = os.path.join(".auto-coder", "auto-coder.web", "events.jsonl")
+    _default_instance: Optional[EventManager] = None
+    _instances: Dict[str, EventManager] = {}
     
     @classmethod
     def get_instance(cls, event_file: Optional[str] = None) -> EventManager:
         """
-        获取EventManager的单例实例。
+        Get an EventManager instance for the specified event file.
         
         Args:
-            event_file: 事件文件路径，如果为None则使用默认路径
+            event_file: Event file path to use as key. If None, returns the default instance.
             
         Returns:
-            EventManager实例
+            EventManager: The appropriate EventManager instance
         """
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    # 如果未提供event_file，使用默认路径
-                    if event_file is None:
-                        event_file = cls._default_event_file
-                    
-                    # 确保目录存在
-                    os.makedirs(os.path.dirname(event_file), exist_ok=True)
-                    
-                    logger.debug(f"创建EventManager单例，使用文件路径: {event_file}")
-                    cls._instance = EventManager.create(event_file)
+        if event_file is None:
+            # Use default instance logic
+            if cls._default_instance is None:
+                cls._default_instance = EventManager()
+            return cls._default_instance
         
-        return cls._instance
+        # If event_file is provided, use it as a key to store/retrieve EventManager instances
+        if event_file not in cls._instances:
+            cls._instances[event_file] = EventManager(event_file)
+        
+        return cls._instances[event_file]
     
     @classmethod
     def reset_instance(cls) -> None:
@@ -75,6 +71,9 @@ class EventManagerSingleton:
 def get_event_manager(event_file: Optional[str] = None) -> EventManager:
     """
     获取EventManager的单例实例。
+    
+    如果没有提供event_file，将返回默认的EventManager实例。
+    如果提供了event_file，将返回或创建与该文件关联的EventManager实例。
     
     Args:
         event_file: 事件文件路径，如果为None则使用默认路径

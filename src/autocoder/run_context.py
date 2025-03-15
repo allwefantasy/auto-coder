@@ -3,7 +3,7 @@ Module providing a singleton class to track run context (terminal or web mode).
 """
 from enum import Enum, auto
 from typing import Optional
-from loguru import logger
+
 
 class RunMode(Enum):
     """Enum representing different run modes for Auto-Coder."""
@@ -41,7 +41,6 @@ class RunContext:
     
     def set_mode(self, mode: RunMode) -> None:
         """Set the current run mode."""
-        logger.info(f"The run mode is set to {mode}")
         self._mode = mode
     
     def is_terminal(self) -> bool:

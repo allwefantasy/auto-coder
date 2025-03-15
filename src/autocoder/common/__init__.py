@@ -410,6 +410,8 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     enable_task_history: Optional[bool] = False
 
+    event_file: Optional[str] = None
+
     class Config:
         protected_namespaces = ()
 

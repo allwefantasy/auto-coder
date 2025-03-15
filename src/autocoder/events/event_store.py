@@ -77,6 +77,14 @@ class EventStore(ABC):
         """
         pass
 
+    @abstractmethod
+    def truncate(self) -> None:
+        """
+        Clear the event store by truncating the file.
+        This removes all events from the store.
+        """
+        pass
+
 
 class JsonlEventStore(EventStore):
     """
@@ -348,4 +356,21 @@ class JsonlEventStore(EventStore):
         """
         self._stop_monitoring.set()
         if self._monitor_thread.is_alive():
-            self._monitor_thread.join(timeout=1.0) 
+            self._monitor_thread.join(timeout=1.0)
+    
+    def truncate(self) -> None:
+        """
+        Clear the event store by truncating the file.
+        This removes all events from the store.
+        """
+        with self.rwlock.gen_wlock():
+            # Open the file in write mode with truncation ('w')
+            with open(self.file_path, 'w', encoding='utf-8') as f:
+                pass  # Just open and close to truncate
+            
+            # Reset the last event ID
+            self._last_event_id = None
+            
+            # Notify all watchers
+            for watcher in self._watchers:
+                watcher.set() 

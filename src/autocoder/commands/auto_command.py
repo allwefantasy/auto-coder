@@ -469,7 +469,7 @@ class CommandAutoTuner:
                                                                         output_cost, 4),
                                                                     speed=round(speed, 2))
             printer.print_str_in_terminal(temp_content)
-            get_event_manager().write_result(
+            get_event_manager(self.args.event_file).write_result(
                 EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
                     model_name=model_name,
                     elapsed_time=elapsed_time,
@@ -508,7 +508,7 @@ class CommandAutoTuner:
                                                                     command=command
                                                                     )
             printer.print_str_in_terminal(temp_content,style="blue")
-            get_event_manager().write_result(EventContentCreator.create_markdown_result(content=
+            get_event_manager(self.args.event_file).write_result(EventContentCreator.create_markdown_result(content=
                                                            EventContentCreator.ResultCommandPrepareStatContent(
                                                                command=command,
                                                                parameters=parameters
@@ -538,7 +538,7 @@ class CommandAutoTuner:
                     temp_content = printer.get_message_from_key_with_format(
                         "auto_command_action_break", command=command, action=action)
                     printer.print_str_in_terminal(temp_content,style="yellow")
-                    get_event_manager().write_result(
+                    get_event_manager(self.args.event_file).write_result(
                         EventContentCreator.create_result(content=temp_content))
                     break
 
@@ -559,7 +559,7 @@ class CommandAutoTuner:
                     border_style="blue",
                     padding=(1, 2)
                 ))
-                get_event_manager().write_result(
+                get_event_manager(self.args.event_file).write_result(
                     EventContentCreator.create_result(content=EventContentCreator.ResultCommandExecuteStatContent(
                         command=command,
                         content=content
@@ -631,7 +631,7 @@ class CommandAutoTuner:
                                                   output_cost, 4),
                                               speed=round(speed, 2))
                     printer.print_str_in_terminal(temp_content)
-                    get_event_manager().write_result(
+                    get_event_manager(self.args.event_file).write_result(
                         EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
                             model_name=model_name,
                             elapsed_time=elapsed_time,
@@ -654,7 +654,7 @@ class CommandAutoTuner:
             else:
                 temp_content = printer.get_message_from_key_with_format("auto_command_break",  command=command)
                 printer.print_str_in_terminal(temp_content,style="yellow")
-                get_event_manager().write_result(
+                get_event_manager(self.args.event_file).write_result(
                     EventContentCreator.create_result(content=temp_content))
                 break
 
