@@ -8,7 +8,7 @@ import time
 import threading
 from typing import List, Optional, Dict, Any, Iterator, Union, Callable, Tuple
 from abc import ABC, abstractmethod
-import fcntl
+# import fcntl
 from pathlib import Path
 from readerwriterlock import rwlock
 
@@ -118,8 +118,8 @@ class JsonlEventStore(EventStore):
         """Update the last event ID by reading the last event from the file."""
         with self.rwlock.gen_rlock():
             try:
-                with open(self.file_path, 'r') as f:
-                    fcntl.flock(f, fcntl.LOCK_SH)
+                with open(self.file_path, 'r', encoding='utf-8') as f:
+                    # fcntl.flock(f, fcntl.LOCK_SH)
                     try:
                         # Get the last line of the file that contains a valid event
                         last_event = None
@@ -145,7 +145,8 @@ class JsonlEventStore(EventStore):
                         if last_event:
                             self._last_event_id = last_event.event_id
                     finally:
-                        fcntl.flock(f, fcntl.LOCK_UN)
+                        # fcntl.flock(f, fcntl.LOCK_UN)
+                        pass
             except FileNotFoundError:
                 # File doesn't exist yet
                 pass
@@ -158,30 +159,25 @@ class JsonlEventStore(EventStore):
             List of all events from the file
         """
         events = []
-        with open(self.file_path, 'r') as f:
-            fcntl.flock(f, fcntl.LOCK_SH)
-            try:
-                for line in f:
-                    line = line.strip()
-                    if not line:
+        with open(self.file_path, 'r', encoding='utf-8') as f:                        
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    event_data = json.loads(line)
+                    if "event_type" not in event_data:
                         continue
-                    try:
-                        event_data = json.loads(line)
-                        if "event_type" not in event_data:
-                            continue
-                        
-                        if "response_to" in event_data:
-                            event = ResponseEvent.from_dict(event_data)
-                        else:
-                            event = Event.from_dict(event_data)
-                        
-                        events.append(event)
-                    except json.JSONDecodeError:
-                        # Skip invalid lines
-                        pass
-            finally:
-                fcntl.flock(f, fcntl.LOCK_UN)
-        
+                    
+                    if "response_to" in event_data:
+                        event = ResponseEvent.from_dict(event_data)
+                    else:
+                        event = Event.from_dict(event_data)
+                    
+                    events.append(event)
+                except json.JSONDecodeError:
+                    # Skip invalid lines
+                    pass                    
         return events
     
     def append_event(self, event: Event) -> None:
@@ -192,13 +188,14 @@ class JsonlEventStore(EventStore):
             event: The event to append
         """
         with self.rwlock.gen_wlock():
-            with open(self.file_path, 'a') as f:
-                fcntl.flock(f, fcntl.LOCK_EX)
+            with open(self.file_path, 'a', encoding='utf-8') as f:
+                # fcntl.flock(f, fcntl.LOCK_EX)
                 try:
                     f.write(event.to_json() + '\n')
                     f.flush()
                 finally:
-                    fcntl.flock(f, fcntl.LOCK_UN)
+                    # fcntl.flock(f, fcntl.LOCK_UN)
+                    pass
             
             self._last_event_id = event.event_id
             
