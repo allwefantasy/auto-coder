@@ -37,6 +37,8 @@ from autocoder.index.symbols_utils import (
     SymbolType,
     symbols_info_to_str,
 )
+from autocoder.run_context import get_run_context
+from autocoder.events.event_manager_singleton import get_event_manager
 
 
 @byzerllm.prompt()
@@ -111,6 +113,17 @@ class AutoCommandTools:
                 ),
             )
             return response_json
+        
+        # 如果是在web模式下，则使用event_manager事件来询问用户
+        if get_run_context().is_web():
+            answer = get_event_manager().ask_user(prompt=question)
+            self.result_manager.append(content=answer, meta = {
+                "action": "ask_user",
+                "input": {
+                    "question": question
+                }
+            })
+            return answer
 
         console = Console()
 

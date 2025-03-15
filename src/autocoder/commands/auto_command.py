@@ -28,6 +28,7 @@ from autocoder.common.mcp_server import get_mcp_server, McpServerInfoRequest
 from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
+from autocoder.run_context import get_run_context
 
 
 class CommandMessage(BaseModel):
@@ -499,9 +500,10 @@ class CommandAutoTuner:
                                                                     )
             printer.print_str_in_terminal(temp_content,style="blue")
             get_event_manager().write_result(
-                EventContentCreator.create_markdown_result(content=temp_content))
-
+                EventContentCreator.create_markdown_result(content=temp_content))                           
+            
             self.execute_auto_command(command, parameters)
+            
             content = ""
             last_result = result_manager.get_last()
             if last_result:

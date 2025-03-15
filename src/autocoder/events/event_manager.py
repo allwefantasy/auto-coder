@@ -28,7 +28,7 @@ class EventManager:
             event_store: The event store to use
         """
         self.event_store = event_store        
-        self._last_read_event_id: Optional[str] = None
+        self._last_read_event_id: Optional[str] = self.event_store._last_event_id
         self._blocking_events: Dict[str, threading.Event] = {}
         self._response_callbacks: Dict[str, Callable[[str], None]] = {}
     
