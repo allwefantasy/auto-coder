@@ -434,7 +434,8 @@ class CommandAutoTuner:
             model_name=model_name,
             title=title,
             final_title=final_title,
-            display_func=extract_command_response
+            display_func=extract_command_response,
+            args=self.args
         )
 
         if last_meta:
@@ -596,7 +597,8 @@ class CommandAutoTuner:
                     model_name=model_name,
                     title=title,
                     final_title=final_title,
-                    display_func=extract_command_response
+                    display_func=extract_command_response,
+                    args=self.args
                 )
 
                 if last_meta:

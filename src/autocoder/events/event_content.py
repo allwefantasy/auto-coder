@@ -110,14 +110,38 @@ class ResultTokenStatContent(BaseModel):
     output_cost:float = 0.0
     speed:float = 0.0
 
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return self.model_dump()
+    
+    def to_json(self) -> str:
+        """转换为JSON字符串"""
+        return self.model_dump_json()
+
 
 class ResultCommandPrepareStatContent(BaseModel):
     command:str = ""
     parameters:Dict[str,Any] = {}    
 
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return self.model_dump()
+    
+    def to_json(self) -> str:
+        """转换为JSON字符串"""
+        return self.model_dump_json()
+
 class ResultCommandExecuteStatContent(BaseModel):    
     command:str = ""
     content:str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return self.model_dump()
+    
+    def to_json(self) -> str:
+        """转换为JSON字符串"""
+        return self.model_dump_json()
     
 
 
