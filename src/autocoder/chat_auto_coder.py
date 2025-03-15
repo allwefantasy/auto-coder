@@ -476,7 +476,7 @@ def main():
                 and user_input
                 and not user_input.startswith("/")
             ):
-                auto_command(ARGS, user_input)
+                auto_command(user_input)
 
             elif memory["mode"] == "voice_input" and not user_input.startswith("/"):
                 text = voice_input()

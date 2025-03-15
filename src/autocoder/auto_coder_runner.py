@@ -52,7 +52,6 @@ from autocoder.utils.thread_utils import run_in_raw_thread
 from autocoder.common.command_completer import CommandCompleter,FileSystemModel as CCFileSystemModel,MemoryConfig as CCMemoryModel
 from autocoder.common.conf_validator import ConfigValidator
 from autocoder import command_parser as CommandParser
-from autocoder.events.event_manager_singleton import get_event_manager
 
 class SymbolItem(BaseModel):
     symbol_name: str
@@ -83,8 +82,6 @@ memory = {
 }
 
 project_root = os.getcwd()
-
-_ = get_event_manager(os.path.join(project_root,".auto-coder", "auto-coder.web", "events.jsonl"))
 
 base_persist_dir = os.path.join(project_root,".auto-coder", "plugins", "chat-auto-coder")
 
@@ -2593,10 +2590,12 @@ def conf_import(path: str):
     import_conf(os.getcwd(), path)
 
 @run_in_raw_thread()
-def auto_command(params,query: str):
+def auto_command(query: str,extra_args: Dict[str,Any]={}):
     """处理/auto指令"""
     from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
     args = get_final_config()
+    if "event_file_id" in extra_args:
+        args.event_file = os.path.join(args.source_dir,".auto-coder", "auto-coder.web", "events",f"{extra_args['event_file_id']}.jsonl")
     # help(query)
 
     # 准备请求参数
