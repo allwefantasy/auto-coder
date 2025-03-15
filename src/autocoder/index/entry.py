@@ -27,10 +27,14 @@ from autocoder.common import SourceCodeList
 from autocoder.common.context_pruner import PruneContext
 from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events import event_content as EventContentCreator
+
+
 def build_index_and_filter_files(
     llm, args: AutoCoderArgs, sources: List[SourceCode]
 ) -> SourceCodeList:
-    
+
     action_yml_file_manager = ActionYmlFileManager(args.source_dir)
     # Initialize timing and statistics
     total_start_time = time.monotonic()
@@ -61,11 +65,11 @@ def build_index_and_filter_files(
             return file_path.strip()[2:]
         return file_path
 
-    # 文件路径 -> TargetFile 
+    # 文件路径 -> TargetFile
     final_files: Dict[str, TargetFile] = {}
 
     # 文件路径 -> 文件在文件列表中的位置（越前面表示越相关）
-    file_positions:Dict[str,int] = {}
+    file_positions: Dict[str, int] = {}
 
     # Phase 1: Process REST/RAG/Search sources
     printer = Printer()
@@ -78,7 +82,7 @@ def build_index_and_filter_files(
             )
     phase_end = time.monotonic()
     stats["timings"]["process_tagged_sources"] = phase_end - phase_start
-        
+
     if not args.skip_build_index and llm:
         # Phase 2: Build index
         if args.request_id and not args.skip_events:
@@ -109,31 +113,34 @@ def build_index_and_filter_files(
                     })
                 )
             )
-        
-        
+
         if not args.skip_filter_index and args.index_filter_model:
-            model_name = getattr(index_manager.index_filter_llm, 'default_model_name', None)
+            model_name = getattr(
+                index_manager.index_filter_llm, 'default_model_name', None)
             if not model_name:
-                model_name = "unknown(without default model name)"    
-            printer.print_in_terminal("quick_filter_start", style="blue", model_name=model_name)
-            quick_filter = QuickFilter(index_manager,stats,sources)        
-            quick_filter_result = quick_filter.filter(index_manager.read_index(),args.query)            
-            
+                model_name = "unknown(without default model name)"
+            printer.print_in_terminal(
+                "quick_filter_start", style="blue", model_name=model_name)
+            quick_filter = QuickFilter(index_manager, stats, sources)
+            quick_filter_result = quick_filter.filter(
+                index_manager.read_index(), args.query)
+
             final_files.update(quick_filter_result.files)
-            
+
             if quick_filter_result.file_positions:
                 file_positions.update(quick_filter_result.file_positions)
-        
+
         if not args.skip_filter_index and not args.index_filter_model:
             model_name = getattr(index_manager.llm, 'default_model_name', None)
             if not model_name:
-                model_name = "unknown(without default model name)" 
-            printer.print_in_terminal("normal_filter_start", style="blue",model_name=model_name)
-            normal_filter = NormalFilter(index_manager,stats,sources)
-            normal_filter_result = normal_filter.filter(index_manager.read_index(),args.query)
+                model_name = "unknown(without default model name)"
+            printer.print_in_terminal(
+                "normal_filter_start", style="blue", model_name=model_name)
+            normal_filter = NormalFilter(index_manager, stats, sources)
+            normal_filter_result = normal_filter.filter(
+                index_manager.read_index(), args.query)
             # Merge normal filter results into final_files
             final_files.update(normal_filter_result.files)
-        
 
     def display_table_and_get_selections(data):
         from prompt_toolkit.shortcuts import checkboxlist_dialog
@@ -173,7 +180,7 @@ def build_index_and_filter_files(
 
     def print_selected(data):
         console = Console()
-        
+
         # 获取终端宽度
         console_width = console.width
 
@@ -185,18 +192,19 @@ def build_index_and_filter_files(
             width=min(console_width - 10, 120),
             expand=True
         )
-        
+
         # 优化列配置
-        table.add_column("File Path", 
-                        style="cyan", 
-                        width=int((console_width - 10) * 0.6),  # 分配 60% 宽度给文件路径
-                        overflow="fold",  # 自动折叠过长的路径
-                        no_wrap=False)  # 允许换行
-        
-        table.add_column("Reason", 
-                        style="green", 
-                        width=int((console_width - 10) * 0.4),  # 分配 40% 宽度给原因
-                        no_wrap=False)
+        table.add_column("File Path",
+                         style="cyan",
+                         # 分配 60% 宽度给文件路径
+                         width=int((console_width - 10) * 0.6),
+                         overflow="fold",  # 自动折叠过长的路径
+                         no_wrap=False)  # 允许换行
+
+        table.add_column("Reason",
+                         style="green",
+                         width=int((console_width - 10) * 0.4),  # 分配 40% 宽度给原因
+                         no_wrap=False)
 
         # 添加处理过的文件路径
         for file, reason in data:
@@ -215,7 +223,7 @@ def build_index_and_filter_files(
 
     # Phase 6: File selection and limitation
     printer.print_in_terminal("phase6_file_selection")
-    phase_start = time.monotonic()    
+    phase_start = time.monotonic()
 
     if args.index_filter_file_num > 0:
         logger.info(
@@ -246,7 +254,7 @@ def build_index_and_filter_files(
 
     # Phase 7: Display results and prepare output
     printer.print_in_terminal("phase7_preparing_output")
-    phase_start = time.monotonic()    
+    phase_start = time.monotonic()
     try:
         print_selected(
             [
@@ -263,11 +271,11 @@ def build_index_and_filter_files(
         for file in final_filenames:
             print(f"{file} - {final_files[file].reason}")
 
-    # source_code = ""  
+    # source_code = ""
     source_code_list = SourceCodeList(sources=[])
     depulicated_sources = set()
-    
-    ## 先去重
+
+    # 先去重
     temp_sources = []
     for file in sources:
         if file.module_name in final_filenames:
@@ -278,27 +286,31 @@ def build_index_and_filter_files(
             # source_code += f"{file.source_code}\n\n"
             temp_sources.append(file)
 
-    ## 开启了裁剪，则需要做裁剪，不过目前只针对 quick filter 生效
+    # 开启了裁剪，则需要做裁剪，不过目前只针对 quick filter 生效
     if args.context_prune:
-        context_pruner = PruneContext(max_tokens=args.conversation_prune_safe_zone_tokens, args=args, llm=llm)
+        context_pruner = PruneContext(
+            max_tokens=args.conversation_prune_safe_zone_tokens, args=args, llm=llm)
         # 如果 file_positions 不为空，则通过 file_positions 来获取文件
         if file_positions:
-            ## 拿到位置列表，然后根据位置排序 得到 [(pos,file_path)]
-            ## 将 [(pos,file_path)] 转换为 [file_path]
-            ## 通过 [file_path] 顺序调整 temp_sources 的顺序             
-            ## MARK 
-             # 将 file_positions 转换为 [(pos, file_path)] 的列表
-            position_file_pairs = [(pos, file_path) for file_path, pos in file_positions.items()]
+            # 拿到位置列表，然后根据位置排序 得到 [(pos,file_path)]
+            # 将 [(pos,file_path)] 转换为 [file_path]
+            # 通过 [file_path] 顺序调整 temp_sources 的顺序
+            # MARK
+            # 将 file_positions 转换为 [(pos, file_path)] 的列表
+            position_file_pairs = [(pos, file_path)
+                                   for file_path, pos in file_positions.items()]
             # 按位置排序
             position_file_pairs.sort(key=lambda x: x[0])
             # 提取排序后的文件路径列表
-            sorted_file_paths = [file_path for _, file_path in position_file_pairs]
+            sorted_file_paths = [file_path for _,
+                                 file_path in position_file_pairs]
             # 根据 sorted_file_paths 重新排序 temp_sources
-            temp_sources.sort(key=lambda x: sorted_file_paths.index(x.module_name) if x.module_name in sorted_file_paths else len(sorted_file_paths))                       
-            
-        pruned_files = context_pruner.handle_overflow(temp_sources, [{"role":"user","content":args.query}], args.context_prune_strategy)        
-        source_code_list.sources = pruned_files
+            temp_sources.sort(key=lambda x: sorted_file_paths.index(
+                x.module_name) if x.module_name in sorted_file_paths else len(sorted_file_paths))
 
+        pruned_files = context_pruner.handle_overflow(
+            temp_sources, [{"role": "user", "content": args.query}], args.context_prune_strategy)
+        source_code_list.sources = pruned_files
 
     if args.request_id and not args.skip_events:
         queue_communicate.send_event(
@@ -309,7 +321,7 @@ def build_index_and_filter_files(
                     (file.module_name, "") for file in source_code_list.sources
                 ])
             )
-        )        
+        )
 
     stats["final_files"] = len(source_code_list.sources)
     phase_end = time.monotonic()
@@ -319,7 +331,7 @@ def build_index_and_filter_files(
     total_end_time = time.monotonic()
     total_time = total_end_time - total_start_time
     stats["timings"]["total"] = total_time
-    
+
     # Calculate total filter time
     total_filter_time = (
         stats["timings"]["quick_filter"] +
@@ -354,7 +366,7 @@ def build_index_and_filter_files(
     #     summary,
     #     text_options={"justify": "left", "style": "bold white"},
     #     panel_options={
-    #         "title": "Indexing and Filtering Summary", 
+    #         "title": "Indexing and Filtering Summary",
     #         "border_style": "bold blue",
     #         "padding": (1, 2),
     #         "expand": False
@@ -372,19 +384,31 @@ def build_index_and_filter_files(
                 })
             )
         )
-    
+
+    get_event_manager(args.event_file).write_result(
+        EventContentCreator.create_result(
+            content=EventContentCreator.create_result_context_used(
+                files=final_filenames,
+                title="Files Used as Context",
+                description=""
+            ).to_dict()
+        )
+    )
+
     if args.file:
         action_file_name = os.path.basename(args.file)
         dynamic_urls = []
-        
+
         for file in source_code_list.sources:
             dynamic_urls.append(file.module_name)
-        
+
         args.dynamic_urls = dynamic_urls
 
-        update_yaml_success = action_yml_file_manager.update_yaml_field(action_file_name, "dynamic_urls", args.dynamic_urls)    
-        if not update_yaml_success:        
+        update_yaml_success = action_yml_file_manager.update_yaml_field(
+            action_file_name, "dynamic_urls", args.dynamic_urls)
+        if not update_yaml_success:
             printer = Printer()
-            printer.print_in_terminal("yaml_save_error", style="red", yaml_file=action_file_name)  
-    
+            printer.print_in_terminal(
+                "yaml_save_error", style="red", yaml_file=action_file_name)
+
     return source_code_list

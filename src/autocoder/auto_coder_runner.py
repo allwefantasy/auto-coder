@@ -2594,19 +2594,12 @@ def conf_import(path: str):
 def auto_command(query: str,extra_args: Dict[str,Any]={}):
     """处理/auto指令"""
     from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
-    args = get_final_config()    
-    if "event_file_id" in extra_args:
-        args.event_file = os.path.join(args.source_dir,".auto-coder", "auto-coder.web", "events",f"{extra_args['event_file_id']}.jsonl")
-    # help(query)
+    args = get_final_config()            
 
     # 准备请求参数
     request = AutoCommandRequest(
         user_input=query        
     )
-
-    logger.info("=============")
-    logger.info(args.event_file)
-    logger.info("=============")
 
     # 初始化调优器
     llm = get_single_llm(args.chat_model or args.model,product_mode=args.product_mode)    

@@ -50,6 +50,8 @@ from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
 from autocoder.privacy.model_filter import ModelPathFilter
 from autocoder.common.result_manager import ResultManager
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events import event_content as EventContentCreator
 
 console = Console()
 

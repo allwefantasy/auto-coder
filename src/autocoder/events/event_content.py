@@ -99,7 +99,8 @@ class ResultContent(BaseEventContent):
             }
         }
     )
-
+## ResultContent.content 字段的类型
+## begin===============================
 class ResultTokenStatContent(BaseModel):
     model_name:str = ""
     elapsed_time:float = 0.0
@@ -142,8 +143,22 @@ class ResultCommandExecuteStatContent(BaseModel):
     def to_json(self) -> str:
         """转换为JSON字符串"""
         return self.model_dump_json()
-    
 
+class ResultContextUsedContent(BaseModel):
+    files:List[str] = []
+    title:str = ""
+    description:str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return self.model_dump()
+    
+    def to_json(self) -> str:
+        """转换为JSON字符串"""
+        return self.model_dump_json()
+    
+## ResultContent.content 字段的类型
+## end===============================
 
 class MarkDownResultContent(ResultContent):
     """
