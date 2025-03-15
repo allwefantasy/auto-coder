@@ -8,7 +8,7 @@ import threading
 from typing import Optional, Dict, Any
 
 from .event_manager import EventManager
-from .event_types import Event, EventType, ResponseEvent
+from .event_store import EventStore, JsonlEventStore
 from loguru import logger
 
 
@@ -39,7 +39,7 @@ class EventManagerSingleton:
         
         # If event_file is provided, use it as a key to store/retrieve EventManager instances
         if event_file not in cls._instances:
-            cls._instances[event_file] = EventManager(event_file)
+            cls._instances[event_file] = EventManager(JsonlEventStore(event_file))  
         
         return cls._instances[event_file]
     
