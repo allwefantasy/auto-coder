@@ -100,6 +100,26 @@ class ResultContent(BaseEventContent):
         }
     )
 
+class ResultTokenStatContent(BaseModel):
+    model_name:str = ""
+    elapsed_time:float = 0.0
+    first_token_time:float = 0.0
+    input_tokens:int = 0
+    output_tokens:int = 0
+    input_cost:float = 0.0
+    output_cost:float = 0.0
+    speed:float = 0.0
+
+
+class ResultCommandPrepareStatContent(BaseModel):
+    command:str = ""
+    parameters:Dict[str,Any] = {}    
+
+class ResultCommandExecuteStatContent(BaseModel):    
+    command:str = ""
+    content:str = ""
+    
+
 
 class MarkDownResultContent(ResultContent):
     """

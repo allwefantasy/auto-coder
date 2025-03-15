@@ -470,7 +470,16 @@ class CommandAutoTuner:
                                                                     speed=round(speed, 2))
             printer.print_str_in_terminal(temp_content)
             get_event_manager().write_result(
-                EventContentCreator.create_result(content=temp_content))
+                EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                    model_name=model_name,
+                    elapsed_time=elapsed_time,
+                    first_token_time=last_meta.first_token_time,
+                    input_tokens=last_meta.input_tokens_count,
+                    output_tokens=last_meta.generated_tokens_count,
+                    input_cost=round(input_cost, 4),
+                    output_cost=round(output_cost, 4),
+                    speed=round(speed, 2)
+                )).to_dict())
 
         # 这里打印
 
@@ -499,11 +508,13 @@ class CommandAutoTuner:
                                                                     command=command
                                                                     )
             printer.print_str_in_terminal(temp_content,style="blue")
-            get_event_manager().write_result(
-                EventContentCreator.create_markdown_result(content=temp_content))                           
+            get_event_manager().write_result(EventContentCreator.create_markdown_result(content=
+                                                           EventContentCreator.ResultCommandPrepareStatContent(
+                                                               command=command,
+                                                               parameters=parameters
+                                                           ).to_dict()))                           
             
             self.execute_auto_command(command, parameters)
-            
             content = ""
             last_result = result_manager.get_last()
             if last_result:
@@ -549,7 +560,10 @@ class CommandAutoTuner:
                     padding=(1, 2)
                 ))
                 get_event_manager().write_result(
-                    EventContentCreator.create_result(content=f"{title}\n{content}"))
+                    EventContentCreator.create_result(content=EventContentCreator.ResultCommandExecuteStatContent(
+                        command=command,
+                        content=content
+                    ).to_dict()))
                 # 保持原content不变，继续后续处理
 
                 # 添加新的对话内容
@@ -618,7 +632,13 @@ class CommandAutoTuner:
                                               speed=round(speed, 2))
                     printer.print_str_in_terminal(temp_content)
                     get_event_manager().write_result(
-                        EventContentCreator.create_result(content=temp_content))
+                        EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                            model_name=model_name,
+                            elapsed_time=elapsed_time,
+                            first_token_time=last_meta.first_token_time,
+                            input_tokens=last_meta.input_tokens_count,
+                            output_tokens=last_meta.generated_tokens_count,
+                        ).to_dict()))
 
                 conversations.append({"role": "assistant", "content": result})
                 # 提取 JSON 并转换为 AutoCommandResponse
