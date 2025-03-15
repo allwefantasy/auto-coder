@@ -34,7 +34,7 @@ class EventManagerSingleton:
         if event_file is None:
             # Use default instance logic
             if cls._default_instance is None:
-                cls._default_instance = EventManager()
+                cls._default_instance = EventManager(JsonlEventStore(os.path.join(".auto-coder", "auto-coder.web", "events.jsonl")))
             return cls._default_instance
         
         # If event_file is provided, use it as a key to store/retrieve EventManager instances
