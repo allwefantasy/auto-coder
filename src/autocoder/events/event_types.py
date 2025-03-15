@@ -15,9 +15,9 @@ class EventType(Enum):
     RESULT = auto()  # 结果数据
     STREAM = auto()  # 流式数据
     ASK_USER = auto()  # 请求用户输入
-    USER_RESPONSE = auto()  # 用户响应
-    SYSTEM_COMMAND = auto()  # 系统命令
+    USER_RESPONSE = auto()  # 用户响应    
     ERROR = auto()  # 错误事件
+    COMPLETION = auto()  # 完成事件
 
 
 @dataclass

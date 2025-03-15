@@ -101,6 +101,25 @@ class ResultContent(BaseEventContent):
     )
 
 
+class MarkDownResultContent(ResultContent):
+    """
+    Markdown结果内容模型
+    用于表示Markdown格式的处理结果
+    """
+    content_type: ContentType = ContentType.MARKDOWN
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "content": "# 处理结果\n处理已完成，详情如下...",
+                "content_type": "markdown",
+                "metadata": {"processing_time": 1.23, "status": "success"},
+                "timestamp": 1626888000.0
+            }
+        }
+    )
+
+
 class AskUserContent(BaseEventContent):
     """
     询问用户的内容模型
@@ -252,6 +271,23 @@ def create_stream_content(content: str, sequence: int = 0) -> StreamContent:
 def create_result(content: Any, metadata: Dict[str, Any] = None) -> ResultContent:
     """创建结果内容"""
     return ResultContent(
+        content=content,
+        metadata=metadata or {}
+    )
+
+
+def create_markdown_result(content: str, metadata: Dict[str, Any] = None) -> MarkDownResultContent:
+    """
+    创建Markdown结果内容
+    
+    Args:
+        content: Markdown格式的内容
+        metadata: 元数据信息
+        
+    Returns:
+        MarkDownResultContent 实例
+    """
+    return MarkDownResultContent(
         content=content,
         metadata=metadata or {}
     )

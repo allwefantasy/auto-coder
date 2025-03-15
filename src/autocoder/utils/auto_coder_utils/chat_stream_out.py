@@ -252,7 +252,7 @@ def stream_out(
                 
                 
                 content = EventContentCreator.create_stream_thinking(
-                    content=display_content,
+                    content=display_delta,
                     sequence=sequence
                 )
                 get_event_manager().write_stream(content.to_dict())
@@ -285,7 +285,7 @@ def stream_out(
             if display_func:
                 final_display_content = display_func(assistant_response)
 
-            content = EventContentCreator.create_result(
+            content = EventContentCreator.create_markdown_result(
                 content=final_display_content                
             )
             get_event_manager().write_result(content.to_dict())

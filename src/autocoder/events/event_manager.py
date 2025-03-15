@@ -27,8 +27,7 @@ class EventManager:
         Args:
             event_store: The event store to use
         """
-        self.event_store = event_store
-        self.lock = threading.RLock()
+        self.event_store = event_store        
         self._last_read_event_id: Optional[str] = None
         self._blocking_events: Dict[str, threading.Event] = {}
         self._response_callbacks: Dict[str, Callable[[str], None]] = {}
@@ -60,6 +59,38 @@ class EventManager:
         if not isinstance(content, dict):
             content = content.to_dict()
         event = Event(event_type=EventType.RESULT, content=content)
+        self.event_store.append_event(event)
+        return event
+    
+    def write_completion(self, content: Union[Dict[str, Any], Any]) -> Event:
+        """
+        Write a completion event.
+        
+        Args:
+            content: The content of the completion (CompletionContent or dict)
+            
+        Returns:
+            The created event
+        """
+        if not isinstance(content, dict):
+            content = content.to_dict()
+        event = Event(event_type=EventType.COMPLETION, content=content)
+        self.event_store.append_event(event)
+        return event
+    
+    def write_error(self, content: Union[Dict[str, Any], Any]) -> Event:
+        """
+        Write an error event.
+        
+        Args:
+            content: The content of the error (ErrorContent or dict)
+            
+        Returns:
+            The created event
+        """
+        if not isinstance(content, dict):
+            content = content.to_dict()
+        event = Event(event_type=EventType.ERROR, content=content)
         self.event_store.append_event(event)
         return event
     
@@ -104,14 +135,13 @@ class EventManager:
         logger.debug(f"Created ASK_USER event with ID: {event.event_id}")
         
         # Register a blocking event
-        blocker = threading.Event()
-        with self.lock:
-            self.event_store.append_event(event)            
-            self._blocking_events[event.event_id] = blocker
-            logger.debug(f"self._blocking_events: {self._blocking_events}")
-            if callback:
-                self._response_callbacks[event.event_id] = callback
-                logger.debug(f"Registered callback for event: {event.event_id}")
+        blocker = threading.Event()        
+        self.event_store.append_event(event)            
+        self._blocking_events[event.event_id] = blocker
+        logger.debug(f"self._blocking_events: {self._blocking_events}")
+        if callback:
+            self._response_callbacks[event.event_id] = callback
+            logger.debug(f"Registered callback for event: {event.event_id}")
         
         # Wait for response
         logger.debug(f"Waiting for response to event: {event.event_id}")
@@ -141,13 +171,12 @@ class EventManager:
         else:
             logger.warning("No valid response found in event store")
         
-        # 清理资源（移到这里确保在获取响应后才清理）
-        with self.lock:
-            if event.event_id in self._blocking_events:
-                del self._blocking_events[event.event_id]
-                logger.debug(f"Clean up blocker for event: {event.event_id}")
-            else:
-                logger.debug(f"No blocker found for event: {event.event_id} during cleanup")
+        # 清理资源（移到这里确保在获取响应后才清理）        
+        if event.event_id in self._blocking_events:
+            del self._blocking_events[event.event_id]
+            logger.debug(f"Clean up blocker for event: {event.event_id}")
+        else:
+            logger.debug(f"No blocker found for event: {event.event_id} during cleanup")
             
             # 注意：回调不在这里清理，而是在respond_to_user中清理
             # 这样回调函数仍然可用
@@ -180,15 +209,14 @@ class EventManager:
                 
         # 获取回调和阻塞器
         callback = None
-        
-        with self.lock:
-            # 检查是否有回调
-            if ask_event_id in self._response_callbacks:
-                callback = self._response_callbacks[ask_event_id]
-                # 暂时不删除回调，确保不会丢失
-                logger.debug(f"Retrieved callback for event: {ask_event_id}")
-            else:
-                logger.debug(f"No callback found for event: {ask_event_id}")
+                
+        # 检查是否有回调
+        if ask_event_id in self._response_callbacks:
+            callback = self._response_callbacks[ask_event_id]
+            # 暂时不删除回调，确保不会丢失
+            logger.debug(f"Retrieved callback for event: {ask_event_id}")
+        else:
+            logger.debug(f"No callback found for event: {ask_event_id}")
                             
         
         # 如果找到了回调，执行它
@@ -198,21 +226,19 @@ class EventManager:
                 callback(response)
                 logger.debug(f"Callback execution completed for event: {ask_event_id}")
                 
-                # 回调执行后再移除它
-                with self.lock:
-                    if ask_event_id in self._response_callbacks:
-                        del self._response_callbacks[ask_event_id]
+                # 回调执行后再移除它                
+                if ask_event_id in self._response_callbacks:
+                    del self._response_callbacks[ask_event_id]
             except Exception as e:
                 logger.error(f"Error in response callback: {e}")   
 
-        # 检查是否存在对应的阻塞事件
-        with self.lock:
-            logger.debug(f"self._blocking_events: {self._blocking_events}")
-            if ask_event_id in self._blocking_events:
-                self._blocking_events[ask_event_id].set()
-                logger.debug(f"Unblocked event: {ask_event_id}")
-            else:
-                logger.warning(f"No blocking event found for event_id: {ask_event_id}")
+        # 检查是否存在对应的阻塞事件        
+        logger.debug(f"self._blocking_events: {self._blocking_events}")
+        if ask_event_id in self._blocking_events:
+            self._blocking_events[ask_event_id].set()
+            logger.debug(f"Unblocked event: {ask_event_id}")
+        else:
+            logger.warning(f"No blocking event found for event_id: {ask_event_id}")
         
         return event
     
@@ -230,16 +256,15 @@ class EventManager:
             
         Returns:
             List of events
-        """
-        with self.lock:
-            events = self.event_store.get_events(
-                after_id=self._last_read_event_id,
-                event_types=event_types
-            )
-            
-            if events:
-                self._last_read_event_id = events[-1].event_id
-                return events
+        """        
+        events = self.event_store.get_events(
+            after_id=self._last_read_event_id,
+            event_types=event_types
+        )
+        
+        if events:
+            self._last_read_event_id = events[-1].event_id
+            return events
         
         # No events and not blocking
         if not block:
@@ -249,22 +274,20 @@ class EventManager:
         def is_new_event(e: Event) -> bool:
             if event_types and e.event_type not in event_types:
                 return False
-            
-            with self.lock:
-                return self._last_read_event_id is None or e.event_id != self._last_read_event_id
+                        
+            return self._last_read_event_id is None or e.event_id != self._last_read_event_id
         
         event = self.event_store.wait_for_event(is_new_event, timeout=timeout)
         
-        if event:
-            with self.lock:
-                events = self.event_store.get_events(
-                    after_id=self._last_read_event_id,
-                    event_types=event_types
-                )
-                
-                if events:
-                    self._last_read_event_id = events[-1].event_id
-                    return events
+        if event:            
+            events = self.event_store.get_events(
+                after_id=self._last_read_event_id,
+                event_types=event_types
+            )
+            
+            if events:
+                self._last_read_event_id = events[-1].event_id
+                return events
         
         return []
         
@@ -273,10 +296,9 @@ class EventManager:
         """
         Close the event manager and its event store.
         """
-        # Unblock any waiting threads
-        with self.lock:
-            for blocker in self._blocking_events.values():
-                blocker.set()
+        # Unblock any waiting threads        
+        for blocker in self._blocking_events.values():
+            blocker.set()
         
         # Close the event store
         if isinstance(self.event_store, JsonlEventStore):

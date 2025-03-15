@@ -33,6 +33,7 @@ jupyter_client
 prompt-toolkit
 tokenizers
 aiofiles
+readerwriterlock
 
 # dependencies only for stable_diffusion
 # safetensors

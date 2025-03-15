@@ -113,6 +113,45 @@
 }
 ```
 
+## 3.1 MarkDownResultContent
+
+表示Markdown格式的处理结果，继承自ResultContent：
+
+```json
+{
+  "timestamp": 1626888000.0,
+  "content": "# 处理结果\n处理已完成，详情如下...",  // Markdown格式的内容
+  "content_type": "markdown",  // 固定为 "markdown"
+  "metadata": {
+    "processing_time": 1.23,
+    "status": "success",
+    "items_processed": 50
+    // 可以包含任何额外信息
+  }
+}
+```
+
+完整事件示例：
+
+```json
+{
+  "event_id": "8f9e5a3c-a1b2-4c3d-9e8f-7a6b5c4d3e2f",
+  "event_type": "RESULT",
+  "timestamp": 1626888000.0,
+  "content": {
+    "timestamp": 1626888000.0,
+    "content": "# 分析报告\n\n## 总览\n- 文件总数: 25\n- 代码行数: 1520\n- 执行时间: 0.87秒\n\n## 详细分析\n| 文件类型 | 数量 | 比例 |\n|---------|-----|------|\n| .py     | 18  | 72%  |\n| .json   | 5   | 20%  |\n| .md     | 2   | 8%   |",
+    "content_type": "markdown",
+    "metadata": {
+      "file_count": 25,
+      "total_lines": 1520,
+      "execution_time": 0.87,
+      "success": true
+    }
+  }
+}
+```
+
 ## 4. AskUserContent
 
 用于请求用户提供输入：
@@ -355,4 +394,74 @@ error_content = create_error(
 
 event_manager = get_event_manager()
 event_manager.write_result(error_content.to_dict())
+```
+
+## 使用专用写入方法
+
+事件管理器提供了多个专用方法写入不同类型的事件内容，更加语义化且便于使用：
+
+### 使用 write_completion 方法
+
+用于记录操作成功完成的事件：
+
+```python
+from autocoder.events import get_event_manager, create_completion
+
+event_manager = get_event_manager()
+completion = create_completion(
+    success_code="BUILD_COMPLETE",
+    success_message="项目构建成功",
+    result={"files_generated": 15, "warnings": 2},
+    details={"duration": 5.2, "environment": "production"}
+)
+event_manager.write_completion(completion)
+```
+
+### 使用 write_error 方法
+
+用于记录操作失败或错误的事件：
+
+```python
+from autocoder.events import get_event_manager, create_error
+
+event_manager = get_event_manager()
+error = create_error(
+    error_code="VALIDATION_ERROR",
+    error_message="数据验证失败",
+    details={"field": "email", "reason": "格式无效", "value": "invalid-email"}
+)
+event_manager.write_error(error)
+```
+
+### 使用 write_markdown_result 方法
+
+用于发送 Markdown 格式的结果：
+
+```python
+from autocoder.events import get_event_manager, create_markdown_result
+
+event_manager = get_event_manager()
+markdown_content = create_markdown_result(
+    content="# 分析报告\n\n## 性能指标\n- 响应时间: 120ms\n- 吞吐量: 1000 req/s\n\n## 建议\n优化数据库查询可提高性能",
+    metadata={"analysis_time": 2.5, "critical_issues": 0}
+)
+event_manager.write_result(markdown_content)
+```
+
+### 使用 write_stream 方法
+
+用于流式输出内容：
+
+```python
+from autocoder.events import get_event_manager, create_stream_content, create_stream_thinking
+
+event_manager = get_event_manager()
+
+# 输出思考过程
+thinking = create_stream_thinking("正在分析数据结构...", sequence=1)
+event_manager.write_stream(thinking)
+
+# 输出正式内容
+content = create_stream_content("分析完成，发现3个问题", sequence=2)
+event_manager.write_stream(content)
 ```
