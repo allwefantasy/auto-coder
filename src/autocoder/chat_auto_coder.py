@@ -1,3 +1,8 @@
+from autocoder.run_context import get_run_context,RunMode
+
+# 设置运行模式为终端模式
+get_run_context().set_mode(RunMode.TERMINAL)
+
 import argparse
 import os
 from prompt_toolkit import PromptSession
