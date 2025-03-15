@@ -52,6 +52,7 @@ from autocoder.utils.thread_utils import run_in_raw_thread
 from autocoder.common.command_completer import CommandCompleter,FileSystemModel as CCFileSystemModel,MemoryConfig as CCMemoryModel
 from autocoder.common.conf_validator import ConfigValidator
 from autocoder import command_parser as CommandParser
+from loguru import logger
 
 class SymbolItem(BaseModel):
     symbol_name: str
@@ -2593,7 +2594,7 @@ def conf_import(path: str):
 def auto_command(query: str,extra_args: Dict[str,Any]={}):
     """处理/auto指令"""
     from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
-    args = get_final_config()
+    args = get_final_config()    
     if "event_file_id" in extra_args:
         args.event_file = os.path.join(args.source_dir,".auto-coder", "auto-coder.web", "events",f"{extra_args['event_file_id']}.jsonl")
     # help(query)
@@ -2602,6 +2603,10 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
     request = AutoCommandRequest(
         user_input=query        
     )
+
+    logger.info("=============")
+    logger.info(args.event_file)
+    logger.info("=============")
 
     # 初始化调优器
     llm = get_single_llm(args.chat_model or args.model,product_mode=args.product_mode)    
