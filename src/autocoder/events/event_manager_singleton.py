@@ -11,7 +11,7 @@ import byzerllm
 
 from .event_manager import EventManager
 from .event_store import EventStore, JsonlEventStore
-from .event_types import Event
+from .event_types import Event, EventType
 from loguru import logger
 
 
@@ -138,6 +138,7 @@ def _format_events_prompt(event_files: List[Dict]) -> str:
 def to_events_prompt(limit: int = 5, project_path: Optional[str] = None) -> str:
     """
     获取最近的N条事件文件并读取其中的事件内容，返回格式化后的提示文本。
+    排除类型为 STREAM 的事件，以减少输出内容的冗余。
     
     Args:
         limit: 最多返回的事件文件数量，默认为5
@@ -196,6 +197,11 @@ def to_events_prompt(limit: int = 5, project_path: Optional[str] = None) -> str:
                         try:
                             event_json = json.loads(line)
                             event = Event.from_dict(event_json)
+                            
+                            # 排除 STREAM 类型的事件
+                            if event.event_type == EventType.STREAM:
+                                continue
+                                
                             events.append({
                                 "event_type": event.event_type.name,
                                 "content": json.dumps(event.content, ensure_ascii=False, indent=2) if event.content else "",
