@@ -39,6 +39,7 @@ from autocoder.index.symbols_utils import (
 )
 from autocoder.run_context import get_run_context
 from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events import event_content as EventContentCreator
 
 
 @byzerllm.prompt()
@@ -53,6 +54,7 @@ def detect_rm_command(command: str) -> Bool:
     如果该脚本中包含删除目录或者文件的命令，请返回True，否则返回False。
     """
 
+
 @contextmanager
 def redirect_stdout():
     original_stdout = sys.stdout
@@ -60,10 +62,11 @@ def redirect_stdout():
     try:
         yield f
     finally:
-        sys.stdout = original_stdout    
+        sys.stdout = original_stdout
+
 
 class AutoCommandTools:
-    def __init__(self, args: AutoCoderArgs, 
+    def __init__(self, args: AutoCoderArgs,
                  llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
         self.args = args
         self.llm = llm
@@ -71,7 +74,7 @@ class AutoCommandTools:
         self.printer = Printer()
 
     def execute_mcp_server(self, query: str) -> str:
-        from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest                               
+        from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest
         mcp_server = get_mcp_server()
         response = mcp_server.send_request(
             McpRequest(
@@ -80,10 +83,10 @@ class AutoCommandTools:
                 product_mode=self.args.product_mode
             )
         )
-        
+
         result = response.result
-        
-        self.result_manager.append(content=result, meta = {
+
+        self.result_manager.append(content=result, meta={
             "action": "execute_mcp_server",
             "input": {
                 "query": query
@@ -91,8 +94,7 @@ class AutoCommandTools:
         })
         return result
 
-
-    def ask_user(self,question:str) -> str:
+    def ask_user(self, question: str) -> str:
         '''
         如果你对用户的问题有什么疑问，或者你想从用户收集一些额外信息，可以调用此方法。
         输入参数 question 是你对用户的提问。
@@ -103,7 +105,7 @@ class AutoCommandTools:
 
         if self.args.request_id and not self.args.silence and not self.args.skip_events:
             event_data = {
-                "question": question                
+                "question": question
             }
             response_json = queue_communicate.send_event(
                 request_id=self.args.request_id,
@@ -113,11 +115,12 @@ class AutoCommandTools:
                 ),
             )
             return response_json
-        
+
         # 如果是在web模式下，则使用event_manager事件来询问用户
         if get_run_context().is_web():
-            answer = get_event_manager(self.args.event_file).ask_user(prompt=question)
-            self.result_manager.append(content=answer, meta = {
+            answer = get_event_manager(
+                self.args.event_file).ask_user(prompt=question)
+            self.result_manager.append(content=answer, meta={
                 "action": "ask_user",
                 "input": {
                     "question": question
@@ -137,15 +140,16 @@ class AutoCommandTools:
         )
 
         # 显示问题面板
-        console.print(question_panel)        
+        console.print(question_panel)
 
-        session = PromptSession( message=self.printer.get_message_from_key('tool_ask_user'))
+        session = PromptSession(
+            message=self.printer.get_message_from_key('tool_ask_user'))
         try:
             answer = session.prompt()
         except KeyboardInterrupt:
-            answer = ""        
+            answer = ""
 
-        self.result_manager.append(content=answer, meta = {
+        self.result_manager.append(content=answer, meta={
             "action": "ask_user",
             "input": {
                 "question": question
@@ -153,8 +157,27 @@ class AutoCommandTools:
         })
 
         return answer
-    
+
     def response_user(self, response: str):
+
+        # 如果是在web模式下，则使用event_manager事件来询问用户
+        if get_run_context().is_web():
+            answer = get_event_manager(
+                self.args.event_file).write_result(
+                EventContentCreator.create_result(
+                    EventContentCreator.ResultSummaryContent(
+                        summary=response
+                    )
+                )
+            )
+            self.result_manager.append(content=response, meta={
+                "action": "response_user",
+                "input": {
+                    "response": response
+                }
+            })
+            return answer
+
         console = Console()
         answer_text = Text(response, style="italic")
         answer_panel = Panel(
@@ -165,7 +188,7 @@ class AutoCommandTools:
         )
         console.print(answer_panel)
 
-        self.result_manager.append(content=response, meta = {
+        self.result_manager.append(content=response, meta={
             "action": "response_user",
             "input": {
                 "response": response
@@ -173,7 +196,6 @@ class AutoCommandTools:
         })
 
         return response
-        
 
     def run_python_code(self, code: str) -> str:
         """
@@ -191,8 +213,8 @@ class AutoCommandTools:
             )
         finally:
             interpreter.close()
-        
-        self.result_manager.append(content=s, meta = {
+
+        self.result_manager.append(content=s, meta={
             "action": "run_python_code",
             "input": {
                 "code": code
@@ -219,8 +241,8 @@ class AutoCommandTools:
             )
         finally:
             interpreter.close()
-        
-        self.result_manager.append(content=s, meta = {
+
+        self.result_manager.append(content=s, meta={
             "action": "run_shell_code",
             "input": {
                 "script": script
@@ -228,13 +250,13 @@ class AutoCommandTools:
         })
 
         return s
-   
+
     def get_related_files_by_symbols(self, query: str) -> str:
         """
         你可以给出类名，函数名，以及文件的用途描述等信息，该工具会根据这些信息返回项目中相关的文件。
         """
         v = self.get_project_related_files(query)
-        self.result_manager.append(content=v, meta = {
+        self.result_manager.append(content=v, meta={
             "action": "get_related_files_by_symbols",
             "input": {
                 "query": query
@@ -258,18 +280,18 @@ class AutoCommandTools:
         pp.run()
         sources = pp.sources
 
-        index_manager = IndexManager(llm=self.llm, sources=sources, args=self.args)
+        index_manager = IndexManager(
+            llm=self.llm, sources=sources, args=self.args)
         target_files = index_manager.get_target_files_by_query(query)
         file_list = target_files.file_list
-        v =  ",".join([file.file_path for file in file_list])
-        self.result_manager.append(content=v, meta = {
+        v = ",".join([file.file_path for file in file_list])
+        self.result_manager.append(content=v, meta={
             "action": "get_project_related_files",
             "input": {
                 "query": query
             }
         })
         return v
-    
 
     def _get_sources(self):
         if self.args.project_type == "ts":
@@ -281,11 +303,12 @@ class AutoCommandTools:
         pp.run()
         return pp.sources
 
-    def _get_index(self):        
+    def _get_index(self):
         sources = self._get_sources()
-        index_manager = IndexManager(llm=self.llm, sources=sources, args=self.args)
+        index_manager = IndexManager(
+            llm=self.llm, sources=sources, args=self.args)
         return index_manager
-    
+
     def get_project_map(self, file_paths: Optional[str] = None) -> str:
         """
         该工具会返回项目中所有已经被构建索引的文件以及该文件的信息，诸如该文件的用途，导入的包，定义的类，函数，变量等信息。
@@ -297,18 +320,18 @@ class AutoCommandTools:
 
         注意，这个工具无法返回所有文件的信息，因为有些文件可能没有被索引。
         尽量避免使用该工具。
-        """        
+        """
         index_manager = self._get_index()
         s = index_manager.read_index_as_str()
         index_data = json.loads(s)
 
         final_result = []
-        
+
         # 解析文件路径列表（如果提供了）
         file_path_list = []
         if file_paths:
             file_path_list = [path.strip() for path in file_paths.split(",")]
-        
+
         for k in index_data.values():
             value = {}
             value["file_name"] = k["module_name"]
@@ -317,19 +340,19 @@ class AutoCommandTools:
             value["index_tokens"] = k.get("generated_tokens_count", -1)
             value["file_tokens_cost"] = k.get("input_tokens_cost", -1)
             value["index_tokens_cost"] = k.get("generated_tokens_cost", -1)
-            
+
             # 如果提供了文件路径列表，检查当前文件是否匹配任何一个路径
             if file_path_list:
                 if any(path in k["module_name"] for path in file_path_list):
                     final_result.append(value)
             else:
                 final_result.append(value)
-                
+
         v = json.dumps(final_result, ensure_ascii=False)
         tokens = count_tokens(v)
         if tokens > self.args.conversation_prune_safe_zone_tokens/2.0:
             result = f"The project map is too large to return. (tokens: {tokens}). Try to use another function."
-            self.result_manager.add_result(content=result, meta = {
+            self.result_manager.add_result(content=result, meta={
                 "action": "get_project_map",
                 "input": {
                     "file_paths": file_paths
@@ -337,15 +360,15 @@ class AutoCommandTools:
             })
             return result
 
-        self.result_manager.add_result(content=v, meta = {
+        self.result_manager.add_result(content=v, meta={
             "action": "get_project_map",
             "input": {
                 "file_paths": file_paths
             }
         })
         return v
-    
-    def read_file_with_keyword_ranges(self, file_path: str, keyword:str, before_size:int = 100, after_size:int = 100) -> str:
+
+    def read_file_with_keyword_ranges(self, file_path: str, keyword: str, before_size: int = 100, after_size: int = 100) -> str:
         """
         该函数用于读取包含了关键字(keyword)的行，以及该行前后指定大小的行。
         输入参数:
@@ -353,7 +376,7 @@ class AutoCommandTools:
         - keyword: 关键字
         - before_size: 关键字所在行之前的行数
         - after_size: 关键字所在行之后的行数
-        
+
         返回值:
         - 返回str类型，返回包含关键字的行，以及该行前后指定大小的行。
 
@@ -361,7 +384,7 @@ class AutoCommandTools:
         ```
         ##File: /path/to/file.py
         ##Line: 10-20
-        
+
         内容
         ```
         """
@@ -376,34 +399,34 @@ class AutoCommandTools:
 
         result = []
         try:
-            
-            lines = files_utils.read_lines(absolute_path)            
+
+            lines = files_utils.read_lines(absolute_path)
             # Find all lines containing the keyword
             keyword_lines = []
             for i, line in enumerate(lines):
                 if keyword.lower() in line.lower():
                     keyword_lines.append(i)
-            
+
             # Process each keyword line and its surrounding range
             processed_ranges = set()
             for line_num in keyword_lines:
                 # Calculate range boundaries
                 start = max(0, line_num - before_size)
                 end = min(len(lines), line_num + after_size + 1)
-                
+
                 # Check if this range overlaps with any previously processed range
                 range_key = (start, end)
                 if range_key in processed_ranges:
                     continue
-                
+
                 processed_ranges.add(range_key)
-                
+
                 # Format the content block
                 content = f"##File: {absolute_path}\n"
                 content += f"##Line: {start+1}-{end}\n\n"
                 content += "".join(lines[start:end])
                 result.append(content)
-                
+
         except Exception as e:
             v = f"Error reading file {absolute_path}: {str(e)}"
             self.result_manager.add_result(content=v, meta={
@@ -416,7 +439,7 @@ class AutoCommandTools:
                 }
             })
             return v
-        
+
         final_result = "\n\n".join(result)
         self.result_manager.add_result(content=final_result, meta={
             "action": "read_file_with_keyword_ranges",
@@ -427,7 +450,7 @@ class AutoCommandTools:
                 "after_size": after_size
             }
         })
-        
+
         return final_result
 
     def read_files(self, paths: str, line_ranges: Optional[str] = None) -> str:
@@ -460,21 +483,22 @@ class AutoCommandTools:
         """
         paths = [p.strip() for p in paths.split(",")]
         source_code_str = ""
-        
+
         # Parse line ranges if provided
         file_line_ranges = {}
         if line_ranges:
             ranges_per_file = line_ranges.split(",")
             if len(ranges_per_file) != len(paths):
-                self.result_manager.add_result(content="Number of line ranges must match number of files", meta = {
+                self.result_manager.add_result(content="Number of line ranges must match number of files", meta={
                     "action": "read_files",
                     "input": {
                         "paths": paths,
                         "line_ranges": line_ranges
                     }
                 })
-                raise ValueError("Number of line ranges must match number of files")
-            
+                raise ValueError(
+                    "Number of line ranges must match number of files")
+
             for path, ranges in zip(paths, ranges_per_file):
                 file_line_ranges[path] = []
                 for range_str in ranges.split("/"):
@@ -492,7 +516,7 @@ class AutoCommandTools:
                         if path in os.path.join(root, file):
                             absolute_path = os.path.join(root, file)
                             break
-            
+
             if path in file_line_ranges:
                 # Read specific line ranges
                 lines = files_utils.read_lines(absolute_path)
@@ -502,7 +526,8 @@ class AutoCommandTools:
                     start = max(0, start - 1)
                     end = min(len(lines), end)
                     content = "".join(lines[start:end])
-                    filtered_lines.extend(f"##File: {absolute_path}\n##Line: {start}-{end}\n\n{content}")
+                    filtered_lines.extend(
+                        f"##File: {absolute_path}\n##Line: {start}-{end}\n\n{content}")
                 source_code = "".join(filtered_lines)
                 # Add source_code to source_code_str
                 source_code_str += source_code
@@ -510,11 +535,12 @@ class AutoCommandTools:
                 # Read entire file if no range specified
                 content = files_utils.read_file(absolute_path)
                 source_code = f"##File: {absolute_path}\n\n{content}"
-                
-                sc = SourceCode(module_name=absolute_path, source_code=source_code)
+
+                sc = SourceCode(module_name=absolute_path,
+                                source_code=source_code)
                 source_code_str += f"{sc.source_code}\n\n"
-        
-        self.result_manager.add_result(content=source_code_str, meta = {
+
+        self.result_manager.add_result(content=source_code_str, meta={
             "action": "read_files",
             "input": {
                 "paths": paths,
@@ -532,24 +558,24 @@ class AutoCommandTools:
         index_manager = self._get_index()
         result = []
         index_items = index_manager.read_index()
-        
+
         for item in index_items:
             symbols = extract_symbols(item.symbols)
             for symbol_info in symbols:
                 # 进行精确匹配和模糊匹配
-                if (symbol_info.name == symbol or 
-                    symbol.lower() in symbol_info.name.lower()):
+                if (symbol_info.name == symbol or
+                        symbol.lower() in symbol_info.name.lower()):
                     # 检查是否已经添加过该文件路径
                     if symbol_info.module_name not in result:
                         result.append(symbol_info.module_name)
-        
+
         # 生成以逗号分隔的文件路径列表
         file_paths = ",".join(result)
-        
+
         # 如果没有找到任何匹配项，返回提示信息
         if not file_paths:
             file_paths = f"未找到符号 '{symbol}' 的定义"
-        
+
         # 记录操作结果
         self.result_manager.add_result(content=file_paths, meta={
             "action": "find_symbols_definition",
@@ -557,7 +583,7 @@ class AutoCommandTools:
                 "symbol": symbol
             }
         })
-        
+
         return file_paths
 
     def list_files(self, path: str) -> str:
@@ -571,7 +597,7 @@ class AutoCommandTools:
         if not os.path.isabs(path):
             # 如果是相对路径，将其转换为绝对路径
             target_path = os.path.join(self.args.source_dir, path)
-        
+
         # 确保路径存在且是目录
         if not os.path.exists(target_path):
             result = f"目录不存在: {target_path}"
@@ -582,7 +608,7 @@ class AutoCommandTools:
                 }
             })
             return result
-        
+
         if not os.path.isdir(target_path):
             result = f"指定路径不是目录: {target_path}"
             self.result_manager.add_result(content=result, meta={
@@ -592,7 +618,7 @@ class AutoCommandTools:
                 }
             })
             return result
-        
+
         # 只收集当前目录下的文件，不递归子目录
         file_list = []
         for item in os.listdir(target_path):
@@ -600,10 +626,10 @@ class AutoCommandTools:
             # 只添加文件，不添加目录
             if os.path.isfile(item_path):
                 file_list.append(item_path)
-        
+
         # 生成以逗号分隔的文件列表
         result = ",".join(file_list)
-        
+
         # 记录结果
         self.result_manager.add_result(content=result, meta={
             "action": "list_files",
@@ -611,10 +637,10 @@ class AutoCommandTools:
                 "path": path
             }
         })
-        
+
         return result
 
-    def get_project_structure(self) -> str:        
+    def get_project_structure(self) -> str:
         if self.args.project_type == "ts":
             pp = TSProject(args=self.args, llm=self.llm)
         elif self.args.project_type == "py":
@@ -623,24 +649,23 @@ class AutoCommandTools:
             pp = SuffixProject(args=self.args, llm=self.llm, file_filter=None)
         pp.run()
         s = pp.get_tree_like_directory_structure()
-        
+
         tokens = count_tokens(s)
         if tokens > self.args.conversation_prune_safe_zone_tokens / 2.0:
             result = f"The project structure is too large to return. (tokens: {tokens}). Try to use another function."
-            self.result_manager.add_result(content=result, meta = {
+            self.result_manager.add_result(content=result, meta={
                 "action": "get_project_structure",
                 "input": {
                 }
             })
             return result
 
-        self.result_manager.add_result(content=s, meta = {
+        self.result_manager.add_result(content=s, meta={
             "action": "get_project_structure",
             "input": {
             }
         })
         return s
-
 
     def find_files_by_name(self, keyword: str) -> str:
         """
@@ -658,14 +683,14 @@ class AutoCommandTools:
                     matched_files.append(os.path.join(root, file))
 
         v = ",".join(matched_files)
-        self.result_manager.add_result(content=v, meta = {
+        self.result_manager.add_result(content=v, meta={
             "action": "find_files_by_name",
             "input": {
                 "keyword": keyword
             }
         })
         return v
-    
+
     def count_file_tokens(self, file_path: str) -> int:
         """
         该工具用于计算指定文件的token数量。
@@ -704,18 +729,18 @@ class AutoCommandTools:
         excluded_file_patterns = [
             '*.pyc', '*.pyo', '*.pyd', '*.egg-info', '*.log'
         ]
-        
+
         matched_files = []
-        
+
         for root, dirs, files in os.walk(self.args.source_dir):
             # 移除需要排除的目录
             dirs[:] = [d for d in dirs if d not in excluded_dirs]
-            
+
             # 过滤掉需要排除的文件
             files[:] = [f for f in files if not any(
                 f.endswith(pattern[1:]) for pattern in excluded_file_patterns
             )]
-            
+
             for file in files:
                 file_path = os.path.join(root, file)
                 try:
@@ -732,7 +757,7 @@ class AutoCommandTools:
                 break
 
         v = ",".join(matched_files[:10])
-        self.result_manager.add_result(content=v, meta = {
+        self.result_manager.add_result(content=v, meta={
             "action": "find_files_by_content",
             "input": {
                 "keyword": keyword

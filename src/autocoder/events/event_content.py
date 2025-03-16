@@ -157,6 +157,19 @@ class ResultContextUsedContent(BaseModel):
         """转换为JSON字符串"""
         return self.model_dump_json()
     
+
+## 最后总结性消息内容
+class ResultSummaryContent(BaseModel):
+    summary:str = ""    
+
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return self.model_dump()
+    
+    def to_json(self) -> str:
+        """转换为JSON字符串"""
+        return self.model_dump_json()
+    
 ## ResultContent.content 字段的类型
 ## end===============================
 

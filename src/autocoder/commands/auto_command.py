@@ -378,7 +378,7 @@ class CommandAutoTuner:
         请根据命令执行结果以及前面的对话，返回下一个函数。
 
         *** 非常非常重要的提示 ***
-        1. 如果已经满足要求，则不要返回任何函数,确保 suggestions 为空。
+        1. 如果已经满足要求，则总是调用 response_user函数，对用户的初始问题根据前面所有信息做一次详细的回复。
         2. 你最多尝试 {{ auto_command_max_iterations }} 次，如果 {{ auto_command_max_iterations }} 次都没有满足要求，则不要返回任何函数，确保 suggestions 为空。
         '''
         return {
@@ -548,6 +548,15 @@ class CommandAutoTuner:
                         EventContentCreator.create_result(content=temp_content))
                     break
 
+                if command == "response_user":
+                    break
+
+                get_event_manager(self.args.event_file).write_result(
+                    EventContentCreator.create_result(content=EventContentCreator.ResultCommandExecuteStatContent(
+                        command=command,
+                        content=content
+                    ).to_dict()))
+
                 # 打印执行结果
                 console = Console()
                 # 截取content前后200字符
@@ -565,13 +574,7 @@ class CommandAutoTuner:
                     border_style="blue",
                     padding=(1, 2)
                 ))
-                get_event_manager(self.args.event_file).write_result(
-                    EventContentCreator.create_result(content=EventContentCreator.ResultCommandExecuteStatContent(
-                        command=command,
-                        content=content
-                    ).to_dict()))
-                # 保持原content不变，继续后续处理
-
+                
                 # 添加新的对话内容
                 new_content = self._execute_command_result.prompt(content)
                 conversations.append({"role": "user", "content": new_content})
@@ -655,12 +658,11 @@ class CommandAutoTuner:
                 response = to_model(result, AutoCommandResponse)
                 if not response or not response.suggestions:
                     break
-                # 保存对话记录
+
                 save_to_memory_file(
                     query=request.user_input,
                     response=response.model_dump_json(indent=2)
-                )
-
+                )                                               
             else:
                 temp_content = printer.get_message_from_key_with_format("auto_command_break",  command=command)
                 printer.print_str_in_terminal(temp_content,style="yellow")
