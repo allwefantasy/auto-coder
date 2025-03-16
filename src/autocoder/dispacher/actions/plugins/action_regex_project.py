@@ -17,6 +17,8 @@ import time
 from autocoder.utils.llms import get_llm_names
 from autocoder.common import SourceCodeList
 from autocoder.common.global_cancel import global_cancel
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events import event_content as EventContentCreator
 from loguru import logger
 class ActionRegexProject:
     def __init__(
@@ -109,6 +111,19 @@ class ActionRegexProject:
                 model_names=model_names,
                 sampling_count=len(generate_result.contents)
             )
+
+            get_event_manager(self.args.event_file).write_result(
+                EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                    model_name=model_names,
+                    elapsed_time=elapsed_time,
+                    input_tokens=generate_result.metadata.get(
+                        'input_tokens_count', 0),
+                    output_tokens=generate_result.metadata.get(
+                        'generated_tokens_count', 0),
+                    input_cost=input_tokens_cost,
+                    output_cost=generated_tokens_cost,
+                    speed=round(speed, 2)
+                )).to_dict())
 
             if global_cancel.requested:
                 printer = Printer()            

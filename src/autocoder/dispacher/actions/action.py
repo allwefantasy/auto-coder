@@ -30,16 +30,20 @@ from autocoder.utils.llms import get_llm_names
 from autocoder.privacy.model_filter import ModelPathFilter
 from autocoder.common import SourceCodeList
 from autocoder.common.global_cancel import global_cancel
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events import event_content as EventContentCreator
 
 
-class BaseAction:    
+class BaseAction:
     def _get_content_length(self, content: str) -> int:
         try:
             tokenizer = BuildinTokenizer()
             return tokenizer.count_tokens(content)
         except Exception as e:
-            logger.warning(f"Failed to use tokenizer to count tokens, fallback to len(): {e}")
+            logger.warning(
+                f"Failed to use tokenizer to count tokens, fallback to len(): {e}")
             return len(content)
+
 
 class ActionTSProject(BaseAction):
     def __init__(
@@ -66,7 +70,7 @@ class ActionTSProject(BaseAction):
                 args.query = (args.context or "") + "\n\n" + args.query
             source_code_list = build_index_and_filter_files(
                 llm=self.llm, args=args, sources=pp.sources
-            )            
+            )
             if args.in_code_apply:
                 args.query = old_query
 
@@ -86,13 +90,13 @@ class ActionTSProject(BaseAction):
                 max_iter=self.args.image_max_iter,
             )
             html_code = ""
-            with open(html_path, "r",encoding="utf-8") as f:
+            with open(html_path, "r", encoding="utf-8") as f:
                 html_code = f.read()
-            
-            source_code_list.sources.append(SourceCode( 
+
+            source_code_list.sources.append(SourceCode(
                 module_name=html_path,
                 source_code=html_code,
-                tag="IMAGE"))            
+                tag="IMAGE"))
 
         self.process_content(source_code_list)
         return True
@@ -105,13 +109,14 @@ class ActionTSProject(BaseAction):
             if content_length > self.args.model_max_input_length:
                 logger.warning(
                     f"Content(send to model) is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}"
-                )                
+                )
 
         if global_cancel.requested:
-            printer = Printer()            
-            raise Exception(printer.get_message_from_key("generation_cancelled")) 
-                             
-        if args.execute:             
+            printer = Printer()
+            raise Exception(printer.get_message_from_key(
+                "generation_cancelled"))
+
+        if args.execute:
             self.printer.print_in_terminal("code_generation_start")
             start_time = time.time()
             if args.auto_merge == "diff":
@@ -127,8 +132,9 @@ class ActionTSProject(BaseAction):
                     llm=self.llm, args=self.args, action=self
                 )
             else:
-                generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
-                        
+                generate = CodeAutoGenerate(
+                    llm=self.llm, args=self.args, action=self)
+
             if self.args.enable_multi_round_generate:
                 generate_result = generate.multi_round_run(
                     query=args.query, source_code_list=source_code_list
@@ -138,41 +144,67 @@ class ActionTSProject(BaseAction):
                     query=args.query, source_code_list=source_code_list
                 )
             elapsed_time = time.time() - start_time
-            speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
-            input_tokens_cost = generate_result.metadata.get('input_tokens_cost', 0)
-            generated_tokens_cost = generate_result.metadata.get('generated_tokens_cost', 0)
+            speed = generate_result.metadata.get(
+                'generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
+            input_tokens_cost = generate_result.metadata.get(
+                'input_tokens_cost', 0)
+            generated_tokens_cost = generate_result.metadata.get(
+                'generated_tokens_cost', 0)
             model_names = ",".join(get_llm_names(generate.llms))
             self.printer.print_in_terminal(
                 "code_generation_complete",
                 duration=elapsed_time,
-                input_tokens=generate_result.metadata.get('input_tokens_count', 0),
-                output_tokens=generate_result.metadata.get('generated_tokens_count', 0),
+                input_tokens=generate_result.metadata.get(
+                    'input_tokens_count', 0),
+                output_tokens=generate_result.metadata.get(
+                    'generated_tokens_count', 0),
                 input_cost=input_tokens_cost,
                 output_cost=generated_tokens_cost,
                 speed=round(speed, 2),
                 model_names=model_names,
                 sampling_count=len(generate_result.contents)
             )
-            
+
+            get_event_manager(self.args.event_file).write_result(
+                EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                    model_name=model_names,
+                    elapsed_time=elapsed_time,
+                    input_tokens=generate_result.metadata.get(
+                        'input_tokens_count', 0),
+                    output_tokens=generate_result.metadata.get(
+                        'generated_tokens_count', 0),
+                    input_cost=input_tokens_cost,
+                    output_cost=generated_tokens_cost,
+                    speed=round(speed, 2)
+                )).to_dict())
+
             if global_cancel.requested:
-                printer = Printer()            
-                raise Exception(printer.get_message_from_key("generation_cancelled")) 
-            
+                printer = Printer()
+                raise Exception(printer.get_message_from_key(
+                    "generation_cancelled"))
+
             merge_result = None
             if args.execute and args.auto_merge:
                 self.printer.print_in_terminal("code_merge_start")
                 if args.auto_merge == "diff":
-                    code_merge = CodeAutoMergeDiff(llm=self.llm, args=self.args)
-                    merge_result = code_merge.merge_code(generate_result=generate_result)
+                    code_merge = CodeAutoMergeDiff(
+                        llm=self.llm, args=self.args)
+                    merge_result = code_merge.merge_code(
+                        generate_result=generate_result)
                 elif args.auto_merge == "strict_diff":
-                    code_merge = CodeAutoMergeStrictDiff(llm=self.llm, args=self.args)
-                    merge_result = code_merge.merge_code(generate_result=generate_result)
+                    code_merge = CodeAutoMergeStrictDiff(
+                        llm=self.llm, args=self.args)
+                    merge_result = code_merge.merge_code(
+                        generate_result=generate_result)
                 elif args.auto_merge == "editblock":
-                    code_merge = CodeAutoMergeEditBlock(llm=self.llm, args=self.args)
-                    merge_result = code_merge.merge_code(generate_result=generate_result)
+                    code_merge = CodeAutoMergeEditBlock(
+                        llm=self.llm, args=self.args)
+                    merge_result = code_merge.merge_code(
+                        generate_result=generate_result)
                 else:
                     code_merge = CodeAutoMerge(llm=self.llm, args=self.args)
-                    merge_result = code_merge.merge_code(generate_result=generate_result)
+                    merge_result = code_merge.merge_code(
+                        generate_result=generate_result)
 
                 if merge_result is not None:
                     content = merge_result.contents[0]
@@ -190,7 +222,6 @@ class ActionTSProject(BaseAction):
                         conversations=generate_result.conversations[0],
                         model=self.llm.default_model_name,
                     )
-                
 
 
 class ActionPyScriptProject(BaseAction):
@@ -216,9 +247,10 @@ class ActionPyScriptProject(BaseAction):
     def process_content(self, source_code_list: SourceCodeList):
         args = self.args
         if global_cancel.requested:
-            printer = Printer()            
-            raise Exception(printer.get_message_from_key("generation_cancelled")) 
-        
+            printer = Printer()
+            raise Exception(printer.get_message_from_key(
+                "generation_cancelled"))
+
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
             start_time = time.time()
@@ -235,7 +267,8 @@ class ActionPyScriptProject(BaseAction):
                     llm=self.llm, args=self.args, action=self
                 )
             else:
-                generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
+                generate = CodeAutoGenerate(
+                    llm=self.llm, args=self.args, action=self)
             if self.args.enable_multi_round_generate:
                 generate_result = generate.multi_round_run(
                     query=args.query, source_code_list=source_code_list
@@ -246,15 +279,20 @@ class ActionPyScriptProject(BaseAction):
                 )
 
             elapsed_time = time.time() - start_time
-            speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
+            speed = generate_result.metadata.get(
+                'generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
             model_names = ",".join(get_llm_names(generate.llms))
-            input_tokens_cost = generate_result.metadata.get('input_tokens_cost', 0)
-            generated_tokens_cost = generate_result.metadata.get('generated_tokens_cost', 0)
+            input_tokens_cost = generate_result.metadata.get(
+                'input_tokens_cost', 0)
+            generated_tokens_cost = generate_result.metadata.get(
+                'generated_tokens_cost', 0)
             self.printer.print_in_terminal(
                 "code_generation_complete",
                 duration=elapsed_time,
-                input_tokens=generate_result.metadata.get('input_tokens_count', 0),
-                output_tokens=generate_result.metadata.get('generated_tokens_count', 0),
+                input_tokens=generate_result.metadata.get(
+                    'input_tokens_count', 0),
+                output_tokens=generate_result.metadata.get(
+                    'generated_tokens_count', 0),
                 input_cost=input_tokens_cost,
                 output_cost=generated_tokens_cost,
                 speed=round(speed, 2),
@@ -262,25 +300,46 @@ class ActionPyScriptProject(BaseAction):
                 sampling_count=len(generate_result.contents)
             )
 
+            get_event_manager(self.args.event_file).write_result(
+                EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                    model_name=model_names,
+                    elapsed_time=elapsed_time,
+                    input_tokens=generate_result.metadata.get(
+                        'input_tokens_count', 0),
+                    output_tokens=generate_result.metadata.get(
+                        'generated_tokens_count', 0),
+                    input_cost=input_tokens_cost,
+                    output_cost=generated_tokens_cost,
+                    speed=round(speed, 2)
+                )).to_dict())
+
             if global_cancel.requested:
-                printer = Printer()            
-                raise Exception(printer.get_message_from_key("generation_cancelled")) 
-            
+                printer = Printer()
+                raise Exception(printer.get_message_from_key(
+                    "generation_cancelled"))
+
             merge_result = None
             if args.execute and args.auto_merge:
                 self.printer.print_in_terminal("code_merge_start")
                 if args.auto_merge == "diff":
-                    code_merge = CodeAutoMergeDiff(llm=self.llm, args=self.args)
-                    merge_result = code_merge.merge_code(generate_result=generate_result)
+                    code_merge = CodeAutoMergeDiff(
+                        llm=self.llm, args=self.args)
+                    merge_result = code_merge.merge_code(
+                        generate_result=generate_result)
                 elif args.auto_merge == "strict_diff":
-                    code_merge = CodeAutoMergeStrictDiff(llm=self.llm, args=self.args)
-                    merge_result = code_merge.merge_code(generate_result=generate_result)
+                    code_merge = CodeAutoMergeStrictDiff(
+                        llm=self.llm, args=self.args)
+                    merge_result = code_merge.merge_code(
+                        generate_result=generate_result)
                 elif args.auto_merge == "editblock":
-                    code_merge = CodeAutoMergeEditBlock(llm=self.llm, args=self.args)
-                    merge_result = code_merge.merge_code(generate_result=generate_result)
+                    code_merge = CodeAutoMergeEditBlock(
+                        llm=self.llm, args=self.args)
+                    merge_result = code_merge.merge_code(
+                        generate_result=generate_result)
                 else:
                     code_merge = CodeAutoMerge(llm=self.llm, args=self.args)
-                    merge_result = code_merge.merge_code(generate_result=generate_result)
+                    merge_result = code_merge.merge_code(
+                        generate_result=generate_result)
 
                 content = merge_result.contents[0]
 
@@ -298,7 +357,7 @@ class ActionPyScriptProject(BaseAction):
                     instruction=self.args.query,
                     conversations=generate_result.conversations[0],
                     model=self.llm.default_model_name,
-                )                        
+                )
 
 
 class ActionPyProject(BaseAction):
@@ -316,8 +375,9 @@ class ActionPyProject(BaseAction):
             return False
         pp = PyProject(args=self.args, llm=self.llm)
         self.pp = pp
-        pp.run(packages=args.py_packages.split(",") if args.py_packages else [])            
-        source_code_list = SourceCodeList(pp.sources)                
+        pp.run(packages=args.py_packages.split(
+            ",") if args.py_packages else [])
+        source_code_list = SourceCodeList(pp.sources)
 
         if self.llm:
             old_query = args.query
@@ -339,15 +399,16 @@ class ActionPyProject(BaseAction):
             content_length = self._get_content_length(content)
             if content_length > self.args.model_max_input_length:
                 self.printer.print_in_terminal(
-                "code_execution_warning",
-                style="yellow",
-                content_length=content_length,
-                max_length=self.args.model_max_input_length
-            )
-        
+                    "code_execution_warning",
+                    style="yellow",
+                    content_length=content_length,
+                    max_length=self.args.model_max_input_length
+                )
+
         if global_cancel.requested:
-            printer = Printer()            
-            raise Exception(printer.get_message_from_key("generation_cancelled")) 
+            printer = Printer()
+            raise Exception(printer.get_message_from_key(
+                "generation_cancelled"))
 
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
@@ -365,8 +426,8 @@ class ActionPyProject(BaseAction):
                     llm=self.llm, args=self.args, action=self
                 )
             else:
-                generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
-
+                generate = CodeAutoGenerate(
+                    llm=self.llm, args=self.args, action=self)
 
             if self.args.enable_multi_round_generate:
                 generate_result = generate.multi_round_run(
@@ -377,15 +438,20 @@ class ActionPyProject(BaseAction):
                     query=args.query, source_code_list=source_code_list
                 )
             elapsed_time = time.time() - start_time
-            speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
+            speed = generate_result.metadata.get(
+                'generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
             model_names = ",".join(get_llm_names(generate.llms))
-            input_tokens_cost = generate_result.metadata.get('input_tokens_cost', 0)
-            generated_tokens_cost = generate_result.metadata.get('generated_tokens_cost', 0)
+            input_tokens_cost = generate_result.metadata.get(
+                'input_tokens_cost', 0)
+            generated_tokens_cost = generate_result.metadata.get(
+                'generated_tokens_cost', 0)
             self.printer.print_in_terminal(
                 "code_generation_complete",
                 duration=elapsed_time,
-                input_tokens=generate_result.metadata.get('input_tokens_count', 0),
-                output_tokens=generate_result.metadata.get('generated_tokens_count', 0),
+                input_tokens=generate_result.metadata.get(
+                    'input_tokens_count', 0),
+                output_tokens=generate_result.metadata.get(
+                    'generated_tokens_count', 0),
                 input_cost=input_tokens_cost,
                 output_cost=generated_tokens_cost,
                 speed=round(speed, 2),
@@ -393,25 +459,46 @@ class ActionPyProject(BaseAction):
                 sampling_count=len(generate_result.contents)
             )
 
+            get_event_manager(self.args.event_file).write_result(
+                EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                    model_name=model_names,
+                    elapsed_time=elapsed_time,
+                    input_tokens=generate_result.metadata.get(
+                        'input_tokens_count', 0),
+                    output_tokens=generate_result.metadata.get(
+                        'generated_tokens_count', 0),
+                    input_cost=input_tokens_cost,
+                    output_cost=generated_tokens_cost,
+                    speed=round(speed, 2)
+                )).to_dict())
+
             if global_cancel.requested:
-                printer = Printer()            
-                raise Exception(printer.get_message_from_key("generation_cancelled")) 
-            
+                printer = Printer()
+                raise Exception(printer.get_message_from_key(
+                    "generation_cancelled"))
+
             merge_result = None
             if args.execute and args.auto_merge:
                 self.printer.print_in_terminal("code_merge_start")
                 if args.auto_merge == "diff":
-                    code_merge = CodeAutoMergeDiff(llm=self.llm, args=self.args)
-                    merge_result = code_merge.merge_code(generate_result=generate_result)
+                    code_merge = CodeAutoMergeDiff(
+                        llm=self.llm, args=self.args)
+                    merge_result = code_merge.merge_code(
+                        generate_result=generate_result)
                 elif args.auto_merge == "strict_diff":
-                    code_merge = CodeAutoMergeStrictDiff(llm=self.llm, args=self.args)
-                    merge_result = code_merge.merge_code(generate_result=generate_result)
+                    code_merge = CodeAutoMergeStrictDiff(
+                        llm=self.llm, args=self.args)
+                    merge_result = code_merge.merge_code(
+                        generate_result=generate_result)
                 elif args.auto_merge == "editblock":
-                    code_merge = CodeAutoMergeEditBlock(llm=self.llm, args=self.args)
-                    merge_result = code_merge.merge_code(generate_result=generate_result)
+                    code_merge = CodeAutoMergeEditBlock(
+                        llm=self.llm, args=self.args)
+                    merge_result = code_merge.merge_code(
+                        generate_result=generate_result)
                 else:
                     code_merge = CodeAutoMerge(llm=self.llm, args=self.args)
-                    merge_result = code_merge.merge_code(generate_result=generate_result)
+                    merge_result = code_merge.merge_code(
+                        generate_result=generate_result)
 
                 content = merge_result.contents[0]
 
@@ -429,7 +516,7 @@ class ActionPyProject(BaseAction):
                     instruction=self.args.query,
                     conversations=generate_result.conversations[0],
                     model=self.llm.default_model_name,
-                )                        
+                )
 
 
 class ActionSuffixProject(BaseAction):
@@ -467,11 +554,12 @@ class ActionSuffixProject(BaseAction):
             if content_length > self.args.model_max_input_length:
                 logger.warning(
                     f"Content(send to model) is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}"
-                )                
+                )
 
         if global_cancel.requested:
-            printer = Printer()            
-            raise Exception(printer.get_message_from_key("generation_cancelled")) 
+            printer = Printer()
+            raise Exception(printer.get_message_from_key(
+                "generation_cancelled"))
 
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
@@ -489,7 +577,8 @@ class ActionSuffixProject(BaseAction):
                     llm=self.llm, args=self.args, action=self
                 )
             else:
-                generate = CodeAutoGenerate(llm=self.llm, args=self.args, action=self)
+                generate = CodeAutoGenerate(
+                    llm=self.llm, args=self.args, action=self)
             if self.args.enable_multi_round_generate:
                 generate_result = generate.multi_round_run(
                     query=args.query, source_code_list=source_code_list
@@ -498,43 +587,67 @@ class ActionSuffixProject(BaseAction):
                 generate_result = generate.single_round_run(
                     query=args.query, source_code_list=source_code_list
                 )
-              
+
         elapsed_time = time.time() - start_time
-        speed = generate_result.metadata.get('generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
+        speed = generate_result.metadata.get(
+            'generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
         model_names = ",".join(get_llm_names(generate.llms))
-        input_tokens_cost = generate_result.metadata.get('input_tokens_cost', 0)
-        generated_tokens_cost = generate_result.metadata.get('generated_tokens_cost', 0)
+        input_tokens_cost = generate_result.metadata.get(
+            'input_tokens_cost', 0)
+        generated_tokens_cost = generate_result.metadata.get(
+            'generated_tokens_cost', 0)
         self.printer.print_in_terminal(
             "code_generation_complete",
             duration=elapsed_time,
             input_tokens=generate_result.metadata.get('input_tokens_count', 0),
-            output_tokens=generate_result.metadata.get('generated_tokens_count', 0),
+            output_tokens=generate_result.metadata.get(
+                'generated_tokens_count', 0),
             input_cost=input_tokens_cost,
             output_cost=generated_tokens_cost,
             speed=round(speed, 2),
             model_names=model_names,
             sampling_count=len(generate_result.contents)
         )
-        
+
+        get_event_manager(self.args.event_file).write_result(
+                EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                    model_name=model_names,
+                    elapsed_time=elapsed_time,
+                    input_tokens=generate_result.metadata.get(
+                        'input_tokens_count', 0),
+                    output_tokens=generate_result.metadata.get(
+                        'generated_tokens_count', 0),
+                    input_cost=input_tokens_cost,
+                    output_cost=generated_tokens_cost,
+                    speed=round(speed, 2)
+                )).to_dict())
+
         if global_cancel.requested:
-            printer = Printer()            
-            raise Exception(printer.get_message_from_key("generation_cancelled")                    )
-        
+            printer = Printer()
+            raise Exception(printer.get_message_from_key(
+                "generation_cancelled"))
+
         merge_result = None
         if args.execute and args.auto_merge:
             self.printer.print_in_terminal("code_merge_start")
             if args.auto_merge == "diff":
                 code_merge = CodeAutoMergeDiff(llm=self.llm, args=self.args)
-                merge_result = code_merge.merge_code(generate_result=generate_result)
+                merge_result = code_merge.merge_code(
+                    generate_result=generate_result)
             elif args.auto_merge == "strict_diff":
-                code_merge = CodeAutoMergeStrictDiff(llm=self.llm, args=self.args)
-                merge_result = code_merge.merge_code(generate_result=generate_result)
+                code_merge = CodeAutoMergeStrictDiff(
+                    llm=self.llm, args=self.args)
+                merge_result = code_merge.merge_code(
+                    generate_result=generate_result)
             elif args.auto_merge == "editblock":
-                code_merge = CodeAutoMergeEditBlock(llm=self.llm, args=self.args)
-                merge_result = code_merge.merge_code(generate_result=generate_result)
+                code_merge = CodeAutoMergeEditBlock(
+                    llm=self.llm, args=self.args)
+                merge_result = code_merge.merge_code(
+                    generate_result=generate_result)
             else:
                 code_merge = CodeAutoMerge(llm=self.llm, args=self.args)
-                merge_result = code_merge.merge_code(generate_result=generate_result)
+                merge_result = code_merge.merge_code(
+                    generate_result=generate_result)
 
         if merge_result is not None:
             content = merge_result.contents[0]
@@ -543,7 +656,7 @@ class ActionSuffixProject(BaseAction):
                 instruction=self.args.query,
                 conversations=merge_result.conversations[0],
                 model=self.llm.default_model_name,
-            )            
+            )
         else:
             content = generate_result.contents[0]
 
@@ -553,5 +666,3 @@ class ActionSuffixProject(BaseAction):
                 conversations=generate_result.conversations[0],
                 model=self.llm.default_model_name,
             )
-            
-
