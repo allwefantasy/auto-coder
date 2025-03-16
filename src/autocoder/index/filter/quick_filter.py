@@ -1,5 +1,6 @@
 from typing import List, Union, Dict, Any, Optional
 from pydantic import BaseModel
+from autocoder.common.stream_out_type import IndexFilterStreamOutType
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
 from byzerllm.utils.str2model import to_model
@@ -123,7 +124,10 @@ class QuickFilter():
                         model_name=model_name,
                         title=self.printer.get_message_from_key_with_format(
                             "quick_filter_title", model_name=model_name),
-                        args=self.args
+                        args=self.args,
+                        extra_meta={
+                            "stream_out_type": IndexFilterStreamOutType.FILE_NUMBER_LIST.value
+                        }   
                     )
                     file_number_list = to_model(full_response, FileNumberList)
 
@@ -475,7 +479,10 @@ class QuickFilter():
                 title=self.printer.get_message_from_key_with_format(
                     "quick_filter_title", model_name=model_name),
                 args=self.args,
-                display_func=extract_file_number_list
+                display_func=extract_file_number_list,
+                extra_meta={
+                    "stream_out_type": IndexFilterStreamOutType.FILE_NUMBER_LIST.value
+                }
             )
             # 解析结果
             file_number_list = to_model(full_response, FileNumberList)
@@ -737,7 +744,10 @@ class QuickFilter():
                     title=self.printer.get_message_from_key_with_format(
                         "super_big_filter_title", model_name=model_name),
                     args=self.args,
-                    display_func=extract_file_number_list
+                    display_func=extract_file_number_list,
+                    extra_meta={
+                        "stream_out_type": IndexFilterStreamOutType.FILE_NUMBER_LIST.value
+                    }
                 )
                 
                 # 解析结果

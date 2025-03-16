@@ -395,7 +395,7 @@ def build_index_and_filter_files(
             ).to_dict()
         ),
         metadata=EventMetadata(
-            action_file=args.file
+            action_file=args.file            
         ).to_dict()
     )
 
