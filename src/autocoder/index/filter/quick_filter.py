@@ -25,6 +25,9 @@ from byzerllm.utils.client.code_utils import extract_code
 import json
 from autocoder.index.symbols_utils import extract_symbols
 import os.path
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events import event_content as EventContentCreator
+from autocoder.events.event_types import EventMetadata
 
 
 def get_file_path(file_path):
@@ -157,6 +160,17 @@ class QuickFilter():
                         output_cost=total_output_cost,
                         model_names=model_name
                     )
+
+                    get_event_manager(self.args.event_file).write_result(
+                        EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                            model_name=model_name,
+                            elapsed_time=0,
+                            first_token_time=0,
+                            input_tokens=last_meta.input_tokens_count,
+                            output_tokens=last_meta.generated_tokens_count,
+                            input_cost=total_input_cost,
+                            output_cost=total_output_cost
+                        ).to_dict()))
                 else:
                     # 其他chunks直接使用with_llm
                     meta_holder = MetaHolder()
@@ -182,6 +196,16 @@ class QuickFilter():
                         model_names=model_name,
                         elapsed_time=f"{end_time - start_time:.2f}"
                     )
+                    get_event_manager(self.args.event_file).write_result(
+                        EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                            model_name=model_name,
+                            elapsed_time=end_time - start_time,
+                            first_token_time=0,
+                            input_tokens=meta_dict.get("input_tokens_count", 0),
+                            output_tokens=meta_dict.get("generated_tokens_count", 0),
+                            input_cost=total_input_cost,
+                            output_cost=total_output_cost
+                        ).to_dict()))
 
                 if file_number_list:
                     for index,file_number in enumerate(file_number_list.file_list):
@@ -517,6 +541,16 @@ class QuickFilter():
                 model_names=model_name,
                 speed=f"{speed:.2f}"
             )
+            get_event_manager(self.args.event_file).write_result(
+                EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                    model_name=model_name,
+                    elapsed_time=end_time - start_time,
+                    input_tokens=last_meta.input_tokens_count,
+                    output_tokens=last_meta.generated_tokens_count,
+                    input_cost=total_input_cost,
+                    output_cost=total_output_cost,
+                    speed=speed
+                ).to_dict()))
 
         except Exception as e:
             self.printer.print_in_terminal(
@@ -783,6 +817,18 @@ class QuickFilter():
                     speed=f"{speed:.2f}",
                     chunk_index=chunk_index
                 )
+
+                get_event_manager(self.args.event_file).write_result(
+                    EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                        model_name=model_name,
+                        elapsed_time=end_time - start_time,
+                        input_tokens=last_meta.input_tokens_count,
+                        output_tokens=last_meta.generated_tokens_count,
+                        input_cost=total_input_cost,
+                        output_cost=total_output_cost,
+                        speed=speed
+                    ).to_dict()))
+                
             else:
                 # 非UI模式，直接使用LLM处理
                 meta_holder = MetaHolder()
@@ -807,6 +853,18 @@ class QuickFilter():
                         elapsed_time=f"{end_time - start_time:.2f}",
                         chunk_index=chunk_index
                     )
+
+                    get_event_manager(self.args.event_file).write_result(
+                        EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                            model_name=model_name,
+                            elapsed_time=end_time - start_time,
+                            input_tokens=meta_dict.get("input_tokens_count", 0),
+                            output_tokens=meta_dict.get("generated_tokens_count", 0),
+                            input_cost=total_input_cost,
+                            output_cost=total_output_cost,
+                            speed=speed
+                        ).to_dict()))
+                    
             
             # 构建返回结果
             files = {}
