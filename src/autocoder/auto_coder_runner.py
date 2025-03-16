@@ -1363,7 +1363,7 @@ def commit(query: str):
                 return_paths=True
             )
 
-            if conf.get("enable_global_memory", "true") in ["true", "True",True]:
+            if conf.get("enable_global_memory", "false") in ["true", "True",True]:
                 yaml_config["urls"] += get_global_memory_file_paths()
 
             # 临时保存yaml文件，然后读取yaml文件，转换为args
@@ -1471,7 +1471,7 @@ def coding(query: str):
             return_paths=True
         )
 
-        if conf.get("enable_global_memory", "true") in ["true", "True",True]:
+        if conf.get("enable_global_memory", "false") in ["true", "True",True]:
             yaml_config["urls"] += get_global_memory_file_paths()
 
         # handle image
@@ -1592,7 +1592,7 @@ def chat(query: str):
         return_paths=True
     )
 
-    if conf.get("enable_global_memory", "true") in ["true", "True",True]:
+    if conf.get("enable_global_memory", "false") in ["true", "True",True]:
         current_files += get_global_memory_file_paths()
 
     yaml_config["urls"] = current_files
