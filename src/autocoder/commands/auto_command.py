@@ -483,7 +483,8 @@ class CommandAutoTuner:
                     input_cost=round(input_cost, 4),
                     output_cost=round(output_cost, 4),
                     speed=round(speed, 2)
-                )).to_dict())
+                )).to_dict()
+                )
 
         # 这里打印
 

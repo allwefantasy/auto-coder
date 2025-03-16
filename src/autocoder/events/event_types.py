@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 import uuid
 import time
 import json
+from pydantic import BaseModel
 
 class EventType(Enum):
     """Event types supported by the system"""
@@ -61,6 +62,20 @@ class Event:
         """Create event from JSON string"""
         return cls.from_dict(json.loads(json_str))
 
+
+class EventMetadata(BaseModel):
+    action_file: str = field(default="") # 关联 auto-coder 中的action文件
+    stream_out_type: str = field(default="") # 标记，比如当前这个流式是用于什么场景的，比如用于产生命令的还是啥
+    is_streaming: bool = field(default=False) # 是否是流式输出
+    output: str = field(default="") # result or delta, 在流式里，我们也可能会输出 ResultContent 类型
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert event metadata to dictionary for serialization"""
+        return self.model_dump()
+    
+    def to_json(self) -> str:
+        """Convert event metadata to JSON string"""
+        return json.dumps(self.to_dict(),ensure_ascii=False)
 
 @dataclass
 class ResponseEvent(Event):

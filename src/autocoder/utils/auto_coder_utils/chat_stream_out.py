@@ -16,6 +16,7 @@ from autocoder.common import AutoCoderArgs
 from autocoder.common.global_cancel import global_cancel
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
+from autocoder.events.event_types import EventMetadata
 
 MAX_HISTORY_LINES = 40  # 最大保留历史行数
 
@@ -256,13 +257,14 @@ def stream_out(
                     content=display_delta,
                     sequence=sequence
                 )
-                get_event_manager(args.event_file).write_stream(content.to_dict(),
-                    metadata={
-                        "stream_out_type": extra_meta.get("stream_out_type", ""),
-                        "is_streaming":True,
-                        "output":"delta",
-                        "action_file": args.file
-                    })
+                get_event_manager(args.event_file).write_stream(content.to_dict(),  
+                    metadata=EventMetadata(
+                        stream_out_type=extra_meta.get("stream_out_type", ""),
+                        is_streaming=True,
+                        output="delta",
+                        action_file=args.file
+                    ).to_dict()
+                )
                 sequence += 1
                 
                 if request_id and request_queue:
@@ -295,12 +297,12 @@ def stream_out(
             content = EventContentCreator.create_markdown_result(
                 content=final_display_content                
             )
-            get_event_manager(args.event_file).write_result(content.to_dict(), metadata={
-                "stream_out_type": extra_meta.get("stream_out_type", ""),
-                "is_streaming":True,
-                "output":"result",
-                "action_file": args.file
-            })
+            get_event_manager(args.event_file).write_result(content.to_dict(), metadata=EventMetadata(
+                stream_out_type=extra_meta.get("stream_out_type", ""),
+                is_streaming=True,
+                output="result",
+                action_file=args.file
+            ).to_dict())
 
             live.update(
                 Panel(

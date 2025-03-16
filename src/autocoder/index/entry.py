@@ -10,6 +10,7 @@ from rich.table import Table
 from rich.panel import Panel
 
 from autocoder.common.printer import Printer
+from autocoder.events.event_types import EventMetadata
 from autocoder.utils.queue_communicate import (
     queue_communicate,
     CommunicateEvent,
@@ -393,9 +394,9 @@ def build_index_and_filter_files(
                 description=""
             ).to_dict()
         ),
-        metadata={
-            "action_file": args.file
-        }
+        metadata=EventMetadata(
+            action_file=args.file
+        ).to_dict()
     )
 
     if args.file:
