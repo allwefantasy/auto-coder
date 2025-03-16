@@ -19,6 +19,7 @@ from autocoder.common import SourceCodeList
 from autocoder.common.global_cancel import global_cancel
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
+from autocoder.events.event_types import EventMetadata
 from loguru import logger
 class ActionRegexProject:
     def __init__(
@@ -123,9 +124,9 @@ class ActionRegexProject:
                     input_cost=input_tokens_cost,
                     output_cost=generated_tokens_cost,
                     speed=round(speed, 2),                    
-                )).to_dict(),metadata={
-                    "action_file": self.args.file
-                })
+                )).to_dict(),metadata=EventMetadata(
+                    action_file=self.args.file
+                ).to_dict())
 
             if global_cancel.requested:
                 printer = Printer()            
