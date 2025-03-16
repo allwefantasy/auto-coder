@@ -6,6 +6,8 @@
 import os
 import threading
 from typing import Optional, Dict, Any
+import uuid
+from datetime import datetime
 
 from .event_manager import EventManager
 from .event_store import EventStore, JsonlEventStore
@@ -14,8 +16,7 @@ from loguru import logger
 
 class EventManagerSingleton:
     """
-    EventManager的单例包装器。确保整个应用程序中只有一个EventManager实例。
-    默认使用.auto-coder/auto-coder.web/events.jsonl文件存储事件。
+    EventManager的单例包装器。确保整个应用程序中只有一个EventManager实例    
     """
     _default_instance: Optional[EventManager] = None
     _instances: Dict[str, EventManager] = {}
@@ -34,7 +35,7 @@ class EventManagerSingleton:
         if event_file is None:
             # Use default instance logic
             if cls._default_instance is None:
-                cls._default_instance = EventManager(JsonlEventStore(os.path.join(".auto-coder", "auto-coder.web", "events.jsonl")))
+                cls._default_instance = EventManager(JsonlEventStore(os.path.join(".auto-coder", "events", "events.jsonl")))
             return cls._default_instance
         
         # If event_file is provided, use it as a key to store/retrieve EventManager instances
@@ -66,6 +67,25 @@ class EventManagerSingleton:
         else:
             logger.warning("尝试更改默认事件文件，但实例已存在。请先调用reset_instance()。")
 
+
+def gengerate_event_file_path() -> str:
+    """
+    生成一个格式为 uuid_timestamp.jsonl 的事件文件名。
+    timestamp 格式为 YYYYMMDD-HHMMSS。
+    
+    Returns:
+        生成的事件文件路径
+    """
+    # 生成 UUID
+    unique_id = str(uuid.uuid4())
+    
+    # 生成当前时间戳，格式为 YYYYMMDD-HHMMSS
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    
+    # 组合文件名
+    file_name = f"{unique_id}_{timestamp}.jsonl"
+    
+    return os.path.join(".auto-coder", "events", file_name)
 
 # 便捷函数，可以直接导入使用
 def get_event_manager(event_file: Optional[str] = None) -> EventManager:
