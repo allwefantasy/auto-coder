@@ -392,7 +392,10 @@ def build_index_and_filter_files(
                 title="Files Used as Context",
                 description=""
             ).to_dict()
-        )
+        ),
+        metadata={
+            "action_file": args.file
+        }
     )
 
     if args.file:

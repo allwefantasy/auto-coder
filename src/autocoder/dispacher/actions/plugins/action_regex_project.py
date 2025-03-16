@@ -122,8 +122,10 @@ class ActionRegexProject:
                         'generated_tokens_count', 0),
                     input_cost=input_tokens_cost,
                     output_cost=generated_tokens_cost,
-                    speed=round(speed, 2)
-                )).to_dict())
+                    speed=round(speed, 2),                    
+                )).to_dict(),metadata={
+                    "action_file": self.args.file
+                })
 
             if global_cancel.requested:
                 printer = Printer()            

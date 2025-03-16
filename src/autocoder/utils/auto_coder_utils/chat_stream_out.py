@@ -260,7 +260,8 @@ def stream_out(
                     metadata={
                         "stream_out_type": extra_meta.get("stream_out_type", ""),
                         "is_streaming":True,
-                        "output":"delta"
+                        "output":"delta",
+                        "action_file": args.file
                     })
                 sequence += 1
                 
@@ -297,7 +298,8 @@ def stream_out(
             get_event_manager(args.event_file).write_result(content.to_dict(), metadata={
                 "stream_out_type": extra_meta.get("stream_out_type", ""),
                 "is_streaming":True,
-                "output":"result"
+                "output":"result",
+                "action_file": args.file
             })
 
             live.update(

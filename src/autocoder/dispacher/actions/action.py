@@ -176,7 +176,9 @@ class ActionTSProject(BaseAction):
                     input_cost=input_tokens_cost,
                     output_cost=generated_tokens_cost,
                     speed=round(speed, 2)
-                )).to_dict())
+                )).to_dict(),metadata={
+                    "action_file": self.args.file
+                })
 
             if global_cancel.requested:
                 printer = Printer()
@@ -311,7 +313,9 @@ class ActionPyScriptProject(BaseAction):
                     input_cost=input_tokens_cost,
                     output_cost=generated_tokens_cost,
                     speed=round(speed, 2)
-                )).to_dict())
+                )).to_dict(),metadata={
+                    "action_file": self.args.file
+                })
 
             if global_cancel.requested:
                 printer = Printer()
@@ -470,7 +474,9 @@ class ActionPyProject(BaseAction):
                     input_cost=input_tokens_cost,
                     output_cost=generated_tokens_cost,
                     speed=round(speed, 2)
-                )).to_dict())
+                )).to_dict(), metadata={
+                    "action_file": self.args.file
+                })
 
             if global_cancel.requested:
                 printer = Printer()
@@ -620,7 +626,9 @@ class ActionSuffixProject(BaseAction):
                     input_cost=input_tokens_cost,
                     output_cost=generated_tokens_cost,
                     speed=round(speed, 2)
-                )).to_dict())
+                )).to_dict(), metadata={
+                    "action_file": self.args.file
+                })
 
         if global_cancel.requested:
             printer = Printer()
