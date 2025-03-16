@@ -1,11 +1,10 @@
 """
 单例模式的事件管理器。
-提供全局访问EventManager的方法，默认使用.auto-coder/auto-coder.web/events.jsonl文件存储事件。
 """
 
 import os
 import threading
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Tuple
 import uuid
 from datetime import datetime
 
@@ -67,8 +66,13 @@ class EventManagerSingleton:
         else:
             logger.warning("尝试更改默认事件文件，但实例已存在。请先调用reset_instance()。")
 
+def get_event_file_path(file_id:str,project_path: Optional[str] = None) -> str:
+    if project_path is None:
+        return os.path.join(".auto-coder", "events", f"{file_id}.jsonl")
+    else:
+        return os.path.join(project_path, ".auto-coder", "events", f"{file_id}.jsonl")
 
-def gengerate_event_file_path() -> str:
+def gengerate_event_file_path(project_path: Optional[str] = None) -> Tuple[str,str]:
     """
     生成一个格式为 uuid_timestamp.jsonl 的事件文件名。
     timestamp 格式为 YYYYMMDD-HHMMSS。
@@ -82,10 +86,14 @@ def gengerate_event_file_path() -> str:
     # 生成当前时间戳，格式为 YYYYMMDD-HHMMSS
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     
+    file_id = f"{unique_id}_{timestamp}"
     # 组合文件名
-    file_name = f"{unique_id}_{timestamp}.jsonl"
+    file_name = f"{file_id}.jsonl"
     
-    return os.path.join(".auto-coder", "events", file_name)
+    if project_path is None:
+        return os.path.join(".auto-coder", "events", file_name),file_id
+    else:   
+        return os.path.join(project_path, ".auto-coder", "events", file_name),file_id
 
 # 便捷函数，可以直接导入使用
 def get_event_manager(event_file: Optional[str] = None) -> EventManager:
