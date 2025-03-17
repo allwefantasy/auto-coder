@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import threading
+import queue
 from datetime import datetime
 from typing import List, Dict, Optional, Any, Tuple, Set
 from loguru import logger
@@ -66,6 +67,12 @@ class ActiveContextManager:
     _instance = None
     _is_initialized = False
     
+    # 任务队列和队列处理线程
+    _task_queue = None
+    _queue_thread = None
+    _queue_lock = None
+    _is_processing = False
+    
     def __new__(cls, llm: byzerllm.ByzerLLM = None, args: AutoCoderArgs = None):
         """
         实现单例模式，确保只创建一个实例
@@ -102,6 +109,14 @@ class ActiveContextManager:
         self.yml_manager = ActionYmlFileManager(args.source_dir)
         self.tasks = {}  # 用于跟踪任务状态
         self.printer = Printer()
+        
+        # 初始化任务队列和锁
+        self.__class__._task_queue = queue.Queue()
+        self.__class__._queue_lock = threading.Lock()
+        
+        # 启动队列处理线程
+        self.__class__._queue_thread = threading.Thread(target=self._process_queue, daemon=True)
+        self.__class__._queue_thread.start()
         
         # 标记为已初始化
         self._is_initialized = True
@@ -156,6 +171,53 @@ class ActiveContextManager:
             except:
                 pass
     
+    def _process_queue(self):
+        """
+        处理任务队列的后台线程
+        确保一次只有一个任务在运行
+        """
+        while True:
+            try:
+                # 从队列中获取任务
+                task = self._task_queue.get()
+                if task is None:
+                    # None 是退出信号
+                    break
+                    
+                # 设置处理标志
+                with self._queue_lock:
+                    self.__class__._is_processing = True
+                    
+                # 解包任务参数
+                task_id, query, changed_urls, current_urls = task
+                
+                # 更新任务状态为运行中
+                self.tasks[task_id]['status'] = 'running'
+                self.printer.print_in_terminal(
+                    "active_context_processing", 
+                    task_id=task_id,
+                    style="blue"
+                )
+                
+                # 执行任务，重定向输出到日志文件
+                self._redirect_output_to_file(
+                    self._process_changes_async, 
+                    task_id, query, changed_urls, current_urls
+                )
+                
+                # 重置处理标志
+                with self._queue_lock:
+                    self.__class__._is_processing = False
+                    
+                # 标记任务完成
+                self._task_queue.task_done()
+                
+            except Exception as e:
+                logger.error(f"Error in queue processing thread: {e}")
+                # 重置处理标志，确保队列可以继续处理
+                with self._queue_lock:
+                    self.__class__._is_processing = False
+    
     def process_changes(self, file_name: Optional[str] = None) -> str:
         """
         处理代码变更，创建活动上下文
@@ -183,27 +245,33 @@ class ActiveContextManager:
             
             # 更新任务状态
             self.tasks[task_id] = {
-                'status': 'starting',
+                'status': 'queued',  # 初始状态为排队中
                 'start_time': datetime.now(),
                 'file_name': file_name,
                 'query': query,
                 'changed_urls': changed_urls,
-                'current_urls': current_urls
+                'current_urls': current_urls,
+                'queue_position': self._task_queue.qsize() + (1 if self._is_processing else 0)
             }
             
-            # 创建并启动独立线程，将输出重定向到日志文件
-            thread = threading.Thread(
-                target=self._redirect_output_to_file,
-                args=(self._process_changes_async, task_id, query, changed_urls, current_urls),
-                daemon=True
-            )
-            thread.start()
+            # 将任务添加到队列
+            self._task_queue.put((task_id, query, changed_urls, current_urls))
             
-            self.printer.print_in_terminal(
-                "active_context_started", 
-                task_id=task_id,
-                style="green"
-            )
+            # 通知用户任务已排队
+            queue_position = self.tasks[task_id]['queue_position']
+            if queue_position > 0:
+                self.printer.print_in_terminal(
+                    "active_context_queued", 
+                    task_id=task_id,
+                    position=queue_position,
+                    style="yellow"
+                )
+            else:
+                self.printer.print_in_terminal(
+                    "active_context_started", 
+                    task_id=task_id,
+                    style="green"
+                )
             
             return task_id
         
@@ -358,7 +426,7 @@ class ActiveContextManager:
             List[Dict]: 所有正在运行的任务的状态信息
         """
         return [{'task_id': tid, **task} for tid, task in self.tasks.items() 
-                if task['status'] == 'running']
+                if task['status'] in ['running', 'queued']]
     
     def load_active_contexts_for_files(self, file_paths: List[str]) -> FileContextsResult:
         """
