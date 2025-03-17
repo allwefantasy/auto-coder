@@ -412,6 +412,8 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     event_file: Optional[str] = None
 
+    enable_active_context: Optional[bool] = False
+
     class Config:
         protected_namespaces = ()
 

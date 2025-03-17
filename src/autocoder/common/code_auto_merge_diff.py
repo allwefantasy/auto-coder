@@ -9,6 +9,7 @@ from autocoder.common.printer import Printer
 import hashlib
 from pathlib import Path
 from itertools import groupby
+from autocoder.memory.active_context_manager import ActiveContextManager
 from autocoder.common.search_replace import (
     SearchTextNotUnique,
     all_preprocs,
@@ -593,6 +594,10 @@ class CodeAutoMergeDiff:
             update_yaml_success = action_yml_file_manager.update_yaml_field(action_file_name, "add_updated_urls", add_updated_urls)
             if not update_yaml_success:                        
                 self.printer.print_in_terminal("yaml_save_error", style="red", yaml_file=action_file_name)    
+            
+            if self.args.enable_active_context:
+                active_context_manager = ActiveContextManager(self.llm, self.args)
+                active_context_manager.process_changes()
                           
             git_utils.print_commit_info(commit_result=commit_result)
         else:

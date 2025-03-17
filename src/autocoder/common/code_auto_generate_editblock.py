@@ -16,6 +16,7 @@ from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
 from autocoder.utils import llms as llm_utils
 from autocoder.common import SourceCodeList
+from autocoder.memory.active_context_manager import ActiveContextManager
 
 
 class CodeAutoGenerateEditBlock:
@@ -59,7 +60,7 @@ class CodeAutoGenerateEditBlock:
         """
 
     @byzerllm.prompt()
-    def multi_round_instruction(self, instruction: str, content: str, context: str = "") -> str:
+    def multi_round_instruction(self, instruction: str, content: str, context: str = "", package_context: str = "") -> str:
         """
         如果你需要生成代码，对于每个需要更改的文件,你需要按 *SEARCH/REPLACE block* 的格式进行生成。
 
@@ -192,6 +193,13 @@ class CodeAutoGenerateEditBlock:
         {{ content }}
         </files>
         {%- endif %}
+
+        {%- if package_context %}
+        下面是上面文件的一些信息（包括最近的变更情况）：
+        <package_context>
+        {{ package_context }}
+        </package_context>
+        {%- endif %}     
 
         {%- if context %}
         <extra_context>
@@ -224,7 +232,11 @@ class CodeAutoGenerateEditBlock:
         }
 
     @byzerllm.prompt()
-    def single_round_instruction(self, instruction: str, content: str, context: str = "") -> str:
+    def single_round_instruction(self, instruction: str, 
+                                 content: str, 
+                                 context: str = "",
+                                 package_context: str = ""
+                                 ) -> str:
         """
         如果你需要生成代码，对于每个需要更改的文件,你需要按 *SEARCH/REPLACE block* 的格式进行生成。
 
@@ -355,6 +367,13 @@ class CodeAutoGenerateEditBlock:
         <files>
         {{ content }}
         </files>
+        {%- endif %}
+
+        {%- if package_context %}
+        下面是上面文件的一些信息（包括最近的变更情况）：
+        <package_context>
+        {{ package_context }}
+        </package_context>
         {%- endif %}
 
         {%- if context %}
@@ -409,9 +428,28 @@ class CodeAutoGenerateEditBlock:
 
         source_content = source_code_list.to_str()
 
+        active_context_manager = ActiveContextManager(self.llm, self.args)
+
         if self.args.template == "common":
+            # 获取包上下文信息
+            package_context = ""
+            
+            if self.args.enable_active_context:
+                # 获取活动上下文信息
+                result = active_context_manager.load_active_contexts_for_files(
+                    [source.module_name for source in source_code_list.sources]
+                )
+                # 将活动上下文信息格式化为文本
+                if result.contexts:
+                    package_context_parts = []
+                    for dir_path, context in result.contexts.items():
+                        package_context_parts.append(f"<package_info>{context.content}</package_info>")
+                    
+                    package_context = "\n".join(package_context_parts)
+
             init_prompt = self.single_round_instruction.prompt(
-                instruction=query, content=source_content, context=self.args.context
+                instruction=query, content=source_content, context=self.args.context, 
+                package_context=package_context
             )
         elif self.args.template == "auto_implement":
             init_prompt = self.auto_implement_function.prompt(
@@ -525,9 +563,28 @@ class CodeAutoGenerateEditBlock:
         result = []
         source_content = source_code_list.to_str()
 
+        # 获取包上下文信息
+        package_context = ""
+        
+        if self.args.enable_active_context:
+            # 初始化活动上下文管理器
+            active_context_manager = ActiveContextManager(self.llm, self.args)
+            # 获取活动上下文信息
+            result = active_context_manager.load_active_contexts_for_files(
+                [source.module_name for source in source_code_list.sources]
+            )
+            # 将活动上下文信息格式化为文本
+            if result.contexts:
+                package_context_parts = []
+                for dir_path, context in result.contexts.items():
+                    package_context_parts.append(f"<package_info>{context.content}</package_info>")
+                
+                package_context = "\n".join(package_context_parts)
+
         if self.args.template == "common":
             init_prompt = self.multi_round_instruction.prompt(
-                instruction=query, content=source_content, context=self.args.context
+                instruction=query, content=source_content, context=self.args.context,
+                package_context=package_context
             )
         elif self.args.template == "auto_implement":
             init_prompt = self.auto_implement_function.prompt(

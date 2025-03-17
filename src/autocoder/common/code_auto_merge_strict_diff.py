@@ -12,6 +12,7 @@ from pathlib import Path
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
 from autocoder.common.code_modification_ranker import CodeModificationRanker
 from autocoder.common import files as  FileUtils
+from autocoder.memory.active_context_manager import ActiveContextManager
 
 class PathAndCode(pydantic.BaseModel):
     path: str
@@ -300,6 +301,10 @@ class CodeAutoMergeStrictDiff:
             update_yaml_success = action_yml_file_manager.update_yaml_field(action_file_name, "add_updated_urls", add_updated_urls)
             if not update_yaml_success:                        
                 self.printer.print_in_terminal("yaml_save_error", style="red", yaml_file=action_file_name)  
+            
+            if self.args.enable_active_context:
+                active_context_manager = ActiveContextManager(self.llm, self.args)
+                active_context_manager.process_changes()
             
             git_utils.print_commit_info(commit_result=commit_result)
         else:
