@@ -278,6 +278,28 @@ class ActionYmlFileManager:
         except Exception:
             return None
     
+    def get_file_name_from_commit_msg(self, commit_msg: str) -> Optional[str]:
+        """
+        从 commit 消息中提取文件名，获取消息最后一行，然后调用 get_file_name_from_commit_id
+        
+        Args:
+            commit_msg: commit 消息内容
+            
+        Returns:
+            Optional[str]: 文件名，如果提取失败返回 None
+        """
+        if not commit_msg:
+            return None
+            
+        try:
+            # 获取消息的最后一行
+            last_line = commit_msg.strip().split('\n')[-1]
+            # 调用 get_file_name_from_commit_id 从最后一行提取文件名
+            return self.get_file_name_from_commit_id(last_line)
+        except Exception as e:
+            logger.error(f"Failed to extract file name from commit message: {e}")
+            return None
+    
     def get_commit_changes(self, file_name: Optional[str] = None) -> List[Tuple[str, List[str], Dict[str, Tuple[str, str]]]]:
         """
         获取与特定文件相关的 commit 变更
