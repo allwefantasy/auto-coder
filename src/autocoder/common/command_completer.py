@@ -53,7 +53,10 @@ COMMANDS = {
     },
     "/shell": {
         "/chat": "",
-    }    
+    },
+    "/active_context": {
+        "/list": ""
+    }
 }
 
 
@@ -495,6 +498,15 @@ class CommandCompleter(Completer):
                 for command in parser.get_sub_commands():
                     if command.startswith(current_word):
                         yield Completion(command, start_position=-len(current_word))            
+
+            elif words[0] == "/active_context":
+                new_text = text[len("/active_context"):]
+                parser = CommandTextParser(new_text, words[0])
+                parser.lib()
+                current_word = parser.current_word()
+                for command in parser.get_sub_commands():
+                    if command.startswith(current_word):
+                        yield Completion(command, start_position=-len(current_word))
 
             elif words[0] == "/conf":
                 new_words = text[len("/conf"):].strip().split()
