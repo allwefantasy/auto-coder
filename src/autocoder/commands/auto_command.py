@@ -500,10 +500,7 @@ class CommandAutoTuner:
         result_manager = ResultManager()
 
         while True:
-            if global_cancel.requested:
-                printer = Printer(console)
-                printer.print_in_terminal("generation_cancelled")
-                break
+            global_cancel.check_and_raise()
             # 执行命令
             command = response.suggestions[0].command
             parameters = response.suggestions[0].parameters

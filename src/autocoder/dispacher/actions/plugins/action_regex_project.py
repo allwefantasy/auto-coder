@@ -66,9 +66,7 @@ class ActionRegexProject:
 
         start_time = time.time()
         
-        if global_cancel.requested:
-            printer = Printer()            
-            raise Exception(printer.get_message_from_key("generation_cancelled")) 
+        global_cancel.check_and_raise()
         
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
@@ -128,9 +126,7 @@ class ActionRegexProject:
                     action_file=self.args.file
                 ).to_dict())
 
-            if global_cancel.requested:
-                printer = Printer()            
-                raise Exception(printer.get_message_from_key("generation_cancelled")) 
+            global_cancel.check_and_raise()
             
             merge_result = None
             if args.execute and args.auto_merge:

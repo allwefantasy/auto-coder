@@ -112,10 +112,7 @@ class ActionTSProject(BaseAction):
                     f"Content(send to model) is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}"
                 )
 
-        if global_cancel.requested:
-            printer = Printer()
-            raise Exception(printer.get_message_from_key(
-                "generation_cancelled"))
+        global_cancel.check_and_raise()
 
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
@@ -181,10 +178,7 @@ class ActionTSProject(BaseAction):
                     action_file=self.args.file
                 ).to_dict())
 
-            if global_cancel.requested:
-                printer = Printer()
-                raise Exception(printer.get_message_from_key(
-                    "generation_cancelled"))
+            global_cancel.check_and_raise()
 
             merge_result = None
             if args.execute and args.auto_merge:
@@ -249,10 +243,7 @@ class ActionPyScriptProject(BaseAction):
 
     def process_content(self, source_code_list: SourceCodeList):
         args = self.args
-        if global_cancel.requested:
-            printer = Printer()
-            raise Exception(printer.get_message_from_key(
-                "generation_cancelled"))
+        global_cancel.check_and_raise()
 
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
@@ -318,10 +309,7 @@ class ActionPyScriptProject(BaseAction):
                     action_file=self.args.file
                 ).to_dict())
 
-            if global_cancel.requested:
-                printer = Printer()
-                raise Exception(printer.get_message_from_key(
-                    "generation_cancelled"))
+            global_cancel.check_and_raise()
 
             merge_result = None
             if args.execute and args.auto_merge:
@@ -410,10 +398,7 @@ class ActionPyProject(BaseAction):
                     max_length=self.args.model_max_input_length
                 )
 
-        if global_cancel.requested:
-            printer = Printer()
-            raise Exception(printer.get_message_from_key(
-                "generation_cancelled"))
+        global_cancel.check_and_raise()
 
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
@@ -479,10 +464,7 @@ class ActionPyProject(BaseAction):
                     action_file=self.args.file
                 ).to_dict())
 
-            if global_cancel.requested:
-                printer = Printer()
-                raise Exception(printer.get_message_from_key(
-                    "generation_cancelled"))
+            global_cancel.check_and_raise()
 
             merge_result = None
             if args.execute and args.auto_merge:
@@ -563,10 +545,7 @@ class ActionSuffixProject(BaseAction):
                     f"Content(send to model) is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}"
                 )
 
-        if global_cancel.requested:
-            printer = Printer()
-            raise Exception(printer.get_message_from_key(
-                "generation_cancelled"))
+        global_cancel.check_and_raise()
 
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
@@ -631,10 +610,7 @@ class ActionSuffixProject(BaseAction):
                     action_file=self.args.file
                 ).to_dict())
 
-        if global_cancel.requested:
-            printer = Printer()
-            raise Exception(printer.get_message_from_key(
-                "generation_cancelled"))
+        global_cancel.check_and_raise()
 
         merge_result = None
         if args.execute and args.auto_merge:

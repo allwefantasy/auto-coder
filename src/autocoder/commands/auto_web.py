@@ -794,15 +794,7 @@ class AutoWebTuner:
             logger.info(f"开始执行迭代 {iterations}/{max_iterations}")
 
             # 检查是否需要取消操作
-            if global_cancel.requested:
-                logger.info("检测到取消请求，停止操作")
-                self.printer.print_in_terminal(
-                    "operation_cancelled", style="yellow")
-                return AutoWebResponse(
-                    explanation="操作已取消",
-                    overall_status="cancelled",
-                    actions=[]
-                )
+            global_cancel.check_and_raise()
 
             # 如果没有更多操作，认为任务完成
             if not plan.actions:

@@ -296,8 +296,7 @@ class IndexManager:
         return False
 
     def build_index_for_single_source(self, source: SourceCode):
-        if global_cancel.requested:
-            return None
+        global_cancel.check_and_raise()
 
         file_path = source.module_name
         if not os.path.exists(file_path):
@@ -552,8 +551,7 @@ class IndexManager:
                 for source in wait_to_build_files
             ]
             for future in as_completed(futures):
-                if global_cancel.requested:
-                    break
+                global_cancel.check_and_raise()
                 result = future.result()
                 if result is not None:
                     counter += 1

@@ -13,7 +13,7 @@ from autocoder.utils.request_queue import request_queue
 import time
 from byzerllm.utils.types import SingleOutputMeta
 from autocoder.common import AutoCoderArgs
-from autocoder.common.global_cancel import global_cancel
+from autocoder.common.global_cancel import global_cancel, CancelRequestedException
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
 from autocoder.events.event_types import EventMetadata
@@ -68,23 +68,35 @@ class MultiStreamRenderer:
             
     def _process_stream(self, 
                        stream_idx: int, 
-                       stream_generator: Generator[Tuple[str, Dict[str, Any]], None, None]):
+                       stream_generator: Generator[Tuple[str, Dict[str, Any]], None, None],
+                       cancel_token: Optional[str] = None):
         """Process a single stream in a separate thread"""
         stream = self.streams[stream_idx]
         try:
             for content, meta in stream_generator:
+                try:
+                    # 使用新的异常机制检查取消请求
+                    global_cancel.check_and_raise(cancel_token)
+                except CancelRequestedException:
+                    break
+                    
                 if content:
                     stream.update(content)
+        except CancelRequestedException:
+            # 处理取消异常
+            stream.update("\n\n**Operation was cancelled**")
         finally:
             stream.complete()
 
     def render_streams(self, 
-                      stream_generators: List[Generator[Tuple[str, Dict[str, Any]], None, None]]) -> List[str]:
+                      stream_generators: List[Generator[Tuple[str, Dict[str, Any]], None, None]],
+                      cancel_token: Optional[str] = None) -> List[str]:
         """
         Render multiple streams simultaneously
         
         Args:
             stream_generators: List of stream generators to render
+            cancel_token: Optional cancellation token
             
         Returns:
             List of final content from each stream
@@ -94,7 +106,7 @@ class MultiStreamRenderer:
         # Start processing threads
         threads = []
         for i, generator in enumerate(stream_generators):
-            thread = Thread(target=self._process_stream, args=(i, generator))
+            thread = Thread(target=self._process_stream, args=(i, generator, cancel_token))
             thread.daemon = True
             thread.start()
             threads.append(thread)
@@ -102,6 +114,13 @@ class MultiStreamRenderer:
         try:
             with Live(self.layout, console=self.console, refresh_per_second=10) as live:
                 while any(not stream.is_complete for stream in self.streams):
+                    try:
+                        # 使用新的异常机制检查取消请求
+                        global_cancel.check_and_raise(cancel_token)
+                    except CancelRequestedException:
+                        print("\nCancelling streams...")
+                        break
+                        
                     # Update all panels
                     for i, stream in enumerate(self.streams):
                         panel = Panel(
@@ -116,7 +135,11 @@ class MultiStreamRenderer:
                     time.sleep(0.1)  # Prevent excessive CPU usage
                     
         except KeyboardInterrupt:
+            # 键盘中断时设置取消标志
+            global_cancel.set(cancel_token, {"message": "Keyboard interrupt"})
             print("\nStopping streams...")
+        except CancelRequestedException:
+            print("\nCancelling streams...")
             
         # Wait for all threads to complete
         for thread in threads:
@@ -128,7 +151,8 @@ def multi_stream_out(
     stream_generators: List[Generator[Tuple[str, Dict[str, Any]], None, None]],
     titles: List[str],
     layout: str = "horizontal",
-    console: Optional[Console] = None
+    console: Optional[Console] = None,
+    cancel_token: Optional[str] = None
 ) -> List[str]:
     """
     Render multiple streams with Rich
@@ -138,12 +162,13 @@ def multi_stream_out(
         titles: List of titles for each stream
         layout: "horizontal" or "vertical"
         console: Optional Rich console instance
+        cancel_token: Optional cancellation token
         
     Returns:
         List of final content from each stream
     """
     renderer = MultiStreamRenderer(titles, layout, console)
-    return renderer.render_streams(stream_generators)
+    return renderer.render_streams(stream_generators, cancel_token)
 
 
 def stream_out(
@@ -155,7 +180,8 @@ def stream_out(
     final_title: Optional[str] = None,
     args: Optional[AutoCoderArgs] = None,
     display_func: Optional[Callable] = None,
-    extra_meta: Dict[str, Any] = {}
+    extra_meta: Dict[str, Any] = {},
+    cancel_token: Optional[str] = None
 ) -> Tuple[str, Optional[SingleOutputMeta]]:
     """
     处理流式输出事件并在终端中展示
@@ -167,6 +193,9 @@ def stream_out(
         model_name: 模型名称
         title: 面板标题，如果没有提供则使用默认值
         args: AutoCoderArgs对象
+        display_func: 可选的显示函数
+        extra_meta: 额外的元数据
+        cancel_token: 可选的取消令牌
     Returns:
         Tuple[str, Dict[SingleOutputMeta]]: 返回完整的响应内容和最后的元数据
     """
@@ -197,10 +226,8 @@ def stream_out(
             console=console
         ) as live:
             for res in stream_generator:
-                if global_cancel.requested:
-                    printer = Printer(console)
-                    printer.print_in_terminal("generation_cancelled")                    
-                    break
+                global_cancel.check_and_raise(cancel_token)
+                    
                 last_meta = res[1]                
                 content = res[0]
 
@@ -312,6 +339,24 @@ def stream_out(
                 )
             )            
             
+    except CancelRequestedException as cancel_exc:
+        # 捕获取消异常，显示取消信息
+        console.print(Panel(
+            "Generation was cancelled",  
+            title=f"Cancelled[ {panel_title} ]",
+            border_style="yellow"
+        ))
+        
+        if request_id and request_queue:
+            request_queue.add_request(
+                request_id,
+                RequestValue(
+                    value=StreamValue(value=["Operation was cancelled"]), 
+                    status=RequestOption.FAILED
+                ),
+            )
+        raise cancel_exc   
+    
     except Exception as e:
         console.print(Panel(
             f"Error: {str(e)}",  
