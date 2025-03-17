@@ -547,17 +547,6 @@ class ActiveContextManager:
         Returns:
             str: 活动上下文中对应的目录路径
         """
-        try:
-            relative_path = os.path.relpath(directory_path, self.args.source_dir)
-            return os.path.join(self.args.source_dir, ".auto-coder", "active-context", relative_path)
-        except ValueError:
-            # 处理可能的跨设备相对路径错误
-            # 使用绝对路径的最后部分
-            parts = os.path.normpath(directory_path).split(os.sep)
-            # 取最后两级目录，如果存在
-            if len(parts) >= 2:
-                relative_path = os.path.join(parts[-2], parts[-1])
-            else:
-                relative_path = parts[-1]
-            return os.path.join(self.args.source_dir, ".auto-coder", "active-context", relative_path)
+        relative_path = os.path.relpath(directory_path, self.args.source_dir)
+        return os.path.join(self.args.source_dir, ".auto-coder", "active-context", relative_path)
         
