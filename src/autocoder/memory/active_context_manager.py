@@ -58,7 +58,29 @@ class ActiveContextManager:
     2. 映射目录结构
     3. 生成活动上下文文档
     4. 管理异步任务执行
+    
+    该类实现了单例模式，确保系统中只有一个实例。
     """
+    
+    # 类变量，用于存储单例实例
+    _instance = None
+    _is_initialized = False
+    
+    def __new__(cls, llm: byzerllm.ByzerLLM = None, args: AutoCoderArgs = None):
+        """
+        实现单例模式，确保只创建一个实例
+        
+        Args:
+            llm: ByzerLLM实例，用于生成文档内容
+            args: AutoCoderArgs实例，包含配置信息
+        
+        Returns:
+            ActiveContextManager: 单例实例
+        """
+        if cls._instance is None:
+            cls._instance = super(ActiveContextManager, cls).__new__(cls)
+            cls._instance._is_initialized = False
+        return cls._instance
     
     def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs):
         """
@@ -68,6 +90,10 @@ class ActiveContextManager:
             llm: ByzerLLM实例，用于生成文档内容
             args: AutoCoderArgs实例，包含配置信息
         """
+        # 如果已经初始化过，则直接返回
+        if self._is_initialized:
+            return
+            
         self.llm = llm
         self.args = args
         self.directory_mapper = DirectoryMapper()
@@ -76,6 +102,9 @@ class ActiveContextManager:
         self.yml_manager = ActionYmlFileManager(args.source_dir)
         self.tasks = {}  # 用于跟踪任务状态
         self.printer = Printer()
+        
+        # 标记为已初始化
+        self._is_initialized = True
         
     def _redirect_output_to_file(self, func, *args, **kwargs):
         """
