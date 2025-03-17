@@ -213,13 +213,18 @@ def get_uncommitted_changes(repo_path: str) -> str:
         # 处理未暂存的变更
         for diff_item in diff_index:
             file_path = diff_item.a_path
-            diff_content = repo.git.diff(None, file_path)            
-            if diff_item.new_file:
-                changes['new'].append((file_path, diff_content))
-            elif diff_item.deleted_file:
-                changes['deleted'].append((file_path, diff_content))
-            else:
-                changes['modified'].append((file_path, diff_content))
+            try:
+                diff_content = repo.git.diff(None, '--', file_path)            
+                if diff_item.new_file:
+                    changes['new'].append((file_path, diff_content))
+                elif diff_item.deleted_file:
+                    changes['deleted'].append((file_path, diff_content))
+                else:
+                    changes['modified'].append((file_path, diff_content))
+            except GitCommandError as e:
+                logger.error(f"Error getting diff for file {file_path}: {e}")
+                # 继续处理下一个文件，不中断整个流程
+                continue
                 
         # 处理未追踪的文件    
         for file_path in untracked:
@@ -229,6 +234,7 @@ def get_uncommitted_changes(repo_path: str) -> str:
                 changes['new'].append((file_path, f'+++ {file_path}\n{content}'))
             except Exception as e:
                 logger.error(f"Error reading file {file_path}: {e}")
+                # 继续处理下一个文件
                 
         # 生成markdown报告
         report = ["# Git Changes Report\n"]
