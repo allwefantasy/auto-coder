@@ -3,7 +3,9 @@
 """
 
 import os
+import sys
 import time
+import threading
 from datetime import datetime
 from typing import List, Dict, Optional, Any, Tuple, Set
 from loguru import logger
@@ -75,6 +77,56 @@ class ActiveContextManager:
         self.tasks = {}  # 用于跟踪任务状态
         self.printer = Printer()
         
+    def _redirect_output_to_file(self, func, *args, **kwargs):
+        """
+        将函数的所有输出重定向到日志文件
+        
+        Args:
+            func: 要执行的函数
+            *args, **kwargs: 传递给函数的参数
+        """
+        # 确保日志目录存在
+        log_dir = os.path.join(self.args.source_dir, '.auto-coder', 'active-context')
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, 'active.log')
+        
+        # 保存原始的标准输出和标准错误
+        original_stdout = sys.stdout
+        original_stderr = sys.stderr
+        
+        try:
+            # 打开日志文件并重定向输出
+            with open(log_file, 'a', encoding='utf-8') as f:
+                # 添加时间戳
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                f.write(f"\n\n--- 开始执行任务 {timestamp} ---\n")
+                
+                # 重定向标准输出和标准错误
+                sys.stdout = f
+                sys.stderr = f
+                
+                # 配置loguru将日志输出到文件
+                logger_id = logger.add(f, format="{time} {level} {message}", level="INFO")
+                
+                # 执行函数
+                result = func(*args, **kwargs)
+                
+                # 添加结束时间戳
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                f.write(f"\n--- 任务执行完成 {timestamp} ---\n")
+                
+                return result
+        finally:
+            # 恢复原始的标准输出和标准错误
+            sys.stdout = original_stdout
+            sys.stderr = original_stderr
+            
+            # 移除loguru的处理器
+            try:
+                logger.remove(logger_id)
+            except:
+                pass
+    
     def process_changes(self, file_name: Optional[str] = None) -> str:
         """
         处理代码变更，创建活动上下文
@@ -110,14 +162,13 @@ class ActiveContextManager:
                 'current_urls': current_urls
             }
             
-            # 异步处理
-            self.async_processor.schedule(
-                self._process_changes_async,
-                task_id,
-                query,
-                changed_urls,
-                current_urls
+            # 创建并启动独立线程，将输出重定向到日志文件
+            thread = threading.Thread(
+                target=self._redirect_output_to_file,
+                args=(self._process_changes_async, task_id, query, changed_urls, current_urls),
+                daemon=True
             )
+            thread.start()
             
             self.printer.print_in_terminal(
                 "active_context_started", 
