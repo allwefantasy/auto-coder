@@ -49,6 +49,7 @@ from autocoder.utils.llms import get_single_llm
 import pkg_resources
 from autocoder.common.printer import Printer
 from autocoder.utils.thread_utils import run_in_raw_thread
+from autocoder.memory.active_context_manager import ActiveContextManager
 from autocoder.common.command_completer import CommandCompleter,FileSystemModel as CCFileSystemModel,MemoryConfig as CCMemoryModel
 from autocoder.common.conf_validator import ConfigValidator
 from autocoder import command_parser as CommandParser
@@ -1754,6 +1755,90 @@ def design(query: str):
         execute_design()
     finally:
         os.remove(execute_file)
+
+
+@run_in_raw_thread()
+def active_context(query: str):
+    """
+    管理活动上下文任务，支持列表、查询等操作
+    
+    Args:
+        query: 命令参数，例如 "list" 列出所有任务
+    """    
+    # 解析命令
+    commands_infos = CommandParser.parse_query(query)
+    command = "list"  # 默认命令是列出所有任务
+    
+    if len(commands_infos) > 0:
+        if "list" in commands_infos:
+            command = "list"
+    
+    args = get_final_config()
+    # 获取LLM实例    
+    llm = get_single_llm(args.model,product_mode=args.product_mode)
+    
+    # 获取配置和参数
+    
+    
+    # 获取ActiveContextManager单例
+    active_context_manager = ActiveContextManager(llm, args)
+    
+    # 处理不同的命令
+    if command == "list":
+        # 获取所有任务
+        all_tasks = active_context_manager.get_all_tasks()
+        
+        if not all_tasks:
+            console = Console()
+            console.print("[yellow]没有找到任何活动上下文任务[/yellow]")
+            return
+        
+        # 创建表格
+        table = Table(title="活动上下文任务列表")
+        table.add_column("任务ID", style="cyan")
+        table.add_column("状态", style="green")
+        table.add_column("开始时间", style="yellow")
+        table.add_column("完成时间", style="yellow")
+        table.add_column("文件", style="blue")
+        
+        # 添加任务数据
+        for task in all_tasks:
+            status = task.get("status", "未知")
+            status_display = status
+            
+            # 根据状态设置不同的显示样式
+            if status == "completed":
+                status_display = "[green]已完成[/green]"
+            elif status == "running":
+                status_display = "[blue]运行中[/blue]"
+            elif status == "queued":
+                position = task.get("queue_position", 0)
+                status_display = f"[yellow]排队中 (位置: {position})[/yellow]"
+            elif status == "failed":
+                status_display = "[red]失败[/red]"
+            
+            # 格式化时间
+            start_time = task.get("start_time", "") 
+            start_time_str = start_time.strftime("%Y-%m-%d %H:%M:%S") if start_time else "未知"
+            
+            completion_time = task.get("completion_time", "")
+            completion_time_str = completion_time.strftime("%Y-%m-%d %H:%M:%S") if completion_time else "-"
+            
+            # 获取文件名
+            file_name = task.get("file_name", "未知")
+            
+            # 添加到表格
+            table.add_row(
+                task.get("task_id", "未知"),
+                status_display,
+                start_time_str,
+                completion_time_str,
+                file_name
+            )
+        
+        # 显示表格
+        console = Console()
+        console.print(table)
 
 
 def voice_input():

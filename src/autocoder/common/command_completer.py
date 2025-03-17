@@ -53,7 +53,7 @@ COMMANDS = {
     },
     "/shell": {
         "/chat": "",
-    }
+    }    
 }
 
 

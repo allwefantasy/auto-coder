@@ -192,12 +192,7 @@ class ActiveContextManager:
                 task_id, query, changed_urls, current_urls = task
                 
                 # 更新任务状态为运行中
-                self.tasks[task_id]['status'] = 'running'
-                self.printer.print_in_terminal(
-                    "active_context_processing", 
-                    task_id=task_id,
-                    style="blue"
-                )
+                self.tasks[task_id]['status'] = 'running'                
                 
                 # 执行任务，重定向输出到日志文件
                 self._redirect_output_to_file(
@@ -258,30 +253,12 @@ class ActiveContextManager:
             self._task_queue.put((task_id, query, changed_urls, current_urls))
             
             # 通知用户任务已排队
-            queue_position = self.tasks[task_id]['queue_position']
-            if queue_position > 0:
-                self.printer.print_in_terminal(
-                    "active_context_queued", 
-                    task_id=task_id,
-                    position=queue_position,
-                    style="yellow"
-                )
-            else:
-                self.printer.print_in_terminal(
-                    "active_context_started", 
-                    task_id=task_id,
-                    style="green"
-                )
+            queue_position = self.tasks[task_id]['queue_position']            
             
             return task_id
         
         except Exception as e:
-            logger.error(f"Error in process_changes: {e}")
-            self.printer.print_in_terminal(
-                "active_context_error", 
-                error=str(e),
-                style="red"
-            )
+            logger.error(f"Error in process_changes: {e}")            
             raise
     
     def _process_changes_async(self, task_id: str, query: str, changed_urls: List[str], current_urls: List[str]):

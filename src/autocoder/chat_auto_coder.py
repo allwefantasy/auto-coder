@@ -49,6 +49,7 @@ from autocoder.auto_coder_runner import (
     completer,
     summon,
     get_memory,
+    active_context,
 )
 
 # Create a global plugin manager
@@ -149,6 +150,7 @@ def show_help():
     print(f"  \033[94m/lib\033[0m - \033[92m{get_message('lib_desc')}\033[0m")
     print(f"  \033[94m/models\033[0m - \033[92m{get_message('models_desc')}\033[0m")
     print(f"  \033[94m/plugins\033[0m - \033[92m{get_message('plugins_desc')}\033[0m")
+    print(f"  \033[94m/active_context\033[0m - \033[92m{get_message('active_context_desc')}\033[0m")
     print(f"  \033[94m/exit\033[0m - \033[92m{get_message('exit_desc')}\033[0m")
     print()
 
@@ -423,13 +425,14 @@ def main():
         )
 
     # Replace original functions with wrapped versions
-    global ask, coding, chat, design, voice_input, auto_command, execute_shell_command
+    global ask, coding, chat, design, voice_input, auto_command, execute_shell_command, active_context
     ask = wrapped_functions.get("ask", ask)
     coding = wrapped_functions.get("coding", coding)
     chat = wrapped_functions.get("chat", chat)
     design = wrapped_functions.get("design", design)
     voice_input = wrapped_functions.get("voice_input", voice_input)
     auto_command = wrapped_functions.get("auto_command", auto_command)
+    active_context = wrapped_functions.get("active_context", active_context)
     execute_shell_command = wrapped_functions.get(
         "execute_shell_command", execute_shell_command
     )
@@ -620,6 +623,10 @@ def main():
                     print("Please enter your query.")
                 else:
                     mcp(query)
+                    
+            elif user_input.startswith("/active_context"):
+                query = user_input[len("/active_context") :].strip()
+                active_context(query)
 
             elif user_input.startswith("/auto"):
                 query = user_input[len("/auto") :].strip()
