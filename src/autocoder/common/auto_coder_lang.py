@@ -66,6 +66,11 @@ MESSAGES = {
         "index_related_files_fail": "⚠️ Failed to find related files for chunk {{ chunk_count }}",
         "index_file_removed": "🗑️ Removed non-existent file index: {{ file_path }}",
         "index_file_saved": "💾 Saved index file, updated {{ updated_files }} files, removed {{ removed_files }} files, input_tokens: {{ input_tokens }}, output_tokens: {{ output_tokens }}, input_cost: {{ input_cost }}, output_cost: {{ output_cost }}",
+        "task_cancelled_by_user": "Task was cancelled by user",
+        "cancellation_requested": "Cancellation requested, waiting for thread to terminate...",
+        "force_terminating_thread": "Force terminating thread after timeout",
+        "force_raising_keyboard_interrupt": "Force raising KeyboardInterrupt after timeout",
+        "thread_terminated": "Thread terminated",
         "human_as_model_instructions": (
             "You are now in Human as Model mode. The content has been copied to your clipboard.\n"
             "The system is waiting for your input. When finished, enter 'EOF' on a new line to submit.\n"
@@ -156,7 +161,6 @@ MESSAGES = {
         "generated_shell_script": "Generated Shell Script",
         "confirm_execute_shell_script": "Do you want to execute this shell script?",
         "shell_script_not_executed": "Shell script was not executed",
-        "conf_not_found": "Configuration file not found: {{path}}",
         "index_export_success": "Index exported successfully: {{path}}",
         "index_import_success": "Index imported successfully: {{path}}",
         "edits_title": "edits",
@@ -279,6 +283,11 @@ MESSAGES = {
         "index_related_files_fail": "⚠️ 无法为块 {{ chunk_count }} 找到相关文件",
         "index_file_removed": "🗑️ 已移除不存在的文件索引：{{ file_path }}",
         "index_file_saved": "💾 已保存索引文件，更新了 {{ updated_files }} 个文件，移除了 {{ removed_files }} 个文件，输入token数: {{ input_tokens }}, 输出token数: {{ output_tokens }}, 输入成本: {{ input_cost }}, 输出成本: {{ output_cost }}",
+        "task_cancelled_by_user": "任务被用户取消",
+        "cancellation_requested": "已请求取消，正在等待线程终止...",
+        "force_terminating_thread": "线程超时强制终止",
+        "force_raising_keyboard_interrupt": "超时强制抛出键盘中断异常",
+        "thread_terminated": "线程已终止",
         "human_as_model_instructions": (
             "您现在处于人类作为模型模式。内容已复制到您的剪贴板。\n"
             "系统正在等待您的输入。完成后，在新行输入'EOF'提交。\n"
