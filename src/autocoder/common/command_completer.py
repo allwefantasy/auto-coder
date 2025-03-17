@@ -359,23 +359,6 @@ class CommandTextParser:
             else:
                 self.consume_coding_value()
 
-    def active_context(self):
-        """
-        for example:
-        /active_context /list
-        """
-        while True:
-            if self.pos == self.len - 1:
-                break
-            elif self.is_extracted:
-                break
-            elif self.is_sub_command():
-                self.consume_sub_command()
-            else:
-                self.consume_command_value()
-
-        return self
-
 
 class CommandCompleter(Completer):
     def __init__(self, commands, file_system_model: FileSystemModel, memory_model: MemoryConfig):
@@ -519,7 +502,7 @@ class CommandCompleter(Completer):
             elif words[0] == "/active_context":
                 new_text = text[len("/active_context"):]
                 parser = CommandTextParser(new_text, words[0])
-                parser.active_context()
+                parser.lib()
                 current_word = parser.current_word()
                 for command in parser.get_sub_commands():
                     if command.startswith(current_word):
