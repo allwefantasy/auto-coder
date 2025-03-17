@@ -623,7 +623,7 @@ def main():
 
             elif user_input.startswith("/auto"):
                 query = user_input[len("/auto") :].strip()
-                auto_command(ARGS, query)
+                auto_command(query)
             elif user_input.startswith("/debug"):
                 code = user_input[len("/debug") :].strip()
                 try:
