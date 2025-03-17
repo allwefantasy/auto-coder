@@ -48,7 +48,7 @@ def run_in_raw_thread(token: Optional[str] = None, context: Optional[Dict[str, A
                     result.append(ret)
                 except CancelRequestedException as e:
                     # 处理取消异常
-                    printer.print_in_terminal(get_message("generation_cancelled"))
+                    printer.print_in_terminal("generation_cancelled")
                     exception_raised[0] = e
                 except Exception as e:
                     # 存储其他异常
