@@ -414,6 +414,8 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     enable_active_context: Optional[bool] = False
 
+    generate_max_rounds: Optional[int] = 5
+
     class Config:
         protected_namespaces = ()
 

@@ -272,7 +272,12 @@ class CodeAutoGenerate:
                         for _ in range(self.generate_times_same_model):
                             model_names.append(model_name)
                             futures.append(executor.submit(
-                                chat_with_continue, llm=llm, conversations=conversations, llm_config=llm_config))
+                                chat_with_continue, 
+                                llm=llm, 
+                                conversations=conversations, 
+                                llm_config=llm_config,
+                                args=self.args
+                            ))
                             
                 temp_results = [future.result() for future in futures]
                 for result in temp_results:
@@ -290,7 +295,12 @@ class CodeAutoGenerate:
                     conversations + [{"role": "assistant", "content": result}])
         else:            
             for _ in range(self.args.human_model_num):
-                single_result = chat_with_continue(llm=self.llms[0], conversations=conversations, llm_config=llm_config)                
+                single_result = chat_with_continue(
+                    llm=self.llms[0], 
+                    conversations=conversations, 
+                    llm_config=llm_config,
+                    args=self.args
+                )                
                 results.append(single_result.content)
                 input_tokens_count += single_result.input_tokens_count
                 generated_tokens_count += single_result.generated_tokens_count
