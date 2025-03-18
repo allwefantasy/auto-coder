@@ -445,7 +445,10 @@ class CodeAutoMergeEditBlock:
 
                     if self.args.enable_active_context:
                         active_context_manager = ActiveContextManager(self.llm, self.args)
-                        active_context_manager.process_changes()
+                        task_id = active_context_manager.process_changes()
+                        self.printer.print_in_terminal("active_context_background_task", 
+                                                     style="blue",
+                                                     task_id=task_id)
                     git_utils.print_commit_info(commit_result=commit_result)
                 except Exception as e:
                     self.printer.print_str_in_terminal(

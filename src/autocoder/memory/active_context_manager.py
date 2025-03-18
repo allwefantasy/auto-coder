@@ -132,11 +132,16 @@ class ActiveContextManager:
         # 确保日志目录存在
         log_dir = os.path.join(self.args.source_dir, '.auto-coder', 'active-context')
         os.makedirs(log_dir, exist_ok=True)
-        log_file = os.path.join(log_dir, 'active.log')
+        log_file = os.path.join(log_dir, f'{args[0]}.log')
         
         # 保存原始的标准输出和标准错误
         original_stdout = sys.stdout
         original_stderr = sys.stderr
+        
+        # 保存所有现有的 loguru 处理器
+        existing_handlers = []
+        for handler_id in logger._core.handlers:
+            existing_handlers.append(handler_id)
         
         try:
             # 打开日志文件并重定向输出
@@ -148,6 +153,10 @@ class ActiveContextManager:
                 # 重定向标准输出和标准错误
                 sys.stdout = f
                 sys.stderr = f
+                
+                # 移除所有现有的处理器，防止日志同时输出到控制台
+                for handler_id in existing_handlers:
+                    logger.remove(handler_id)
                 
                 # 配置loguru将日志输出到文件
                 logger_id = logger.add(f, format="{time} {level} {message}", level="INFO")
@@ -165,11 +174,20 @@ class ActiveContextManager:
             sys.stdout = original_stdout
             sys.stderr = original_stderr
             
-            # 移除loguru的处理器
+            # 移除当前日志处理器
             try:
                 logger.remove(logger_id)
             except:
                 pass
+            
+            # 恢复原始日志处理器
+            for handler_id in existing_handlers:
+                try:
+                    # 因为我们无法直接恢复已移除的处理器，可以重新配置默认处理器
+                    if handler_id == 0:  # 默认处理器ID通常为0
+                        logger.add(sys.stderr, format="{time} {level} {message}", level="INFO")
+                except:
+                    pass
     
     def _process_queue(self):
         """
@@ -215,7 +233,7 @@ class ActiveContextManager:
     
     def process_changes(self, file_name: Optional[str] = None) -> str:
         """
-        处理代码变更，创建活动上下文
+        处理代码变更，创建活动上下文（非阻塞）
         
         Args:
             file_name: YAML文件名，如果为None则使用args.file
@@ -240,7 +258,7 @@ class ActiveContextManager:
             
             # 更新任务状态
             self.tasks[task_id] = {
-                'status': 'queued',  # 初始状态为排队中
+                'status': 'queued',
                 'start_time': datetime.now(),
                 'file_name': file_name,
                 'query': query,
@@ -249,17 +267,52 @@ class ActiveContextManager:
                 'queue_position': self._task_queue.qsize() + (1 if self._is_processing else 0)
             }
             
-            # 将任务添加到队列
-            self._task_queue.put((task_id, query, changed_urls, current_urls))
+            # 直接启动后台线程处理任务，不通过队列
+            thread = threading.Thread(
+                target=self._execute_task_in_background,
+                args=(task_id, query, changed_urls, current_urls),
+                daemon=True  # 使用守护线程，主程序退出时自动结束
+            )
+            thread.start()
             
-            # 通知用户任务已排队
-            queue_position = self.tasks[task_id]['queue_position']            
-            
+            # 记录任务已启动，并立即返回
+            logger.info(f"Task {task_id} started in background thread")
             return task_id
-        
+            
         except Exception as e:
             logger.error(f"Error in process_changes: {e}")            
             raise
+    
+    def _execute_task_in_background(self, task_id: str, query: str, changed_urls: List[str], current_urls: List[str]):
+        """
+        在后台线程中执行任务，处理所有日志重定向
+        
+        Args:
+            task_id: 任务ID
+            query: 用户查询
+            changed_urls: 变更的文件列表
+            current_urls: 当前相关的文件列表
+        """
+        try:
+            # 更新任务状态为运行中
+            self.tasks[task_id]['status'] = 'running'
+            
+            # 重定向输出并执行任务
+            self._redirect_output_to_file(
+                self._process_changes_async, 
+                task_id, query, changed_urls, current_urls
+            )
+            
+            # 更新任务状态为已完成
+            self.tasks[task_id]['status'] = 'completed'
+            self.tasks[task_id]['completion_time'] = datetime.now()
+            
+        except Exception as e:
+            # 记录错误，但不允许异常传播到主线程
+            error_msg = f"Background task {task_id} failed: {str(e)}"
+            logger.error(error_msg)
+            self.tasks[task_id]['status'] = 'failed'
+            self.tasks[task_id]['error'] = error_msg
     
     def _process_changes_async(self, task_id: str, query: str, changed_urls: List[str], current_urls: List[str]):
         """

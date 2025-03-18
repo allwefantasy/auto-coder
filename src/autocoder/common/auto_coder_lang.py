@@ -201,6 +201,7 @@ MESSAGES = {
         "no_commit_file_name": "Cannot get the file name of the commit_id in the actions directory: {{commit_id}}",
         "yaml_update_success": "✅ Successfully updated YAML file: {{yaml_file}}",
         "yaml_save_error": "❌ Error saving YAML file {{yaml_file}}: {{error}}",
+        "active_context_background_task": "🔄 Active context generation started in background (task ID: {{task_id}})",
     },
     "zh": {
         "file_sliding_window_processing": "文件 {{ file_path }} 过大 ({{ tokens }} tokens)，正在使用滑动窗口处理...",
@@ -400,6 +401,7 @@ MESSAGES = {
         "no_commit_file_name": "无法获取commit_id关联的actions 目录下的文件名: {{commit_id}}",
         "yaml_update_success": "✅ 成功更新YAML文件: {{yaml_file}}",
         "yaml_save_error": "❌ 保存YAML文件出错 {{yaml_file}}: {{error}}",
+        "active_context_background_task": "🔄 正在后台生成活动上下文 (任务ID: {{task_id}})",
     }}
 
 
