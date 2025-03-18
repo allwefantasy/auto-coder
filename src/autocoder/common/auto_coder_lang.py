@@ -729,6 +729,10 @@ MESSAGES = {
     "conf_not_found": {
         "en": "Configuration not found: {{path}}",
         "zh": "未找到配置文件: {{path}}"
+    },
+    "code_generate_title": {
+        "en": "{{model_name}} is generating code",
+        "zh": "{{model_name}}正在生成代码"
     }
 }
 

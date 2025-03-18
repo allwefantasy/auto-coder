@@ -11,12 +11,15 @@ from autocoder.utils.queue_communicate import (
 )
 import json
 from concurrent.futures import ThreadPoolExecutor
-from autocoder.common.utils_code_auto_generate import chat_with_continue
+from autocoder.common.utils_code_auto_generate import chat_with_continue,stream_chat_with_continue,ChatWithContinueResult
+from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
+from autocoder.common.stream_out_type import CodeGenerateStreamOutType
 from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
 from autocoder.utils import llms as llm_utils
 from autocoder.common import SourceCodeList
 from autocoder.memory.active_context_manager import ActiveContextManager
+from autocoder.common.auto_coder_lang import get_message_with_format
 
 
 class CodeAutoGenerateEditBlock:
@@ -508,15 +511,39 @@ class CodeAutoGenerateEditBlock:
                     if model_names_list:
                         model_name = model_names_list[0]                    
 
-                    for _ in range(self.generate_times_same_model):
+                    for i in range(self.generate_times_same_model):
                         model_names.append(model_name)
-                        futures.append(executor.submit(
-                            chat_with_continue, 
-                            llm=llm, 
-                            conversations=conversations, 
-                            llm_config=llm_config,
-                            args=self.args
-                        ))
+                        if i==0:
+                            def job():
+                                stream_generator = stream_chat_with_continue(
+                                    llm=llm, 
+                                    conversations=conversations, 
+                                    llm_config=llm_config,
+                                    args=self.args
+                                )
+                                full_response, last_meta = stream_out(
+                                stream_generator,
+                                model_name=model_name,
+                                title=get_message_with_format(
+                                    "code_generate_title", model_name=model_name),
+                                args=self.args,
+                                extra_meta={
+                                    "stream_out_type": CodeGenerateStreamOutType.CODE_GENERATE.value
+                                })
+                                return ChatWithContinueResult(
+                                    content=full_response,
+                                    input_tokens_count=last_meta.input_tokens_count,
+                                    generated_tokens_count=last_meta.generated_tokens_count
+                                )
+                            futures.append(executor.submit(job))
+                        else:                                
+                            futures.append(executor.submit(
+                                chat_with_continue, 
+                                llm=llm, 
+                                conversations=conversations, 
+                                llm_config=llm_config,
+                                args=self.args
+                            ))
                 
                 temp_results = [future.result() for future in futures]
                 
