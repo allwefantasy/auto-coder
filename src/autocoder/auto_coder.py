@@ -945,7 +945,7 @@ def main(input_args: Optional[List[str]] = None):
 
             console = Console()            
 
-            shell_script = generate_shell_script(args.query, llm)
+            shell_script = generate_shell_script(args, llm)
 
             console.print(
                 Panel(

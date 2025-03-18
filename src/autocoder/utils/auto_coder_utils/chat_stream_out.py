@@ -199,6 +199,11 @@ def stream_out(
     Returns:
         Tuple[str, Dict[SingleOutputMeta]]: 返回完整的响应内容和最后的元数据
     """
+    if args is None:
+        import traceback
+        traceback.print_stack()
+        print("=="*100)
+
     if console is None:
         console = Console(force_terminal=True, color_system="auto", height=None)
     

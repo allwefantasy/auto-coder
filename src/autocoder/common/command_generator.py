@@ -1,7 +1,7 @@
 import byzerllm
 from byzerllm.utils.client import code_utils
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
-from autocoder.common import detect_env
+from autocoder.common import detect_env,AutoCoderArgs
 from autocoder.common import shells
 from autocoder.common.printer import Printer
 from typing import Dict,Union
@@ -57,9 +57,9 @@ def _generate_shell_script(user_input: str) -> str:
     }
 
 
-def generate_shell_script(user_input: str, llm: Union[byzerllm.ByzerLLM,byzerllm.SimpleByzerLLM]) -> str:
+def generate_shell_script(args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM,byzerllm.SimpleByzerLLM]) -> str:
     # 获取 prompt 内容
-    prompt = _generate_shell_script.prompt(user_input=user_input)
+    prompt = _generate_shell_script.prompt(user_input=args.query)
     if llm.get_sub_client("chat_model"):
         shell_llm = llm.get_sub_client("chat_model")                
     else:
@@ -74,7 +74,8 @@ def generate_shell_script(user_input: str, llm: Union[byzerllm.ByzerLLM,byzerllm
     result, _ = stream_out(
         shell_llm.stream_chat_oai(conversations=conversations, delta_mode=True),
         model_name=llm.default_model_name,
-        title=title        
+        title=title,
+        args=args       
     )
     
     # 提取代码块

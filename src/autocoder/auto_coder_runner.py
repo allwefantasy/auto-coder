@@ -1418,7 +1418,7 @@ def commit(query: str):
 
 
 @run_in_raw_thread()
-def coding(query: str):
+def coding(query: str):    
     console = Console()
     is_apply = query.strip().startswith("/apply")
     if is_apply:
