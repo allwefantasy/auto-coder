@@ -14,12 +14,13 @@ from concurrent.futures import ThreadPoolExecutor
 from autocoder.common.utils_code_auto_generate import chat_with_continue,stream_chat_with_continue,ChatWithContinueResult
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
 from autocoder.common.stream_out_type import CodeGenerateStreamOutType
+from autocoder.common.auto_coder_lang import get_message_with_format
 from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
 from autocoder.utils import llms as llm_utils
 from autocoder.common import SourceCodeList
 from autocoder.memory.active_context_manager import ActiveContextManager
-from autocoder.common.auto_coder_lang import get_message_with_format
+
 
 
 class CodeAutoGenerateEditBlock:
