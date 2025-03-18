@@ -13,6 +13,7 @@ from autocoder.utils.llms import get_llm_names, get_model_info
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
 import os
 from autocoder.rag.token_counter import count_tokens
+from autocoder.common.stream_out_type import CodeRankStreamOutType
 
 class RankResult(BaseModel):
     rank_result: List[int]
@@ -211,7 +212,10 @@ class CodeModificationRanker:
                         model_name=model_name,
                         title=self.printer.get_message_from_key_with_format(
                             "rank_code_modification_title", model_name=model_name),
-                        args=self.args
+                        args=self.args,
+                        extra_meta={
+                            "stream_out_type": CodeRankStreamOutType.CODE_RANK.value
+                        }
                     )
                 
                 if last_meta:

@@ -9,3 +9,6 @@ class IndexFilterStreamOutType(Enum):
 
 class CodeGenerateStreamOutType(Enum):
     CODE_GENERATE = "code_generate"
+
+class CodeRankStreamOutType(Enum):
+    CODE_RANK = "code_rank"    
