@@ -4,9 +4,10 @@
 
 from typing import Dict, Any, Optional, Tuple, List
 import os
+import sys
 import re
 import byzerllm
-from loguru import logger
+from loguru import logger as global_logger
 
 class ActivePackage:
     """
@@ -25,6 +26,8 @@ class ActivePackage:
             llm: ByzerLLM实例，用于生成文档内容
         """
         self.llm = llm
+        # 创建专用的 logger 实例
+        self.logger = global_logger.bind(name="ActivePackage")
         
     def generate_active_file(self, context: Dict[str, Any], query: str, 
                             existing_file_path: Optional[str] = None, 
@@ -48,9 +51,9 @@ class ActivePackage:
                 try:
                     with open(existing_file_path, 'r', encoding='utf-8') as f:
                         existing_content = f.read()
-                    logger.info(f"Found existing active.md file: {existing_file_path}")
+                    self.logger.info(f"Found existing active.md file: {existing_file_path}")
                 except Exception as e:
-                    logger.error(f"Error reading existing file {existing_file_path}: {e}")
+                    self.logger.error(f"Error reading existing file {existing_file_path}: {e}")
             
             # 增强上下文信息，添加文件变更信息
             enhanced_context = self._enhance_context_with_changes(context, file_changes)
@@ -65,7 +68,7 @@ class ActivePackage:
             
             return file_content
         except Exception as e:
-            logger.error(f"Error generating active file: {e}")
+            self.logger.error(f"Error generating active file: {e}")
             return f"# 生成文档时出错\n\n错误: {str(e)}"
     
     def _enhance_context_with_changes(self, context: Dict[str, Any], 
@@ -154,7 +157,7 @@ class ActivePackage:
             
             return file_content
         except Exception as e:
-            logger.error(f"Error generating new active file: {e}")
+            self.logger.error(f"Error generating new active file: {e}")
             raise
     
     def extract_sections(self, content: str) -> Tuple[str, str, str]:
@@ -190,7 +193,7 @@ class ActivePackage:
                 
             return header, current_change_section, document_section
         except Exception as e:
-            logger.error(f"Error extracting sections: {e}")
+            self.logger.error(f"Error extracting sections: {e}")
             return header, current_change_section, document_section
     
     def generate_updated_active_file(self, context: Dict[str, Any], query: str, existing_content: str) -> str:
@@ -229,9 +232,9 @@ class ActivePackage:
             
             return file_content
         except Exception as e:
-            logger.error(f"Error updating active file: {e}")
+            self.logger.error(f"Error updating active file: {e}")
             # 如果更新失败，回退到生成新文档
-            logger.info("Falling back to generating new active file")
+            self.logger.info("Falling back to generating new active file")
             return self.generate_new_active_file(context, query)
     
     @byzerllm.prompt()

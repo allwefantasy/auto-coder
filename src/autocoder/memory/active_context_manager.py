@@ -9,7 +9,7 @@ import threading
 import queue
 from datetime import datetime
 from typing import List, Dict, Optional, Any, Tuple, Set
-from loguru import logger
+from loguru import logger as global_logger
 import byzerllm
 import re
 from pydantic import BaseModel, Field
@@ -100,6 +100,24 @@ class ActiveContextManager:
         # 如果已经初始化过，则直接返回
         if self._is_initialized:
             return
+        
+        # 设置日志目录和文件
+        log_dir = os.path.join(args.source_dir, ".auto-coder", "active-context")
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, "active.log")
+        
+        # 配置全局日志输出到文件，不输出到控制台
+        global_logger.configure(
+            handlers=[
+                # 移除控制台输出，只保留文件输出
+                {"sink": log_file, "level": "DEBUG", "rotation": "10 MB", "retention": "1 week", 
+                 "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name} | {message}"}
+            ]
+        )
+        
+        # 创建专用的logger实例
+        self.logger = global_logger.bind(name="ActiveContextManager")
+        self.logger.info(f"初始化 ActiveContextManager，日志输出到 {log_file}")
             
         self.llm = llm
         self.args = args
@@ -154,7 +172,7 @@ class ActiveContextManager:
                 self._task_queue.task_done()
                 
             except Exception as e:
-                logger.error(f"Error in queue processing thread: {e}")
+                self.logger.error(f"Error in queue processing thread: {e}")
                 # 重置处理标志，确保队列可以继续处理
                 with self._queue_lock:
                     self.__class__._is_processing = False
@@ -204,11 +222,11 @@ class ActiveContextManager:
             thread.start()
             
             # 记录任务已启动，并立即返回
-            logger.info(f"Task {task_id} started in background thread")
+            self.logger.info(f"Task {task_id} started in background thread")
             return task_id
             
         except Exception as e:
-            logger.error(f"Error in process_changes: {e}")            
+            self.logger.error(f"Error in process_changes: {e}")            
             raise
     
     def _execute_task_in_background(self, task_id: str, query: str, changed_urls: List[str], current_urls: List[str]):
@@ -235,7 +253,7 @@ class ActiveContextManager:
         except Exception as e:
             # 记录错误，但不允许异常传播到主线程
             error_msg = f"Background task {task_id} failed: {str(e)}"
-            logger.error(error_msg)
+            self.logger.error(error_msg)
             self.tasks[task_id]['status'] = 'failed'
             self.tasks[task_id]['error'] = error_msg
     
@@ -250,51 +268,51 @@ class ActiveContextManager:
             current_urls: 当前相关的文件路径列表
         """
         try:
-            logger.info(f"==== 开始处理任务 {task_id} ====")
-            logger.info(f"查询内容: {query}")
-            logger.info(f"变更文件数量: {len(changed_urls)}")
-            logger.info(f"相关文件数量: {len(current_urls)}")
+            self.logger.info(f"==== 开始处理任务 {task_id} ====")
+            self.logger.info(f"查询内容: {query}")
+            self.logger.info(f"变更文件数量: {len(changed_urls)}")
+            self.logger.info(f"相关文件数量: {len(current_urls)}")
             
             if changed_urls:
-                logger.debug(f"变更文件列表: {', '.join(changed_urls[:5])}{'...' if len(changed_urls) > 5 else ''}")
+                self.logger.debug(f"变更文件列表: {', '.join(changed_urls[:5])}{'...' if len(changed_urls) > 5 else ''}")
             
             self.tasks[task_id]['status'] = 'running'
             
             # 获取当前任务的文件名
             file_name = self.tasks[task_id].get('file_name')
-            logger.info(f"任务关联文件: {file_name}")
+            self.logger.info(f"任务关联文件: {file_name}")
             
             # 获取文件变更信息
             file_changes = {}
             if file_name:
-                logger.info(f"正在获取提交变更信息...")
+                self.logger.info(f"正在获取提交变更信息...")
                 commit_changes = self.yml_manager.get_commit_changes(file_name)
                 if commit_changes and len(commit_changes) > 0:
                     # commit_changes结构为 [(query, urls, changes)]
                     _, _, changes = commit_changes[0]
                     file_changes = changes
-                    logger.info(f"成功获取到 {len(file_changes)} 个文件变更")
+                    self.logger.info(f"成功获取到 {len(file_changes)} 个文件变更")
                 else:
-                    logger.warning("未找到提交变更信息")
+                    self.logger.warning("未找到提交变更信息")
             
             # 1. 映射目录
-            logger.info("开始映射目录结构...")
+            self.logger.info("开始映射目录结构...")
             directory_contexts = self.directory_mapper.map_directories(
                 self.args.source_dir, changed_urls, current_urls
             )
-            logger.info(f"目录映射完成，找到 {len(directory_contexts)} 个相关目录")
+            self.logger.info(f"目录映射完成，找到 {len(directory_contexts)} 个相关目录")
             
             # 2. 处理每个目录
             processed_dirs = []
             for i, context in enumerate(directory_contexts):
                 dir_path = context['directory_path']
-                logger.info(f"[{i+1}/{len(directory_contexts)}] 开始处理目录: {dir_path}")
+                self.logger.info(f"[{i+1}/{len(directory_contexts)}] 开始处理目录: {dir_path}")
                 try:
                     self._process_directory_context(context, query, file_changes)
                     processed_dirs.append(os.path.basename(dir_path))
-                    logger.info(f"目录 {dir_path} 处理完成")
+                    self.logger.info(f"目录 {dir_path} 处理完成")
                 except Exception as e:
-                    logger.error(f"处理目录 {dir_path} 时出错: {str(e)}")
+                    self.logger.error(f"处理目录 {dir_path} 时出错: {str(e)}")
                 
             # 3. 更新任务状态
             self.tasks[task_id]['status'] = 'completed'
@@ -302,13 +320,13 @@ class ActiveContextManager:
             self.tasks[task_id]['processed_dirs'] = processed_dirs
             
             duration = (datetime.now() - self.tasks[task_id]['start_time']).total_seconds()
-            logger.info(f"==== 任务 {task_id} 处理完成 ====")
-            logger.info(f"总耗时: {duration:.2f}秒")
-            logger.info(f"处理的目录数: {len(processed_dirs)}")
+            self.logger.info(f"==== 任务 {task_id} 处理完成 ====")
+            self.logger.info(f"总耗时: {duration:.2f}秒")
+            self.logger.info(f"处理的目录数: {len(processed_dirs)}")
         
         except Exception as e:
             # 记录错误
-            logger.error(f"任务 {task_id} 失败: {str(e)}", exc_info=True)
+            self.logger.error(f"任务 {task_id} 失败: {str(e)}", exc_info=True)
             self.tasks[task_id]['status'] = 'failed'
             self.tasks[task_id]['error'] = str(e)
     
@@ -323,48 +341,48 @@ class ActiveContextManager:
         """
         try:
             directory_path = context['directory_path']
-            logger.debug(f"--- 处理目录上下文开始: {directory_path} ---")
+            self.logger.debug(f"--- 处理目录上下文开始: {directory_path} ---")
             
             # 1. 确保目录存在
             target_dir = self._get_active_context_path(directory_path)
             os.makedirs(target_dir, exist_ok=True)
-            logger.debug(f"目标目录准备完成: {target_dir}")
+            self.logger.debug(f"目标目录准备完成: {target_dir}")
             
             # 2. 检查是否有现有的active.md文件
             existing_file_path = os.path.join(target_dir, "active.md")
             if os.path.exists(existing_file_path):
-                logger.info(f"找到现有 active.md 文件: {existing_file_path}")
+                self.logger.info(f"找到现有 active.md 文件: {existing_file_path}")
                 try:
                     with open(existing_file_path, 'r', encoding='utf-8') as f:
                         existing_content_preview = f.read(500)
-                    logger.debug(f"现有文件内容预览: {existing_content_preview[:100]}...")
+                    self.logger.debug(f"现有文件内容预览: {existing_content_preview[:100]}...")
                 except Exception as e:
-                    logger.warning(f"无法读取现有文件内容: {str(e)}")
+                    self.logger.warning(f"无法读取现有文件内容: {str(e)}")
             else:
                 existing_file_path = None
-                logger.info(f"目录 {directory_path} 没有找到现有的 active.md 文件")
+                self.logger.info(f"目录 {directory_path} 没有找到现有的 active.md 文件")
             
             # 记录目录中的文件信息
             changed_files = context.get('changed_files', [])
             current_files = context.get('current_files', [])
-            logger.debug(f"目录中变更文件数: {len(changed_files)}")
-            logger.debug(f"目录中当前文件数: {len(current_files)}")
+            self.logger.debug(f"目录中变更文件数: {len(changed_files)}")
+            self.logger.debug(f"目录中当前文件数: {len(current_files)}")
             
             # 过滤出当前目录相关的文件变更
             directory_changes = {}
             if file_changes:
-                logger.debug(f"开始筛选与目录相关的文件变更...")
+                self.logger.debug(f"开始筛选与目录相关的文件变更...")
                 # 获取当前目录下的所有文件路径
                 dir_files = []
                 for file_info in changed_files:
                     file_path = file_info['path']
                     dir_files.append(file_path)
-                    logger.debug(f"添加变更文件: {file_path}")
+                    self.logger.debug(f"添加变更文件: {file_path}")
                 
                 for file_info in current_files:
                     file_path = file_info['path']
                     dir_files.append(file_path)
-                    logger.debug(f"添加当前文件: {file_path}")
+                    self.logger.debug(f"添加当前文件: {file_path}")
                 
                 # 从file_changes中获取当前目录文件的变更
                 for file_path, change_info in file_changes.items():
@@ -373,16 +391,16 @@ class ActiveContextManager:
                         old_content, new_content = change_info
                         old_preview = old_content[:50] if old_content else "(空)"
                         new_preview = new_content[:50] if new_content else "(空)"
-                        logger.debug(f"文件变更: {file_path}")
-                        logger.debug(f"  旧内容: {old_preview}...")
-                        logger.debug(f"  新内容: {new_preview}...")
+                        self.logger.debug(f"文件变更: {file_path}")
+                        self.logger.debug(f"  旧内容: {old_preview}...")
+                        self.logger.debug(f"  新内容: {new_preview}...")
                 
-                logger.info(f"找到 {len(directory_changes)} 个与目录 {directory_path} 相关的文件变更")
+                self.logger.info(f"找到 {len(directory_changes)} 个与目录 {directory_path} 相关的文件变更")
             else:
-                logger.debug("没有提供文件变更信息")
+                self.logger.debug("没有提供文件变更信息")
             
             # 3. 生成活动文件内容
-            logger.info(f"开始为目录 {directory_path} 生成活动文件内容...")
+            self.logger.info(f"开始为目录 {directory_path} 生成活动文件内容...")
             markdown_content = self.active_package.generate_active_file(
                 context, 
                 query,
@@ -391,21 +409,21 @@ class ActiveContextManager:
             )
             
             content_length = len(markdown_content)
-            logger.debug(f"生成的活动文件内容长度: {content_length} 字符")
+            self.logger.debug(f"生成的活动文件内容长度: {content_length} 字符")
             if content_length > 0:
-                logger.debug(f"内容预览: {markdown_content[:200]}...")
+                self.logger.debug(f"内容预览: {markdown_content[:200]}...")
             
             # 4. 写入文件
             active_md_path = os.path.join(target_dir, "active.md")
-            logger.info(f"正在写入活动文件: {active_md_path}")
+            self.logger.info(f"正在写入活动文件: {active_md_path}")
             with open(active_md_path, "w", encoding="utf-8") as f:
                 f.write(markdown_content)
                 
-            logger.info(f"成功创建/更新目录 {directory_path} 的活动文件")
-            logger.debug(f"--- 处理目录上下文完成: {directory_path} ---")
+            self.logger.info(f"成功创建/更新目录 {directory_path} 的活动文件")
+            self.logger.debug(f"--- 处理目录上下文完成: {directory_path} ---")
             
         except Exception as e:
-            logger.error(f"处理目录 {context.get('directory_path', 'unknown')} 时出错: {str(e)}", exc_info=True)
+            self.logger.error(f"处理目录 {context.get('directory_path', 'unknown')} 时出错: {str(e)}", exc_info=True)
             raise
     
     def get_task_status(self, task_id: str) -> Dict[str, Any]:
@@ -566,9 +584,9 @@ class ActiveContextManager:
                         # 添加到结果
                         result.contexts[dir_path] = active_context
                         
-                        logger.info(f"已加载目录 {dir_path} 的活动上下文文件")
+                        self.logger.info(f"已加载目录 {dir_path} 的活动上下文文件")
                     except Exception as e:
-                        logger.error(f"读取活动上下文文件 {active_md_path} 时出错: {e}")
+                        self.logger.error(f"读取活动上下文文件 {active_md_path} 时出错: {e}")
             
             # 3. 记录未找到对应活动上下文的文件
             result.not_found_files = [f for f in file_paths if f not in found_files]
@@ -576,7 +594,7 @@ class ActiveContextManager:
             return result
             
         except Exception as e:
-            logger.error(f"加载活动上下文失败: {e}")
+            self.logger.error(f"加载活动上下文失败: {e}")
             return FileContextsResult(not_found_files=file_paths)
     
     def _parse_active_md_content(self, content: str) -> Dict[str, str]:
@@ -613,7 +631,7 @@ class ActiveContextManager:
             
             return result
         except Exception as e:
-            logger.error(f"解析活动上下文文件内容时出错: {e}")
+            self.logger.error(f"解析活动上下文文件内容时出错: {e}")
             return {'header': '', 'current_change': '', 'document': ''}
     
     def _get_active_context_path(self, directory_path: str) -> str:

@@ -3,14 +3,22 @@
 """
 
 import os
+import sys
 from typing import List, Dict, Any
-from loguru import logger
+from loguru import logger as global_logger
 
 class DirectoryMapper:
     """
     DirectoryMapper负责将文件URL映射到对应的目录结构，
     用于确定需要生成active.md文件的目录。
     """
+    
+    def __init__(self):
+        """
+        初始化目录映射器
+        """
+        # 创建专用的 logger 实例
+        self.logger = global_logger.bind(name="DirectoryMapper")
     
     def map_directories(self, project_path: str, changed_urls: List[str], 
                         current_urls: List[str] = None) -> List[Dict[str, Any]]:
@@ -31,7 +39,7 @@ class DirectoryMapper:
             try:
                 directories.add(os.path.dirname(url))
             except Exception as e:
-                logger.error(f"Error extracting directory from {url}: {e}")
+                self.logger.error(f"Error extracting directory from {url}: {e}")
         
         # 2. 创建目录上下文字典
         directory_contexts = []
@@ -54,6 +62,6 @@ class DirectoryMapper:
                     }
                     directory_contexts.append(context)
             except Exception as e:
-                logger.error(f"Error processing directory {directory}: {e}")
+                self.logger.error(f"Error processing directory {directory}: {e}")
         
         return directory_contexts 

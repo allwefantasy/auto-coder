@@ -64,6 +64,7 @@ original_functions = {
     "voice_input": voice_input,
     "auto_command": auto_command,
     "execute_shell_command": execute_shell_command,
+    "active_context": active_context,
 }
 
 

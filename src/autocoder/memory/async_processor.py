@@ -4,7 +4,8 @@
 
 from concurrent.futures import ThreadPoolExecutor, wait
 from typing import Dict, List, Optional, Any, Callable
-from loguru import logger
+from loguru import logger as global_logger
+import sys
 import time
 
 class AsyncProcessor:
@@ -23,6 +24,8 @@ class AsyncProcessor:
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
         self.futures = {}  # 使用字典存储futures，以便跟踪
         self.results = {}  # 存储任务结果
+        # 创建专用的 logger 实例
+        self.logger = global_logger.bind(name="AsyncProcessor")
         
     def schedule(self, func: Callable, task_id: str, *args, **kwargs) -> str:
         """
@@ -41,7 +44,7 @@ class AsyncProcessor:
             self.futures[task_id] = future
             return task_id
         except Exception as e:
-            logger.error(f"Error scheduling task {task_id}: {e}")
+            self.logger.error(f"Error scheduling task {task_id}: {e}")
             raise
         
     def cancel_task(self, task_id: str) -> bool:
@@ -103,7 +106,7 @@ class AsyncProcessor:
         except TimeoutError:
             return "timeout"
         except Exception as e:
-            logger.error(f"Error in task {task_id}: {e}")
+            self.logger.error(f"Error in task {task_id}: {e}")
             return "failed"
             
     def wait_all(self, timeout: Optional[float] = None):
