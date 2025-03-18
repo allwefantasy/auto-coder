@@ -54,6 +54,7 @@ from autocoder.common.command_completer import CommandCompleter,FileSystemModel 
 from autocoder.common.conf_validator import ConfigValidator
 from autocoder import command_parser as CommandParser
 from loguru import logger
+from autocoder.utils.project_structure import EnhancedFileAnalyzer
 
 class SymbolItem(BaseModel):
     symbol_name: str
@@ -169,9 +170,10 @@ def configure_project_type():
     print_info(get_message("examples"))
 
     print_warning(f"{get_message('default_type')}\n")
-
+    
+    extensions = get_all_extensions(project_root) or "py"
     project_type = prompt(
-        get_message("enter_project_type"), default="py", style=style
+        get_message("enter_project_type"), default=extensions, style=style
     ).strip()
 
     if project_type:
@@ -186,6 +188,32 @@ def configure_project_type():
 
     return project_type
 
+
+def get_all_extensions(directory: str = ".") -> str:
+    """获取指定目录下所有文件的后缀名,多个按逗号分隔，并且带."""
+    args = AutoCoderArgs(
+        source_dir=directory,
+        # 其他必要参数设置为默认值
+        target_file="",
+        git_url="",
+        project_type="",
+        conversation_prune_safe_zone_tokens=0
+    )
+    
+    analyzer = EnhancedFileAnalyzer(
+        args=args,
+        llm=None,  # 如果只是获取后缀名，可以不需要LLM
+        config=None  # 使用默认配置
+    )
+    
+    # 获取分析结果
+    analysis_result = analyzer.analyze_extensions()
+    
+    # 合并 code 和 config 的后缀名
+    all_extensions = set(analysis_result["code"] + analysis_result["config"])
+    
+    # 转换为逗号分隔的字符串
+    return ",".join(sorted(all_extensions))
 
 def initialize_system(args:InitializeSystemRequest):
     from autocoder.utils.model_provider_selector import ModelProviderSelector

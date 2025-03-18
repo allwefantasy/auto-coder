@@ -169,7 +169,41 @@ class EnhancedFileAnalyzer:
 
     def _basic_analysis(self, extensions: Set[str]) -> Dict:
         """基于规则的基础分析"""
-        CODE_EXTS = {'.py', '.js', '.ts', '.java', '.c', '.cpp'}
+        CODE_EXTS = {
+            # 通用脚本语言
+            '.py',  # Python
+            '.js', '.jsx', '.ts', '.tsx',  # JavaScript/TypeScript
+            '.rb', '.erb',  # Ruby
+            '.php',  # PHP
+            '.pl', '.pm',  # Perl
+            
+            # 编译型语言
+            '.java', '.kt', '.groovy',  # JVM系
+            '.c', '.cpp', '.cc', '.cxx', '.h', '.hpp',  # C/C++
+            '.cs',  # C#
+            '.go',  # Go
+            '.rs',  # Rust
+            '.swift',  # Swift
+            
+            # Web开发
+            '.vue', '.svelte',  # 前端框架
+            '.html', '.htm',  # HTML
+            '.css', '.scss', '.sass', '.less',  # 样式表
+            
+            # 其他语言
+            '.scala',  # Scala
+            '.clj',  # Clojure
+            '.coffee',  # CoffeeScript
+            '.lua',  # Lua
+            '.r',  # R
+            '.sh', '.bash',  # Shell脚本
+            '.sql',  # SQL
+            '.dart',  # Dart
+            '.ex', '.exs',  # Elixir
+            '.fs', '.fsx',  # F#
+            '.hs',  # Haskell
+            '.ml', '.mli'  # OCaml
+        }
         CONFIG_EXTS = {'.yml', '.yaml', '.json', '.toml', '.ini'}
 
         return {
