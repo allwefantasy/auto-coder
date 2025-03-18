@@ -119,17 +119,7 @@ class ActiveContextManager:
         self.__class__._queue_thread.start()
         
         # 标记为已初始化
-        self._is_initialized = True
-        
-    def _redirect_output_to_file(self, func, *args, **kwargs):
-        """
-        将函数的所有输出重定向到日志文件，包括所有子函数调用中的日志
-        
-        Args:
-            func: 要执行的函数
-            *args, **kwargs: 传递给函数的参数
-        """
-        return func(*args, **kwargs)
+        self._is_initialized = True            
     
     def _process_queue(self):
         """
@@ -153,12 +143,8 @@ class ActiveContextManager:
                 
                 # 更新任务状态为运行中
                 self.tasks[task_id]['status'] = 'running'                
-                
-                # 执行任务，重定向输出到日志文件
-                self._redirect_output_to_file(
-                    self._process_changes_async, 
-                    task_id, query, changed_urls, current_urls
-                )
+                                
+                self._process_changes_async(task_id, query, changed_urls, current_urls)                
                 
                 # 重置处理标志
                 with self._queue_lock:
@@ -240,10 +226,7 @@ class ActiveContextManager:
             self.tasks[task_id]['status'] = 'running'
             
             # 重定向输出并执行任务
-            self._redirect_output_to_file(
-                self._process_changes_async, 
-                task_id, query, changed_urls, current_urls
-            )
+            self._process_changes_async(task_id, query, changed_urls, current_urls)
             
             # 更新任务状态为已完成
             self.tasks[task_id]['status'] = 'completed'
