@@ -2,6 +2,8 @@ from byzerllm import ByzerLLM,SimpleByzerLLM
 from typing import Generator, List, Any, Union, Optional, Callable
 from pydantic import BaseModel
 from loguru import logger
+from autocoder.common import AutoCoderArgs
+from autocoder.common.auto_coder_lang import get_message_with_format
 
 class ChatWithContinueResult(BaseModel):
     content: str
@@ -9,7 +11,12 @@ class ChatWithContinueResult(BaseModel):
     generated_tokens_count: int
     
 
-def chat_with_continue(llm: Union[ByzerLLM,SimpleByzerLLM], conversations: List[dict], llm_config: dict) -> ChatWithContinueResult:
+def chat_with_continue(
+        llm: Union[ByzerLLM,SimpleByzerLLM], 
+        conversations: List[dict], 
+        llm_config: dict,
+        args: AutoCoderArgs
+    ) -> ChatWithContinueResult:
     final_result = ChatWithContinueResult(content="", input_tokens_count=0, generated_tokens_count=0)
     v = llm.chat_oai(
         conversations=conversations, llm_config=llm_config)
@@ -32,6 +39,15 @@ def chat_with_continue(llm: Union[ByzerLLM,SimpleByzerLLM], conversations: List[
         final_result.input_tokens_count += metadata.get("input_tokens_count", 0)
         final_result.generated_tokens_count += metadata.get("generated_tokens_count", 0)
         count += 1
+
+    if count >= args.generate_max_rounds:
+        warning_message = get_message_with_format(
+            "generate_max_rounds_reached",
+            count=count,
+            max_rounds=args.generate_max_rounds,
+            generated_tokens=final_result.generated_tokens_count
+        )
+        logger.warning(warning_message)        
     
     # if count >= 2:
     #   logger.info(f"The code generation is exceed the max length, continue to generate the code {count -1 } times")
@@ -41,7 +57,8 @@ def chat_with_continue(llm: Union[ByzerLLM,SimpleByzerLLM], conversations: List[
 def stream_chat_with_continue(
     llm: Union[ByzerLLM, SimpleByzerLLM], 
     conversations: List[dict], 
-    llm_config: dict    
+    llm_config: dict,
+    args: AutoCoderArgs
 ) -> Generator[Any, None, None]:
     """
     流式处理并继续生成内容，直到完成。
@@ -87,7 +104,16 @@ def stream_chat_with_continue(
         temp_conversations.append({"role": "assistant", "content": current_content})
         
         # 检查是否需要继续生成
-        if current_metadata.finish_reason != "length" or count >= 5:
+        if current_metadata.finish_reason != "length" or count >= args.generate_max_rounds:
+            if count >= args.generate_max_rounds:
+                warning_message = get_message_with_format(
+                    "generate_max_rounds_reached",
+                    count=count,
+                    max_rounds=args.generate_max_rounds,
+                    generated_tokens=current_metadata.generated_tokens_count
+                )
+                logger.warning(warning_message)
             break
+        
         
         count += 1
