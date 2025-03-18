@@ -36,6 +36,7 @@ class AutoReviewCommit:
             skip_diff: 是否跳过获取 diff 信息            
         """
         self.project_dir = args.source_dir
+        self.args = args
         self.actions_dir = os.path.join(args.source_dir, "actions")
         self.llm = llm        
         self.skip_diff = skip_diff
@@ -315,7 +316,8 @@ class AutoReviewCommit:
             v = stream_chat_with_continue(
                     llm=self.llm,
                     conversations=new_conversations,
-                    llm_config={}
+                    llm_config={},
+                    args=self.args
             )
             return v
         except Exception as e:            

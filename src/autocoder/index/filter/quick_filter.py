@@ -120,7 +120,8 @@ class QuickFilter():
                         self.index_manager.index_filter_llm,
                         [{"role": "user", "content": self.quick_filter_files.prompt(
                             chunk, self.args.query)}],
-                        {}
+                        {},
+                        self.args
                     )
                     full_response, last_meta = stream_out(
                         stream_generator,
@@ -485,7 +486,8 @@ class QuickFilter():
             stream_generator = stream_chat_with_continue(
                 self.index_manager.index_filter_llm,
                 [{"role": "user", "content": query}],
-                {}
+                {},
+                self.args
             )
 
             def extract_file_number_list(content: str) -> str:
@@ -760,7 +762,8 @@ class QuickFilter():
                 stream_generator = stream_chat_with_continue(
                     self.index_manager.index_filter_llm,
                     [{"role": "user", "content": prompt}],
-                    {}
+                    {},
+                    self.args
                 )
                 
                 def extract_file_number_list(content: str) -> str:

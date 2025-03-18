@@ -1340,7 +1340,8 @@ def main(input_args: Optional[List[str]] = None):
                 v = stream_chat_with_continue(
                     llm=chat_llm,
                     conversations=loaded_conversations,
-                    llm_config={}
+                    llm_config={},
+                    args=args
                 )              
 
 

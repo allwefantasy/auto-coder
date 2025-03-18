@@ -163,7 +163,8 @@ class CodeModificationRanker:
                                     stream_chat_with_continue,
                                     llm,
                                     [{"role": "user", "content": query}],
-                                    {}
+                                    {},
+                                    self.args
                                 )
                             )
                         else:    
