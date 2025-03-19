@@ -263,10 +263,11 @@ class CommandAutoTuner:
         ## 函数组合说明：        
         {{ command_combination_readme }}
 
-        ## active-context 项目追踪文档系统。
+        ## active-context 项目追踪文档系统
+        
         在 {{ current_project }}/.auto-coder/active-context 下,我们提供了对该项目每个文件目录的追踪。
         具体逻辑为：假设我们在当前项目有 ./src/package1/py1.py, 那么相应的在 .auto-coder/active-context 会有一个 ./src/package1 目录,
-        该目录下可能也会有一个 active-context.md 文件，该文件记录了该目录下所有文件相关信息，可以帮你更好的理解这个目录下的文档，你可以通过 read_files 函数来读取
+        该目录下可能会有一个 active-context.md 文件，该文件记录了该目录下所有文件相关信息，可以帮你更好的理解这个目录下的文档，你可以通过 read_files 函数来读取
         这个文件。注意，这个文件不一定存在。如果读取失败也是正常的。
 
         ## 变更记录文档系统
