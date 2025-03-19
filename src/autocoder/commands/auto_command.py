@@ -213,6 +213,8 @@ class CommandAutoTuner:
     @byzerllm.prompt()
     def _analyze(self, request: AutoCommandRequest) -> str:
         """
+        你是 auto-coder.chat 软件，帮助用户完成编程方面的需求。我们的目标是根据用户输入和当前上下文，组合多个函数来完成用户的需求。
+
         ## 当前用户环境信息如下:
         <os_info>
         操作系统: {{ env_info.os_name }} {{ env_info.os_version }}
@@ -234,10 +236,11 @@ class CommandAutoTuner:
         {%- endif %}   
         </os_info>
 
-        我们的目标是根据用户输入和当前上下文，组合多个函数来完成用户的需求。
-
+        当前项目根目录：
+        {{ current_project }}
+    
         {% if current_files %}
-        ## 当前活跃区文件列表：
+        ## 当前用户手动添加关注的文件列表：
         <current_files>
         {% for file in current_files %}
         - {{ file }}
@@ -246,7 +249,7 @@ class CommandAutoTuner:
         {% endif %}
 
 
-        ## 当前用户的配置选项如下:
+        ## 这是用户对你的配置        
         <current_conf>
         {{ current_conf }}
         </current_conf>
@@ -260,6 +263,23 @@ class CommandAutoTuner:
         ## 函数组合说明：        
         {{ command_combination_readme }}
 
+        ## active-context 项目追踪文档系统。
+        在 {{ current_project }}/.auto-coder/active-context 下,我们提供了对该项目每个文件目录的追踪。
+        具体逻辑为：假设我们在当前项目有 ./src/package1/py1.py, 那么相应的在 .auto-coder/active-context 会有一个 ./src/package1 目录,
+        该目录下可能也会有一个 active-context.md 文件，该文件记录了该目录下所有文件相关信息，可以帮你更好的理解这个目录下的文档，你可以通过 read_files 函数来读取
+        这个文件。注意，这个文件不一定存在。如果读取失败也是正常的。
+
+        ## 变更记录文档系统
+
+        在 {{ current_project }}/actions 目录下，会有格式类似 000000001201_chat_action.yml 的文件，该文件记录了最近10次对话，
+        你可以通过 read_files 函数来读取这些文件，从而更好的理解用户的需求。
+
+        下面是一些字段的简单介绍
+        - query: 用户需求
+        - urls： 用户提供的上下文文件列表
+        - dynamic_urls： auto-coder.chat 自动感知的一些文件列表
+        - add_updated_urls: 这次需求发生变更的文件列表        
+        
         {% if conversation_history %}
         ## 历史对话:
         <conversation_history>
@@ -314,7 +334,8 @@ class CommandAutoTuner:
             "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens,
             "os_distribution": shells.get_os_distribution(),
             "current_user": shells.get_current_username(),
-            "command_combination_readme": self._command_combination_readme.prompt()
+            "command_combination_readme": self._command_combination_readme.prompt(),
+            "current_project": os.path.abspath(self.args.source_dir)
         }
 
     @byzerllm.prompt()

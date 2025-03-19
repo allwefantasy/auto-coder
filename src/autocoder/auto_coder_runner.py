@@ -695,9 +695,7 @@ def revert():
         
         if "Successfully reverted changes" in s:
             result_manager.append(content=s, meta={"action": "revert","success":False, "input":{                
-            }})
-                        
-            os.remove(file_path)
+            }})                                    
         else:
             result_manager.append(content=s, meta={"action": "revert","success":False, "input":{                
             }})

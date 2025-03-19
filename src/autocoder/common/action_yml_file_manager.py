@@ -4,8 +4,10 @@ import hashlib
 import git
 from typing import List, Dict, Tuple, Optional, Union, Any
 from loguru import logger
+from autocoder.common.git_utils import get_repo
 from autocoder.common.printer import Printer
 import byzerllm
+from autocoder.common import git_utils
 
 class ActionYmlFileManager:
     """
@@ -44,7 +46,7 @@ class ActionYmlFileManager:
             except Exception as e:
                 logger.error(f"Failed to create actions directory: {e}")
                 return False
-        return True
+        return True    
     
     def get_action_files(self, filter_prefix: Optional[str] = None) -> List[str]:
         """
@@ -243,16 +245,18 @@ class ActionYmlFileManager:
         Returns:
             Optional[str]: commit ID，如果计算失败返回 None
         """
-        yaml_path = os.path.join(self.actions_dir, file_name)
+        repo = get_repo(self.source_dir)
+        if repo is None:
+            logger.error("Repository is not initialized.")
+            return False
         
-        try:
-            with open(yaml_path, 'r', encoding='utf-8') as f:
-                yaml_content = f.read()
-            file_md5 = hashlib.md5(yaml_content.encode("utf-8")).hexdigest()
-            return f"auto_coder_{file_name}"
-        except Exception as e:
-            logger.error(f"Failed to calculate commit ID: {e}")
-            return None
+        commit_hash = None
+        # 这里遍历从最新的commit 开始遍历
+        for commit in repo.iter_commits():
+            if file_name in commit.message and not commit.message.startswith("<revert>"):
+                commit_hash = commit.hexsha
+                break
+        return commit_hash
     
     def get_file_name_from_commit_id(self, commit_id: str) -> Optional[str]:
         """
@@ -298,7 +302,7 @@ class ActionYmlFileManager:
             return self.get_file_name_from_commit_id(last_line)
         except Exception as e:
             logger.error(f"Failed to extract file name from commit message: {e}")
-            return None
+            return None            
     
     def get_commit_changes(self, file_name: Optional[str] = None) -> List[Tuple[str, List[str], Dict[str, Tuple[str, str]]]]:
         """
@@ -327,31 +331,30 @@ class ActionYmlFileManager:
         changes = {}
         try:
             repo = git.Repo(self.source_dir)
-            for commit in repo.iter_commits():
-                if commit_id in commit.message:
-                    if commit.parents:
-                        parent = commit.parents[0]
-                        # 获取所有文件的前后内容
-                        for diff_item in parent.diff(commit):
-                            file_path = diff_item.a_path if diff_item.a_path else diff_item.b_path
-                            
-                            # 获取变更前内容
-                            before_content = None
-                            try:
-                                if diff_item.a_blob:
-                                    before_content = repo.git.show(f"{parent.hexsha}:{file_path}")
-                            except git.exc.GitCommandError:
-                                pass  # 文件可能是新增的
+            commit =repo.commit(commit_id)            
+            if commit.parents:
+                parent = commit.parents[0]
+                # 获取所有文件的前后内容
+                for diff_item in parent.diff(commit):
+                    file_path = diff_item.a_path if diff_item.a_path else diff_item.b_path
+                    
+                    # 获取变更前内容
+                    before_content = None
+                    try:
+                        if diff_item.a_blob:
+                            before_content = repo.git.show(f"{parent.hexsha}:{file_path}")
+                    except git.exc.GitCommandError:
+                        pass  # 文件可能是新增的
 
-                            # 获取变更后内容
-                            after_content = None
-                            try:
-                                if diff_item.b_blob:
-                                    after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
-                            except git.exc.GitCommandError:
-                                pass  # 文件可能被删除
+                    # 获取变更后内容
+                    after_content = None
+                    try:
+                        if diff_item.b_blob:
+                            after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
+                    except git.exc.GitCommandError:
+                        pass  # 文件可能被删除
 
-                            changes[file_path] = (before_content, after_content)
+                    changes[file_path] = (before_content, after_content)
                     break
         except git.exc.GitCommandError as e:
             self.printer.print_in_terminal("git_command_error", style="red", error=str(e))
@@ -359,6 +362,15 @@ class ActionYmlFileManager:
             self.printer.print_in_terminal("get_commit_changes_error", style="red", error=str(e))
         
         return [(query, urls, changes)]
+    
+    def revert_file(self, file_name: str) -> bool:
+        revert_result = git_utils.revert_changes(
+            self.source_dir, f"auto_coder_{file_name}"
+        )
+        if revert_result:
+            self.update_yaml_field(file_name, "revert_commit_id", revert_result.get("new_commit_hash"))
+            return True
+        return False
     
     def parse_history_tasks(self, limit: int = 5) -> List[Dict]:
         """

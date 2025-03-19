@@ -27,7 +27,6 @@ from autocoder.utils.rest import HttpDoc
 from byzerllm.apps.byzer_storage.env import get_latest_byzer_retrieval_lib
 from autocoder.command_args import parse_args
 from autocoder.rag.api_server import serve, ServerArgs
-from autocoder.utils import open_yaml_file_in_editor, get_last_yaml_file
 from autocoder.utils.request_queue import (
     request_queue,
     RequestValue,
@@ -120,12 +119,10 @@ def main(input_args: Optional[List[str]] = None):
     #     args.request_id = str(uuid.uuid4())
 
     if raw_args.command == "revert":
-        repo_path = args.source_dir
-
         file_name = os.path.basename(args.file)
-        revert_result = git_utils.revert_changes(
-            repo_path, f"auto_coder_{file_name}"
-        )
+        action_file_manager = ActionYmlFileManager(source_dir=args.source_dir)
+        revert_result = action_file_manager.revert_file(file_name)
+        
         if revert_result:
             print(f"Successfully reverted changes for {args.file}")
         else:

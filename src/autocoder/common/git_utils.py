@@ -1,7 +1,8 @@
 import os
 from git import Repo, GitCommandError
+import git
 from loguru import logger
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 import byzerllm
 from rich.console import Console
@@ -103,68 +104,84 @@ def get_current_branch(repo_path: str) -> str:
     return branch
 
 
-def revert_changes(repo_path: str, message: str) -> bool:
+def revert_changes(repo_path: str, action_file_path: str) -> Optional[Any]:
+    '''
+    file_path 类似： auto_coder_000000002009_chat_action.yml 或者 000000002009_chat_action.yml
+    '''
     repo = get_repo(repo_path)
     if repo is None:
         logger.error("Repository is not initialized.")
         return False
-
+    
+    commit_hash = None
+    # 这里遍历从最新的commit 开始遍历
+    for commit in repo.iter_commits():
+        if action_file_path in commit.message and not commit.message.startswith("<revert>"):
+            commit_hash = commit.hexsha
+            break
+    
+    if commit_hash is None:
+        raise ValueError(f"File {action_file_path} not found in any commit")
+    
+    # 尝试获取指定的提交
     try:
-        # 检查当前工作目录是否有未提交的更改
-        if repo.is_dirty():
-            logger.warning(
-                "Working directory is dirty. please commit or stash your changes before reverting."
-            )
-            return False
-
-        # 通过message定位到commit_hash
-        # --grep 默认只搜索第一行 -F 参数将搜索模式视为固定字符串而非正则表达式
-        commit = repo.git.log("--all", f"--grep={message}", "-F", "--format=%H", "-n", "1")
-        if not commit:
-            logger.warning(f"No commit found with message: {message}")
-            return False
-
-        commit_hash = commit
-
-        # 获取从指定commit到HEAD的所有提交
-        commits = list(repo.iter_commits(f"{commit_hash}..HEAD"))
-
-        if not commits:
-            repo.git.revert(commit, no_edit=True)
-            logger.info(f"Reverted single commit: {commit}")
+        commit = repo.commit(commit_hash)
+    except ValueError:
+        # 如果是短哈希，尝试匹配
+        matching_commits = [c for c in repo.iter_commits() if c.hexsha.startswith(commit_hash)]
+        if not matching_commits:
+            raise ValueError(f"Commit {commit_hash} not found")
+        commit = matching_commits[0]
+    
+    # 检查工作目录是否干净
+    if repo.is_dirty():
+        raise ValueError("Working directory is dirty. please commit or stash your changes before reverting.")
+    
+    try:
+        # 执行 git revert
+        # 使用 -n 选项不自动创建提交，而是让我们手动提交
+        repo.git.revert(commit.hexsha, no_commit=True)
+        
+        # 创建带有信息的 revert 提交
+        revert_message = f"<revert>{commit.message.strip()}\n{commit.hexsha}"
+        new_commit = repo.index.commit(
+            revert_message,
+            author=repo.active_branch.commit.author,
+            committer=repo.active_branch.commit.committer
+        )
+        
+        # 构建新提交的信息
+        stats = new_commit.stats.total
+        new_commit_info = {
+            "new_commit_hash": new_commit.hexsha,
+            "new_commit_short_hash": new_commit.hexsha[:7],
+            "reverted_commit": {
+                "hash": commit.hexsha,
+                "short_hash": commit.hexsha[:7],
+                "message": commit.message.strip()
+            },
+            "stats": {
+                "insertions": stats["insertions"],
+                "deletions": stats["deletions"],
+                "files_changed": stats["files"]
+            }
+        }
+        
+        return new_commit_info
+        
+    except git.GitCommandError as e:
+        # 如果发生 Git 命令错误，尝试恢复工作目录
+        try:
+            repo.git.reset("--hard", "HEAD")
+        except:
+            pass  # 如果恢复失败，继续抛出原始错误
+            
+        if "patch does not apply" in str(e):
+            raise Exception("Cannot revert: patch does not apply (likely due to conflicts)")
         else:
-            # 从最新的提交开始，逐个回滚
-            for commit in reversed(commits):
-                try:
-                    repo.git.revert(commit.hexsha, no_commit=True)
-                    logger.info(f"Reverted changes from commit: {commit.hexsha}")
-                except GitCommandError as e:
-                    logger.error(f"Error reverting commit {commit.hexsha}: {e}")
-                    repo.git.revert("--abort")
-                    return False
+            raise Exception(f"Git error during revert: {str(e)}")
 
-            # 提交所有的回滚更改
-            repo.git.commit(message=f"Reverted all changes up to {commit_hash}")
-
-        logger.info(f"Successfully reverted changes up to {commit_hash}")
-
-        ## this is a mark, chat_auto_coder.py need this
-        print(f"Successfully reverted changes", flush=True)
-
-        # # 如果之前有stash，现在应用它
-        # if stashed:
-        #     try:
-        #         repo.git.stash('pop')
-        #         logger.info("Applied stashed changes.")
-        #     except GitCommandError as e:
-        #         logger.error(f"Error applying stashed changes: {e}")
-        #         logger.info("Please manually apply the stashed changes.")
-
-        return True
-
-    except GitCommandError as e:
-        logger.error(f"Error during revert operation: {e}")
-        return False
+    return None    
 
 
 def revert_change(repo_path: str, message: str) -> bool:

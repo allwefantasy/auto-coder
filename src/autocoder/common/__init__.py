@@ -416,6 +416,8 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     generate_max_rounds: Optional[int] = 5
 
+    revert_commit_id: Optional[str] = None
+
     class Config:
         protected_namespaces = ()
 
