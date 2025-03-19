@@ -192,6 +192,8 @@ class ActionYmlFileManager:
                 content = yaml.safe_load(f) or {}
             return content
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             self.printer.print_in_terminal("yaml_load_error", style="red", 
                                           yaml_file=yaml_path, error=str(e))
             return {}
