@@ -1425,9 +1425,7 @@ def commit(query: str):
             yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
             with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
                 f.write(yaml_content)
-
-            file_content = open(execute_file).read()
-            md5 = hashlib.md5(file_content.encode("utf-8")).hexdigest()
+            
             file_name = os.path.basename(execute_file)
             commit_result = git_utils.commit_changes(
                 ".", f"{commit_message}\nauto_coder_{file_name}"
