@@ -40,6 +40,7 @@ from autocoder.rag.lang import get_message_with_format_and_newline
 from autocoder.rag.qa_conversation_strategy import get_qa_strategy
 from autocoder.rag.searchable import SearchableResults
 from autocoder.rag.conversation_to_queries import extract_search_queries
+from autocoder.common import openai_content as OpenAIContentProcessor
 try:
     from autocoder_pro.rag.llm_compute import LLMComputeEngine
     pro_version = version("auto-coder-pro")
@@ -348,7 +349,7 @@ class LongContextRAG:
         role_mapping=None,
         llm_config: Dict[str, Any] = {},
         extra_request_params: Dict[str, Any] = {}
-    ):
+    ):        
         try:
             return self._stream_chat_oai(
                 conversations,
@@ -399,6 +400,7 @@ class LongContextRAG:
         llm_config: Dict[str, Any] = {},
         extra_request_params: Dict[str, Any] = {}
     ):
+        conversations = OpenAIContentProcessor.process_conversations(conversations)
         if self.client:
             model = model or self.args.model
             response = self.client.chat.completions.create(
@@ -415,6 +417,7 @@ class LongContextRAG:
             target_llm = self.llm.get_sub_client("qa_model")
 
         query = conversations[-1]["content"]
+        
         context = []
 
         if (
