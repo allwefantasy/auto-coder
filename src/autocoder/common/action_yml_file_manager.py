@@ -188,7 +188,8 @@ class ActionYmlFileManager:
 
         import traceback
         traceback.print_stack()
-        
+        print(file_name)
+
         yaml_path = os.path.join(self.actions_dir, file_name)        
         try:
             with open(yaml_path, 'r', encoding='utf-8') as f:
