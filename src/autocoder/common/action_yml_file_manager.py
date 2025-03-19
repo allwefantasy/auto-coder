@@ -239,6 +239,25 @@ class ActionYmlFileManager:
         yaml_content = self.load_yaml_content(file_name)
         yaml_content[field] = value
         return self.save_yaml_content(file_name, yaml_content)
+
+    def get_all_commit_id_from_file(self,file_name:str):
+        '''
+        会包含 revert 信息
+        '''
+        repo = get_repo(self.source_dir)
+        if repo is None:
+            logger.error("Repository is not initialized.")
+            return []
+        
+        commit_hashes = []        
+        for commit in repo.iter_commits():
+            last_line = commit.message.strip().split('\n')[-1]
+            if file_name in last_line:
+                commit_hash = commit.hexsha
+                commit_hashes.append(commit_hash)
+                
+        return commit_hashes
+
     
     def get_commit_id_from_file(self, file_name: str) -> Optional[str]:
         """
@@ -253,12 +272,13 @@ class ActionYmlFileManager:
         repo = get_repo(self.source_dir)
         if repo is None:
             logger.error("Repository is not initialized.")
-            return False
+            return None
         
         commit_hash = None
         # 这里遍历从最新的commit 开始遍历
         for commit in repo.iter_commits():
-            if file_name in commit.message and not commit.message.startswith("<revert>"):
+            last_line = commit.message.strip().split('\n')[-1]
+            if file_name in last_line and not commit.message.startswith("<revert>"):
                 commit_hash = commit.hexsha
                 break
         return commit_hash
