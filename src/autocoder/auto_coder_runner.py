@@ -1832,7 +1832,7 @@ def active_context(query: str):
     # 获取配置和参数
     
     
-    active_context_manager = ActiveContextManager(llm, args)
+    active_context_manager = ActiveContextManager(llm, args.source_dir)
     if command == "run":
         file_name = commands_infos["run"]["args"][-1]
         args.file = action_file_manager.get_full_path_by_file_name(file_name)        

@@ -211,7 +211,7 @@ class CodeAutoGenerate:
         
         if self.args.enable_active_context:
             # 初始化活动上下文管理器
-            active_context_manager = ActiveContextManager(self.llm, self.args)
+            active_context_manager = ActiveContextManager(self.llm, self.args.source_dir)
             # 获取活动上下文信息
             result = active_context_manager.load_active_contexts_for_files(
                 [source.module_name for source in source_code_list.sources]
@@ -361,7 +361,7 @@ class CodeAutoGenerate:
         
         if self.args.enable_active_context:
             # 初始化活动上下文管理器
-            active_context_manager = ActiveContextManager(self.llm, self.args)
+            active_context_manager = ActiveContextManager(self.llm, self.args.source_dir)
             # 获取活动上下文信息
             result = active_context_manager.load_active_contexts_for_files(
                 [source.module_name for source in source_code_list.sources]
