@@ -251,8 +251,9 @@ class ActionYmlFileManager:
         
         commit_hashes = []        
         for commit in repo.iter_commits():
-            last_line = commit.message.strip().split('\n')[-1]
-            if file_name in last_line:
+            lines = commit.message.strip().split('\n')
+            last_line = lines[-1]            
+            if file_name in last_line or (commit.message.startswith("<revert>") and file_name in commit.message):
                 commit_hash = commit.hexsha
                 commit_hashes.append(commit_hash)
                 
