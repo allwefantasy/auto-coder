@@ -215,7 +215,7 @@ class AutoCommandTools:
             interpreter.close()
 
         self.result_manager.append(content=s, meta={
-            "action": "run_python_code",
+            "action": "run_python",
             "input": {
                 "code": code
             }
