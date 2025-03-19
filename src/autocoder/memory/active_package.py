@@ -7,7 +7,11 @@ import os
 import sys
 import re
 import byzerllm
+from byzerllm import MetaHolder
+import time
 from loguru import logger as global_logger
+from autocoder.common.token_cost_caculate import TokenCostCalculator, TokenUsageStats
+from autocoder.common import AutoCoderArgs
 
 class ActivePackage:
     """
@@ -18,20 +22,25 @@ class ActivePackage:
     然后基于现有信息和新信息一起生成更新后的文档。
     """
     
-    def __init__(self, llm: byzerllm.ByzerLLM):
+    def __init__(self, llm: byzerllm.ByzerLLM, product_mode: str = "lite"):
         """
         初始化活动包生成器
         
         Args:
             llm: ByzerLLM实例，用于生成文档内容
+            product_mode: 产品模式，用于获取模型价格信息
         """
         self.llm = llm
+        self.product_mode = product_mode
         # 创建专用的 logger 实例
         self.logger = global_logger.bind(name="ActivePackage")
-        
+        # 创建Token计费计算器
+        self.token_calculator = TokenCostCalculator(logger_name="ActivePackage.TokenCost", product_mode=product_mode)
+    
     def generate_active_file(self, context: Dict[str, Any], query: str, 
                             existing_file_path: Optional[str] = None, 
-                            file_changes: Optional[Dict[str, Tuple[str, str]]] = None) -> str:
+                            file_changes: Optional[Dict[str, Tuple[str, str]]] = None,
+                            args: Optional[AutoCoderArgs] = None) -> str:
         """
         生成完整的活动文件内容
         
@@ -40,6 +49,7 @@ class ActivePackage:
             query: 用户查询/需求
             existing_file_path: 可选的现有文件路径，如果提供，将读取并参考现有内容
             file_changes: 文件变更字典，键为文件路径，值为(变更前内容, 变更后内容)的元组
+            args: AutoCoderArgs实例，包含配置信息
             
         Returns:
             str: 生成的活动文件内容
@@ -145,10 +155,45 @@ class ActivePackage:
         """
         try:
             # 1. 生成current change部分
-            current_change = self.generate_current_change.with_llm(self.llm).run(context, query)
+            meta_holder_current_change = MetaHolder()
+            start_time_current_change = time.monotonic()
+            current_change = self.generate_current_change.with_llm(self.llm).with_meta(
+                meta_holder_current_change).run(context, query)
+            end_time_current_change = time.monotonic()
+            
+            # 使用TokenCostCalculator跟踪token使用情况
+            current_change_stats: TokenUsageStats = self.token_calculator.track_token_usage(
+                llm=self.llm,
+                meta_holder=meta_holder_current_change,
+                operation_name="Current Change Generation",
+                start_time=start_time_current_change,
+                end_time=end_time_current_change
+            )
+            
+            self.logger.info(f"Current Change Generation - Total tokens: {current_change_stats.total_tokens}, Total cost: ${current_change_stats.total_cost:.6f}")
             
             # 2. 生成document部分
-            document = self.generate_document.with_llm(self.llm).run(context, query)
+            meta_holder_document = MetaHolder()
+            start_time_document = time.monotonic()
+            document = self.generate_document.with_llm(self.llm).with_meta(
+                meta_holder_document).run(context, query)
+            end_time_document = time.monotonic()
+            
+            # 使用TokenCostCalculator跟踪token使用情况
+            document_stats: TokenUsageStats = self.token_calculator.track_token_usage(
+                llm=self.llm,
+                meta_holder=meta_holder_document,
+                operation_name="Document Generation",
+                start_time=start_time_document,
+                end_time=end_time_document
+            )
+            
+            self.logger.info(f"Document Generation - Total tokens: {document_stats.total_tokens}, Total cost: ${document_stats.total_cost:.6f}")
+            
+            # 计算总token使用统计
+            total_tokens = current_change_stats.total_tokens + document_stats.total_tokens
+            total_cost = current_change_stats.total_cost + document_stats.total_cost
+            self.logger.info(f"Total Usage - Tokens: {total_tokens}, Cost: ${total_cost:.6f}")
             
             # 3. 组合成完整的活动文件内容
             file_content = f"# 活动上下文 - {os.path.basename(context['directory_path'])}\n\n"
@@ -213,17 +258,52 @@ class ActivePackage:
             header, existing_current_change, existing_document = self.extract_sections(existing_content)
             
             # 2. 分别更新每个部分
-            updated_current_change = self.update_current_change.with_llm(self.llm).run(
+            meta_holder_current_change = MetaHolder()
+            start_time_current_change = time.monotonic()
+            updated_current_change = self.update_current_change.with_llm(self.llm).with_meta(
+                meta_holder_current_change).run(
                 context=context,
                 query=query,
                 existing_current_change=existing_current_change
             )
+            end_time_current_change = time.monotonic()
             
-            updated_document = self.update_document.with_llm(self.llm).run(
+            # 使用TokenCostCalculator跟踪token使用情况
+            update_current_change_stats: TokenUsageStats = self.token_calculator.track_token_usage(
+                llm=self.llm,
+                meta_holder=meta_holder_current_change,
+                operation_name="Update Current Change",
+                start_time=start_time_current_change,
+                end_time=end_time_current_change
+            )
+            
+            self.logger.info(f"Update Current Change - Total tokens: {update_current_change_stats.total_tokens}, Total cost: ${update_current_change_stats.total_cost:.6f}")
+            
+            meta_holder_document = MetaHolder()
+            start_time_document = time.monotonic()
+            updated_document = self.update_document.with_llm(self.llm).with_meta(
+                meta_holder_document).run(
                 context=context,
                 query=query,
                 existing_document=existing_document
             )
+            end_time_document = time.monotonic()
+            
+            # 使用TokenCostCalculator跟踪token使用情况
+            update_document_stats: TokenUsageStats = self.token_calculator.track_token_usage(
+                llm=self.llm,
+                meta_holder=meta_holder_document,
+                operation_name="Update Document",
+                start_time=start_time_document,
+                end_time=end_time_document
+            )
+            
+            self.logger.info(f"Update Document - Total tokens: {update_document_stats.total_tokens}, Total cost: ${update_document_stats.total_cost:.6f}")
+            
+            # 计算总token使用统计
+            total_tokens = update_current_change_stats.total_tokens + update_document_stats.total_tokens
+            total_cost = update_current_change_stats.total_cost + update_document_stats.total_cost
+            self.logger.info(f"Total Update Usage - Tokens: {total_tokens}, Cost: ${total_cost:.6f}")
             
             # 3. 组合成更新后的活动文件内容
             file_content = f"{header}"
