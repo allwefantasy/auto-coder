@@ -89,20 +89,19 @@ class ActiveContextManager:
             cls._instance._is_initialized = False
         return cls._instance
     
-    def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs):
+    def __init__(self, llm: byzerllm.ByzerLLM,source_dir:str):
         """
         初始化活动上下文管理器
         
         Args:
-            llm: ByzerLLM实例，用于生成文档内容
-            args: AutoCoderArgs实例，包含配置信息
+            llm: ByzerLLM实例，用于生成文档内容            
         """
         # 如果已经初始化过，则直接返回
         if self._is_initialized:
             return
-        
+        self.source_dir = source_dir
         # 设置日志目录和文件
-        log_dir = os.path.join(args.source_dir, ".auto-coder", "active-context")
+        log_dir = os.path.join(source_dir, ".auto-coder", "active-context")
         os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.join(log_dir, "active.log")
         
@@ -119,12 +118,11 @@ class ActiveContextManager:
         self.logger = global_logger.bind(name="ActiveContextManager")
         self.logger.info(f"初始化 ActiveContextManager，日志输出到 {log_file}")
             
-        self.llm = llm
-        self.args = args
+        self.llm = llm        
         self.directory_mapper = DirectoryMapper()
         self.active_package = ActivePackage(llm)
         self.async_processor = AsyncProcessor()
-        self.yml_manager = ActionYmlFileManager(args.source_dir)
+        self.yml_manager = ActionYmlFileManager(source_dir)
         self.tasks = {}  # 用于跟踪任务状态
         self.printer = Printer()
         
@@ -137,7 +135,7 @@ class ActiveContextManager:
         self.__class__._queue_thread.start()
         
         # 标记为已初始化
-        self._is_initialized = True            
+        self._is_initialized = True                    
     
     def _process_queue(self):
         """
@@ -177,20 +175,22 @@ class ActiveContextManager:
                 with self._queue_lock:
                     self.__class__._is_processing = False
     
-    def process_changes(self, file_name: Optional[str] = None) -> str:
+    def process_changes(self, args:AutoCoderArgs) -> str:
         """
         处理代码变更，创建活动上下文（非阻塞）
         
         Args:
-            file_name: YAML文件名，如果为None则使用args.file
+            args: AutoCoderArgs实例，包含配置信息
         
         Returns:
             str: 任务ID，可用于后续查询任务状态
         """
         try:
             # 使用参数中的文件或者指定的文件
-            file_name = file_name or os.path.basename(self.args.file)
+            if not args.file:
+                raise ValueError("action file is required")            
             
+            file_name = os.path.basename(args.file)
             # 从YAML文件加载数据
             yaml_content = self.yml_manager.load_yaml_content(file_name)
             
@@ -298,7 +298,7 @@ class ActiveContextManager:
             # 1. 映射目录
             self.logger.info("开始映射目录结构...")
             directory_contexts = self.directory_mapper.map_directories(
-                self.args.source_dir, changed_urls, current_urls
+                self.source_dir, changed_urls, current_urls
             )
             self.logger.info(f"目录映射完成，找到 {len(directory_contexts)} 个相关目录")
             
@@ -460,7 +460,7 @@ class ActiveContextManager:
         # 构建日志文件路径
         log_file_path = None
         if 'file_name' in task:
-            log_dir = os.path.join(self.args.source_dir, '.auto-coder', 'active-context', 'logs')
+            log_dir = os.path.join(self.source_dir, '.auto-coder', 'active-context', 'logs')
             log_file_path = os.path.join(log_dir, f'{task_id}.log')
             if not os.path.exists(log_file_path):
                 log_file_path = None
@@ -644,6 +644,6 @@ class ActiveContextManager:
         Returns:
             str: 活动上下文中对应的目录路径
         """
-        relative_path = os.path.relpath(directory_path, self.args.source_dir)
-        return os.path.join(self.args.source_dir, ".auto-coder", "active-context", relative_path)
+        relative_path = os.path.relpath(directory_path, self.source_dir)
+        return os.path.join(self.source_dir, ".auto-coder", "active-context", relative_path)
         

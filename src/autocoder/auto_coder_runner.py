@@ -1427,7 +1427,7 @@ def commit(query: str):
             with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
                 f.write(yaml_content)
 
-            args.file = execute_file    
+            args.file = execute_file             
             
             file_name = os.path.basename(execute_file)
             commit_result = git_utils.commit_changes(
@@ -1449,8 +1449,8 @@ def commit(query: str):
                 printer.print_in_terminal("yaml_save_error", style="red", yaml_file=action_file_name)  
                         
             if args.enable_active_context:                
-                active_context_manager = ActiveContextManager(llm, args)
-                task_id = active_context_manager.process_changes()
+                active_context_manager = ActiveContextManager(llm, args.source_dir)
+                task_id = active_context_manager.process_changes(args)
                 printer.print_in_terminal("active_context_background_task", 
                                              style="blue",
                                              task_id=task_id)
@@ -1820,17 +1820,29 @@ def active_context(query: str):
     if len(commands_infos) > 0:
         if "list" in commands_infos:
             command = "list"
+        if "run" in commands_infos:
+            command = "run"
     
     args = get_final_config()
+    printer = Printer()
     # 获取LLM实例    
     llm = get_single_llm(args.model,product_mode=args.product_mode)
+    action_file_manager = ActionYmlFileManager(args.source_dir)
     
     # 获取配置和参数
     
     
-    # 获取ActiveContextManager单例
     active_context_manager = ActiveContextManager(llm, args)
-    
+    if command == "run":
+        file_name = commands_infos["run"]["args"][-1]
+        args.file = action_file_manager.get_full_path_by_file_name(file_name)        
+        ## 因为更新了args.file
+        active_context_manager = ActiveContextManager(llm, args.source_dir)
+        task_id = active_context_manager.process_changes(args)
+        printer.print_in_terminal("active_context_background_task", 
+                                        style="blue",
+                                        task_id=task_id)
+
     # 处理不同的命令
     if command == "list":
         # 获取所有任务

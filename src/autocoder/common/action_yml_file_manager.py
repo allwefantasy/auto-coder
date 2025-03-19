@@ -194,6 +194,12 @@ class ActionYmlFileManager:
             self.printer.print_in_terminal("yaml_load_error", style="red", 
                                           yaml_file=yaml_path, error=str(e))
             return {}
+        
+    def get_full_path_by_file_name(self, file_name: str) -> str:
+        """
+        根据文件名获取完整路径
+        """
+        return os.path.join(self.actions_dir, file_name)
     
     def save_yaml_content(self, file_name: str, content: Dict) -> bool:
         """

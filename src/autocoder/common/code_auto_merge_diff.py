@@ -596,8 +596,8 @@ class CodeAutoMergeDiff:
                 self.printer.print_in_terminal("yaml_save_error", style="red", yaml_file=action_file_name)    
             
             if self.args.enable_active_context:
-                active_context_manager = ActiveContextManager(self.llm, self.args)
-                task_id = active_context_manager.process_changes()
+                active_context_manager = ActiveContextManager(self.llm, self.args.source_dir)
+                task_id = active_context_manager.process_changes(self.args)
                 self.printer.print_in_terminal("active_context_background_task", 
                                              style="blue",
                                              task_id=task_id)
