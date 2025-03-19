@@ -1432,6 +1432,13 @@ def commit(query: str):
             commit_result = git_utils.commit_changes(
                 ".", f"{commit_message}\nauto_coder_{file_name}"
             )
+            if args.enable_active_context:
+                printer = Printer()
+                active_context_manager = ActiveContextManager(llm, args)
+                task_id = active_context_manager.process_changes()
+                printer.print_in_terminal("active_context_background_task", 
+                                             style="blue",
+                                             task_id=task_id)
             git_utils.print_commit_info(commit_result=commit_result)
             if commit_message:
                 printer.print_in_terminal("commit_message", style="green", model_name=target_model, message=commit_message)                
