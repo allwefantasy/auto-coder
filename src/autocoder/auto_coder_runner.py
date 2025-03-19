@@ -17,6 +17,7 @@ from contextlib import contextmanager
 from typing import List, Dict, Any, Optional
 from autocoder.common import AutoCoderArgs
 from pydantic import BaseModel
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 from autocoder.common.result_manager import ResultManager
 from autocoder.version import __version__
 from autocoder.auto_coder import main as auto_coder_main
@@ -1425,14 +1426,29 @@ def commit(query: str):
             yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
             with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
                 f.write(yaml_content)
+
+            args.file = execute_file    
             
             file_name = os.path.basename(execute_file)
             commit_result = git_utils.commit_changes(
                 ".", f"{commit_message}\nauto_coder_{file_name}"
             )
-            args.file = execute_file
-            if args.enable_active_context:
-                printer = Printer()
+
+            printer = Printer()
+
+            action_yml_file_manager = ActionYmlFileManager(args.source_dir)
+            action_file_name = os.path.basename(args.file)
+            add_updated_urls = []
+            commit_result.changed_files
+            for file in commit_result.changed_files:
+                add_updated_urls.append(os.path.join(args.source_dir, file))
+
+            args.add_updated_urls = add_updated_urls
+            update_yaml_success = action_yml_file_manager.update_yaml_field(action_file_name, "add_updated_urls", add_updated_urls)
+            if not update_yaml_success:                        
+                printer.print_in_terminal("yaml_save_error", style="red", yaml_file=action_file_name)  
+                        
+            if args.enable_active_context:                
                 active_context_manager = ActiveContextManager(llm, args)
                 task_id = active_context_manager.process_changes()
                 printer.print_in_terminal("active_context_background_task", 
