@@ -87,3 +87,4 @@ youtube-transcript-api
 SpeechRecognition
 pathvalidate
 mcp ; python_version >= '3.10'
+setuptools
