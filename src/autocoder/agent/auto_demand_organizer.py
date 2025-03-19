@@ -6,6 +6,8 @@ import byzerllm
 import pydantic
 import git
 
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
+
 
 class DemandItem(pydantic.BaseModel):
     """单个需求项"""
@@ -44,6 +46,7 @@ class AutoDemandOrganizer:
             file_size_limit: 最多分析多少历史任务
         """
         self.project_dir = project_dir
+        self.action_file_manager = ActionYmlFileManager(project_dir)
         self.actions_dir = os.path.join(project_dir, "actions")
         self.llm = llm
         self.file_size_limit = file_size_limit
@@ -162,26 +165,16 @@ class AutoDemandOrganizer:
 
             if query and urls:
                 commit_diff = ""
-                if not self.skip_diff:
-                    # 计算文件的MD5用于匹配commit
-                    import hashlib
-                    file_md5 = hashlib.md5(open(yaml_path, 'rb').read()).hexdigest()
-                    response_id = f"auto_coder_{yaml_file}_{file_md5}"
-                    # 查找对应的commit                   
-                    try:
-                        for commit in repo.iter_commits():
-                            if response_id in commit.message:
-                                if commit.parents:
-                                    parent = commit.parents[0]
-                                    commit_diff = repo.git.diff(
-                                        parent.hexsha, commit.hexsha)
-                                else:
-                                    commit_diff = repo.git.show(commit.hexsha)
-                                break
-                    except git.exc.GitCommandError as e:
-                        logger.error(f"Git命令执行错误: {str(e)}")
-                    except Exception as e:
-                        logger.error(f"获取commit diff时出错: {str(e)}")
+                if not self.skip_diff:                                    
+                    commit_id = self.action_file_manager.get_commit_id_from_file(yaml_file)
+                    commit = repo.commit(commit_id)
+                    if commit:
+                        if commit.parents:
+                            parent = commit.parents[0]
+                            commit_diff = repo.git.diff(
+                                parent.hexsha, commit.hexsha)
+                        else:
+                            commit_diff = repo.git.show(commit.hexsha)
 
                 querie_with_urls_and_diffs.append((query, urls, commit_diff))
 

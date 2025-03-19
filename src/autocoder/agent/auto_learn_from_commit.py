@@ -121,40 +121,30 @@ class AutoLearnFromCommit:
             if not self.skip_diff:
                 # 使用 ActionManager 获取 commit ID
                 commit_id = self.action_manager.get_commit_id_from_file(action_file)
-                if commit_id:
-                    try:
-                        for commit in repo.iter_commits():
-                            if commit_id in commit.message:
-                                if commit.parents:
-                                    parent = commit.parents[0]
-                                    # 获取所有文件的前后内容
-                                    for diff_item in parent.diff(commit):
-                                        file_path = diff_item.a_path if diff_item.a_path else diff_item.b_path
-                                        
-                                        # 获取变更前内容
-                                        before_content = None
-                                        try:
-                                            if diff_item.a_blob:
-                                                before_content = repo.git.show(f"{parent.hexsha}:{file_path}")
-                                        except git.exc.GitCommandError:
-                                            pass  # 文件可能是新增的
+                commit = repo.commit(commit_id)                
+                if commit and commit.parents:
+                    parent = commit.parents[0]
+                    # 获取所有文件的前后内容
+                    for diff_item in parent.diff(commit):
+                        file_path = diff_item.a_path if diff_item.a_path else diff_item.b_path
+                        
+                        # 获取变更前内容
+                        before_content = None
+                        try:
+                            if diff_item.a_blob:
+                                before_content = repo.git.show(f"{parent.hexsha}:{file_path}")
+                        except git.exc.GitCommandError:
+                            pass  # 文件可能是新增的
 
-                                        # 获取变更后内容
-                                        after_content = None
-                                        try:
-                                            if diff_item.b_blob:
-                                                after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
-                                        except git.exc.GitCommandError:
-                                            pass  # 文件可能被删除
+                        # 获取变更后内容
+                        after_content = None
+                        try:
+                            if diff_item.b_blob:
+                                after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
+                        except git.exc.GitCommandError:
+                            pass  # 文件可能被删除
 
-                                        changes[file_path] = (before_content, after_content)
-                                break
-                    except git.exc.GitCommandError as e:
-                        printer = Printer()
-                        printer.print_in_terminal("git_command_error", style="red", error=str(e))
-                    except Exception as e:
-                        printer = Printer()
-                        printer.print_in_terminal("get_commit_changes_error", style="red", error=str(e))
+                        changes[file_path] = (before_content, after_content)
 
             querie_with_urls_and_changes.append((query, urls, changes))
 
