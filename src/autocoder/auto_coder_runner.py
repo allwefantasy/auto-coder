@@ -1432,6 +1432,7 @@ def commit(query: str):
             commit_result = git_utils.commit_changes(
                 ".", f"{commit_message}\nauto_coder_{file_name}"
             )
+            args.file = execute_file
             if args.enable_active_context:
                 printer = Printer()
                 active_context_manager = ActiveContextManager(llm, args)
