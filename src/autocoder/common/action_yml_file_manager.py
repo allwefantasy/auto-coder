@@ -185,15 +185,16 @@ class ActionYmlFileManager:
         Returns:
             Dict: YAML 内容，如果加载失败返回空字典
         """
-        yaml_path = os.path.join(self.actions_dir, file_name)
+
+        import traceback
+        traceback.print_stack()
         
+        yaml_path = os.path.join(self.actions_dir, file_name)        
         try:
             with open(yaml_path, 'r', encoding='utf-8') as f:
                 content = yaml.safe_load(f) or {}
             return content
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
+        except Exception as e:            
             self.printer.print_in_terminal("yaml_load_error", style="red", 
                                           yaml_file=yaml_path, error=str(e))
             return {}
