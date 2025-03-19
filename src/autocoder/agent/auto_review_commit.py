@@ -9,6 +9,7 @@ from autocoder.common.printer import Printer
 from autocoder.common import AutoCoderArgs
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
 import hashlib
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 
 
 def load_yaml_config(yaml_file: str) -> Dict:
@@ -41,6 +42,7 @@ class AutoReviewCommit:
         self.llm = llm        
         self.skip_diff = skip_diff
         self.console = console or Console()
+        self.action_yml_manager = ActionYmlFileManager(source_dir=args.source_dir)
 
     @byzerllm.prompt()
     def review(self, querie_with_urls_and_changes: List[Tuple[str, List[str], Dict[str, Tuple[str, str]]]], query: str) -> Generator[str,None,None]:
@@ -141,66 +143,16 @@ class AutoReviewCommit:
             action_files = sorted(action_files, key=get_seq)
             action_files.reverse()   
         
+        if not action_files:
+            return []
+            
         action_file = action_files[0]
-
         querie_with_urls_and_changes = []
-        repo = git.Repo(self.project_dir)
 
-        # 收集所有query、urls和对应的文件变化
-        for yaml_file in [action_file]:
-            yaml_path = os.path.join(self.actions_dir, yaml_file)
-            config = load_yaml_config(yaml_path)
-
-            if not config:
-                continue
-
-            query = config.get('query', '')
-            urls = config.get('urls', [])
-
-            if query:
-                changes = {}
-                if not self.skip_diff:
-                    # 计算文件的MD5用于匹配commit   
-                    with open(yaml_path, 'r', encoding='utf-8') as f:
-                        yaml_content = f.read()                 
-                        file_md5 = hashlib.md5(yaml_content.encode("utf-8")).hexdigest()
-                    response_id = f"auto_coder_{yaml_file}_{file_md5}"
-                    # 查找对应的commit                   
-                    try:
-                        for commit in repo.iter_commits():
-                            if response_id in commit.message:
-                                if commit.parents:
-                                    parent = commit.parents[0]
-                                    # 获取所有文件的前后内容
-                                    for diff_item in parent.diff(commit):
-                                        file_path = diff_item.a_path if diff_item.a_path else diff_item.b_path
-                                        
-                                        # 获取变更前内容
-                                        before_content = None
-                                        try:
-                                            if diff_item.a_blob:
-                                                before_content = repo.git.show(f"{parent.hexsha}:{file_path}")
-                                        except git.exc.GitCommandError:
-                                            pass  # 文件可能是新增的
-
-                                        # 获取变更后内容
-                                        after_content = None
-                                        try:
-                                            if diff_item.b_blob:
-                                                after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
-                                        except git.exc.GitCommandError:
-                                            pass  # 文件可能被删除
-
-                                        changes[file_path] = (before_content, after_content)
-                                break
-                    except git.exc.GitCommandError as e:
-                        printer = Printer()
-                        printer.print_in_terminal("git_command_error", style="red", error=str(e))
-                    except Exception as e:
-                        printer = Printer()
-                        printer.print_in_terminal("get_commit_changes_error", style="red", error=str(e))
-
-                querie_with_urls_and_changes.append((query, urls, changes))
+        # 使用ActionYmlFileManager获取提交变更
+        changes = self.action_yml_manager.get_commit_changes(action_file)
+        if changes:
+            querie_with_urls_and_changes = changes
 
         return querie_with_urls_and_changes
     
@@ -289,14 +241,11 @@ class AutoReviewCommit:
         printer = Printer()
         commit_file_name = None
         if commit_id:
+            # 利用ActionYmlFileManager获取文件名
             repo = git.Repo(self.project_dir)
             commit = repo.commit(commit_id)
-            # auto_coder_000000001926_chat_action.yml_88614d5bd4046a068786c252fbc39c13
-            msg = commit.message
-            commit_file_info = msg.split("_")[0]
-            if commit_file_info.startswith("auto_coder_"):
-                commit_file_name = "_".join(msg.split("_",)[0:-1]) 
-
+            commit_file_name = self.action_yml_manager.get_file_name_from_commit_msg(commit.message)
+            
             if not commit_file_name:
                 raise ValueError(printer.get_message_from_key_with_format("no_commit_file_name",commit_id=commit_id))
         
