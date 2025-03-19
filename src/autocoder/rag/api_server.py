@@ -49,6 +49,8 @@ TIMEOUT_KEEP_ALIVE = 5  # seconds
 # timeout in 10 minutes. Streaming can take longer than 3 min
 TIMEOUT = float(os.environ.get("BYZERLLM_APISERVER_HTTP_TIMEOUT", 600))
 
+# Static file serving security settings
+
 router_app = FastAPI()
 
 
@@ -178,46 +180,51 @@ async def embed(body: EmbeddingCompletionRequest):
     )
 
 @router_app.get("/static/{full_path:path}")
-async def serve_image(full_path: str, request: Request):
+async def serve_static_file(full_path: str, request: Request):
     
-    allowed_file_type = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
-    
-    if any(full_path.endswith(ext) for ext in allowed_file_type):
-        try:
-            # 获取文件的完整路径，并进行URL解码
-            file_path = unquote(full_path)
-            # 使用 os.path.normpath 来标准化路径，自动处理不同操作系统的路径分隔符
-            file_path = os.path.normpath(file_path)
-            if not os.path.isabs(file_path):
-                file_path = os.path.join("/", file_path)
-            
-            # 检查文件是否存在
-            if not os.path.exists(file_path):
-                raise FileNotFoundError(f"File not found: {file_path}")
-                
-            # 异步读取文件内容
-            async with aiofiles.open(file_path, "rb") as f:
-                content = await f.read()
-            
+    try:
+        # 路径安全检查已经在中间件中完成
+        # 直接使用规范化的路径
+        file_path = os.path.join("/", os.path.normpath(unquote(full_path)))
+        
+        # 检查文件是否存在
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+        
+        # 如果启用了Nginx X-Accel-Redirect，使用X-Accel特性
+        if hasattr(request.app.state, "enable_nginx_x_accel") and request.app.state.enable_nginx_x_accel:
             # 获取文件的 MIME 类型
             content_type = mimetypes.guess_type(file_path)[0]
             if not content_type:
                 content_type = "application/octet-stream"
                 
-            # 返回文件内容
-            return Response(content=content, media_type=content_type)
-        except FileNotFoundError as e:
-            logger.error(f"Image not found: {str(e)}")
-            raise HTTPException(status_code=404, detail=f"Image not found: {str(e)}")
-        except PermissionError as e:
-            logger.error(f"Permission denied: {str(e)}")
-            raise HTTPException(status_code=403, detail=f"Permission denied: {str(e)}")
-        except Exception as e:
-            logger.error(f"Error serving image: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Error serving image: {str(e)}")
-    
-    # 如果路径中没有图片, 返回 404
-    raise HTTPException(status_code=404, detail="Only images are supported")
+            # 返回带X-Accel-Redirect头的响应
+            # 通过添加X-Accel-Redirect头告诉Nginx直接提供该文件
+            # 注意：Nginx配置必须正确设置内部路径映射
+            response = Response(content="", media_type=content_type)
+            response.headers["X-Accel-Redirect"] = f"/internal{file_path}"
+            return response
+            
+        # 默认行为：异步读取文件内容
+        async with aiofiles.open(file_path, "rb") as f:
+            content = await f.read()
+        
+        # 获取文件的 MIME 类型
+        content_type = mimetypes.guess_type(file_path)[0]
+        if not content_type:
+            content_type = "application/octet-stream"
+            
+        # 返回文件内容
+        return Response(content=content, media_type=content_type)
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {str(e)}")
+        raise HTTPException(status_code=404, detail=f"File not found: {str(e)}")
+    except PermissionError as e:
+        logger.error(f"Permission denied: {str(e)}")
+        raise HTTPException(status_code=403, detail=f"Permission denied: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error serving file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error serving file: {str(e)}")
 
 class ServerArgs(BaseModel):
     host: str = None
@@ -234,14 +241,38 @@ class ServerArgs(BaseModel):
     response_role: str = "assistant"
     ssl_keyfile: str = None
     ssl_certfile: str = None 
-    doc_dir: str = "" 
-    tokenizer_path: Optional[str] = None     
+    doc_dir: str = ""  # Document directory path, also used as the root directory for serving static files
+    tokenizer_path: Optional[str] = None
+    max_static_path_length: int = int(os.environ.get("BYZERLLM_MAX_STATIC_PATH_LENGTH", 3000))  # Maximum length allowed for static file paths (larger value to better support Chinese characters)
+    enable_nginx_x_accel: bool = False  # Enable Nginx X-Accel-Redirect for static file serving
 
 def serve(llm:ByzerLLM, args: ServerArgs):
     
     logger.info(f"ByzerLLM API server version {version}")
     logger.info(f"args: {args}")
 
+    # 设置静态文件路径长度限制
+    max_path_length = args.max_static_path_length
+    logger.info(f"Maximum static file path length: {max_path_length}")
+    
+    # 存储Nginx X-Accel设置到应用状态
+    router_app.state.enable_nginx_x_accel = args.enable_nginx_x_accel
+    if args.enable_nginx_x_accel:
+        logger.info("Nginx X-Accel-Redirect enabled for static file serving")
+    
+    # 确定允许访问的静态文件目录
+    # 优先级：1. 环境变量 BYZERLLM_ALLOWED_STATIC_DIR
+    #        2. 命令行参数 doc_dir
+    #        3. 默认值 "/tmp"
+    allowed_static_dir = os.environ.get("BYZERLLM_ALLOWED_STATIC_DIR")
+    if not allowed_static_dir and args.doc_dir:
+        allowed_static_dir = args.doc_dir
+    if not allowed_static_dir:
+        allowed_static_dir = "/tmp"
+    
+    allowed_static_abs = os.path.abspath(allowed_static_dir)
+    logger.info(f"Static files root directory: {allowed_static_abs}")
+    
     router_app.add_middleware(
         CORSMiddleware,
         allow_origins=args.allowed_origins,
@@ -249,6 +280,47 @@ def serve(llm:ByzerLLM, args: ServerArgs):
         allow_methods=args.allowed_methods,
         allow_headers=args.allowed_headers,
     )
+    
+    # Add static file security middleware
+    @router_app.middleware("http")
+    async def static_file_security(request: Request, call_next):
+        # Only apply to static routes
+        if request.url.path.startswith("/static/"):
+            # Extract the full_path from the URL
+            path_parts = request.url.path.split("/static/", 1)
+            if len(path_parts) > 1:
+                full_path = path_parts[1]
+                
+                # Check path length
+                if len(full_path) > max_path_length:
+                    logger.warning(f"Path too long: {len(full_path)} > {max_path_length}")
+                    return JSONResponse(
+                        content={"error": "Path too long"},
+                        status_code=401
+                    )
+                
+                # Add warning when path length approaches the limit (80% of max)
+                if len(full_path) > (max_path_length * 0.8):
+                    logger.warning(f"Path length approaching limit: {len(full_path)} is {(len(full_path) / max_path_length * 100):.1f}% of max ({max_path_length})")
+                
+                # Decode and normalize path
+                decoded_path = unquote(full_path)
+                normalized_path = os.path.normpath(decoded_path)
+                
+                # Check if path is in allowed directory
+                abs_path = os.path.abspath(os.path.join("/", normalized_path))
+                
+                # 使用预先计算好的allowed_static_abs
+                is_allowed = abs_path.startswith(allowed_static_abs)
+                
+                if not is_allowed:
+                    logger.warning(f"Unauthorized path access: {abs_path}")
+                    return JSONResponse(
+                        content={"error": "Unauthorized path"},
+                        status_code=401
+                    )
+        
+        return await call_next(request)
     
     if token := os.environ.get("BYZERLLM_API_KEY") or args.api_key:
 
