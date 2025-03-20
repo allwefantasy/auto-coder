@@ -1854,12 +1854,14 @@ def active_context(query: str):
             return
         
         # 创建表格
-        table = Table(title="活动上下文任务列表")
-        table.add_column("任务ID", style="cyan")
-        table.add_column("状态", style="green")
-        table.add_column("开始时间", style="yellow")
-        table.add_column("完成时间", style="yellow")
-        table.add_column("文件", style="blue")
+        table = Table(title="活动上下文任务列表", show_lines=True, expand=True)
+        table.add_column("任务ID", style="cyan", no_wrap=False)
+        table.add_column("状态", style="green", no_wrap=False)
+        table.add_column("开始时间", style="yellow", no_wrap=False)
+        table.add_column("完成时间", style="yellow", no_wrap=False)
+        table.add_column("文件", style="blue", no_wrap=False)
+        table.add_column("Token统计", style="magenta", no_wrap=False)
+        table.add_column("费用", style="red", no_wrap=False)
         
         # 添加任务数据
         for task in all_tasks:
@@ -1887,17 +1889,29 @@ def active_context(query: str):
             # 获取文件名
             file_name = task.get("file_name", "未知")
             
+            # 获取token信息
+            total_tokens = task.get("total_tokens", 0)
+            input_tokens = task.get("input_tokens", 0)
+            output_tokens = task.get("output_tokens", 0)
+            token_info = f"总计: {total_tokens:,}\n输入: {input_tokens:,}\n输出: {output_tokens:,}"
+            
+            # 获取费用信息
+            cost = task.get("cost", 0.0)
+            cost_info = f"${cost:.6f}"
+            
             # 添加到表格
             table.add_row(
                 task.get("task_id", "未知"),
                 status_display,
                 start_time_str,
                 completion_time_str,
-                file_name
+                file_name,
+                token_info,
+                cost_info
             )
         
         # 显示表格
-        console = Console()
+        console = Console(width=120)  # 设置更宽的显示宽度
         console.print(table)
 
 
