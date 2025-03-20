@@ -40,7 +40,7 @@ class ActivePackage:
     def generate_active_file(self, context: Dict[str, Any], query: str, 
                             existing_file_path: Optional[str] = None, 
                             file_changes: Optional[Dict[str, Tuple[str, str]]] = None,
-                            args: Optional[AutoCoderArgs] = None) -> str:
+                            args: Optional[AutoCoderArgs] = None) -> Tuple[str, Dict[str, Any]]:
         """
         生成完整的活动文件内容
         
@@ -52,9 +52,17 @@ class ActivePackage:
             args: AutoCoderArgs实例，包含配置信息
             
         Returns:
-            str: 生成的活动文件内容
+            Tuple[str, Dict[str, Any]]: 生成的活动文件内容和token使用及费用信息
         """
         try:
+            # 初始化token和费用统计
+            total_stats = {
+                "total_tokens": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost": 0.0
+            }
+            
             # 检查是否有现有文件
             existing_content = None
             if existing_file_path and os.path.exists(existing_file_path):
@@ -71,15 +79,34 @@ class ActivePackage:
             # 根据是否有现有内容选择不同的生成方式
             if existing_content:
                 # 有现有内容，使用更新模式
-                file_content = self.generate_updated_active_file(enhanced_context, query, existing_content)
+                file_content, usage_stats = self.generate_updated_active_file(enhanced_context, query, existing_content)
+                # 合并token和费用统计
+                total_stats["total_tokens"] += usage_stats["total_tokens"]
+                total_stats["input_tokens"] += usage_stats["input_tokens"]
+                total_stats["output_tokens"] += usage_stats["output_tokens"]
+                total_stats["cost"] += usage_stats["cost"]
             else:
                 # 无现有内容，使用创建模式
-                file_content = self.generate_new_active_file(enhanced_context, query)
+                file_content, usage_stats = self.generate_new_active_file(enhanced_context, query)
+                # 合并token和费用统计
+                total_stats["total_tokens"] += usage_stats["total_tokens"]
+                total_stats["input_tokens"] += usage_stats["input_tokens"]
+                total_stats["output_tokens"] += usage_stats["output_tokens"]
+                total_stats["cost"] += usage_stats["cost"]
             
-            return file_content
+            return file_content, total_stats
         except Exception as e:
             self.logger.error(f"Error generating active file: {e}")
-            return f"# 生成文档时出错\n\n错误: {str(e)}"
+            # 创建空统计
+            empty_stats = {
+                "total_tokens": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost": 0.0
+            }
+            # 返回错误信息和空统计
+            dir_name = os.path.basename(context.get('directory_path', '未知目录')) if context else '未知目录'
+            return f"# 生成文档时出错 - {dir_name}\n\n错误: {str(e)}", empty_stats
     
     def _enhance_context_with_changes(self, context: Dict[str, Any], 
                                     file_changes: Optional[Dict[str, Tuple[str, str]]]) -> Dict[str, Any]:
@@ -142,7 +169,7 @@ class ActivePackage:
         
         return enhanced_context
     
-    def generate_new_active_file(self, context: Dict[str, Any], query: str) -> str:
+    def generate_new_active_file(self, context: Dict[str, Any], query: str) -> Tuple[str, Dict[str, Any]]:
         """
         生成全新的活动文件内容
         
@@ -151,7 +178,7 @@ class ActivePackage:
             query: 用户查询/需求
             
         Returns:
-            str: 新生成的活动文件内容
+            Tuple[str, Dict[str, Any]]: 新生成的活动文件内容和token使用及费用信息
         """
         try:
             # 1. 生成current change部分
@@ -192,18 +219,33 @@ class ActivePackage:
             
             # 计算总token使用统计
             total_tokens = current_change_stats.total_tokens + document_stats.total_tokens
+            input_tokens = current_change_stats.prompt_tokens + document_stats.prompt_tokens
+            output_tokens = current_change_stats.completion_tokens + document_stats.completion_tokens
             total_cost = current_change_stats.total_cost + document_stats.total_cost
-            self.logger.info(f"Total Usage - Tokens: {total_tokens}, Cost: ${total_cost:.6f}")
+            self.logger.info(f"Total Usage - Tokens: {total_tokens}, Input: {input_tokens}, Output: {output_tokens}, Cost: ${total_cost:.6f}")
             
             # 3. 组合成完整的活动文件内容
             file_content = f"# 活动上下文 - {os.path.basename(context['directory_path'])}\n\n"
             file_content += f"## 当前变更\n\n{current_change}\n\n"
             file_content += f"## 文档\n\n{document}\n"
             
-            return file_content
+            return file_content, {
+                "total_tokens": total_tokens,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "cost": total_cost
+            }
         except Exception as e:
             self.logger.error(f"Error generating new active file: {e}")
-            raise
+            # 返回错误信息和空统计
+            empty_stats = {
+                "total_tokens": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost": 0.0
+            }
+            err_content = f"# 生成文档时出错 - {os.path.basename(context.get('directory_path', '未知目录'))}\n\n错误: {str(e)}"
+            return err_content, empty_stats
     
     def extract_sections(self, content: str) -> Tuple[str, str, str]:
         """
@@ -241,31 +283,27 @@ class ActivePackage:
             self.logger.error(f"Error extracting sections: {e}")
             return header, current_change_section, document_section
     
-    def generate_updated_active_file(self, context: Dict[str, Any], query: str, existing_content: str) -> str:
+    def generate_updated_active_file(self, context: Dict[str, Any], query: str, existing_content: str) -> Tuple[str, Dict[str, Any]]:
         """
         基于现有内容生成更新后的活动文件内容
         
         Args:
             context: 目录上下文字典
             query: 用户查询/需求
-            existing_content: 现有文件内容
+            existing_content: 现有的活动文件内容
             
         Returns:
-            str: 更新后的活动文件内容
+            Tuple[str, Dict[str, Any]]: 更新后的活动文件内容和token使用及费用信息
         """
         try:
-            # 1. 从现有内容中提取各个部分
+            # 1. 从现有内容中提取各部分
             header, existing_current_change, existing_document = self.extract_sections(existing_content)
             
-            # 2. 分别更新每个部分
+            # 2. 更新current change部分
             meta_holder_current_change = MetaHolder()
             start_time_current_change = time.monotonic()
             updated_current_change = self.update_current_change.with_llm(self.llm).with_meta(
-                meta_holder_current_change).run(
-                context=context,
-                query=query,
-                existing_current_change=existing_current_change
-            )
+                meta_holder_current_change).run(context, query, existing_current_change)
             end_time_current_change = time.monotonic()
             
             # 使用TokenCostCalculator跟踪token使用情况
@@ -277,16 +315,13 @@ class ActivePackage:
                 end_time=end_time_current_change
             )
             
-            self.logger.info(f"Update Current Change - Total tokens: {update_current_change_stats.total_tokens}, Total cost: ${update_current_change_stats.total_cost:.6f}")
+            self.logger.info(f"Current Change Update - Total tokens: {update_current_change_stats.total_tokens}, Total cost: ${update_current_change_stats.total_cost:.6f}")
             
+            # 3. 更新document部分
             meta_holder_document = MetaHolder()
             start_time_document = time.monotonic()
             updated_document = self.update_document.with_llm(self.llm).with_meta(
-                meta_holder_document).run(
-                context=context,
-                query=query,
-                existing_document=existing_document
-            )
+                meta_holder_document).run(context, query, existing_document)
             end_time_document = time.monotonic()
             
             # 使用TokenCostCalculator跟踪token使用情况
@@ -298,24 +333,38 @@ class ActivePackage:
                 end_time=end_time_document
             )
             
-            self.logger.info(f"Update Document - Total tokens: {update_document_stats.total_tokens}, Total cost: ${update_document_stats.total_cost:.6f}")
+            self.logger.info(f"Document Update - Total tokens: {update_document_stats.total_tokens}, Total cost: ${update_document_stats.total_cost:.6f}")
             
             # 计算总token使用统计
             total_tokens = update_current_change_stats.total_tokens + update_document_stats.total_tokens
+            input_tokens = update_current_change_stats.prompt_tokens + update_document_stats.prompt_tokens
+            output_tokens = update_current_change_stats.completion_tokens + update_document_stats.completion_tokens
             total_cost = update_current_change_stats.total_cost + update_document_stats.total_cost
-            self.logger.info(f"Total Update Usage - Tokens: {total_tokens}, Cost: ${total_cost:.6f}")
+            self.logger.info(f"Total Usage - Tokens: {total_tokens}, Input: {input_tokens}, Output: {output_tokens}, Cost: ${total_cost:.6f}")
             
-            # 3. 组合成更新后的活动文件内容
-            file_content = f"{header}"
+            # 4. 组合成完整的活动文件内容
+            file_content = header
             file_content += f"## 当前变更\n\n{updated_current_change}\n\n"
             file_content += f"## 文档\n\n{updated_document}\n"
             
-            return file_content
+            return file_content, {
+                "total_tokens": total_tokens,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "cost": total_cost
+            }
         except Exception as e:
             self.logger.error(f"Error updating active file: {e}")
-            # 如果更新失败，回退到生成新文档
-            self.logger.info("Falling back to generating new active file")
-            return self.generate_new_active_file(context, query)
+            # 返回错误信息和空统计
+            empty_stats = {
+                "total_tokens": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost": 0.0
+            }
+            dir_name = os.path.basename(context.get('directory_path', '未知目录'))
+            err_content = f"# 更新文档时出错 - {dir_name}\n\n错误: {str(e)}\n\n## 原始内容\n\n{existing_content}"
+            return err_content, empty_stats
     
     @byzerllm.prompt()
     def update_current_change(self, context: Dict[str, Any], query: str, existing_current_change: str) -> str:
