@@ -120,6 +120,11 @@ class ActivePackage:
         Returns:
             Dict[str, Any]: 增强后的上下文字典
         """
+        # 增加空值检查
+        if not context:
+            self.logger.warning("调用_enhance_context_with_changes时传入空context")
+            return {}
+            
         if not file_changes:
             return context
         
@@ -221,13 +226,16 @@ class ActivePackage:
             
             # 计算总token使用统计
             total_tokens = current_change_stats.total_tokens + document_stats.total_tokens
-            input_tokens = current_change_stats.prompt_tokens + document_stats.prompt_tokens
-            output_tokens = current_change_stats.completion_tokens + document_stats.completion_tokens
+            input_tokens = current_change_stats.input_tokens + document_stats.input_tokens
+            output_tokens = current_change_stats.output_tokens + document_stats.output_tokens
             total_cost = current_change_stats.total_cost + document_stats.total_cost
             self.logger.info(f"Total Usage - Tokens: {total_tokens}, Input: {input_tokens}, Output: {output_tokens}, Cost: ${total_cost:.6f}")
             
+            # 安全获取目录名称
+            dir_name = os.path.basename(context.get('directory_path', '未知目录'))
+            
             # 3. 组合成完整的活动文件内容
-            file_content = f"# 活动上下文 - {os.path.basename(context['directory_path'])}\n\n"
+            file_content = f"# 活动上下文 - {dir_name}\n\n"
             file_content += f"## 当前变更\n\n{current_change}\n\n"
             file_content += f"## 文档\n\n{document}\n"
             
@@ -341,8 +349,8 @@ class ActivePackage:
             
             # 计算总token使用统计
             total_tokens = update_current_change_stats.total_tokens + update_document_stats.total_tokens
-            input_tokens = update_current_change_stats.prompt_tokens + update_document_stats.prompt_tokens
-            output_tokens = update_current_change_stats.completion_tokens + update_document_stats.completion_tokens
+            input_tokens = update_current_change_stats.input_tokens + update_document_stats.input_tokens
+            output_tokens = update_current_change_stats.output_tokens + update_document_stats.output_tokens
             total_cost = update_current_change_stats.total_cost + update_document_stats.total_cost
             self.logger.info(f"Total Usage - Tokens: {total_tokens}, Input: {input_tokens}, Output: {output_tokens}, Cost: ${total_cost:.6f}")
             
