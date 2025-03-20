@@ -35,7 +35,7 @@ class ActivePackage:
         # 创建专用的 logger 实例
         self.logger = global_logger.bind(name="ActivePackage")
         # 创建Token计费计算器
-        self.token_calculator = TokenCostCalculator(logger_name="ActivePackage.TokenCost", product_mode=product_mode)
+        self.token_calculator = TokenCostCalculator(logger_name="ActivePackage.TokenCost")
     
     def generate_active_file(self, context: Dict[str, Any], query: str, 
                             existing_file_path: Optional[str] = None, 
@@ -194,7 +194,8 @@ class ActivePackage:
                 meta_holder=meta_holder_current_change,
                 operation_name="Current Change Generation",
                 start_time=start_time_current_change,
-                end_time=end_time_current_change
+                end_time=end_time_current_change,
+                product_mode=self.product_mode
             )
             
             self.logger.info(f"Current Change Generation - Total tokens: {current_change_stats.total_tokens}, Total cost: ${current_change_stats.total_cost:.6f}")
@@ -212,7 +213,8 @@ class ActivePackage:
                 meta_holder=meta_holder_document,
                 operation_name="Document Generation",
                 start_time=start_time_document,
-                end_time=end_time_document
+                end_time=end_time_document,
+                product_mode=self.product_mode
             )
             
             self.logger.info(f"Document Generation - Total tokens: {document_stats.total_tokens}, Total cost: ${document_stats.total_cost:.6f}")
@@ -312,7 +314,8 @@ class ActivePackage:
                 meta_holder=meta_holder_current_change,
                 operation_name="Update Current Change",
                 start_time=start_time_current_change,
-                end_time=end_time_current_change
+                end_time=end_time_current_change,
+                product_mode=self.product_mode
             )
             
             self.logger.info(f"Current Change Update - Total tokens: {update_current_change_stats.total_tokens}, Total cost: ${update_current_change_stats.total_cost:.6f}")
@@ -330,7 +333,8 @@ class ActivePackage:
                 meta_holder=meta_holder_document,
                 operation_name="Update Document",
                 start_time=start_time_document,
-                end_time=end_time_document
+                end_time=end_time_document,
+                product_mode=self.product_mode
             )
             
             self.logger.info(f"Document Update - Total tokens: {update_document_stats.total_tokens}, Total cost: ${update_document_stats.total_cost:.6f}")
