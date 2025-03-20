@@ -312,7 +312,7 @@ class ActiveContextManager:
                     'cost': 0.0,  # 初始化费用
                 }
                 # 持久化任务信息
-                self._save_tasks_to_disk()
+            self._save_tasks_to_disk()
 
             # 直接启动后台线程处理任务，不通过队列
             thread = threading.Thread(
