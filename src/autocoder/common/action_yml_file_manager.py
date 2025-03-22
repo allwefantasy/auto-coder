@@ -63,7 +63,7 @@ class ActionYmlFileManager:
             
         action_files = [
             f for f in os.listdir(self.actions_dir) 
-            if f[:3].isdigit() and "_" in f and f.endswith('.yml')
+            if f[:3].isdigit() and "_" in f and f.endswith('_chat_action.yml')
         ]
         
         if filter_prefix:
@@ -185,7 +185,7 @@ class ActionYmlFileManager:
         Returns:
             Dict: YAML 内容，如果加载失败返回空字典
         """
-        yaml_path = os.path.join(self.actions_dir, file_name)        
+        yaml_path = os.path.join(self.actions_dir, file_name)         
         try:
             with open(yaml_path, 'r', encoding='utf-8') as f:
                 content = yaml.safe_load(f) or {}

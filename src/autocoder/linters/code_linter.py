@@ -1,5 +1,5 @@
 """
-Module for linting ReactJS and Vue projects.
+Module for linting frontend projects (ReactJS and Vue).
 This module provides functionality to analyze ReactJS and Vue projects for code quality and best practices.
 """
 
@@ -8,7 +8,9 @@ import json
 import subprocess
 from typing import Dict, List, Optional, Union, Tuple, Any
 
-class FrontendLinter:
+from autocoder.linters.base_linter import BaseLinter
+
+class FrontendLinter(BaseLinter):
     """
     A class that provides linting functionality for ReactJS and Vue projects and single files.
     """
@@ -20,7 +22,7 @@ class FrontendLinter:
         Args:
             verbose (bool): Whether to display verbose output.
         """
-        self.verbose = verbose
+        super().__init__(verbose)
     
     def _check_dependencies(self) -> bool:
         """
@@ -37,6 +39,15 @@ class FrontendLinter:
             return True
         except (subprocess.SubprocessError, FileNotFoundError):
             return False
+    
+    def get_supported_extensions(self) -> List[str]:
+        """
+        Get the list of file extensions supported by this linter.
+        
+        Returns:
+            List[str]: List of supported file extensions.
+        """
+        return ['.js', '.jsx', '.ts', '.tsx', '.vue']
     
     def _detect_project_type(self, project_path: str) -> str:
         """
@@ -88,8 +99,7 @@ class FrontendLinter:
             return 'unknown'
         
         # Get file extension
-        _, ext = os.path.splitext(file_path)
-        ext = ext.lower()
+        ext = self.get_file_extension(file_path)
         
         if ext == '.jsx' or ext == '.tsx':
             return 'react'
@@ -193,15 +203,15 @@ class FrontendLinter:
         except subprocess.SubprocessError:
             return False
     
-    def lint_file(self, file_path: str, project_path: str = None, fix: bool = False) -> Dict[str, Any]:
+    def lint_file(self, file_path: str, fix: bool = False, project_path: str = None) -> Dict[str, Any]:
         """
         Lint a single file using ESLint.
         
         Args:
             file_path (str): Path to the file to lint.
+            fix (bool): Whether to automatically fix fixable issues.
             project_path (str, optional): Path to the project directory. If not provided, 
                                          the parent directory of the file will be used.
-            fix (bool): Whether to automatically fix fixable issues.
             
         Returns:
             Dict: A dictionary containing lint results with the same structure as lint_project.
@@ -220,6 +230,11 @@ class FrontendLinter:
             result['error'] = f"File '{file_path}' does not exist or is not a file"
             return result
         
+        # Check if file is supported
+        if not self.is_supported_file(file_path):
+            result['error'] = f"Unsupported file type for '{file_path}'"
+            return result
+            
         # Check dependencies
         if not self._check_dependencies():
             result['error'] = "Required dependencies (node, npm, npx) are not installed"
@@ -557,7 +572,7 @@ def lint_file(file_path: str, project_path: str = None, fix: bool = False, verbo
         Dict: A dictionary containing lint results.
     """
     linter = FrontendLinter(verbose=verbose)
-    return linter.lint_file(file_path, project_path, fix=fix)
+    return linter.lint_file(file_path, fix=fix, project_path=project_path)
 
 def format_lint_result(lint_result: Dict[str, Any]) -> str:
     """

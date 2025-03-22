@@ -40,7 +40,7 @@ from autocoder.index.symbols_utils import (
 from autocoder.run_context import get_run_context
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
-from autocoder.linters.code_linter import FrontendLinter, lint_file, lint_project, format_lint_result
+from autocoder.linters.linter_factory import LinterFactory, lint_file, lint_project, format_lint_result
 import traceback
 
 
@@ -775,46 +775,53 @@ class AutoCommandTools:
         })
         return v
 
-    def lint_code(self, path: str, fix: bool = False, verbose: bool = False) -> str:
+    def lint_code(self, path: str, language: Optional[str] = None, fix: bool = False, verbose: bool = False) -> str:
         """
-        使用ESLint对前端代码进行代码质量检查（支持React和Vue项目）。
-        可以检查单个文件或整个项目。
-
+        对代码进行质量检查，支持多种编程语言。
+        
         参数说明:
         path (str): 要检查的文件路径或项目目录
+        language (str, optional): 明确指定语言类型，如'python', 'javascript', 'typescript', 'react', 'vue'等
+                                如果不指定，将尝试根据文件扩展名或项目结构自动检测
         fix (bool): 是否自动修复可修复的问题，默认为False
         verbose (bool): 是否显示详细输出，默认为False
-
+        
         返回值:
         格式化后的lint结果，包含错误和警告信息
-
-        注意:
-        - 需要Node.js环境和对应的ESLint配置
-        - 对React项目会自动安装react-eslint插件
-        - 对Vue项目会自动安装vue-eslint插件
+        
+        支持的语言:
+        - 前端: JavaScript, TypeScript, React, Vue (使用ESLint)
+        - Python: 使用pylint, flake8, black
+        
+        说明:
+        - 对于前端代码，需要Node.js环境
+        - 对于Python代码，需要pylint/flake8/black
+        - 工具会尝试自动安装缺少的依赖
         - 如果路径是文件，则只检查该文件
         - 如果路径是目录，则检查整个项目
+        - fix=True时会尝试自动修复问题
         """
-        try:            
+        try:
             # 检查是否是目录或文件
             is_directory = os.path.isdir(path)
             
             # 根据路径类型执行相应的lint操作
             if is_directory:
                 # 对整个项目进行lint
-                result = lint_project(path, fix=fix, verbose=verbose)
+                result = lint_project(path, language=language, fix=fix, verbose=verbose)
             else:
                 # 对单个文件进行lint
                 result = lint_file(path, fix=fix, verbose=verbose)
             
             # 格式化结果
-            formatted_result = format_lint_result(result)
+            formatted_result = format_lint_result(result, language=language)
             
             # 记录操作结果
             self.result_manager.add_result(content=formatted_result, meta={
                 "action": "lint_code",
                 "input": {
                     "path": path,
+                    "language": language,
                     "fix": fix,
                     "verbose": verbose
                 },
@@ -830,6 +837,7 @@ class AutoCommandTools:
                 "action": "lint_code",
                 "input": {
                     "path": path,
+                    "language": language,
                     "fix": fix,
                     "verbose": verbose
                 },
