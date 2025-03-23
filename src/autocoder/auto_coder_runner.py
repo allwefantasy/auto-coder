@@ -1557,32 +1557,28 @@ def coding(query: str):
                     )
                 )
 
-            if not os.path.exists(memory_file):
-                error_message()
-                return
+            conversations = []
+            if os.path.exists(memory_file):            
+                with open(memory_file, "r",encoding="utf-8") as f:
+                    chat_history = json.load(f)
 
-            with open(memory_file, "r",encoding="utf-8") as f:
-                chat_history = json.load(f)
+                if not chat_history["ask_conversation"]:
+                    error_message()                    
+                else: 
+                    conversations = chat_history["ask_conversation"]
+            
+            if conversations:
+                yaml_config[
+                    "context"
+                ] += f"下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码: \n\n<history>\n"
+                for conv in conversations:
+                    if conv["role"] == "user":
+                        yaml_config["context"] += f"用户: {conv['content']}\n"
+                    elif conv["role"] == "assistant":
+                        yaml_config["context"] += f"你: {conv['content']}\n"
+                yaml_config["context"] += "</history>\n"
 
-            if not chat_history["ask_conversation"]:
-                error_message()
-                return
-
-            conversations = chat_history["ask_conversation"]
-
-            yaml_config[
-                "context"
-            ] += f"下面是我们的历史对话，参考我们的历史对话从而更好的理解需求和修改代码: \n\n<history>\n"
-            for conv in conversations:
-                if conv["role"] == "user":
-                    yaml_config["context"] += f"用户: {conv['content']}\n"
-                elif conv["role"] == "assistant":
-                    yaml_config["context"] += f"你: {conv['content']}\n"
-            yaml_config["context"] += "</history>\n"
-
-        yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
-
-        md5 = hashlib.md5(yaml_content.encode("utf-8")).hexdigest()
+        yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)        
 
         execute_file = os.path.join("actions", latest_yaml_file)
         with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
