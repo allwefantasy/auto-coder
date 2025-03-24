@@ -164,7 +164,7 @@ class AutoCommandTools:
         # 如果是在web模式下，则使用event_manager事件来询问用户
         if get_run_context().is_web():
             try:
-                answer = get_event_manager(
+                get_event_manager(
                     self.args.event_file).write_result(
                     EventContentCreator.create_result(
                         EventContentCreator.ResultSummaryContent(
@@ -178,15 +178,15 @@ class AutoCommandTools:
                         "response": response
                     }
                 })
-            except Exception as e:    
-                error_message = f"Error: {str(e)}\n\n完整异常堆栈信息:\n{traceback.format_exc()}"            
+            except Exception as e:
+                error_message = f"Error: {str(e)}\n\n完整异常堆栈信息:\n{traceback.format_exc()}"
                 self.result_manager.append(content=f"Error: {error_message}", meta={
                     "action": "response_user",
                     "input": {
                         "response": response
                     }
                 })
-            return answer
+            return response
 
         console = Console()
         answer_text = Text(response, style="italic")
@@ -331,9 +331,19 @@ class AutoCommandTools:
         注意，这个工具无法返回所有文件的信息，因为有些文件可能没有被索引。
         尽量避免使用该工具。
         """
-        index_manager = self._get_index()
-        s = index_manager.read_index_as_str()
-        index_data = json.loads(s)
+        try:
+            index_manager = self._get_index()
+            s = index_manager.read_index_as_str()
+            index_data = json.loads(s)
+        except Exception as e:
+            v = f"Error: {str(e)}\n\n完整异常堆栈信息:\n{traceback.format_exc()}"
+            self.result_manager.add_result(content=v, meta={
+                "action": "get_project_map",
+                "input": {
+                    "file_paths": file_paths
+                }
+            })
+            return v
 
         final_result = []
 
@@ -778,21 +788,21 @@ class AutoCommandTools:
     def lint_code(self, path: str, language: Optional[str] = None, fix: bool = False, verbose: bool = False) -> str:
         """
         对代码进行质量检查，支持多种编程语言。
-        
+
         参数说明:
         path (str): 要检查的文件路径或项目目录
         language (str, optional): 明确指定语言类型，如'python', 'javascript', 'typescript', 'react', 'vue'等
                                 如果不指定，将尝试根据文件扩展名或项目结构自动检测
         fix (bool): 是否自动修复可修复的问题，默认为False
         verbose (bool): 是否显示详细输出，默认为False
-        
+
         返回值:
         格式化后的lint结果，包含错误和警告信息
-        
+
         支持的语言:
         - 前端: JavaScript, TypeScript, React, Vue (使用ESLint)
         - Python: 使用pylint, flake8, black
-        
+
         说明:
         - 对于前端代码，需要Node.js环境
         - 对于Python代码，需要pylint/flake8/black
@@ -804,18 +814,19 @@ class AutoCommandTools:
         try:
             # 检查是否是目录或文件
             is_directory = os.path.isdir(path)
-            
+
             # 根据路径类型执行相应的lint操作
             if is_directory:
                 # 对整个项目进行lint
-                result = lint_project(path, language=language, fix=fix, verbose=verbose)
+                result = lint_project(
+                    path, language=language, fix=fix, verbose=verbose)
             else:
                 # 对单个文件进行lint
                 result = lint_file(path, fix=fix, verbose=verbose)
-            
+
             # 格式化结果
             formatted_result = format_lint_result(result, language=language)
-            
+
             # 记录操作结果
             self.result_manager.add_result(content=formatted_result, meta={
                 "action": "lint_code",
@@ -827,12 +838,12 @@ class AutoCommandTools:
                 },
                 "result": result
             })
-            
+
             return formatted_result
-            
+
         except Exception as e:
             error_message = f"Linting failed: {str(e)}\n\n完整异常堆栈信息:\n{traceback.format_exc()}"
-            
+
             self.result_manager.add_result(content=error_message, meta={
                 "action": "lint_code",
                 "input": {
@@ -843,5 +854,5 @@ class AutoCommandTools:
                 },
                 "error": error_message
             })
-            
+
             return error_message
