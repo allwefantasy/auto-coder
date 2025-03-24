@@ -1,7 +1,3 @@
-"""
-活动上下文管理器 - 子系统的主要接口
-"""
-
 import os
 import sys
 import time
