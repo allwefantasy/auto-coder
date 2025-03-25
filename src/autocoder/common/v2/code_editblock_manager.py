@@ -60,7 +60,7 @@ class CodeEditBlockManager:
         
         # Create shadow manager for linting
         self.shadow_manager = ShadowManager(args.source_dir)
-        self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=True)
+        self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
 
     @byzerllm.prompt()
     def fix_linter_errors(self, query: str, lint_issues: str) -> str:
