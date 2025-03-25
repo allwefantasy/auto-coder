@@ -168,6 +168,7 @@ class CodeEditBlockManager:
         """
         # 初始代码生成
         self.printer.print_in_terminal("generating_initial_code")
+        start_time = time.time()
         generation_result = self.code_generator.single_round_run(query, source_code_list)
         
         token_cost_calculator = TokenCostCalculator(args=self.args)
@@ -175,7 +176,7 @@ class CodeEditBlockManager:
             llm=self.llm,
             generate=generation_result,
             operation_name="code_generation_complete",
-            start_time=time.time(),
+            start_time=start_time,
             end_time=time.time()
         )
         
@@ -231,13 +232,21 @@ class CodeEditBlockManager:
                 lint_issues=formatted_issues
             )
             
-            for source in source_code_list.sources:
-                print(f"file_path: {source.module_name}")                
-            print(f"fix_prompt: {fix_prompt}")
+            # for source in source_code_list.sources:
+            #     print(f"file_path: {source.module_name}")                
+            # print(f"fix_prompt: {fix_prompt}")
             
             # 将 shadow_files 转化为 source_code_list
+            start_time = time.time()
             source_code_list = self.code_merger.get_source_code_list_from_shadow_files(shadow_files)
-            generation_result = self.code_generator.single_round_run(fix_prompt, source_code_list)            
+            generation_result = self.code_generator.single_round_run(fix_prompt, source_code_list) 
+            token_cost_calculator.track_token_usage_by_generate(
+                llm=self.llm,
+                generate=generation_result,
+                operation_name="code_generation_complete",
+                start_time=start_time,
+                end_time=time.time()
+            )           
 
         
         # 清理临时影子文件

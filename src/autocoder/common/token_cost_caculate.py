@@ -73,7 +73,7 @@ class TokenCostCalculator:
 
         return model_name, model_info_map
 
-    def calculate_token_costs_by_generate(self, generate: CodeGenerateResult) -> TokenUsageStats:
+    def calculate_token_costs_by_generate(self, generate: CodeGenerateResult) -> TokenUsageStats:        
         stats = TokenUsageStats()
         stats.input_tokens = generate.metadata.get("input_tokens_count", 0)
         stats.output_tokens = generate.metadata.get(
