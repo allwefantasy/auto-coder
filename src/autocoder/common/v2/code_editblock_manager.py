@@ -188,8 +188,8 @@ class CodeEditBlockManager:
             # 运行linter
             lint_results = self.shadow_linter.lint_all_shadow_files()
             error_count = self._count_errors(lint_results)
-            print(f"error_count: {error_count}")
-            print(f"lint_results: {json.dumps(lint_results.model_dump(), indent=4,ensure_ascii=False)}")            
+            # print(f"error_count: {error_count}")
+            # print(f"lint_results: {json.dumps(lint_results.model_dump(), indent=4,ensure_ascii=False)}")            
             
             # 如果没有错误则完成
             if error_count == 0:
