@@ -139,8 +139,7 @@ class FileLintResult(BaseModel):
         return "\n".join(result)
 
 class ProjectLintResult(BaseModel):
-    """整个项目或一组文件的lint结果。"""
-    timestamp: datetime = Field(default_factory=datetime.now, description="执行lint的时间")
+    """整个项目或一组文件的lint结果。"""    
     project_path: Optional[str] = Field(None, description="被检查的项目路径")
     file_results: Dict[str, FileLintResult] = Field(..., description="文件路径到其lint结果的映射")
     total_files: int = Field(..., description="检查的文件总数")

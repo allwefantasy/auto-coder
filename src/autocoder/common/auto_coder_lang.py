@@ -733,6 +733,30 @@ MESSAGES = {
     "code_generate_title": {
         "en": "{{model_name}} is generating code",
         "zh": "{{model_name}}正在生成代码"
+    },
+    "generating_initial_code": {
+        "en": "Generating initial code...",
+        "zh": "正在生成初始代码..."
+    },
+    "generation_failed": {
+        "en": "Code generation failed",
+        "zh": "代码生成失败"
+    },
+    "no_files_to_lint": {
+        "en": "No files to lint",
+        "zh": "没有需要检查的文件"
+    },
+    "no_lint_errors_found": {
+        "en": "No lint errors found",
+        "zh": "未发现代码质量问题"
+    },
+    "lint_attempt_status": {
+        "en": "Lint attempt {{attempt}}/{{max_correction_attempts}}: {{error_count}} errors found",
+        "zh": "代码质量检查尝试 {{attempt}}/{{max_correction_attempts}}: 发现 {{error_count}} 个错误"
+    },
+    "max_attempts_reached": {
+        "en": "Maximum correction attempts reached",
+        "zh": "已达到最大修复尝试次数"
     }
 }
 

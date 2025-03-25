@@ -33,6 +33,7 @@ from autocoder.common.global_cancel import global_cancel
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
 from autocoder.events.event_types import EventMetadata
+from autocoder.common.v2.code_editblock_manager import CodeEditBlockManager
 
 
 class BaseAction:
@@ -113,6 +114,11 @@ class ActionTSProject(BaseAction):
                 )
 
         global_cancel.check_and_raise()
+
+        if args.enable_auto_fix_lint and args.execute and args.auto_merge=="editblock":
+            code_merge_manager = CodeEditBlockManager(llm=self.llm, args=self.args,action=self)
+            code_merge_manager.run(query=args.query, source_code_list=source_code_list)
+            return
 
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
@@ -268,6 +274,11 @@ class ActionPyProject(BaseAction):
 
         global_cancel.check_and_raise()
 
+        if args.enable_auto_fix_lint and args.execute and args.auto_merge=="editblock":
+            code_merge_manager = CodeEditBlockManager(llm=self.llm, args=self.args,action=self)
+            code_merge_manager.run(query=args.query, source_code_list=source_code_list)
+            return
+
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")
             start_time = time.time()
@@ -414,6 +425,11 @@ class ActionSuffixProject(BaseAction):
                 )
 
         global_cancel.check_and_raise()
+
+        if args.enable_auto_fix_lint and args.execute and args.auto_merge=="editblock":
+            code_merge_manager = CodeEditBlockManager(llm=self.llm, args=self.args,action=self)
+            code_merge_manager.run(query=args.query, source_code_list=source_code_list)
+            return
 
         if args.execute:
             self.printer.print_in_terminal("code_generation_start")

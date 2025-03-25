@@ -6,7 +6,8 @@ import os
 from typing import Optional, Dict, Any, List
 
 from autocoder.linters.base_linter import BaseLinter
-from autocoder.linters.code_linter import FrontendLinter
+from autocoder.linters.reactjs_linter import ReactJSLinter
+from autocoder.linters.vue_linter import VueLinter
 from autocoder.linters.python_linter import PythonLinter
 
 class LinterFactory:
@@ -40,14 +41,15 @@ class LinterFactory:
         # Map language to linter class
         linter_map = {
             'python': PythonLinter,
-            'javascript': FrontendLinter,
-            'typescript': FrontendLinter,
-            'js': FrontendLinter,
-            'ts': FrontendLinter,
-            'jsx': FrontendLinter,
-            'tsx': FrontendLinter,
-            'react': FrontendLinter,
-            'vue': FrontendLinter,
+            'javascript': ReactJSLinter,
+            'typescript': ReactJSLinter,
+            'js': ReactJSLinter,
+            'ts': ReactJSLinter,
+            'jsx': ReactJSLinter,
+            'tsx': ReactJSLinter,
+            'react': ReactJSLinter,
+            'reactjs': ReactJSLinter,
+            'vue': VueLinter,
         }
         
         linter_class = linter_map.get(language.lower() if language else None)
@@ -135,13 +137,31 @@ class LinterFactory:
         """
         # If language not specified, try to detect from project contents
         if language is None:
-            # First check for package.json (JavaScript/TypeScript)
+            # First check for package.json (JavaScript/TypeScript/React/Vue)
             if os.path.exists(os.path.join(project_path, 'package.json')):
-                linter = cls.create_linter(language='javascript', verbose=verbose)
+                # Check if it's a React or Vue project
+                try:
+                    with open(os.path.join(project_path, 'package.json'), 'r') as f:
+                        import json
+                        package_data = json.load(f)
+                        
+                    dependencies = {
+                        **package_data.get('dependencies', {}),
+                        **package_data.get('devDependencies', {})
+                    }
+                    
+                    if 'react' in dependencies:
+                        language = 'react'
+                    elif 'vue' in dependencies:
+                        language = 'vue'
+                    else:
+                        language = 'javascript'
+                except:
+                    language = 'javascript'  # Default to JavaScript
             # Check for setup.py or requirements.txt (Python)
             elif (os.path.exists(os.path.join(project_path, 'setup.py')) or
                   os.path.exists(os.path.join(project_path, 'requirements.txt'))):
-                linter = cls.create_linter(language='python', verbose=verbose)
+                language = 'python'
             else:
                 # Count file extensions to guess the dominant language
                 language_counts = {}
@@ -165,12 +185,10 @@ class LinterFactory:
                     raise ValueError(f"Could not detect project language in {project_path}")
                 
                 language = cls._detect_language_from_file(f"dummy{most_common}")
-                linter = cls.create_linter(language=language, verbose=verbose)
-        else:
-            linter = cls.create_linter(language=language, verbose=verbose)
         
+        linter = cls.create_linter(language=language, verbose=verbose)
         if linter is None:
-            return linter
+            return None
         return linter.lint_project(project_path, fix=fix)
     
     @classmethod
@@ -186,12 +204,12 @@ class LinterFactory:
         Returns:
             str: A formatted string representation of the lint results.
         """
-        # Try to infer language from lint_result
+        # Try to infer language/framework from lint_result
         if language is None:
             if 'language' in lint_result:
                 language = lint_result['language']
-            elif 'project_type' in lint_result:
-                language = lint_result['project_type']
+            elif 'framework' in lint_result:
+                language = lint_result['framework']
             elif 'file_type' in lint_result:
                 language = lint_result['file_type']
             else:

@@ -25,6 +25,7 @@ from autocoder.shadows.shadow_manager import ShadowManager
 from autocoder.linters.shadow_linter import ShadowLinter
 from autocoder.linters.models import IssueSeverity
 from loguru import logger
+from autocoder.common.global_cancel import global_cancel
 
 
 class CodeEditBlockManager:
@@ -170,6 +171,7 @@ class CodeEditBlockManager:
         
         # 最多尝试修复5次
         for attempt in range(self.max_correction_attempts):
+            global_cancel.check_and_raise()
             # 代码生成结果更新到影子文件里去
             shadow_files = self._create_shadow_files_from_edits(generation_result)
             
@@ -180,6 +182,8 @@ class CodeEditBlockManager:
             # 运行linter
             lint_results = self.shadow_linter.lint_all_shadow_files()
             error_count = self._count_errors(lint_results)
+            print(f"error_count: {error_count}")
+            print(f"lint_results: {json.dumps(lint_results.model_dump(), indent=4,ensure_ascii=False)}")            
             
             # 如果没有错误则完成
             if error_count == 0:
@@ -235,7 +239,7 @@ class CodeEditBlockManager:
         """
         # 生成代码并自动修复lint错误
         generation_result = self.generate_and_fix(query, source_code_list)
-        
+        global_cancel.check_and_raise()
         # 合并代码        
         self.code_merger.merge_code(generation_result)
         
