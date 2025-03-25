@@ -1,6 +1,6 @@
 import os
 import threading
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 import uuid
 from datetime import datetime
 import glob
@@ -75,7 +75,7 @@ def get_event_file_path(file_id:str,project_path: Optional[str] = None) -> str:
     else:
         return os.path.join(project_path, ".auto-coder", "events", f"{file_id}.jsonl")
 
-def gengerate_event_file_path(project_path: Optional[str] = None) -> (str,str):
+def gengerate_event_file_path(project_path: Optional[str] = None) -> Tuple[str,str]:
     """
     生成一个格式为 uuid_timestamp.jsonl 的事件文件名。
     timestamp 格式为 YYYYMMDD-HHMMSS。

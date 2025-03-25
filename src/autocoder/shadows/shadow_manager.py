@@ -1,4 +1,5 @@
 import os
+import shutil
 
 class ShadowManager:
     """
@@ -21,12 +22,30 @@ class ShadowManager:
         
         # 根据是否提供了event_file_id来确定shadows_dir的路径
         if event_file_id:
+            event_file_id = self.get_event_file_id_from_path(event_file_id)
             self.shadows_dir = os.path.join(self.source_dir, '.auto-coder', 'shadows', event_file_id)
         else:
             self.shadows_dir = os.path.join(self.source_dir, '.auto-coder', 'shadows')
         
         # 确保影子目录存在
         os.makedirs(self.shadows_dir, exist_ok=True)
+
+    def get_event_file_id_from_path(self, path):
+        """
+        从给定路径中提取事件文件ID。
+        
+        参数:
+            path (str): 项目路径
+        
+        返回:
+            str: 事件文件ID
+        """
+        if not path.endswith('.jsonl'):
+            return event_file_id
+        temp = os.path.basename(path)
+        ##  获取不带后缀的event_file_id
+        event_file_id = os.path.splitext(temp)[0]
+        return event_file_id
     
     def to_shadow_path(self, path):
         """
@@ -190,3 +209,27 @@ class ShadowManager:
             return True
         
         return False 
+        
+    def clean_shadows(self):
+        """
+        清理影子目录中的所有文件和子目录，但保留影子目录本身。
+        
+        返回:
+            bool: 操作成功则为True，否则为False
+        """
+        if not os.path.exists(self.shadows_dir):
+            return True
+            
+        try:
+            # 删除影子目录中的所有内容
+            for item in os.listdir(self.shadows_dir):
+                item_path = os.path.join(self.shadows_dir, item)
+                if os.path.isfile(item_path):
+                    os.unlink(item_path)
+                elif os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+            
+            return True
+        except Exception as e:
+            print(f"清理影子目录时出错: {str(e)}")
+            return False 

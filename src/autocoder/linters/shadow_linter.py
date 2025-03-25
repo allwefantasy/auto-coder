@@ -299,40 +299,40 @@ class ShadowLinter:
             if severity_str in ('error', 'critical', 'fatal'):
                 severity = IssueSeverity.ERROR
                 error_count += 1
+                
+                # 提取位置信息
+                line = raw_issue.get('line', 1)
+                column = raw_issue.get('column')
+                end_line = raw_issue.get('end_line')
+                end_column = raw_issue.get('end_column')
+                
+                position = IssuePosition(
+                    line=line,
+                    column=column,
+                    end_line=end_line,
+                    end_column=end_column
+                )
+                
+                # 创建问题
+                issue = LintIssue(
+                    code=raw_issue.get('code', ''),
+                    message=raw_issue.get('message', '未知问题'),
+                    severity=severity,
+                    position=position,
+                    file_path=project_path,  # 使用项目路径而不是影子路径
+                    rule_name=raw_issue.get('rule_name'),
+                    source=raw_issue.get('source'),
+                    fix_available=raw_issue.get('fix_available', False),
+                    fix_description=raw_issue.get('fix_description')
+                )
+                
+                issues.append(issue)
             elif severity_str in ('warning', 'warn'):
                 severity = IssueSeverity.WARNING
                 warning_count += 1
             else:
                 severity = IssueSeverity.INFO
                 info_count += 1
-            
-            # 提取位置信息
-            line = raw_issue.get('line', 1)
-            column = raw_issue.get('column')
-            end_line = raw_issue.get('end_line')
-            end_column = raw_issue.get('end_column')
-            
-            position = IssuePosition(
-                line=line,
-                column=column,
-                end_line=end_line,
-                end_column=end_column
-            )
-            
-            # 创建问题
-            issue = LintIssue(
-                code=raw_issue.get('code', ''),
-                message=raw_issue.get('message', '未知问题'),
-                severity=severity,
-                position=position,
-                file_path=project_path,  # 使用项目路径而不是影子路径
-                rule_name=raw_issue.get('rule_name'),
-                source=raw_issue.get('source'),
-                fix_available=raw_issue.get('fix_available', False),
-                fix_description=raw_issue.get('fix_description')
-            )
-            
-            issues.append(issue)
         
         # 创建文件结果
         return FileLintResult(
