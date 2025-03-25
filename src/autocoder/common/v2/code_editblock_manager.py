@@ -241,7 +241,7 @@ class CodeEditBlockManager:
 
         
         # 清理临时影子文件
-        # self.shadow_manager.clean_shadows()
+        self.shadow_manager.clean_shadows()
         
         # 返回最终结果
         return generation_result

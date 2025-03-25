@@ -142,6 +142,7 @@ class ShadowLinter:
                     traceback.print_exc()
                     print(f"处理 {shadow_path} 时出错: {str(e)}")
                 
+                # 加载的是影子文件，但是要转换成项目的路径
                 project_path = self.shadow_manager.from_shadow_path(shadow_path)
                 language = self._detect_language(shadow_path)
                 file_results[project_path] = FileLintResult(
