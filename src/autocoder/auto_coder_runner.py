@@ -1438,8 +1438,7 @@ def commit(query: str):
 
             action_yml_file_manager = ActionYmlFileManager(args.source_dir)
             action_file_name = os.path.basename(args.file)
-            add_updated_urls = []
-            commit_result.changed_files
+            add_updated_urls = []            
             for file in commit_result.changed_files:
                 add_updated_urls.append(os.path.join(args.source_dir, file))
 
