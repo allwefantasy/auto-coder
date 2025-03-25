@@ -26,6 +26,7 @@ from autocoder.linters.shadow_linter import ShadowLinter
 from autocoder.linters.models import IssueSeverity
 from loguru import logger
 from autocoder.common.global_cancel import global_cancel
+from autocoder.linters.models import ProjectLintResult
 
 
 class CodeEditBlockManager:
@@ -96,38 +97,47 @@ class CodeEditBlockManager:
 
         return shadow_files
 
-    def _format_lint_issues(self, lint_results) -> str:
+    def _format_lint_issues(self, lint_results:ProjectLintResult,level:IssueSeverity) -> str:
         """
         将linter结果格式化为字符串供模型使用
         
         参数:
             lint_results: Linter结果对象
+            level: 过滤问题的级别
             
         返回:
             str: 格式化的问题描述
         """
         formatted_issues = []
         
-        for file_path, result in lint_results.file_results.items():
-            if not result.success or not result.issues:
-                continue
+        for file_path, result in lint_results.file_results.items():                        
+            file_has_issues = False
+            file_issues = []
+            
+            for issue in result.issues:                
+                if issue.severity.value != level.value:
+                    continue
+                    
+                if not file_has_issues:
+                    file_has_issues = True
+                    file_issues.append(f"文件: {file_path}")
                 
-            formatted_issues.append(f"文件: {file_path}")
-            for issue in result.issues:
                 severity = "错误" if issue.severity == IssueSeverity.ERROR else "警告" if issue.severity == IssueSeverity.WARNING else "信息"
                 line_info = f"第{issue.position.line}行"
                 if issue.position.column:
                     line_info += f", 第{issue.position.column}列"
                 
-                formatted_issues.append(
+                file_issues.append(
                     f"  - [{severity}] {line_info}: {issue.message} (规则: {issue.code})"
                 )
             
-            formatted_issues.append("")  # 空行分隔不同文件
+            if file_has_issues:
+                formatted_issues.extend(file_issues)
+                formatted_issues.append("")  # 空行分隔不同文件
             
         return "\n".join(formatted_issues)
 
-    def _count_errors(self, lint_results) -> int:
+    def _count_errors(self, lint_results:ProjectLintResult) -> int:
         """
         计算lint结果中的错误数量
         
@@ -139,11 +149,7 @@ class CodeEditBlockManager:
         """
         error_count = 0
         
-        for _, result in lint_results.file_results.items():
-            if not result.success:
-                error_count += 1
-                continue
-                
+        for _, result in lint_results.file_results.items():                
             error_count += result.error_count
                 
         return error_count
@@ -189,21 +195,25 @@ class CodeEditBlockManager:
             if error_count == 0:
                 self.printer.print_in_terminal("no_lint_errors_found", style="green")
                 break
-                
+
+            # 格式化lint问题
+            formatted_issues = self._format_lint_issues(lint_results, IssueSeverity.ERROR)            
+
             # 打印当前错误
             self.printer.print_in_terminal(
                 "lint_attempt_status", 
                 style="yellow", 
                 attempt=(attempt + 1), 
-                error_count=error_count
+                max_correction_attempts=self.max_correction_attempts,
+                error_count=error_count,
+                formatted_issues=formatted_issues
             )
             
             if attempt == self.max_correction_attempts - 1:
                 self.printer.print_in_terminal("max_attempts_reached", style="yellow")
                 break
                 
-            # 格式化lint问题
-            formatted_issues = self._format_lint_issues(lint_results)            
+            
             
             # 准备修复提示
             fix_prompt = self.fix_linter_errors.prompt(

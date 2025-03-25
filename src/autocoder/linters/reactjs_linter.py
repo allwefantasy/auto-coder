@@ -305,7 +305,7 @@ class ReactJSLinter(BaseLinter):
                         json_text = self._extract_json_from_output(output_text)
                         eslint_output = json.loads(json_text)
                     
-                    print(f"eslint_output: {json.dumps(eslint_output, indent=4,ensure_ascii=False)}")
+                    # print(f"eslint_output: {json.dumps(eslint_output, indent=4,ensure_ascii=False)}")
 
                     # Count files analyzed (should be 1)
                     result['files_analyzed'] = len(eslint_output)
@@ -363,7 +363,7 @@ class ReactJSLinter(BaseLinter):
             fix (bool): Whether to automatically fix fixable issues.
 
         Returns:
-            Dict: A dictionary containing lint results.
+            ProjectLintResult: A dictionary containing lint results.
         """
         result = {
             'success': False,

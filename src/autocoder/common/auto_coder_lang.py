@@ -751,8 +751,8 @@ MESSAGES = {
         "zh": "未发现代码质量问题"
     },
     "lint_attempt_status": {
-        "en": "Lint attempt {{attempt}}/{{max_correction_attempts}}: {{error_count}} errors found",
-        "zh": "代码质量检查尝试 {{attempt}}/{{max_correction_attempts}}: 发现 {{error_count}} 个错误"
+        "en": "Lint attempt {{attempt}}/{{max_correction_attempts}}: {{error_count}} errors found. {{ formatted_issues }}",
+        "zh": "代码质量检查尝试 {{attempt}}/{{max_correction_attempts}}: 发现 {{error_count}} 个错误. {{ formatted_issues }}"
     },
     "max_attempts_reached": {
         "en": "Maximum correction attempts reached",
