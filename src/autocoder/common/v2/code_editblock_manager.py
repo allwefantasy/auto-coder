@@ -27,6 +27,7 @@ from autocoder.linters.models import IssueSeverity
 from loguru import logger
 from autocoder.common.global_cancel import global_cancel
 from autocoder.linters.models import ProjectLintResult
+from autocoder.common.token_cost_caculate import TokenCostCalculator
 
 
 class CodeEditBlockManager:
@@ -168,6 +169,15 @@ class CodeEditBlockManager:
         # 初始代码生成
         self.printer.print_in_terminal("generating_initial_code")
         generation_result = self.code_generator.single_round_run(query, source_code_list)
+        
+        token_cost_calculator = TokenCostCalculator()
+        token_cost_calculator.track_token_usage_by_generate(
+            llm=self.llm,
+            generate=generation_result,
+            operation_name="code_generation_complete",
+            start_time=time.time(),
+            end_time=time.time()
+        )
         
         # 确保结果非空
         if not generation_result.contents:
