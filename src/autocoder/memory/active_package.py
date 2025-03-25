@@ -33,9 +33,7 @@ class ActivePackage:
         self.llm = llm
         self.product_mode = product_mode
         # 创建专用的 logger 实例
-        self.logger = global_logger.bind(name="ActivePackage")
-        # 创建Token计费计算器
-        self.token_calculator = TokenCostCalculator(logger_name="ActivePackage.TokenCost")
+        self.logger = global_logger.bind(name="ActivePackage")        
     
     def generate_active_file(self, context: Dict[str, Any], query: str, 
                             existing_file_path: Optional[str] = None, 
@@ -79,7 +77,7 @@ class ActivePackage:
             # 根据是否有现有内容选择不同的生成方式
             if existing_content:
                 # 有现有内容，使用更新模式
-                file_content, usage_stats = self.generate_updated_active_file(enhanced_context, query, existing_content)
+                file_content, usage_stats = self.generate_updated_active_file(enhanced_context, query, existing_content,args)
                 # 合并token和费用统计
                 total_stats["total_tokens"] += usage_stats["total_tokens"]
                 total_stats["input_tokens"] += usage_stats["input_tokens"]
@@ -87,7 +85,7 @@ class ActivePackage:
                 total_stats["cost"] += usage_stats["cost"]
             else:
                 # 无现有内容，使用创建模式
-                file_content, usage_stats = self.generate_new_active_file(enhanced_context, query)
+                file_content, usage_stats = self.generate_new_active_file(enhanced_context, query,args)
                 # 合并token和费用统计
                 total_stats["total_tokens"] += usage_stats["total_tokens"]
                 total_stats["input_tokens"] += usage_stats["input_tokens"]
@@ -174,7 +172,7 @@ class ActivePackage:
         
         return enhanced_context
     
-    def generate_new_active_file(self, context: Dict[str, Any], query: str) -> Tuple[str, Dict[str, Any]]:
+    def generate_new_active_file(self, context: Dict[str, Any], query: str,args:AutoCoderArgs) -> Tuple[str, Dict[str, Any]]:
         """
         生成全新的活动文件内容
         
@@ -194,7 +192,8 @@ class ActivePackage:
             end_time_current_change = time.monotonic()
             
             # 使用TokenCostCalculator跟踪token使用情况
-            current_change_stats: TokenUsageStats = self.token_calculator.track_token_usage(
+            token_calculator = TokenCostCalculator(logger_name="ActivePackage.TokenCost",args=args)
+            current_change_stats: TokenUsageStats = token_calculator.track_token_usage(
                 llm=self.llm,
                 meta_holder=meta_holder_current_change,
                 operation_name="Current Change Generation",
@@ -213,7 +212,7 @@ class ActivePackage:
             end_time_document = time.monotonic()
             
             # 使用TokenCostCalculator跟踪token使用情况
-            document_stats: TokenUsageStats = self.token_calculator.track_token_usage(
+            document_stats: TokenUsageStats = token_calculator.track_token_usage(
                 llm=self.llm,
                 meta_holder=meta_holder_document,
                 operation_name="Document Generation",
@@ -293,7 +292,7 @@ class ActivePackage:
             self.logger.error(f"Error extracting sections: {e}")
             return header, current_change_section, document_section
     
-    def generate_updated_active_file(self, context: Dict[str, Any], query: str, existing_content: str) -> Tuple[str, Dict[str, Any]]:
+    def generate_updated_active_file(self, context: Dict[str, Any], query: str, existing_content: str,args:AutoCoderArgs) -> Tuple[str, Dict[str, Any]]:
         """
         基于现有内容生成更新后的活动文件内容
         
@@ -317,7 +316,8 @@ class ActivePackage:
             end_time_current_change = time.monotonic()
             
             # 使用TokenCostCalculator跟踪token使用情况
-            update_current_change_stats: TokenUsageStats = self.token_calculator.track_token_usage(
+            token_calculator = TokenCostCalculator(logger_name="ActivePackage.TokenCost",args=args)
+            update_current_change_stats: TokenUsageStats = token_calculator.track_token_usage(
                 llm=self.llm,
                 meta_holder=meta_holder_current_change,
                 operation_name="Update Current Change",
@@ -335,8 +335,8 @@ class ActivePackage:
                 meta_holder_document).run(context, query, existing_document)
             end_time_document = time.monotonic()
             
-            # 使用TokenCostCalculator跟踪token使用情况
-            update_document_stats: TokenUsageStats = self.token_calculator.track_token_usage(
+            # 使用TokenCostCalculator跟踪token使用情况            
+            update_document_stats: TokenUsageStats = token_calculator.track_token_usage(
                 llm=self.llm,
                 meta_holder=meta_holder_document,
                 operation_name="Update Document",

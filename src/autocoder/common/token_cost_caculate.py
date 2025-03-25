@@ -10,6 +10,7 @@ from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
 from pydantic import BaseModel, Field
 from autocoder.common import AutoCoderArgs
+from autocoder.common.printer import Printer
 
 
 class TokenUsageStats(BaseModel):
@@ -44,6 +45,7 @@ class TokenCostCalculator:
         """
         self.logger = logger.bind(name=logger_name)
         self.args = args
+        self.printer = Printer()
 
     def get_model_info(self, llm: byzerllm.ByzerLLM, product_mode: str = "lite") -> Tuple[str, Dict[str, Dict[str, float]]]:
         """

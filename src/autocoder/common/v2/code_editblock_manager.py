@@ -170,7 +170,7 @@ class CodeEditBlockManager:
         self.printer.print_in_terminal("generating_initial_code")
         generation_result = self.code_generator.single_round_run(query, source_code_list)
         
-        token_cost_calculator = TokenCostCalculator()
+        token_cost_calculator = TokenCostCalculator(args=self.args)
         token_cost_calculator.track_token_usage_by_generate(
             llm=self.llm,
             generate=generation_result,
