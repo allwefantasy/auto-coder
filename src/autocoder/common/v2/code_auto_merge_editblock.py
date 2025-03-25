@@ -157,8 +157,8 @@ class CodeAutoMergeEditBlock:
     def merge_code(self, generate_result: CodeGenerateResult, force_skip_git: bool = False):
         result = self.choose_best_choice(generate_result)
         self._merge_code(result.contents[0], force_skip_git)
-        return result
-
+        return result  
+    
     def choose_best_choice(self, generate_result: CodeGenerateResult) -> CodeGenerateResult:
         if len(generate_result.contents) == 1:
             return generate_result

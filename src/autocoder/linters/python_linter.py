@@ -102,13 +102,7 @@ class PythonLinter(BaseLinter):
                 subprocess.run([sys.executable, "-m", "flake8", "--version"], 
                               check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             except (subprocess.SubprocessError, FileNotFoundError):
-                dependencies_to_install.append("flake8")
-            
-            try:
-                subprocess.run([sys.executable, "-m", "black", "--version"], 
-                              check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            except (subprocess.SubprocessError, FileNotFoundError):
-                dependencies_to_install.append("black")
+                dependencies_to_install.append("flake8")                        
             
             # Install missing dependencies
             if dependencies_to_install:

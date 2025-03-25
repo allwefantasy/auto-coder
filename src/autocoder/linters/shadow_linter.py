@@ -58,6 +58,20 @@ class ShadowLinter:
             # 对影子文件运行代码检查
             raw_lint_result = LinterFactory.lint_file(shadow_path, fix=fix, verbose=self.verbose)
             
+            # 如果lint过程返回None，创建一个空的结果对象，而不是直接返回None
+            if raw_lint_result is None:
+                language = self._detect_language(shadow_path)
+                return FileLintResult(
+                    file_path=project_path,
+                    success=False,
+                    language=language,
+                    issues=[],  # 空问题列表
+                    error=None,
+                    error_count=0,
+                    warning_count=0,
+                    info_count=0
+                )
+            
             # 计算执行时间（毫秒）
             execution_time_ms = int((time.time() - start_time) * 1000)
             raw_lint_result['execution_time_ms'] = execution_time_ms
@@ -69,11 +83,16 @@ class ShadowLinter:
                 print(f"检查 {shadow_path} 时出错: {str(e)}")
             
             project_path = self.shadow_manager.from_shadow_path(shadow_path)
+            language = self._detect_language(shadow_path)
             return FileLintResult(
                 file_path=project_path,
                 success=False,
-                language=self._detect_language(shadow_path),
-                error=str(e)
+                language=language,
+                error=str(e),
+                issues=[],  # 添加空问题列表
+                error_count=0,
+                warning_count=0,
+                info_count=0
             )
     
     def lint_all_shadow_files(self, fix: bool = False) -> ProjectLintResult:
@@ -100,6 +119,7 @@ class ShadowLinter:
         for shadow_path in shadow_files:
             try:
                 file_result = self.lint_shadow_file(shadow_path, fix=fix)
+                # lint_shadow_file现在总是返回有效的FileLintResult，不再需要检查None
                 project_path = self.shadow_manager.from_shadow_path(shadow_path)
                 
                 file_results[project_path] = file_result
@@ -118,14 +138,21 @@ class ShadowLinter:
                         fixed_issues_count += file_result.fixed_issues_count
             except Exception as e:
                 if self.verbose:
+                    import traceback
+                    traceback.print_exc()
                     print(f"处理 {shadow_path} 时出错: {str(e)}")
                 
                 project_path = self.shadow_manager.from_shadow_path(shadow_path)
+                language = self._detect_language(shadow_path)
                 file_results[project_path] = FileLintResult(
                     file_path=project_path,
                     success=False,
-                    language=self._detect_language(shadow_path),
-                    error=str(e)
+                    language=language,
+                    error=str(e),
+                    issues=[],
+                    error_count=0,
+                    warning_count=0,
+                    info_count=0
                 )
         
         # 创建项目结果
@@ -168,6 +195,7 @@ class ShadowLinter:
         for shadow_path in shadow_files:
             try:
                 file_result = self.lint_shadow_file(shadow_path, fix=fix)
+                # lint_shadow_file现在总是返回有效的FileLintResult，不再需要检查None
                 project_path = self.shadow_manager.from_shadow_path(shadow_path)
                 
                 file_results[project_path] = file_result
@@ -189,11 +217,16 @@ class ShadowLinter:
                     print(f"处理 {shadow_path} 时出错: {str(e)}")
                 
                 project_path = self.shadow_manager.from_shadow_path(shadow_path)
+                language = self._detect_language(shadow_path)
                 file_results[project_path] = FileLintResult(
                     file_path=project_path,
                     success=False,
-                    language=self._detect_language(shadow_path),
-                    error=str(e)
+                    language=language,
+                    error=str(e),
+                    issues=[],
+                    error_count=0,
+                    warning_count=0,
+                    info_count=0
                 )
         
         # 创建项目结果
@@ -264,9 +297,14 @@ class ShadowLinter:
             str: 检测到的语言或"unknown"
         """
         try:
-            return LinterFactory._detect_language_from_file(file_path)
+            language = LinterFactory._detect_language_from_file(file_path)
+            # 确保返回值是字符串
+            return language if isinstance(language, str) else "unknown"
         except ValueError:
             # 如果语言检测失败，返回默认值
+            return "unknown"
+        except Exception:
+            # 捕获所有其他异常并返回默认值
             return "unknown"
     
     def _convert_raw_lint_result(self, raw_result: Dict[str, Any], shadow_path: str, project_path: str) -> FileLintResult:
@@ -282,7 +320,9 @@ class ShadowLinter:
             FileLintResult: 标准化的lint结果模型
         """
         # 提取语言信息
-        language = raw_result.get('language', self._detect_language(shadow_path))
+        language = raw_result.get('language')
+        if not isinstance(language, str):
+            language = self._detect_language(shadow_path)
         
         # 初始化计数器
         error_count = 0

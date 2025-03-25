@@ -65,4 +65,5 @@ notebooks/generated_image.png
 /notebooks/sample_code_byzer
 /notebooks/test_project
 /notebooks/*.txt
+/examples/test_project
 

@@ -57,7 +57,7 @@ class CodeEditBlockManager:
         
         # Create shadow manager for linting
         self.shadow_manager = ShadowManager(args.source_dir)
-        self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=args.verbose)
+        self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=True)
 
     @byzerllm.prompt()
     def fix_linter_errors(self, query: str, lint_issues: str) -> str:
@@ -76,57 +76,23 @@ class CodeEditBlockManager:
         请严格遵守*SEARCH/REPLACE block*的格式。
         """
         
-    def _create_shadow_files_from_edits(self, content: str) -> Dict[str, str]:
+    def _create_shadow_files_from_edits(self, generation_result: CodeGenerateResult) -> Dict[str, str]:
         """
         从编辑块内容中提取代码并创建临时影子文件用于检查。
         
         参数:
-            content (str): 包含SEARCH/REPLACE块的内容
+            generation_result (CodeGenerateResult): 包含SEARCH/REPLACE块的内容
             
         返回:
             Dict[str, str]: 映射 {影子文件路径: 内容}
         """
-        edits = self.code_merger.get_edits(content)
+        result = self.code_merger.choose_best_choice(generation_result)
+        merge = self.code_merger._merge_code_without_effect(result.contents[0])        
         shadow_files = {}
-        
-        for file_path, head, update in edits:
-            # 确定文件的最终内容
-            if os.path.exists(file_path):
-                # 现有文件的更新
-                existing_content = ""
-                with open(file_path, "r", encoding="utf-8") as f:
-                    existing_content = f.read()
-                
-                # 首先尝试精确匹配
-                new_content = (
-                    existing_content.replace(head, update, 1)
-                    if head
-                    else existing_content + "\n" + update
-                )
-                
-                # 如果内容没有变化且提供了头部，尝试相似性匹配
-                if new_content == existing_content and head:
-                    from autocoder.common.text import TextSimilarity
-                    similarity, best_window = TextSimilarity(
-                        head, existing_content
-                    ).get_best_matching_window()
-                    if similarity > self.args.editblock_similarity:
-                        new_content = existing_content.replace(
-                            best_window, update, 1
-                        )
-            else:
-                # 新文件
-                new_content = update
-            
-            # 转换为影子文件路径并存储内容
-            shadow_path = self.shadow_manager.to_shadow_path(file_path)
-            os.makedirs(os.path.dirname(shadow_path), exist_ok=True)
-            shadow_files[shadow_path] = new_content
-            
-            # 写入临时文件
-            with open(shadow_path, "w", encoding="utf-8") as f:
-                f.write(new_content)
-                
+        for file_path, new_content in merge.success_blocks:
+            self.shadow_manager.update_file(file_path, new_content)
+            shadow_files[self.shadow_manager.to_shadow_path(file_path)] = new_content
+
         return shadow_files
 
     def _format_lint_issues(self, lint_results) -> str:
@@ -200,15 +166,12 @@ class CodeEditBlockManager:
         if not generation_result.contents:
             self.printer.print_in_terminal("generation_failed", style="red")
             return generation_result
-            
-        # 选择最佳结果
-        best_content = generation_result.contents[0]
-        best_conversation = generation_result.conversations[0]
+                            
         
         # 最多尝试修复5次
         for attempt in range(self.max_correction_attempts):
-            # 创建临时文件进行lint检查
-            shadow_files = self._create_shadow_files_from_edits(best_content)
+            # 代码生成结果更新到影子文件里去
+            shadow_files = self._create_shadow_files_from_edits(generation_result)
             
             if not shadow_files:
                 self.printer.print_in_terminal("no_files_to_lint", style="yellow")
@@ -243,22 +206,19 @@ class CodeEditBlockManager:
                 query=query,
                 lint_issues=formatted_issues
             )
-
-            logger.info(f"fix_prompt: {fix_prompt}")
+            print(source_code_list)                       
+            print(f"fix_prompt: {fix_prompt}")
             
             # 将 shadow_files 转化为 source_code_list
             source_code_list = self.code_merger.get_source_code_list_from_shadow_files(shadow_files)
-            generation_result = self.code_generator.single_round_run(fix_prompt, source_code_list)                                                    
+            generation_result = self.code_generator.single_round_run(fix_prompt, source_code_list)            
+
         
         # 清理临时影子文件
-        self.shadow_manager.clean_shadows()
+        # self.shadow_manager.clean_shadows()
         
         # 返回最终结果
-        return CodeGenerateResult(
-            contents=[best_content], 
-            conversations=[best_conversation],
-            metadata=generation_result.metadata
-        )
+        return generation_result
 
     def run(self, query: str, source_code_list: SourceCodeList) -> CodeGenerateResult:
         """
@@ -274,8 +234,7 @@ class CodeEditBlockManager:
         # 生成代码并自动修复lint错误
         generation_result = self.generate_and_fix(query, source_code_list)
         
-        # 合并代码
-        if not self.args.skip_merge:
-            self.code_merger.merge_code(generation_result)
+        # 合并代码        
+        self.code_merger.merge_code(generation_result)
         
         return generation_result 

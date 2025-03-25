@@ -53,12 +53,12 @@ class LinterFactory:
         linter_class = linter_map.get(language.lower() if language else None)
         
         if linter_class is None:
-            raise ValueError(f"Unsupported language: {language}")
+            return None
         
         return linter_class(verbose=verbose)
     
     @classmethod
-    def _detect_language_from_file(cls, file_path: str) -> str:
+    def _detect_language_from_file(cls, file_path: str) -> Optional[str]:
         """
         Detect the programming language based on file extension.
         
@@ -72,7 +72,7 @@ class LinterFactory:
             ValueError: If the file extension is not recognized.
         """
         if not os.path.exists(file_path):
-            raise ValueError(f"File does not exist: {file_path}")
+            return None
         
         _, ext = os.path.splitext(file_path)
         ext = ext.lower()
@@ -87,10 +87,7 @@ class LinterFactory:
             '.vue': 'vue',
         }
         
-        language = extension_map.get(ext)
-        if language is None:
-            raise ValueError(f"Unsupported file extension: {ext}")
-        
+        language = extension_map.get(ext)                
         return language
     
     @classmethod
@@ -117,6 +114,8 @@ class LinterFactory:
             Dict[str, Any]: Lint results.
         """
         linter = cls.create_linter(file_path=file_path, verbose=verbose)
+        if linter is None:
+            return None
         return linter.lint_file(file_path, fix=fix)
     
     @classmethod
@@ -170,6 +169,8 @@ class LinterFactory:
         else:
             linter = cls.create_linter(language=language, verbose=verbose)
         
+        if linter is None:
+            return linter
         return linter.lint_project(project_path, fix=fix)
     
     @classmethod

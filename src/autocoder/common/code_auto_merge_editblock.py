@@ -43,38 +43,7 @@ class CodeAutoMergeEditBlock:
         self.fence_0 = fence_0
         self.fence_1 = fence_1
         self.printer = Printer()
-
-    def run_pylint(self, code: str) -> tuple[bool, str]:
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as temp_file:
-            temp_file.write(code)
-            temp_file_path = temp_file.name
-
-        try:
-            result = subprocess.run(
-                [
-                    "pylint",
-                    "--disable=all",
-                    "--enable=E0001,W0311,W0312",
-                    temp_file_path,
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            os.unlink(temp_file_path)
-            if result.returncode != 0:
-                error_message = result.stdout.strip() or result.stderr.strip()
-                self.printer.print_in_terminal("pylint_check_failed", error_message=error_message)
-                return False, error_message
-            return True, ""
-        except subprocess.CalledProcessError as e:
-            error_message = f"Error running pylint: {str(e)}"
-            self.printer.print_in_terminal("pylint_error", error_message=error_message)
-            os.unlink(temp_file_path)
-            return False, error_message
-
+    
     def parse_whole_text(self, text: str) -> List[PathAndCode]:
         '''
         从文本中抽取如下格式代码(two_line_mode)：
@@ -373,16 +342,7 @@ class CodeAutoMergeEditBlock:
             self.printer.print_in_terminal("unmerged_blocks_warning", num_blocks=len(unmerged_blocks))
             self._print_unmerged_blocks(unmerged_blocks)
             return
-
-        # lint check
-        for file_path, new_content in file_content_mapping.items():
-            if file_path.endswith(".py"):
-                pylint_passed, error_message = self.run_pylint(new_content)
-                if not pylint_passed:
-                    self.printer.print_in_terminal("pylint_file_check_failed", 
-                                                  file_path=file_path, 
-                                                  error_message=error_message)
-
+        
         if changes_made and not force_skip_git and not self.args.skip_commit:
             try:
                 git_utils.commit_changes(
