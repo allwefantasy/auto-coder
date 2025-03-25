@@ -26,8 +26,8 @@ class CommitResult(BaseModel):
     success: bool
     commit_message: Optional[str] = None
     commit_hash: Optional[str] = None
-    changed_files: Optional[List[str]] = None
-    diffs: Optional[dict] = None
+    changed_files: Optional[List[str]] = []
+    diffs: Optional[dict] = {}
     error_message: Optional[str] = None
 
 
