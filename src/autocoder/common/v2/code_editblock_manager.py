@@ -206,7 +206,9 @@ class CodeEditBlockManager:
                 query=query,
                 lint_issues=formatted_issues
             )
-            print(source_code_list)                       
+            
+            for source in source_code_list.sources:
+                print(f"file_path: {source.module_name}")                
             print(f"fix_prompt: {fix_prompt}")
             
             # 将 shadow_files 转化为 source_code_list

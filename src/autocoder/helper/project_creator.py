@@ -165,6 +165,27 @@ class ReactJSFileCreator(FileCreator):
         """返回项目类型"""
         return "tsx"
     
+    def _create_index_html(self, project_dir: str) -> None:
+        """创建 index.html 文件"""
+        index_html_path = os.path.join(project_dir, "public", "index.html")
+        os.makedirs(os.path.dirname(index_html_path), exist_ok=True)
+        index_html_content = """<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="React Calculator App" />
+    <title>React Calculator</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>"""
+        with open(index_html_path, "w", encoding="utf-8") as f:
+            f.write(index_html_content)
+    
     def _create_package_json(self, project_dir: str) -> None:
         """创建 package.json 文件"""
         package_path = os.path.join(project_dir, "package.json")
