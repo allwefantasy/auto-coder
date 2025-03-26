@@ -98,7 +98,7 @@ class CodeEditBlockManager:
 
         return shadow_files
 
-    def _format_lint_issues(self, lint_results:ProjectLintResult,level:IssueSeverity) -> str:
+    def _format_lint_issues(self, lint_results:ProjectLintResult,levels:List[IssueSeverity]=[IssueSeverity.ERROR]) -> str:
         """
         将linter结果格式化为字符串供模型使用
         
@@ -116,7 +116,7 @@ class CodeEditBlockManager:
             file_issues = []
             
             for issue in result.issues:                
-                if issue.severity.value != level.value:
+                if issue.severity.value in levels:
                     continue
                     
                 if not file_has_issues:
@@ -138,7 +138,7 @@ class CodeEditBlockManager:
             
         return "\n".join(formatted_issues)
 
-    def _count_errors(self, lint_results:ProjectLintResult) -> int:
+    def _count_errors(self, lint_results:ProjectLintResult,levels:List[IssueSeverity]=[IssueSeverity.ERROR]) -> int:
         """
         计算lint结果中的错误数量
         
@@ -150,8 +150,15 @@ class CodeEditBlockManager:
         """
         error_count = 0
         
-        for _, result in lint_results.file_results.items():                
-            error_count += result.error_count
+        for _, result in lint_results.file_results.items():                            
+            if IssueSeverity.ERROR in levels:
+                error_count += result.error_count
+            if IssueSeverity.WARNING in levels:
+                error_count += result.warning_count
+            if IssueSeverity.INFO in levels:
+                error_count += result.info_count
+            if IssueSeverity.HINT in levels:
+                error_count += result.hint_count
                 
         return error_count
 
@@ -208,7 +215,7 @@ class CodeEditBlockManager:
                 break
 
             # 格式化lint问题
-            formatted_issues = self._format_lint_issues(lint_results, IssueSeverity.ERROR)            
+            formatted_issues = self._format_lint_issues(lint_results, [IssueSeverity.ERROR, IssueSeverity.WARNING])            
 
             # 打印当前错误
             self.printer.print_in_terminal(
