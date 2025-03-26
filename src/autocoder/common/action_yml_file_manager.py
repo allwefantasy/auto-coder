@@ -48,15 +48,15 @@ class ActionYmlFileManager:
                 return False
         return True    
     
-    def get_action_files(self, filter_prefix: Optional[str] = None) -> List[str]:
+    def get_action_files(self, filter_prefix: Optional[str] = None, limit: Optional[int] = None) -> List[str]:
         """
-        获取所有符合条件的 YAML 文件名
+        获取所有符合条件的 YAML 文件名，并按数字部分降序排序
         
         Args:
             filter_prefix: 可选的文件名前缀过滤
             
         Returns:
-            List[str]: 符合条件的文件名列表
+            List[str]: 符合条件的文件名列表，按数字部分降序排序
         """
         if not os.path.exists(self.actions_dir):
             return []
@@ -69,7 +69,17 @@ class ActionYmlFileManager:
         if filter_prefix:
             action_files = [f for f in action_files if f.startswith(filter_prefix)]
             
-        return action_files
+        # 按数字部分降序排序
+        def get_numeric_part(filename: str) -> int:
+            try:
+                return int(filename.split('_')[0])
+            except (ValueError, IndexError):
+                return 0
+
+        if limit:
+            return sorted(action_files, key=get_numeric_part, reverse=True)[0:limit]
+        else:
+            return sorted(action_files, key=get_numeric_part, reverse=True)
     
     def get_sequence_number(self, file_name: str) -> int:
         """

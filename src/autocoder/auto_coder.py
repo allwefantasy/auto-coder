@@ -1,3 +1,4 @@
+from autocoder.events.event_types import EventMetadata
 import byzerllm
 import yaml
 import os
@@ -1393,6 +1394,19 @@ def main(input_args: Optional[List[str]] = None):
                                     input_cost=round(input_cost, 4),
                                     output_cost=round(output_cost, 4),
                                     speed=round(speed, 2))
+                get_event_manager(args.event_file).write_result(
+                    EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                        model_name=model_name,
+                        elapsed_time=elapsed_time,
+                        input_tokens=last_meta.input_tokens_count,
+                        output_tokens=last_meta.generated_tokens_count,
+                        input_cost=round(input_cost, 4),
+                        output_cost=round(output_cost, 4),
+                        speed=round(speed, 2)
+                    )).to_dict(), metadata=EventMetadata(
+                        action_file=args.file
+                    ).to_dict())                
+                
             
             chat_history["ask_conversation"].append(
                 {"role": "assistant", "content": assistant_response}

@@ -48,7 +48,7 @@ readerwriterlock
 
 # camelot-py
 # llama_index
-byzerllm[saas]>=0.1.179
+byzerllm[saas]>=0.1.180
 patch
 diff_match_patch
 GitPython
