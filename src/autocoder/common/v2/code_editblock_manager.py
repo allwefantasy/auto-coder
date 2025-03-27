@@ -13,7 +13,7 @@ from autocoder.common import sys_prompt
 from autocoder.privacy.model_filter import ModelPathFilter
 from autocoder.common.utils_code_auto_generate import chat_with_continue, stream_chat_with_continue, ChatWithContinueResult
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
-from autocoder.common.stream_out_type import CodeGenerateStreamOutType
+from autocoder.common.stream_out_type import LintStreamOutType
 from autocoder.common.auto_coder_lang import get_message_with_format
 from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
@@ -28,6 +28,9 @@ from loguru import logger
 from autocoder.common.global_cancel import global_cancel
 from autocoder.linters.models import ProjectLintResult
 from autocoder.common.token_cost_caculate import TokenCostCalculator
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events.event_types import Event, EventType, EventMetadata
+from autocoder.events import event_content as EventContentCreator
 
 
 class CodeEditBlockManager:
@@ -226,6 +229,20 @@ class CodeEditBlockManager:
                 error_count=error_count,
                 formatted_issues=formatted_issues
             )
+
+            get_event_manager(self.args.event_file).add_event(Event(
+                event_type=EventType.RESULT,
+                content=EventContentCreator.create_result(
+                    content=EventContentCreator.ResultContent(
+                        content=f"Lint attempt {attempt + 1}/{self.max_correction_attempts}: Found {error_count} issues:\n {formatted_issues}",
+                        metadata={}
+                    )
+                ).to_dict(),
+                metadata={
+                    "stream_out_type": LintStreamOutType.LINT.value,
+                    "action_file": self.args.file
+                }
+            ))
             
             if attempt == self.max_correction_attempts - 1:
                 self.printer.print_in_terminal("max_attempts_reached", style="yellow")

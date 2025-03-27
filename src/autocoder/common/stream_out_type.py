@@ -11,4 +11,7 @@ class CodeGenerateStreamOutType(Enum):
     CODE_GENERATE = "code_generate"
 
 class CodeRankStreamOutType(Enum):
-    CODE_RANK = "code_rank"    
+    CODE_RANK = "code_rank"
+
+class LintStreamOutType(Enum):
+    LINT = "lint"
