@@ -1648,14 +1648,12 @@ def chat(query: str):
     commands_infos = CommandParser.parse_query(query)    
     if len(commands_infos) > 0:
         if "query" in commands_infos:
-            query = commands_infos["query"]["args"][-1]
-        else:
-            # 获取第一个command 的最后一个位置参数作为默认query 
+            query = " ".join(commands_infos["query"]["args"])
+        else:            
             temp_query = ""
             for (command,command_info) in commands_infos.items():
                 if command_info["args"]:
-                    temp_query = command_info["args"][-1]
-                    break            
+                    temp_query = " ".join(command_info["args"])                    
             query = temp_query
 
     is_new = "new" in commands_infos

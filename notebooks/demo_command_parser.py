@@ -227,13 +227,52 @@ def main():
     """主函数，运行所有演示"""
     print("命令解析器(CommandParser)演示")
     print("此脚本展示如何使用 command_parser 模块解析各种格式的命令")
-    
-    demo_basic_parsing()
-    demo_multiple_commands()
-    demo_command_extraction()
-    demo_quoted_values()
-    demo_practical_application()    
-    print("\n" + "=" * 80)
+
+    query = "/rag /wow file1.txt file2.txt"
+    print(f"查询: {query}")
+    commands_infos = parse_query(query)
+    print(f"解析结果: {commands_infos}")
+
+    temp_query = ""
+    for (command,command_info) in commands_infos.items():
+        if command_info["args"]:
+            temp_query = " ".join(command_info["args"])
+            # 删除break，使循环继续，这样最后一个有args的command会覆盖之前的            
+    query = temp_query
+    print(f"最终查询: {query}")
+
+    query = "file1.txt file2.txt"
+    print(f"查询: {query}")
+    commands_infos = parse_query(query)
+    print(f"解析结果: {commands_infos}")
+
+    temp_query = ""
+    for (command,command_info) in commands_infos.items():
+        if command_info["args"]:
+            temp_query = " ".join(command_info["args"])
+            # 删除break，使循环继续，这样最后一个有args的command会覆盖之前的            
+    query = temp_query
+    print(f"最终查询: {query}")
+
+
+    query = "/chat /rag"
+    print(f"查询: {query}")
+    commands_infos = parse_query(query)
+    print(f"解析结果: {commands_infos}")
+
+    temp_query = ""
+    for (command,command_info) in commands_infos.items():
+        if command_info["args"]:
+            temp_query = " ".join(command_info["args"])
+            # 删除break，使循环继续，这样最后一个有args的command会覆盖之前的            
+    query = temp_query
+    print(f"最终查询: {query}")
+    # demo_basic_parsing()
+    # demo_multiple_commands()
+    # demo_command_extraction()
+    # demo_quoted_values()
+    # demo_practical_application()    
+    # print("\n" + "=" * 80)
     print("演示结束！")
 
     print(parse_query('/save "/tmp/test.txt'))
