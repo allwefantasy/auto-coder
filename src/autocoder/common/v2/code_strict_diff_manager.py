@@ -30,7 +30,7 @@ class CodeStrictDiffManager:
         # Initialize sub-components
         self.code_generator = CodeAutoGenerateStrictDiff(llm, args, action)
         self.code_merger = CodeAutoMergeStrictDiff(llm, args)
-        self.shadow_manager = ShadowManager(args.source_dir)
+        self.shadow_manager = ShadowManager(args.source_dir, args.event_file)
         self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
 
     @byzerllm.prompt()

@@ -20,7 +20,12 @@ class ShadowManager:
         """
         self.source_dir = os.path.abspath(source_dir)
         
-        # 根据是否提供了event_file_id来确定shadows_dir的路径
+        # # 根据是否提供了event_file_id来确定shadows_dir的路径
+        # if event_file_id:       
+        #     print("======" + event_file_id)
+        # import traceback
+        # traceback.print_stack()
+        
         if event_file_id:
             event_file_id = self.get_event_file_id_from_path(event_file_id)
             self.shadows_dir = os.path.join(self.source_dir, '.auto-coder', 'shadows', event_file_id)

@@ -15,6 +15,7 @@ from autocoder.chat_auto_coder_lang import get_message
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.completion import Completer, Completion
 from autocoder.plugins import PluginManager
+from autocoder.events.event_manager_singleton import gengerate_event_file_path
 from autocoder.auto_coder_runner import (
     auto_command,
     load_memory,
@@ -474,6 +475,9 @@ def main():
                     if handler:
                         handler(*args)
                         continue
+
+            event_file, file_id = gengerate_event_file_path()
+            configure(f"event_file:{event_file}")
 
             if (
                 memory["mode"] == "auto_detect"
