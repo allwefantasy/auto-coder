@@ -2532,28 +2532,26 @@ def index_import(path: str):
 
 @run_in_raw_thread()
 def index_query(query: str):
-    conf = memory.get("conf", {})
-    yaml_config = {
-        "include_file": ["./base/base.yml"],
-    }
+    from autocoder.index.entry import build_index_and_filter_files
+    from autocoder.pyproject import PyProject
+    from autocoder.tsproject import TSProject
+    from autocoder.suffixproject import SuffixProject
 
-    for key, value in conf.items():
-        converted_value = convert_config_value(key, value)
-        if converted_value is not None:
-            yaml_config[key] = converted_value
+    config = get_final_config()
+    config.query = query
+    config.skip_filter_index = False
+    llm = get_single_llm(config.chat_model or config.model, product_mode=config.product_mode)
 
-    yaml_config["query"] = query
-
-    yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)
-    yaml_file = os.path.join("actions", f"{uuid.uuid4()}.yml")
-
-    with open(yaml_file, "w",encoding="utf-8") as f:
-        f.write(yaml_content)
-    try:        
-        auto_coder_main(["index-query", "--file", yaml_file])        
-    finally:
-        os.remove(yaml_file)
-
+    if config.project_type == "ts":
+        pp = TSProject(args=config, llm=llm)
+    elif config.project_type == "py":
+        pp = PyProject(args=config, llm=llm)
+    else:
+        pp = SuffixProject(args=config, llm=llm, file_filter=None)
+    pp.run()
+    sources = pp.sources    
+    source_code_list = build_index_and_filter_files(llm=llm, args=config, sources=sources)
+    return source_code_list    
 
 def list_files():
     console = Console()
