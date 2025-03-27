@@ -17,7 +17,7 @@ from autocoder.utils.llms import get_single_llm
 from autocoder.common.v2.code_editblock_manager import CodeEditBlockManager
 from autocoder.auto_coder_runner import load_tokenizer
 from autocoder.rag.token_counter import count_tokens
-from project_creator import ProjectCreator, FileCreatorFactory
+from autocoder.helper.project_creator import ProjectCreator, FileCreatorFactory
 
 
 def file_to_source_code(file_path: str) -> SourceCode:

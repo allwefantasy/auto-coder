@@ -116,7 +116,7 @@ class CodeEditBlockManager:
             file_issues = []
             
             for issue in result.issues:                
-                if issue.severity.value in levels:
+                if issue.severity.value not in levels:
                     continue
                     
                 if not file_has_issues:
@@ -273,9 +273,11 @@ class CodeEditBlockManager:
         返回:
             CodeGenerateResult: 生成和修复的代码结果
         """
-        # 生成代码并自动修复lint错误
+        # 生成代码并自动修复lint错误        
+
         generation_result = self.generate_and_fix(query, source_code_list)
-        global_cancel.check_and_raise()
+        global_cancel.check_and_raise()        
+
         # 合并代码        
         self.code_merger.merge_code(generation_result)
         

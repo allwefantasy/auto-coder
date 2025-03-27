@@ -474,16 +474,14 @@ def main():
                     plugin_name, handler, args = plugin_result
                     if handler:
                         handler(*args)
-                        continue
-
-            event_file, file_id = gengerate_event_file_path()
-            configure(f"event_file:{event_file}")
-
+                        continue                                    
             if (
                 memory["mode"] == "auto_detect"
                 and user_input
                 and not user_input.startswith("/")
             ):
+                event_file, file_id = gengerate_event_file_path()
+                configure(f"event_file:{event_file}")
                 auto_command(user_input)
 
             elif memory["mode"] == "voice_input" and not user_input.startswith("/"):
@@ -592,12 +590,16 @@ def main():
                 raise EOFError()
 
             elif user_input.startswith("/coding"):
+                event_file, file_id = gengerate_event_file_path()
+                configure(f"event_file:{event_file}")
                 query = user_input[len("/coding") :].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
                     continue
                 coding(query)
             elif user_input.startswith("/chat"):
+                event_file, file_id = gengerate_event_file_path()
+                configure(f"event_file:{event_file}")
                 query = user_input[len("/chat") :].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
@@ -653,6 +655,8 @@ def main():
                         print("Please enter a shell command to execute.")
                     else:
                         if command.startswith("/chat"):
+                            event_file, file_id = gengerate_event_file_path()
+                            configure(f"event_file:{event_file}")
                             command = command[len("/chat") :].strip()
                             gen_and_exec_shell_command(command)
                         else:

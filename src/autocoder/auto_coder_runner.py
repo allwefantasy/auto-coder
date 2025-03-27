@@ -608,10 +608,10 @@ def load_memory():
         memory.clear()
         memory.update(_memory)
     completer.update_current_files(memory["current_files"]["files"])
-
-def get_memory():
-    global memory
     return memory
+
+def get_memory():    
+    return load_memory()    
 
 
 completer = CommandCompleter(commands,
