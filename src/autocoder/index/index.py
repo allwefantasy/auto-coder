@@ -464,6 +464,25 @@ class IndexManager:
         return False
 
     def build_index(self):
+        # 记录索引构建开始事件
+        from autocoder.common.stream_out_type import IndexStreamOutType
+        from autocoder.events.event_manager_singleton import get_event_manager
+        from autocoder.events import event_content as EventContentCreator
+
+        if self.args.event_file:
+            get_event_manager(self.args.event_file).write_result(
+                EventContentCreator.create_result(
+                    content=EventContentCreator.ResultContent(
+                        content=f"开始构建索引，共 {len(self.sources)} 个文件",
+                        metadata={}
+                    ).to_dict(),
+                    metadata={
+                        "stream_out_type": IndexStreamOutType.INDEX_BUILD.value,
+                        "action_file": self.args.file
+                    }
+                )
+            )
+
         if os.path.exists(self.index_file):
             with open(self.index_file, "r", encoding="utf-8") as file:
                 index_data = json.load(file)
@@ -591,6 +610,34 @@ class IndexManager:
                 output_cost=total_output_cost
             )
             print("")
+
+            # 记录索引构建完成事件
+            if self.args.event_file:
+                from autocoder.common.stream_out_type import IndexStreamOutType
+                from autocoder.events.event_manager_singleton import get_event_manager
+                from autocoder.events import event_content as EventContentCreator
+
+                get_event_manager(self.args.event_file).write_result(
+                    EventContentCreator.create_result(
+                        content=EventContentCreator.ResultContent(
+                            content=f"索引构建完成，更新了 {len(updated_sources)} 个文件，移除了 {len(keys_to_remove)} 个文件。\n"
+                                   f"总输入令牌：{total_input_tokens}，总输出令牌：{total_output_tokens}\n"
+                                   f"输入成本：{total_input_cost}，输出成本：{total_output_cost}",
+                            metadata={
+                                "updated_files": len(updated_sources),
+                                "removed_files": len(keys_to_remove),
+                                "input_tokens": total_input_tokens,
+                                "output_tokens": total_output_tokens,
+                                "input_cost": total_input_cost,
+                                "output_cost": total_output_cost
+                            }
+                        ).to_dict(),
+                        metadata={
+                            "stream_out_type": IndexStreamOutType.INDEX_BUILD.value,
+                            "action_file": self.args.file
+                        }
+                    )
+                )
 
         return index_data
 
