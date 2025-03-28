@@ -108,8 +108,22 @@ class ActiveContextManager:
         global_logger.configure(
             handlers=[
                 # 移除控制台输出，只保留文件输出
-                {"sink": log_file, "level": "DEBUG", "rotation": "10 MB", "retention": "1 week",
-                 "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name} | {message}"}
+                # 文件 Handler（仅处理 DirectoryMapper）
+                {
+                    "sink": log_file,
+                    "level": "INFO",
+                    "rotation": "10 MB",
+                    "retention": "1 week",
+                    "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name} | {message}",
+                    "filter": lambda record: record["extra"].get("name") in ["DirectoryMapper", "ActiveContextManager","ActivePackage","AsyncProcessor"]
+                },
+                # 控制台 Handler（排除 DirectoryMapper）
+                {
+                    "sink": sys.stdout,
+                    "level": "INFO",
+                    "format": "{time:YYYY-MM-DD HH:mm:ss} | {name} | {message}",
+                    "filter": lambda record: record["extra"].get("name") not in ["ActiveContextManager"]
+                }
             ]
         )
 
@@ -118,17 +132,18 @@ class ActiveContextManager:
         self.logger.info(f"初始化 ActiveContextManager，日志输出到 {log_file}")
 
         self.llm = llm
-        self.directory_mapper = DirectoryMapper()        
+        self.directory_mapper = DirectoryMapper()
         self.async_processor = AsyncProcessor()
         self.yml_manager = ActionYmlFileManager(source_dir)
-        
+
         # 任务持久化文件路径
-        self.tasks_file_path = os.path.join(source_dir, ".auto-coder", "active-context", "tasks.json")
-        
+        self.tasks_file_path = os.path.join(
+            source_dir, ".auto-coder", "active-context", "tasks.json")
+
         # 加载已存在的任务
         self.tasks = self._load_tasks_from_disk()
         self.tasks_lock = threading.Lock()  # 添加锁以保护任务字典的操作
-        
+
         self.printer = Printer()
 
         # 初始化任务队列和锁
@@ -142,11 +157,11 @@ class ActiveContextManager:
 
         # 标记为已初始化
         self._is_initialized = True
-        
+
     def _load_tasks_from_disk(self) -> Dict[str, Dict[str, Any]]:
         """
         从磁盘加载任务信息
-        
+
         Returns:
             Dict: 任务字典
         """
@@ -154,22 +169,25 @@ class ActiveContextManager:
             if os.path.exists(self.tasks_file_path):
                 with open(self.tasks_file_path, 'r', encoding='utf-8') as f:
                     tasks_json = json.load(f)
-                
+
                 # 转换时间字符串为datetime对象
                 for task_id, task in tasks_json.items():
                     if 'start_time' in task and task['start_time']:
                         try:
-                            task['start_time'] = datetime.fromisoformat(task['start_time'])
+                            task['start_time'] = datetime.fromisoformat(
+                                task['start_time'])
                         except:
                             task['start_time'] = None
-                            
+
                     if 'completion_time' in task and task['completion_time']:
                         try:
-                            task['completion_time'] = datetime.fromisoformat(task['completion_time'])
+                            task['completion_time'] = datetime.fromisoformat(
+                                task['completion_time'])
                         except:
                             task['completion_time'] = None
-                
-                self.logger.info(f"从 {self.tasks_file_path} 加载了 {len(tasks_json)} 个任务")
+
+                self.logger.info(
+                    f"从 {self.tasks_file_path} 加载了 {len(tasks_json)} 个任务")
                 return tasks_json
             else:
                 self.logger.info(f"任务文件 {self.tasks_file_path} 不存在，将创建新文件")
@@ -177,7 +195,7 @@ class ActiveContextManager:
         except Exception as e:
             self.logger.error(f"加载任务文件失败: {e}")
             return {}
-            
+
     def _save_tasks_to_disk(self):
         """
         将任务信息保存到磁盘
@@ -195,22 +213,24 @@ class ActiveContextManager:
                         else:
                             task_copy[k] = v
                     tasks_copy[task_id] = task_copy
-                
+
                 # 确保目录存在
-                os.makedirs(os.path.dirname(self.tasks_file_path), exist_ok=True)
-                
+                os.makedirs(os.path.dirname(
+                    self.tasks_file_path), exist_ok=True)
+
                 # 写入JSON文件
                 with open(self.tasks_file_path, 'w', encoding='utf-8') as f:
                     json.dump(tasks_copy, f, ensure_ascii=False, indent=2)
-                
-                self.logger.debug(f"成功保存 {len(tasks_copy)} 个任务到 {self.tasks_file_path}")
+
+                self.logger.debug(
+                    f"成功保存 {len(tasks_copy)} 个任务到 {self.tasks_file_path}")
         except Exception as e:
             self.logger.error(f"保存任务到磁盘失败: {e}")
-            
+
     def _update_task(self, task_id: str, **kwargs):
         """
         更新任务信息并持久化到磁盘
-        
+
         Args:
             task_id: 任务ID
             **kwargs: 要更新的任务属性
@@ -221,7 +241,7 @@ class ActiveContextManager:
                 self.logger.debug(f"更新任务 {task_id} 信息: {kwargs.keys()}")
             else:
                 self.logger.warning(f"尝试更新不存在的任务: {task_id}")
-                
+
         # 持久化到磁盘
         self._save_tasks_to_disk()
 
@@ -326,8 +346,8 @@ class ActiveContextManager:
             self.logger.error(f"Error in process_changes: {e}")
             raise
 
-    def _execute_task_in_background(self, task_id: str, 
-                                    query: str, 
+    def _execute_task_in_background(self, task_id: str,
+                                    query: str,
                                     changed_urls: List[str], current_urls: List[str],
                                     args: AutoCoderArgs):
         """
@@ -348,7 +368,8 @@ class ActiveContextManager:
                 task_id, query, changed_urls, current_urls, args)
 
             # 更新任务状态为已完成
-            self._update_task(task_id, status='completed', completion_time=datetime.now())
+            self._update_task(task_id, status='completed',
+                              completion_time=datetime.now())
 
         except Exception as e:
             # 记录错误，但不允许异常传播到主线程
@@ -409,7 +430,7 @@ class ActiveContextManager:
             input_tokens = 0
             output_tokens = 0
             cost = 0.0
-            
+
             for i, context in enumerate(directory_contexts):
                 dir_path = context['directory_path']
                 self.logger.info(
@@ -417,29 +438,30 @@ class ActiveContextManager:
                 try:
                     result = self._process_directory_context(
                         context, query, file_changes, args)
-                    
+
                     # 如果返回了token和费用信息，则累加
                     if isinstance(result, dict):
                         dir_tokens = result.get('total_tokens', 0)
                         dir_input_tokens = result.get('input_tokens', 0)
                         dir_output_tokens = result.get('output_tokens', 0)
                         dir_cost = result.get('cost', 0.0)
-                        
+
                         total_tokens += dir_tokens
                         input_tokens += dir_input_tokens
                         output_tokens += dir_output_tokens
                         cost += dir_cost
-                        
-                        self.logger.info(f"目录 {dir_path} 处理完成，使用了 {dir_tokens} tokens，费用 {dir_cost:.6f}")
-                    
+
+                        self.logger.info(
+                            f"目录 {dir_path} 处理完成，使用了 {dir_tokens} tokens，费用 {dir_cost:.6f}")
+
                     processed_dirs.append(os.path.basename(dir_path))
-                    
+
                 except Exception as e:
                     self.logger.error(f"处理目录 {dir_path} 时出错: {str(e)}")
-            
+
             # 更新任务的token和费用信息
             self._update_task(
-                task_id, 
+                task_id,
                 total_tokens=total_tokens,
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
@@ -448,16 +470,17 @@ class ActiveContextManager:
             )
 
             # 3. 更新任务状态
-            self._update_task(task_id, 
-                             status='completed', 
-                             completion_time=datetime.now())
+            self._update_task(task_id,
+                              status='completed',
+                              completion_time=datetime.now())
 
             duration = (datetime.now() -
                         self.tasks[task_id]['start_time']).total_seconds()
             self.logger.info(f"==== 任务 {task_id} 处理完成 ====")
             self.logger.info(f"总耗时: {duration:.2f}秒")
             self.logger.info(f"处理的目录数: {len(processed_dirs)}")
-            self.logger.info(f"使用总tokens: {total_tokens} (输入: {input_tokens}, 输出: {output_tokens})")
+            self.logger.info(
+                f"使用总tokens: {total_tokens} (输入: {input_tokens}, 输出: {output_tokens})")
             self.logger.info(f"总费用: {cost:.6f}")
 
         except Exception as e:
@@ -474,7 +497,7 @@ class ActiveContextManager:
             query: 用户查询/需求
             file_changes: 文件变更字典，键为文件路径，值为(变更前内容, 变更后内容)的元组
             args: AutoCoderArgs实例，包含配置信息
-            
+
         Returns:
             Dict: 包含token和费用信息的字典
         """
@@ -544,9 +567,9 @@ class ActiveContextManager:
 
             # 3. 生成活动文件内容
             self.logger.info(f"开始为目录 {directory_path} 生成活动文件内容...")
-            
+
             active_package = ActivePackage(self.llm, args.product_mode)
-            
+
             # 调用生成方法，捕获token和费用信息
             generation_result = active_package.generate_active_file(
                 context,
@@ -555,7 +578,7 @@ class ActiveContextManager:
                 file_changes=directory_changes,
                 args=args
             )
-            
+
             # 检查返回值类型，兼容现有逻辑
             if isinstance(generation_result, tuple) and len(generation_result) >= 2:
                 markdown_content = generation_result[0]
@@ -582,7 +605,7 @@ class ActiveContextManager:
 
             self.logger.info(f"成功创建/更新目录 {directory_path} 的活动文件")
             self.logger.debug(f"--- 处理目录上下文完成: {directory_path} ---")
-            
+
             # 返回token和费用信息
             return tokens_info
 
@@ -661,7 +684,7 @@ class ActiveContextManager:
 
         if 'error' in task:
             result['error'] = task['error']
-            
+
         # 添加token和费用信息
         for key in ['total_tokens', 'input_tokens', 'output_tokens', 'cost']:
             if key in task:

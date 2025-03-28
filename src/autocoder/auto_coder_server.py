@@ -198,7 +198,7 @@ async def delete_config(key: str):
 
 @app.post("/coding")
 async def coding(request: QueryRequest, background_tasks: BackgroundTasks):
-    memory["conversation"].append({"role": "user", "content": request.query})
+    # memory["conversation"].append({"role": "user", "content": request.query})
     conf = memory.get("conf", {})
     current_files = memory["current_files"]["files"]
     request_id = str(uuid.uuid4())

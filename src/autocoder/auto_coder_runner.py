@@ -1416,8 +1416,8 @@ def commit(query: str):
                 commit_message = git_utils.generate_commit_message.with_llm(llm).run(
                     uncommitted_changes
                 )                
-                memory["conversation"].append(
-                    {"role": "user", "content": commit_message})
+                # memory["conversation"].append(
+                #     {"role": "user", "content": commit_message})
             except Exception as e:
                 printer.print_in_terminal("commit_failed", style="red", error=str(e), model_name=target_model)
                 return
@@ -1479,7 +1479,7 @@ def coding(query: str):
         code_next(query)
         return
 
-    memory["conversation"].append({"role": "user", "content": query})
+    # memory["conversation"].append({"role": "user", "content": query})
     conf = memory.get("conf", {})
 
     current_files = memory["current_files"]["files"]
