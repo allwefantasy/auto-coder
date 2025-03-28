@@ -119,6 +119,35 @@ class ResultTokenStatContent(BaseModel):
         """转换为JSON字符串"""
         return self.model_dump_json()
 
+class IndexBuildStartContent(BaseModel):
+    file_number:int = 0
+    total_files:int = 0
+
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return self.model_dump()
+    
+    def to_json(self) -> str:
+        """转换为JSON字符串"""
+        return self.model_dump_json()
+
+class IndexBuildEndContent(BaseModel):
+    updated_files:int = 0
+    removed_files:int = 0
+    input_tokens:int = 0
+    output_tokens:int = 0
+    input_cost:float = 0.0
+    output_cost:float = 0.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return self.model_dump()
+    
+    def to_json(self) -> str:
+        """转换为JSON字符串"""
+        return self.model_dump_json()
+    
+
 
 class ResultCommandPrepareStatContent(BaseModel):
     command:str = ""
