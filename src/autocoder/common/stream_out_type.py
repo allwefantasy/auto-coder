@@ -16,5 +16,8 @@ class CodeRankStreamOutType(Enum):
 class LintStreamOutType(Enum):
     LINT = "lint"
 
+class CompileStreamOutType(Enum):
+    COMPILE = "compile"
+
 class IndexStreamOutType(Enum):
     INDEX_BUILD = "index_build"

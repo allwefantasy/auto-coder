@@ -264,10 +264,37 @@ class ShadowManager:
         
         返回:
             str: 链接项目的路径
-        """                    
+        """      
+        # 清理链接项目目录
+        self._clean_link_project_dir()
+        # 创建链接项目
         self._create_links(self.source_dir, self.link_projects_dir)        
         return self.link_projects_dir
     
+    def _clean_link_project_dir(self):
+        """
+        清理链接项目目录中的所有内容，但保留目录本身。
+        
+        返回:
+            bool: 操作成功则为True，否则为False
+        """
+        if not os.path.exists(self.link_projects_dir):
+            return True
+            
+        try:
+            # 删除链接项目目录中的所有内容
+            for item in os.listdir(self.link_projects_dir):
+                item_path = os.path.join(self.link_projects_dir, item)
+                if os.path.isfile(item_path):
+                    os.unlink(item_path)
+                elif os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+            
+            return True
+        except Exception as e:
+            print(f"清理链接项目目录时出错: {str(e)}")
+            return False
+
     def _create_links(self, source_path, link_path, rel_path=''):
         """
         递归创建从源目录到链接项目目录的链接
@@ -276,7 +303,7 @@ class ShadowManager:
             source_path: 当前处理的源目录路径
             link_path: 对应的链接项目目录路径
             rel_path: 相对于根源目录的相对路径
-        """
+        """        
         # 获取源目录中的所有项目
         for item in os.listdir(source_path):
             # 跳过.auto-coder目录

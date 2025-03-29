@@ -10,10 +10,11 @@ from byzerllm.utils.client import code_utils
 from autocoder.common.types import Mode, CodeGenerateResult, MergeCodeWithoutEffect
 from autocoder.common import AutoCoderArgs, git_utils, SourceCodeList
 from autocoder.common import sys_prompt
+from autocoder.compilers.shadow_compiler import ShadowCompiler
 from autocoder.privacy.model_filter import ModelPathFilter
 from autocoder.common.utils_code_auto_generate import chat_with_continue, stream_chat_with_continue, ChatWithContinueResult
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
-from autocoder.common.stream_out_type import LintStreamOutType
+from autocoder.common.stream_out_type import LintStreamOutType, CompileStreamOutType
 from autocoder.common.auto_coder_lang import get_message_with_format
 from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
@@ -54,7 +55,8 @@ class CodeEditBlockManager:
         self.fence_0 = fence_0
         self.fence_1 = fence_1
         self.generate_times_same_model = args.generate_times_same_model
-        self.max_correction_attempts = args.auto_fix_lint_max_attempts
+        self.auto_fix_lint_max_attempts = args.auto_fix_lint_max_attempts
+        self.auto_fix_compile_max_attempts = args.auto_fix_compile_max_attempts
         self.printer = Printer()
 
         # Initialize sub-components
@@ -63,8 +65,11 @@ class CodeEditBlockManager:
         self.code_merger = CodeAutoMergeEditBlock(llm, args, fence_0, fence_1)
 
         # Create shadow manager for linting
-        self.shadow_manager = ShadowManager(args.source_dir, args.event_file, args.ignore_clean_shadows)
+        self.shadow_manager = ShadowManager(
+            args.source_dir, args.event_file, args.ignore_clean_shadows)
         self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
+        self.shadow_compiler = ShadowCompiler(
+            self.shadow_manager, verbose=False)
 
     @byzerllm.prompt()
     def fix_linter_errors(self, query: str, lint_issues: str) -> str:
@@ -73,6 +78,22 @@ class CodeEditBlockManager:
         <lint_issues>
         {{ lint_issues }}
         </lint_issues>
+
+        用户原始需求:
+        <user_query_wrapper>
+        {{ query }}
+        </user_query_wrapper>
+
+        修复上述问题，请确保代码质量问题被解决，同时保持代码的原有功能。
+        请严格遵守*SEARCH/REPLACE block*的格式。
+        """
+
+    def fix_compile_errors(self, query: str, compile_errors: str) -> str:
+        """
+        编译错误:
+        <compile_errors>
+        {{ compile_errors }}
+        </compile_errors>
 
         用户原始需求:
         <user_query_wrapper>
@@ -169,7 +190,7 @@ class CodeEditBlockManager:
 
     def generate_and_fix(self, query: str, source_code_list: SourceCodeList) -> CodeGenerateResult:
         """
-        生成代码，运行linter，修复错误，最多尝试指定次数
+        生成代码，运行linter/compile，修复错误，最多尝试指定次数
 
         参数:
             query (str): 用户查询
@@ -199,7 +220,7 @@ class CodeEditBlockManager:
             return generation_result
 
         # 最多尝试修复5次
-        for attempt in range(self.max_correction_attempts):
+        for attempt in range(self.auto_fix_lint_max_attempts):
             global_cancel.check_and_raise()
             # 代码生成结果更新到影子文件里去
             shadow_files = self._create_shadow_files_from_edits(
@@ -231,13 +252,14 @@ class CodeEditBlockManager:
                 "lint_attempt_status",
                 style="yellow",
                 attempt=(attempt + 1),
-                max_correction_attempts=self.max_correction_attempts,
+                max_correction_attempts=self.auto_fix_lint_max_attempts,
                 error_count=error_count,
                 formatted_issues=formatted_issues
             )
 
+            # 把lint结果记录到事件系统
             get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
-                content=EventContentCreator.ResultContent(content=f"Lint attempt {attempt + 1}/{self.max_correction_attempts}: Found {error_count} issues:\n {formatted_issues}",
+                content=EventContentCreator.ResultContent(content=f"Lint attempt {attempt + 1}/{self.auto_fix_lint_max_attempts}: Found {error_count} issues:\n {formatted_issues}",
                                                           metadata={}
                                                           ).to_dict(),
                 metadata={
@@ -246,7 +268,7 @@ class CodeEditBlockManager:
                 }
             ))
 
-            if attempt == self.max_correction_attempts - 1:
+            if attempt == self.auto_fix_lint_max_attempts - 1:
                 self.printer.print_in_terminal(
                     "max_attempts_reached", style="yellow")
                 break
@@ -267,6 +289,8 @@ class CodeEditBlockManager:
                 shadow_files)
             generation_result = self.code_generator.single_round_run(
                 fix_prompt, source_code_list)
+
+            # 计算这次修复lint 问题花费的token情况
             token_cost_calculator.track_token_usage_by_generate(
                 llm=self.llm,
                 generate=generation_result,
@@ -274,6 +298,66 @@ class CodeEditBlockManager:
                 start_time=start_time,
                 end_time=time.time()
             )
+        
+        # 如果开启了自动修复compile问题，则进行compile修复
+        if self.args.enable_auto_fix_compile:
+            for attempt in range(self.auto_fix_compile_max_attempts):
+                global_cancel.check_and_raise()
+                # 先更新增量影子系统的文件
+                shadow_files = self._create_shadow_files_from_edits(generation_result)
+
+                # 在影子系统生成完整的项目，然后编译
+                compile_result = self.shadow_compiler.compile_all_shadow_files("")
+                
+                # 如果编译成功，则退出，继续往后走
+                if compile_result.success or compile_result.total_errors == 0:
+                    self.printer.print_in_terminal(
+                        "compile_success", style="green")
+                    break
+                
+                # 如果有错误，则把compile结果记录到事件系统
+                get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
+                    content=EventContentCreator.ResultContent(content=f"Compile attempt {attempt + 1}/{self.auto_fix_compile_max_attempts}: Found {compile_result.total_errors} errors:\n {compile_result.to_str()}",
+                                                              metadata={}
+                                                              ).to_dict(),
+                    metadata={
+                        "stream_out_type": CompileStreamOutType.COMPILE.value,
+                        "action_file": self.args.file
+                    }
+                ))
+
+                if attempt == self.auto_fix_compile_max_attempts - 1:
+                    self.printer.print_in_terminal(
+                        "max_compile_attempts_reached", style="yellow")
+                    break
+
+                # 打印当前compile错误
+                self.printer.print_in_terminal("compile_attempt_status",
+                                               style="yellow",
+                                               attempt=(attempt + 1), max_correction_attempts=self.auto_fix_compile_max_attempts,
+                                               error_count=compile_result.total_errors,
+                                               formatted_issues=compile_result.to_str())
+
+                fix_compile_prompt = self.fix_compile_errors.prompt(
+                    query=query,
+                    compile_errors=compile_result.to_str()
+                )
+
+                # 将 shadow_files 转化为 source_code_list
+                start_time = time.time()
+                source_code_list = self.code_merger.get_source_code_list_from_shadow_files(
+                    shadow_files)
+                generation_result = self.code_generator.single_round_run(
+                    fix_compile_prompt, source_code_list)
+
+                # 计算这次修复compile 问题花费的token情况
+                token_cost_calculator.track_token_usage_by_generate(
+                    llm=self.llm,
+                    generate=generation_result,
+                    operation_name="code_generation_complete",
+                    start_time=start_time,
+                    end_time=time.time()
+                ) 
 
         # 清理临时影子文件
         self.shadow_manager.clean_shadows()

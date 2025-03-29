@@ -419,7 +419,11 @@ class AutoCoderArgs(pydantic.BaseModel):
     revert_commit_id: Optional[str] = None
 
     enable_auto_fix_lint: Optional[bool] = False
+    enable_auto_fix_compile: Optional[bool] = False
+
     auto_fix_lint_max_attempts: Optional[int] = 5
+    auto_fix_compile_max_attempts: Optional[int] = 5
+    
     ignore_clean_shadows: Optional[bool] = False
 
     class Config:

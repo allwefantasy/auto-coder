@@ -757,6 +757,22 @@ MESSAGES = {
     "max_attempts_reached": {
         "en": "Maximum correction attempts reached",
         "zh": "已达到最大修复尝试次数"
+    },
+    "compile_success": {
+        "en": "Compile success",
+        "zh": "编译成功"
+    },
+    "compile_failed": {
+        "en": "Compile failed",
+        "zh": "编译失败"
+    },
+    "compile_attempt_status": {
+        "en": "Compile attempt {{attempt}}/{{max_correction_attempts}}: {{error_count}} errors found. {{ formatted_issues }}",
+        "zh": "编译尝试 {{attempt}}/{{max_correction_attempts}}: 发现 {{error_count}} 个错误. {{ formatted_issues }}"
+    },
+    "max_compile_attempts_reached": {
+        "en": "Maximum compilation attempts reached",
+        "zh": "已达到最大编译尝试次数"
     }
 }
 
