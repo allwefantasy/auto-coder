@@ -19,7 +19,7 @@ class ShadowManager:
             event_file_id (str, optional): 事件文件ID，用于创建特定的影子目录。
         """
         self.source_dir = os.path.abspath(source_dir)
-        
+        self.event_file_id = None        
         # # 根据是否提供了event_file_id来确定shadows_dir的路径
         # if event_file_id:       
         #     print("======" + event_file_id)
@@ -28,12 +28,25 @@ class ShadowManager:
         
         if event_file_id:
             event_file_id = self.get_event_file_id_from_path(event_file_id)
+            self.event_file_id = event_file_id
             self.shadows_dir = os.path.join(self.source_dir, '.auto-coder', 'shadows', event_file_id)
         else:
             self.shadows_dir = os.path.join(self.source_dir, '.auto-coder', 'shadows')
-        
+
         # 确保影子目录存在
         os.makedirs(self.shadows_dir, exist_ok=True)
+        
+        # 确保链接项目目录存在
+        link_projects_dir = os.path.join(self.source_dir, '.auto-coder', 'shadows', 'link_projects')
+        source_basename = os.path.basename(self.source_dir)
+        os.makedirs(link_projects_dir, exist_ok=True)
+        if self.event_file_id:
+            self.link_projects_dir = os.path.join(link_projects_dir, self.event_file_id, source_basename)
+        else:
+            self.link_projects_dir = os.path.join(link_projects_dir, source_basename) 
+
+        os.makedirs(self.link_projects_dir, exist_ok=True)                
+        
 
     def get_event_file_id_from_path(self, path):
         """
@@ -238,3 +251,79 @@ class ShadowManager:
         except Exception as e:
             print(f"清理影子目录时出错: {str(e)}")
             return False 
+
+    def create_link_project(self):
+        """
+        创建链接项目，该项目是源目录的一个特殊副本，
+        其中优先使用影子目录中的文件，如果影子目录中不存在则使用源目录中的文件。
+        
+        返回:
+            str: 链接项目的路径
+        """                    
+        self._create_links(self.source_dir, self.link_projects_dir)        
+        return self.link_projects_dir
+    
+    def _create_links(self, source_path, link_path, rel_path=''):
+        """
+        递归创建从源目录到链接项目目录的链接
+        
+        参数:
+            source_path: 当前处理的源目录路径
+            link_path: 对应的链接项目目录路径
+            rel_path: 相对于根源目录的相对路径
+        """
+        # 获取源目录中的所有项目
+        for item in os.listdir(source_path):
+            # 跳过.auto-coder目录
+            if item == '.auto-coder':
+                continue
+                
+            source_item_path = os.path.join(source_path, item)
+            link_item_path = os.path.join(link_path, item)
+            current_rel_path = os.path.join(rel_path, item) if rel_path else item
+            
+            # 我们相当于遍历了所有目录，遇到 shadow_dir 和 source_dir 同时存在：
+            # 则创建目录，遍历里面的文件，如果文件出现在shadow_dir里，则软链到shadow_dir，否则软链到source_dir里。
+            # 如果目录不同时存在，则直接创建到 source_dir的软链。这样就能确保 link_project 和 source_dir 的结构完全一致。
+            if os.path.isdir(source_item_path):
+                # 构建在shadows_dir中可能存在的对应路径
+                shadow_dir_path = os.path.join(self.shadows_dir, current_rel_path)
+                
+                # 2.1 如果目录在shadows_dir中存在
+                if os.path.exists(shadow_dir_path) and os.path.isdir(shadow_dir_path):
+                    # 创建对应的目录结构
+                    os.makedirs(link_item_path, exist_ok=True)
+                    
+                    # 遍历源目录中的文件
+                    for file_item in os.listdir(source_item_path):
+                        source_file_path = os.path.join(source_item_path, file_item)
+                        link_file_path = os.path.join(link_item_path, file_item)
+                        shadow_file_path = os.path.join(shadow_dir_path, file_item)
+                        
+                        # 只处理文件，不处理子目录
+                        if os.path.isfile(source_file_path):
+                            # 如果文件在shadows_dir中存在，链接到shadows_dir中的文件
+                            if os.path.exists(shadow_file_path) and os.path.isfile(shadow_file_path):
+                                os.symlink(shadow_file_path, link_file_path)
+                            # 否则链接到源目录中的文件
+                            else:
+                                os.symlink(source_file_path, link_file_path)
+                    
+                    # 递归处理子目录
+                    self._create_links(source_item_path, link_item_path, current_rel_path)
+                
+                # 2.2 如果目录在shadows_dir中不存在，直接创建软链接
+                else:
+                    os.symlink(source_item_path, link_item_path)
+            
+            # # 如果是文件，我们不用处理因为在上面处理目录的环节全部处理完了
+            # elif os.path.isfile(source_item_path):
+            #     # 构建在shadows_dir中可能存在的对应文件路径
+            #     shadow_file_path = os.path.join(self.shadows_dir, current_rel_path)
+                
+            #     # 如果文件在shadows_dir中存在，链接到shadows_dir中的文件
+            #     if os.path.exists(shadow_file_path) and os.path.isfile(shadow_file_path):
+            #         os.symlink(shadow_file_path, link_item_path)
+            #     # 否则链接到源目录中的文件
+            #     else:
+            #         os.symlink(source_item_path, link_item_path) 
