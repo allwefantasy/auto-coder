@@ -122,7 +122,7 @@ class ActiveContextManager:
                     "sink": sys.stdout,
                     "level": "INFO",
                     "format": "{time:YYYY-MM-DD HH:mm:ss} | {name} | {message}",
-                    "filter": lambda record: record["extra"].get("name") not in ["DirectoryMapper", "ActiveContextManager","ActivePackage","AsyncProcessor"]
+                    "filter": lambda record: record["extra"].get("name") not in ["DirectoryMapper", "ActiveContextManager","ActivePackage","AsyncProcessor","TokenCostCalculator"]
                 }
             ]
         )
