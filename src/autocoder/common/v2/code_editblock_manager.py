@@ -307,7 +307,7 @@ class CodeEditBlockManager:
                 shadow_files = self._create_shadow_files_from_edits(generation_result)
 
                 # 在影子系统生成完整的项目，然后编译
-                compile_result = self.shadow_compiler.compile_all_shadow_files("")
+                compile_result = self.shadow_compiler.compile_all_shadow_files()
                 
                 # 如果编译成功，则退出，继续往后走
                 if compile_result.success or compile_result.total_errors == 0:

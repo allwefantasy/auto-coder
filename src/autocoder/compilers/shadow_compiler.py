@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from autocoder.shadows.shadow_manager import ShadowManager
 from autocoder.compilers.compiler_factory import CompilerFactory
 from autocoder.compilers.models import ProjectCompilationResult,FileCompilationResult
@@ -33,7 +34,7 @@ class ShadowCompiler:
             output_file=None
         )  
 
-    def compile_all_shadow_files(self,target_compiler_name:str) -> ProjectCompilationResult:
+    def compile_all_shadow_files(self,target_compiler_name:Optional[str]=None) -> ProjectCompilationResult:
         link_projects_dir = self.shadow_manager.create_link_project()
         result = self.compiler.compile_project(link_projects_dir,target_compiler_name)
         result.project_path = self.shadow_manager.source_dir
