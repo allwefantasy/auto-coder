@@ -192,7 +192,7 @@ class ActivePackage:
             end_time_current_change = time.monotonic()
             
             # 使用TokenCostCalculator跟踪token使用情况
-            token_calculator = TokenCostCalculator(logger_name="ActivePackage.TokenCost",args=args)
+            token_calculator = TokenCostCalculator(logger_name="ActivePackage",args=args)
             current_change_stats: TokenUsageStats = token_calculator.track_token_usage(
                 llm=self.llm,
                 meta_holder=meta_holder_current_change,
