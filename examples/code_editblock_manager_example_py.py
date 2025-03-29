@@ -69,7 +69,8 @@ def main():
         enable_auto_fix_lint=True,
         generate_times_same_model=1,  
         target_file= os.path.join(project_dir, "output.txt"),
-        file=os.path.join(project_dir, "actions", "000000000001_chat_action.yml")            
+        file=os.path.join(project_dir, "actions", "000000000001_chat_action.yml"),
+        ignore_clean_shadows=True
     )
     
     # 初始化 CodeEditBlockManager

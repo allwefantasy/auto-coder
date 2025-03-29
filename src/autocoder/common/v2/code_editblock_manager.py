@@ -63,7 +63,7 @@ class CodeEditBlockManager:
         self.code_merger = CodeAutoMergeEditBlock(llm, args, fence_0, fence_1)
 
         # Create shadow manager for linting
-        self.shadow_manager = ShadowManager(args.source_dir, args.event_file)
+        self.shadow_manager = ShadowManager(args.source_dir, args.event_file, args.ignore_clean_shadows)
         self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
 
     @byzerllm.prompt()
