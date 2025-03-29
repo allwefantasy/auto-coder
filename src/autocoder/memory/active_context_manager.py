@@ -108,7 +108,7 @@ class ActiveContextManager:
         global_logger.configure(
             handlers=[
                 # 移除控制台输出，只保留文件输出
-                # 文件 Handler（仅处理 DirectoryMapper）
+                # 文件 Handler
                 {
                     "sink": log_file,
                     "level": "INFO",
@@ -117,12 +117,12 @@ class ActiveContextManager:
                     "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name} | {message}",
                     "filter": lambda record: record["extra"].get("name") in ["DirectoryMapper", "ActiveContextManager","ActivePackage","AsyncProcessor"]
                 },
-                # 控制台 Handler（排除 DirectoryMapper）
+                # 控制台 Handler
                 {
                     "sink": sys.stdout,
                     "level": "INFO",
                     "format": "{time:YYYY-MM-DD HH:mm:ss} | {name} | {message}",
-                    "filter": lambda record: record["extra"].get("name") not in ["ActiveContextManager"]
+                    "filter": lambda record: record["extra"].get("name") not in ["DirectoryMapper", "ActiveContextManager","ActivePackage","AsyncProcessor"]
                 }
             ]
         )
