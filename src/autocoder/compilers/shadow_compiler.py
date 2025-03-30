@@ -9,7 +9,7 @@ class ShadowCompiler:
     用于对ShadowManager管理的文件进行代码检查并将结果转换回项目路径的类。
     """
     
-    def __init__(self, shadow_manager: ShadowManager):
+    def __init__(self, shadow_manager: ShadowManager,verbose:bool=False):
         """
         使用ShadowManager实例初始化。
         

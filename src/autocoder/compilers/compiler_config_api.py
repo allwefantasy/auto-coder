@@ -32,6 +32,7 @@ class CompilerConfigAPI:
     def create_compiler(self, 
                        name: str, 
                        compiler_type: str, 
+                       triggers: List[str],
                        working_dir: str, 
                        command: str, 
                        args: List[str], 
@@ -65,6 +66,7 @@ class CompilerConfigAPI:
                 working_dir=working_dir,
                 command=command,
                 args=args,
+                triggers=triggers,
                 extract_regex=extract_regex
             )
             
@@ -143,6 +145,7 @@ class CompilerConfigAPI:
                        working_dir: Optional[str] = None,
                        command: Optional[str] = None,
                        args: Optional[List[str]] = None,
+                       triggers: Optional[List[str]] = None,
                        extract_regex: Optional[str] = None) -> Dict[str, Any]:
         """
         Update an existing compiler configuration.
@@ -181,6 +184,9 @@ class CompilerConfigAPI:
             
             if extract_regex is not None:
                 updated_config["extract_regex"] = extract_regex
+
+            if triggers is not None:
+                updated_config["triggers"] = triggers
                 
             # Update the configuration
             success = self.config_manager.update_compiler(name, updated_config)

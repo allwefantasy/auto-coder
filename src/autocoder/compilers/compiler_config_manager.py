@@ -223,6 +223,7 @@ class CompilerConfigManager:
                                working_dir: str, 
                                command: str, 
                                args: List[str], 
+                               triggers: List[str],
                                extract_regex: Optional[str] = None) -> Dict[str, Any]:
         """
         Create a new compiler configuration dictionary.
@@ -243,7 +244,8 @@ class CompilerConfigManager:
             "type": type,
             "working_dir": working_dir,
             "command": command,
-            "args": args
+            "args": args,
+            "triggers": triggers
         }
         
         if extract_regex:
