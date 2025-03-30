@@ -89,7 +89,7 @@ project_root = os.getcwd()
 
 base_persist_dir = os.path.join(project_root,".auto-coder", "plugins", "chat-auto-coder")
 
-defaut_exclude_dirs = [".git", "node_modules", "dist", "build", "__pycache__"]
+defaut_exclude_dirs = [".git", "node_modules", "dist", "build", "__pycache__",".auto-coder"]
 
 commands = [
     "/add_files",
