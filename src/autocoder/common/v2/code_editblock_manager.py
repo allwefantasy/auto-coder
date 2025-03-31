@@ -283,9 +283,7 @@ class CodeEditBlockManager:
                     )
                     
                     # 使用修复提示重新生成代码
-                    start_time = time.time()
-                    source_code_list = self.code_merger.get_source_code_list_from_shadow_files(
-                        shadow_files) if 'shadow_files' in locals() else source_code_list
+                    start_time = time.time()                    
                     generation_result = self.code_generator.single_round_run(
                         fix_prompt, source_code_list)
                     
@@ -294,7 +292,7 @@ class CodeEditBlockManager:
                     token_cost_calculator.track_token_usage_by_generate(
                         llm=self.llm,
                         generate=generation_result,
-                        operation_name="fix_unmerged_blocks",
+                        operation_name="code_generation_complete",
                         start_time=start_time,
                         end_time=time.time()
                     )
