@@ -25,6 +25,7 @@ class PythonLinter(BaseLinter):
             verbose (bool): Whether to display verbose output.
         """
         super().__init__(verbose)
+        BaseLinter.tt()
     
     def get_supported_extensions(self) -> List[str]:
         """
@@ -152,6 +153,7 @@ class PythonLinter(BaseLinter):
                 sys.executable, 
                 "-m", 
                 "pylint", 
+                "--disable=import-error",
                 "--output-format=json", 
                 target
             ]
