@@ -237,80 +237,104 @@ class CodeEditBlockManager:
         if not generation_result.contents:
             self.printer.print_in_terminal("generation_failed", style="red")
             return generation_result
-        
+
         result = self.code_merger.choose_best_choice(generation_result)
         merge = self.code_merger._merge_code_without_effect(result.contents[0])
-        if merge.failed_blocks:            
-            formatted_text = ""             
-            for file_path, head, update in merge.failed_blocks: 
-                formatted_text += "```lang"                      
-                formatted_text += f"##File: {file_path}\n"                
-                formatted_text += "<<<<<<< SEARCH\n"
-                formatted_text += head
-                formatted_text += "=======\n"
-                formatted_text += update
-                formatted_text += ">>>>>>> REPLACE\n"                
-                formatted_text += "```"
-                formatted_text += "\n"
-            
-            get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
-                content=EventContentCreator.ResultContent(content=f"Unmerged blocks:\\n {formatted_text}",
-                                                          metadata={
-                                                              "merged_blocks": merge.success_blocks,
-                                                              "failed_blocks": merge.failed_blocks
-                                                          }
-                                                          ).to_dict(),
-                metadata={
-                    "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
-                    "action_file": self.args.file
-                }
-            ))
 
-            if self.args.enable_auto_fix_unmerged_blocks:
-                for attempt in range(self.args.auto_fix_merge_max_attempts):
-                    global_cancel.check_and_raise()
-                    fix_prompt = self.fix_unmerged_blocks.prompt(
-                        query=query,
-                        unmerged_blocks=formatted_text
-                    )
-                    
-                    # 打印当前修复尝试状态
+        if self.args.enable_auto_fix_unmerged_blocks and merge.failed_blocks:
+            def _format_unmerged_blocks(merge: MergeCodeWithoutEffect) -> str:
+                formatted_text = ""
+                for file_path, head, update in merge.failed_blocks:
+                    formatted_text += "```lang"
+                    formatted_text += f"##File: {file_path}\n"
+                    formatted_text += "<<<<<<< SEARCH\n"
+                    formatted_text += head
+                    formatted_text += "=======\n"
+                    formatted_text += update
+                    formatted_text += ">>>>>>> REPLACE\n"
+                    formatted_text += "```"
+                    formatted_text += "\n"
+
+                get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
+                    content=EventContentCreator.ResultContent(content=f"Unmerged blocks:\\n {formatted_text}",
+                                                              metadata={
+                                                                  "merged_blocks": merge.success_blocks,
+                                                                  "failed_blocks": merge.failed_blocks
+                                                              }
+                                                              ).to_dict(),
+                    metadata={
+                        "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
+                        "action_file": self.args.file
+                    }
+                ))
+                return formatted_text
+
+            for attempt in range(self.args.auto_fix_merge_max_attempts):
+                global_cancel.check_and_raise()
+                formatted_text = _format_unmerged_blocks(merge)
+                fix_prompt = self.fix_unmerged_blocks.prompt(
+                    query=query,
+                    unmerged_blocks=formatted_text
+                )
+
+                # 打印当前修复尝试状态
+                self.printer.print_in_terminal(
+                    "unmerged_blocks_attempt_status",
+                    style="yellow",
+                    attempt=(attempt + 1),
+                    max_correction_attempts=self.args.auto_fix_merge_max_attempts
+                )
+
+                get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
+                    content=EventContentCreator.ResultContent(content=f"Unmerged blocks attempt {attempt + 1}/{self.args.auto_fix_merge_max_attempts}: {formatted_text}",
+                                                              metadata={}
+                                                              ).to_dict(),
+                    metadata={
+                        "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
+                        "action_file": self.args.file
+                    }
+                ))
+
+                # 使用修复提示重新生成代码
+                start_time = time.time()
+                generation_result = self.code_generator.single_round_run(
+                    fix_prompt, source_code_list)
+
+                # 计算这次修复未合并块花费的token情况
+                token_cost_calculator = TokenCostCalculator(args=self.args)
+                token_cost_calculator.track_token_usage_by_generate(
+                    llm=self.llm,
+                    generate=generation_result,
+                    operation_name="code_generation_complete",
+                    start_time=start_time,
+                    end_time=time.time()
+                )
+
+                # 检查修复后的代码是否仍有未合并块
+                result = self.code_merger.choose_best_choice(generation_result)
+                merge = self.code_merger._merge_code_without_effect(
+                    result.contents[0])
+
+                # 如果没有失败的块，则修复成功，退出循环
+                if not merge.failed_blocks:
                     self.printer.print_in_terminal(
-                        "unmerged_blocks_attempt_status",
-                        style="yellow",
-                        attempt=(attempt + 1),
-                        max_correction_attempts=self.args.auto_fix_merge_max_attempts
-                    )
-                    
-                    # 使用修复提示重新生成代码
-                    start_time = time.time()                    
-                    generation_result = self.code_generator.single_round_run(
-                        fix_prompt, source_code_list)
-                    
-                    # 计算这次修复未合并块花费的token情况
-                    token_cost_calculator = TokenCostCalculator(args=self.args)
-                    token_cost_calculator.track_token_usage_by_generate(
-                        llm=self.llm,
-                        generate=generation_result,
-                        operation_name="code_generation_complete",
-                        start_time=start_time,
-                        end_time=time.time()
-                    )
-                    
-                    # 检查修复后的代码是否仍有未合并块
-                    result = self.code_merger.choose_best_choice(generation_result)
-                    merge = self.code_merger._merge_code_without_effect(result.contents[0])
-                    
-                    # 如果没有失败的块，则修复成功，退出循环
-                    if not merge.failed_blocks:
-                        self.printer.print_in_terminal(
-                            "unmerged_blocks_fixed", style="green")
-                        break
-                    
-                    # 如果是最后一次尝试仍未成功，打印警告
-                    if attempt == self.args.auto_fix_merge_max_attempts - 1:
-                        self.printer.print_in_terminal(
-                            "max_unmerged_blocks_attempts_reached", style="yellow")
+                        "unmerged_blocks_fixed", style="green")
+                    break
+
+                # 如果是最后一次尝试仍未成功，打印警告
+                if attempt == self.args.auto_fix_merge_max_attempts - 1:
+                    self.printer.print_in_terminal(
+                        "max_unmerged_blocks_attempts_reached", style="yellow")
+                    get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
+                        content=EventContentCreator.ResultContent(content=self.printer.get_message_from_key("max_unmerged_blocks_attempts_reached"),
+                                                                  metadata={}
+                                                                  ).to_dict(),
+                        metadata={
+                            "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
+                            "action_file": self.args.file
+                        }
+                    ))
+                    raise Exception(self.printer.get_message_from_key("max_unmerged_blocks_attempts_reached"))
 
         # 最多尝试修复5次
         for attempt in range(self.auto_fix_lint_max_attempts):
@@ -391,23 +415,24 @@ class CodeEditBlockManager:
                 start_time=start_time,
                 end_time=time.time()
             )
-        
+
         # 如果开启了自动修复compile问题，则进行compile修复
         if self.args.enable_auto_fix_compile:
             for attempt in range(self.auto_fix_compile_max_attempts):
                 global_cancel.check_and_raise()
                 # 先更新增量影子系统的文件
-                shadow_files = self._create_shadow_files_from_edits(generation_result)
+                shadow_files = self._create_shadow_files_from_edits(
+                    generation_result)
 
                 # 在影子系统生成完整的项目，然后编译
                 compile_result = self.shadow_compiler.compile_all_shadow_files()
-                
+
                 # 如果编译成功，则退出，继续往后走
                 if compile_result.success or compile_result.total_errors == 0:
                     self.printer.print_in_terminal(
                         "compile_success", style="green")
                     break
-                
+
                 # 如果有错误，则把compile结果记录到事件系统
                 get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
                     content=EventContentCreator.ResultContent(content=f"Compile attempt {attempt + 1}/{self.auto_fix_compile_max_attempts}: Found {compile_result.total_errors} errors:\n {compile_result.to_str()}",
@@ -450,7 +475,7 @@ class CodeEditBlockManager:
                     operation_name="code_generation_complete",
                     start_time=start_time,
                     end_time=time.time()
-                ) 
+                )
 
         # 清理临时影子文件
         self.shadow_manager.clean_shadows()
