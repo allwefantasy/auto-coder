@@ -138,15 +138,10 @@ class ActionTSProject(BaseAction):
             else:
                 generate = CodeAutoGenerate(
                     llm=self.llm, args=self.args, action=self)
-
-            if self.args.enable_multi_round_generate:
-                generate_result = generate.multi_round_run(
-                    query=args.query, source_code_list=source_code_list
-                )
-            else:
-                generate_result = generate.single_round_run(
-                    query=args.query, source_code_list=source_code_list
-                )
+            
+            generate_result = generate.single_round_run(
+                query=args.query, source_code_list=source_code_list
+            )
             elapsed_time = time.time() - start_time
             speed = generate_result.metadata.get(
                 'generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
@@ -297,15 +292,11 @@ class ActionPyProject(BaseAction):
             else:
                 generate = CodeAutoGenerate(
                     llm=self.llm, args=self.args, action=self)
+            
+            generate_result = generate.single_round_run(
+                query=args.query, source_code_list=source_code_list
+            )
 
-            if self.args.enable_multi_round_generate:
-                generate_result = generate.multi_round_run(
-                    query=args.query, source_code_list=source_code_list
-                )
-            else:
-                generate_result = generate.single_round_run(
-                    query=args.query, source_code_list=source_code_list
-                )
             elapsed_time = time.time() - start_time
             speed = generate_result.metadata.get(
                 'generated_tokens_count', 0) / elapsed_time if elapsed_time > 0 else 0
@@ -449,14 +440,10 @@ class ActionSuffixProject(BaseAction):
             else:
                 generate = CodeAutoGenerate(
                     llm=self.llm, args=self.args, action=self)
-            if self.args.enable_multi_round_generate:
-                generate_result = generate.multi_round_run(
-                    query=args.query, source_code_list=source_code_list
-                )
-            else:
-                generate_result = generate.single_round_run(
-                    query=args.query, source_code_list=source_code_list
-                )
+            
+            generate_result = generate.single_round_run(
+                query=args.query, source_code_list=source_code_list
+            )
 
         elapsed_time = time.time() - start_time
         speed = generate_result.metadata.get(

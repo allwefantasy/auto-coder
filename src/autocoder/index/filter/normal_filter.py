@@ -44,14 +44,6 @@ class NormalFilter():
         
         final_files: Dict[str, TargetFile] = {}
         if not self.args.skip_filter_index:
-            if self.args.request_id and not self.args.skip_events:
-                queue_communicate.send_event(
-                    request_id=self.args.request_id,
-                    event=CommunicateEvent(
-                        event_type=CommunicateEventType.CODE_INDEX_FILTER_START.value,
-                        data=json.dumps({})
-                    )
-                )
             # Phase 3: Level 1 filtering - Query-based
             logger.info(
                 "Phase 3: Performing Level 1 filtering (query-based)...")
@@ -71,14 +63,6 @@ class NormalFilter():
             if target_files is not None and self.args.index_filter_level >= 2:
                 logger.info(
                     "Phase 4: Performing Level 2 filtering (related files)...")
-                if self.args.request_id and not self.args.skip_events:
-                    queue_communicate.send_event(
-                        request_id=self.args.request_id,
-                        event=CommunicateEvent(
-                            event_type=CommunicateEventType.CODE_INDEX_FILTER_START.value,
-                            data=json.dumps({})
-                        )
-                    )
                 phase_start = time.monotonic()
                 related_files = self.index_manager.get_related_files(
                     [file.file_path for file in target_files.file_list]

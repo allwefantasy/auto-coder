@@ -14,8 +14,7 @@ class TestActionRegexProject(unittest.TestCase):
             execute=True,
             auto_merge="editblock",
             target_file="test_output.txt",
-            model_max_input_length=1000,
-            enable_multi_round_generate=False,
+            model_max_input_length=1000            
         )
         self.llm = MagicMock()
 

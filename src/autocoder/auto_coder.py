@@ -475,30 +475,7 @@ def main(input_args: Optional[List[str]] = None):
                             border_style="blue",
                             expand=False,
                         )
-                    )
-
-                if args.request_id and not args.silence and not args.skip_events:
-                    event_data = {
-                        "instruction": final_ins,
-                        "model": model,
-                        "request_id": args.request_id,
-                    }
-                    response_json = queue_communicate.send_event(
-                        request_id=args.request_id,
-                        event=CommunicateEvent(
-                            event_type=CommunicateEventType.CODE_HUMAN_AS_MODEL.value,
-                            data=json.dumps(event_data, ensure_ascii=False),
-                        ),
-                    )
-                    response = json.loads(response_json)
-                    v = [
-                        {
-                            "predict": response["value"],
-                            "input": input_value[0]["instruction"],
-                            "metadata": {},
-                        }
-                    ]
-                    return False, v
+                    )                
 
                 lines = []
                 while True:

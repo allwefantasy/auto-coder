@@ -51,69 +51,7 @@ class CodeAutoGenerate:
         {{ instruction }}
 
         """
-
-    @byzerllm.prompt(llm=lambda self: self.llm)
-    def multi_round_instruction(
-        self, instruction: str, content: str, context: str = "", package_context: str = ""
-    ) -> str:
-        """
-        {%- if structure %}
-        {{ structure }}
-        {%- endif %}
-
-        {%- if content %}
-        下面是一些文件路径以及每个文件对应的源码：
-        <files>
-        {{ content }}
-        </files>
-        {%- endif %}
-
-        {%- if package_context %}
-        下面是上面文件的一些信息（包括最近的变更情况）：
-        <package_context>
-        {{ package_context }}
-        </package_context>
-        {%- endif %}
-
-        {%- if context %}
-        <extra_context>
-        {{ context }}
-        </extra_context>
-        {%- endif %}
-
-        下面是用户的需求：
-
-        {{ instruction }}
-
-        如果你需要生成代码，你生成的代码要符合这个格式：
-
-        ```{lang}
-        ##File: {FILE_PATH}
-        {CODE}
-        ```
-
-        ```{lang}
-        ##File: {FILE_PATH}
-        {CODE}
-        ```
-
-        其中，{lang}是代码的语言，{CODE}是代码的内容, {FILE_PATH} 是文件的路径(请尽量使用绝对路径)，他们都在代码块中，请严格按上面的格式进行内容生成。
-        每次生成一个文件的代码，然后询问我是否继续，当我回复继续，继续生成下一个文件的代码。当没有后续任务时，请回复 "__完成__" 或者 "__EOF__"。
-        请确保每份代码的完整性，而不要只生成修改部分。
-        """
-        
-        if not self.args.include_project_structure:
-            return {
-                "structure": "",                
-            }
-
-        return {
-            "structure": (
-                self.action.pp.get_tree_like_directory_structure()
-                if self.action
-                else ""
-            )
-        }
+    
 
     @byzerllm.prompt(llm=lambda self: self.llm)
     def single_round_instruction(
@@ -196,15 +134,6 @@ class CodeAutoGenerate:
             
         source_code_list = SourceCodeList(filtered_sources)
         source_content = source_code_list.to_str()
-
-        if self.args.request_id and not self.args.skip_events:
-            queue_communicate.send_event_no_wait(
-                request_id=self.args.request_id,
-                event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_GENERATE_START.value,
-                    data=query,
-                ),
-            )
 
         # 获取包上下文信息
         package_context = ""
@@ -339,90 +268,6 @@ class CodeAutoGenerate:
             "generated_tokens_cost": generated_tokens_cost
         }        
     
-        if self.args.request_id and not self.args.skip_events:
-            queue_communicate.send_event_no_wait(
-                request_id=self.args.request_id,
-                event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_GENERATE_END.value,
-                    data=json.dumps(statistics, ensure_ascii=False),
-                ),
-            )
-
         return CodeGenerateResult(contents=results, conversations=conversations_list, metadata=statistics)
 
-    def multi_round_run(
-        self, query: str, source_code_list: SourceCodeList, max_steps: int = 10
-    ) -> Tuple[List[str], List[Dict[str, str]]]:
-        llm_config = {"human_as_model": self.args.human_as_model}
-        result = []
-        source_content = source_code_list.to_str()
-
-        # 获取包上下文信息
-        package_context = ""
-        
-        if self.args.enable_active_context:
-            # 初始化活动上下文管理器
-            active_context_manager = ActiveContextManager(self.llm, self.args.source_dir)
-            # 获取活动上下文信息
-            result = active_context_manager.load_active_contexts_for_files(
-                [source.module_name for source in source_code_list.sources]
-            )
-            # 将活动上下文信息格式化为文本
-            if result.contexts:
-                package_context_parts = []
-                for dir_path, context in result.contexts.items():
-                    package_context_parts.append(f"<package_info>{context.content}</package_info>")
-                
-                package_context = "\n".join(package_context_parts)
-
-        if self.args.template == "common":
-            init_prompt = self.multi_round_instruction.prompt(
-                instruction=query, content=source_content, context=self.args.context,
-                package_context=package_context
-            )
-        elif self.args.template == "auto_implement":
-            init_prompt = self.auto_implement_function.prompt(
-                instruction=query, content=source_content
-            )
-
-        conversations = [{"role": "user", "content": init_prompt}]
-
-        with open(self.args.target_file, "w",encoding="utf-8") as file:
-            file.write(init_prompt)
-
-        t = self.llm.chat_oai(conversations=conversations, llm_config=llm_config)
-
-        result.append(t[0].output)
-
-        conversations.append({"role": "assistant", "content": t[0].output})
-
-        if (
-            "__完成__" in t[0].output
-            or "/done" in t[0].output
-            or "__EOF__" in t[0].output
-        ):
-            return result, conversations
-
-        current_step = 0
-
-        while current_step < max_steps:
-
-            conversations.append({"role": "user", "content": "继续"})
-
-            with open(self.args.target_file, "w",encoding="utf-8") as file:
-                file.write("继续")
-
-            t = self.llm.chat_oai(conversations=conversations, llm_config=llm_config)
-
-            result.append(t[0].output)
-            conversations.append({"role": "assistant", "content": t[0].output})
-            current_step += 1
-
-            if (
-                "__完成__" in t[0].output
-                or "/done" in t[0].output
-                or "__EOF__" in t[0].output
-            ):
-                return CodeGenerateResult(contents=["\n\n".join(result)], conversations=[conversations])
-
-        return CodeGenerateResult(contents=["\n\n".join(result)], conversations=[conversations])
+    

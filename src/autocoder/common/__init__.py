@@ -326,12 +326,13 @@ class AutoCoderArgs(pydantic.BaseModel):
     image_max_iter: Optional[int] = 1
     
     urls: Optional[Union[str, List[str]]] = ""
-    urls_use_model: Optional[bool] = False
-    enable_multi_round_generate: Optional[bool] = False
+    urls_use_model: Optional[bool] = False    
     command: Optional[str] = None
     doc_command: Optional[str] = None
     required_exts: Optional[str] = None
     hybrid_index_max_output_tokens: Optional[int] = 1000000
+
+    enable_multi_round_generate: Optional[bool] = False
 
     monitor_mode: bool = False
     enable_hybrid_index: bool = False

@@ -98,13 +98,7 @@ def init_command_template(source_dir:str):
     ## The model will generate the code for you
     ## 模型将为您生成代码
     execute: true
-
-    ## If you want to generate multiple files, you can enable this option to generate the code in multiple rounds
-    ## to avoid exceeding the maximum token limit of the model
-    ## 如果您想生成多个文件，可以启用此选项，以便在多个回合中生成代码
-    ## 以避免超过模型的最大令牌限制
-    enable_multi_round_generate: false
-
+    
     ## AutoCoder will merge the generated code into your project
     ## AutoCoder将合并生成的代码到您的项目中
     auto_merge: true
@@ -175,8 +169,7 @@ def base_base(source_dir:str,project_type:str)->str:
     target_file: {{ target_file }}
 
     model: v3_chat    
-    model_max_input_length: 60000
-    enable_multi_round_generate: false
+    model_max_input_length: 60000    
     index_filter_workers: 100
     index_build_workers: 100
     index_filter_level: 1

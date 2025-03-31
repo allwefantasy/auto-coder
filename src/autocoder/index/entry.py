@@ -86,15 +86,6 @@ def build_index_and_filter_files(
 
     if not args.skip_build_index and llm:
         # Phase 2: Build index
-        if args.request_id and not args.skip_events:
-            queue_communicate.send_event(
-                request_id=args.request_id,
-                event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_INDEX_BUILD_START.value,
-                    data=json.dumps({"total_files": len(sources)})
-                )
-            )
-
         printer.print_in_terminal("phase2_building_index")
         phase_start = time.monotonic()
         index_manager = IndexManager(llm=llm, sources=sources, args=args)
@@ -103,17 +94,6 @@ def build_index_and_filter_files(
         phase_end = time.monotonic()
         stats["timings"]["build_index"] = phase_end - phase_start
 
-        if args.request_id and not args.skip_events:
-            queue_communicate.send_event(
-                request_id=args.request_id,
-                event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_INDEX_BUILD_END.value,
-                    data=json.dumps({
-                        "indexed_files": stats["indexed_files"],
-                        "build_index_time": stats["timings"]["build_index"],
-                    })
-                )
-            )
 
         if not args.skip_filter_index and args.index_filter_model:
             model_name = getattr(
@@ -313,17 +293,6 @@ def build_index_and_filter_files(
             temp_sources, [{"role": "user", "content": args.query}], args.context_prune_strategy)
         source_code_list.sources = pruned_files
 
-    if args.request_id and not args.skip_events:
-        queue_communicate.send_event(
-            request_id=args.request_id,
-            event=CommunicateEvent(
-                event_type=CommunicateEventType.CODE_INDEX_FILTER_FILE_SELECTED.value,
-                data=json.dumps([
-                    (file.module_name, "") for file in source_code_list.sources
-                ])
-            )
-        )
-
     stats["final_files"] = len(source_code_list.sources)
     phase_end = time.monotonic()
     stats["timings"]["prepare_output"] = phase_end - phase_start
@@ -373,18 +342,6 @@ def build_index_and_filter_files(
     #         "expand": False
     #     }
     # )
-
-    if args.request_id and not args.skip_events:
-        queue_communicate.send_event(
-            request_id=args.request_id,
-            event=CommunicateEvent(
-                event_type=CommunicateEventType.CODE_INDEX_FILTER_END.value,
-                data=json.dumps({
-                    "filtered_files": stats["final_files"],
-                    "filter_time": total_filter_time
-                })
-            )
-        )
 
     get_event_manager(args.event_file).write_result(
         EventContentCreator.create_result(

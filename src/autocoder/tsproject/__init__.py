@@ -198,17 +198,8 @@ class TSProject:
         if not self.args.enable_rag_search and not self.args.enable_rag_context:
             return []
             
-        if self.args.request_id and not self.args.skip_events:
-            _ = queue_communicate.send_event(
-                request_id=self.args.request_id,
-                event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_RAG_SEARCH_START.value,
-                    data=json.dumps({},ensure_ascii=False)
-                )
-            )
-        else:
-            console = Console()
-            console.print(f"\n[bold blue]Starting RAG search for:[/bold blue] {self.args.query}")
+        console = Console()
+        console.print(f"\n[bold blue]Starting RAG search for:[/bold blue] {self.args.query}")
             
         from autocoder.rag.rag_entry import RAGFactory
         rag = RAGFactory.get_rag(self.llm, self.args, "")
@@ -216,17 +207,9 @@ class TSProject:
         for doc in docs:
             doc.tag = "RAG"
             
-        if self.args.request_id and not self.args.skip_events:
-            _ = queue_communicate.send_event(
-                request_id=self.args.request_id,
-                event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_RAG_SEARCH_END.value,
-                    data=json.dumps({},ensure_ascii=False)
-                )
-            )
-        else:
-            console = Console()
-            console.print(f"[bold green]Found {len(docs)} relevant documents[/bold green]")
+
+        console = Console()
+        console.print(f"[bold green]Found {len(docs)} relevant documents[/bold green]")
             
         return docs
 

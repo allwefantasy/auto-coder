@@ -367,21 +367,6 @@ class CodeAutoMergeEditBlock:
                     else:
                         unmerged_blocks.append(
                             (file_path, head, update, similarity))
-
-        if unmerged_blocks:
-            if self.args.request_id and not self.args.skip_events:
-                # collect unmerged blocks
-                event_data = []
-                for file_path, head, update, similarity in unmerged_blocks:
-                    event_data.append(
-                        {
-                            "file_path": file_path,
-                            "head": head,
-                            "update": update,
-                            "similarity": similarity,
-                        }
-                    )
-                return
             
             self.printer.print_in_terminal("unmerged_blocks_warning", num_blocks=len(unmerged_blocks))
             self._print_unmerged_blocks(unmerged_blocks)
@@ -413,20 +398,6 @@ class CodeAutoMergeEditBlock:
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, "w") as f:
                 f.write(new_content)
-
-        if self.args.request_id and not self.args.skip_events:
-            # collect modified files
-            event_data = []
-            for code in merged_blocks:
-                file_path, head, update, similarity = code
-                event_data.append(
-                    {
-                        "file_path": file_path,
-                        "head": head,
-                        "update": update,
-                        "similarity": similarity,
-                    }
-                )
 
 
         if changes_made:

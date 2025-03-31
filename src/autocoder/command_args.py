@@ -195,12 +195,7 @@ def parse_args(input_args: Optional[List[str]] = None) -> AutoCoderArgs:
     parser.add_argument(
         "--image_max_iter", type=int, default=1, help=desc["image_max_iter"]
     )
-
-    parser.add_argument(
-        "--enable_multi_round_generate",
-        action="store_true",
-        help=desc["enable_multi_round_generate"],
-    )
+    
     parser.add_argument(
         "--skip_confirm", action="store_true", help=desc["skip_confirm"]
     )

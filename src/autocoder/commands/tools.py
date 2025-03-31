@@ -105,19 +105,6 @@ class AutoCommandTools:
         注意，尽量不要询问用户，除非你感受到你无法回答用户的问题。
         '''
 
-        if self.args.request_id and not self.args.silence and not self.args.skip_events:
-            event_data = {
-                "question": question
-            }
-            response_json = queue_communicate.send_event(
-                request_id=self.args.request_id,
-                event=CommunicateEvent(
-                    event_type=CommunicateEventType.ASK_HUMAN.value,
-                    data=json.dumps(event_data, ensure_ascii=False),
-                ),
-            )
-            return response_json
-
         # 如果是在web模式下，则使用event_manager事件来询问用户
         if get_run_context().is_web():
             answer = get_event_manager(

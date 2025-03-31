@@ -505,7 +505,6 @@ index_build_workers: 100
 
 skip_build_index: false
 execute: true
-enable_multi_round_generate: false
 auto_merge: editblock
 human_as_model: false
 """
