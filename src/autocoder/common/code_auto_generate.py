@@ -264,15 +264,16 @@ class CodeAutoGenerate:
         if not self.args.human_as_model:
             with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
                 futures = []
+                count = 0
                 for llm in self.llms:
                     model_names_list = llm_utils.get_llm_names(llm) 
                     model_name = None
                     if model_names_list:
                         model_name = model_names_list[0]  
 
-                    for i in range(self.generate_times_same_model):
+                    for _ in range(self.generate_times_same_model):
                         model_names.append(model_name)
-                        if i==0:
+                        if count == 0:
                             def job():
                                 stream_generator = stream_chat_with_continue(
                                     llm=llm, 
@@ -303,7 +304,7 @@ class CodeAutoGenerate:
                                 llm_config=llm_config,
                                 args=self.args
                             ))
-                            
+                        count += 1
                 temp_results = [future.result() for future in futures]
                 for result in temp_results:
                     results.append(result.content)

@@ -337,15 +337,7 @@ class CodeAutoGenerateStrictDiff:
                 {"role": "system", "content": self.args.system_prompt})
 
         conversations.append({"role": "user", "content": init_prompt})
-
-        if self.args.request_id and not self.args.skip_events:
-            _ = queue_communicate.send_event(
-                request_id=self.args.request_id,
-                event=CommunicateEvent(
-                    event_type=CommunicateEventType.CODE_GENERATE_START.value,
-                    data=json.dumps({}, ensure_ascii=False),
-                ),
-            )
+     
         
         conversations_list = []
         results = []
@@ -365,6 +357,7 @@ class CodeAutoGenerateStrictDiff:
         if not self.args.human_as_model:
             with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
                 futures = []
+                count = 0
                 for llm in self.llms:
                     for _ in range(self.generate_times_same_model):
                         
@@ -373,9 +366,9 @@ class CodeAutoGenerateStrictDiff:
                         if model_names_list:
                             model_name = model_names_list[0]                                                    
                         
-                        for i in range(self.generate_times_same_model):
+                        for _ in range(self.generate_times_same_model):
                             model_names.append(model_name)
-                            if i==0:
+                            if count == 0:
                                 def job():
                                     stream_generator = stream_chat_with_continue(
                                         llm=llm, 
@@ -406,7 +399,7 @@ class CodeAutoGenerateStrictDiff:
                                     llm_config=llm_config,
                                     args=self.args
                                 ))
-                            
+                            count += 1
                 temp_results = [future.result() for future in futures]
                 for result in temp_results:
                     results.append(result.content)
