@@ -1197,21 +1197,7 @@ def main(input_args: Optional[List[str]] = None):
                             border_style="blue",
                             expand=False,
                         )
-                    )
-                if args.request_id:
-                    request_queue.add_request(
-                        args.request_id,
-                        RequestValue(
-                            value=StreamValue(value=[chat_content]), status=RequestOption.RUNNING
-                        ),
-                    )
-                    request_queue.add_request(
-                        args.request_id,
-                        RequestValue(
-                            value=StreamValue(value=[""]), status=RequestOption.COMPLETED
-                        ),
-                    )
-                    return {}
+                    )    
 
                 lines = []
                 while True:
@@ -1244,14 +1230,7 @@ def main(input_args: Optional[List[str]] = None):
                 )
 
                 with open(memory_file, "w",encoding="utf-8") as f:
-                    json.dump(chat_history, f, ensure_ascii=False)
-
-                request_queue.add_request(
-                    args.request_id,
-                    RequestValue(
-                        value=DefaultValue(value=result), status=RequestOption.COMPLETED
-                    ),
-                )
+                    json.dump(chat_history, f, ensure_ascii=False)                
 
                 if "save" in commands_info:
                     save_to_memory_file(ask_conversation=chat_history["ask_conversation"],
@@ -1311,6 +1290,9 @@ def main(input_args: Optional[List[str]] = None):
                 printer.print_in_terminal("estimated_chat_input_tokens", style="yellow",
                                   estimated_input_tokens=estimated_input_tokens
                                   )
+                
+                # with open("/tmp/output.txt", "w",encoding="utf-8") as f:
+                #     f.write(json.dumps(loaded_conversations, ensure_ascii=False, indent=4))
 
                 v = stream_chat_with_continue(
                     llm=chat_llm,

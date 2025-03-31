@@ -239,9 +239,13 @@ class CodeEditBlockManager:
         if not generation_result.contents:
             self.printer.print_in_terminal("generation_failed", style="red")
             return generation_result
+        
+        ## 可能第一次触发排序
+        generation_result = self.code_merger.choose_best_choice(generation_result)
+        merge = self.code_merger._merge_code_without_effect(generation_result.contents[0])
 
-        result = self.code_merger.choose_best_choice(generation_result)
-        merge = self.code_merger._merge_code_without_effect(result.contents[0])
+        ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
+        generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
 
         if self.args.enable_auto_fix_merge and merge.failed_blocks:
             def _format_blocks(merge: MergeCodeWithoutEffect) -> Tuple[str, str]:
@@ -327,7 +331,9 @@ class CodeEditBlockManager:
                 )
 
                 # 检查修复后的代码是否仍有未合并块
-                result = self.code_merger.choose_best_choice(generation_result)
+                generation_result = self.code_merger.choose_best_choice(generation_result)
+                ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
+                generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
                 merge = self.code_merger._merge_code_without_effect(
                     result.contents[0])
 
@@ -353,7 +359,7 @@ class CodeEditBlockManager:
                     raise Exception(self.printer.get_message_from_key(
                         "max_unmerged_blocks_attempts_reached"))
 
-        # 最多尝试修复5次
+        # 接着开始看看 Lin他最多尝试修复5次
         for attempt in range(self.auto_fix_lint_max_attempts):
             global_cancel.check_and_raise()
             # 代码生成结果更新到影子文件里去
@@ -440,7 +446,7 @@ class CodeEditBlockManager:
                 # 先更新增量影子系统的文件
                 shadow_files = self._create_shadow_files_from_edits(
                     generation_result)
-
+                
                 # 在影子系统生成完整的项目，然后编译
                 compile_result = self.shadow_compiler.compile_all_shadow_files()
 

@@ -148,17 +148,20 @@ class CodeModificationRanker:
         input_tokens_count = 0
         generated_tokens_count = 0
         try:
+            import traceback
+            traceback.print_stack()
             # Create a thread pool with (number of models * generate_times) workers
             with ThreadPoolExecutor(max_workers=total_tasks) as executor:
                 # Submit tasks for each model and generate_times
                 futures = []
+                count = 0
                 for llm in self.llms:                                                          
                     model_name = ",".join(get_llm_names(llm))
                     self.printer.print_in_terminal(
                         "ranking_start", style="blue", count=len(generate_result.contents), model_name=model_name)
                     
-                    for i in range(rank_times):
-                        if i == 0:
+                    for _ in range(rank_times):
+                        if count == 0:
                             futures.append(
                                 executor.submit(
                                     stream_chat_with_continue,
@@ -178,6 +181,7 @@ class CodeModificationRanker:
                                     self.args
                                 )
                             )
+                        count += 1
 
                 # Collect all results
                 results = []
