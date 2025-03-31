@@ -773,6 +773,18 @@ MESSAGES = {
     "max_compile_attempts_reached": {
         "en": "Maximum compilation attempts reached",
         "zh": "已达到最大编译尝试次数"
+    },
+    "unmerged_blocks_fixed": {
+        "en": "Unmerged blocks fixed successfully",
+        "zh": "未合并代码块已成功修复"
+    },
+    "unmerged_blocks_attempt_status": {
+        "en": "Fixing unmerged blocks attempt {{attempt}}/{{max_correction_attempts}}",
+        "zh": "正在尝试修复未合并代码块 {{attempt}}/{{max_correction_attempts}}"
+    },
+    "max_unmerged_blocks_attempts_reached": {
+        "en": "Maximum unmerged blocks fix attempts reached",
+        "zh": "已达到最大未合并代码块修复尝试次数"
     }
 }
 
