@@ -291,7 +291,7 @@ class CodeEditBlockManager:
                     merge)
                 fix_prompt = self.fix_unmerged_blocks.prompt(
                     query=query,
-                    original_code=result.contents[0],
+                    original_code=generation_result.contents[0],
                     unmerged_blocks=unmerged_formatted_text
                 )
 
@@ -335,7 +335,7 @@ class CodeEditBlockManager:
                 ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
                 generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
                 merge = self.code_merger._merge_code_without_effect(
-                    result.contents[0])
+                    generation_result.contents[0])
 
                 # 如果没有失败的块，则修复成功，退出循环
                 if not merge.failed_blocks:
