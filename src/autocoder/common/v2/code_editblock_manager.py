@@ -103,17 +103,24 @@ class CodeEditBlockManager:
         修复上述问题，请确保代码质量问题被解决，同时保持代码的原有功能。
         请严格遵守*SEARCH/REPLACE block*的格式。
         """
-
+    @byzerllm.prompt()
     def fix_unmerged_blocks(self, query: str, unmerged_blocks: str) -> str:
-        """
+        """        
         出现了未合并的代码块:
         <unmerged_blocks>
         {{ unmerged_blocks }}
         </unmerged_blocks>
 
-        请确保 SEARCH/REPLACE block 的格式正确, 我们会根据 SEARCH 寻找代码，然后使用 REPLACE 替换代码,代码无法合并
+        用户原始需求:
+        <user_query_wrapper>
+        {{ query }}
+        </user_query_wrapper>
+
+        请确保 SEARCH/REPLACE block 的格式正确, 我们会根据 SEARCH 寻找代码，然后使用 REPLACE 替换代码。代码无法合并
         的主要原因是通过 SEARCH 部分的代码块无法在提供的源码中找到完全一样的代码，请确保 SEARCH 部分的代码块在提供的源码中存在完全匹配，
-        包括缩进，字符等等。
+        包括缩进，空格，换行符等所有字符。
+
+        请修复上述未合并的代码块，使其能够正确合并。返回完整的修复后的代码块，使用与原始格式相同的 SEARCH/REPLACE block 格式。
         """
 
     def _create_shadow_files_from_edits(self, generation_result: CodeGenerateResult) -> Dict[str, str]:
@@ -266,7 +273,46 @@ class CodeEditBlockManager:
                         query=query,
                         unmerged_blocks=formatted_text
                     )
-
+                    
+                    # 打印当前修复尝试状态
+                    self.printer.print_in_terminal(
+                        "unmerged_blocks_attempt_status",
+                        style="yellow",
+                        attempt=(attempt + 1),
+                        max_correction_attempts=self.args.auto_fix_merge_max_attempts
+                    )
+                    
+                    # 使用修复提示重新生成代码
+                    start_time = time.time()
+                    source_code_list = self.code_merger.get_source_code_list_from_shadow_files(
+                        shadow_files) if 'shadow_files' in locals() else source_code_list
+                    generation_result = self.code_generator.single_round_run(
+                        fix_prompt, source_code_list)
+                    
+                    # 计算这次修复未合并块花费的token情况
+                    token_cost_calculator = TokenCostCalculator(args=self.args)
+                    token_cost_calculator.track_token_usage_by_generate(
+                        llm=self.llm,
+                        generate=generation_result,
+                        operation_name="fix_unmerged_blocks",
+                        start_time=start_time,
+                        end_time=time.time()
+                    )
+                    
+                    # 检查修复后的代码是否仍有未合并块
+                    result = self.code_merger.choose_best_choice(generation_result)
+                    merge = self.code_merger._merge_code_without_effect(result.contents[0])
+                    
+                    # 如果没有失败的块，则修复成功，退出循环
+                    if not merge.failed_blocks:
+                        self.printer.print_in_terminal(
+                            "unmerged_blocks_fixed", style="green")
+                        break
+                    
+                    # 如果是最后一次尝试仍未成功，打印警告
+                    if attempt == self.args.auto_fix_merge_max_attempts - 1:
+                        self.printer.print_in_terminal(
+                            "max_unmerged_blocks_attempts_reached", style="yellow")
 
         # 最多尝试修复5次
         for attempt in range(self.auto_fix_lint_max_attempts):
