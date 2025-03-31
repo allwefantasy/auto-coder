@@ -15,6 +15,7 @@ from autocoder.rag.token_counter import count_tokens
 from autocoder.utils import llms as llm_utils
 from autocoder.common import SourceCodeList
 from autocoder.memory.active_context_manager import ActiveContextManager
+from loguru import logger
 
 
 
@@ -298,6 +299,7 @@ class CodeAutoGenerateEditBlock:
         if not self.args.human_as_model:
             with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
                 futures = []
+                count = 0
                 for llm in self.llms:
                     
                     model_names_list = llm_utils.get_llm_names(llm) 
@@ -305,9 +307,10 @@ class CodeAutoGenerateEditBlock:
                     if model_names_list:
                         model_name = model_names_list[0]                    
 
-                    for i in range(self.generate_times_same_model):
-                        model_names.append(model_name)
-                        if i==0:
+                    for _ in range(self.generate_times_same_model):
+                        model_names.append(model_name)                          
+                        if count==0:
+                            logger.info(f"code generation with model(Stream): {model_name}")
                             def job():
                                 stream_generator = stream_chat_with_continue(
                                     llm=llm, 
@@ -330,7 +333,8 @@ class CodeAutoGenerateEditBlock:
                                     generated_tokens_count=last_meta.generated_tokens_count
                                 )
                             futures.append(executor.submit(job))
-                        else:                                
+                        else:    
+                            logger.info(f"code generation with model(Non-stream): {model_name}")
                             futures.append(executor.submit(
                                 chat_with_continue, 
                                 llm=llm, 
@@ -338,6 +342,7 @@ class CodeAutoGenerateEditBlock:
                                 llm_config=llm_config,
                                 args=self.args
                             ))
+                        count += 1
                 
                 temp_results = [future.result() for future in futures]
                 

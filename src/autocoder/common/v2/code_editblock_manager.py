@@ -104,23 +104,29 @@ class CodeEditBlockManager:
         请严格遵守*SEARCH/REPLACE block*的格式。
         """
     @byzerllm.prompt()
-    def fix_unmerged_blocks(self, query: str, unmerged_blocks: str) -> str:
-        """        
-        出现了未合并的代码块:
+    def fix_unmerged_blocks(self, query: str, original_code: str, unmerged_blocks: str) -> str:
+        """  
+
+        原始的修改代码:
+        <original_code>
+        {{ original_code }}
+        </original_code>
+
+        其中未合并的代码块:
         <unmerged_blocks>
         {{ unmerged_blocks }}
         </unmerged_blocks>
 
-        用户原始需求:
+        用户原始的需求:
         <user_query_wrapper>
         {{ query }}
         </user_query_wrapper>
 
-        请确保 SEARCH/REPLACE block 的格式正确, 我们会根据 SEARCH 寻找代码，然后使用 REPLACE 替换代码。代码无法合并
-        的主要原因是通过 SEARCH 部分的代码块无法在提供的源码中找到完全一样的代码，请确保 SEARCH 部分的代码块在提供的源码中存在完全匹配，
+        我们会根据 SEARCH 寻找代码，然后使用 REPLACE 替换代码。现在有部分代码块无法合并，
+        主要原因是 SEARCH 部分的代码块无法在提供的源码中找到完全一样的代码，请确保 SEARCH 部分的代码块在提供的源码中存在完全匹配，
         包括缩进，空格，换行符等所有字符。
 
-        请修复上述未合并的代码块，使其能够正确合并。返回完整的修复后的代码块，使用与原始格式相同的 SEARCH/REPLACE block 格式。
+        请修复上述未合并的代码块，然后重新按SEARCH/REPLACE 格式输出所有代码块（同时包含成功和与失败后修正的），使得最终所有的代码块都能够正确合并。
         """
 
     def _create_shadow_files_from_edits(self, generation_result: CodeGenerateResult) -> Dict[str, str]:
@@ -241,40 +247,51 @@ class CodeEditBlockManager:
         result = self.code_merger.choose_best_choice(generation_result)
         merge = self.code_merger._merge_code_without_effect(result.contents[0])
 
-        if self.args.enable_auto_fix_unmerged_blocks and merge.failed_blocks:
-            def _format_unmerged_blocks(merge: MergeCodeWithoutEffect) -> str:
-                formatted_text = ""
+        if self.args.enable_auto_fix_merge and merge.failed_blocks:                        
+            def _format_blocks(merge: MergeCodeWithoutEffect) -> Tuple[str, str]:                                
+                unmerged_formatted_text = ""
                 for file_path, head, update in merge.failed_blocks:
-                    formatted_text += "```lang"
-                    formatted_text += f"##File: {file_path}\n"
-                    formatted_text += "<<<<<<< SEARCH\n"
-                    formatted_text += head
-                    formatted_text += "=======\n"
-                    formatted_text += update
-                    formatted_text += ">>>>>>> REPLACE\n"
-                    formatted_text += "```"
-                    formatted_text += "\n"
-
+                    unmerged_formatted_text += "```lang"
+                    unmerged_formatted_text += f"##File: {file_path}\n"
+                    unmerged_formatted_text += "<<<<<<< SEARCH\n"
+                    unmerged_formatted_text += head
+                    unmerged_formatted_text += "=======\n"
+                    unmerged_formatted_text += update
+                    unmerged_formatted_text += ">>>>>>> REPLACE\n"
+                    unmerged_formatted_text += "```"
+                    unmerged_formatted_text += "\n"
+                
+                merged_formatted_text = ""
+                for file_path, head, update in merge.merged_blocks:
+                    merged_formatted_text += "```lang"
+                    merged_formatted_text += f"##File: {file_path}\n"
+                    merged_formatted_text += head
+                    merged_formatted_text += "=======\n"
+                    merged_formatted_text += update 
+                    merged_formatted_text += "```"
+                    merged_formatted_text += "\n"
+                                
                 get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
-                    content=EventContentCreator.ResultContent(content=f"Unmerged blocks:\\n {formatted_text}",
-                                                              metadata={
-                                                                  "merged_blocks": merge.success_blocks,
-                                                                  "failed_blocks": merge.failed_blocks
-                                                              }
-                                                              ).to_dict(),
+                    content=EventContentCreator.ResultContent(content=f"Unmerged blocks:\\n {unmerged_formatted_text}",
+                                                            metadata={
+                                                                "merged_blocks": merge.success_blocks,
+                                                                "failed_blocks": merge.failed_blocks
+                                                            }
+                                                            ).to_dict(),
                     metadata={
                         "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
                         "action_file": self.args.file
                     }
                 ))
-                return formatted_text
+                return (unmerged_formatted_text, merged_formatted_text)
 
             for attempt in range(self.args.auto_fix_merge_max_attempts):
                 global_cancel.check_and_raise()
-                formatted_text = _format_unmerged_blocks(merge)
+                unmerged_formatted_text,merged_formatted_text = _format_blocks(merge)                
                 fix_prompt = self.fix_unmerged_blocks.prompt(
                     query=query,
-                    unmerged_blocks=formatted_text
+                    original_code=result.contents[0],
+                    unmerged_blocks=unmerged_formatted_text
                 )
 
                 # 打印当前修复尝试状态

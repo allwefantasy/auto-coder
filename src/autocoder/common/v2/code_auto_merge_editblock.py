@@ -269,10 +269,12 @@ class CodeAutoMergeEditBlock:
         codes = self.get_edits(content)
         file_content_mapping = {}
         failed_blocks = []
+        merged_blocks = []
 
         for block in codes:
             file_path, head, update = block
             if not os.path.exists(file_path):
+                merged_blocks.append((file_path, "", update))
                 file_content_mapping[file_path] = update
             else:
                 if file_path not in file_content_mapping:
@@ -297,6 +299,7 @@ class CodeAutoMergeEditBlock:
                         )
 
                 if new_content != existing_content:
+                    merged_blocks.append((file_path, head, update))
                     file_content_mapping[file_path] = new_content
                 else:
                     failed_blocks.append((file_path, head, update))
@@ -304,7 +307,8 @@ class CodeAutoMergeEditBlock:
         return MergeCodeWithoutEffect(
             success_blocks=[(path, content)
                             for path, content in file_content_mapping.items()],
-            failed_blocks=failed_blocks
+            failed_blocks=failed_blocks,
+            merged_blocks=merged_blocks
         )
     
 

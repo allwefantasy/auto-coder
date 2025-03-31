@@ -15,7 +15,7 @@ from autocoder.rag.token_counter import count_tokens
 from autocoder.utils import llms as llm_utils
 from autocoder.common import SourceCodeList
 from autocoder.memory.active_context_manager import ActiveContextManager
-
+from loguru import logger
 
 class CodeAutoGenerate:
     def __init__(
@@ -127,7 +127,7 @@ class CodeAutoGenerate:
                         model_name = model_names_list[0]                    
 
                     for i in range(self.generate_times_same_model):
-                        model_names.append(model_name)
+                        model_names.append(model_name)                        
                         if i==0:
                             def job():
                                 stream_generator = stream_chat_with_continue(
