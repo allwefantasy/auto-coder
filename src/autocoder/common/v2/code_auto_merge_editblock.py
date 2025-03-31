@@ -368,19 +368,11 @@ class CodeAutoMergeEditBlock:
                         unmerged_blocks.append(
                             (file_path, head, update, similarity))
             
-            self.printer.print_in_terminal("unmerged_blocks_warning", num_blocks=len(unmerged_blocks))
-            self._print_unmerged_blocks(unmerged_blocks)
-            return
-
-        # lint check
-        for file_path, new_content in file_content_mapping.items():
-            if file_path.endswith(".py"):
-                pylint_passed, error_message = self.run_pylint(new_content)
-                if not pylint_passed:
-                    self.printer.print_in_terminal("pylint_file_check_failed", 
-                                                  file_path=file_path, 
-                                                  error_message=error_message)
-
+            if unmerged_blocks:
+                self.printer.print_in_terminal("unmerged_blocks_warning", num_blocks=len(unmerged_blocks))
+                self._print_unmerged_blocks(unmerged_blocks)
+                return
+        
         if changes_made and not force_skip_git and not self.args.skip_commit:
             try:
                 git_utils.commit_changes(

@@ -1,14 +1,18 @@
 import os
 import difflib
 import diff_match_patch as dmp_module
-from pathlib import Path
-from typing import List, Dict, Tuple
+from autocoder.common import AutoCoderArgs, git_utils
+from typing import List,Tuple
 import pydantic
 import byzerllm
-from autocoder.common import AutoCoderArgs, git_utils
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
+from autocoder.common.printer import Printer
+import hashlib
+from pathlib import Path
 from autocoder.common.types import CodeGenerateResult, MergeCodeWithoutEffect
-from autocoder.common.v2.code_auto_merge import CodeAutoMerge
-from autocoder.common import files as FileUtils
+from autocoder.common.code_modification_ranker import CodeModificationRanker
+from autocoder.common import files as  FileUtils
+from autocoder.memory.active_context_manager import ActiveContextManager
 
 class PathAndCode(pydantic.BaseModel):
     path: str
@@ -49,6 +53,7 @@ def apply_hunk(content, hunk):
 
     return "\n".join(content_out)
 
+
 def hunk_to_before_after(hunk, lines=False):
     before = []
     after = []
@@ -77,7 +82,14 @@ def hunk_to_before_after(hunk, lines=False):
 
     return before, after
 
-class CodeAutoMergeStrictDiff(CodeAutoMerge):
+
+class CodeAutoMergeStrictDiff:
+    def __init__(self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs):
+        self.llm = llm
+        self.args = args
+        self.printer = Printer()
+
+
     def parse_diff_block(self,text: str) -> List[PathAndCode]:
         lines = text.split('\n')
         lines_len = len(lines)    
@@ -120,6 +132,46 @@ class CodeAutoMergeStrictDiff(CodeAutoMerge):
                 block.append(line)                
 
         return path_and_code_list
+
+    def merge_code(self, generate_result: CodeGenerateResult, force_skip_git: bool = False):
+        result = self.choose_best_choice(generate_result)
+        self._merge_code(result.contents[0], force_skip_git)
+        return result
+
+    def choose_best_choice(self, generate_result: CodeGenerateResult) -> CodeGenerateResult:
+        if len(generate_result.contents) == 1:
+            return generate_result
+        
+        merge_results = []
+        for content,conversations in zip(generate_result.contents,generate_result.conversations):
+            merge_result = self._merge_code_without_effect(content)
+            merge_results.append(merge_result)
+
+        # If all merge results are None, return first one
+        if all(len(result.failed_blocks) != 0 for result in merge_results):
+            self.printer.print_in_terminal("all_merge_results_failed")
+            return CodeGenerateResult(contents=[generate_result.contents[0]], conversations=[generate_result.conversations[0]])
+        
+        # If only one merge result is not None, return that one
+        not_none_indices = [i for i, result in enumerate(merge_results) if len(result.failed_blocks) == 0]
+        if len(not_none_indices) == 1:
+            idx = not_none_indices[0]
+            self.printer.print_in_terminal("only_one_merge_result_success")
+            return CodeGenerateResult(contents=[generate_result.contents[idx]], conversations=[generate_result.conversations[idx]])        
+
+        # 最后，如果有多个，那么根据质量排序再返回
+        ranker = CodeModificationRanker(self.llm, self.args)
+        ranked_result = ranker.rank_modifications(generate_result,merge_results)        
+         
+        ## 得到的结果，再做一次合并，第一个通过的返回 , 返回做合并有点重复低效，未来修改。
+        for content,conversations in zip(ranked_result.contents,ranked_result.conversations):
+            merge_result = self._merge_code_without_effect(content)
+            if not merge_result.failed_blocks:
+                return CodeGenerateResult(contents=[content], conversations=[conversations])
+
+        # 最后保底，但实际不会出现
+        return CodeGenerateResult(contents=[ranked_result.contents[0]], conversations=[ranked_result.conversations[0]])
+    
 
     def abs_root_path(self, path):
         if path.startswith(self.args.source_dir):
@@ -207,6 +259,7 @@ class CodeAutoMergeStrictDiff(CodeAutoMerge):
         
         file_content = FileUtils.read_file(self.args.file)
         md5 = hashlib.md5(file_content.encode('utf-8')).hexdigest()
+        # get the file name 
         file_name = os.path.basename(self.args.file)
         
         if not force_skip_git and not self.args.skip_commit:
@@ -256,4 +309,20 @@ class CodeAutoMergeStrictDiff(CodeAutoMerge):
             git_utils.print_commit_info(commit_result=commit_result)
         else:
             # Print diff blocks for review
-            self.print_diff_blocks(diff_blocks) 
+            self.print_diff_blocks(diff_blocks)    
+
+    @byzerllm.prompt(render="jinja2")
+    def git_require_msg(self, source_dir: str, error: str) -> str:
+        '''
+        auto_merge only works for git repositories.
+         
+        Try to use git init in the source directory. 
+        
+        ```shell
+        cd {{ source_dir }}
+        git init .
+        ```
+
+        Then try to run auto-coder again.
+        Error: {{ error }}
+        '''
