@@ -45,7 +45,7 @@ def generate_content_md5(content: Union[str, bytes]) -> str:
 
 
 class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
-    def __init__(self, path: str, ignore_spec, required_exts: list):
+    def __init__(self, path: str, ignore_spec, required_exts: list, update_interval: int = 5):
         """
         初始化异步更新队列，用于管理代码文件的缓存。
         
@@ -53,6 +53,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             path: 需要索引的代码库根目录
             ignore_spec: 指定哪些文件/目录应被忽略的规则
             required_exts: 需要处理的文件扩展名列表
+            update_interval: 自动触发更新的时间间隔（秒），默认为5秒
             
         缓存结构 (self.cache):
             self.cache 是一个字典，其结构如下:
@@ -90,13 +91,22 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
+        self.update_interval = update_interval
         self.queue = []
         self.cache = {}  # 初始化为空字典，稍后通过 read_cache() 填充
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
-        self.thread = threading.Thread(target=self._process_queue)
-        self.thread.daemon = True
-        self.thread.start()
+        
+        # 启动处理队列的线程
+        self.queue_thread = threading.Thread(target=self._process_queue)
+        self.queue_thread.daemon = True
+        self.queue_thread.start()
+        
+        # 启动定时触发更新的线程
+        self.update_thread = threading.Thread(target=self._periodic_update)
+        self.update_thread.daemon = True
+        self.update_thread.start()
+        
         self.cache = self.read_cache()
 
     def _process_queue(self):
@@ -106,10 +116,21 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             except Exception as e:
                 logger.error(f"Error in process_queue: {e}")
             time.sleep(1)  # 避免过于频繁的检查
+            
+    def _periodic_update(self):
+        """定时触发文件更新检查"""
+        while not self.stop_event.is_set():
+            try:
+                logger.debug(f"Periodic update triggered (every {self.update_interval}s)")
+                self.trigger_update()
+            except Exception as e:
+                logger.error(f"Error in periodic update: {e}")
+            time.sleep(self.update_interval)
 
     def stop(self):
         self.stop_event.set()
-        self.thread.join()
+        self.queue_thread.join()
+        self.update_thread.join()
 
     def fileinfo_to_tuple(self, file_info: FileInfo) -> Tuple[str, str, float, str]:
         return (file_info.file_path, file_info.relative_path, file_info.modify_time, file_info.file_md5)    
@@ -285,7 +306,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
 
     def get_cache(self, options: Optional[Dict[str, Any]] = None):
         self.load_first()
-        self.trigger_update()
+        # 不再在这里触发更新，因为已经有定时线程在处理
         return self.cache
 
     def get_all_files(self) -> List[Tuple[str, str, float]]:
