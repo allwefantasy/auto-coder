@@ -286,7 +286,7 @@ class CodeAutoMergeEditBlock:
                     else existing_content + "\n" + update
                 )
 
-                # If exact match fails, try similarity match
+                # If exact match fails, try similarity match                
                 if new_content == existing_content and head:
                     similarity, best_window = TextSimilarity(
                         head, existing_content

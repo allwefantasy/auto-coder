@@ -16,6 +16,9 @@ class CodeRankStreamOutType(Enum):
 class LintStreamOutType(Enum):
     LINT = "lint"
 
+class UnmergedBlocksStreamOutType(Enum):
+    UNMERGED_BLOCKS = "unmerged_blocks"
+
 class CompileStreamOutType(Enum):
     COMPILE = "compile"
 

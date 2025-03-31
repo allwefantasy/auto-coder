@@ -119,9 +119,13 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             
     def _periodic_update(self):
         """定时触发文件更新检查"""
-        while not self.stop_event.is_set():
+        while not self.stop_event.is_set():            
             try:
                 logger.debug(f"Periodic update triggered (every {self.update_interval}s)")
+                # 如果没有被初始化过，不会增量触发
+                if not self.cache:
+                    time.sleep(self.update_interval)
+                    continue
                 self.trigger_update()
             except Exception as e:
                 logger.error(f"Error in periodic update: {e}")
