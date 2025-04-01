@@ -259,7 +259,18 @@ class CodeEditBlockManager:
                     unmerged_formatted_text += update
                     unmerged_formatted_text += ">>>>>>> REPLACE\n"
                     unmerged_formatted_text += "```"
-                    unmerged_formatted_text += "\n"                                
+                    unmerged_formatted_text += "\n"
+
+                merged_formatted_text = ""
+                if merge.merged_blocks:
+                    for file_path, head, update in merge.merged_blocks:
+                        merged_formatted_text += "```lang"
+                        merged_formatted_text += f"##File: {file_path}\n"
+                        merged_formatted_text += head
+                        merged_formatted_text += "=======\n"
+                        merged_formatted_text += update
+                        merged_formatted_text += "```"
+                        merged_formatted_text += "\n"
 
                 get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
                     content=EventContentCreator.ResultContent(content=f"Unmerged blocks:\\n {unmerged_formatted_text}",
