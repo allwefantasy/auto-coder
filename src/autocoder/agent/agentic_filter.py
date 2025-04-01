@@ -57,14 +57,171 @@ class AgenticFilter:
         根据用户需求识别需要操作的文件，最终返回JSON格式的文件列表。你需要通过组合使用可用工具来达成这个目标。
 
         ## 可用工具
-        1.  **get_project_structure**: 获取项目根目录下的目录结构树。
-        2.  **get_project_map(file_paths: Optional[str] = None)**: 获取项目中指定文件（或所有已索引文件）的符号信息、用途、tokens数等。`file_paths` 是逗号分隔的路径字符串。
-        3.  **find_files_by_name(keyword: str)**: 根据文件名中的关键字搜索文件。
-        4.  **find_files_by_content(keyword: str)**: 根据文件内容中的关键字搜索文件。
-        5.  **read_files(paths: str, line_ranges: Optional[str] = None)**: 读取指定文件的内容，支持指定行范围。`paths` 是逗号分隔的文件路径，`line_ranges` 是可选的行范围字符串。
-        6.  **run_python(code: str)**: 执行Python脚本。
-        7.  **execute_shell_command(command: str)**: 执行Shell命令（禁止使用rm）。
-        8.  **response_user(response: str)**: 当你认为已经收集到足够信息并能确定最终文件列表时，调用此工具返回最终结果。
+
+        <command>
+        <name>get_project_structure</name>
+        <description>返回当前项目结构</description>
+        <usage>
+         该命令不需要参数。返回一个目录树结构（类似 tree 命令的输出）
+
+         使用例子：
+
+         get_project_structure()
+
+         该函数特别适合你通过目录结构来了解这个项目是什么类型的项目，有什么文件，如果你对一些文件
+         感兴趣，可以配合 read_files 函数来读取文件内容，从而帮你做更好的决策
+
+        </usage>
+        </command>
+
+        <command>
+        <name>get_project_map</name>
+        <description>返回项目中指定文件包括文件用途、导入的包、定义的类、函数、变量等。</description>
+        <usage>
+         该命令接受一个参数 file_paths，路径list,或者是以逗号分割的多个文件路径。
+         路径支持相对路径和绝对路径。
+
+         使用例子：
+
+         get_project_map(file_paths=["full/path/to/main.py","partial/path/to/utils.py"])，
+
+         或者：
+
+         get_project_map(file_paths="full/path/to/main.py,partial/path/to/utils.py")
+
+         该函数特别适合你想要了解某个文件的用途，以及该文件的导入的包，定义的类，函数，变量等信息。
+         同时，你还能看到文件的大小（tokens数），以及索引的大小（tokens数），以及构建索引花费费用等信息。
+         如果你觉得该文件确实是你关注的，你可以通过 read_files 函数来读取文件完整内容，从而帮你做更好的决策。
+
+         注意：
+         - 返回值为JSON格式文本
+         - 只能返回已被索引的文件
+        </usage>
+        </command>
+
+        <command>
+        <name>read_files</name>
+        <description>读取指定文件的内容（支持指定行范围），支持文件名或绝对路径。</description>
+        <usage>
+        该函数用于读取指定文件的内容。
+
+        参数说明:
+        1. paths (str):
+           - 以逗号分隔的文件路径列表
+           - 支持两种格式:
+             a) 文件名: 如果多个文件匹配该名称，将选择第一个匹配项
+             b) 绝对路径: 直接指定文件的完整路径
+           - 示例: "main.py,utils.py" 或 "/path/to/main.py,/path/to/utils.py"
+           - 建议: 每次调用推荐一个文件，最多不要超过3个文件。
+
+        2. line_ranges (Optional[str]):
+           - 可选参数，用于指定每个文件要读取的具体行范围
+           - 格式说明:
+             * 使用逗号分隔不同文件的行范围
+             * 每个文件可以指定多个行范围，用/分隔
+             * 每个行范围使用-连接起始行和结束行
+           - 示例:
+             * "1-100,2-50" (为两个文件分别指定一个行范围)
+             * "1-100/200-300,50-100" (第一个文件指定两个行范围，第二个文件指定一个行范围)
+           - 注意: line_ranges中的文件数量必须与paths中的文件数量一致，否则会抛出错误
+
+        返回值:
+        - 返回str类型，包含所有请求文件的内容
+        - 每个文件内容前会标注文件路径和行范围信息（如果指定了行范围）
+
+        使用例子：
+
+        read_files(paths="main.py,utils.py", line_ranges="1-100/200-300,50-100")
+
+        read_files(paths="main.py,utils.py")
+
+        你可以使用 get_project_structure 函数获取项目结构后，然后再通过 get_project_map 函数获取某个文件的用途，符号列表，以及
+        文件大小（tokens数）,最后再通过 read_files 函数来读取文件内容，从而帮你做更好的决策。如果需要读取的文件过大，
+
+        特别注意：使用 read_files 时，一次性读取文件数量不要超过1个,每次只读取200行。如果发现读取的内容不够，则继续读取下面200行。
+
+        </usage>
+        </command>
+
+        <command>
+        <name>find_files_by_name</name>
+        <description>根据文件名中的关键字搜索文件。</description>
+        <usage>
+         该命令接受一个参数 keyword，为要搜索的关键字字符串。
+
+         使用例子：
+
+         find_files_by_name(keyword="test")
+
+         注意：
+         - 搜索不区分大小写
+         - 返回所有匹配的文件路径，逗号分隔
+        </usage>
+        </command>
+
+        <command>
+        <name>find_files_by_content</name>
+        <description>根据文件内容中的关键字搜索文件。</description>
+        <usage>
+         该命令接受一个参数 keyword，为要搜索的关键字字符串。
+
+         使用例子：
+
+         find_files_by_content(keyword="TODO")
+
+         注意：
+         - 搜索不区分大小写
+         - 如果结果过多，只返回前10个匹配项
+        </usage>
+        </command>
+
+        <command>
+        <name>run_python</name>
+        <description>运行指定的Python代码。主要用于执行一些Python脚本或测试代码。</description>
+        <usage>
+         该命令接受一个参数 code，为要执行的Python代码字符串。
+
+         使用例子：
+
+         run_python(code="print('Hello World')")
+
+         注意：
+         - 代码将在项目根目录下执行
+         - 可以访问项目中的所有文件
+         - 输出结果会返回给用户
+        </usage>
+        </command>
+
+        <command>
+        <name>execute_shell_command</name>
+        <description>运行指定的Shell脚本。主要用于编译、运行、测试等任务。</description>
+        <usage>
+         该命令接受一个参数 command，为要执行的Shell脚本字符串。
+
+
+         使用例子：
+
+         execute_shell_command(command="ls -l")
+
+         注意：
+         - 脚本将在项目根目录下执行
+         - 禁止执行包含 rm 命令的脚本
+         - 输出结果会返回给用户
+         - 执行该命令的时候，需要通过 ask_user 询问用户是否同意执行，如果用户拒绝，则不再执行当前想执行的脚本呢。
+        </usage>
+        </command>
+
+        <command>
+        <name>response_user</name>
+        <description>响应用户。</description>
+        <usage>
+         如果你需要直接发送信息给用户，那么可以通过 response_user 函数来直接回复用户。
+
+         比如用户问你是谁？
+         你可以通过如下方式来回答：
+         response_user(response="你好，我是 auto-coder")
+        </usage>
+        </command>
 
         ## 操作流程建议
         1.  **理解需求**: 分析用户输入 `{{ user_input }}`。
@@ -141,15 +298,15 @@ class AgenticFilter:
         {% endfor %}
         </conversation_history>
 
-        ## 可用工具
+        ## 可用工具 (详细用法见上文)
         1.  get_project_structure
-        2.  get_project_map(file_paths: Optional[str] = None)
-        3.  find_files_by_name(keyword: str)
-        4.  find_files_by_content(keyword: str)
-        5.  read_files(paths: str, line_ranges: Optional[str] = None)
-        6.  run_python(code: str)
-        7.  execute_shell_command(command: str)
-        8.  response_user(response: str)
+        2.  get_project_map
+        3.  find_files_by_name
+        4.  find_files_by_content
+        5.  read_files
+        6.  run_python
+        7.  execute_shell_command
+        8.  response_user
 
         ## 当前任务
         请根据上一步工具的执行结果和对话历史，决定下一步调用哪个工具（或者调用 `response_user` 返回最终结果）。返回包含 `tool_name` 和 `parameters` 的JSON对象。
