@@ -1,6 +1,6 @@
 from enum import Enum
 import pydantic
-from typing import List, Dict, Tuple,Any
+from typing import List, Dict, Tuple,Any,Optional
 class Mode(Enum):
     MULTI_ROUND = "multi_round"
     SINGLE_ROUND = "single_round"
