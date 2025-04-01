@@ -96,6 +96,8 @@ def build_index_and_filter_files(
 
 
         if not args.skip_filter_index and args.index_filter_model:
+
+            
             model_name = getattr(
                 index_manager.index_filter_llm, 'default_model_name', None)
             if not model_name:
@@ -109,7 +111,7 @@ def build_index_and_filter_files(
             final_files.update(quick_filter_result.files)
 
             if quick_filter_result.file_positions:
-                file_positions.update(quick_filter_result.file_positions)
+                file_positions.update(quick_filter_result.file_positions)                
 
         if not args.skip_filter_index and not args.index_filter_model:
             model_name = getattr(index_manager.llm, 'default_model_name', None)

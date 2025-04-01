@@ -785,7 +785,7 @@ class CommandAutoTuner:
 
         <command>
         <name>list_files</name>
-        <description>通过add_files 添加的文件</description>
+        <description>list_files 查看某个目录下的所有文件</description>
         <usage>
          该命令不需要任何参数，直接使用即可。
          使用例子：
