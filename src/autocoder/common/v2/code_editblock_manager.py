@@ -294,6 +294,16 @@ class CodeEditBlockManager:
                 source = SourceCode(module_name=file_path, source_code=file_content)
                 updated_source_code_list.sources.append(source)
         
+        # 更新action yml文件
+        if missing_files and hasattr(self.args, 'dynamic_urls') and self.args.dynamic_urls:
+            action_yml_file_manager = ActionYmlFileManager(self.args.source_dir)
+            action_file_name = os.path.basename(self.args.file)
+            update_yaml_success = action_yml_file_manager.update_yaml_field(
+                action_file_name, "dynamic_urls", self.args.dynamic_urls)
+            if not update_yaml_success:
+                self.printer.print_in_terminal(
+                    "yaml_save_error", style="red", yaml_file=action_file_name)
+        
         # 准备修复提示
         fix_prompt = self.fix_missing_context.prompt(
             query=query,
