@@ -306,16 +306,6 @@ class CodeEditBlockManager:
                     "yaml_save_error", style="red", yaml_file=action_file_name)
         
         # 准备修复提示
-        if missing_files and hasattr(self.args, 'dynamic_urls') and self.args.dynamic_urls:
-            action_yml_file_manager = ActionYmlFileManager(self.args.source_dir)
-            action_file_name = os.path.basename(self.args.file)
-            update_yaml_success = action_yml_file_manager.update_yaml_field(
-                action_file_name, "dynamic_urls", self.args.dynamic_urls)
-            if not update_yaml_success:
-                self.printer.print_in_terminal(
-                    "yaml_save_error", style="red", yaml_file=action_file_name)
-        
-        # 准备修复提示
         fix_prompt = self.fix_missing_context.prompt(
             query=query,
             original_code=generation_result.contents[0],
@@ -366,7 +356,7 @@ class CodeEditBlockManager:
         def _format_blocks(merge: MergeCodeWithoutEffect) -> Tuple[str, str]:
             unmerged_formatted_text = ""
             for file_path, head, update in merge.failed_blocks:
-                unmerged_formatted_text += "```lang"
+                unmerged_formatted_text += "```lang\n"
                 unmerged_formatted_text += f"##File: {file_path}\n"
                 unmerged_formatted_text += "<<<<<<< SEARCH\n"
                 unmerged_formatted_text += head
@@ -379,7 +369,7 @@ class CodeEditBlockManager:
             merged_formatted_text = ""
             if merge.merged_blocks:
                 for file_path, head, update in merge.merged_blocks:
-                    merged_formatted_text += "```lang"
+                    merged_formatted_text += "```lang\n"
                     merged_formatted_text += f"##File: {file_path}\n"
                     merged_formatted_text += head
                     merged_formatted_text += "=======\n"
@@ -388,7 +378,7 @@ class CodeEditBlockManager:
                     merged_formatted_text += "\n"
 
             get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
-                content=EventContentCreator.ResultContent(content=f"Unmerged blocks:\\n {unmerged_formatted_text}",
+                content=EventContentCreator.ResultContent(content=f"Unmerged blocks:\n\n {unmerged_formatted_text}",
                                                           metadata={
                                                               "merged_blocks": merge.success_blocks,
                                                               "failed_blocks": merge.failed_blocks
