@@ -57,6 +57,8 @@ from autocoder import command_parser as CommandParser
 from loguru import logger
 from autocoder.utils.project_structure import EnhancedFileAnalyzer
 
+## 对外API，用于第三方集成 auto-coder 使用。
+
 class SymbolItem(BaseModel):
     symbol_name: str
     symbol_type: SymbolType

@@ -785,7 +785,15 @@ MESSAGES = {
     "max_unmerged_blocks_attempts_reached": {
         "en": "Maximum unmerged blocks fix attempts reached",
         "zh": "已达到最大未合并代码块修复尝试次数"
-    }
+    },
+    "agenticFilterContext": {
+    "en": "Start to find context...",
+    "zh": "开始智能查找上下文...."
+  },
+  "agenticFilterContextFinished": {
+    "en": "End to find context...",
+    "zh": "结束智能查找上下文...."
+  }
 }
 
 

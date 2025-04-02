@@ -271,7 +271,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     index_model_max_input_length: Optional[int] = 0
     index_model_anti_quota_limit: Optional[int] = 0
 
-    enable_agentic_filter: Optional[bool] = True
+    enable_agentic_filter: Optional[bool] = False
     
 
     index_filter_level: Optional[int] = 0

@@ -30,41 +30,110 @@ from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
 from autocoder.run_context import get_run_context
-from autocoder.common.stream_out_type import AutoCommandStreamOutType
+from autocoder.common.stream_out_type import AgenticFilterStreamOutType
+
 
 class AgenticFilterRequest(BaseModel):
     user_input: str
+
 
 class FileOperation(BaseModel):
     path: str
     operation: str  # e.g., "MODIFY", "REFERENCE", "ADD", "REMOVE"
 
+
 class AgenticFilterResponse(BaseModel):
     files: List[FileOperation]  # 文件列表，包含path和operation字段
     reasoning: str  # 决策过程说明
 
-class AgenticFilterConfig(BaseModel):
-    get_project_structure: SkipValidation[Callable]
-    get_project_map: SkipValidation[Callable]
-    read_files: SkipValidation[Callable]
-    find_files_by_name: SkipValidation[Callable]
-    find_files_by_content: SkipValidation[Callable]
-    run_python: SkipValidation[Callable]
+
+class CommandSuggestion(BaseModel):
+    command: str
+    parameters: Dict[str, Any]
+    confidence: float
+    reasoning: str
+
+
+class AutoCommandResponse(BaseModel):
+    suggestions: List[CommandSuggestion]
+    reasoning: Optional[str] = None
+
+
+class AutoCommandRequest(BaseModel):
+    user_input: str
+
+
+class MemoryConfig(BaseModel):
+    """
+    A model to encapsulate memory configuration and operations.
+    """
+
+    memory: Dict[str, Any]
+    save_memory_func: SkipValidation[Callable]
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class CommandConfig(BaseModel):
+    coding: SkipValidation[Callable]
+    chat: SkipValidation[Callable]
+    add_files: SkipValidation[Callable]
+    remove_files: SkipValidation[Callable]
+    index_build: SkipValidation[Callable]
+    index_query: SkipValidation[Callable]
+    list_files: SkipValidation[Callable]
+    ask: SkipValidation[Callable]
+    revert: SkipValidation[Callable]
+    commit: SkipValidation[Callable]
+    help: SkipValidation[Callable]
+    exclude_dirs: SkipValidation[Callable]
+    summon: SkipValidation[Callable]
+    design: SkipValidation[Callable]
+    mcp: SkipValidation[Callable]
+    models: SkipValidation[Callable]
+    lib: SkipValidation[Callable]
     execute_shell_command: SkipValidation[Callable]
-    response_user: SkipValidation[Callable]
+    generate_shell_command: SkipValidation[Callable]
+    conf_export: SkipValidation[Callable]
+    conf_import: SkipValidation[Callable]
+    index_export: SkipValidation[Callable]
+    index_import: SkipValidation[Callable]
+    exclude_files: SkipValidation[Callable]
+
 
 class AgenticFilter:
-    def __init__(self, 
-                 llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],
-                 conversation_history: List[Dict[str, Any]],
-                 args: AutoCoderArgs):
+    def __init__(
+        self,
+        llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],
+        conversation_history: List[Dict[str, Any]],
+        args: AutoCoderArgs,
+        memory_config: MemoryConfig,
+        command_config: Optional[CommandConfig] = None,
+    ):
         self.llm = llm
         self.args = args
         self.printer = Printer()
         self.tools = AutoCommandTools(args=args, llm=self.llm)
         self.result_manager = ResultManager(source_dir=args.source_dir)
-        self.max_iterations = args.auto_command_max_iterations # Use existing args for max iterations
+        # Use existing args for max iterations
+        self.max_iterations = args.auto_command_max_iterations
         self.conversation_history = conversation_history
+        self.memory_config = memory_config
+        self.command_config = command_config
+        self.project_type_analyzer = ProjectTypeAnalyzer(args=args, llm=self.llm)
+        try:
+            self.mcp_server = get_mcp_server()
+            mcp_server_info_response = self.mcp_server.send_request(
+                McpServerInfoRequest(
+                    model=args.inference_model or args.model,
+                    product_mode=args.product_mode,
+                )
+            )
+            self.mcp_server_info = mcp_server_info_response.result
+        except Exception as e:
+            logger.error(f"Error getting MCP server info: {str(e)}")
+            self.mcp_server_info = ""
 
     @byzerllm.prompt()
     def _analyze(self, request: AgenticFilterRequest) -> str:
@@ -90,12 +159,12 @@ class AgenticFilter:
         {%- endif %}
         {%- if env_info.virtualenv %}
         虚拟环境: {{ env_info.virtualenv }}
-        {%- endif %}   
+        {%- endif %}
         </os_info>
 
         当前项目根目录：
         {{ current_project }}
-    
+
         {% if current_files %}
         ## 当前用户手动添加关注的文件列表：
         <current_files>
@@ -111,9 +180,9 @@ class AgenticFilter:
         ## 当前大模型窗口安全值
         {{ conversation_safe_zone_tokens }}
 
-        ## 函数组合说明：        
-        {{ command_combination_readme }}        
-    
+        ## 函数组合说明：
+        {{ command_combination_readme }}
+
 
         ## 对话历史
         <conversation_history>
@@ -128,15 +197,33 @@ class AgenticFilter:
         ## Token 安全区
         对话和文件内容的总Token数不应超过 {{ conversation_safe_zone_tokens }}。请谨慎读取大文件。
 
-        ## 最终输出要求 (通过 response_user 工具返回)
-        返回的JSON字符串必须严格符合以下格式:
-        
-        其中 `operation` 可以是 "MODIFY", "REFERENCE", "ADD", "REMOVE" 等。
+        请分析用户意图，组合一个或者多个函数，请务必确保帮助用户找到相关文件，不要有遗漏。
 
-        ## 当前任务
+        返回格式必须是严格的JSON格式：
+
+        ```json
+        {
+            "suggestions": [
+                {
+                    "command": "函数名称",
+                    "parameters": {},
+                    "confidence": 0.9,
+                    "reasoning": "推荐理由"
+                }
+            ],
+            "reasoning": "整体推理说明"
+        }
+        ```
+
         注意，现在，请返回第一个函数。我后续会把每个函数的执行结果告诉你。你根据执行结果继续确定下一步该执行什新的函数，直到
         满足需求。
         """
+        env_info = detect_env()
+        shell_type = "bash"
+        if shells.is_running_in_cmd():
+            shell_type = "cmd"
+        elif shells.is_running_in_powershell():
+            shell_type = "powershell"
         return {
             "user_input": request.user_input,
             "current_files": self.memory_config.memory["current_files"]["files"],
@@ -149,60 +236,85 @@ class AgenticFilter:
             "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens,
             "os_distribution": shells.get_os_distribution(),
             "current_user": shells.get_current_username(),
-            "command_combination_readme": self._command_combination_readme.prompt(user_input=request.user_input),
-            "current_project": os.path.abspath(self.args.source_dir)
+            "command_combination_readme": self._command_combination_readme.prompt(
+                user_input=request.user_input
+            ),
+            "current_project": os.path.abspath(self.args.source_dir),
         }
-        
 
     @byzerllm.prompt()
     def _command_combination_readme(self, user_input: str) -> str:
-        '''
+        """
         ## 操作流程建议
         1.  **理解需求**: 分析用户输入 `{{ user_input }}`。
         2.  **探索项目**:
-            *   使用 `get_project_structure` 了解项目结构。
-            *   根据初步理解，使用 `find_files_by_name` 或 `find_files_by_content` 定位可能相关的文件。
-            *   使用 `get_project_map` 获取候选文件的详细信息（如符号）。
+            *   使用 `list_files` 层层递进了解项目结构，用来确定需要关注的文件。
+            *   如果用户提及文件名等，则可以使用 `find_files_by_name` 或，如果用户提到关键字则可以使用 `find_files_by_content` 定位可能相关的文件。
+            *   如果用户提到了具体的符号（函数，类名等）则可以使用 `get_project_map` 获取候选文件的详细信息（如符号）。
         3.  **深入分析**:
             *   使用 `read_files` 读取关键文件的内容进行确认。如果文件过大，使用 `line_ranges` 参数分段读取。
             *   如有必要，使用 `run_python` 或 `execute_shell_command` 执行代码或命令进行更复杂的分析。
         4.  **迭代决策**: 根据工具的返回结果，你可能需要多次调用不同的工具来逐步缩小范围或获取更多信息。
-        5.  **最终响应**: 当你确定了所有需要参考和修改的文件后，**必须**调用 `response_user` 工具，并提供符合下面格式的JSON字符串作为其 `response` 参数。   
-        '''        
-        
+        5.  **最终响应**: 当你确定了所有需要参考和修改的文件后，**必须**调用 `output_result` 工具，并提供符合其要求格式的JSON字符串作为其 `response` 参数。
+            该json格式要求为：
+            ```json
+            {
+                "files": [
+                    {"path": "/path/to/file1.py", "operation": "MODIFY"},
+                    {"path": "/path/to/file2.md", "operation": "REFERENCE"},
+                    {"path": "/path/to/new_file.txt", "operation": "ADD"},
+                    {"path": "/path/to/old_file.log", "operation": "REMOVE"}
+                ],
+                "reasoning": "详细说明你是如何通过分析和使用工具得出这个文件列表的。"
+            }
+            ```
+
+
+        """
 
     @byzerllm.prompt()
-    def _tool_result_prompt(self, tool_name: str, tool_result: str, conversation_history: List[Dict[str, str]]) -> str:
+    def _execute_command_result(self, result: str) -> str:
         """
         根据函数执行结果，返回下一个函数。
 
-        下面是我们上一个函数执行结果: 
+        下面是我们上一个函数执行结果:
 
         <function_result>
         {{ result }}
-        </function_result>                
+        </function_result>
 
         请根据命令执行结果以及前面的对话，返回下一个函数。
 
         *** 非常非常重要的提示 ***
-        1. 如果你认为已经收集到足够信息来确定最终的文件列表，请务必调用 `response_user` 并提供符合要求的JSON字符串作为 `response` 参数。最多允许 {{ max_iterations }} 次工具调用。
+        1. 如果你认为已经收集到足够信息来确定最终的文件列表，请务必调用 `output_result` 并以如下格式要求的JSON字符串作为 `response` 参数。最多允许 {{ max_iterations }} 次工具调用。
+            ```json
+            {
+                "files": [
+                    {"path": "/path/to/file1.py", "operation": "MODIFY"},
+                    {"path": "/path/to/file2.md", "operation": "REFERENCE"},
+                    {"path": "/path/to/new_file.txt", "operation": "ADD"},
+                    {"path": "/path/to/old_file.log", "operation": "REMOVE"}
+                ],
+                "reasoning": "详细说明你是如何通过分析和使用工具得出这个文件列表的。"
+            }
+            ```
         2. 你最多尝试 {{ auto_command_max_iterations }} 次，如果 {{ auto_command_max_iterations }} 次都没有满足要求，则不要返回任何函数，确保 suggestions 为空。
         """
         return {
             "auto_command_max_iterations": self.args.auto_command_max_iterations,
-            "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens
+            "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens,
         }
 
     @byzerllm.prompt()
     def _command_readme(self) -> str:
-        '''
+        """
         你有如下函数可供使用：
-        <commands>        
+        <commands>
         <name>ask_user</name>
         <description>
         如果你对用户的问题有什么疑问，或者你想从用户收集一些额外信息，可以调用此方法。
         输入参数 question 是你对用户的提问。
-        返回值是 用户对你问题的回答。    
+        返回值是 用户对你问题的回答。
         ** 如果你的问题比较多，建议一次就问一个，然后根据用户回答再问下一个。 **
         </description>
         <usage>
@@ -210,7 +322,6 @@ class AgenticFilter:
 
          使用例子：
          ask_user(question="请输入火山引擎的 R1 模型推理点")
-
         </command>
 
         <command>
@@ -247,36 +358,19 @@ class AgenticFilter:
          - 输出结果会返回给用户
          - 执行该命令的时候，需要通过 ask_user 询问用户是否同意执行，如果用户拒绝，则不再执行当前想执行的脚本呢。
         </usage>
-        </command> 
+        </command>
 
         <command>
         <name>generate_shell_command</name>
         <description>
-        根据用户需求描述，生成shell脚本。 
+        根据用户需求描述，生成shell脚本。
         </description>
         <usage>
           支持的参数名为 input_text， 字符串类型，用户的需求，使用该函数，会打印生成结果，用户可以更加清晰
           的看到生成的脚本。然后配合 ask_user, execute_shell_command 两个函数，最终完成
           脚本执行。
         </usage>
-        </command>  
-
-
-        <command>
-        <name>get_project_structure</name>
-        <description>返回当前项目结构</description>
-        <usage>
-         该命令不需要参数。返回一个目录树结构（类似 tree 命令的输出）
-
-         使用例子：
-
-         get_project_structure()
-
-         该函数特别适合你通过目录结构来了解这个项目是什么类型的项目，有什么文件，如果你对一些文件
-         感兴趣，可以配合 read_files 函数来读取文件内容，从而帮你做更好的决策
-
-        </usage>
-        </command>        
+        </command>
 
         <command>
         <name>get_project_map</name>
@@ -307,13 +401,12 @@ class AgenticFilter:
         <name>list_files</name>
         <description>list_files 查看某个目录下的所有文件</description>
         <usage>
-         该命令不需要任何参数，直接使用即可。
+         该命令接受一个参数 path, 为要查看的目录路径。
          使用例子：
-
-         list_files()
+         list_files(path="path/to/dir")
 
         </usage>
-        </command>  
+        </command>
 
         <command>
         <name>read_files</name>
@@ -322,7 +415,7 @@ class AgenticFilter:
         该函数用于读取指定文件的内容。
 
         参数说明:
-        1. paths (str): 
+        1. paths (str):
            - 以逗号分隔的文件路径列表
            - 支持两种格式:
              a) 文件名: 如果多个文件匹配该名称，将选择第一个匹配项
@@ -336,7 +429,7 @@ class AgenticFilter:
              * 使用逗号分隔不同文件的行范围
              * 每个文件可以指定多个行范围，用/分隔
              * 每个行范围使用-连接起始行和结束行
-           - 示例: 
+           - 示例:
              * "1-100,2-50" (为两个文件分别指定一个行范围)
              * "1-100/200-300,50-100" (第一个文件指定两个行范围，第二个文件指定一个行范围)
            - 注意: line_ranges中的文件数量必须与paths中的文件数量一致，否则会抛出错误
@@ -349,7 +442,7 @@ class AgenticFilter:
 
         read_files(paths="main.py,utils.py", line_ranges="1-100/200-300,50-100")
 
-        read_files(paths="main.py,utils.py") 
+        read_files(paths="main.py,utils.py")
 
         你可以使用 get_project_structure 函数获取项目结构后，然后再通过 get_project_map 函数获取某个文件的用途，符号列表，以及
         文件大小（tokens数）,最后再通过 read_files 函数来读取文件内容，从而帮你做更好的决策。如果需要读取的文件过大，
@@ -420,14 +513,14 @@ class AgenticFilter:
          - 如果文件中有多个匹配的关键字，会返回多个内容块
          - 搜索不区分大小写
         </usage>
-        </command>              
+        </command>
 
         <command>
-        <name>response_user</name>
-        <description>响应用户。</description>
+        <name>output_result</name>
+        <description>输出最后需要的结果</description>
         <usage>
          只有一个参数：
-         response: 字符串类型，需要返回给用户的内容。 reponse 必须满足如下Json格式：
+         response: 字符串类型，需要返回给用户的内容。 response 必须满足如下Json格式：
 
          ```json
         {
@@ -440,9 +533,9 @@ class AgenticFilter:
             "reasoning": "详细说明你是如何通过分析和使用工具得出这个文件列表的。"
         }
         ```
-         
+
         使用例子：
-        response_user(response='{"files": [{"path": "/path/to/file1.py", "operation": "MODIFY"}, {"path": "/path/to/file2.md", "operation": "REFERENCE"}, {"path": "/path/to/new_file.txt", "operation": "ADD"}, {"path": "/path/to/old_file.log", "operation": "REMOVE"}], "reasoning": "详细说明你是如何通过分析和使用工具得出这个文件列表的。"}')
+        output_result(response='{"files": [{"path": "/path/to/file1.py", "operation": "MODIFY"}, {"path": "/path/to/file2.md", "operation": "REFERENCE"}, {"path": "/path/to/new_file.txt", "operation": "ADD"}, {"path": "/path/to/old_file.log", "operation": "REMOVE"}], "reasoning": "详细说明你是如何通过分析和使用工具得出这个文件列表的。"}')
         </usage>
         </command>
 
@@ -492,7 +585,7 @@ class AgenticFilter:
          - 如果未找到匹配项，会返回提示信息
 
         </usage>
-        </command>        
+        </command>
 
         <command>
         <n>execute_mcp_server</n>
@@ -500,7 +593,7 @@ class AgenticFilter:
         <usage>
          该函数接受一个参数 query, 为要执行的MCP服务器查询字符串。
 
-         你可以根据下面已经连接的 mcp server 信息，来决定个是否调用该函数，注意该函数会更具你的 query 
+         你可以根据下面已经连接的 mcp server 信息，来决定个是否调用该函数，注意该函数会更具你的 query
          自动选择合适的 mcp server 来执行。如果你想某个特定的 server 来执行，你可以在 query 中说明你想哪个 server 执行。
 
          <mcp_server_info>
@@ -508,14 +601,14 @@ class AgenticFilter:
          </mcp_server_info>
 
         </usage>
-        </command>                        
-        '''
+        </command>
+        """
         return {
             "config_readme": config_readme.prompt(),
-            "mcp_server_info": self.mcp_server_info
+            "mcp_server_info": self.mcp_server_info,
         }
 
-    def analyze(self, request: AutoCommandRequest) -> AutoCommandResponse:
+    def analyze(self, request: AgenticFilterRequest) -> Optional[AgenticFilterResponse]:
         # 获取 prompt 内容
         prompt = self._analyze.prompt(request)
 
@@ -526,7 +619,11 @@ class AgenticFilter:
         if self.args.enable_task_history:
             new_messages.append({"role": "user", "content": history_tasks})
             new_messages.append(
-                {"role": "assistant", "content": "好的，我知道最近的任务对项目的变更了，我会参考这些来更好的理解你的需求。"})
+                {
+                    "role": "assistant",
+                    "content": "好的，我知道最近的任务对项目的变更了，我会参考这些来更好的理解你的需求。",
+                }
+            )
 
         # 构造对话上下文
         conversations = new_messages + [{"role": "user", "content": prompt}]
@@ -545,7 +642,8 @@ class AgenticFilter:
                     parameters = response.suggestions[0].parameters
                     if parameters:
                         params_str = ", ".join(
-                            [f"{k}={v}" for k, v in parameters.items()])
+                            [f"{k}={v}" for k, v in parameters.items()]
+                        )
                     else:
                         params_str = ""
                     return f"{command}({params_str})"
@@ -555,98 +653,116 @@ class AgenticFilter:
                 logger.error(f"Error extracting command response: {str(e)}")
                 return content
 
-        model_name = ",".join(llms_utils.get_llm_names(self.llm))
-        start_time = time.monotonic()
-        result, last_meta = stream_out(
-            self.llm.stream_chat_oai(
-                conversations=conversations, delta_mode=True),
-            model_name=model_name,
-            title=title,
-            final_title=final_title,
-            display_func=extract_command_response,
-            args=self.args,
-            extra_meta={
-                "stream_out_type": AutoCommandStreamOutType.COMMAND_SUGGESTION.value
+        result_manager = ResultManager()
+        success_flag = False
+
+        get_event_manager(self.args.event_file).write_result(
+            EventContentCreator.create_result(content=printer.get_message_from_key("agenticFilterContext")),
+            metadata={
+                "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
             }
         )
 
-        if last_meta:
-            elapsed_time = time.monotonic() - start_time
-            speed = last_meta.generated_tokens_count / elapsed_time
+        while True:
+            global_cancel.check_and_raise()
+            # print(json.dumps(conversations, ensure_ascii=False, indent=4))
+            model_name = ",".join(llms_utils.get_llm_names(self.llm))
+            start_time = time.monotonic()
+            result, last_meta = stream_out(
+                self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
+                model_name=model_name,
+                title=title,
+                final_title=final_title,
+                display_func=extract_command_response,
+                args=self.args,
+                extra_meta={
+                    "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
+                },
+            )
 
-            # Get model info for pricing
-            from autocoder.utils import llms as llm_utils
-            model_info = llm_utils.get_model_info(
-                model_name, self.args.product_mode) or {}
-            input_price = model_info.get(
-                "input_price", 0.0) if model_info else 0.0
-            output_price = model_info.get(
-                "output_price", 0.0) if model_info else 0.0
+            if last_meta:
+                elapsed_time = time.monotonic() - start_time
+                speed = last_meta.generated_tokens_count / elapsed_time
 
-            # Calculate costs
-            input_cost = (last_meta.input_tokens_count *
-                          input_price) / 1000000  # Convert to millions
-            output_cost = (last_meta.generated_tokens_count *
-                           output_price) / 1000000  # Convert to millions
+                # Get model info for pricing
+                from autocoder.utils import llms as llm_utils
 
-            temp_content = printer.get_message_from_key_with_format("stream_out_stats",
-                                                                    model_name=",".join(
-                                                                        llms_utils.get_llm_names(self.llm)),
-                                                                    elapsed_time=elapsed_time,
-                                                                    first_token_time=last_meta.first_token_time,
-                                                                    input_tokens=last_meta.input_tokens_count,
-                                                                    output_tokens=last_meta.generated_tokens_count,
-                                                                    input_cost=round(
-                                                                        input_cost, 4),
-                                                                    output_cost=round(
-                                                                        output_cost, 4),
-                                                                    speed=round(speed, 2))
-            printer.print_str_in_terminal(temp_content)
-            get_event_manager(self.args.event_file).write_result(
-                EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
-                    model_name=model_name,
+                model_info = (
+                    llm_utils.get_model_info(model_name, self.args.product_mode) or {}
+                )
+                input_price = model_info.get("input_price", 0.0) if model_info else 0.0
+                output_price = (
+                    model_info.get("output_price", 0.0) if model_info else 0.0
+                )
+
+                # Calculate costs
+                input_cost = (
+                    last_meta.input_tokens_count * input_price
+                ) / 1000000  # Convert to millions
+                output_cost = (
+                    last_meta.generated_tokens_count * output_price
+                ) / 1000000  # Convert to millions
+
+                temp_content = printer.get_message_from_key_with_format(
+                    "stream_out_stats",
+                    model_name=",".join(llms_utils.get_llm_names(self.llm)),
                     elapsed_time=elapsed_time,
                     first_token_time=last_meta.first_token_time,
                     input_tokens=last_meta.input_tokens_count,
                     output_tokens=last_meta.generated_tokens_count,
                     input_cost=round(input_cost, 4),
                     output_cost=round(output_cost, 4),
-                    speed=round(speed, 2)
-                )).to_dict()
+                    speed=round(speed, 2),
+                )
+                printer.print_str_in_terminal(temp_content)
+                get_event_manager(self.args.event_file).write_result(
+                    EventContentCreator.create_result(
+                        content=EventContentCreator.ResultTokenStatContent(
+                            model_name=model_name,
+                            elapsed_time=elapsed_time,
+                            first_token_time=last_meta.first_token_time,
+                            input_tokens=last_meta.input_tokens_count,
+                            output_tokens=last_meta.generated_tokens_count,
+                            input_cost=round(input_cost, 4),
+                            output_cost=round(output_cost, 4),
+                            speed=round(speed, 2),
+                        )
+                    ).to_dict()
                 )
 
-        # 这里打印
+            conversations.append({"role": "assistant", "content": result})
+            # 提取 JSON 并转换为 AutoCommandResponse
+            response = to_model(result, AutoCommandResponse)
 
-        conversations.append({"role": "assistant", "content": result})
-        # 提取 JSON 并转换为 AutoCommandResponse
-        response = to_model(result, AutoCommandResponse)
+            if not response or not response.suggestions:
+                break
 
-        # 保存对话记录
-        save_to_memory_file(
-            query=request.user_input,
-            response=response.model_dump_json(indent=2)
-        )
-        result_manager = ResultManager()
-
-        while True:
-            global_cancel.check_and_raise()
             # 执行命令
             command = response.suggestions[0].command
             parameters = response.suggestions[0].parameters
 
             # 打印正在执行的命令
-            temp_content = printer.get_message_from_key_with_format("auto_command_executing",                                                                    
-                                                                    command=command
-                                                                    )
-            printer.print_str_in_terminal(temp_content,style="blue")
+            temp_content = printer.get_message_from_key_with_format(
+                "auto_command_executing", command=command
+            )
+            printer.print_str_in_terminal(temp_content, style="blue")
 
-            get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(content=
-                                                           EventContentCreator.ResultCommandPrepareStatContent(
-                                                               command=command,
-                                                               parameters=parameters
-                                                           ).to_dict()))                           
-            
-            self.execute_auto_command(command, parameters)
+            get_event_manager(self.args.event_file).write_result(
+                EventContentCreator.create_result(
+                    content=EventContentCreator.ResultCommandPrepareStatContent(
+                        command=command, parameters=parameters
+                    ).to_dict()
+                ),metadata={
+                    "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
+                }
+            )
+            try:
+                self.execute_auto_command(command, parameters)
+            except Exception as e:
+                error_content = f"执行命令失败，错误信息：{e}"
+                conversations.append({"role": "user", "content": error_content})
+                continue
+
             content = ""
             last_result = result_manager.get_last()
             if last_result:
@@ -654,7 +770,8 @@ class AgenticFilter:
                 if action == "coding":
                     # 如果上一步是 coding，则需要把上一步的更改前和更改后的内容作为上下文
                     changes = git_utils.get_changes_by_commit_message(
-                        "", last_result.meta["commit_message"])
+                        "", last_result.meta["commit_message"]
+                    )
                     if changes.success:
                         for file_path, change in changes.changes.items():
                             if change:
@@ -668,46 +785,59 @@ class AgenticFilter:
                 if action != command:
                     # command 和 action 不一致，则认为命令执行失败，退出
                     temp_content = printer.get_message_from_key_with_format(
-                        "auto_command_action_break", command=command, action=action)
-                    printer.print_str_in_terminal(temp_content,style="yellow")
+                        "auto_command_action_break", command=command, action=action
+                    )
+                    printer.print_str_in_terminal(temp_content, style="yellow")
                     get_event_manager(self.args.event_file).write_result(
-                        EventContentCreator.create_result(content=temp_content))
+                        EventContentCreator.create_result(content=temp_content),
+                        metadata={
+                            "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
+                        }
+                    )
                     break
 
-                if command == "response_user":
+                if command == "output_result":
+                    success_flag = True
                     break
 
                 get_event_manager(self.args.event_file).write_result(
-                    EventContentCreator.create_result(content=EventContentCreator.ResultCommandExecuteStatContent(
-                        command=command,
-                        content=content
-                    ).to_dict()))
+                    EventContentCreator.create_result(
+                        content=EventContentCreator.ResultCommandExecuteStatContent(
+                            command=command, content=content
+                        ).to_dict(),
+                        metadata={
+                            "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
+                        }
+                    )
+                )
 
                 # 打印执行结果
                 console = Console()
                 # 截取content前后200字符
-                truncated_content = content[:200] + "\n...\n" + \
-                    content[-200:] if len(content) > 400 else content
+                truncated_content = (
+                    content[:200] + "\n...\n" + content[-200:]
+                    if len(content) > 400
+                    else content
+                )
                 title = printer.get_message_from_key_with_format(
-                    "command_execution_result",
-                    action=action
+                    "command_execution_result", action=action
                 )
                 # 转义内容，避免Rich将内容中的[]解释为markup语法
                 text_content = Text(truncated_content)
-                console.print(Panel(
-                    text_content,
-                    title=title,
-                    border_style="blue",
-                    padding=(1, 2)
-                ))
-                
+                console.print(
+                    Panel(
+                        text_content, title=title, border_style="blue", padding=(1, 2)
+                    )
+                )
+
                 # 添加新的对话内容
                 new_content = self._execute_command_result.prompt(content)
                 conversations.append({"role": "user", "content": new_content})
 
                 # 统计 token 数量
-                total_tokens = count_tokens(json.dumps(
-                    conversations, ensure_ascii=False))
+                total_tokens = count_tokens(
+                    json.dumps(conversations, ensure_ascii=False)
+                )
 
                 # 如果对话过长，使用默认策略进行修剪
                 if total_tokens > self.args.conversation_prune_safe_zone_tokens:
@@ -715,117 +845,43 @@ class AgenticFilter:
                         "conversation_pruning_start",
                         style="yellow",
                         total_tokens=total_tokens,
-                        safe_zone=self.args.conversation_prune_safe_zone_tokens
+                        safe_zone=self.args.conversation_prune_safe_zone_tokens,
                     )
                     from autocoder.common.conversation_pruner import ConversationPruner
+
                     pruner = ConversationPruner(self.args, self.llm)
                     conversations = pruner.prune_conversations(conversations)
 
-                title = printer.get_message_from_key("auto_command_analyzing")
-                model_name = ",".join(llms_utils.get_llm_names(self.llm))
-
-                start_time = time.monotonic()
-                result, last_meta = stream_out(
-                    self.llm.stream_chat_oai(
-                        conversations=conversations, delta_mode=True),
-                    model_name=model_name,
-                    title=title,
-                    final_title=final_title,
-                    display_func=extract_command_response,
-                    args=self.args,
-                    extra_meta={
-                        "stream_out_type": AutoCommandStreamOutType.COMMAND_SUGGESTION.value
+            else:
+                temp_content = printer.get_message_from_key_with_format(
+                    "auto_command_break", command=command
+                )
+                printer.print_str_in_terminal(temp_content, style="yellow")
+                get_event_manager(self.args.event_file).write_result(
+                    EventContentCreator.create_result(content=temp_content),
+                    metadata={
+                        "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
                     }
                 )
-
-                if last_meta:
-                    elapsed_time = time.monotonic() - start_time
-                    printer = Printer()
-                    speed = last_meta.generated_tokens_count / elapsed_time
-
-                    # Get model info for pricing
-                    from autocoder.utils import llms as llm_utils
-                    model_info = llm_utils.get_model_info(
-                        model_name, self.args.product_mode) or {}
-                    input_price = model_info.get(
-                        "input_price", 0.0) if model_info else 0.0
-                    output_price = model_info.get(
-                        "output_price", 0.0) if model_info else 0.0
-
-                    # Calculate costs
-                    input_cost = (last_meta.input_tokens_count *
-                                  input_price) / 1000000  # Convert to millions
-                    # Convert to millions
-                    output_cost = (
-                        last_meta.generated_tokens_count * output_price) / 1000000
-
-                    temp_content = printer.get_message_from_key_with_format("stream_out_stats",
-                                              model_name=model_name,
-                                              elapsed_time=elapsed_time,
-                                              first_token_time=last_meta.first_token_time,
-                                              input_tokens=last_meta.input_tokens_count,
-                                              output_tokens=last_meta.generated_tokens_count,
-                                              input_cost=round(input_cost, 4),
-                                              output_cost=round(
-                                                  output_cost, 4),
-                                              speed=round(speed, 2))
-                    printer.print_str_in_terminal(temp_content)
-                    get_event_manager(self.args.event_file).write_result(
-                        EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
-                            model_name=model_name,
-                            elapsed_time=elapsed_time,
-                            first_token_time=last_meta.first_token_time,
-                            input_tokens=last_meta.input_tokens_count,
-                            output_tokens=last_meta.generated_tokens_count,
-                        ).to_dict()))
-
-                conversations.append({"role": "assistant", "content": result})
-                # 提取 JSON 并转换为 AutoCommandResponse
-                response = to_model(result, AutoCommandResponse)
-                if not response or not response.suggestions:
-                    break
-
-                save_to_memory_file(
-                    query=request.user_input,
-                    response=response.model_dump_json(indent=2)
-                )                                               
-            else:
-                temp_content = printer.get_message_from_key_with_format("auto_command_break",  command=command)
-                printer.print_str_in_terminal(temp_content,style="yellow")
-                get_event_manager(self.args.event_file).write_result(
-                    EventContentCreator.create_result(content=temp_content))
                 break
 
-        return response
-    
+        get_event_manager(self.args.event_file).write_result(
+            EventContentCreator.create_result(content=printer.get_message_from_key("agenticFilterCommandResult")),
+            metadata={
+                "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
+            }
+        )    
+
+        if success_flag:
+            return AgenticFilterResponse(**json.loads(content))
+        else:
+            return None
 
     def execute_auto_command(self, command: str, parameters: Dict[str, Any]) -> None:
         """
         执行自动生成的命令
         """
         command_map = {
-            "add_files": self.command_config.add_files,
-            "remove_files": self.command_config.remove_files,
-            "list_files": self.command_config.list_files,
-            "revert": self.command_config.revert,
-            "commit": self.command_config.commit,
-            "help": self.command_config.help,
-            "exclude_dirs": self.command_config.exclude_dirs,
-            "ask": self.command_config.ask,
-            "chat": self.command_config.chat,
-            "coding": self.command_config.coding,
-            "design": self.command_config.design,
-            "summon": self.command_config.summon,
-            "lib": self.command_config.lib,
-            "models": self.command_config.models,
-            "execute_shell_command": self.command_config.execute_shell_command,
-            "generate_shell_command": self.command_config.generate_shell_command,
-            "conf_export": self.command_config.conf_export,
-            "conf_import": self.command_config.conf_import,
-            "index_export": self.command_config.index_export,
-            "index_import": self.command_config.index_import,
-            "exclude_files": self.command_config.exclude_files,
-
             "run_python": self.tools.run_python_code,
             "get_related_files_by_symbols": self.tools.get_related_files_by_symbols,
             "get_project_map": self.tools.get_project_map,
@@ -838,17 +894,18 @@ class AgenticFilter:
             "ask_user": self.tools.ask_user,
             "read_file_with_keyword_ranges": self.tools.read_file_with_keyword_ranges,
             "get_project_type": self.project_type_analyzer.analyze,
-            "response_user": self.tools.response_user,
+            "output_result": self.tools.output_result,
             "execute_mcp_server": self.tools.execute_mcp_server,
             "count_file_tokens": self.tools.count_file_tokens,
             "count_string_tokens": self.tools.count_string_tokens,
             "find_symbol_definition": self.tools.find_symbol_definition,
-
         }
 
         if command not in command_map:
-            self.printer.print_in_terminal(
-                "auto_command_not_found", style="red", command=command)
+            v = self.printer.get_message_from_key_with_format(
+                "auto_command_not_found", style="red", command=command
+            )
+            raise Exception(v)
             return
 
         try:
@@ -860,11 +917,7 @@ class AgenticFilter:
 
         except Exception as e:
             error_msg = str(e)
-            self.printer.print_in_terminal(
-                "auto_command_failed", style="red", command=command, error=error_msg)
-
-            # Save failed command execution
-            save_to_memory_file(
-                query=f"Command: {command} Parameters: {json.dumps(parameters) if parameters else 'None'}",
-                response=f"Command execution failed: {error_msg}"
+            v = self.printer.get_message_from_key_with_format(
+                "auto_command_failed", style="red", command=command, error=error_msg
             )
+            raise Exception(v)

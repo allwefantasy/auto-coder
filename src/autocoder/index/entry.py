@@ -30,6 +30,7 @@ from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
+from autocoder.agent.agentic_filter import AgenticFilter
 
 
 def build_index_and_filter_files(
@@ -94,24 +95,46 @@ def build_index_and_filter_files(
         phase_end = time.monotonic()
         stats["timings"]["build_index"] = phase_end - phase_start
 
-
         if not args.skip_filter_index and args.index_filter_model:
 
-            
             model_name = getattr(
                 index_manager.index_filter_llm, 'default_model_name', None)
             if not model_name:
                 model_name = "unknown(without default model name)"
-            printer.print_in_terminal(
-                "quick_filter_start", style="blue", model_name=model_name)
-            quick_filter = QuickFilter(index_manager, stats, sources)
-            quick_filter_result = quick_filter.filter(
-                index_manager.read_index(), args.query)
 
-            final_files.update(quick_filter_result.files)
+            if args.enable_agentic_filter:
+                from autocoder.agent.agentic_filter import AgenticFilterRequest, AgenticFilter, CommandConfig, MemoryConfig
+                from autocoder.common.conf_utils import load_memory
 
-            if quick_filter_result.file_positions:
-                file_positions.update(quick_filter_result.file_positions)                
+                _memory = load_memory(args)
+
+                def save_memory_func():
+                    pass
+
+                tuner = AgenticFilter(index_manager.index_filter_llm,
+                                      args=args,
+                                      conversation_history=[],
+                                      memory_config=MemoryConfig(
+                                          memory=_memory, save_memory_func=save_memory_func),
+                                      command_config=None)
+                response = tuner.analyze(
+                    AgenticFilterRequest(user_input=args.query))
+                if response:
+                    for file in response.files:
+                        final_files[file.path] = TargetFile(
+                            file_path=file.path, reason="Agentic Filter")
+            else:
+                printer.print_in_terminal(
+                    "quick_filter_start", style="blue", model_name=model_name)
+
+                quick_filter = QuickFilter(index_manager, stats, sources)
+                quick_filter_result = quick_filter.filter(
+                    index_manager.read_index(), args.query)
+
+                final_files.update(quick_filter_result.files)
+
+                if quick_filter_result.file_positions:
+                    file_positions.update(quick_filter_result.file_positions)
 
         if not args.skip_filter_index and not args.index_filter_model:
             model_name = getattr(index_manager.llm, 'default_model_name', None)
@@ -354,7 +377,7 @@ def build_index_and_filter_files(
             ).to_dict()
         ),
         metadata=EventMetadata(
-            action_file=args.file            
+            action_file=args.file
         ).to_dict()
     )
 

@@ -16,6 +16,7 @@ from autocoder.linters.models import (
     IssuePosition, 
     IssueSeverity
 )
+from loguru import logger as global_logger
 
 class ShadowLinter:
     """
@@ -32,6 +33,7 @@ class ShadowLinter:
         """
         self.shadow_manager = shadow_manager
         self.verbose = verbose
+        self.logger = global_logger.bind(name="ShadowLinter")
         
     def lint_shadow_file(self, shadow_path: str, fix: bool = False) -> FileLintResult:
         """
@@ -117,8 +119,10 @@ class ShadowLinter:
         
         # 处理每个影子文件
         for shadow_path in shadow_files:
+            self.logger.info(f"正在检查文件: {shadow_path}")
             try:
                 file_result = self.lint_shadow_file(shadow_path, fix=fix)
+                self.logger.info(f"检查完成: {shadow_path}")
                 # lint_shadow_file现在总是返回有效的FileLintResult，不再需要检查None
                 project_path = self.shadow_manager.from_shadow_path(shadow_path)
                 

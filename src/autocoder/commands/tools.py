@@ -8,7 +8,7 @@ from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.common.interpreter import Interpreter
 from autocoder.common import ExecuteSteps, ExecuteStep, detect_env
 from autocoder.common import code_auto_execute
-from typing import List, Tuple
+from typing import List, Tuple,Dict
 import os
 import byzerllm
 import json
@@ -147,8 +147,11 @@ class AutoCommandTools:
 
         return answer
 
-    def response_user(self, response: str):
+    def response_user(self, response: Union[str, Dict]):
         # 如果是在web模式下，则使用event_manager事件来询问用户
+        if isinstance(response, dict):
+            response = json.dumps(response, ensure_ascii=False,indent=4)
+
         if get_run_context().is_web():
             try:
                 get_event_manager(
@@ -187,6 +190,56 @@ class AutoCommandTools:
 
         self.result_manager.append(content=response, meta={
             "action": "response_user",
+            "input": {
+                "response": response
+            }
+        })
+
+        return response
+    
+    def output_result(self, response: Union[str, Dict]):
+        # 如果是在web模式下，则使用event_manager事件来询问用户
+        if isinstance(response, dict):
+            response = json.dumps(response, ensure_ascii=False,indent=4)
+
+        if get_run_context().is_web():
+            try:
+                get_event_manager(
+                    self.args.event_file).write_result(
+                    EventContentCreator.create_result(
+                        EventContentCreator.MarkdownContent(
+                            content=response
+                        )
+                    )
+                )
+                self.result_manager.append(content=response, meta={
+                    "action": "output_result",
+                    "input": {
+                        "response": response
+                    }
+                })
+            except Exception as e:
+                error_message = f"Error: {str(e)}\n\n完整异常堆栈信息:\n{traceback.format_exc()}"
+                self.result_manager.append(content=f"Error: {error_message}", meta={
+                    "action": "output_result",
+                    "input": {
+                        "response": response
+                    }
+                })
+            return response
+
+        console = Console()
+        answer_text = Text(response, style="italic")
+        answer_panel = Panel(
+            answer_text,
+            title="",
+            border_style="green",
+            expand=False
+        )
+        console.print(answer_panel)
+
+        self.result_manager.append(content=response, meta={
+            "action": "output_result",
             "input": {
                 "response": response
             }
@@ -690,6 +743,18 @@ class AutoCommandTools:
                     matched_files.append(os.path.join(root, file))
 
         v = ",".join(matched_files)
+        
+        tokens = count_tokens(v)
+        if tokens > self.args.conversation_prune_safe_zone_tokens / 2.0:
+            result = f"The result is too large to return. (tokens: {tokens}). Try to use another function or use another keyword to search."
+            self.result_manager.add_result(content=result, meta={
+                "action": "find_files_by_name",
+                "input": {
+                    "keyword": keyword
+                }
+            })
+            return result
+
         self.result_manager.add_result(content=v, meta={
             "action": "find_files_by_name",
             "input": {
@@ -731,7 +796,7 @@ class AutoCommandTools:
         excluded_dirs = [
             'node_modules', '.git', '.venv', 'venv', '__pycache__', 'dist', 'build',
             '.DS_Store', '.idea', '.vscode', 'tmp', 'temp', 'cache', 'coverage',
-            'htmlcov', '.mypy_cache', '.pytest_cache', '.hypothesis'
+            'htmlcov', '.mypy_cache', '.pytest_cache', '.hypothesis',".auto-coder"
         ]
         excluded_file_patterns = [
             '*.pyc', '*.pyo', '*.pyd', '*.egg-info', '*.log'
