@@ -137,10 +137,7 @@ class AgenticFilter:
 
     @byzerllm.prompt()
     def _analyze(self, request: AgenticFilterRequest) -> str:
-        """
-        ## 目标
-        根据用户需求识别需要操作的文件，最终返回JSON格式的文件列表。你需要通过组合使用可用工具来达成这个目标。
-
+        """        
         ## 当前用户环境信息如下:
         <os_info>
         操作系统: {{ env_info.os_name }} {{ env_info.os_version }}
@@ -180,25 +177,29 @@ class AgenticFilter:
         ## 当前大模型窗口安全值
         {{ conversation_safe_zone_tokens }}
 
-        ## 函数组合说明：
-        {{ command_combination_readme }}
-
-
+        ## Token 安全区
+        对话和文件内容的总Token数不应超过 {{ conversation_safe_zone_tokens }}。请谨慎读取大文件。  
+        
         ## 对话历史
         <conversation_history>
         {% for msg in conversation_history %}
         **{{ msg.role }}**: {{ msg.content }}
         {% endfor %}
         </conversation_history>
+        
 
-        ## 当前项目根目录
-        {{ project_root }}
-
-        ## Token 安全区
-        对话和文件内容的总Token数不应超过 {{ conversation_safe_zone_tokens }}。请谨慎读取大文件。
-
-        请分析用户意图，组合一个或者多个函数，请务必确保帮助用户找到相关文件，不要有遗漏。
-
+        ## 完成任务的一些实践指导
+        {{ command_combination_readme }}
+        
+        ## 你的任务以及要求
+        用户需要对当前的项目发起一个新的需求，你的工作是根据用户的需求，组合使用一些函数，来帮用户找到哪些文件是和这个需求
+        相关的。这包括：
+        1. 需要修改的文件
+        2. 为了完成哪些修改，需要参考的文件
+        3. 修改文件可能会发生接口的变化，可能还会影响一些文件。
+        你的目标是需要把这些文件都找出来。
+        
+        ## 返回格式要求
         返回格式必须是严格的JSON格式：
 
         ```json
