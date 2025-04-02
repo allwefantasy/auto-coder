@@ -1,14 +1,11 @@
 from typing import List, Dict, Tuple, Optional, Any
 import os
-import json
 import time
-from concurrent.futures import ThreadPoolExecutor
 
 import byzerllm
-from byzerllm.utils.client import code_utils
 
 from autocoder.common.types import Mode, CodeGenerateResult, MergeCodeWithoutEffect
-from autocoder.common import AutoCoderArgs, git_utils, SourceCodeList
+from autocoder.common import AutoCoderArgs,  SourceCodeList,SourceCode
 from autocoder.common import sys_prompt
 from autocoder.compilers.shadow_compiler import ShadowCompiler
 from autocoder.privacy.model_filter import ModelPathFilter
@@ -103,6 +100,29 @@ class CodeEditBlockManager:
         修复上述问题，请确保代码质量问题被解决，同时保持代码的原有功能。
         请严格遵守*SEARCH/REPLACE block*的格式。
         """
+
+    @byzerllm.prompt()
+    def fix_missing_context(self, query: str, original_code: str, missing_files: str) -> str:
+        """  
+        下面是你根据格式要求输出的一份修改代码:
+        <original_code>
+        {{ original_code }}
+        </original_code>
+
+        我发现你尝试修改以下文件，但这些文件没有在上下文中提供，所以你无法看到它们的内容:
+        <missing_files>
+        {{ missing_files }}
+        </missing_files>
+
+        下面是用户原始的需求:
+        <user_query_wrapper>
+        {{ query }}
+        </user_query_wrapper>
+
+        我已经将这些文件添加到上下文中，请重新生成代码，确保使用SEARCH/REPLACE格式正确修改这些文件。
+        对于每个文件，请确保SEARCH部分包含文件中的实际内容，而不是空的SEARCH块。
+        """
+
     @byzerllm.prompt()
     def fix_unmerged_blocks(self, query: str, original_code: str, unmerged_blocks: str) -> str:
         """  
@@ -209,6 +229,231 @@ class CodeEditBlockManager:
 
         return error_count
 
+    def _fix_missing_context(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
+        """
+        检查是否有空的SEARCH块但目标文件存在，如果有，将文件添加到动态上下文并重新生成代码
+
+        参数:
+            query (str): 用户查询
+            generation_result (CodeGenerateResult): 生成的代码结果
+            source_code_list (SourceCodeList): 源代码列表
+
+        返回:
+            CodeGenerateResult: 修复后的代码结果
+        """
+        token_cost_calculator = TokenCostCalculator(args=self.args)
+        
+        # 获取编辑块
+        codes = self.code_merger.get_edits(generation_result.contents[0])
+        
+        # 检查是否有空的SEARCH块但目标文件存在
+        missing_files = []
+        for file_path, head, update in codes:
+            # 如果SEARCH块为空，检查文件是否存在但不在上下文中
+            if not head and os.path.exists(file_path):
+                # 检查文件是否已经在上下文中
+                in_context = False
+                if hasattr(self.args, 'urls') and self.args.urls:
+                    in_context = file_path in self.args.urls
+                if hasattr(self.args, 'dynamic_urls') and self.args.dynamic_urls and not in_context:
+                    in_context = file_path in self.args.dynamic_urls
+                
+                # 如果文件存在但不在上下文中，添加到缺失文件列表
+                if not in_context:
+                    missing_files.append(file_path)
+                    # 将文件添加到动态上下文中
+                    if not hasattr(self.args, 'dynamic_urls'):
+                        self.args.dynamic_urls = []
+                    if file_path not in self.args.dynamic_urls:
+                        self.args.dynamic_urls.append(file_path)
+        
+        # 如果没有缺失文件，直接返回原结果
+        if not missing_files:
+            return generation_result
+        
+        # 格式化缺失文件列表
+        missing_files_text = "\n".join(missing_files)
+        
+        # 打印当前修复状态
+        self.printer.print_in_terminal(
+            "missing_context_attempt_status",
+            style="yellow",
+            missing_files=missing_files_text
+        )
+        
+        # 更新源代码列表，包含新添加的文件
+        updated_source_code_list = SourceCodeList([])
+        for source in source_code_list.sources:
+            updated_source_code_list.sources.append(source)
+        
+        # 添加缺失的文件到源代码列表
+        for file_path in missing_files:
+            if os.path.exists(file_path):
+                with open(file_path, 'r') as f:
+                    file_content = f.read()
+                source = SourceCode(module_name=file_path, source_code=file_content)
+                updated_source_code_list.sources.append(source)
+        
+        # 准备修复提示
+        fix_prompt = self.fix_missing_context.prompt(
+            query=query,
+            original_code=generation_result.contents[0],
+            missing_files=missing_files_text
+        )
+        
+        logger.info(f"fix_missing_context_prompt: {fix_prompt}")
+        
+        # 使用修复提示重新生成代码
+        start_time = time.time()
+        generation_result = self.code_generator.single_round_run(
+            fix_prompt, updated_source_code_list)
+        
+        # 计算这次修复缺失上下文花费的token情况
+        token_cost_calculator.track_token_usage_by_generate(
+            llm=self.llm,
+            generate=generation_result,
+            operation_name="code_generation_complete",
+            start_time=start_time,
+            end_time=time.time()
+        )
+        
+        # 选择最佳结果
+        generation_result = self.code_merger.choose_best_choice(generation_result)
+        ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
+        generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
+        
+        return generation_result
+
+    def _fix_unmerged_blocks(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
+        """
+        修复未合并的代码块，最多尝试指定次数
+
+        参数:
+            query (str): 用户查询
+            generation_result (CodeGenerateResult): 生成的代码结果
+            source_code_list (SourceCodeList): 源代码列表
+
+        返回:
+            CodeGenerateResult: 修复后的代码结果
+        """
+        token_cost_calculator = TokenCostCalculator(args=self.args)
+        merge = self.code_merger._merge_code_without_effect(generation_result.contents[0])
+
+        if not self.args.enable_auto_fix_merge or not merge.failed_blocks:
+            return generation_result
+
+        def _format_blocks(merge: MergeCodeWithoutEffect) -> Tuple[str, str]:
+            unmerged_formatted_text = ""
+            for file_path, head, update in merge.failed_blocks:
+                unmerged_formatted_text += "```lang"
+                unmerged_formatted_text += f"##File: {file_path}\n"
+                unmerged_formatted_text += "<<<<<<< SEARCH\n"
+                unmerged_formatted_text += head
+                unmerged_formatted_text += "=======\n"
+                unmerged_formatted_text += update
+                unmerged_formatted_text += ">>>>>>> REPLACE\n"
+                unmerged_formatted_text += "```"
+                unmerged_formatted_text += "\n"
+
+            merged_formatted_text = ""
+            if merge.merged_blocks:
+                for file_path, head, update in merge.merged_blocks:
+                    merged_formatted_text += "```lang"
+                    merged_formatted_text += f"##File: {file_path}\n"
+                    merged_formatted_text += head
+                    merged_formatted_text += "=======\n"
+                    merged_formatted_text += update
+                    merged_formatted_text += "```"
+                    merged_formatted_text += "\n"
+
+            get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
+                content=EventContentCreator.ResultContent(content=f"Unmerged blocks:\\n {unmerged_formatted_text}",
+                                                          metadata={
+                                                              "merged_blocks": merge.success_blocks,
+                                                              "failed_blocks": merge.failed_blocks
+                                                          }
+                                                          ).to_dict(),
+                metadata={
+                    "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
+                    "action_file": self.args.file
+                }
+            ))
+            return (unmerged_formatted_text, merged_formatted_text)
+
+        for attempt in range(self.args.auto_fix_merge_max_attempts):
+            global_cancel.check_and_raise()
+            unmerged_formatted_text, merged_formatted_text = _format_blocks(merge)
+            fix_prompt = self.fix_unmerged_blocks.prompt(
+                query=query,
+                original_code=generation_result.contents[0],
+                unmerged_blocks=unmerged_formatted_text
+            )
+
+            logger.info(f"fix_prompt: {fix_prompt}")
+
+            # 打印当前修复尝试状态
+            self.printer.print_in_terminal(
+                "unmerged_blocks_attempt_status",
+                style="yellow",
+                attempt=(attempt + 1),
+                max_correction_attempts=self.args.auto_fix_merge_max_attempts
+            )
+
+            get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
+                content=EventContentCreator.ResultContent(content=f"Unmerged blocks attempt {attempt + 1}/{self.args.auto_fix_merge_max_attempts}: {unmerged_formatted_text}",
+                                                          metadata={}
+                                                          ).to_dict(),
+                metadata={
+                    "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
+                    "action_file": self.args.file
+                }
+            ))
+
+            # 使用修复提示重新生成代码
+            start_time = time.time()
+            generation_result = self.code_generator.single_round_run(
+                fix_prompt, source_code_list)
+
+            # 计算这次修复未合并块花费的token情况
+            token_cost_calculator.track_token_usage_by_generate(
+                llm=self.llm,
+                generate=generation_result,
+                operation_name="code_generation_complete",
+                start_time=start_time,
+                end_time=time.time()
+            )
+
+            # 检查修复后的代码是否仍有未合并块
+            generation_result = self.code_merger.choose_best_choice(generation_result)
+            ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
+            generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
+            merge = self.code_merger._merge_code_without_effect(
+                generation_result.contents[0])
+
+            # 如果没有失败的块，则修复成功，退出循环
+            if not merge.failed_blocks:
+                self.printer.print_in_terminal(
+                    "unmerged_blocks_fixed", style="green")
+                break
+
+            # 如果是最后一次尝试仍未成功，打印警告
+            if attempt == self.args.auto_fix_merge_max_attempts - 1:
+                self.printer.print_in_terminal(
+                    "max_unmerged_blocks_attempts_reached", style="yellow")
+                get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
+                    content=EventContentCreator.ResultContent(content=self.printer.get_message_from_key("max_unmerged_blocks_attempts_reached"),
+                                                              metadata={}
+                                                              ).to_dict(),
+                    metadata={
+                        "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
+                        "action_file": self.args.file
+                    }
+                ))
+                raise Exception(self.printer.get_message_from_key(
+                    "max_unmerged_blocks_attempts_reached"))
+                
+        return generation_result
+     
     def _fix_unmerged_blocks(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
         """
         修复未合并的代码块，最多尝试指定次数
@@ -538,11 +783,13 @@ class CodeEditBlockManager:
             return generation_result
         
         ## 可能第一次触发排序
-        generation_result = self.code_merger.choose_best_choice(generation_result)
-        merge = self.code_merger._merge_code_without_effect(generation_result.contents[0])
+        generation_result = self.code_merger.choose_best_choice(generation_result)        
 
         ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
         generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
+
+        # 修复缺少上下文的文件
+        generation_result = self._fix_missing_context(query, generation_result, source_code_list)
 
         # 修复未合并的代码块
         generation_result = self._fix_unmerged_blocks(query, generation_result, source_code_list)

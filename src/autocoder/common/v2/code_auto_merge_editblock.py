@@ -272,7 +272,7 @@ class CodeAutoMergeEditBlock:
         merged_blocks = []
 
         for block in codes:
-            file_path, head, update = block
+            file_path, head, update = block            
             if not os.path.exists(file_path):
                 merged_blocks.append((file_path, "", update))
                 file_content_mapping[file_path] = update
