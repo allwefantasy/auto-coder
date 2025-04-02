@@ -1,19 +1,19 @@
 from typing import List, Dict, Tuple, Optional, Any
 import os
-import json
 import time
-from concurrent.futures import ThreadPoolExecutor
 
 import byzerllm
 from byzerllm.utils.client import code_utils
 
 from autocoder.common.types import Mode, CodeGenerateResult, MergeCodeWithoutEffect
-from autocoder.common import AutoCoderArgs, git_utils, SourceCodeList
+from autocoder.common import AutoCoderArgs, git_utils, SourceCodeList, SourceCode
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 from autocoder.common import sys_prompt
+from autocoder.compilers.shadow_compiler import ShadowCompiler
 from autocoder.privacy.model_filter import ModelPathFilter
 from autocoder.common.utils_code_auto_generate import chat_with_continue, stream_chat_with_continue, ChatWithContinueResult
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
-from autocoder.common.stream_out_type import CodeGenerateStreamOutType
+from autocoder.common.stream_out_type import LintStreamOutType, CompileStreamOutType, UnmergedBlocksStreamOutType, CodeGenerateStreamOutType
 from autocoder.common.auto_coder_lang import get_message_with_format
 from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
@@ -28,6 +28,9 @@ from loguru import logger
 from autocoder.common.global_cancel import global_cancel
 from autocoder.linters.models import ProjectLintResult
 from autocoder.common.token_cost_caculate import TokenCostCalculator
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events.event_types import Event, EventType, EventMetadata
+from autocoder.events import event_content as EventContentCreator
 
 
 class CodeDiffManager:
@@ -47,7 +50,8 @@ class CodeDiffManager:
         self.args = args
         self.action = action
         self.generate_times_same_model = args.generate_times_same_model
-        self.max_correction_attempts = args.auto_fix_lint_max_attempts
+        self.auto_fix_lint_max_attempts = args.auto_fix_lint_max_attempts
+        self.auto_fix_compile_max_attempts = args.auto_fix_compile_max_attempts
         self.printer = Printer()
         
         # Initialize sub-components
@@ -55,8 +59,11 @@ class CodeDiffManager:
         self.code_merger = CodeAutoMergeDiff(llm, args)
         
         # Create shadow manager for linting
-        self.shadow_manager = ShadowManager(args.source_dir, args.event_file)
+        self.shadow_manager = ShadowManager(
+            args.source_dir, args.event_file, args.ignore_clean_shadows)
         self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
+        self.shadow_compiler = ShadowCompiler(
+            self.shadow_manager, verbose=False)
 
     @byzerllm.prompt()
     def fix_linter_errors(self, query: str, lint_issues: str) -> str:
@@ -72,6 +79,66 @@ class CodeDiffManager:
         </user_query_wrapper>
 
         修复上述问题，请确保代码质量问题被解决，同时保持代码的原有功能。
+        请使用 unified diff 格式输出修改。
+        """
+        
+    @byzerllm.prompt()
+    def fix_compile_errors(self, query: str, compile_errors: str) -> str:
+        """
+        编译错误:
+        <compile_errors>
+        {{ compile_errors }}
+        </compile_errors>
+
+        用户原始需求:
+        <user_query_wrapper>
+        {{ query }}
+        </user_query_wrapper>
+
+        修复上述问题，请确保代码质量问题被解决，同时保持代码的原有功能。
+        请使用 unified diff 格式输出修改。
+        """
+
+    @byzerllm.prompt()
+    def fix_missing_context(self, query: str, original_code: str, missing_files: str) -> str:
+        """  
+        下面是你根据格式要求输出的一份修改代码:
+        <original_code>
+        {{ original_code }}
+        </original_code>
+
+        我发现你尝试修改以下文件，但这些文件没有在上下文中提供，所以你无法看到它们的内容:
+        <missing_files>
+        {{ missing_files }}
+        </missing_files>
+
+        下面是用户原始的需求:
+        <user_query_wrapper>
+        {{ query }}
+        </user_query_wrapper>
+
+        我已经将这些文件添加到上下文中，请重新生成代码，确保使用 unified diff 格式正确修改这些文件。
+        """
+
+    @byzerllm.prompt()
+    def fix_unmerged_blocks(self, query: str, original_code: str, unmerged_blocks: str) -> str:
+        """  
+        下面是你根据格式要求输出的一份修改代码:
+        <original_code>
+        {{ original_code }}
+        </original_code>
+
+        但是我发现下面的代码块无法合并:
+        <unmerged_blocks>
+        {{ unmerged_blocks }}
+        </unmerged_blocks>
+
+        下面是用户原始的需求:
+        <user_query_wrapper>
+        {{ query }}
+        </user_query_wrapper>
+
+        请根据反馈，回顾之前的格式要求，重新生成一份修改代码，确保所有代码块都能够正确合并。
         请使用 unified diff 格式输出修改。
         """
         
