@@ -87,7 +87,7 @@ class CodeEditBlockManager:
         修复上述问题，请确保代码质量问题被解决，同时保持代码的原有功能。
         请严格遵守*SEARCH/REPLACE block*的格式。
         """
-
+    @byzerllm.prompt()
     def fix_compile_errors(self, query: str, compile_errors: str) -> str:
         """
         编译错误:
@@ -339,48 +339,20 @@ class CodeEditBlockManager:
                 
         return generation_result
 
-    def generate_and_fix(self, query: str, source_code_list: SourceCodeList) -> CodeGenerateResult:
+    def _fix_lint_errors(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
         """
-        生成代码，运行linter/compile，修复错误，最多尝试指定次数
+        自动修复lint错误，最多尝试指定次数
 
         参数:
             query (str): 用户查询
+            generation_result (CodeGenerateResult): 生成的代码结果
             source_code_list (SourceCodeList): 源代码列表
 
         返回:
-            CodeGenerateResult: 生成的代码结果
+            CodeGenerateResult: 修复后的代码结果
         """
-        # 初始代码生成
-        self.printer.print_in_terminal("generating_initial_code")
-        start_time = time.time()
-        generation_result = self.code_generator.single_round_run(
-            query, source_code_list)
-
         token_cost_calculator = TokenCostCalculator(args=self.args)
-        token_cost_calculator.track_token_usage_by_generate(
-            llm=self.llm,
-            generate=generation_result,
-            operation_name="code_generation_complete",
-            start_time=start_time,
-            end_time=time.time()
-        )
 
-        # 确保结果非空
-        if not generation_result.contents:
-            self.printer.print_in_terminal("generation_failed", style="red")
-            return generation_result
-        
-        ## 可能第一次触发排序
-        generation_result = self.code_merger.choose_best_choice(generation_result)
-        merge = self.code_merger._merge_code_without_effect(generation_result.contents[0])
-
-        ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
-        generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
-
-        # 修复未合并的代码块
-        generation_result = self._fix_unmerged_blocks(query, generation_result, source_code_list)
-
-        # 接着开始看看 Lin他最多尝试修复5次
         for attempt in range(self.auto_fix_lint_max_attempts):
             global_cancel.check_and_raise()
             # 代码生成结果更新到影子文件里去
@@ -395,8 +367,6 @@ class CodeEditBlockManager:
             # 运行linter
             lint_results = self.shadow_linter.lint_all_shadow_files()
             error_count = self._count_errors(lint_results)
-            # print(f"error_count: {error_count}")
-            # print(f"lint_results: {json.dumps(lint_results.model_dump(), indent=4,ensure_ascii=False)}")
 
             # 如果没有错误则完成
             if error_count == 0:
@@ -440,10 +410,6 @@ class CodeEditBlockManager:
                 lint_issues=formatted_issues
             )
 
-            # for source in source_code_list.sources:
-            #     print(f"file_path: {source.module_name}")
-            # print(f"fix_prompt: {fix_prompt}")
-
             # 将 shadow_files 转化为 source_code_list
             start_time = time.time()
             source_code_list = self.code_merger.get_source_code_list_from_shadow_files(
@@ -451,7 +417,7 @@ class CodeEditBlockManager:
             generation_result = self.code_generator.single_round_run(
                 fix_prompt, source_code_list)
 
-            # 计算这次修复lint 问题花费的token情况
+            # 计算这次修复lint问题花费的token情况
             token_cost_calculator.track_token_usage_by_generate(
                 llm=self.llm,
                 generate=generation_result,
@@ -459,67 +425,133 @@ class CodeEditBlockManager:
                 start_time=start_time,
                 end_time=time.time()
             )
+            
+        return generation_result
 
-        # 如果开启了自动修复compile问题，则进行compile修复
-        if self.args.enable_auto_fix_compile:
-            for attempt in range(self.auto_fix_compile_max_attempts):
-                global_cancel.check_and_raise()
-                # 先更新增量影子系统的文件
-                shadow_files = self._create_shadow_files_from_edits(
-                    generation_result)
-                
-                # 在影子系统生成完整的项目，然后编译
-                compile_result = self.shadow_compiler.compile_all_shadow_files()
+    def _fix_compile_errors(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
+        """
+        自动修复编译错误，最多尝试指定次数
 
-                # 如果编译成功，则退出，继续往后走
-                if compile_result.success or compile_result.total_errors == 0:
-                    self.printer.print_in_terminal(
-                        "compile_success", style="green")
-                    break
+        参数:
+            query (str): 用户查询
+            generation_result (CodeGenerateResult): 生成的代码结果
+            source_code_list (SourceCodeList): 源代码列表
 
-                # 如果有错误，则把compile结果记录到事件系统
-                get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
-                    content=EventContentCreator.ResultContent(content=f"Compile attempt {attempt + 1}/{self.auto_fix_compile_max_attempts}: Found {compile_result.total_errors} errors:\n {compile_result.to_str()}",
-                                                              metadata={}
-                                                              ).to_dict(),
-                    metadata={
-                        "stream_out_type": CompileStreamOutType.COMPILE.value,
-                        "action_file": self.args.file
-                    }
-                ))
+        返回:
+            CodeGenerateResult: 修复后的代码结果
+        """
+        if not self.args.enable_auto_fix_compile:
+            return generation_result
+            
+        token_cost_calculator = TokenCostCalculator(args=self.args)
+        
+        for attempt in range(self.auto_fix_compile_max_attempts):
+            global_cancel.check_and_raise()
+            # 先更新增量影子系统的文件
+            shadow_files = self._create_shadow_files_from_edits(
+                generation_result)
+            
+            # 在影子系统生成完整的项目，然后编译
+            compile_result = self.shadow_compiler.compile_all_shadow_files()
 
-                if attempt == self.auto_fix_compile_max_attempts - 1:
-                    self.printer.print_in_terminal(
-                        "max_compile_attempts_reached", style="yellow")
-                    break
+            # 如果编译成功，则退出，继续往后走
+            if compile_result.success or compile_result.total_errors == 0:
+                self.printer.print_in_terminal(
+                    "compile_success", style="green")
+                break
 
-                # 打印当前compile错误
-                self.printer.print_in_terminal("compile_attempt_status",
-                                               style="yellow",
-                                               attempt=(attempt + 1), max_correction_attempts=self.auto_fix_compile_max_attempts,
-                                               error_count=compile_result.total_errors,
-                                               formatted_issues=compile_result.to_str())
+            # 如果有错误，则把compile结果记录到事件系统
+            get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
+                content=EventContentCreator.ResultContent(content=f"Compile attempt {attempt + 1}/{self.auto_fix_compile_max_attempts}: Found {compile_result.total_errors} errors:\n {compile_result.to_str()}",
+                                                          metadata={}
+                                                          ).to_dict(),
+                metadata={
+                    "stream_out_type": CompileStreamOutType.COMPILE.value,
+                    "action_file": self.args.file
+                }
+            ))
 
-                fix_compile_prompt = self.fix_compile_errors.prompt(
-                    query=query,
-                    compile_errors=compile_result.to_str()
-                )
+            if attempt == self.auto_fix_compile_max_attempts - 1:
+                self.printer.print_in_terminal(
+                    "max_compile_attempts_reached", style="yellow")
+                break
 
-                # 将 shadow_files 转化为 source_code_list
-                start_time = time.time()
-                source_code_list = self.code_merger.get_source_code_list_from_shadow_files(
-                    shadow_files)
-                generation_result = self.code_generator.single_round_run(
-                    fix_compile_prompt, source_code_list)
+            # 打印当前compile错误
+            self.printer.print_in_terminal("compile_attempt_status",
+                                           style="yellow",
+                                           attempt=(attempt + 1), max_correction_attempts=self.auto_fix_compile_max_attempts,
+                                           error_count=compile_result.total_errors,
+                                           formatted_issues=compile_result.to_str())
 
-                # 计算这次修复compile 问题花费的token情况
-                token_cost_calculator.track_token_usage_by_generate(
-                    llm=self.llm,
-                    generate=generation_result,
-                    operation_name="code_generation_complete",
-                    start_time=start_time,
-                    end_time=time.time()
-                )
+            fix_compile_prompt = self.fix_compile_errors.prompt(
+                query=query,
+                compile_errors=compile_result.to_str()
+            )
+
+            # 将 shadow_files 转化为 source_code_list
+            start_time = time.time()
+            source_code_list = self.code_merger.get_source_code_list_from_shadow_files(
+                shadow_files)
+            generation_result = self.code_generator.single_round_run(
+                fix_compile_prompt, source_code_list)
+
+            # 计算这次修复compile问题花费的token情况
+            token_cost_calculator.track_token_usage_by_generate(
+                llm=self.llm,
+                generate=generation_result,
+                operation_name="code_generation_complete",
+                start_time=start_time,
+                end_time=time.time()
+            )
+            
+        return generation_result
+
+    def generate_and_fix(self, query: str, source_code_list: SourceCodeList) -> CodeGenerateResult:
+        """
+        生成代码，运行linter/compile，修复错误，最多尝试指定次数
+
+        参数:
+            query (str): 用户查询
+            source_code_list (SourceCodeList): 源代码列表
+
+        返回:
+            CodeGenerateResult: 生成的代码结果
+        """
+        # 初始代码生成
+        self.printer.print_in_terminal("generating_initial_code")
+        start_time = time.time()
+        generation_result = self.code_generator.single_round_run(
+            query, source_code_list)
+
+        token_cost_calculator = TokenCostCalculator(args=self.args)
+        token_cost_calculator.track_token_usage_by_generate(
+            llm=self.llm,
+            generate=generation_result,
+            operation_name="code_generation_complete",
+            start_time=start_time,
+            end_time=time.time()
+        )
+
+        # 确保结果非空
+        if not generation_result.contents:
+            self.printer.print_in_terminal("generation_failed", style="red")
+            return generation_result
+        
+        ## 可能第一次触发排序
+        generation_result = self.code_merger.choose_best_choice(generation_result)
+        merge = self.code_merger._merge_code_without_effect(generation_result.contents[0])
+
+        ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
+        generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
+
+        # 修复未合并的代码块
+        generation_result = self._fix_unmerged_blocks(query, generation_result, source_code_list)
+
+        # 修复lint错误
+        generation_result = self._fix_lint_errors(query, generation_result, source_code_list)
+        
+        # 修复编译错误
+        generation_result = self._fix_compile_errors(query, generation_result, source_code_list)
 
         # 清理临时影子文件
         self.shadow_manager.clean_shadows()
