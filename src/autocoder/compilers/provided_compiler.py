@@ -292,8 +292,8 @@ class ProvidedCompiler(BaseCompiler):
                 print(working_dir)
                 all_extensions = self.get_all_extensions(working_dir)                                
                 triggers = compiler_config.get("triggers","").split(",")
-                print(all_extensions)
-                print(triggers)
+                # print(all_extensions)
+                # print(triggers)
                 if any(trigger in all_extensions for trigger in triggers):
                     target_compiler_config = compiler_config
                     break
