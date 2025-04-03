@@ -207,22 +207,59 @@ class ReactJSLinter(BaseLinter):
         Returns:
             str: The extracted JSON string, or the original text if no separator is found.
         """
-        if "=============" in output_text:
-            lines = output_text.split('\n')
-            json_lines = []
-            found_separator = False
+        return output_text.split("=============")[-1]
+    
+    def _convert_raw_lint_result_to_dict(self, raw_result: str,result: Dict[str, Any], project_path: str):        
+        try:
+            output_text = raw_result
+            eslint_output = []
+            try:
+                eslint_output = json.loads(output_text)
+            except json.JSONDecodeError:
+                # Try to extract JSON from output if it contains separator
+                json_text = self._extract_json_from_output(output_text)                
+                try:
+                        eslint_output = json.loads(json_text)
+                except json.JSONDecodeError:                           
+                    print(json_text[0:100],"...",json_text[-100:])              
             
-            for line in lines:
-                if line.startswith("============="):
-                    found_separator = True
-                    continue
-                if found_separator:
-                    json_lines.append(line)
-            
-            if json_lines:
-                return '\n'.join(json_lines)
-        
-        return output_text
+            # print(f"eslint_output: {json.dumps(eslint_output, indent=4,ensure_ascii=False)}")
+
+            # Count files analyzed (should be 1)
+            result['files_analyzed'] = len(eslint_output)
+
+            # Track overall counts
+            total_errors = 0
+            total_warnings = 0
+
+            # Process the file result
+            for file_result in eslint_output:
+                file_rel_path = os.path.relpath(
+                    file_result['filePath'], project_path)
+
+                # Add error and warning counts
+                total_errors += file_result.get('errorCount', 0)
+                total_warnings += file_result.get('warningCount', 0)
+
+                # Process individual messages
+                for message in file_result.get('messages', []):
+                    issue = {
+                        'file': file_rel_path,
+                        'line': message.get('line', 0),
+                        'column': message.get('column', 0),
+                        'severity': 'error' if message.get('severity', 1) == 2 else 'warning',
+                        'message': message.get('message', ''),
+                        'rule': message.get('ruleId', 'unknown')
+                    }
+                    result['issues'].append(issue)
+
+            result['error_count'] = total_errors
+            result['warning_count'] = total_warnings
+            result['success'] = True
+        except json.JSONDecodeError:
+            # Handle case where ESLint output is not valid JSON
+            result['error'] = "Failed to parse ESLint output"
+
 
     def lint_file(self, file_path: str, fix: bool = False, project_path: str = None) -> Dict[str, Any]:
         """
@@ -296,51 +333,7 @@ class ReactJSLinter(BaseLinter):
 
             # Parse ESLint output
             if process.stdout:
-                try:
-                    output_text = process.stdout                    
-                    try:
-                        eslint_output = json.loads(output_text)
-                    except json.JSONDecodeError:
-                        # Try to extract JSON from output if it contains separator
-                        json_text = self._extract_json_from_output(output_text)
-                        eslint_output = json.loads(json_text)
-                    
-                    # print(f"eslint_output: {json.dumps(eslint_output, indent=4,ensure_ascii=False)}")
-
-                    # Count files analyzed (should be 1)
-                    result['files_analyzed'] = len(eslint_output)
-
-                    # Track overall counts
-                    total_errors = 0
-                    total_warnings = 0
-
-                    # Process the file result
-                    for file_result in eslint_output:
-                        file_rel_path = os.path.relpath(
-                            file_result['filePath'], project_path)
-
-                        # Add error and warning counts
-                        total_errors += file_result.get('errorCount', 0)
-                        total_warnings += file_result.get('warningCount', 0)
-
-                        # Process individual messages
-                        for message in file_result.get('messages', []):
-                            issue = {
-                                'file': file_rel_path,
-                                'line': message.get('line', 0),
-                                'column': message.get('column', 0),
-                                'severity': 'error' if message.get('severity', 1) == 2 else 'warning',
-                                'message': message.get('message', ''),
-                                'rule': message.get('ruleId', 'unknown')
-                            }
-                            result['issues'].append(issue)
-
-                    result['error_count'] = total_errors
-                    result['warning_count'] = total_warnings
-                    result['success'] = True
-                except json.JSONDecodeError:
-                    # Handle case where ESLint output is not valid JSON
-                    result['error'] = "Failed to parse ESLint output"
+                self._convert_raw_lint_result_to_dict(process.stdout, result, project_path)
             else:
                 # Handle case where ESLint didn't produce any output
                 stderr = process.stderr.strip()
@@ -578,3 +571,4 @@ def format_lint_result(lint_result: Dict[str, Any]) -> str:
     """
     linter = ReactJSLinter()
     return linter.format_lint_result(lint_result) 
+    

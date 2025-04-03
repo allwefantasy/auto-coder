@@ -37,7 +37,7 @@ def main():
     shadow_manager.compare_directories()
 
     shadow_compiler = ShadowCompiler(shadow_manager)
-    result = shadow_compiler.compile_all_shadow_files("reactjs")
+    result = shadow_compiler.compile_all_shadow_files()
     print(result)
     print(result.to_str())
     
