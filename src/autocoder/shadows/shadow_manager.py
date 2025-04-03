@@ -285,7 +285,7 @@ class ShadowManager:
             # 删除链接项目目录中的所有内容
             for item in os.listdir(self.link_projects_dir):
                 item_path = os.path.join(self.link_projects_dir, item)
-                if os.path.isfile(item_path):
+                if os.path.isfile(item_path) or os.path.islink(item_path):
                     os.unlink(item_path)
                 elif os.path.isdir(item_path):
                     shutil.rmtree(item_path)
