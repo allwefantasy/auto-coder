@@ -107,6 +107,7 @@ class Calculator:
         main_path = os.path.join(project_dir, "main.py")
         main_content = """
 from calculator import Calculator
+  from abc import ABC, abstractmethod
 def main():
     calc = Calculator()
     
