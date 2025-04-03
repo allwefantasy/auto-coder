@@ -130,34 +130,40 @@ if __name__ == "__main__":
 
 class ReactJSFileCreator(FileCreator):
     """
-    React TypeScript 计算器项目文件创建器
+    Vite + React TypeScript 计算器项目文件创建器
     """
     
     def create_files(self, project_dir: str) -> None:
-        """创建 React TypeScript 项目文件"""
+        """创建 Vite + React TypeScript 项目文件"""
         # 创建 package.json
         self._create_package_json(project_dir)
         # 创建 index.html
         self._create_index_html(project_dir)
+        # 创建 vite.config.ts
+        self._create_vite_config(project_dir)
         # 创建 src 目录
         src_dir = os.path.join(project_dir, "src")
         os.makedirs(src_dir, exist_ok=True)
         # 创建 App.tsx 和 Calculator.tsx 组件
         self._create_app_tsx(src_dir)
         self._create_calculator_component(src_dir)
-        self._create_index_tsx(src_dir)
-        # 创建 tsconfig.json
+        self._create_main_tsx(src_dir)
+        # 创建 tsconfig.json 和 tsconfig.node.json
         self._create_tsconfig_json(project_dir)
+        self._create_tsconfig_node_json(project_dir)
+        # 创建 .gitignore
+        self._create_gitignore(project_dir)
     
     def get_file_paths(self, project_dir: str) -> List[str]:
-        """获取 React TypeScript 项目的主要文件路径"""
+        """获取 Vite + React TypeScript 项目的主要文件路径"""
         abs_project_dir = os.path.abspath(project_dir)
         return [
             os.path.join(abs_project_dir, "package.json"),
+            os.path.join(abs_project_dir, "vite.config.ts"),
             os.path.join(abs_project_dir, "tsconfig.json"),
             os.path.join(abs_project_dir, "src", "App.tsx"),
             os.path.join(abs_project_dir, "src", "Calculator.tsx"),
-            os.path.join(abs_project_dir, "src", "index.tsx")
+            os.path.join(abs_project_dir, "src", "main.tsx")
         ]
     
     @property
@@ -167,20 +173,17 @@ class ReactJSFileCreator(FileCreator):
     
     def _create_index_html(self, project_dir: str) -> None:
         """创建 index.html 文件"""
-        index_html_path = os.path.join(project_dir, "public", "index.html")
-        os.makedirs(os.path.dirname(index_html_path), exist_ok=True)
+        index_html_path = os.path.join(project_dir, "index.html")
         index_html_content = """<!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="description" content="React Calculator App" />
-    <title>React Calculator</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React Calculator</title>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>"""
         with open(index_html_path, "w", encoding="utf-8") as f:
@@ -191,133 +194,213 @@ class ReactJSFileCreator(FileCreator):
         package_path = os.path.join(project_dir, "package.json")
         package_content = """{
   "name": "calculator-app",
-  "version": "0.1.0",
   "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1",
-    "@types/node": "^16.18.0",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "typescript": "^4.9.5"
+    "react-dom": "^18.2.0"
   },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5"
   }
 }"""
         with open(package_path, "w", encoding="utf-8") as f:
             f.write(package_content)
+    
+    def _create_vite_config(self, project_dir: str) -> None:
+        """创建 vite.config.ts 文件"""
+        vite_config_path = os.path.join(project_dir, "vite.config.ts")
+        vite_config_content = """import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+})
+"""
+        with open(vite_config_path, "w", encoding="utf-8") as f:
+            f.write(vite_config_content)
     
     def _create_tsconfig_json(self, project_dir: str) -> None:
         """创建 tsconfig.json 文件"""
         tsconfig_path = os.path.join(project_dir, "tsconfig.json")
         tsconfig_content = """{
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
     "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "module": "esnext",
-    "moduleResolution": "node",
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }"""
         with open(tsconfig_path, "w", encoding="utf-8") as f:
             f.write(tsconfig_content)
     
+    def _create_tsconfig_node_json(self, project_dir: str) -> None:
+        """创建 tsconfig.node.json 文件"""
+        tsconfig_node_path = os.path.join(project_dir, "tsconfig.node.json")
+        tsconfig_node_content = """{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts"]
+}"""
+        with open(tsconfig_node_path, "w", encoding="utf-8") as f:
+            f.write(tsconfig_node_content)
+    
+    def _create_gitignore(self, project_dir: str) -> None:
+        """创建 .gitignore 文件"""
+        gitignore_path = os.path.join(project_dir, ".gitignore")
+        gitignore_content = """# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+"""
+        with open(gitignore_path, "w", encoding="utf-8") as f:
+            f.write(gitignore_content)
+    
     def _create_app_tsx(self, src_dir: str) -> None:
         """创建 App.tsx 文件"""
         app_path = os.path.join(src_dir, "App.tsx")
-        app_content = """import React from 'react';
-import Calculator from './Calculator';
+        app_content = """import { useState } from 'react'
+import Calculator from './Calculator'
+import './App.css'
 
-const App: React.FC = () => {
+function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>React Calculator</h1>
+        <h1>Vite + React Calculator</h1>
       </header>
       <main>
         <Calculator />
       </main>
     </div>
-  );
-};
+  )
+}
 
-export default App;"""
+export default App
+"""
         with open(app_path, "w", encoding="utf-8") as f:
             f.write(app_content)
+        
+        # 创建 App.css 文件
+        app_css_path = os.path.join(src_dir, "App.css")
+        app_css_content = """.App {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.App-header {
+  margin-bottom: 2rem;
+}
+
+.App-header h1 {
+  font-size: 2.5em;
+  line-height: 1.1;
+}
+"""
+        with open(app_css_path, "w", encoding="utf-8") as f:
+            f.write(app_css_content)
     
     def _create_calculator_component(self, src_dir: str) -> None:
         """创建 Calculator.tsx 组件"""
         calculator_path = os.path.join(src_dir, "Calculator.tsx")
-        calculator_content = """import React, { useState } from 'react';
+        calculator_content = """import { useState } from 'react'
+import './Calculator.css'
 
 interface CalculatorProps {}
 
 const Calculator: React.FC<CalculatorProps> = () => {
-  const [display, setDisplay] = useState<string>('0');
-  const [equation, setEquation] = useState<string>('');
+  const [display, setDisplay] = useState<string>('0')
+  const [equation, setEquation] = useState<string>('')
 
   const handleNumber = (num: string) => {
     if (display === '0') {
-      setDisplay(num);
+      setDisplay(num)
     } else {
-      setDisplay(display + num);
+      setDisplay(display + num)
     }
-  };
+  }
 
   const handleOperator = (operator: string) => {
-    setEquation(display + ' ' + operator + ' ');
-    setDisplay('0');
-  };
+    setEquation(display + ' ' + operator + ' ')
+    setDisplay('0')
+  }
 
   const handleEqual = () => {
     try {
-      const result = eval(equation + display);
-      setDisplay(result.toString());
-      setEquation('');
+      const result = eval(equation + display)
+      setDisplay(result.toString())
+      setEquation('')
     } catch (error) {
-      setDisplay('Error');
-      setEquation('');
+      setDisplay('Error')
+      setEquation('')
     }
-  };
+  }
 
   const handleClear = () => {
-    setDisplay('0');
-    setEquation('');
-  };
+    setDisplay('0')
+    setEquation('')
+  }
 
   return (
     <div className="calculator">
@@ -345,31 +428,130 @@ const Calculator: React.FC<CalculatorProps> = () => {
         <button onClick={() => handleNumber('.')}>.</button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Calculator;"""
+export default Calculator
+"""
         with open(calculator_path, "w", encoding="utf-8") as f:
             f.write(calculator_content)
+        
+        # 创建 Calculator.css 文件
+        calculator_css_path = os.path.join(src_dir, "Calculator.css")
+        calculator_css_content = """.calculator {
+  width: 300px;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  background-color: #f7f7f7;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.display {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  margin-bottom: 10px;
+  padding: 10px;
+  text-align: right;
+  min-height: 60px;
+}
+
+.equation {
+  color: #777;
+  font-size: 14px;
+  min-height: 20px;
+}
+
+.current {
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+
+button {
+  background-color: #e0e0e0;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 18px;
+  padding: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #d0d0d0;
+}
+
+button:active {
+  background-color: #c0c0c0;
+}
+"""
+        with open(calculator_css_path, "w", encoding="utf-8") as f:
+            f.write(calculator_css_content)
     
-    def _create_index_tsx(self, src_dir: str) -> None:
-        """创建 index.tsx 文件"""
-        index_path = os.path.join(src_dir, "index.tsx")
-        index_content = """import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
+    def _create_main_tsx(self, src_dir: str) -> None:
+        """创建 main.tsx 文件"""
+        main_path = os.path.join(src_dir, "main.tsx")
+        main_content = """import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import './index.css'
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-
-root.render(
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
-);"""
-        with open(index_path, "w", encoding="utf-8") as f:
-            f.write(index_content) 
+  </React.StrictMode>,
+)
+"""
+        with open(main_path, "w", encoding="utf-8") as f:
+            f.write(main_content)
+        
+        # 创建 index.css 文件
+        index_css_path = os.path.join(src_dir, "index.css")
+        index_css_content = """:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+"""
+        with open(index_css_path, "w", encoding="utf-8") as f:
+            f.write(index_css_content)
 
 
 class FileCreatorFactory:
