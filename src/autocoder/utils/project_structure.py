@@ -127,9 +127,9 @@ class EnhancedFileAnalyzer:
         return self._basic_analysis(extensions)
 
     def _collect_extensions(self) -> Set[str]:
-        """带过滤的文件后缀收集"""
+        """带过滤的文件后缀收集，支持软链接目录和文件"""
         extensions = set()
-        for root, dirs, files in os.walk(self.directory):
+        for root, dirs, files in os.walk(self.directory, followlinks=True):
             dirs[:] = [d for d in dirs if not self.file_filter.should_ignore(d, True)]
             for file in files:
                 if self.file_filter.should_ignore(file, False):
