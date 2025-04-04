@@ -20,6 +20,7 @@ from autocoder.utils import llms as llm_utils
 from autocoder.memory.active_context_manager import ActiveContextManager
 from autocoder.common.v2.code_auto_generate_editblock import CodeAutoGenerateEditBlock
 from autocoder.common.v2.code_auto_merge_editblock import CodeAutoMergeEditBlock
+from autocoder.common.stream_out_type import ContextFixStreamOutType # Assuming this is defined elsewhere or we use a generic type
 from autocoder.shadows.shadow_manager import ShadowManager
 from autocoder.linters.shadow_linter import ShadowLinter
 from autocoder.linters.models import IssueSeverity
@@ -242,6 +243,15 @@ class CodeEditBlockManager:
         返回:
             CodeGenerateResult: 修复后的代码结果
         """
+        get_event_manager(self.args.event_file).write_result(
+            EventContentCreator.create_result(content="Starting missing context fixing process."),
+            metadata={
+                # Using a placeholder type, replace if ContextFixStreamOutType is defined
+                "stream_out_type": "context_fix_start", 
+                "action_file": self.args.file
+            }
+        )
+        
         token_cost_calculator = TokenCostCalculator(args=self.args)
         
         # 获取编辑块
@@ -333,6 +343,14 @@ class CodeEditBlockManager:
         ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
         generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
         
+        get_event_manager(self.args.event_file).write_result(
+            EventContentCreator.create_result(content="Finished missing context fixing process."),
+            metadata={
+                # Using a placeholder type, replace if ContextFixStreamOutType is defined
+                "stream_out_type": "context_fix_end", 
+                "action_file": self.args.file
+            }
+        )
         return generation_result
 
     def _fix_unmerged_blocks(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
@@ -352,6 +370,14 @@ class CodeEditBlockManager:
 
         if not self.args.enable_auto_fix_merge or not merge.failed_blocks:
             return generation_result
+            
+        get_event_manager(self.args.event_file).write_result(
+            EventContentCreator.create_result(content="Starting unmerged blocks fixing process."),
+            metadata={
+                "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
+                "action_file": self.args.file
+            }
+        )
 
         def _format_blocks(merge: MergeCodeWithoutEffect) -> Tuple[str, str]:
             unmerged_formatted_text = ""
@@ -462,7 +488,14 @@ class CodeEditBlockManager:
                 ))
                 raise Exception(self.printer.get_message_from_key(
                     "max_unmerged_blocks_attempts_reached"))
-                
+        
+        get_event_manager(self.args.event_file).write_result(
+            EventContentCreator.create_result(content="Finished unmerged blocks fixing process."),
+            metadata={
+                "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
+                "action_file": self.args.file
+            }
+        )
         return generation_result
      
     def _fix_unmerged_blocks(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
@@ -482,6 +515,15 @@ class CodeEditBlockManager:
 
         if not self.args.enable_auto_fix_merge or not merge.failed_blocks:
             return generation_result
+        
+        # Log start only if enabled and there are blocks to fix
+        get_event_manager(self.args.event_file).write_result(
+            EventContentCreator.create_result(content="Starting unmerged blocks fixing process (duplicate function)."),
+            metadata={
+                "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
+                "action_file": self.args.file
+            }
+        )
 
         def _format_blocks(merge: MergeCodeWithoutEffect) -> Tuple[str, str]:
             unmerged_formatted_text = ""
@@ -592,7 +634,16 @@ class CodeEditBlockManager:
                 ))
                 raise Exception(self.printer.get_message_from_key(
                     "max_unmerged_blocks_attempts_reached"))
-                
+        
+        # Log end only if enabled
+        if self.args.enable_auto_fix_merge:
+            get_event_manager(self.args.event_file).write_result(
+                EventContentCreator.create_result(content="Finished unmerged blocks fixing process (duplicate function)."),
+                metadata={
+                    "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
+                    "action_file": self.args.file
+                }
+            )
         return generation_result
 
     def _fix_lint_errors(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
@@ -607,6 +658,14 @@ class CodeEditBlockManager:
         返回:
             CodeGenerateResult: 修复后的代码结果
         """
+        get_event_manager(self.args.event_file).write_result(
+            EventContentCreator.create_result(content="Starting lint error fixing process."),
+            metadata={
+                "stream_out_type": LintStreamOutType.LINT.value,
+                "action_file": self.args.file
+            }
+        )
+        
         token_cost_calculator = TokenCostCalculator(args=self.args)
 
         for attempt in range(self.auto_fix_lint_max_attempts):
@@ -682,6 +741,13 @@ class CodeEditBlockManager:
                 end_time=time.time()
             )
             
+        get_event_manager(self.args.event_file).write_result(
+            EventContentCreator.create_result(content="Finished lint error fixing process."),
+            metadata={
+                "stream_out_type": LintStreamOutType.LINT.value,
+                "action_file": self.args.file
+            }
+        )
         return generation_result
 
     def _fix_compile_errors(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
@@ -699,6 +765,14 @@ class CodeEditBlockManager:
         if not self.args.enable_auto_fix_compile:
             return generation_result
             
+        get_event_manager(self.args.event_file).write_result(
+            EventContentCreator.create_result(content="Starting compile error fixing process."),
+            metadata={
+                "stream_out_type": CompileStreamOutType.COMPILE.value,
+                "action_file": self.args.file
+            }
+        )
+        
         token_cost_calculator = TokenCostCalculator(args=self.args)
         
         for attempt in range(self.auto_fix_compile_max_attempts):
@@ -760,6 +834,15 @@ class CodeEditBlockManager:
                 end_time=time.time()
             )
             
+        # Log end only if enabled
+        if self.args.enable_auto_fix_compile:
+            get_event_manager(self.args.event_file).write_result(
+                EventContentCreator.create_result(content="Finished compile error fixing process."),
+                metadata={
+                    "stream_out_type": CompileStreamOutType.COMPILE.value,
+                    "action_file": self.args.file
+                }
+            )
         return generation_result
 
     def generate_and_fix(self, query: str, source_code_list: SourceCodeList) -> CodeGenerateResult:
