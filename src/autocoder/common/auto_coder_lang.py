@@ -795,36 +795,36 @@ MESSAGES = {
         "zh": "结束智能查找上下文...."
     },
     "/context/check/start":{
-        "en": "Starting missing context fixing process.",
-        "zh": "开始缺失上下文修复过程."
+        "en": "Starting missing context checking process.",
+        "zh": "开始缺失上下文检查过程."
     },
     "/context/check/end": {
-        "en": "Finished missing context fixing process.",
-        "zh": "结束缺失上下文修复过程."
+        "en": "Finished missing context checking process.",
+        "zh": "结束缺失上下文检查过程."
     },
     "/unmerged_blocks/check/start": {
-        "en": "Starting unmerged blocks fixing process.",
-        "zh": "开始未合并代码块修复过程."
+        "en": "Starting unmerged blocks checking process.",
+        "zh": "开始未合并代码检查过程."
     },
     "/unmerged_blocks/check/end": {
-        "en": "Finished unmerged blocks fixing process.",
-        "zh": "结束未合并代码块修复过程."
+        "en": "Finished unmerged blocks checking process.",
+        "zh": "结束未合并代码检查过程."
     },
     "/lint/check/start": {
-        "en": "Starting lint error fixing process.",
+        "en": "Starting lint error checking process.",
         "zh": "开始代码质量检查过程."
     },
     "/lint/check/end": {
-        "en": "Finished lint error fixing process.",
+        "en": "Finished lint error checking process.",
         "zh": "结束代码质量检查过程."
     },
     "/compile/check/start": {
-        "en": "Starting compile error fixing process.",
-        "zh": "开始编译错误修复过程."
+        "en": "Starting compile error checking process.",
+        "zh": "开始编译错误检查过程."
     },
     "/compile/check/end": {
-        "en": "Finished compile error fixing process.",
-        "zh": "结束编译错误修复过程."
+        "en": "Finished compile error checking process.",
+        "zh": "结束编译错误检查过程."
     }
 }
 
