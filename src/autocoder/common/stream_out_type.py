@@ -24,5 +24,8 @@ class UnmergedBlocksStreamOutType(Enum):
 class CompileStreamOutType(Enum):
     COMPILE = "compile"
 
+class ContextMissingCheckStreamOutType(Enum):
+    CONTEXT_MISSING_CHECK = "context_missing_check"
+
 class IndexStreamOutType(Enum):
     INDEX_BUILD = "index_build"

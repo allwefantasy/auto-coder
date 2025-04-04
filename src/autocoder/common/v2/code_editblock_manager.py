@@ -12,7 +12,7 @@ from autocoder.compilers.shadow_compiler import ShadowCompiler
 from autocoder.privacy.model_filter import ModelPathFilter
 from autocoder.common.utils_code_auto_generate import chat_with_continue, stream_chat_with_continue, ChatWithContinueResult
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
-from autocoder.common.stream_out_type import LintStreamOutType, CompileStreamOutType, UnmergedBlocksStreamOutType
+from autocoder.common.stream_out_type import LintStreamOutType, CompileStreamOutType, UnmergedBlocksStreamOutType,ContextMissingCheckStreamOutType
 from autocoder.common.auto_coder_lang import get_message_with_format
 from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
@@ -247,8 +247,9 @@ class CodeEditBlockManager:
             EventContentCreator.create_result(content="Starting missing context fixing process."),
             metadata={
                 # Using a placeholder type, replace if ContextFixStreamOutType is defined
-                "stream_out_type": "context_fix_start", 
-                "action_file": self.args.file
+                "stream_out_type": ContextMissingCheckStreamOutType.CONTEXT_MISSING_CHECK.value, 
+                "action_file": self.args.file,
+                "path": "/context/check/start"
             }
         )
         
@@ -347,8 +348,9 @@ class CodeEditBlockManager:
             EventContentCreator.create_result(content="Finished missing context fixing process."),
             metadata={
                 # Using a placeholder type, replace if ContextFixStreamOutType is defined
-                "stream_out_type": "context_fix_end", 
-                "action_file": self.args.file
+                "stream_out_type": ContextMissingCheckStreamOutType.CONTEXT_MISSING_CHECK.value, 
+                "action_file": self.args.file,
+                "path": "/context/check/end"
             }
         )
         return generation_result
@@ -375,7 +377,8 @@ class CodeEditBlockManager:
             EventContentCreator.create_result(content="Starting unmerged blocks fixing process."),
             metadata={
                 "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
-                "action_file": self.args.file
+                "action_file": self.args.file,
+                "path": "/unmerged_blocks/check/start"
             }
         )
 
@@ -412,7 +415,8 @@ class CodeEditBlockManager:
                                                           ).to_dict(),
                 metadata={
                     "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
-                    "action_file": self.args.file
+                    "action_file": self.args.file,
+                    "path": "/unmerged_blocks/check/message"
                 }
             ))
             return (unmerged_formatted_text, merged_formatted_text)
@@ -442,7 +446,8 @@ class CodeEditBlockManager:
                                                           ).to_dict(),
                 metadata={
                     "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
-                    "action_file": self.args.file
+                    "action_file": self.args.file,
+                    "path": "/unmerged_blocks/check/message"
                 }
             ))
 
@@ -493,158 +498,12 @@ class CodeEditBlockManager:
             EventContentCreator.create_result(content="Finished unmerged blocks fixing process."),
             metadata={
                 "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
-                "action_file": self.args.file
+                "action_file": self.args.file,
+                "path": "/unmerged_blocks/check/end"
             }
         )
         return generation_result
-     
-    def _fix_unmerged_blocks(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
-        """
-        修复未合并的代码块，最多尝试指定次数
-
-        参数:
-            query (str): 用户查询
-            generation_result (CodeGenerateResult): 生成的代码结果
-            source_code_list (SourceCodeList): 源代码列表
-
-        返回:
-            CodeGenerateResult: 修复后的代码结果
-        """
-        token_cost_calculator = TokenCostCalculator(args=self.args)
-        merge = self.code_merger._merge_code_without_effect(generation_result.contents[0])
-
-        if not self.args.enable_auto_fix_merge or not merge.failed_blocks:
-            return generation_result
-        
-        # Log start only if enabled and there are blocks to fix
-        get_event_manager(self.args.event_file).write_result(
-            EventContentCreator.create_result(content="Starting unmerged blocks fixing process (duplicate function)."),
-            metadata={
-                "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
-                "action_file": self.args.file
-            }
-        )
-
-        def _format_blocks(merge: MergeCodeWithoutEffect) -> Tuple[str, str]:
-            unmerged_formatted_text = ""
-            for file_path, head, update in merge.failed_blocks:
-                unmerged_formatted_text += "```lang"
-                unmerged_formatted_text += f"##File: {file_path}\n"
-                unmerged_formatted_text += "<<<<<<< SEARCH\n"
-                unmerged_formatted_text += head
-                unmerged_formatted_text += "=======\n"
-                unmerged_formatted_text += update
-                unmerged_formatted_text += ">>>>>>> REPLACE\n"
-                unmerged_formatted_text += "```"
-                unmerged_formatted_text += "\n"
-
-            merged_formatted_text = ""
-            if merge.merged_blocks:
-                for file_path, head, update in merge.merged_blocks:
-                    merged_formatted_text += "```lang"
-                    merged_formatted_text += f"##File: {file_path}\n"
-                    merged_formatted_text += head
-                    merged_formatted_text += "=======\n"
-                    merged_formatted_text += update
-                    merged_formatted_text += "```"
-                    merged_formatted_text += "\n"
-
-            get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
-                content=EventContentCreator.ResultContent(content=f"Unmerged blocks:\\n {unmerged_formatted_text}",
-                                                          metadata={
-                                                              "merged_blocks": merge.success_blocks,
-                                                              "failed_blocks": merge.failed_blocks
-                                                          }
-                                                          ).to_dict(),
-                metadata={
-                    "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
-                    "action_file": self.args.file
-                }
-            ))
-            return (unmerged_formatted_text, merged_formatted_text)
-
-        for attempt in range(self.args.auto_fix_merge_max_attempts):
-            global_cancel.check_and_raise()
-            unmerged_formatted_text, merged_formatted_text = _format_blocks(merge)
-            fix_prompt = self.fix_unmerged_blocks.prompt(
-                query=query,
-                original_code=generation_result.contents[0],
-                unmerged_blocks=unmerged_formatted_text
-            )
-
-            logger.info(f"fix_prompt: {fix_prompt}")
-
-            # 打印当前修复尝试状态
-            self.printer.print_in_terminal(
-                "unmerged_blocks_attempt_status",
-                style="yellow",
-                attempt=(attempt + 1),
-                max_correction_attempts=self.args.auto_fix_merge_max_attempts
-            )
-
-            get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
-                content=EventContentCreator.ResultContent(content=f"Unmerged blocks attempt {attempt + 1}/{self.args.auto_fix_merge_max_attempts}: {unmerged_formatted_text}",
-                                                          metadata={}
-                                                          ).to_dict(),
-                metadata={
-                    "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
-                    "action_file": self.args.file
-                }
-            ))
-
-            # 使用修复提示重新生成代码
-            start_time = time.time()
-            generation_result = self.code_generator.single_round_run(
-                fix_prompt, source_code_list)
-
-            # 计算这次修复未合并块花费的token情况
-            token_cost_calculator.track_token_usage_by_generate(
-                llm=self.llm,
-                generate=generation_result,
-                operation_name="code_generation_complete",
-                start_time=start_time,
-                end_time=time.time()
-            )
-
-            # 检查修复后的代码是否仍有未合并块
-            generation_result = self.code_merger.choose_best_choice(generation_result)
-            ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
-            generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
-            merge = self.code_merger._merge_code_without_effect(
-                generation_result.contents[0])
-
-            # 如果没有失败的块，则修复成功，退出循环
-            if not merge.failed_blocks:
-                self.printer.print_in_terminal(
-                    "unmerged_blocks_fixed", style="green")
-                break
-
-            # 如果是最后一次尝试仍未成功，打印警告
-            if attempt == self.args.auto_fix_merge_max_attempts - 1:
-                self.printer.print_in_terminal(
-                    "max_unmerged_blocks_attempts_reached", style="yellow")
-                get_event_manager(self.args.event_file).write_result(EventContentCreator.create_result(
-                    content=EventContentCreator.ResultContent(content=self.printer.get_message_from_key("max_unmerged_blocks_attempts_reached"),
-                                                              metadata={}
-                                                              ).to_dict(),
-                    metadata={
-                        "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
-                        "action_file": self.args.file
-                    }
-                ))
-                raise Exception(self.printer.get_message_from_key(
-                    "max_unmerged_blocks_attempts_reached"))
-        
-        # Log end only if enabled
-        if self.args.enable_auto_fix_merge:
-            get_event_manager(self.args.event_file).write_result(
-                EventContentCreator.create_result(content="Finished unmerged blocks fixing process (duplicate function)."),
-                metadata={
-                    "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
-                    "action_file": self.args.file
-                }
-            )
-        return generation_result
+         
 
     def _fix_lint_errors(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
         """
@@ -662,7 +521,8 @@ class CodeEditBlockManager:
             EventContentCreator.create_result(content="Starting lint error fixing process."),
             metadata={
                 "stream_out_type": LintStreamOutType.LINT.value,
-                "action_file": self.args.file
+                "action_file": self.args.file,
+                "path": "/lint/check/start"
             }
         )
         
@@ -710,7 +570,8 @@ class CodeEditBlockManager:
                                                           ).to_dict(),
                 metadata={
                     "stream_out_type": LintStreamOutType.LINT.value,
-                    "action_file": self.args.file
+                    "action_file": self.args.file,
+                    "path": "/lint/check/message"
                 }
             ))
 
@@ -745,7 +606,8 @@ class CodeEditBlockManager:
             EventContentCreator.create_result(content="Finished lint error fixing process."),
             metadata={
                 "stream_out_type": LintStreamOutType.LINT.value,
-                "action_file": self.args.file
+                "action_file": self.args.file,
+                "path": "/lint/check/end"
             }
         )
         return generation_result
@@ -769,7 +631,8 @@ class CodeEditBlockManager:
             EventContentCreator.create_result(content="Starting compile error fixing process."),
             metadata={
                 "stream_out_type": CompileStreamOutType.COMPILE.value,
-                "action_file": self.args.file
+                "action_file": self.args.file,
+                "path": "/compile/check/start"
             }
         )
         
@@ -797,7 +660,8 @@ class CodeEditBlockManager:
                                                           ).to_dict(),
                 metadata={
                     "stream_out_type": CompileStreamOutType.COMPILE.value,
-                    "action_file": self.args.file
+                    "action_file": self.args.file,
+                    "path": "/compile/check/message"
                 }
             ))
 
@@ -840,7 +704,8 @@ class CodeEditBlockManager:
                 EventContentCreator.create_result(content="Finished compile error fixing process."),
                 metadata={
                     "stream_out_type": CompileStreamOutType.COMPILE.value,
-                    "action_file": self.args.file
+                    "action_file": self.args.file,
+                    "path": "/compile/check/end"
                 }
             )
         return generation_result
