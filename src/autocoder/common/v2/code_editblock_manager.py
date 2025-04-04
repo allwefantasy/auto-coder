@@ -20,7 +20,6 @@ from autocoder.utils import llms as llm_utils
 from autocoder.memory.active_context_manager import ActiveContextManager
 from autocoder.common.v2.code_auto_generate_editblock import CodeAutoGenerateEditBlock
 from autocoder.common.v2.code_auto_merge_editblock import CodeAutoMergeEditBlock
-from autocoder.common.stream_out_type import ContextFixStreamOutType # Assuming this is defined elsewhere or we use a generic type
 from autocoder.shadows.shadow_manager import ShadowManager
 from autocoder.linters.shadow_linter import ShadowLinter
 from autocoder.linters.models import IssueSeverity

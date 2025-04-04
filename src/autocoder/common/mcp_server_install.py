@@ -209,6 +209,7 @@ class McpServerInstaller:
         config = {}
         try:
             # Check if market_install_item is provided
+            logger.info(f"Installing MCP server: {request.market_install_item}")
             if request.market_install_item:
                 name, config = self.process_market_install_item(request.market_install_item)
                 display_result = request.market_install_item.name
