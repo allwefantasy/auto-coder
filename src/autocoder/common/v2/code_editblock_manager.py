@@ -385,7 +385,7 @@ class CodeEditBlockManager:
 
         get_event_manager(self.args.event_file).write_result(
             EventContentCreator.create_result(
-                content=self.printer.get_message_from_key("/unmerged_blocks/check/start"),
+                content=self.printer.get_message_from_key("/unmerged_blocks/check/start")),
             metadata={
                 "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
                 "action_file": self.args.file,
@@ -510,7 +510,7 @@ class CodeEditBlockManager:
 
         get_event_manager(self.args.event_file).write_result(
             EventContentCreator.create_result(
-                content=self.printer.get_message_from_key("/unmerged_blocks/check/end"),
+                content=self.printer.get_message_from_key("/unmerged_blocks/check/end")),
             metadata={
                 "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
                 "action_file": self.args.file,
@@ -533,7 +533,7 @@ class CodeEditBlockManager:
         """
         get_event_manager(self.args.event_file).write_result(
             EventContentCreator.create_result(
-                content=self.printer.get_message_from_key("/lint/check/start"),
+                content=self.printer.get_message_from_key("/lint/check/start")),
             metadata={
                 "stream_out_type": LintStreamOutType.LINT.value,
                 "action_file": self.args.file,
@@ -620,7 +620,7 @@ class CodeEditBlockManager:
 
         get_event_manager(self.args.event_file).write_result(
             EventContentCreator.create_result(
-                content=self.printer.get_message_from_key("/lint/check/end"),
+                content=self.printer.get_message_from_key("/lint/check/end")),
             metadata={
                 "stream_out_type": LintStreamOutType.LINT.value,
                 "action_file": self.args.file,
@@ -646,7 +646,7 @@ class CodeEditBlockManager:
 
         get_event_manager(self.args.event_file).write_result(
             EventContentCreator.create_result(
-                content=self.printer.get_message_from_key("/compile/check/start"),
+                content=self.printer.get_message_from_key("/compile/check/start")),
             metadata={
                 "stream_out_type": CompileStreamOutType.COMPILE.value,
                 "action_file": self.args.file,
@@ -721,7 +721,7 @@ class CodeEditBlockManager:
         if self.args.enable_auto_fix_compile:
             get_event_manager(self.args.event_file).write_result(
                 EventContentCreator.create_result(
-                    content=self.printer.get_message_from_key("/compile/check/end"),
+                    content=self.printer.get_message_from_key("/compile/check/end")),
                 metadata={  
                     "stream_out_type": CompileStreamOutType.COMPILE.value,
                     "action_file": self.args.file,
