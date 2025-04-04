@@ -42,6 +42,16 @@ class McpResource(BaseModel):
     description: Optional[str] = None
     mime_type: Optional[str] = None
 
+class MarketplaceMCPServerItem(BaseModel):
+    """Represents an MCP server item"""
+
+    name: str
+    description: Optional[str] = ""
+    mcp_type: str = "command" # command/sse
+    command: str = "" # npm/uvx/python/node/...
+    args: List[str] = Field(default_factory=list)
+    env: Dict[str, str] = Field(default_factory=dict)
+    url: str = "" # sse url
 
 class McpResourceTemplate(BaseModel):
     """Represents an MCP resource template"""
@@ -133,7 +143,7 @@ class McpHub:
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, settings_path: Optional[str] = None):
+    def __init__(self, settings_path: Optional[str] = None, marketplace_path: Optional[str] = None):
         if self._initialized:
             return
         """Initialize the MCP Hub with a path to settings file"""
@@ -141,6 +151,12 @@ class McpHub:
             self.settings_path = Path.home() / ".auto-coder" / "mcp" / "settings.json"
         else:
             self.settings_path = Path(settings_path)
+
+        if marketplace_path is None:
+            self.marketplace_path = Path.home() / ".auto-coder" / "mcp" / "marketplace.json"
+        else:
+            self.marketplace_path = Path(marketplace_path)
+
         self.connections: Dict[str, McpConnection] = {}
         self.is_connecting = False
         self.exit_stacks: Dict[str, AsyncExitStack] = {}
@@ -149,6 +165,11 @@ class McpHub:
         self.settings_path.parent.mkdir(parents=True, exist_ok=True)
         if not self.settings_path.exists():
             self._write_default_settings()
+            
+        # Ensure marketplace file exists
+        self.marketplace_path.parent.mkdir(parents=True, exist_ok=True)
+        if not self.marketplace_path.exists():
+            self._write_default_marketplace()
 
         self._initialized = True
 
@@ -157,6 +178,178 @@ class McpHub:
         default_settings = {"mcpServers": {}}
         with open(self.settings_path, "w", encoding="utf-8") as f:
             json.dump(default_settings, f, indent=2)
+            
+    def _write_default_marketplace(self):
+        """Write default marketplace file"""
+        default_marketplace = {"mcpServers": []}
+        with open(self.marketplace_path, "w", encoding="utf-8") as f:
+            json.dump(default_marketplace, f, indent=2)
+            
+    def _read_marketplace(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Read marketplace file"""
+        try:
+            with open(self.marketplace_path) as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to read marketplace: {e}")
+            return {"mcpServers": []}
+            
+    def get_marketplace_items(self) -> List[MarketplaceMCPServerItem]:
+        """Get all marketplace items"""
+        data = self._read_marketplace()
+        return [MarketplaceMCPServerItem(**item) for item in data.get("mcpServers", [])]
+        
+    def get_marketplace_item(self, name: str) -> Optional[MarketplaceMCPServerItem]:
+        """Get a marketplace item by name"""
+        items = self.get_marketplace_items()
+        for item in items:
+            if item.name == name:
+                return item
+        return None
+    
+    async def add_marketplace_item(self, item: MarketplaceMCPServerItem) -> bool:
+        """
+        Add a new marketplace item
+        
+        Args:
+            item: MarketplaceMCPServerItem to add
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Check if item with this name already exists
+            existing = self.get_marketplace_item(item.name)
+            if existing:
+                logger.warning(f"Marketplace item with name {item.name} already exists")
+                return False
+                
+            # Add the new item
+            data = self._read_marketplace()
+            data["mcpServers"].append(item.dict())
+            
+            # Write back to file
+            with open(self.marketplace_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+                
+            logger.info(f"Added marketplace item: {item.name}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to add marketplace item: {e}")
+            return False
+    
+    async def update_marketplace_item(self, name: str, updated_item: MarketplaceMCPServerItem) -> bool:
+        """
+        Update an existing marketplace item
+        
+        Args:
+            name: Name of the item to update
+            updated_item: Updated MarketplaceMCPServerItem
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            data = self._read_marketplace()
+            items = data.get("mcpServers", [])
+            
+            # Find the item to update
+            for i, item in enumerate(items):
+                if item.get("name") == name:
+                    # Update the item
+                    items[i] = updated_item.dict()
+                    
+                    # Write back to file
+                    with open(self.marketplace_path, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=2, ensure_ascii=False)
+                    
+                    logger.info(f"Updated marketplace item: {name}")
+                    return True
+            
+            logger.warning(f"Marketplace item with name {name} not found")
+            return False
+        except Exception as e:
+            logger.error(f"Failed to update marketplace item: {e}")
+            return False
+    
+    async def remove_marketplace_item(self, name: str) -> bool:
+        """
+        Remove a marketplace item
+        
+        Args:
+            name: Name of the item to remove
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            data = self._read_marketplace()
+            items = data.get("mcpServers", [])
+            
+            # Find and remove the item
+            for i, item in enumerate(items):
+                if item.get("name") == name:
+                    del items[i]
+                    
+                    # Write back to file
+                    with open(self.marketplace_path, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=2, ensure_ascii=False)
+                    
+                    logger.info(f"Removed marketplace item: {name}")
+                    return True
+            
+            logger.warning(f"Marketplace item with name {name} not found")
+            return False
+        except Exception as e:
+            logger.error(f"Failed to remove marketplace item: {e}")
+            return False
+            
+    async def apply_marketplace_item(self, name: str) -> bool:
+        """
+        Apply a marketplace item to server config
+        
+        Args:
+            name: Name of the item to apply
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            item = self.get_marketplace_item(name)
+            if not item:
+                logger.warning(f"Marketplace item with name {name} not found")
+                return False
+                
+            # Convert marketplace item to server config
+            config = {}
+            
+            if item.mcp_type == "command":
+                config = {
+                    "command": item.command,
+                    "args": item.args,
+                    "env": item.env,
+                    "transport": {
+                        "type": "stdio",
+                        "endpoint": ""
+                    }
+                }
+            elif item.mcp_type == "sse":
+                config = {
+                    "transport": {
+                        "type": "sse",
+                        "endpoint": item.url
+                    }
+                }
+            else:
+                logger.error(f"Unknown MCP type: {item.mcp_type}")
+                return False
+                
+            # Add server config
+            result = await self.add_server_config(name, config)
+            return result
+        except Exception as e:
+            logger.error(f"Failed to apply marketplace item: {e}")
+            return False
 
     async def add_server_config(self, name: str, config: Dict[str, Any]) -> None:
         """

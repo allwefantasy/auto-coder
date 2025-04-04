@@ -40,7 +40,11 @@ import git
 from autocoder.common import git_utils
 from autocoder.chat_auto_coder_lang import get_message
 from autocoder.agent.auto_guess_query import AutoGuessQuery
-from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest,McpServerInfoRequest
+from autocoder.common.mcp_server import get_mcp_server
+from autocoder.common.mcp_server_types import (
+    McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, 
+    McpListRunningRequest, McpRefreshRequest, McpServerInfoRequest
+)
 import byzerllm
 from byzerllm.utils import format_str_jinja2
 from autocoder.common.memory_manager import get_global_memory_file_paths 

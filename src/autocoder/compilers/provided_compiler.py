@@ -21,6 +21,7 @@ from autocoder.compilers.models import (
     CompilationErrorSeverity
 )
 from autocoder.utils.project_structure import EnhancedFileAnalyzer
+from loguru import logger
 
 
 class ProvidedCompiler(BaseCompiler):
@@ -307,12 +308,12 @@ class ProvidedCompiler(BaseCompiler):
             result.error_message = f"Compiler {target_compiler_name} not found in configuration"
             return result
                 
-        if self.verbose:
-            print(f"Running compiler: {target_compiler_name}")
+        logger.info(f"Using compiler to compile project({project_path}): {target_compiler_config.get('name','unknown')}")
 
         # Run the compilation command
         compile_result = self._run_compilation_command(project_path, target_compiler_config)
         compile_errors:List[CompilationError] = compile_result['errors']
+        logger.info(f"compile_result: {compile_result}")
         error_count = len(compile_errors)
 
         result = ProjectCompilationResult(

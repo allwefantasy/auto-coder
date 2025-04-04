@@ -42,6 +42,11 @@ from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
 from autocoder.linters.linter_factory import LinterFactory, lint_file, lint_project, format_lint_result
 import traceback
+from autocoder.common.mcp_server import get_mcp_server
+from autocoder.common.mcp_server_types import (
+    McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, 
+    McpListRunningRequest, McpRefreshRequest
+)
 
 
 @byzerllm.prompt()
@@ -76,7 +81,6 @@ class AutoCommandTools:
         self.printer = Printer()
 
     def execute_mcp_server(self, query: str) -> str:
-        from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest
         mcp_server = get_mcp_server()
         response = mcp_server.send_request(
             McpRequest(

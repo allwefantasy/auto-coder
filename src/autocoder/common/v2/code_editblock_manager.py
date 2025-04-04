@@ -703,7 +703,7 @@ class CodeEditBlockManager:
         
         for attempt in range(self.auto_fix_compile_max_attempts):
             global_cancel.check_and_raise()
-            # 先更新增量影子系统的文件
+            # 先更新增量影子系统的文件            
             shadow_files = self._create_shadow_files_from_edits(
                 generation_result)
             

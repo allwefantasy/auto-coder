@@ -52,6 +52,11 @@ from autocoder.privacy.model_filter import ModelPathFilter
 from autocoder.common.result_manager import ResultManager
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
+from autocoder.common.mcp_server import get_mcp_server
+from autocoder.common.mcp_server_types import (
+    McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, 
+    McpListRunningRequest, McpRefreshRequest
+)
 
 console = Console()
 
@@ -1254,7 +1259,6 @@ def main(input_args: Optional[List[str]] = None):
                 v = (item for item in response)
                 
             elif "mcp" in commands_info: 
-                from autocoder.common.mcp_server import get_mcp_server, McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, McpListRunningRequest, McpRefreshRequest                               
                 mcp_server = get_mcp_server()
                 
                 pos_args = commands_info["mcp"].get("args", [])
