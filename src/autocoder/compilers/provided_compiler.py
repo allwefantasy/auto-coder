@@ -313,7 +313,7 @@ class ProvidedCompiler(BaseCompiler):
         # Run the compilation command
         compile_result = self._run_compilation_command(project_path, target_compiler_config)
         compile_errors:List[CompilationError] = compile_result['errors']
-        logger.info(f"compile_result: {compile_result}")
+        # logger.info(f"compile_result: {compile_result}")
         error_count = len(compile_errors)
 
         result = ProjectCompilationResult(
