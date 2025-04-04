@@ -5,14 +5,14 @@ import time
 import byzerllm
 
 from autocoder.common.types import Mode, CodeGenerateResult, MergeCodeWithoutEffect
-from autocoder.common import AutoCoderArgs,  SourceCodeList,SourceCode
+from autocoder.common import AutoCoderArgs,  SourceCodeList, SourceCode
 from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 from autocoder.common import sys_prompt
 from autocoder.compilers.shadow_compiler import ShadowCompiler
 from autocoder.privacy.model_filter import ModelPathFilter
 from autocoder.common.utils_code_auto_generate import chat_with_continue, stream_chat_with_continue, ChatWithContinueResult
 from autocoder.utils.auto_coder_utils.chat_stream_out import stream_out
-from autocoder.common.stream_out_type import LintStreamOutType, CompileStreamOutType, UnmergedBlocksStreamOutType,ContextMissingCheckStreamOutType
+from autocoder.common.stream_out_type import LintStreamOutType, CompileStreamOutType, UnmergedBlocksStreamOutType, ContextMissingCheckStreamOutType
 from autocoder.common.auto_coder_lang import get_message_with_format
 from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
@@ -243,20 +243,33 @@ class CodeEditBlockManager:
             CodeGenerateResult: 修复后的代码结果
         """
         get_event_manager(self.args.event_file).write_result(
-            EventContentCreator.create_result(content="Starting missing context fixing process."),
+            EventContentCreator.create_result(
+                content="Starting missing context fixing process."),
             metadata={
                 # Using a placeholder type, replace if ContextFixStreamOutType is defined
-                "stream_out_type": ContextMissingCheckStreamOutType.CONTEXT_MISSING_CHECK.value, 
+                "stream_out_type": ContextMissingCheckStreamOutType.CONTEXT_MISSING_CHECK.value,
                 "action_file": self.args.file,
                 "path": "/context/check/start"
             }
         )
-        
+
+        def write_end_event():
+            get_event_manager(self.args.event_file).write_result(
+                EventContentCreator.create_result(
+                    content="Finished missing context fixing process."),
+                metadata={
+                    # Using a placeholder type, replace if ContextFixStreamOutType is defined
+                    "stream_out_type": ContextMissingCheckStreamOutType.CONTEXT_MISSING_CHECK.value,
+                    "action_file": self.args.file,
+                    "path": "/context/check/end"
+                }
+            )
+
         token_cost_calculator = TokenCostCalculator(args=self.args)
-        
+
         # 获取编辑块
         codes = self.code_merger.get_edits(generation_result.contents[0])
-        
+
         # 检查是否有空的SEARCH块但目标文件存在
         missing_files = []
         for file_path, head, update in codes:
@@ -268,7 +281,7 @@ class CodeEditBlockManager:
                     in_context = file_path in self.args.urls
                 if hasattr(self.args, 'dynamic_urls') and self.args.dynamic_urls and not in_context:
                     in_context = file_path in self.args.dynamic_urls
-                
+
                 # 如果文件存在但不在上下文中，添加到缺失文件列表
                 if not in_context:
                     missing_files.append(file_path)
@@ -277,58 +290,61 @@ class CodeEditBlockManager:
                         self.args.dynamic_urls = []
                     if file_path not in self.args.dynamic_urls:
                         self.args.dynamic_urls.append(file_path)
-        
+
         # 如果没有缺失文件，直接返回原结果
         if not missing_files:
+            write_end_event()
             return generation_result
-        
+
         # 格式化缺失文件列表
         missing_files_text = "\n".join(missing_files)
-        
+
         # 打印当前修复状态
         self.printer.print_in_terminal(
             "missing_context_attempt_status",
             style="yellow",
             missing_files=missing_files_text
         )
-        
+
         # 更新源代码列表，包含新添加的文件
         updated_source_code_list = SourceCodeList([])
         for source in source_code_list.sources:
             updated_source_code_list.sources.append(source)
-        
+
         # 添加缺失的文件到源代码列表
         for file_path in missing_files:
             if os.path.exists(file_path):
                 with open(file_path, 'r') as f:
                     file_content = f.read()
-                source = SourceCode(module_name=file_path, source_code=file_content)
+                source = SourceCode(module_name=file_path,
+                                    source_code=file_content)
                 updated_source_code_list.sources.append(source)
-        
+
         # 更新action yml文件
         if missing_files and hasattr(self.args, 'dynamic_urls') and self.args.dynamic_urls:
-            action_yml_file_manager = ActionYmlFileManager(self.args.source_dir)
+            action_yml_file_manager = ActionYmlFileManager(
+                self.args.source_dir)
             action_file_name = os.path.basename(self.args.file)
             update_yaml_success = action_yml_file_manager.update_yaml_field(
                 action_file_name, "dynamic_urls", self.args.dynamic_urls)
             if not update_yaml_success:
                 self.printer.print_in_terminal(
                     "yaml_save_error", style="red", yaml_file=action_file_name)
-        
+
         # 准备修复提示
         fix_prompt = self.fix_missing_context.prompt(
             query=query,
             original_code=generation_result.contents[0],
             missing_files=missing_files_text
         )
-        
+
         logger.info(f"fix_missing_context_prompt: {fix_prompt}")
-        
+
         # 使用修复提示重新生成代码
         start_time = time.time()
         generation_result = self.code_generator.single_round_run(
             fix_prompt, updated_source_code_list)
-        
+
         # 计算这次修复缺失上下文花费的token情况
         token_cost_calculator.track_token_usage_by_generate(
             llm=self.llm,
@@ -337,21 +353,15 @@ class CodeEditBlockManager:
             start_time=start_time,
             end_time=time.time()
         )
-        
+
         # 选择最佳结果
-        generation_result = self.code_merger.choose_best_choice(generation_result)
-        ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
-        generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
-        
-        get_event_manager(self.args.event_file).write_result(
-            EventContentCreator.create_result(content="Finished missing context fixing process."),
-            metadata={
-                # Using a placeholder type, replace if ContextFixStreamOutType is defined
-                "stream_out_type": ContextMissingCheckStreamOutType.CONTEXT_MISSING_CHECK.value, 
-                "action_file": self.args.file,
-                "path": "/context/check/end"
-            }
-        )
+        generation_result = self.code_merger.choose_best_choice(
+            generation_result)
+        # 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
+        generation_result = CodeGenerateResult(contents=[generation_result.contents[0]], conversations=[
+                                               generation_result.conversations[0]], metadata=generation_result.metadata)
+
+        write_end_event()
         return generation_result
 
     def _fix_unmerged_blocks(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
@@ -367,13 +377,15 @@ class CodeEditBlockManager:
             CodeGenerateResult: 修复后的代码结果
         """
         token_cost_calculator = TokenCostCalculator(args=self.args)
-        merge = self.code_merger._merge_code_without_effect(generation_result.contents[0])
+        merge = self.code_merger._merge_code_without_effect(
+            generation_result.contents[0])
 
         if not self.args.enable_auto_fix_merge or not merge.failed_blocks:
             return generation_result
-            
+
         get_event_manager(self.args.event_file).write_result(
-            EventContentCreator.create_result(content="Starting unmerged blocks fixing process."),
+            EventContentCreator.create_result(
+                content="Starting unmerged blocks fixing process."),
             metadata={
                 "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
                 "action_file": self.args.file,
@@ -422,7 +434,8 @@ class CodeEditBlockManager:
 
         for attempt in range(self.args.auto_fix_merge_max_attempts):
             global_cancel.check_and_raise()
-            unmerged_formatted_text, merged_formatted_text = _format_blocks(merge)
+            unmerged_formatted_text, merged_formatted_text = _format_blocks(
+                merge)
             fix_prompt = self.fix_unmerged_blocks.prompt(
                 query=query,
                 original_code=generation_result.contents[0],
@@ -465,9 +478,11 @@ class CodeEditBlockManager:
             )
 
             # 检查修复后的代码是否仍有未合并块
-            generation_result = self.code_merger.choose_best_choice(generation_result)
-            ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
-            generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
+            generation_result = self.code_merger.choose_best_choice(
+                generation_result)
+            # 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
+            generation_result = CodeGenerateResult(contents=[generation_result.contents[0]], conversations=[
+                                                   generation_result.conversations[0]], metadata=generation_result.metadata)
             merge = self.code_merger._merge_code_without_effect(
                 generation_result.contents[0])
 
@@ -492,9 +507,10 @@ class CodeEditBlockManager:
                 ))
                 raise Exception(self.printer.get_message_from_key(
                     "max_unmerged_blocks_attempts_reached"))
-        
+
         get_event_manager(self.args.event_file).write_result(
-            EventContentCreator.create_result(content="Finished unmerged blocks fixing process."),
+            EventContentCreator.create_result(
+                content="Finished unmerged blocks fixing process."),
             metadata={
                 "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
                 "action_file": self.args.file,
@@ -502,7 +518,6 @@ class CodeEditBlockManager:
             }
         )
         return generation_result
-         
 
     def _fix_lint_errors(self, query: str, generation_result: CodeGenerateResult, source_code_list: SourceCodeList) -> CodeGenerateResult:
         """
@@ -517,14 +532,15 @@ class CodeEditBlockManager:
             CodeGenerateResult: 修复后的代码结果
         """
         get_event_manager(self.args.event_file).write_result(
-            EventContentCreator.create_result(content="Starting lint error fixing process."),
+            EventContentCreator.create_result(
+                content="Starting lint error fixing process."),
             metadata={
                 "stream_out_type": LintStreamOutType.LINT.value,
                 "action_file": self.args.file,
                 "path": "/lint/check/start"
             }
         )
-        
+
         token_cost_calculator = TokenCostCalculator(args=self.args)
 
         for attempt in range(self.auto_fix_lint_max_attempts):
@@ -601,9 +617,10 @@ class CodeEditBlockManager:
                 start_time=start_time,
                 end_time=time.time()
             )
-            
+
         get_event_manager(self.args.event_file).write_result(
-            EventContentCreator.create_result(content="Finished lint error fixing process."),
+            EventContentCreator.create_result(
+                content="Finished lint error fixing process."),
             metadata={
                 "stream_out_type": LintStreamOutType.LINT.value,
                 "action_file": self.args.file,
@@ -626,25 +643,26 @@ class CodeEditBlockManager:
         """
         if not self.args.enable_auto_fix_compile:
             return generation_result
-            
+
         get_event_manager(self.args.event_file).write_result(
-            EventContentCreator.create_result(content="Starting compile error fixing process."),
+            EventContentCreator.create_result(
+                content="Starting compile error fixing process."),
             metadata={
                 "stream_out_type": CompileStreamOutType.COMPILE.value,
                 "action_file": self.args.file,
                 "path": "/compile/check/start"
             }
         )
-        
+
         token_cost_calculator = TokenCostCalculator(args=self.args)
-        
+
         for attempt in range(self.auto_fix_compile_max_attempts):
             global_cancel.check_and_raise()
-            # 先更新增量影子系统的文件 
-            self.shadow_manager.clean_shadows()           
+            # 先更新增量影子系统的文件
+            self.shadow_manager.clean_shadows()
             shadow_files = self._create_shadow_files_from_edits(
                 generation_result)
-            
+
             # 在影子系统生成完整的项目，然后编译
             compile_result = self.shadow_compiler.compile_all_shadow_files()
 
@@ -698,11 +716,12 @@ class CodeEditBlockManager:
                 start_time=start_time,
                 end_time=time.time()
             )
-            
+
         # Log end only if enabled
         if self.args.enable_auto_fix_compile:
             get_event_manager(self.args.event_file).write_result(
-                EventContentCreator.create_result(content="Finished compile error fixing process."),
+                EventContentCreator.create_result(
+                    content="Finished compile error fixing process."),
                 metadata={
                     "stream_out_type": CompileStreamOutType.COMPILE.value,
                     "action_file": self.args.file,
@@ -741,25 +760,31 @@ class CodeEditBlockManager:
         if not generation_result.contents:
             self.printer.print_in_terminal("generation_failed", style="red")
             return generation_result
-        
-        ## 可能第一次触发排序
-        generation_result = self.code_merger.choose_best_choice(generation_result)        
 
-        ## 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
-        generation_result = CodeGenerateResult(contents=[generation_result.contents[0]],conversations=[generation_result.conversations[0]],metadata=generation_result.metadata)
+        # 可能第一次触发排序
+        generation_result = self.code_merger.choose_best_choice(
+            generation_result)
+
+        # 因为已经排完结果，就不要触发后面的排序了，所以只要保留第一个即可。
+        generation_result = CodeGenerateResult(contents=[generation_result.contents[0]], conversations=[
+                                               generation_result.conversations[0]], metadata=generation_result.metadata)
 
         # 修复缺少上下文的文件
-        generation_result = self._fix_missing_context(query, generation_result, source_code_list)
+        generation_result = self._fix_missing_context(
+            query, generation_result, source_code_list)
 
         # 修复未合并的代码块
-        generation_result = self._fix_unmerged_blocks(query, generation_result, source_code_list)
+        generation_result = self._fix_unmerged_blocks(
+            query, generation_result, source_code_list)
 
         # 修复lint错误
-        generation_result = self._fix_lint_errors(query, generation_result, source_code_list)
-        
+        generation_result = self._fix_lint_errors(
+            query, generation_result, source_code_list)
+
         # 修复编译错误
-        generation_result = self._fix_compile_errors(query, generation_result, source_code_list)
-        
+        generation_result = self._fix_compile_errors(
+            query, generation_result, source_code_list)
+
         # self.shadow_manager.clean_shadows()
 
         # 返回最终结果
