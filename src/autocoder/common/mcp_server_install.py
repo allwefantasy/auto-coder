@@ -194,12 +194,12 @@ class McpServerInstaller:
         }
         
         # Install package if needed
-        if name.startswith("@") or market_item.command in ["npx", "npm"]:
-            for item in market_item.args:
-                if name in item:
-                    self.install_node_package(item)
-        elif market_item.command not in ["python", "node"]:
-            self.install_python_package(name)
+        # if name.startswith("@") or market_item.command in ["npx", "npm"]:
+        #     for item in market_item.args:
+        #         if name in item:
+        #             self.install_node_package(item)
+        # elif market_item.command not in ["python", "node"]:
+        #     self.install_python_package(name)
             
         return name, config
 
