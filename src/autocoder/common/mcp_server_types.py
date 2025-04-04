@@ -140,8 +140,26 @@ class MarketplaceAddResult(BaseModel):
     name: str
     error: Optional[str] = None
 
+
+class MarketplaceUpdateRequest(BaseModel):
+    """Request to update an existing marketplace item"""
+    name: str
+    description: Optional[str] = ""
+    mcp_type: str = "command"  # command/sse
+    command: Optional[str] = ""  # npm/uvx/python/node/...
+    args: Optional[List[str]] = Field(default_factory=list)
+    env: Optional[Dict[str, str]] = Field(default_factory=dict)
+    url: Optional[str] = ""  # sse url
+
+
+class MarketplaceUpdateResult(BaseModel):
+    """Result for marketplace update operation"""
+    success: bool
+    name: str
+    error: Optional[str] = None
+
 class McpResponse(BaseModel):
     result: str
     error: Optional[str] = None
-    raw_result: Optional[Union[InstallResult, MarketplaceAddResult, RemoveResult,
+    raw_result: Optional[Union[InstallResult, MarketplaceAddResult, MarketplaceUpdateResult, RemoveResult,
                                ListResult, ListRunningResult, RefreshResult, QueryResult, ErrorResult]] = None

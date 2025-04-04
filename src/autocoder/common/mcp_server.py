@@ -16,7 +16,8 @@ from autocoder.common.mcp_server_types import (
     McpListRunningRequest, McpRefreshRequest, McpServerInfoRequest, 
     McpResponse, ServerInfo, InstallResult, RemoveResult, ListResult, 
     ListRunningResult, RefreshResult, QueryResult, ErrorResult, ServerConfig,
-    ExternalServerInfo, McpExternalServer, MarketplaceAddRequest, MarketplaceAddResult
+    ExternalServerInfo, McpExternalServer, MarketplaceAddRequest, MarketplaceAddResult,
+    MarketplaceUpdateRequest, MarketplaceUpdateResult
 )
 from autocoder.common.mcp_server_install import McpServerInstaller
 
@@ -250,6 +251,51 @@ class McpServer:
                             result="", 
                             error=get_message_with_format("marketplace_add_error", name=request.name, error=str(e)),
                             raw_result=MarketplaceAddResult(
+                                success=False,
+                                name=request.name,
+                                error=str(e)
+                            )
+                        ))
+
+                elif isinstance(request, MarketplaceUpdateRequest):
+                    try:
+                        # Create a MarketplaceMCPServerItem from the request
+                        item = MarketplaceMCPServerItem(
+                            name=request.name,
+                            description=request.description,
+                            mcp_type=request.mcp_type,
+                            command=request.command,
+                            args=request.args or [],
+                            env=request.env or {},
+                            url=request.url or ""
+                        )
+                        
+                        # Update the item in the marketplace
+                        success = await hub.update_marketplace_item(request.name, item)
+                        
+                        if success:
+                            await self._response_queue.put(McpResponse(
+                                result=get_message_with_format("marketplace_update_success", name=request.name),
+                                raw_result=MarketplaceUpdateResult(
+                                    success=True,
+                                    name=request.name
+                                )
+                            ))
+                        else:
+                            await self._response_queue.put(McpResponse(
+                                result="", 
+                                error=get_message_with_format("marketplace_update_error", name=request.name),
+                                raw_result=MarketplaceUpdateResult(
+                                    success=False,
+                                    name=request.name,
+                                    error=f"Failed to update marketplace item: {request.name}"
+                                )
+                            ))
+                    except Exception as e:
+                        await self._response_queue.put(McpResponse(
+                            result="", 
+                            error=get_message_with_format("marketplace_update_error", name=request.name, error=str(e)),
+                            raw_result=MarketplaceUpdateResult(
                                 success=False,
                                 name=request.name,
                                 error=str(e)

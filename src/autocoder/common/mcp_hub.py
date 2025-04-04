@@ -247,7 +247,7 @@ class McpHub:
             for i, item in enumerate(items):
                 if item.get("name") == name:
                     # Update the item
-                    items[i] = updated_item.dict()
+                    items[i] = updated_item.model_dump()
                     
                     # Write back to file
                     with open(self.marketplace_path, "w", encoding="utf-8") as f:

@@ -84,7 +84,7 @@ class ShadowManager:
         abs_path = os.path.abspath(path)
         
         # 检查路径是否在源目录内
-        if not abs_path.startswith(self.source_dir):
+        if not abs_path.startswith(self.source_dir):            
             raise ValueError(f"路径 {path} 不在源目录 {self.source_dir} 内")
         
         # 获取相对于source_dir的相对路径
