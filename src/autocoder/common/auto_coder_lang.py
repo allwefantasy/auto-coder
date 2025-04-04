@@ -453,7 +453,7 @@ MESSAGES = {
     "quick_filter_too_long": {
         "en": "⚠️ index file is too large ({{ tokens_len }}/{{ max_tokens }}). The query will be split into {{ split_size }} chunks.",
         "zh": "⚠️ 索引文件过大 ({{ tokens_len }}/{{ max_tokens }})。查询将被分成 {{ split_size }} 个部分执行。"
-    },        
+    },
     "quick_filter_tokens_len": {
         "en": "📊 Current index size: {{ tokens_len }} tokens",
         "zh": "📊 当前索引大小: {{ tokens_len }} tokens"
@@ -787,13 +787,45 @@ MESSAGES = {
         "zh": "已达到最大未合并代码块修复尝试次数"
     },
     "agenticFilterContext": {
-    "en": "Start to find context...",
-    "zh": "开始智能查找上下文...."
-  },
-  "agenticFilterContextFinished": {
-    "en": "End to find context...",
-    "zh": "结束智能查找上下文...."
-  }
+        "en": "Start to find context...",
+        "zh": "开始智能查找上下文...."
+    },
+    "agenticFilterContextFinished": {
+        "en": "End to find context...",
+        "zh": "结束智能查找上下文...."
+    },
+    "/context/check/start":{
+        "en": "Starting missing context fixing process.",
+        "zh": "开始缺失上下文修复过程."
+    },
+    "/context/check/end": {
+        "en": "Finished missing context fixing process.",
+        "zh": "结束缺失上下文修复过程."
+    },
+    "/unmerged_blocks/check/start": {
+        "en": "Starting unmerged blocks fixing process.",
+        "zh": "开始未合并代码块修复过程."
+    },
+    "/unmerged_blocks/check/end": {
+        "en": "Finished unmerged blocks fixing process.",
+        "zh": "结束未合并代码块修复过程."
+    },
+    "/lint/check/start": {
+        "en": "Starting lint error fixing process.",
+        "zh": "开始代码质量检查过程."
+    },
+    "/lint/check/end": {
+        "en": "Finished lint error fixing process.",
+        "zh": "结束代码质量检查过程."
+    },
+    "/compile/check/start": {
+        "en": "Starting compile error fixing process.",
+        "zh": "开始编译错误修复过程."
+    },
+    "/compile/check/end": {
+        "en": "Finished compile error fixing process.",
+        "zh": "结束编译错误修复过程."
+    }
 }
 
 

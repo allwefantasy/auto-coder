@@ -244,7 +244,7 @@ class CodeEditBlockManager:
         """
         get_event_manager(self.args.event_file).write_result(
             EventContentCreator.create_result(
-                content="Starting missing context fixing process."),
+                content=self.printer.get_message_from_key("/context/check/start"),
             metadata={
                 # Using a placeholder type, replace if ContextFixStreamOutType is defined
                 "stream_out_type": ContextMissingCheckStreamOutType.CONTEXT_MISSING_CHECK.value,
@@ -256,7 +256,7 @@ class CodeEditBlockManager:
         def write_end_event():
             get_event_manager(self.args.event_file).write_result(
                 EventContentCreator.create_result(
-                    content="Finished missing context fixing process."),
+                    content=self.printer.get_message_from_key("/context/check/end"),
                 metadata={
                     # Using a placeholder type, replace if ContextFixStreamOutType is defined
                     "stream_out_type": ContextMissingCheckStreamOutType.CONTEXT_MISSING_CHECK.value,
@@ -385,7 +385,7 @@ class CodeEditBlockManager:
 
         get_event_manager(self.args.event_file).write_result(
             EventContentCreator.create_result(
-                content="Starting unmerged blocks fixing process."),
+                content=self.printer.get_message_from_key("/unmerged_blocks/check/start"),
             metadata={
                 "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
                 "action_file": self.args.file,
@@ -510,7 +510,7 @@ class CodeEditBlockManager:
 
         get_event_manager(self.args.event_file).write_result(
             EventContentCreator.create_result(
-                content="Finished unmerged blocks fixing process."),
+                content=self.printer.get_message_from_key("/unmerged_blocks/check/end"),
             metadata={
                 "stream_out_type": UnmergedBlocksStreamOutType.UNMERGED_BLOCKS.value,
                 "action_file": self.args.file,
@@ -533,7 +533,7 @@ class CodeEditBlockManager:
         """
         get_event_manager(self.args.event_file).write_result(
             EventContentCreator.create_result(
-                content="Starting lint error fixing process."),
+                content=self.printer.get_message_from_key("/lint/check/start"),
             metadata={
                 "stream_out_type": LintStreamOutType.LINT.value,
                 "action_file": self.args.file,
@@ -620,7 +620,7 @@ class CodeEditBlockManager:
 
         get_event_manager(self.args.event_file).write_result(
             EventContentCreator.create_result(
-                content="Finished lint error fixing process."),
+                content=self.printer.get_message_from_key("/lint/check/end"),
             metadata={
                 "stream_out_type": LintStreamOutType.LINT.value,
                 "action_file": self.args.file,
@@ -646,7 +646,7 @@ class CodeEditBlockManager:
 
         get_event_manager(self.args.event_file).write_result(
             EventContentCreator.create_result(
-                content="Starting compile error fixing process."),
+                content=self.printer.get_message_from_key("/compile/check/start"),
             metadata={
                 "stream_out_type": CompileStreamOutType.COMPILE.value,
                 "action_file": self.args.file,
@@ -721,8 +721,8 @@ class CodeEditBlockManager:
         if self.args.enable_auto_fix_compile:
             get_event_manager(self.args.event_file).write_result(
                 EventContentCreator.create_result(
-                    content="Finished compile error fixing process."),
-                metadata={
+                    content=self.printer.get_message_from_key("/compile/check/end"),
+                metadata={  
                     "stream_out_type": CompileStreamOutType.COMPILE.value,
                     "action_file": self.args.file,
                     "path": "/compile/check/end"
