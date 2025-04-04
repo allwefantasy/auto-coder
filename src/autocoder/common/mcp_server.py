@@ -7,7 +7,7 @@ import time
 from loguru import logger
 import json
 
-from autocoder.common.mcp_hub import McpHub, MCP_BUILD_IN_SERVERS
+from autocoder.common.mcp_hub import McpHub, MCP_BUILD_IN_SERVERS, MarketplaceMCPServerItem
 from autocoder.common.mcp_tools import McpExecutor
 from autocoder.utils.llms import get_single_llm
 from autocoder.chat_auto_coder_lang import get_message_with_format
@@ -16,7 +16,7 @@ from autocoder.common.mcp_server_types import (
     McpListRunningRequest, McpRefreshRequest, McpServerInfoRequest, 
     McpResponse, ServerInfo, InstallResult, RemoveResult, ListResult, 
     ListRunningResult, RefreshResult, QueryResult, ErrorResult, ServerConfig,
-    ExternalServerInfo, McpExternalServer
+    ExternalServerInfo, McpExternalServer, MarketplaceAddRequest, MarketplaceAddResult
 )
 from autocoder.common.mcp_server_install import McpServerInstaller
 
@@ -50,11 +50,13 @@ class McpServer:
         self._loop.run_forever()
 
     async def _process_request(self):
-        hub = McpHub()
+        hub = McpHub()    
+
+        ## 可能会阻塞，当mcp settings.json 里有异常内容时    
         await hub.initialize()
 
         while self._running:
-            try:
+            try:                
                 request = await self._request_queue.get()
                 if request is None:
                     break
@@ -86,25 +88,61 @@ class McpServer:
 
                 elif isinstance(request, McpListRequest):
                     try:
-                        # Get built-in servers
-                        builtin_servers = [
-                            f"- Built-in: {name}" for name in MCP_BUILD_IN_SERVERS.keys()]
+                        # Get built-in servers                        
+                        builtin_servers = []
+                        for name, config in MCP_BUILD_IN_SERVERS.items():
+                            marketplace_item = MarketplaceMCPServerItem(
+                                name=name,
+                                description=f"Built-in: {name}",
+                                mcp_type="command",
+                                command=config.get("command", ""),
+                                args=config.get("args", []),
+                                env=config.get("env", {})
+                            )
+                            builtin_servers.append(marketplace_item)
 
                         # Get external servers
                         external_servers = self._installer.get_mcp_external_servers()
-                        external_list = [
-                            f"- External: {s.name} ({s.description})" for s in external_servers]
+                        external_items = []
+                        for server in external_servers:
+                            marketplace_item = MarketplaceMCPServerItem(
+                                name=server.name,
+                                description=server.description,
+                                mcp_type="command"
+                            )
+                            external_items.append(marketplace_item)
 
-                        # Combine results
-                        all_servers = builtin_servers + external_list
-                        result =  "\n".join(all_servers)
+                        # Get marketplace items
+                        marketplace_items = hub.get_marketplace_items()
                         
+                        # Combine results for display
+                        result_sections = []
+                        
+                        if builtin_servers:
+                            builtin_title = get_message_with_format("mcp_list_builtin_title")
+                            builtin_list = [f"- {item.name}" for item in builtin_servers]
+                            result_sections.append(builtin_title)
+                            result_sections.append("\n".join(builtin_list))
+                            
+                        if external_items:
+                            external_title = get_message_with_format("mcp_list_external_title")
+                            external_list = [f"- {item.name} ({item.description})" for item in external_items]
+                            result_sections.append(external_title)
+                            result_sections.append("\n".join(external_list))
+                            
+                        if marketplace_items:
+                            marketplace_title = get_message_with_format("mcp_list_marketplace_title")
+                            marketplace_list = [f"- {item.name} ({item.description})" for item in marketplace_items]
+                            result_sections.append(marketplace_title)
+                            result_sections.append("\n".join(marketplace_list))
+                        
+                        result = "\n\n".join(result_sections)
+                        
+                        # Create raw result with MarketplaceMCPServerItem objects
                         raw_result = ListResult(
-                            builtin_servers=list(MCP_BUILD_IN_SERVERS.keys()),
-                            external_servers=[
-                                ExternalServerInfo(name=s.name, description=s.description) 
-                                for s in external_servers
-                            ]
+                            builtin_servers=builtin_servers,
+                            external_servers=external_items,
+                            marketplace_items=marketplace_items
                         )
 
                         await self._response_queue.put(McpResponse(result=result, raw_result=raw_result))
@@ -167,6 +205,51 @@ class McpServer:
                             result="", 
                             error=get_message_with_format("mcp_refresh_error", error=str(e)),
                             raw_result=RefreshResult(
+                                success=False,
+                                name=request.name,
+                                error=str(e)
+                            )
+                        ))
+                
+                elif isinstance(request, MarketplaceAddRequest):
+                    try:
+                        # Create a MarketplaceMCPServerItem from the request
+                        item = MarketplaceMCPServerItem(
+                            name=request.name,
+                            description=request.description,
+                            mcp_type=request.mcp_type,
+                            command=request.command,
+                            args=request.args or [],
+                            env=request.env or {},
+                            url=request.url or ""
+                        )
+                        
+                        # Add the item to the marketplace
+                        success = await hub.add_marketplace_item(item)
+                        
+                        if success:
+                            await self._response_queue.put(McpResponse(
+                                result=get_message_with_format("marketplace_add_success", name=request.name),
+                                raw_result=MarketplaceAddResult(
+                                    success=True,
+                                    name=request.name
+                                )
+                            ))
+                        else:
+                            await self._response_queue.put(McpResponse(
+                                result="", 
+                                error=get_message_with_format("marketplace_add_error", name=request.name),
+                                raw_result=MarketplaceAddResult(
+                                    success=False,
+                                    name=request.name,
+                                    error=f"Failed to add marketplace item: {request.name}"
+                                )
+                            ))
+                    except Exception as e:
+                        await self._response_queue.put(McpResponse(
+                            result="", 
+                            error=get_message_with_format("marketplace_add_error", name=request.name, error=str(e)),
+                            raw_result=MarketplaceAddResult(
                                 success=False,
                                 name=request.name,
                                 error=str(e)

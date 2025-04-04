@@ -2,6 +2,17 @@ from typing import List, Dict, Any, Optional, Union
 from pydantic import BaseModel, Field
 
 
+class MarketplaceMCPServerItem(BaseModel):
+    """Represents an MCP server item"""
+
+    name: str
+    description: Optional[str] = ""
+    mcp_type: str = "command"  # command/sse
+    command: str = ""  # npm/uvx/python/node/...
+    args: List[str] = Field(default_factory=list)
+    env: Dict[str, str] = Field(default_factory=dict)
+    url: str = ""  # sse url
+    
 class McpRequest(BaseModel):
     query: str
     model: Optional[str] = None
@@ -10,6 +21,7 @@ class McpRequest(BaseModel):
 
 class McpInstallRequest(BaseModel):
     server_name_or_config: Optional[str] = None
+    market_install_item:Optional[MarketplaceMCPServerItem] = None
 
 
 class McpRemoveRequest(BaseModel):
@@ -18,12 +30,12 @@ class McpRemoveRequest(BaseModel):
 
 class McpListRequest(BaseModel):
     """Request to list all builtin MCP servers"""
-    pass
+    path:str="/list"
 
 
 class McpListRunningRequest(BaseModel):
     """Request to list all running MCP servers"""
-    pass
+    path:str="/list/running"
 
 
 # Pydantic models for raw_result
@@ -51,9 +63,16 @@ class ExternalServerInfo(BaseModel):
     description: str
 
 
+
+
+
 class ListResult(BaseModel):
-    builtin_servers: List[str] = Field(default_factory=list)
-    external_servers: List[ExternalServerInfo] = Field(default_factory=list)
+    builtin_servers: List[MarketplaceMCPServerItem] = Field(
+        default_factory=list)
+    external_servers: List[MarketplaceMCPServerItem] = Field(
+        default_factory=list)
+    marketplace_items: List[MarketplaceMCPServerItem] = Field(
+        default_factory=list)
     error: Optional[str] = None
 
 
@@ -82,13 +101,6 @@ class ErrorResult(BaseModel):
     success: bool = False
     error: str
 
-
-class McpResponse(BaseModel):
-    result: str
-    error: Optional[str] = None
-    raw_result: Optional[Union[InstallResult, RemoveResult, ListResult, ListRunningResult, RefreshResult, QueryResult, ErrorResult]] = None
-
-
 class McpRefreshRequest(BaseModel):
     """Request to refresh MCP server connections"""
     name: Optional[str] = None
@@ -108,4 +120,28 @@ class McpExternalServer(BaseModel):
     sourceUrl: str
     homepage: str
     license: str
-    runtime: str 
+    runtime: str
+
+
+class MarketplaceAddRequest(BaseModel):
+    """Request to add a new marketplace item"""
+    name: str
+    description: Optional[str] = ""
+    mcp_type: str = "command"  # command/sse
+    command: Optional[str] = ""  # npm/uvx/python/node/...
+    args: Optional[List[str]] = Field(default_factory=list)
+    env: Optional[Dict[str, str]] = Field(default_factory=dict)
+    url: Optional[str] = ""  # sse url
+
+
+class MarketplaceAddResult(BaseModel):
+    """Result for marketplace add operation"""
+    success: bool
+    name: str
+    error: Optional[str] = None
+
+class McpResponse(BaseModel):
+    result: str
+    error: Optional[str] = None
+    raw_result: Optional[Union[InstallResult, MarketplaceAddResult, RemoveResult,
+                               ListResult, ListRunningResult, RefreshResult, QueryResult, ErrorResult]] = None

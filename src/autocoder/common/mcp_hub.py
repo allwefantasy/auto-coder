@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from loguru import logger
 from contextlib import AsyncExitStack
 from datetime import timedelta
+from autocoder.common.mcp_server_types import MarketplaceMCPServerItem
 
 try:
     from mcp import ClientSession
@@ -41,17 +42,6 @@ class McpResource(BaseModel):
     name: str
     description: Optional[str] = None
     mime_type: Optional[str] = None
-
-class MarketplaceMCPServerItem(BaseModel):
-    """Represents an MCP server item"""
-
-    name: str
-    description: Optional[str] = ""
-    mcp_type: str = "command" # command/sse
-    command: str = "" # npm/uvx/python/node/...
-    args: List[str] = Field(default_factory=list)
-    env: Dict[str, str] = Field(default_factory=dict)
-    url: str = "" # sse url
 
 class McpResourceTemplate(BaseModel):
     """Represents an MCP resource template"""
@@ -188,7 +178,7 @@ class McpHub:
     def _read_marketplace(self) -> Dict[str, List[Dict[str, Any]]]:
         """Read marketplace file"""
         try:
-            with open(self.marketplace_path) as f:
+            with open(self.marketplace_path,"r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Failed to read marketplace: {e}")

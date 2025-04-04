@@ -30,6 +30,14 @@ MESSAGES = {
         "en": "Available builtin MCP servers:",
         "zh": "可用的内置 MCP 服务器："
     },
+    "mcp_list_external_title": {
+        "en": "Available external MCP servers:",
+        "zh": "可用的外部 MCP 服务器："
+    },
+    "mcp_list_marketplace_title": {
+        "en": "Available marketplace MCP servers:",
+        "zh": "可用的市场 MCP 服务器："
+    },
     "mcp_refresh_error": {
         "en": "Error refreshing MCP servers: {{error}}",
         "zh": "刷新 MCP 服务器时出错：{{error}}"
@@ -543,8 +551,8 @@ MESSAGES = {
         "zh": "用法: /plugins <命令>\n可用的子命令:\n  /plugins /list - 列出所有可用插件\n  /plugins /load <名称> - 加载一个插件\n  /plugins /unload <名称> - 卸载一个插件\n  /plugins/dirs - 列出插件目录\n  /plugins/dirs /add <路径> - 添加一个插件目录\n  /plugins/dirs /remove <路径> - 移除一个插件目录\n  /plugins/dirs /clear - 清除所有插件目录"
     },
     "mcp_server_info_error": {
-        "en": "Error getting MCP server info: {{ error }}",
-        "zh": "获取MCP服务器信息时出错: {{ error }}"
+        "en": "Error getting MCP server info: {{error}}",
+        "zh": "获取 MCP 服务器信息时出错：{{error}}"
     },
     "mcp_server_info_title": {
         "en": "Connected MCP Server Info",
@@ -553,6 +561,14 @@ MESSAGES = {
     "active_context_desc": {
         "en": "Manage active context tasks, list all tasks and their status",
         "zh": "管理活动上下文任务，列出所有任务及其状态"
+    },
+    "marketplace_add_success": {
+        "en": "Successfully added marketplace item: {{name}}",
+        "zh": "成功添加市场项目：{{name}}"
+    },
+    "marketplace_add_error": {
+        "en": "Error adding marketplace item: {{name}} - {{error}}",
+        "zh": "添加市场项目时出错：{{name}} - {{error}}"
     }
 }
 
