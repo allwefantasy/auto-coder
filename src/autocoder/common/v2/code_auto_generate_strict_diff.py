@@ -299,7 +299,7 @@ class CodeAutoGenerateStrictDiff:
         # 获取包上下文信息
         package_context = ""
         
-        if self.args.enable_active_context:
+        if self.args.enable_active_context and self.args.enable_active_context_in_generate:
             # 初始化活动上下文管理器
             active_context_manager = ActiveContextManager(self.llm, self.args.source_dir)
             # 获取活动上下文信息

@@ -99,7 +99,7 @@ class ResultContent(BaseEventContent):
             }
         }
     )
-## ResultContent.content 字段的类型
+
 ## begin===============================
 class ResultTokenStatContent(BaseModel):
     model_name:str = ""

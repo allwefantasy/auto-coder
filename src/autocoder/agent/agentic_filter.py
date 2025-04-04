@@ -878,7 +878,8 @@ class AgenticFilter:
         )    
 
         if success_flag:
-            return AgenticFilterResponse(**json.loads(content))
+            to_model(content, AgenticFilterResponse)
+            # return AgenticFilterResponse(**json.loads(content))
         else:
             return None
 

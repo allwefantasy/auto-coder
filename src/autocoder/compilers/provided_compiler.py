@@ -318,7 +318,7 @@ class ProvidedCompiler(BaseCompiler):
         result = ProjectCompilationResult(
             project_path=project_path,            
             success=compile_result['success'],
-            error_message=compile_result['error_message'],
+            error_message=compile_result.get('error_message',''),
             file_results={
                 "1":FileCompilationResult(
                 file_path="1",  

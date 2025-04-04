@@ -350,45 +350,8 @@ def stream_out(
             "Generation was cancelled",  
             title=f"Cancelled[ {panel_title} ]",
             border_style="yellow"
-        ))
-        
-        if request_id and request_queue:
-            request_queue.add_request(
-                request_id,
-                RequestValue(
-                    value=StreamValue(value=["Operation was cancelled"]), 
-                    status=RequestOption.FAILED
-                ),
-            )
-        raise cancel_exc   
-    
-    except Exception as e:
-        console.print(Panel(
-            f"Error: {str(e)}",  
-            title=f"Error[ {panel_title} ]",
-            border_style="red"
-        ))
-        # import traceback
-        # traceback.print_exc()
-        
-        if request_id and request_queue:
-            request_queue.add_request(
-                request_id,
-                RequestValue(
-                    value=StreamValue(value=[str(e)]), 
-                    status=RequestOption.FAILED
-                ),
-            )
-            
-    finally:
-        if request_id and request_queue:
-            request_queue.add_request(
-                request_id,
-                RequestValue(
-                    value=StreamValue(value=[""]), 
-                    status=RequestOption.COMPLETED
-                ),
-            )
+        ))                
+        raise cancel_exc          
 
     if last_meta:
         last_meta.first_token_time = first_token_time

@@ -416,6 +416,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     event_file: Optional[str] = None
 
     enable_active_context: Optional[bool] = False
+    enable_active_context_in_generate: Optional[bool] = False
 
     generate_max_rounds: Optional[int] = 5
 
