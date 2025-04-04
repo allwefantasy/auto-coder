@@ -530,6 +530,7 @@ class CodeEditBlockManager:
         for attempt in range(self.auto_fix_lint_max_attempts):
             global_cancel.check_and_raise()
             # 代码生成结果更新到影子文件里去
+            self.shadow_manager.clean_shadows()
             shadow_files = self._create_shadow_files_from_edits(
                 generation_result)
 
@@ -639,7 +640,8 @@ class CodeEditBlockManager:
         
         for attempt in range(self.auto_fix_compile_max_attempts):
             global_cancel.check_and_raise()
-            # 先更新增量影子系统的文件            
+            # 先更新增量影子系统的文件 
+            self.shadow_manager.clean_shadows()           
             shadow_files = self._create_shadow_files_from_edits(
                 generation_result)
             
@@ -757,9 +759,8 @@ class CodeEditBlockManager:
         
         # 修复编译错误
         generation_result = self._fix_compile_errors(query, generation_result, source_code_list)
-
-        # 清理临时影子文件
-        self.shadow_manager.clean_shadows()
+        
+        # self.shadow_manager.clean_shadows()
 
         # 返回最终结果
         return generation_result
