@@ -183,25 +183,50 @@ class McpServerInstaller:
             self.install_python_package(name)
 
         return name, config
+    
+    def process_market_install_item(self, market_item) -> Tuple[str, Dict[str, Any]]:
+        """Process a MarketplaceMCPServerItem into name and config"""
+        name = market_item.name
+        config = {
+            "command": market_item.command,
+            "args": market_item.args,
+            "env": market_item.env
+        }
+        
+        # Install package if needed
+        if name.startswith("@") or market_item.command in ["npx", "npm"]:
+            for item in market_item.args:
+                if name in item:
+                    self.install_node_package(item)
+        elif market_item.command not in ["python", "node"]:
+            self.install_python_package(name)
+            
+        return name, config
 
     async def install_server(self, request: McpInstallRequest, hub: McpHub) -> McpResponse:
         """Install an MCP server with module dependency check"""
         name = ""
         config = {}
         try:
-            server_name_or_config = request.server_name_or_config
-
-            # Try different parsing methods
-            if server_name_or_config.strip().startswith("--"):
-                # Command-line style arguments
-                name, config = self.parse_command_line_args(server_name_or_config)
+            # Check if market_install_item is provided
+            if request.market_install_item:
+                name, config = self.process_market_install_item(request.market_install_item)
+                display_result = request.market_install_item.name
             else:
-                try:
-                    # Try parsing as JSON
-                    name, config = self.parse_json_config(server_name_or_config)
-                except json.JSONDecodeError:
-                    logger.error(f"Failed to parse JSON config: {server_name_or_config}")
-                    pass
+                server_name_or_config = request.server_name_or_config
+                display_result = server_name_or_config
+
+                # Try different parsing methods
+                if server_name_or_config.strip().startswith("--"):
+                    # Command-line style arguments
+                    name, config = self.parse_command_line_args(server_name_or_config)
+                else:
+                    try:
+                        # Try parsing as JSON
+                        name, config = self.parse_json_config(server_name_or_config)
+                    except json.JSONDecodeError:
+                        logger.error(f"Failed to parse JSON config: {server_name_or_config}")
+                        pass
 
             if not name:
                 raise ValueError(
@@ -214,7 +239,7 @@ class McpServerInstaller:
             is_success = await hub.add_server_config(name, config)
             if is_success:
                 return McpResponse(
-                    result=get_message_with_format("mcp_install_success", result=request.server_name_or_config),
+                    result=get_message_with_format("mcp_install_success", result=display_result),
                     raw_result=InstallResult(
                         success=True,
                         server_name=name,
