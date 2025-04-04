@@ -244,7 +244,7 @@ class CodeEditBlockManager:
         """
         get_event_manager(self.args.event_file).write_result(
             EventContentCreator.create_result(
-                content=self.printer.get_message_from_key("/context/check/start"),
+                content=self.printer.get_message_from_key("/context/check/start")),
             metadata={
                 # Using a placeholder type, replace if ContextFixStreamOutType is defined
                 "stream_out_type": ContextMissingCheckStreamOutType.CONTEXT_MISSING_CHECK.value,
@@ -256,7 +256,7 @@ class CodeEditBlockManager:
         def write_end_event():
             get_event_manager(self.args.event_file).write_result(
                 EventContentCreator.create_result(
-                    content=self.printer.get_message_from_key("/context/check/end"),
+                    content=self.printer.get_message_from_key("/context/check/end")),
                 metadata={
                     # Using a placeholder type, replace if ContextFixStreamOutType is defined
                     "stream_out_type": ContextMissingCheckStreamOutType.CONTEXT_MISSING_CHECK.value,
