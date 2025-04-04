@@ -130,7 +130,7 @@ class McpServerInstaller:
             for s in external_servers:
                 if s.name == name:
                     if s.runtime == "python":
-                        self.install_python_package(name)
+                        # self.install_python_package(name)
                         template_config = {
                             "command": "python",
                             "args": [
@@ -138,7 +138,7 @@ class McpServerInstaller:
                             ],
                         }
                     elif s.runtime == "node":
-                        self.install_node_package(name)
+                        # self.install_node_package(name)
                         template_config = {
                             "command": "npx",
                             "args": [
@@ -156,12 +156,12 @@ class McpServerInstaller:
             config["args"] = ["-y", "-g", name]
 
         ## 如果有模板，则无需再次安装，处理模板的时候会自动安装
-        if not template_config:
-            # Install package if needed
-            if name.startswith("@") or config.get("command") in ["npx", "npm"]:
-                self.install_node_package(name)
-            else:
-                self.install_python_package(name)
+        # if not template_config:
+        #     # Install package if needed
+        #     if name.startswith("@") or config.get("command") in ["npx", "npm"]:
+        #         self.install_node_package(name)
+        #     else:
+        #         self.install_python_package(name)
 
         return name, config
 
@@ -175,12 +175,12 @@ class McpServerInstaller:
         # 取第一个server 配置
         config = list(raw_config.values())[0]
         name = list(raw_config.keys())[0]
-        if name.startswith("@") or config["command"] in ["npx", "npm"]:
-            for item in config["args"]:
-                if name in item:
-                    self.install_node_package(item)
-        else:
-            self.install_python_package(name)
+        # if name.startswith("@") or config["command"] in ["npx", "npm"]:
+        #     for item in config["args"]:
+        #         if name in item:
+        #             self.install_node_package(item)
+        # else:
+        #     self.install_python_package(name)
 
         return name, config
     
