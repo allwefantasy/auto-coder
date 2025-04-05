@@ -25,8 +25,13 @@ from autocoder.common import SourceCodeList
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue # Added import
 import re
 import xml.sax.saxutils
+import time # Added for sleep
 from typing import Iterator, Union, Type, Generator
 from xml.etree import ElementTree as ET
+from rich.console import Console # Added
+from rich.panel import Panel # Added
+from rich.syntax import Syntax # Added
+from rich.markdown import Markdown # Added
 from autocoder.agent.agentic_edit_tools import ( # Import specific resolvers
     BaseToolResolver,
     ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
@@ -46,7 +51,12 @@ from autocoder.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
                                                 TOOL_MODEL_MAP,
                                                 # Event Types
                                                 LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
-                                                ToolResultEvent, CompletionEvent, ErrorEvent)
+                                                ToolResultEvent, CompletionEvent, ErrorEvent,
+                                                # Import specific tool types for display mapping
+                                                ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
+                                                ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
+                                                AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
+                                                )
 
 
 # Map Pydantic Tool Models to their Resolver Classes
@@ -63,6 +73,50 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     PlanModeRespondTool: PlanModeRespondToolResolver,
     UseMcpTool: UseMcpToolResolver,
 }
+
+
+# --- Tool Display Customization (Moved from demo) ---
+# Map tool types to functions that return a user-friendly string representation
+TOOL_DISPLAY_MAPPING = {
+    ReadFileTool: lambda tool: f"AutoCoder wants to read this file:\n[bold cyan]{tool.path}[/]",
+    WriteToFileTool: lambda tool: (
+        f"AutoCoder wants to write to this file:\n[bold cyan]{tool.path}[/]\n\n"
+        f"[dim]Content Snippet:[/dim]\n{tool.content[:150]}{'...' if len(tool.content)>150 else ''}"
+    ),
+    ReplaceInFileTool: lambda tool: (
+        f"AutoCoder wants to replace content in this file:\n[bold cyan]{tool.path}[/]\n\n"
+        f"[dim]Diff Snippet:[/dim]\n{tool.diff[:200]}{'...' if len(tool.diff)>200 else ''}"
+    ),
+    ExecuteCommandTool: lambda tool: (
+        f"AutoCoder wants to execute this command:\n[bold yellow]{tool.command}[/]\n"
+        f"[dim](Requires Approval: {tool.requires_approval})[/]"
+    ),
+    ListFilesTool: lambda tool: (
+        f"AutoCoder wants to list files in:\n[bold green]{tool.path}[/] "
+        f"{'(Recursively)' if tool.recursive else '(Top Level)'}"
+    ),
+    SearchFilesTool: lambda tool: (
+        f"AutoCoder wants to search files in:\n[bold green]{tool.path}[/]\n"
+        f"[dim]File Pattern:[/dim] [yellow]{tool.file_pattern or '*'}[/]\n"
+        f"[dim]Regex:[/dim] [yellow]{tool.regex}[/]"
+    ),
+    ListCodeDefinitionNamesTool: lambda tool: (
+        f"AutoCoder wants to list definitions in:\n[bold green]{tool.path}[/]"
+    ),
+    AskFollowupQuestionTool: lambda tool: (
+        f"AutoCoder is asking a question:\n[bold magenta]{tool.question}[/]\n"
+        + (("[dim]Options:[/dim]\n" + "\n".join([f"- {opt}" for opt in tool.options])) if tool.options else "")
+    ),
+    UseMcpTool: lambda tool: (
+        f"AutoCoder wants to use an MCP tool:\n"
+        f"[dim]Server:[/dim] [blue]{tool.server_name}[/]\n"
+        f"[dim]Tool:[/dim] [blue]{tool.tool_name}[/]\n"
+        f"[dim]Args:[/dim] {str(tool.arguments)[:100]}{'...' if len(str(tool.arguments)) > 100 else ''}"
+    ),
+    # AttemptCompletionTool is handled separately in the display loop
+}
+# --- End Tool Display Customization ---
+
 
 class AgenticEdit:
     def __init__(
@@ -914,5 +968,113 @@ class AgenticEdit:
              yield ErrorEvent(message=f"Stream ended with unterminated <{current_tool_tag}> block.")
              if buffer: yield LLMOutputEvent(text=buffer) # Yield remaining as text
         elif buffer:
-            # Remaining plain text
+             # Remaining plain text
             yield LLMOutputEvent(text=buffer)
+
+
+    def run_in_terminal(self, request: AgenticEditRequest):
+        """
+        Runs the agentic edit process based on the request and displays
+        the interaction streamingly in the terminal using Rich.
+        """
+        console = Console()
+        project_name = os.path.basename(os.path.abspath(self.args.source_dir))
+        console.rule(f"[bold cyan]Starting Agentic Edit: {project_name}[/]")
+        console.print(Panel(f"[bold]User Query:[/bold]\n{request.user_input}", title="Objective", border_style="blue"))
+
+        try:
+            event_stream = self.analyze(request)
+            for event in event_stream:
+                if isinstance(event, LLMThinkingEvent):
+                    # Render thinking within a less prominent style, maybe grey?
+                    console.print(f"[grey50]{event.text}[/grey50]", end="")
+                elif isinstance(event, LLMOutputEvent):
+                    # Print regular LLM output, potentially as markdown if needed later
+                    console.print(event.text, end="")
+                elif isinstance(event, ToolCallEvent):
+                    # Skip displaying AttemptCompletionTool's tool call
+                    if isinstance(event.tool, AttemptCompletionTool):
+                        continue # Do not display AttemptCompletionTool tool call
+
+                    tool_type = type(event.tool)
+                    tool_name = tool_type.__name__
+
+                    # Check if there's a custom display function for this tool type
+                    if tool_type in TOOL_DISPLAY_MAPPING:
+                        display_content = TOOL_DISPLAY_MAPPING[tool_type](event.tool)
+                        console.print(Panel(display_content, title=f"🛠️ Action: {tool_name}", border_style="blue", title_align="left"))
+                    else:
+                        # Fallback to showing the raw XML for unmapped tools
+                        syntax = Syntax(event.tool_xml, "xml", theme="default", line_numbers=False)
+                        console.print(Panel(syntax, title=f"🛠️ Tool Call: {tool_name}", border_style="blue", title_align="left"))
+
+                elif isinstance(event, ToolResultEvent):
+                    # Skip displaying AttemptCompletionTool's result
+                    if event.tool_name == "AttemptCompletionTool":
+                        continue # Do not display AttemptCompletionTool result
+
+                    result = event.result
+                    title = f"✅ Tool Result: {event.tool_name}" if result.success else f"❌ Tool Result: {event.tool_name}"
+                    border_style = "green" if result.success else "red"
+                    base_content = f"[bold]Status:[/bold] {'Success' if result.success else 'Failure'}\n"
+                    base_content += f"[bold]Message:[/bold] {result.message}\n"
+
+                    # Prepare panel for base info first
+                    panel_content = [base_content]
+                    syntax_content = None
+
+                    if result.content is not None:
+                        panel_content.append("[bold]Content:[/bold]\n")
+                        content_str = ""
+                        try:
+                            if isinstance(result.content, (dict, list)):
+                                import json
+                                content_str = json.dumps(result.content, indent=2, ensure_ascii=False)
+                                syntax_content = Syntax(content_str, "json", theme="default", line_numbers=False)
+                            elif isinstance(result.content, str) and ('\n' in result.content or result.content.strip().startswith('<')):
+                                # Heuristic for code or XML/HTML
+                                lexer = "python" # Default guess
+                                if event.tool_name == "ReadFileTool" and isinstance(event.result.message, str):
+                                    # Try to guess lexer from file extension in message
+                                    if ".py" in event.result.message: lexer = "python"
+                                    elif ".js" in event.result.message: lexer = "javascript"
+                                    elif ".ts" in event.result.message: lexer = "typescript"
+                                    elif ".html" in event.result.message: lexer = "html"
+                                    elif ".css" in event.result.message: lexer = "css"
+                                    elif ".json" in event.result.message: lexer = "json"
+                                    elif ".xml" in event.result.message: lexer = "xml"
+                                    elif ".md" in event.result.message: lexer = "markdown"
+                                    else: lexer = "text" # Fallback lexer
+                                elif event.tool_name == "ExecuteCommandTool":
+                                     lexer = "shell"
+                                else:
+                                     lexer = "text"
+
+                                syntax_content = Syntax(result.content, lexer, theme="default", line_numbers=True)
+                            else:
+                                content_str = str(result.content)
+                                panel_content.append(content_str) # Append simple string content directly
+                        except Exception as e:
+                            logger.warning(f"Error formatting tool result content: {e}")
+                            panel_content.append(str(result.content)) # Fallback
+
+                    # Print the base info panel
+                    console.print(Panel("\n".join(panel_content), title=title, border_style=border_style, title_align="left"))
+                    # Print syntax highlighted content separately if it exists
+                    if syntax_content:
+                        console.print(syntax_content)
+
+                elif isinstance(event, CompletionEvent):
+                    console.print(Panel(Markdown(event.completion.result), title="🏁 Task Completion", border_style="green", title_align="left"))
+                    if event.completion.command:
+                        console.print(f"[dim]Suggested command:[/dim] [bold cyan]{event.completion.command}[/]")
+                elif isinstance(event, ErrorEvent):
+                    console.print(Panel(f"[bold red]Error:[/bold red] {event.message}", title="🔥 Error", border_style="red", title_align="left"))
+
+                time.sleep(0.1) # Small delay for better visual flow
+
+        except Exception as e:
+            logger.exception("An unexpected error occurred during agent execution:")
+            console.print(Panel(f"[bold red]FATAL ERROR:[/bold red]\n{str(e)}", title="🔥 System Error", border_style="red"))
+        finally:
+            console.rule("[bold cyan]Agentic Edit Finished[/]")

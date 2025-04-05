@@ -18,56 +18,10 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.markdown import Markdown
-from autocoder.agent.agentic_edit_types import (
-    ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
-    ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
-    AskFollowupQuestionTool, UseMcpTool # Import specific tool types
-)
-
 
 configure_logger()
 
-# --- Tool Display Customization ---
-# Map tool types to functions that return a user-friendly string representation
-TOOL_DISPLAY_MAPPING = {
-    ReadFileTool: lambda tool: f"AutoCoder wants to read this file:\n[bold cyan]{tool.path}[/]",
-    WriteToFileTool: lambda tool: (
-        f"AutoCoder wants to write to this file:\n[bold cyan]{tool.path}[/]\n\n"
-        f"[dim]Content Snippet:[/dim]\n{tool.content[:150]}{'...' if len(tool.content)>150 else ''}"
-    ),
-    ReplaceInFileTool: lambda tool: (
-        f"AutoCoder wants to replace content in this file:\n[bold cyan]{tool.path}[/]\n\n"
-        f"[dim]Diff Snippet:[/dim]\n{tool.diff[:200]}{'...' if len(tool.diff)>200 else ''}"
-    ),
-    ExecuteCommandTool: lambda tool: (
-        f"AutoCoder wants to execute this command:\n[bold yellow]{tool.command}[/]\n"
-        f"[dim](Requires Approval: {tool.requires_approval})[/]"
-    ),
-    ListFilesTool: lambda tool: (
-        f"AutoCoder wants to list files in:\n[bold green]{tool.path}[/] "
-        f"{'(Recursively)' if tool.recursive else '(Top Level)'}"
-    ),
-    SearchFilesTool: lambda tool: (
-        f"AutoCoder wants to search files in:\n[bold green]{tool.path}[/]\n"
-        f"[dim]File Pattern:[/dim] [yellow]{tool.file_pattern or '*'}[/]\n"
-        f"[dim]Regex:[/dim] [yellow]{tool.regex}[/]"
-    ),
-    ListCodeDefinitionNamesTool: lambda tool: (
-        f"AutoCoder wants to list definitions in:\n[bold green]{tool.path}[/]"
-    ),
-    AskFollowupQuestionTool: lambda tool: (
-        f"AutoCoder is asking a question:\n[bold magenta]{tool.question}[/]\n"
-        + (("[dim]Options:[/dim]\n" + "\n".join([f"- {opt}" for opt in tool.options])) if tool.options else "")
-    ),
-    UseMcpTool: lambda tool: (
-        f"AutoCoder wants to use an MCP tool:\n"
-        f"[dim]Server:[/dim] [blue]{tool.server_name}[/]\n"
-        f"[dim]Tool:[/dim] [blue]{tool.tool_name}[/]\n"
-        f"[dim]Args:[/dim] {str(tool.arguments)[:100]}{'...' if len(str(tool.arguments)) > 100 else ''}"
-    ),
-    # Add other tools here if needed
-}
-# --- End Tool Display Customization ---
+# --- Tool Display Customization is now moved inside AgenticEdit class ---
 
 def file_to_source_code(file_path: str) -> SourceCode:
     """Converts a file to a SourceCode object."""
@@ -168,86 +122,5 @@ agentic_editor = AgenticEdit(
 # 9. Prepare the request
 request = AgenticEditRequest(user_input=USER_QUERY)
 
-# 10. Initialize Rich Console
-console = Console()
-console.rule(f"[bold cyan]Starting Agentic Edit: {PROJECT_NAME}[/]")
-console.print(Panel(f"[bold]User Query:[/bold]\n{USER_QUERY}", title="Objective", border_style="blue"))
-
-# 11. Run the agent and display output streamingly
-try:
-    event_stream = agentic_editor.analyze(request)
-    for event in event_stream:
-        if isinstance(event, LLMThinkingEvent):
-            console.print(event.text, end="")
-        elif isinstance(event, LLMOutputEvent):
-            # Print regular LLM output, potentially as markdown
-            console.print(event.text, end="") # Less prominent style
-        elif isinstance(event, ToolCallEvent):
-            # Skip displaying AttemptCompletionTool's tool call
-            from autocoder.agent.agentic_edit_types import AttemptCompletionTool
-            if isinstance(event.tool, AttemptCompletionTool):
-                continue  # Do not display AttemptCompletionTool tool call
-            tool_type = type(event.tool)
-            tool_name = tool_type.__name__
-            # Check if there's a custom display function for this tool type
-            if tool_type in TOOL_DISPLAY_MAPPING:
-                display_content = TOOL_DISPLAY_MAPPING[tool_type](event.tool)
-                console.print(Panel(display_content, title=f"🛠️ Action: {tool_name}", border_style="blue", title_align="left"))
-            else:
-                # Fallback to showing the raw XML for unmapped tools
-                syntax = Syntax(event.tool_xml, "xml", theme="default", line_numbers=False)
-                console.print(Panel(syntax, title=f"🛠️ Tool Call: {tool_name}", border_style="blue", title_align="left"))                
-        elif isinstance(event, ToolResultEvent):
-            # Skip displaying AttemptCompletionTool's result
-            if event.tool_name == "AttemptCompletionTool":
-                continue  # Do not display AttemptCompletionTool result
-            result = event.result
-            title = f"✅ Tool Result: {event.tool_name}" if result.success else f"❌ Tool Result: {event.tool_name}"
-            border_style = "green" if result.success else "red"
-            content = f"[bold]Status:[/bold] {'Success' if result.success else 'Failure'}\n"
-            content += f"[bold]Message:[/bold] {result.message}\n"
-            if result.content is not None:
-                 # Try to format content nicely (e.g., JSON, code, or just string)
-                 content_str = ""
-                 if isinstance(result.content, (dict, list)):
-                     try:
-                         import json
-                         content_str = json.dumps(result.content, indent=2, ensure_ascii=False)
-                         syntax = Syntax(content_str, "json", theme="default", line_numbers=False)
-                         content += f"[bold]Content:[/bold]\n"
-                         console.print(Panel(content, title=title, border_style=border_style, title_align="left"))
-                         console.print(syntax) # Print syntax separately for better formatting
-                         continue # Skip default content print
-                     except Exception:
-                         content_str = str(result.content) # Fallback to string
-                 elif isinstance(result.content, str) and ('\n' in result.content or result.content.strip().startswith('<')):
-                     # Heuristic for code or XML/HTML
-                     lexer = "python" if event.tool_name == "ReadFileTool" and ".py" in str(event.result.message) else "markup" # Basic guess
-                     syntax = Syntax(result.content, lexer, theme="default", line_numbers=True)
-                     content += f"[bold]Content:[/bold]\n"
-                     console.print(Panel(content, title=title, border_style=border_style, title_align="left"))
-                     console.print(syntax)
-                     continue # Skip default content print
-                 else:
-                    content_str = str(result.content)
-
-                 content += f"[bold]Content:[/bold]\n{content_str}"
-
-            console.print(Panel(content, title=title, border_style=border_style, title_align="left"))
-
-        elif isinstance(event, CompletionEvent):
-            # syntax = Syntax(event.completion_xml, "xml", theme="default", line_numbers=False)
-            console.print(Panel(Markdown(event.completion.result), title="🏁 Task Completion", border_style="green", title_align="left"))            
-            # console.print(Panel(f"{event.completion.result}", title="Summary", border_style="green"))
-            if event.completion.command:
-                console.print(f"[dim]Suggested command:[/dim] [bold cyan]{event.completion.command}[/]")
-        elif isinstance(event, ErrorEvent):
-            console.print(Panel(f"[bold red]Error:[/bold red] {event.message}", title="🔥 Error", border_style="red", title_align="left"))
-
-        time.sleep(0.1) # Small delay for better visual flow
-
-except Exception as e:
-    logger.exception("An unexpected error occurred during agent execution:")
-    console.print(Panel(f"[bold red]FATAL ERROR:[/bold red]\n{str(e)}", title="🔥 System Error", border_style="red"))
-finally:
-    console.rule("[bold cyan]Agentic Edit Finished[/]")
+# 10. Run the agent using the new run_in_terminal method
+agentic_editor.run_in_terminal(request)
