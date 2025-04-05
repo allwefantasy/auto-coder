@@ -88,18 +88,18 @@ class AgenticEdit:
         self.command_config = command_config # Note: command_config might be unused now
         self.project_type_analyzer = ProjectTypeAnalyzer(
             args=args, llm=self.llm)
-        try:
-            self.mcp_server = get_mcp_server()
-            mcp_server_info_response = self.mcp_server.send_request(
-                McpServerInfoRequest(
-                    model=args.inference_model or args.model,
-                    product_mode=args.product_mode,
-                )
-            )
-            self.mcp_server_info = mcp_server_info_response.result
-        except Exception as e:
-            logger.error(f"Error getting MCP server info: {str(e)}")
-            self.mcp_server_info = ""
+        self.mcp_server_info = ""
+        # try:
+        #     self.mcp_server = get_mcp_server()
+        #     mcp_server_info_response = self.mcp_server.send_request(
+        #         McpServerInfoRequest(
+        #             model=args.inference_model or args.model,
+        #             product_mode=args.product_mode,
+        #         )
+        #     )
+        #     self.mcp_server_info = mcp_server_info_response.result
+        # except Exception as e:
+        #     logger.error(f"Error getting MCP server info: {str(e)}")            
 
     @byzerllm.prompt()
     def _analyze(self, request: AgenticEditRequest) -> str:
@@ -560,10 +560,8 @@ class AgenticEdit:
             shell_type = "cmd"
         elif shells.is_running_in_powershell():
             shell_type = "powershell"
-        return {
-            "current_files": self.memory_config.memory["current_files"]["files"],
-            "conversation_history": self.conversation_history,
-            "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),
+        return {            
+            "conversation_history": self.conversation_history,            
             "env_info": env_info,
             "shell_type": shell_type,
             "shell_encoding": shells.get_terminal_encoding(),
@@ -577,7 +575,6 @@ class AgenticEdit:
         }
 
     # Removed _execute_command_result and execute_auto_command methods
-
     def _reconstruct_tool_xml(self, tool: BaseTool) -> str:
         """
         Reconstructs the XML representation of a tool call from its Pydantic model.
@@ -715,7 +712,7 @@ class AgenticEdit:
 
 
     def stream_and_parse_llm_response(
-        self, generator: Iterator[Tuple[str, Any]] # Modified to accept tuple
+        self, generator: Generator[Tuple[str, Any], None, None] # Modified to accept tuple
     ) -> Generator[Union[BaseTool, PlainTextOutput], None, None]:
         """
         Streamingly parses the LLM response generator (yielding content, metadata tuples),
@@ -743,7 +740,7 @@ class AgenticEdit:
                 continue
 
             buffer += content_chunk
-            logger.debug(f"Content chunk received: '{content_chunk}', Buffer: '{buffer}'")
+            logger.info(f"Content chunk received: '{content_chunk}', Buffer: '{buffer}'")
 
             # Process the buffer to find complete tags or accumulate plain text
             while True: # Loop to process buffer content immediately

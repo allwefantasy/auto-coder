@@ -18,6 +18,8 @@ from autocoder.agent.agentic_edit_types import AgenticEditRequest
 from loguru import logger
 from autocoder.rag.token_counter import count_tokens
 from autocoder.helper.project_creator import ProjectCreator, FileCreatorFactory
+from loguru import logger
+
 
 def file_to_source_code(file_path: str) -> SourceCode:
     """将文件转换为 SourceCode 对象"""
@@ -56,13 +58,10 @@ print(f"获取到 {len(source_code_list.sources)} 个源代码文件")
 ## 切换工作目录到 project_dir
 os.chdir(project_dir)
 
-# 获取 LLM 实例
-llm = get_single_llm("v3_chat", product_mode="lite")
-print("初始化 LLM 完成")
 
 args = AutoCoderArgs(
     source_dir=project_dir,        
-    model="v3_chat",
+    model="quasar-alpha",
     product_mode="lite",
     target_file= os.path.join(project_dir, "output.txt"),
     file=os.path.join(project_dir, "actions", "000000000001_chat_action.yml")
@@ -75,13 +74,11 @@ llm = get_single_llm(args.model, product_mode=args.product_mode)
 def dummy_save_memory(memory: dict):
     logger.info("Dummy save memory called.")
 memory_config = MemoryConfig(memory={}, save_memory_func=dummy_save_memory)
-#    - Conversation history (empty for this example)
-conversation_history = []
 
 # 5. Instantiate AgenticEdit
 agentic_editor = AgenticEdit(
     llm=llm,
-    conversation_history=conversation_history,
+    conversation_history=[],
     files=source_code_list,
     args=args,
     memory_config=memory_config,
@@ -89,4 +86,7 @@ agentic_editor = AgenticEdit(
 )
 
 
-agentic_editor.analyze(AgenticEditRequest(user_input="优化下代码"))
+v = agentic_editor.analyze(AgenticEditRequest(user_input="优化下代码"))
+
+for i in v:
+    print(i)
