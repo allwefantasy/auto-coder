@@ -22,12 +22,19 @@ from autocoder.utils.auto_project_type import ProjectTypeAnalyzer
 from rich.text import Text
 from autocoder.common.mcp_server import get_mcp_server, McpServerInfoRequest
 from autocoder.common import SourceCodeList
-from autocoder.common.utils_code_auto_generate import stream_chat_with_continue # Added import
+from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
 import re
-from typing import Iterator, Union, Type, Generator
+import json
+from typing import Iterator, Union, Type, Generator, Tuple, Optional, Dict, Any, Type
 from xml.etree import ElementTree as ET
+from .agentic_edit_tools import ( # Import resolvers and ToolResult
+    BaseToolResolver, ToolResult, ExecuteCommandToolResolver, ReadFileToolResolver,
+    WriteToFileToolResolver, ReplaceInFileToolResolver, SearchFilesToolResolver,
+    ListFilesToolResolver, ListCodeDefinitionNamesToolResolver, UseMcpToolResolver
+)
 from autocoder.agent.agentic_edit_types import (AgenticFilterRequest,
                                                 AgenticFilterResponse,
+                                                ToolResult, # Added ToolResult import here for clarity if needed, though available via .agentic_edit_tools
                                                 MemoryConfig,
                                                 CommandConfig,
                                                 BaseTool,
@@ -42,8 +49,24 @@ from autocoder.agent.agentic_edit_types import (AgenticFilterRequest,
                                                 AskFollowupQuestionTool,
                                                 AttemptCompletionTool,
                                                 PlanModeRespondTool,
-                                                UseMcpTool,TOOL_MODEL_MAP)
+                                                UseMcpTool,
+                                                TOOL_MODEL_MAP
+                                                )
 
+
+# Map tool types to resolver classes for internal execution
+TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
+    ExecuteCommandTool: ExecuteCommandToolResolver,
+    ReadFileTool: ReadFileToolResolver,
+    WriteToFileTool: WriteToFileToolResolver,
+    ReplaceInFileTool: ReplaceInFileToolResolver,
+    SearchFilesTool: SearchFilesToolResolver,
+    ListFilesTool: ListFilesToolResolver,
+    ListCodeDefinitionNamesTool: ListCodeDefinitionNamesToolResolver,
+    UseMcpTool: UseMcpToolResolver,
+    # Interaction tools (AskFollowup, AttemptCompletion, PlanModeRespond)
+    # are yielded, not resolved internally in the loop.
+}
 
 class AgenticEdit:
     def __init__(
@@ -78,10 +101,14 @@ class AgenticEdit:
         except Exception as e:
             logger.error(f"Error getting MCP server info: {str(e)}")
             self.mcp_server_info = ""
+        # Ensure conversation history is initialized if not passed properly
+        if not isinstance(self.conversation_history, list):
+            logger.warning("Conversation history was not a list, initializing.")
+            self.conversation_history = []
 
     @byzerllm.prompt()
-    def _analyze(self, request: AgenticFilterRequest) -> str:
-        """        
+    def _analyze_prompt(self, request: AgenticFilterRequest) -> str: # Renamed to avoid conflict
+        """
         You are a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
 
         ====
