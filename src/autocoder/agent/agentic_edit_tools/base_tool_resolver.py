@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 from autocoder.agent.agentic_edit_types import BaseTool
+from autocoder.common import AutoCoderArgs
+
 class ToolResult:
     def __init__(self, success: bool, message: str, content: Any = None):
         self.success = success
@@ -11,7 +13,7 @@ class ToolResult:
         return f"Success: {self.success}, Message: {self.message}"
 
 class BaseToolResolver(ABC):
-    def __init__(self, agent: Optional[Any], tool: BaseTool, args: Dict[str, Any]):
+    def __init__(self, agent: Optional[Any], tool: BaseTool, args: AutoCoderArgs):
         """
         Initializes the resolver.
 

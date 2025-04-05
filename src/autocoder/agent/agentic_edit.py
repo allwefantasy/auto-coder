@@ -27,15 +27,14 @@ import re
 import xml.sax.saxutils
 from typing import Iterator, Union, Type, Generator
 from xml.etree import ElementTree as ET
-from .agentic_edit_tools import ( # Import specific resolvers
+from autocoder.agent.agentic_edit_tools import ( # Import specific resolvers
     BaseToolResolver, ToolResult,
     ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
     ReplaceInFileToolResolver, SearchFilesToolResolver, ListFilesToolResolver,
     ListCodeDefinitionNamesToolResolver, AskFollowupQuestionToolResolver,
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver
 )
-from autocoder.agent.agentic_edit_types import (AgenticFilterRequest,
-                                                AgenticFilterResponse,
+from autocoder.agent.agentic_edit_types import (AgenticEditRequest,                                                
                                                 MemoryConfig,
                                                 CommandConfig,
                                                 BaseTool,
@@ -617,7 +616,7 @@ class AgenticEdit:
         return "\n".join(xml_parts)
 
 
-    def analyze(self, request: AgenticFilterRequest) -> Generator[Union[BaseTool, PlainTextOutput], None, None]:
+    def analyze(self, request: AgenticEditRequest) -> Generator[Union[BaseTool, PlainTextOutput], None, None]:
         """
         Analyzes the user request, iteratively interacts with the LLM,
         parses responses, executes tools, and yields outputs until completion.

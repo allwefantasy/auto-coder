@@ -71,36 +71,13 @@ TOOL_MODEL_MAP: Dict[str, Type[BaseTool]] = {
 }
 
 
-class AgenticFilterRequest(BaseModel):
+class AgenticEditRequest(BaseModel):
     user_input: str
 
 
 class FileOperation(BaseModel):
     path: str
     operation: str  # e.g., "MODIFY", "REFERENCE", "ADD", "REMOVE"
-
-
-class AgenticFilterResponse(BaseModel):
-    files: List[FileOperation]  # 文件列表，包含path和operation字段
-    reasoning: str  # 决策过程说明
-
-
-class CommandSuggestion(BaseModel):
-    command: str
-    parameters: Dict[str, Any]
-    confidence: float
-    reasoning: str
-
-
-class AutoCommandResponse(BaseModel):
-    suggestions: List[CommandSuggestion]
-    reasoning: Optional[str] = None
-
-
-class AutoCommandRequest(BaseModel):
-    user_input: str
-
-
 class MemoryConfig(BaseModel):
     """
     A model to encapsulate memory configuration and operations.
