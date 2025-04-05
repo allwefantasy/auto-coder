@@ -20,6 +20,10 @@ from autocoder.rag.token_counter import count_tokens
 from autocoder.helper.project_creator import ProjectCreator, FileCreatorFactory
 from loguru import logger
 
+# Set loguru logger level to INFO
+logger.remove()
+logger.add(sys.stderr, level="INFO")
+
 
 def file_to_source_code(file_path: str) -> SourceCode:
     """将文件转换为 SourceCode 对象"""
