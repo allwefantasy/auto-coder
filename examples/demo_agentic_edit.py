@@ -19,8 +19,7 @@ from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.markdown import Markdown
 
-# Set loguru logger level to INFO
-configure_logger(level="INFO") # Set default level
+configure_logger() 
 
 def file_to_source_code(file_path: str) -> SourceCode:
     """Converts a file to a SourceCode object."""
@@ -52,8 +51,8 @@ def get_source_code_list(project_dir: str) -> SourceCodeList:
     return SourceCodeList(sources=source_codes)
 
 # --- Configuration ---
-MODEL_NAME = "deepseek-coder" # Or choose your preferred model
-PROJECT_NAME = "calculator_project"
+MODEL_NAME = "quasar-alpha" # Or choose your preferred model
+PROJECT_NAME = "test_project"
 USER_QUERY = "给计算器添加乘法和除法功能，并为所有方法添加类型提示和文档字符串。"
 # --- End Configuration ---
 
@@ -131,10 +130,10 @@ try:
     event_stream = agentic_editor.analyze(request)
     for event in event_stream:
         if isinstance(event, LLMThinkingEvent):
-            console.print(Panel(Markdown(f"```markdown\n{event.text}\n```"), title="🤔 Thinking", border_style="dim yellow", title_align="left"))
+            console.print(event.text,end="")
         elif isinstance(event, LLMOutputEvent):
             # Print regular LLM output, potentially as markdown
-            console.print(Markdown(event.text), style="dim") # Less prominent style
+            console.print(event.text, end="") # Less prominent style
         elif isinstance(event, ToolCallEvent):
             # Display the tool call XML using Syntax highlighting
             syntax = Syntax(event.tool_xml, "xml", theme="default", line_numbers=False)
