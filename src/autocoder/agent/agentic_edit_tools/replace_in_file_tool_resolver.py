@@ -56,7 +56,7 @@ class ReplaceInFileToolResolver(BaseToolResolver):
     def resolve(self) -> ToolResult:
         file_path = self.tool.path
         diff_content = self.tool.diff
-        source_dir = self.args.get("source_dir", ".")
+        source_dir = self.args.source_dir or "."
         absolute_path = os.path.abspath(os.path.join(source_dir, file_path))
 
         # Security check

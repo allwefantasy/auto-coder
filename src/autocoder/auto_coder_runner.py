@@ -58,11 +58,11 @@ from autocoder.memory.active_context_manager import ActiveContextManager
 from autocoder.common.command_completer import CommandCompleter,FileSystemModel as CCFileSystemModel,MemoryConfig as CCMemoryModel
 from autocoder.common.conf_validator import ConfigValidator
 from autocoder import command_parser as CommandParser
-from loguru import logger
+from loguru import global_logger
 from autocoder.utils.project_structure import EnhancedFileAnalyzer
 
-## 对外API，用于第三方集成 auto-coder 使用。
 
+## 对外API，用于第三方集成 auto-coder 使用。
 class SymbolItem(BaseModel):
     symbol_name: str
     symbol_type: SymbolType
@@ -221,6 +221,37 @@ def get_all_extensions(directory: str = ".") -> str:
     
     # 转换为逗号分隔的字符串
     return ",".join(sorted(all_extensions))
+
+def configure_logger():
+    # 设置日志目录和文件
+    log_dir = os.path.join(project_root, ".auto-coder", "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "auto-coder.log")
+
+    # 配置全局日志输出到文件，不输出到控制台
+    global_logger.configure(
+        handlers=[
+            # 移除控制台输出，只保留文件输出
+            # 文件 Handler
+            {
+                "sink": log_file,
+                "level": "INFO",
+                "rotation": "10 MB",
+                "retention": "1 week",
+                "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name} | {message}",
+                "filter": lambda record: record["extra"].get("name") in ["DirectoryMapper", "ActiveContextManager","ActivePackage","AsyncProcessor"]
+            },
+            # 控制台 Handler
+            {
+                "sink": sys.stdout,
+                "level": "INFO",
+                "format": "{time:YYYY-MM-DD HH:mm:ss} | {name} | {message}",
+                "filter": lambda record: record["extra"].get("name") not in ["DirectoryMapper", "ActiveContextManager","ActivePackage","AsyncProcessor","TokenCostCalculator"]
+            }
+        ]
+    )
+
+configure_logger()
 
 def initialize_system(args:InitializeSystemRequest):
     from autocoder.utils.model_provider_selector import ModelProviderSelector

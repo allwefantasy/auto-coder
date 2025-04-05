@@ -99,37 +99,10 @@ class ActiveContextManager:
         if self._is_initialized:
             return
         self.source_dir = source_dir
-        # 设置日志目录和文件
-        log_dir = os.path.join(source_dir, ".auto-coder", "active-context")
-        os.makedirs(log_dir, exist_ok=True)
-        log_file = os.path.join(log_dir, "active.log")
-
-        # 配置全局日志输出到文件，不输出到控制台
-        global_logger.configure(
-            handlers=[
-                # 移除控制台输出，只保留文件输出
-                # 文件 Handler
-                {
-                    "sink": log_file,
-                    "level": "INFO",
-                    "rotation": "10 MB",
-                    "retention": "1 week",
-                    "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name} | {message}",
-                    "filter": lambda record: record["extra"].get("name") in ["DirectoryMapper", "ActiveContextManager","ActivePackage","AsyncProcessor"]
-                },
-                # 控制台 Handler
-                {
-                    "sink": sys.stdout,
-                    "level": "INFO",
-                    "format": "{time:YYYY-MM-DD HH:mm:ss} | {name} | {message}",
-                    "filter": lambda record: record["extra"].get("name") not in ["DirectoryMapper", "ActiveContextManager","ActivePackage","AsyncProcessor","TokenCostCalculator"]
-                }
-            ]
-        )
-
+        
         # 创建专用的logger实例
         self.logger = global_logger.bind(name="ActiveContextManager")
-        self.logger.info(f"初始化 ActiveContextManager，日志输出到 {log_file}")
+    
 
         self.llm = llm
         self.directory_mapper = DirectoryMapper()
