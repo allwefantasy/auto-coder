@@ -34,22 +34,19 @@ from autocoder.agent.agentic_edit_tools import ( # Import specific resolvers
     ListCodeDefinitionNamesToolResolver, AskFollowupQuestionToolResolver,
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver
 )
-from autocoder.agent.agentic_edit_types import (AgenticEditRequest, ToolResult, # Import ToolResult from types
-                                                MemoryConfig,
-                                                CommandConfig,
-                                                BaseTool,
-                                                PlainTextOutput,
-                                                ExecuteCommandTool,
-                                                ReadFileTool,
+from autocoder.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
+                                                MemoryConfig, CommandConfig, BaseTool,
+                                                ExecuteCommandTool, ReadFileTool,
                                                 WriteToFileTool,
                                                 ReplaceInFileTool,
                                                 SearchFilesTool,
                                                 ListFilesTool,
-                                                ListCodeDefinitionNamesTool,
-                                                AskFollowupQuestionTool,
-                                                AttemptCompletionTool,
-                                                PlanModeRespondTool,
-                                                UseMcpTool, TOOL_MODEL_MAP)
+                                                ListCodeDefinitionNamesTool, AskFollowupQuestionTool,
+                                                AttemptCompletionTool, PlanModeRespondTool, UseMcpTool,
+                                                TOOL_MODEL_MAP,
+                                                # Event Types
+                                                LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
+                                                ToolResultEvent, CompletionEvent, ErrorEvent)
 
 
 # Map Pydantic Tool Models to their Resolver Classes
@@ -613,10 +610,10 @@ class AgenticEdit:
         return "\n".join(xml_parts)
 
 
-    def analyze(self, request: AgenticEditRequest) -> Generator[Union[BaseTool, PlainTextOutput], None, None]:
+    def analyze(self, request: AgenticEditRequest) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ToolResultEvent, CompletionEvent, ErrorEvent], None, None]:
         """
-        Analyzes the user request, iteratively interacts with the LLM,
-        parses responses, executes tools, and yields outputs until completion.
+        Analyzes the user request, interacts with the LLM, parses responses,
+        executes tools, and yields structured events for visualization until completion or error.
         """
         system_prompt = self._analyze.prompt(request)
         conversations = [
@@ -637,75 +634,92 @@ class AgenticEdit:
                 args=self.args
             )
 
-            parsed_items = self.stream_and_parse_llm_response(llm_response_gen)
+            parsed_events = self.stream_and_parse_llm_response(llm_response_gen)
 
-            for item in parsed_items:
-                if isinstance(item, PlainTextOutput):
-                    assistant_buffer += item.text
-                    yield item
-                elif isinstance(item, AttemptCompletionTool):
-                    logger.info("AttemptCompletionTool received. Finalizing session.")
-                    tool_xml = self._reconstruct_tool_xml(item)
-                    conversations.append({
-                        "role": "assistant",
-                        "content": assistant_buffer + tool_xml
-                    })
-                    yield item
-                    logger.info("AgenticEdit analyze loop finished due to AttemptCompletion.")
-                    return
-                elif isinstance(item, BaseTool):
+            for event in parsed_events:
+                if isinstance(event, (LLMOutputEvent, LLMThinkingEvent)):
+                    assistant_buffer += event.text
+                    yield event # Yield text/thinking immediately for display
+
+                elif isinstance(event, ToolCallEvent):
                     tool_executed = True
+                    tool_obj = event.tool
+                    tool_xml = event.tool_xml # Already reconstructed by parser
 
-                    tool_xml = self._reconstruct_tool_xml(item)
-                    if tool_xml.startswith("<error>"):
-                        logger.error(f"Failed to reconstruct XML for tool {type(item).__name__}. Skipping execution.")
-                        yield PlainTextOutput(text=f"[SYSTEM ERROR] Failed to reconstruct XML for tool {type(item).__name__}. Skipping execution.")
-                        continue
-
+                    # Append assistant's thoughts and the tool call to history
                     conversations.append({
                         "role": "assistant",
                         "content": assistant_buffer + tool_xml
                     })
-                    assistant_buffer = ""
+                    assistant_buffer = "" # Reset buffer after tool call
 
-                    resolver_cls = TOOL_RESOLVER_MAP.get(type(item))
+                    yield event # Yield the ToolCallEvent for display
+
+                    # Handle AttemptCompletion separately as it ends the loop
+                    if isinstance(tool_obj, AttemptCompletionTool):
+                        logger.info("AttemptCompletionTool received. Finalizing session.")
+                        yield CompletionEvent(completion=tool_obj, completion_xml=tool_xml)
+                        logger.info("AgenticEdit analyze loop finished due to AttemptCompletion.")
+                        return
+
+                    # Resolve the tool
+                    resolver_cls = TOOL_RESOLVER_MAP.get(type(tool_obj))
                     if not resolver_cls:
-                        logger.error(f"No resolver implemented for tool {type(item).__name__}")
-                        result_content = f"<tool_result tool_name='{type(item).__name__}' success='false'><message>Error: Tool resolver not implemented.</message><content></content></tool_result>"
+                        logger.error(f"No resolver implemented for tool {type(tool_obj).__name__}")
+                        tool_result = ToolResult(success=False, message="Error: Tool resolver not implemented.", content=None)
+                        result_event = ToolResultEvent(tool_name=type(tool_obj).__name__, result=tool_result)
+                        error_xml = f"<tool_result tool_name='{type(tool_obj).__name__}' success='false'><message>Error: Tool resolver not implemented.</message><content></content></tool_result>"
                     else:
                         try:
-                            resolver = resolver_cls(agent=self, tool=item, args=self.args)
-                            logger.info(f"Executing tool: {type(item).__name__} with params: {item.model_dump()}")
-                            result: ToolResult = resolver.resolve()
-                            logger.info(f"Tool Result: Success={result.success}, Message='{result.message}'")
+                            resolver = resolver_cls(agent=self, tool=tool_obj, args=self.args)
+                            logger.info(f"Executing tool: {type(tool_obj).__name__} with params: {tool_obj.model_dump()}")
+                            tool_result: ToolResult = resolver.resolve()
+                            logger.info(f"Tool Result: Success={tool_result.success}, Message='{tool_result.message}'")
+                            result_event = ToolResultEvent(tool_name=type(tool_obj).__name__, result=tool_result)
 
-                            escaped_message = xml.sax.saxutils.escape(result.message)
-                            content_str = str(result.content) if result.content is not None else ""
+                            # Prepare XML for conversation history
+                            escaped_message = xml.sax.saxutils.escape(tool_result.message)
+                            content_str = str(tool_result.content) if tool_result.content is not None else ""
                             escaped_content = xml.sax.saxutils.escape(content_str)
-
-                            result_content = (
-                                f"<tool_result tool_name='{type(item).__name__}' success='{str(result.success).lower()}'>"
+                            error_xml = (
+                                f"<tool_result tool_name='{type(tool_obj).__name__}' success='{str(tool_result.success).lower()}'>"
                                 f"<message>{escaped_message}</message>"
                                 f"<content>{escaped_content}</content>"
                                 f"</tool_result>"
                             )
                         except Exception as e:
-                            logger.exception(f"Error resolving tool {type(item).__name__}: {e}")
-                            escaped_error = xml.sax.saxutils.escape(f"Critical Error during tool execution: {e}")
-                            result_content = f"<tool_result tool_name='{type(item).__name__}' success='false'><message>{escaped_error}</message><content></content></tool_result>"
+                            logger.exception(f"Error resolving tool {type(tool_obj).__name__}: {e}")
+                            error_message = f"Critical Error during tool execution: {e}"
+                            tool_result = ToolResult(success=False, message=error_message, content=None)
+                            result_event = ToolResultEvent(tool_name=type(tool_obj).__name__, result=tool_result)
+                            escaped_error = xml.sax.saxutils.escape(error_message)
+                            error_xml = f"<tool_result tool_name='{type(tool_obj).__name__}' success='false'><message>{escaped_error}</message><content></content></tool_result>"
 
+                    yield result_event # Yield the ToolResultEvent for display
+
+                    # Append the tool result (as user message) to history
                     conversations.append({
-                        "role": "user",
-                        "content": result_content
+                        "role": "user", # Simulating the user providing the tool result
+                        "content": error_xml
                     })
-                    logger.debug(f"Added tool result to conversations for tool {type(item).__name__}")
-                    break  # After tool execution, break to start a new LLM cycle
+                    logger.debug(f"Added tool result to conversations for tool {type(tool_obj).__name__}")
+                    break # After tool execution and result, break to start a new LLM cycle
+
+                elif isinstance(event, ErrorEvent):
+                    yield event # Pass through errors
+                    # Optionally stop the process on parsing errors
+                    # logger.error("Stopping analyze loop due to parsing error.")
+                    # return
 
             if not tool_executed:
-                # No tool executed in this cycle, so finish
-                logger.info("LLM response finished without executing a tool. Ending analyze loop.")
+                # No tool executed in this LLM response cycle
+                logger.info("LLM response finished without executing a tool.")
+                # Append any remaining assistant buffer to history if it wasn't followed by a tool
                 if assistant_buffer:
-                    conversations.append({"role": "assistant", "content": assistant_buffer})
+                     conversations.append({"role": "assistant", "content": assistant_buffer})
+                # If the loop ends without AttemptCompletion, it means the LLM finished talking
+                # without signaling completion. We might just stop or yield a final message.
+                # Let's assume it stops here.
                 break
 
         logger.info("AgenticEdit analyze loop finished.")
@@ -713,121 +727,192 @@ class AgenticEdit:
 
     def stream_and_parse_llm_response(
         self, generator: Generator[Tuple[str, Any], None, None]
-    ) -> Generator[Union[BaseTool, PlainTextOutput], None, None]:
+    ) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ErrorEvent], None, None]:
         """
-        Streamingly parses the LLM response generator (yielding content, metadata tuples),
-        distinguishing between plain text and tool usage blocks,
-        yielding corresponding Pydantic models.
+        Streamingly parses the LLM response generator, distinguishing between
+        plain text, thinking blocks, and tool usage blocks, yielding corresponding Event models.
 
         Args:
-            generator: An iterator yielding (content, metadata) tuples.
+            generator: An iterator yielding (content, metadata) tuples from the LLM stream.
 
         Yields:
-            Union[BaseTool, PlainTextOutput]: Either a Pydantic model representing
-            a detected tool usage or a PlainTextOutput model for plain text segments.
+            Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ErrorEvent]: Events representing
+            different parts of the LLM's response.
         """
         buffer = ""
         in_tool_block = False
+        in_thinking_block = False
         current_tool_tag = None
-        tool_start_pattern = re.compile(r"<([a-zA-Z0-9_]+)>")
-        plain_text_buffer = ""
+        tool_start_pattern = re.compile(r"<([a-zA-Z0-9_]+)>") # Matches tool tags
+        thinking_start_tag = "<thinking>"
+        thinking_end_tag = "</thinking>"
 
         def parse_tool_xml(tool_xml: str, tool_tag: str) -> Optional[BaseTool]:
-            """
-            A minimal, non-XML-library parser for tool XML string.
-            Returns parsed pydantic model or None if parse error.
-            """
+            """Minimal parser for tool XML string."""
             params = {}
             try:
-                pos = len(f"<{tool_tag}>")
-                end_pos = len(tool_xml) - len(f"</{tool_tag}>")
-                inner_xml = tool_xml[pos:end_pos]
+                # Find content between <tool_tag> and </tool_tag>
+                inner_xml_match = re.search(rf"<{tool_tag}>(.*?)</{tool_tag}>", tool_xml, re.DOTALL)
+                if not inner_xml_match:
+                    logger.error(f"Could not find content within <{tool_tag}>...</{tool_tag}>")
+                    return None
+                inner_xml = inner_xml_match.group(1).strip()
 
-                # Simple regex to find all <param>value</param> pairs
-                # This will greedily capture multiline content
+                # Find <param>value</param> pairs within the inner content
                 pattern = re.compile(r"<([a-zA-Z0-9_]+)>(.*?)</\1>", re.DOTALL)
                 for m in pattern.finditer(inner_xml):
                     key = m.group(1)
-                    val = m.group(2)
+                    # Basic unescaping (might need more robust unescaping if complex values are used)
+                    val = xml.sax.saxutils.unescape(m.group(2))
                     params[key] = val
-                # logger.debug(f"Parsed tool '{tool_tag}' params: {params}")
+
                 tool_cls = TOOL_MODEL_MAP.get(tool_tag)
                 if tool_cls:
+                    # Attempt to handle boolean conversion specifically for requires_approval
+                    if 'requires_approval' in params:
+                        params['requires_approval'] = params['requires_approval'].lower() == 'true'
+                    # Attempt to handle JSON parsing for arguments in use_mcp_tool
+                    if tool_tag == 'use_mcp_tool' and 'arguments' in params:
+                         try:
+                             params['arguments'] = json.loads(params['arguments'])
+                         except json.JSONDecodeError:
+                             logger.warning(f"Could not decode JSON arguments for use_mcp_tool: {params['arguments']}")
+                             # Keep as string or handle error? Let's keep as string for now.
+                             pass
+                    # Handle recursive for list_files
+                    if tool_tag == 'list_files' and 'recursive' in params:
+                         params['recursive'] = params['recursive'].lower() == 'true'
+
                     return tool_cls(**params)
+                else:
+                    logger.error(f"Tool class not found for tag: {tool_tag}")
+                    return None
             except Exception as e:
-                logger.error(f"Failed to parse tool xml with custom parser: {e}")
-            return None
+                logger.exception(f"Failed to parse tool XML for <{tool_tag}>: {e}\nXML:\n{tool_xml}")
+                return None
 
         for content_chunk, metadata in generator:
             if not content_chunk:
                 continue
             buffer += content_chunk
-            # logger.info(f"Content chunk received: '{content_chunk}', Buffer: '{buffer}'")
 
             while True:
-                if not in_tool_block:
-                    match = tool_start_pattern.search(buffer)
-                    if match:
-                        tool_name = match.group(1)
-                        logger.debug(f"Potential tool start tag found: '{tool_name}' at {match.start()}")
-                        if tool_name in TOOL_MODEL_MAP:
-                            start_index = match.start()
-                            preceding = buffer[:start_index]
-                            if preceding:
-                                plain_text_buffer += preceding
-                                logger.debug(f"Yielding preceding plain text: '{plain_text_buffer}'")
-                                yield PlainTextOutput(text=plain_text_buffer)
-                                plain_text_buffer = ""
+                # Check for transitions: thinking -> text, tool -> text, text -> thinking, text -> tool
+                next_event_pos = len(buffer)
+                found_event = False
 
-                            buffer = buffer[start_index:]
-                            in_tool_block = True
-                            current_tool_tag = tool_name
-                            logger.debug(f"Entering tool block: '{current_tool_tag}', Buffer: '{buffer}'")
-                        else:
-                            # Unknown tag, treat as plain text
-                            plain_text_buffer += buffer[:match.end()]
-                            buffer = buffer[match.end():]
-                            logger.debug(f"Tag '{tool_name}' not in TOOL_MODEL_MAP. Treating as plain text. Buffer: '{buffer}'")
-                            continue
+                # 1. Check for </thinking> if inside thinking block
+                if in_thinking_block:
+                    end_think_pos = buffer.find(thinking_end_tag)
+                    if end_think_pos != -1:
+                        thinking_content = buffer[:end_think_pos]
+                        yield LLMThinkingEvent(text=thinking_content)
+                        buffer = buffer[end_think_pos + len(thinking_end_tag):]
+                        in_thinking_block = False
+                        found_event = True
+                        continue # Restart loop with updated buffer/state
                     else:
-                        # No tag found
-                        split_point = max(0, len(buffer) - 50)
-                        plain_text_buffer += buffer[:split_point]
-                        buffer = buffer[split_point:]
-                        logger.debug(f"No tool start tag found. Accumulating plain text. Buffer: '{buffer}'")
+                        # Need more data to close thinking block
                         break
-                else:
+
+                # 2. Check for </tool_tag> if inside tool block
+                elif in_tool_block:
                     end_tag = f"</{current_tool_tag}>"
-                    end_index = buffer.find(end_tag)
-                    logger.debug(f"Searching for end tag: '{end_tag}' in Buffer: '{buffer}'")
-                    if end_index != -1:
-                        tool_block_end = end_index + len(end_tag)
-                        tool_xml = buffer[:tool_block_end]
-                        buffer = buffer[tool_block_end:]
-                        logger.debug(f"Found end tag. Tool XML: '{tool_xml[:50]}...', Remaining Buffer: '{buffer[:50]}...'")
-
+                    end_tool_pos = buffer.find(end_tag)
+                    if end_tool_pos != -1:
+                        tool_block_end_index = end_tool_pos + len(end_tag)
+                        tool_xml = buffer[:tool_block_end_index]
                         tool_obj = parse_tool_xml(tool_xml, current_tool_tag)
-                        if tool_obj:
-                            yield tool_obj
-                        else:
-                            logger.warning(f"Custom parse failed for tool tag '{current_tool_tag}'. Yielding as plain text.")
-                            yield PlainTextOutput(text=tool_xml)
 
+                        if tool_obj:
+                             # Reconstruct the XML accurately here AFTER successful parsing
+                             # This ensures the XML yielded matches what was parsed.
+                             reconstructed_xml = self._reconstruct_tool_xml(tool_obj)
+                             if reconstructed_xml.startswith("<error>"):
+                                 yield ErrorEvent(message=f"Failed to reconstruct XML for tool {current_tool_tag}")
+                             else:
+                                 yield ToolCallEvent(tool=tool_obj, tool_xml=reconstructed_xml)
+                        else:
+                            yield ErrorEvent(message=f"Failed to parse tool: <{current_tool_tag}>")
+                            # Optionally yield the raw XML as plain text?
+                            # yield LLMOutputEvent(text=tool_xml)
+
+                        buffer = buffer[tool_block_end_index:]
                         in_tool_block = False
                         current_tool_tag = None
-                        continue
+                        found_event = True
+                        continue # Restart loop
                     else:
-                        # End tag not found yet
-                        logger.debug("End tag not found yet, need more data.")
+                        # Need more data to close tool block
                         break
 
-        # After generator exhausted
-        if plain_text_buffer:
-            logger.debug(f"Yielding final accumulated plain text: '{plain_text_buffer}'")
-            yield PlainTextOutput(text=plain_text_buffer)
-        if buffer and not in_tool_block:
-            logger.debug(f"Yielding final remaining buffer content: '{buffer}'")
-            yield PlainTextOutput(text=buffer)
-        elif buffer and in_tool_block:
-            logger.warning(f"Stream ended with incomplete tool block for '{current_tool_tag}': '{buffer}'")
-            yield PlainTextOutput(text=buffer)
+                # 3. Check for <thinking> or <tool_tag> if in plain text state
+                else:
+                    start_think_pos = buffer.find(thinking_start_tag)
+                    tool_match = tool_start_pattern.search(buffer)
+                    start_tool_pos = tool_match.start() if tool_match else -1
+                    tool_name = tool_match.group(1) if tool_match else None
+
+                    # Determine which tag comes first (if any)
+                    first_tag_pos = -1
+                    is_thinking = False
+                    is_tool = False
+
+                    if start_think_pos != -1 and (start_tool_pos == -1 or start_think_pos < start_tool_pos):
+                        first_tag_pos = start_think_pos
+                        is_thinking = True
+                    elif start_tool_pos != -1 and (start_think_pos == -1 or start_tool_pos < start_think_pos):
+                         # Check if it's a known tool
+                         if tool_name in TOOL_MODEL_MAP:
+                            first_tag_pos = start_tool_pos
+                            is_tool = True
+                         else:
+                             # Unknown tag, treat as text for now, let buffer grow
+                             pass
+
+
+                    if first_tag_pos != -1: # Found either <thinking> or a known <tool>
+                        # Yield preceding text if any
+                        preceding_text = buffer[:first_tag_pos]
+                        if preceding_text:
+                            yield LLMOutputEvent(text=preceding_text)
+
+                        # Transition state
+                        if is_thinking:
+                            buffer = buffer[first_tag_pos + len(thinking_start_tag):]
+                            in_thinking_block = True
+                        elif is_tool:
+                            buffer = buffer[first_tag_pos:] # Keep the starting tag
+                            in_tool_block = True
+                            current_tool_tag = tool_name
+
+                        found_event = True
+                        continue # Restart loop
+
+                    else:
+                         # No tags found, or only unknown tags found. Need more data or end of stream.
+                         # Yield text chunk but keep some buffer for potential tag start
+                         split_point = max(0, len(buffer) - 100) # Keep last 100 chars
+                         text_to_yield = buffer[:split_point]
+                         if text_to_yield:
+                             yield LLMOutputEvent(text=text_to_yield)
+                             buffer = buffer[split_point:]
+                         break # Need more data
+
+                # If no event was processed in this iteration, break inner loop
+                if not found_event:
+                    break
+
+
+        # After generator exhausted, yield any remaining content
+        if in_thinking_block:
+            # Unterminated thinking block
+            yield ErrorEvent(message="Stream ended with unterminated <thinking> block.")
+            if buffer: yield LLMThinkingEvent(text=buffer) # Yield remaining as thinking
+        elif in_tool_block:
+             # Unterminated tool block
+             yield ErrorEvent(message=f"Stream ended with unterminated <{current_tool_tag}> block.")
+             if buffer: yield LLMOutputEvent(text=buffer) # Yield remaining as text
+        elif buffer:
+            # Remaining plain text
+            yield LLMOutputEvent(text=buffer)

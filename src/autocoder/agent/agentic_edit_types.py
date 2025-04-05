@@ -57,8 +57,37 @@ class UseMcpTool(BaseTool):
     tool_name: str
     arguments: Dict[str, Any]
 
-class PlainTextOutput(BaseModel):
+# Event Types for Rich Output Streaming
+class LLMOutputEvent(BaseModel):
+    """Represents plain text output from the LLM."""
     text: str
+
+class LLMThinkingEvent(BaseModel):
+    """Represents text within <thinking> tags from the LLM."""
+    text: str
+
+class ToolCallEvent(BaseModel):
+    """Represents the LLM deciding to call a tool."""
+    tool: SkipValidation[BaseTool] # Use SkipValidation as BaseTool itself is complex
+    tool_xml: str
+
+class ToolResultEvent(BaseModel):
+    """Represents the result of executing a tool."""
+    tool_name: str
+    result: ToolResult
+
+class CompletionEvent(BaseModel):
+    """Represents the LLM attempting to complete the task."""
+    completion: SkipValidation[AttemptCompletionTool] # Skip validation
+    completion_xml: str
+
+class ErrorEvent(BaseModel):
+    """Represents an error during the process."""
+    message: str
+
+# Deprecated: Will be replaced by specific Event types
+# class PlainTextOutput(BaseModel):
+#     text: str
 
 
 # Mapping from tool tag names to Pydantic models
