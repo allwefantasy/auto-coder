@@ -1,10 +1,6 @@
 import os
 import sys
 from typing import Iterator, Union, Generator
-# Add the project root directory to the Python path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, project_root)
-
 from autocoder.auto_coder_runner import load_tokenizer
 from autocoder.common import AutoCoderArgs, SourceCodeList
 from autocoder.utils.llms import get_single_llm
@@ -25,7 +21,7 @@ load_tokenizer()
 # 2. Configure arguments
 args = AutoCoderArgs(
     source_dir=".",  # Specify your project source directory
-    model="gpt-4",  # Choose your LLM model
+    model="v3_chat",  # Choose your LLM model
     product_mode="lite", # Or your specific product mode
     # Add other relevant args as needed
 )
@@ -35,7 +31,7 @@ llm = get_single_llm(args.model, product_mode=args.product_mode)
 
 # 4. Prepare necessary components for AgenticEdit
 #    - SourceCodeList (can be empty or loaded from source_dir)
-files = SourceCodeList(source_dir=args.source_dir)
+files = SourceCodeList(sources=[])
 #    - MemoryConfig (dummy for this example)
 def dummy_save_memory(memory: dict):
     logger.info("Dummy save memory called.")
