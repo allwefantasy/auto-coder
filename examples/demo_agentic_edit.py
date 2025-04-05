@@ -57,7 +57,7 @@ TOOL_DISPLAY_MAPPING = {
     ),
     AskFollowupQuestionTool: lambda tool: (
         f"AutoCoder is asking a question:\n[bold magenta]{tool.question}[/]\n"
-        f"{'[dim]Options:[/dim]\n' + '\n'.join([f'- {opt}' for opt in tool.options]) if tool.options else ''}"
+        + (("[dim]Options:[/dim]\n" + "\n".join([f"- {opt}" for opt in tool.options])) if tool.options else "")
     ),
     UseMcpTool: lambda tool: (
         f"AutoCoder wants to use an MCP tool:\n"
