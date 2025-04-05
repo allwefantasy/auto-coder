@@ -971,6 +971,8 @@ class AgenticEdit:
              # Remaining plain text
             yield LLMOutputEvent(text=buffer)
 
+    def run_with_events(self, request: AgenticEditRequest):
+        pass
 
     def run_in_terminal(self, request: AgenticEditRequest):
         """
