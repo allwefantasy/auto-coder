@@ -1,7 +1,7 @@
 import os
 import sys
 from typing import Iterator, Union, Generator
-from autocoder.auto_coder_runner import load_tokenizer
+from autocoder.auto_coder_runner import load_tokenizer,configure_logger
 from autocoder.common import AutoCoderArgs, SourceCodeList
 from autocoder.utils.llms import get_single_llm
 from autocoder.agent.agentic_edit import (
@@ -21,8 +21,7 @@ from autocoder.helper.project_creator import ProjectCreator, FileCreatorFactory
 from loguru import logger
 
 # Set loguru logger level to INFO
-logger.remove()
-logger.add(sys.stderr, level="INFO")
+configure_logger()
 
 
 def file_to_source_code(file_path: str) -> SourceCode:

@@ -58,7 +58,7 @@ from autocoder.memory.active_context_manager import ActiveContextManager
 from autocoder.common.command_completer import CommandCompleter,FileSystemModel as CCFileSystemModel,MemoryConfig as CCMemoryModel
 from autocoder.common.conf_validator import ConfigValidator
 from autocoder import command_parser as CommandParser
-from loguru import global_logger
+from loguru import logger as global_logger
 from autocoder.utils.project_structure import EnhancedFileAnalyzer
 
 
