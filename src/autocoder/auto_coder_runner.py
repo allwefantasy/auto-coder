@@ -228,25 +228,24 @@ def configure_logger():
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, "auto-coder.log")
 
-    # 配置全局日志输出到文件，不输出到控制台
+    # 配置全局日志
+    # 默认情况下，所有日志都写入文件
+    # 控制台上默认不输出任何日志，除非显式配置
     global_logger.configure(
         handlers=[
-            # 移除控制台输出，只保留文件输出
-            # 文件 Handler
             {
                 "sink": log_file,
                 "level": "INFO",
                 "rotation": "10 MB",
                 "retention": "1 week",
                 "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name} | {message}",
-                "filter": lambda record: record["extra"].get("name") in ["DirectoryMapper", "ActiveContextManager","ActivePackage","AsyncProcessor"]
             },
-            # 控制台 Handler
             {
                 "sink": sys.stdout,
                 "level": "INFO",
                 "format": "{time:YYYY-MM-DD HH:mm:ss} | {name} | {message}",
-                "filter": lambda record: record["extra"].get("name") not in ["DirectoryMapper", "ActiveContextManager","ActivePackage","AsyncProcessor","TokenCostCalculator"]
+                # 默认不打印任何日志到控制台
+                "filter": lambda record: False
             }
         ]
     )
