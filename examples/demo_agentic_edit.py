@@ -183,6 +183,10 @@ try:
             # Print regular LLM output, potentially as markdown
             console.print(event.text, end="") # Less prominent style
         elif isinstance(event, ToolCallEvent):
+            # Skip displaying AttemptCompletionTool's tool call
+            from autocoder.agent.agentic_edit_types import AttemptCompletionTool
+            if isinstance(event.tool, AttemptCompletionTool):
+                continue  # Do not display AttemptCompletionTool tool call
             tool_type = type(event.tool)
             tool_name = tool_type.__name__
             # Check if there's a custom display function for this tool type
@@ -194,6 +198,9 @@ try:
                 syntax = Syntax(event.tool_xml, "xml", theme="default", line_numbers=False)
                 console.print(Panel(syntax, title=f"🛠️ Tool Call: {tool_name}", border_style="blue", title_align="left"))
         elif isinstance(event, ToolResultEvent):
+            # Skip displaying AttemptCompletionTool's result
+            if event.tool_name == "AttemptCompletionTool":
+                continue  # Do not display AttemptCompletionTool result
             result = event.result
             title = f"✅ Tool Result: {event.tool_name}" if result.success else f"❌ Tool Result: {event.tool_name}"
             border_style = "green" if result.success else "red"
