@@ -101,6 +101,10 @@ class ErrorResult(BaseModel):
     success: bool = False
     error: str
 
+class StringResult(BaseModel):
+    success: bool = True
+    result: str
+
 class McpRefreshRequest(BaseModel):
     """Request to refresh MCP server connections"""
     name: Optional[str] = None
@@ -162,4 +166,4 @@ class McpResponse(BaseModel):
     result: str
     error: Optional[str] = None
     raw_result: Optional[Union[InstallResult, MarketplaceAddResult, MarketplaceUpdateResult, RemoveResult,
-                               ListResult, ListRunningResult, RefreshResult, QueryResult, ErrorResult]] = None
+                               ListResult, ListRunningResult, RefreshResult, QueryResult, ErrorResult,StringResult]] = None

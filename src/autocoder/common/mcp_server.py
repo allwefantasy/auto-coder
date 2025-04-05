@@ -15,7 +15,7 @@ from autocoder.common.mcp_server_types import (
     McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, 
     McpListRunningRequest, McpRefreshRequest, McpServerInfoRequest, 
     McpResponse, ServerInfo, InstallResult, RemoveResult, ListResult, 
-    ListRunningResult, RefreshResult, QueryResult, ErrorResult, ServerConfig,
+    ListRunningResult, RefreshResult, QueryResult, ErrorResult, ServerConfig,StringResult,
     ExternalServerInfo, McpExternalServer, MarketplaceAddRequest, MarketplaceAddResult,
     MarketplaceUpdateRequest, MarketplaceUpdateResult
 )
@@ -159,7 +159,7 @@ class McpServer:
                         llm = get_single_llm(request.model, product_mode=request.product_mode)
                         mcp_executor = McpExecutor(hub, llm)
                         result = mcp_executor.get_connected_servers_info()
-                        await self._response_queue.put(McpResponse(result=result, raw_result=result))
+                        await self._response_queue.put(McpResponse(result=result, raw_result=StringResult(result=result)))
                     except Exception as e:
                         import traceback
                         traceback.print_exc()
