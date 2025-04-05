@@ -32,6 +32,9 @@ from rich.console import Console # Added
 from rich.panel import Panel # Added
 from rich.syntax import Syntax # Added
 from rich.markdown import Markdown # Added
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events.event_types import Event, EventType, EventMetadata
+from autocoder.events import event_content as EventContentCreator
 from autocoder.agent.agentic_edit_tools import ( # Import specific resolvers
     BaseToolResolver,
     ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
@@ -976,30 +979,25 @@ class AgenticEdit:
         Runs the agentic edit process, converting internal events to the
         standard event system format and writing them using the event manager.
         """
-        from autocoder.events.event_manager_singleton import get_event_manager
-        from autocoder.events.event_types import Event, EventType, EventMetadata
-        from autocoder.events import event_content as EventContentCreator
+        
 
         event_manager = get_event_manager(self.args.event_file)
         logger.info(f"Starting agentic edit with event output to: {self.args.event_file}")
 
         try:
             event_stream = self.analyze(request)
-            for agent_event in event_stream:
-                event_type = EventType.INFO # Default
+            for agent_event in event_stream:                
                 content = None
-                metadata = EventMetadata(tags=["agentic_edit"])
-
+                metadata = EventMetadata(action_file=self.args.event_file,is_streaming=False)
                 if isinstance(agent_event, LLMThinkingEvent):
-                    event_type = EventType.STREAM
                     content = EventContentCreator.create_stream_thinking(content=agent_event.text)
-                    metadata.tags.append("llm_thinking")
-                elif isinstance(agent_event, LLMOutputEvent):
-                    event_type = EventType.STREAM
+                    metadata.is_streaming = True                    
+                    event_manager.write_stream(content=content.to_dict(), metadata=metadata)
+                elif isinstance(agent_event, LLMOutputEvent):                    
                     content = EventContentCreator.create_stream_content(content=agent_event.text)
-                    metadata.tags.append("llm_output")
-                elif isinstance(agent_event, ToolCallEvent):
-                    event_type = EventType.INFO # Representing tool call initiation
+                    metadata.is_streaming = True
+                    event_manager.write_stream(content=content.to_dict(), metadata=metadata)
+                elif isinstance(agent_event, ToolCallEvent):                    
                     tool_name = type(agent_event.tool).__name__
                     content = EventContentCreator.create_result(
                         content={
@@ -1007,11 +1005,10 @@ class AgenticEdit:
                             "tool_xml": agent_event.tool_xml,
                             "tool_params": agent_event.tool.model_dump()
                         },
-                        metadata={"agent_event_type": "ToolCallEvent"}
-                    )
-                    metadata.tags.extend(["tool_call", tool_name])
-                elif isinstance(agent_event, ToolResultEvent):
-                    event_type = EventType.RESULT
+                        metadata={"path": "/agent/tool/call"}
+                    )                    
+                    event_manager.write_result(content=content.to_dict(), metadata=metadata)
+                elif isinstance(agent_event, ToolResultEvent):                    
                     content = EventContentCreator.create_result(
                         content={
                             "tool_name": agent_event.tool_name,
@@ -1019,45 +1016,34 @@ class AgenticEdit:
                             "message": agent_event.result.message,
                             "result_content": agent_event.result.content
                         },
-                        metadata={"agent_event_type": "ToolResultEvent"}
+                        metadata={"path": "/agent/tool/result"}
                     )
-                    metadata.tags.extend(["tool_result", agent_event.tool_name, "success" if agent_event.result.success else "failure"])
-                elif isinstance(agent_event, CompletionEvent):
-                    event_type = EventType.COMPLETION # Use COMPLETION type
+                    event_manager.write_result(content=content.to_dict(), metadata=metadata)
+                elif isinstance(agent_event, CompletionEvent):                    
                     content = EventContentCreator.create_completion(
                         success_code="AGENT_COMPLETE",
                         success_message="Agent attempted task completion.",
                         result={
                             "completion_result": agent_event.completion.result,
                             "command": agent_event.completion.command
-                        },
-                        metadata={"agent_event_type": "CompletionEvent"}
-                    )
-                    metadata.tags.append("completion")
-                elif isinstance(agent_event, ErrorEvent):
-                    event_type = EventType.ERROR
+                        }                        
+                    )  
+                    event_manager.write_completion(content=content.to_dict())
+                elif isinstance(agent_event, ErrorEvent):                    
                     content = EventContentCreator.create_error(
                         error_code="AGENT_ERROR",
                         error_message=agent_event.message,
                         details={"agent_event_type": "ErrorEvent"}
-                    )
-                    metadata.tags.append("error")
+                    )  
+                    event_manager.write_error(content=content.to_dict())
                 else:
                     logger.warning(f"Unhandled agent event type: {type(agent_event)}")
-                    content = EventContentCreator.create_result(content=str(agent_event), metadata={"agent_event_type": type(agent_event).__name__})
-
-                if content:
-                    event = Event(event_type=event_type, content=content, metadata=metadata)
-                    event_manager.write_event(event)
-
-            # Optionally write a final "agent finished" event
-            final_event = Event(
-                event_type=EventType.INFO,
-                content=EventContentCreator.create_result(content="Agentic edit process finished."),
-                metadata=EventMetadata(tags=["agentic_edit", "finish"])
-            )
-            event_manager.write_event(final_event)
-            logger.info("Agentic edit process finished.")
+                    content = EventContentCreator.create_error(
+                        error_code="AGENT_ERROR",
+                        error_message=f"Unhandled agent event type: {type(agent_event)}",
+                        details={"agent_event_type": type(agent_event).__name__}
+                    )  
+                    event_manager.write_error(content=content.to_dict())                                                                        
 
         except Exception as e:
             logger.exception("An unexpected error occurred during agent execution:")
@@ -1065,13 +1051,8 @@ class AgenticEdit:
                 error_code="AGENT_FATAL_ERROR",
                 error_message=f"An unexpected error occurred: {str(e)}",
                 details={"exception_type": type(e).__name__}
-            )
-            error_event = Event(
-                event_type=EventType.ERROR,
-                content=error_content,
-                metadata=EventMetadata(tags=["agentic_edit", "fatal_error"])
-            )
-            event_manager.write_event(error_event)
+            )            
+            event_manager.write_error(content=error_content.to_dict())
             # Re-raise the exception if needed, or handle appropriately
             # raise e
 
