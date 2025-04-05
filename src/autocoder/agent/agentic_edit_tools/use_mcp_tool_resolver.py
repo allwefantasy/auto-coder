@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
 from autocoder.common import AutoCoderArgs
-from .base_tool_resolver import BaseToolResolver, ToolResult
-from autocoder.agent.agentic_edit_types import UseMcpTool
+from .base_tool_resolver import BaseToolResolver
+from autocoder.agent.agentic_edit_types import UseMcpTool, ToolResult # Import ToolResult from types
 from autocoder.common.mcp_server import get_mcp_server
 from loguru import logger
 

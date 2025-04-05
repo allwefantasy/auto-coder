@@ -2,8 +2,8 @@ import os
 import re
 import glob
 from typing import Dict, Any, Optional
-from .base_tool_resolver import BaseToolResolver, ToolResult
-from autocoder.agent.agentic_edit_types import SearchFilesTool
+from .base_tool_resolver import BaseToolResolver
+from autocoder.agent.agentic_edit_types import SearchFilesTool, ToolResult # Import ToolResult from types
 from loguru import logger
 
 

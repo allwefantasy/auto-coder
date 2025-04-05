@@ -3,6 +3,18 @@ from typing import List, Dict, Any, Callable, Optional, Type
 from pydantic import SkipValidation
 
 
+# Result class used by Tool Resolvers
+class ToolResult:
+    def __init__(self, success: bool, message: str, content: Any = None):
+        self.success = success
+        self.message = message
+        self.content = content # Can store file content, command output, etc.
+
+    def __str__(self):
+        return f"Success: {self.success}, Message: {self.message}"
+
+
+
 # Pydantic Models for Tools
 class BaseTool(BaseModel):
     pass

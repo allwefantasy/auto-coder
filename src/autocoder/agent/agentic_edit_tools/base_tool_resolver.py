@@ -1,16 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
-from autocoder.agent.agentic_edit_types import BaseTool
+from autocoder.agent.agentic_edit_types import BaseTool, ToolResult # Import ToolResult from types
 from autocoder.common import AutoCoderArgs
 
-class ToolResult:
-    def __init__(self, success: bool, message: str, content: Any = None):
-        self.success = success
-        self.message = message
-        self.content = content # Can store file content, command output, etc.
-
-    def __str__(self):
-        return f"Success: {self.success}, Message: {self.message}"
 
 class BaseToolResolver(ABC):
     def __init__(self, agent: Optional[Any], tool: BaseTool, args: AutoCoderArgs):

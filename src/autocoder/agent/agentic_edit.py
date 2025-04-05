@@ -28,13 +28,13 @@ import xml.sax.saxutils
 from typing import Iterator, Union, Type, Generator
 from xml.etree import ElementTree as ET
 from autocoder.agent.agentic_edit_tools import ( # Import specific resolvers
-    BaseToolResolver, ToolResult,
+    BaseToolResolver,
     ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
     ReplaceInFileToolResolver, SearchFilesToolResolver, ListFilesToolResolver,
     ListCodeDefinitionNamesToolResolver, AskFollowupQuestionToolResolver,
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver
 )
-from autocoder.agent.agentic_edit_types import (AgenticEditRequest,                                                
+from autocoder.agent.agentic_edit_types import (AgenticEditRequest, ToolResult, # Import ToolResult from types
                                                 MemoryConfig,
                                                 CommandConfig,
                                                 BaseTool,

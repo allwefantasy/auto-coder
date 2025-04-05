@@ -1,8 +1,8 @@
 import os
 import re
 from typing import Dict, Any, Optional, List, Tuple
-from .base_tool_resolver import BaseToolResolver, ToolResult
-from autocoder.agent.agentic_edit_types import ReplaceInFileTool
+from .base_tool_resolver import BaseToolResolver
+from autocoder.agent.agentic_edit_types import ReplaceInFileTool, ToolResult # Import ToolResult from types
 from loguru import logger
 
 
