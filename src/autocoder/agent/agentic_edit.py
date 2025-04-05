@@ -35,6 +35,7 @@ from rich.markdown import Markdown # Added
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events.event_types import Event, EventType, EventMetadata
 from autocoder.events import event_content as EventContentCreator
+from .agentic_tool_display import get_tool_display_message # Import the new display function
 from autocoder.agent.agentic_edit_tools import ( # Import specific resolvers
     BaseToolResolver,
     ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
@@ -59,7 +60,7 @@ from autocoder.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
                                                 ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
                                                 ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
                                                 AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
-                                                )
+                                                                                                )
 
 
 # Map Pydantic Tool Models to their Resolver Classes
@@ -77,48 +78,7 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     UseMcpTool: UseMcpToolResolver,
 }
 
-
-# --- Tool Display Customization (Moved from demo) ---
-# Map tool types to functions that return a user-friendly string representation
-TOOL_DISPLAY_MAPPING = {
-    ReadFileTool: lambda tool: f"AutoCoder wants to read this file:\n[bold cyan]{tool.path}[/]",
-    WriteToFileTool: lambda tool: (
-        f"AutoCoder wants to write to this file:\n[bold cyan]{tool.path}[/]\n\n"
-        f"[dim]Content Snippet:[/dim]\n{tool.content[:150]}{'...' if len(tool.content)>150 else ''}"
-    ),
-    ReplaceInFileTool: lambda tool: (
-        f"AutoCoder wants to replace content in this file:\n[bold cyan]{tool.path}[/]\n\n"
-        f"[dim]Diff Snippet:[/dim]\n{tool.diff[:200]}{'...' if len(tool.diff)>200 else ''}"
-    ),
-    ExecuteCommandTool: lambda tool: (
-        f"AutoCoder wants to execute this command:\n[bold yellow]{tool.command}[/]\n"
-        f"[dim](Requires Approval: {tool.requires_approval})[/]"
-    ),
-    ListFilesTool: lambda tool: (
-        f"AutoCoder wants to list files in:\n[bold green]{tool.path}[/] "
-        f"{'(Recursively)' if tool.recursive else '(Top Level)'}"
-    ),
-    SearchFilesTool: lambda tool: (
-        f"AutoCoder wants to search files in:\n[bold green]{tool.path}[/]\n"
-        f"[dim]File Pattern:[/dim] [yellow]{tool.file_pattern or '*'}[/]\n"
-        f"[dim]Regex:[/dim] [yellow]{tool.regex}[/]"
-    ),
-    ListCodeDefinitionNamesTool: lambda tool: (
-        f"AutoCoder wants to list definitions in:\n[bold green]{tool.path}[/]"
-    ),
-    AskFollowupQuestionTool: lambda tool: (
-        f"AutoCoder is asking a question:\n[bold magenta]{tool.question}[/]\n"
-        + (("[dim]Options:[/dim]\n" + "\n".join([f"- {opt}" for opt in tool.options])) if tool.options else "")
-    ),
-    UseMcpTool: lambda tool: (
-        f"AutoCoder wants to use an MCP tool:\n"
-        f"[dim]Server:[/dim] [blue]{tool.server_name}[/]\n"
-        f"[dim]Tool:[/dim] [blue]{tool.tool_name}[/]\n"
-        f"[dim]Args:[/dim] {str(tool.arguments)[:100]}{'...' if len(str(tool.arguments)) > 100 else ''}"
-    ),
-    # AttemptCompletionTool is handled separately in the display loop
-}
-# --- End Tool Display Customization ---
+# --- Tool Display Customization is now handled by agentic_tool_display.py ---
 
 
 class AgenticEdit:
@@ -1081,17 +1041,10 @@ class AgenticEdit:
                     if isinstance(event.tool, AttemptCompletionTool):
                         continue # Do not display AttemptCompletionTool tool call
 
-                    tool_type = type(event.tool)
-                    tool_name = tool_type.__name__
-
-                    # Check if there's a custom display function for this tool type
-                    if tool_type in TOOL_DISPLAY_MAPPING:
-                        display_content = TOOL_DISPLAY_MAPPING[tool_type](event.tool)
-                        console.print(Panel(display_content, title=f"🛠️ Action: {tool_name}", border_style="blue", title_align="left"))
-                    else:
-                        # Fallback to showing the raw XML for unmapped tools
-                        syntax = Syntax(event.tool_xml, "xml", theme="default", line_numbers=False)
-                        console.print(Panel(syntax, title=f"🛠️ Tool Call: {tool_name}", border_style="blue", title_align="left"))
+                    tool_name = type(event.tool).__name__
+                    # Use the new internationalized display function
+                    display_content = get_tool_display_message(event.tool)
+                    console.print(Panel(display_content, title=f"🛠️ Action: {tool_name}", border_style="blue", title_align="left"))
 
                 elif isinstance(event, ToolResultEvent):
                     # Skip displaying AttemptCompletionTool's result

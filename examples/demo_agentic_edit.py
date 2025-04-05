@@ -18,10 +18,11 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.markdown import Markdown
+from rich.markdown import Markdown
 
 configure_logger()
 
-# --- Tool Display Customization is now moved inside AgenticEdit class ---
+# --- Tool Display Customization is now handled by autocoder.agent.agentic_tool_display ---
 
 def file_to_source_code(file_path: str) -> SourceCode:
     """Converts a file to a SourceCode object."""
