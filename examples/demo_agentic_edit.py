@@ -196,7 +196,7 @@ try:
             else:
                 # Fallback to showing the raw XML for unmapped tools
                 syntax = Syntax(event.tool_xml, "xml", theme="default", line_numbers=False)
-                console.print(Panel(syntax, title=f"🛠️ Tool Call: {tool_name}", border_style="blue", title_align="left"))
+                console.print(Panel(syntax, title=f"🛠️ Tool Call: {tool_name}", border_style="blue", title_align="left"))                
         elif isinstance(event, ToolResultEvent):
             # Skip displaying AttemptCompletionTool's result
             if event.tool_name == "AttemptCompletionTool":
@@ -236,10 +236,9 @@ try:
             console.print(Panel(content, title=title, border_style=border_style, title_align="left"))
 
         elif isinstance(event, CompletionEvent):
-            syntax = Syntax(event.completion_xml, "xml", theme="default", line_numbers=False)
-            console.print(Panel(syntax, title="🏁 Attempt Completion", border_style="green", title_align="left"))
-            # Optionally print the result text from the completion object
-            console.print(Panel(f"[bold]Final Result:[/bold]\n{event.completion.result}", title="Summary", border_style="green"))
+            # syntax = Syntax(event.completion_xml, "xml", theme="default", line_numbers=False)
+            console.print(Panel(Markdown(event.completion.result), title="🏁 Task Completion", border_style="green", title_align="left"))            
+            # console.print(Panel(f"{event.completion.result}", title="Summary", border_style="green"))
             if event.completion.command:
                 console.print(f"[dim]Suggested command:[/dim] [bold cyan]{event.completion.command}[/]")
         elif isinstance(event, ErrorEvent):
