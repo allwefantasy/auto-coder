@@ -1,17 +1,15 @@
 import subprocess
 import os
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, Optional
 from .base_tool_resolver import BaseToolResolver, ToolResult
-from autocoder.agent.agentic_edit import ExecuteCommandTool
+from autocoder.agent.agentic_edit_types import ExecuteCommandTool
 from autocoder.common import shells
 from autocoder.common.printer import Printer
 from loguru import logger
 
-if TYPE_CHECKING:
-    from autocoder.auto_coder import AutoCoder
 
 class ExecuteCommandToolResolver(BaseToolResolver):
-    def __init__(self, agent: 'AutoCoder', tool: ExecuteCommandTool, args: Dict[str, Any]):
+    def __init__(self, agent: Optional[Any], tool: ExecuteCommandTool, args: Dict[str, Any]):
         super().__init__(agent, tool, args)
         self.tool: ExecuteCommandTool = tool # For type hinting
 

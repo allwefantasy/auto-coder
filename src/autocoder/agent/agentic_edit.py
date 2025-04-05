@@ -35,143 +35,23 @@ from typing import Iterator, Union, Type, Generator
 from xml.etree import ElementTree as ET
 from autocoder.common.stream_out_type import AgenticFilterStreamOutType
 from autocoder.common import SourceCodeList
-
-
-# Pydantic Models for Tools
-class BaseTool(BaseModel):
-    pass
-
-class ExecuteCommandTool(BaseTool):
-    command: str
-    requires_approval: bool
-
-class ReadFileTool(BaseTool):
-    path: str
-
-class WriteToFileTool(BaseTool):
-    path: str
-    content: str
-
-class ReplaceInFileTool(BaseTool):
-    path: str
-    diff: str
-
-class SearchFilesTool(BaseTool):
-    path: str
-    regex: str
-    file_pattern: Optional[str] = None
-
-class ListFilesTool(BaseTool):
-    path: str
-    recursive: Optional[bool] = False
-
-class ListCodeDefinitionNamesTool(BaseTool):
-    path: str
-
-class AskFollowupQuestionTool(BaseTool):
-    question: str
-    options: Optional[List[str]] = None
-
-class AttemptCompletionTool(BaseTool):
-    result: str
-    command: Optional[str] = None
-
-class PlanModeRespondTool(BaseTool):
-    response: str
-    options: Optional[List[str]] = None
-
-class UseMcpTool(BaseTool):
-    server_name: str
-    tool_name: str
-    arguments: Dict[str, Any]
-
-class PlainTextOutput(BaseModel):
-    text: str
-
-
-# Mapping from tool tag names to Pydantic models
-TOOL_MODEL_MAP: Dict[str, Type[BaseTool]] = {
-    "execute_command": ExecuteCommandTool,
-    "read_file": ReadFileTool,
-    "write_to_file": WriteToFileTool,
-    "replace_in_file": ReplaceInFileTool,
-    "search_files": SearchFilesTool,
-    "list_files": ListFilesTool,
-    "list_code_definition_names": ListCodeDefinitionNamesTool,
-    "ask_followup_question": AskFollowupQuestionTool,
-    "attempt_completion": AttemptCompletionTool,
-    "plan_mode_respond": PlanModeRespondTool,
-    "use_mcp_tool": UseMcpTool,
-}
-
-
-class AgenticFilterRequest(BaseModel):
-    user_input: str
-
-
-class FileOperation(BaseModel):
-    path: str
-    operation: str  # e.g., "MODIFY", "REFERENCE", "ADD", "REMOVE"
-
-
-class AgenticFilterResponse(BaseModel):
-    files: List[FileOperation]  # 文件列表，包含path和operation字段
-    reasoning: str  # 决策过程说明
-
-
-class CommandSuggestion(BaseModel):
-    command: str
-    parameters: Dict[str, Any]
-    confidence: float
-    reasoning: str
-
-
-class AutoCommandResponse(BaseModel):
-    suggestions: List[CommandSuggestion]
-    reasoning: Optional[str] = None
-
-
-class AutoCommandRequest(BaseModel):
-    user_input: str
-
-
-class MemoryConfig(BaseModel):
-    """
-    A model to encapsulate memory configuration and operations.
-    """
-
-    memory: Dict[str, Any]
-    save_memory_func: SkipValidation[Callable]
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-class CommandConfig(BaseModel):
-    coding: SkipValidation[Callable]
-    chat: SkipValidation[Callable]
-    add_files: SkipValidation[Callable]
-    remove_files: SkipValidation[Callable]
-    index_build: SkipValidation[Callable]
-    index_query: SkipValidation[Callable]
-    list_files: SkipValidation[Callable]
-    ask: SkipValidation[Callable]
-    revert: SkipValidation[Callable]
-    commit: SkipValidation[Callable]
-    help: SkipValidation[Callable]
-    exclude_dirs: SkipValidation[Callable]
-    summon: SkipValidation[Callable]
-    design: SkipValidation[Callable]
-    mcp: SkipValidation[Callable]
-    models: SkipValidation[Callable]
-    lib: SkipValidation[Callable]
-    execute_shell_command: SkipValidation[Callable]
-    generate_shell_command: SkipValidation[Callable]
-    conf_export: SkipValidation[Callable]
-    conf_import: SkipValidation[Callable]
-    index_export: SkipValidation[Callable]
-    index_import: SkipValidation[Callable]
-    exclude_files: SkipValidation[Callable]
+from autocoder.agent.agentic_edit_types import (AgenticFilterRequest,
+                                                AgenticFilterResponse,
+                                                MemoryConfig,
+                                                CommandConfig,
+                                                BaseTool,
+                                                PlainTextOutput,
+                                                ExecuteCommandTool,
+                                                ReadFileTool,
+                                                WriteToFileTool,
+                                                ReplaceInFileTool,
+                                                SearchFilesTool,
+                                                ListFilesTool,
+                                                ListCodeDefinitionNamesTool,
+                                                AskFollowupQuestionTool,
+                                                AttemptCompletionTool,
+                                                PlanModeRespondTool,
+                                                UseMcpTool,TOOL_MODEL_MAP)
 
 
 class AgenticEdit:
@@ -195,7 +75,8 @@ class AgenticEdit:
         self.conversation_history = conversation_history
         self.memory_config = memory_config
         self.command_config = command_config
-        self.project_type_analyzer = ProjectTypeAnalyzer(args=args, llm=self.llm)
+        self.project_type_analyzer = ProjectTypeAnalyzer(
+            args=args, llm=self.llm)
         try:
             self.mcp_server = get_mcp_server()
             mcp_server_info_response = self.mcp_server.send_request(
@@ -213,9 +94,9 @@ class AgenticEdit:
     def _analyze(self, request: AgenticFilterRequest) -> str:
         """        
         You are a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
-        
+
         ====
-        
+
         FILES
 
         The following files are provided to you as context for the user's task. You can use these files to understand the project structure and codebase, and to make informed decisions about which files to modify.
@@ -464,7 +345,7 @@ class AgenticEdit:
         >>>>>>> REPLACE
         </diff>
         </replace_in_file>
-       
+
         ## Example 4: Another example of using an MCP tool (where the server name is a unique identifier such as a URL)
 
         <use_mcp_tool>
@@ -504,7 +385,7 @@ class AgenticEdit:
         4. Ensure that each action builds correctly on the previous ones.
 
         By waiting for and carefully considering the user's response after each tool use, you can react accordingly and make informed decisions about how to proceed with the task. This iterative process helps ensure the overall success and accuracy of your work.
-        
+
         ====
 
         EDITING FILES
@@ -581,7 +462,7 @@ class AgenticEdit:
         By thoughtfully selecting between write_to_file and replace_in_file, you can make your file editing process smoother, safer, and more efficient.
 
         ====
-        
+
         ACT MODE V.S. PLAN MODE
 
         In each user message, the environment_details will specify the current mode. There are two modes:
@@ -602,7 +483,7 @@ class AgenticEdit:
         - Finally once it seems like you've reached a good plan, ask the user to switch you back to ACT MODE to implement the solution.
 
         ====
-        
+
         CAPABILITIES
 
         - You have access to tools that let you execute CLI commands on the user's computer, list files, view source code definitions, regex search${
@@ -668,22 +549,21 @@ class AgenticEdit:
             shell_type = "cmd"
         elif shells.is_running_in_powershell():
             shell_type = "powershell"
-        return {            
+        return {
             "current_files": self.memory_config.memory["current_files"]["files"],
-            "conversation_history": self.conversation_history,            
+            "conversation_history": self.conversation_history,
             "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),
             "env_info": env_info,
             "shell_type": shell_type,
             "shell_encoding": shells.get_terminal_encoding(),
             "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens,
             "os_distribution": shells.get_os_distribution(),
-            "current_user": shells.get_current_username(),            
+            "current_user": shells.get_current_username(),
             "current_project": os.path.abspath(self.args.source_dir),
             "home_dir": os.path.expanduser("~"),
             "files": self.files.to_str(),
             "mcp_server_info": self.mcp_server_info,
         }
-    
 
     @byzerllm.prompt()
     def _execute_command_result(self, result: str) -> str:
@@ -718,7 +598,6 @@ class AgenticEdit:
             "conversation_safe_zone_tokens": self.args.conversation_prune_safe_zone_tokens,
         }
 
-
     def analyze(self, request: AgenticFilterRequest) -> Optional[AgenticFilterResponse]:
         # 获取 prompt 内容
         prompt = self._analyze.prompt(request)
@@ -728,7 +607,7 @@ class AgenticEdit:
         action_yml_file_manager = ActionYmlFileManager(self.args.source_dir)
         history_tasks = action_yml_file_manager.to_tasks_prompt(limit=8)
         new_messages = []
-                
+
         if self.args.enable_task_history:
             new_messages.append({"role": "user", "content": history_tasks})
             new_messages.append(
@@ -770,9 +649,10 @@ class AgenticEdit:
         success_flag = False
 
         get_event_manager(self.args.event_file).write_result(
-            EventContentCreator.create_result(content=printer.get_message_from_key("agenticFilterContext")),
+            EventContentCreator.create_result(
+                content=printer.get_message_from_key("agenticFilterContext")),
             metadata={
-                "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
+                "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value
             }
         )
 
@@ -782,14 +662,15 @@ class AgenticEdit:
             model_name = ",".join(llms_utils.get_llm_names(self.llm))
             start_time = time.monotonic()
             result, last_meta = stream_out(
-                self.llm.stream_chat_oai(conversations=conversations, delta_mode=True),
+                self.llm.stream_chat_oai(
+                    conversations=conversations, delta_mode=True),
                 model_name=model_name,
                 title=title,
                 final_title=final_title,
                 display_func=extract_command_response,
                 args=self.args,
                 extra_meta={
-                    "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
+                    "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value
                 },
             )
 
@@ -801,9 +682,11 @@ class AgenticEdit:
                 from autocoder.utils import llms as llm_utils
 
                 model_info = (
-                    llm_utils.get_model_info(model_name, self.args.product_mode) or {}
+                    llm_utils.get_model_info(
+                        model_name, self.args.product_mode) or {}
                 )
-                input_price = model_info.get("input_price", 0.0) if model_info else 0.0
+                input_price = model_info.get(
+                    "input_price", 0.0) if model_info else 0.0
                 output_price = (
                     model_info.get("output_price", 0.0) if model_info else 0.0
                 )
@@ -865,15 +748,16 @@ class AgenticEdit:
                     content=EventContentCreator.ResultCommandPrepareStatContent(
                         command=command, parameters=parameters
                     ).to_dict()
-                ),metadata={
-                    "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
+                ), metadata={
+                    "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value
                 }
             )
             try:
                 self.execute_auto_command(command, parameters)
             except Exception as e:
                 error_content = f"执行命令失败，错误信息：{e}"
-                conversations.append({"role": "user", "content": error_content})
+                conversations.append(
+                    {"role": "user", "content": error_content})
                 continue
 
             content = ""
@@ -890,7 +774,8 @@ class AgenticEdit:
                             if change:
                                 content += f"## File: {file_path}[更改前]\n{change.before or 'New File'}\n\nFile: {file_path}\n\n[更改后]\n{change.after or 'Deleted File'}\n\n"
                     else:
-                        content = printer.get_message_from_key("no_changes_made")
+                        content = printer.get_message_from_key(
+                            "no_changes_made")
                 else:
                     # 其他的直接获取执行结果
                     content = last_result.content
@@ -902,9 +787,10 @@ class AgenticEdit:
                     )
                     printer.print_str_in_terminal(temp_content, style="yellow")
                     get_event_manager(self.args.event_file).write_result(
-                        EventContentCreator.create_result(content=temp_content),
+                        EventContentCreator.create_result(
+                            content=temp_content),
                         metadata={
-                            "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
+                            "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value
                         }
                     )
                     break
@@ -919,7 +805,7 @@ class AgenticEdit:
                             command=command, content=content
                         ).to_dict(),
                         metadata={
-                            "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
+                            "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value
                         }
                     )
                 )
@@ -973,17 +859,18 @@ class AgenticEdit:
                 get_event_manager(self.args.event_file).write_result(
                     EventContentCreator.create_result(content=temp_content),
                     metadata={
-                        "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
+                        "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value
                     }
                 )
                 break
 
         get_event_manager(self.args.event_file).write_result(
-            EventContentCreator.create_result(content=printer.get_message_from_key("agenticFilterCommandResult")),
+            EventContentCreator.create_result(
+                content=printer.get_message_from_key("agenticFilterCommandResult")),
             metadata={
-                "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value                    
+                "stream_out_type": AgenticFilterStreamOutType.AGENTIC_FILTER.value
             }
-        )    
+        )
 
         if success_flag:
             to_model(content, AgenticFilterResponse)
@@ -1068,14 +955,16 @@ class AgenticEdit:
                     match = tool_start_pattern.search(buffer)
                     if match:
                         tool_name = match.group(1)
-                        logger.debug(f"Potential tool start tag found: '{tool_name}' at index {match.start()}")
+                        logger.debug(
+                            f"Potential tool start tag found: '{tool_name}' at index {match.start()}")
                         if tool_name in TOOL_MODEL_MAP:
                             start_index = match.start()
                             # Yield any preceding plain text
                             preceding_text = buffer[:start_index]
                             if preceding_text:
                                 plain_text_buffer += preceding_text
-                                logger.debug(f"Yielding preceding plain text: '{plain_text_buffer}'")
+                                logger.debug(
+                                    f"Yielding preceding plain text: '{plain_text_buffer}'")
                                 yield PlainTextOutput(text=plain_text_buffer)
                                 plain_text_buffer = ""
 
@@ -1083,45 +972,54 @@ class AgenticEdit:
                             buffer = buffer[start_index:]
                             in_tool_block = True
                             current_tool_tag = tool_name
-                            logger.debug(f"Entering tool block: '{current_tool_tag}', Buffer: '{buffer}'")
+                            logger.debug(
+                                f"Entering tool block: '{current_tool_tag}', Buffer: '{buffer}'")
                             # Continue loop to check for end tag immediately
                         else:
                             # Not a recognized tool tag, treat up to the end of the match as plain text
                             plain_text_buffer += buffer[:match.end()]
                             buffer = buffer[match.end():]
-                            logger.debug(f"Tag '{tool_name}' not in TOOL_MODEL_MAP. Treating as plain text. Buffer: '{buffer}'")
+                            logger.debug(
+                                f"Tag '{tool_name}' not in TOOL_MODEL_MAP. Treating as plain text. Buffer: '{buffer}'")
                             # Continue loop to search for next potential tag in the remaining buffer
 
                     else:
                         # No tool start tag found in the current buffer
                         # Keep the last part of the buffer in case a tag spans chunks
-                        split_point = max(0, len(buffer) - 50) # Keep last 50 chars as a safety margin
+                        # Keep last 50 chars as a safety margin
+                        split_point = max(0, len(buffer) - 50)
                         plain_text_buffer += buffer[:split_point]
                         buffer = buffer[split_point:]
-                        logger.debug(f"No tool start tag found. Accumulating plain text. Buffer: '{buffer}'")
-                        break # Need more chunks
+                        logger.debug(
+                            f"No tool start tag found. Accumulating plain text. Buffer: '{buffer}'")
+                        break  # Need more chunks
 
                 if in_tool_block:
                     # Try to find the end of the current tool block
                     end_tag = f"</{current_tool_tag}>"
                     end_index = buffer.find(end_tag)
-                    logger.debug(f"Searching for end tag: '{end_tag}' in Buffer: '{buffer}'")
+                    logger.debug(
+                        f"Searching for end tag: '{end_tag}' in Buffer: '{buffer}'")
 
                     if end_index != -1:
                         tool_block_end_index = end_index + len(end_tag)
                         tool_xml = buffer[:tool_block_end_index]
-                        buffer = buffer[tool_block_end_index:] # Consume the tool block
-                        logger.debug(f"Found end tag. Tool XML: '{tool_xml}', Remaining Buffer: '{buffer}'")
+                        # Consume the tool block
+                        buffer = buffer[tool_block_end_index:]
+                        logger.debug(
+                            f"Found end tag. Tool XML: '{tool_xml}', Remaining Buffer: '{buffer}'")
 
                         try:
                             # Parse the XML-like tool block
                             # Ensure the root tag matches the expected tool tag
                             if not tool_xml.startswith(f"<{current_tool_tag}>"):
-                                raise ET.ParseError("Root tag mismatch or malformed XML start.")
+                                raise ET.ParseError(
+                                    "Root tag mismatch or malformed XML start.")
 
                             root = ET.fromstring(tool_xml)
                             if root.tag != current_tool_tag:
-                                raise ET.ParseError(f"Root tag '{root.tag}' does not match expected '{current_tool_tag}'")
+                                raise ET.ParseError(
+                                    f"Root tag '{root.tag}' does not match expected '{current_tool_tag}'")
 
                             params = {}
                             # Handle multi-line content within tags correctly
@@ -1131,19 +1029,23 @@ class AgenticEdit:
                                 # if child.tail and child.tail.strip():
                                 #     params[child.tag] += child.tail.strip() # Append tail text if relevant
 
-                            logger.debug(f"Parsing tool '{current_tool_tag}' with params: {params}")
+                            logger.debug(
+                                f"Parsing tool '{current_tool_tag}' with params: {params}")
                             tool_model = TOOL_MODEL_MAP[current_tool_tag]
                             yield tool_model(**params)
-                            logger.debug(f"Yielded tool model: {current_tool_tag}")
+                            logger.debug(
+                                f"Yielded tool model: {current_tool_tag}")
 
                         except ET.ParseError as e:
-                            logger.error(f"Failed to parse tool XML: {tool_xml}. Error: {e}")
+                            logger.error(
+                                f"Failed to parse tool XML: {tool_xml}. Error: {e}")
                             # Fallback: yield the block as plain text
                             yield PlainTextOutput(text=tool_xml)
                         except Exception as e:
-                             logger.error(f"Failed to instantiate/validate tool model {current_tool_tag} with params: {params}. Error: {e}")
-                             # Fallback: yield the block as plain text
-                             yield PlainTextOutput(text=tool_xml)
+                            logger.error(
+                                f"Failed to instantiate/validate tool model {current_tool_tag} with params: {params}. Error: {e}")
+                            # Fallback: yield the block as plain text
+                            yield PlainTextOutput(text=tool_xml)
 
                         in_tool_block = False
                         current_tool_tag = None
@@ -1151,17 +1053,20 @@ class AgenticEdit:
                     else:
                         # End tag not found yet, need more chunks
                         logger.debug("End tag not found yet, need more data.")
-                        break # Break the inner loop to get the next chunk
+                        break  # Break the inner loop to get the next chunk
 
         # After the generator is exhausted, yield any remaining plain text
         if plain_text_buffer:
-             logger.debug(f"Yielding final accumulated plain text: '{plain_text_buffer}'")
-             yield PlainTextOutput(text=plain_text_buffer)
+            logger.debug(
+                f"Yielding final accumulated plain text: '{plain_text_buffer}'")
+            yield PlainTextOutput(text=plain_text_buffer)
         # Yield remaining buffer content if it wasn't part of an incomplete tool block
         if buffer and not in_tool_block:
-            logger.debug(f"Yielding final remaining buffer content: '{buffer}'")
+            logger.debug(
+                f"Yielding final remaining buffer content: '{buffer}'")
             yield PlainTextOutput(text=buffer)
         elif buffer and in_tool_block:
-             logger.warning(f"Stream ended with incomplete tool block for '{current_tool_tag}': '{buffer}'")
-             # Optionally yield the incomplete block as text
-             yield PlainTextOutput(text=buffer)
+            logger.warning(
+                f"Stream ended with incomplete tool block for '{current_tool_tag}': '{buffer}'")
+            # Optionally yield the incomplete block as text
+            yield PlainTextOutput(text=buffer)

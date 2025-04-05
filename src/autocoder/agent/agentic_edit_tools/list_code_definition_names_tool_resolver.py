@@ -1,19 +1,34 @@
 import os
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, Optional
 from .base_tool_resolver import BaseToolResolver, ToolResult
-from autocoder.agent.agentic_edit import ListCodeDefinitionNamesTool
-from autocoder.indexer.repo_parser import RepoParser # Assuming RepoParser can handle this
+from autocoder.agent.agentic_edit_types import ListCodeDefinitionNamesTool
+import json
+from autocoder.index.index import IndexManager
 from loguru import logger
+import traceback
+from autocoder.index.symbols_utils import (
+    extract_symbols,
+    SymbolType,
+    symbols_info_to_str,
+)
 
-if TYPE_CHECKING:
-    from autocoder.auto_coder import AutoCoder
 
 class ListCodeDefinitionNamesToolResolver(BaseToolResolver):
-    def __init__(self, agent: 'AutoCoder', tool: ListCodeDefinitionNamesTool, args: Dict[str, Any]):
+    def __init__(self, agent: Optional[Any], tool: ListCodeDefinitionNamesTool, args: Dict[str, Any]):
         super().__init__(agent, tool, args)
         self.tool: ListCodeDefinitionNamesTool = tool # For type hinting
 
+    def _get_index(self):
+        sources = self._get_sources()
+        index_manager = IndexManager(
+            llm=self.llm, sources=sources, args=self.args)
+        return index_manager
+    
     def resolve(self) -> ToolResult:
+
+        index_items = self._get_index().read_index()
+        index_data = {item.module_name: item for item in index_items}
+
         target_path_str = self.tool.path
         source_dir = self.args.get("source_dir", ".")
         absolute_target_path = os.path.abspath(os.path.join(source_dir, target_path_str))
@@ -23,40 +38,32 @@ class ListCodeDefinitionNamesToolResolver(BaseToolResolver):
             return ToolResult(success=False, message=f"Error: Access denied. Attempted to analyze code outside the project directory: {target_path_str}")
 
         if not os.path.exists(absolute_target_path):
-            return ToolResult(success=False, message=f"Error: Path not found: {target_path_str}")
-        # Allow analyzing single file or directory
-        # if not os.path.isdir(absolute_target_path):
-        #      return ToolResult(success=False, message=f"Error: Path is not a directory: {target_path_str}")
-
+            return ToolResult(success=False, message=f"Error: Path not found: {target_path_str}")        
 
         try:
             # Use RepoParser or a similar mechanism to extract definitions
             # RepoParser might need adjustments or a specific method for this tool's purpose.
             # This is a placeholder implementation. A real implementation needs robust code parsing.
-            logger.info(f"Analyzing definitions in: {absolute_target_path}")
-
-            # Simplified example: Use RepoParser to get symbols from files in the target path
-            parser = RepoParser(base_dir=source_dir, target_dir=absolute_target_path) # Pass target_dir if RepoParser supports it
+            logger.info(f"Analyzing definitions in: {absolute_target_path}")                        
             all_symbols = []
-
-            if os.path.isdir(absolute_target_path):
-                file_paths = parser.get_file_list(absolute_target_path) # Get files within the target dir
-            elif os.path.isfile(absolute_target_path):
+            
+            if os.path.isfile(absolute_target_path):
                 file_paths = [absolute_target_path]
             else:
                  return ToolResult(success=False, message=f"Error: Path is neither a file nor a directory: {target_path_str}")
 
-            for file_path in file_paths:
-                 relative_path = os.path.relpath(file_path, source_dir)
-                 try:
-                     symbols = parser.extract_symbols(file_path)
-                     if symbols:
-                         all_symbols.append({
-                             "path": relative_path,
-                             "definitions": [{"name": s.name, "type": s.kind.name} for s in symbols] # Example structure
-                         })
-                 except Exception as e:
-                     logger.warning(f"Could not parse symbols from {relative_path}: {e}")
+            for file_path in file_paths:                
+                try:
+                    item = index_data[file_path]
+                    symbols_str = item.symbols            
+                    symbols = extract_symbols(symbols_str)
+                    if symbols:
+                        all_symbols.append({
+                            "path": file_path,
+                            "definitions": [{"name": s, "type": "function"} for s in symbols.functions]  +  [{"name": s, "type": "variable"} for s in symbols.variables] + [{"name": s, "type": "class"} for s in symbols.classes]
+                        })
+                except Exception as e:
+                    logger.warning(f"Could not parse symbols from {file_path}: {e}")
 
 
             message = f"Successfully extracted {sum(len(s['definitions']) for s in all_symbols)} definitions from {len(all_symbols)} files in '{target_path_str}'."

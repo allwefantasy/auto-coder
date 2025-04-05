@@ -1,14 +1,12 @@
-from typing import Dict, Any, TYPE_CHECKING
+from typing import Dict, Any, Optional
 from .base_tool_resolver import BaseToolResolver, ToolResult
-from autocoder.agent.agentic_edit import UseMcpTool
+from autocoder.agent.agentic_edit_types import UseMcpTool
 from autocoder.common.mcp_server import get_mcp_server, McpExecuteToolRequest, McpExecuteToolResponse # Assuming these exist
 from loguru import logger
 
-if TYPE_CHECKING:
-    from autocoder.auto_coder import AutoCoder
 
 class UseMcpToolResolver(BaseToolResolver):
-    def __init__(self, agent: 'AutoCoder', tool: UseMcpTool, args: Dict[str, Any]):
+    def __init__(self, agent: Optional[Any], tool: UseMcpTool, args: Dict[str, Any]):
         super().__init__(agent, tool, args)
         self.tool: UseMcpTool = tool # For type hinting
 

@@ -1,16 +1,14 @@
 import os
 import re
 import glob
-from typing import Dict, Any, TYPE_CHECKING, List
+from typing import Dict, Any, Optional
 from .base_tool_resolver import BaseToolResolver, ToolResult
-from autocoder.agent.agentic_edit import SearchFilesTool
+from autocoder.agent.agentic_edit_types import SearchFilesTool
 from loguru import logger
 
-if TYPE_CHECKING:
-    from autocoder.auto_coder import AutoCoder
 
 class SearchFilesToolResolver(BaseToolResolver):
-    def __init__(self, agent: 'AutoCoder', tool: SearchFilesTool, args: Dict[str, Any]):
+    def __init__(self, agent: Optional[Any], tool: SearchFilesTool, args: Dict[str, Any]):
         super().__init__(agent, tool, args)
         self.tool: SearchFilesTool = tool # For type hinting
 
