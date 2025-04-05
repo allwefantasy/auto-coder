@@ -18,8 +18,56 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.syntax import Syntax
 from rich.markdown import Markdown
+from autocoder.agent.agentic_edit_types import (
+    ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
+    ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
+    AskFollowupQuestionTool, UseMcpTool # Import specific tool types
+)
 
-configure_logger() 
+
+configure_logger()
+
+# --- Tool Display Customization ---
+# Map tool types to functions that return a user-friendly string representation
+TOOL_DISPLAY_MAPPING = {
+    ReadFileTool: lambda tool: f"AutoCoder wants to read this file:\n[bold cyan]{tool.path}[/]",
+    WriteToFileTool: lambda tool: (
+        f"AutoCoder wants to write to this file:\n[bold cyan]{tool.path}[/]\n\n"
+        f"[dim]Content Snippet:[/dim]\n{tool.content[:150]}{'...' if len(tool.content)>150 else ''}"
+    ),
+    ReplaceInFileTool: lambda tool: (
+        f"AutoCoder wants to replace content in this file:\n[bold cyan]{tool.path}[/]\n\n"
+        f"[dim]Diff Snippet:[/dim]\n{tool.diff[:200]}{'...' if len(tool.diff)>200 else ''}"
+    ),
+    ExecuteCommandTool: lambda tool: (
+        f"AutoCoder wants to execute this command:\n[bold yellow]{tool.command}[/]\n"
+        f"[dim](Requires Approval: {tool.requires_approval})[/]"
+    ),
+    ListFilesTool: lambda tool: (
+        f"AutoCoder wants to list files in:\n[bold green]{tool.path}[/] "
+        f"{'(Recursively)' if tool.recursive else '(Top Level)'}"
+    ),
+    SearchFilesTool: lambda tool: (
+        f"AutoCoder wants to search files in:\n[bold green]{tool.path}[/]\n"
+        f"[dim]File Pattern:[/dim] [yellow]{tool.file_pattern or '*'}[/]\n"
+        f"[dim]Regex:[/dim] [yellow]{tool.regex}[/]"
+    ),
+    ListCodeDefinitionNamesTool: lambda tool: (
+        f"AutoCoder wants to list definitions in:\n[bold green]{tool.path}[/]"
+    ),
+    AskFollowupQuestionTool: lambda tool: (
+        f"AutoCoder is asking a question:\n[bold magenta]{tool.question}[/]\n"
+        f"{'[dim]Options:[/dim]\n' + '\n'.join([f'- {opt}' for opt in tool.options]) if tool.options else ''}"
+    ),
+    UseMcpTool: lambda tool: (
+        f"AutoCoder wants to use an MCP tool:\n"
+        f"[dim]Server:[/dim] [blue]{tool.server_name}[/]\n"
+        f"[dim]Tool:[/dim] [blue]{tool.tool_name}[/]\n"
+        f"[dim]Args:[/dim] {str(tool.arguments)[:100]}{'...' if len(str(tool.arguments)) > 100 else ''}"
+    ),
+    # Add other tools here if needed
+}
+# --- End Tool Display Customization ---
 
 def file_to_source_code(file_path: str) -> SourceCode:
     """Converts a file to a SourceCode object."""
@@ -130,14 +178,21 @@ try:
     event_stream = agentic_editor.analyze(request)
     for event in event_stream:
         if isinstance(event, LLMThinkingEvent):
-            console.print(event.text,end="")
+            console.print(event.text, end="")
         elif isinstance(event, LLMOutputEvent):
             # Print regular LLM output, potentially as markdown
             console.print(event.text, end="") # Less prominent style
         elif isinstance(event, ToolCallEvent):
-            # Display the tool call XML using Syntax highlighting
-            syntax = Syntax(event.tool_xml, "xml", theme="default", line_numbers=False)
-            console.print(Panel(syntax, title=f"🛠️ Tool Call: {type(event.tool).__name__}", border_style="blue", title_align="left"))
+            tool_type = type(event.tool)
+            tool_name = tool_type.__name__
+            # Check if there's a custom display function for this tool type
+            if tool_type in TOOL_DISPLAY_MAPPING:
+                display_content = TOOL_DISPLAY_MAPPING[tool_type](event.tool)
+                console.print(Panel(display_content, title=f"🛠️ Action: {tool_name}", border_style="blue", title_align="left"))
+            else:
+                # Fallback to showing the raw XML for unmapped tools
+                syntax = Syntax(event.tool_xml, "xml", theme="default", line_numbers=False)
+                console.print(Panel(syntax, title=f"🛠️ Tool Call: {tool_name}", border_style="blue", title_align="left"))
         elif isinstance(event, ToolResultEvent):
             result = event.result
             title = f"✅ Tool Result: {event.tool_name}" if result.success else f"❌ Tool Result: {event.tool_name}"
