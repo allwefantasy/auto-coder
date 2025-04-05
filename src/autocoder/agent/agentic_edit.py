@@ -762,7 +762,7 @@ class AgenticEdit:
             if not content_chunk:
                 continue
             buffer += content_chunk
-            logger.info(f"Content chunk received: '{content_chunk}', Buffer: '{buffer}'")
+            # logger.info(f"Content chunk received: '{content_chunk}', Buffer: '{buffer}'")
 
             while True:
                 if not in_tool_block:
