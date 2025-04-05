@@ -24,8 +24,16 @@ from autocoder.common.mcp_server import get_mcp_server, McpServerInfoRequest
 from autocoder.common import SourceCodeList
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue # Added import
 import re
+import xml.sax.saxutils
 from typing import Iterator, Union, Type, Generator
 from xml.etree import ElementTree as ET
+from .agentic_edit_tools import ( # Import specific resolvers
+    BaseToolResolver, ToolResult,
+    ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
+    ReplaceInFileToolResolver, SearchFilesToolResolver, ListFilesToolResolver,
+    ListCodeDefinitionNamesToolResolver, AskFollowupQuestionToolResolver,
+    AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver
+)
 from autocoder.agent.agentic_edit_types import (AgenticFilterRequest,
                                                 AgenticFilterResponse,
                                                 MemoryConfig,
@@ -42,8 +50,23 @@ from autocoder.agent.agentic_edit_types import (AgenticFilterRequest,
                                                 AskFollowupQuestionTool,
                                                 AttemptCompletionTool,
                                                 PlanModeRespondTool,
-                                                UseMcpTool,TOOL_MODEL_MAP)
+                                                UseMcpTool, TOOL_MODEL_MAP)
 
+
+# Map Pydantic Tool Models to their Resolver Classes
+TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
+    ExecuteCommandTool: ExecuteCommandToolResolver,
+    ReadFileTool: ReadFileToolResolver,
+    WriteToFileTool: WriteToFileToolResolver,
+    ReplaceInFileTool: ReplaceInFileToolResolver,
+    SearchFilesTool: SearchFilesToolResolver,
+    ListFilesTool: ListFilesToolResolver,
+    ListCodeDefinitionNamesTool: ListCodeDefinitionNamesToolResolver,
+    AskFollowupQuestionTool: AskFollowupQuestionToolResolver,
+    AttemptCompletionTool: AttemptCompletionToolResolver, # Will stop the loop anyway
+    PlanModeRespondTool: PlanModeRespondToolResolver,
+    UseMcpTool: UseMcpToolResolver,
+}
 
 class AgenticEdit:
     def __init__(
@@ -556,38 +579,160 @@ class AgenticEdit:
 
     # Removed _execute_command_result and execute_auto_command methods
 
+    def _reconstruct_tool_xml(self, tool: BaseTool) -> str:
+        """
+        Reconstructs the XML representation of a tool call from its Pydantic model.
+        """
+        tool_tag = next((tag for tag, model in TOOL_MODEL_MAP.items() if isinstance(tool, model)), None)
+        if not tool_tag:
+            logger.error(f"Cannot find tag name for tool type {type(tool).__name__}")
+            # Return a placeholder or raise? Let's return an error XML string.
+            return f"<error>Could not find tag for tool {type(tool).__name__}</error>"
+
+        xml_parts = [f"<{tool_tag}>"]
+        for field_name, field_value in tool.model_dump(exclude_none=True).items():
+            # Format value based on type, ensuring XML safety
+            if isinstance(field_value, bool):
+                value_str = str(field_value).lower()
+            elif isinstance(field_value, (list, dict)):
+                # Simple string representation for list/dict for now.
+                # Consider JSON within the tag if needed and supported by the prompt/LLM.
+                value_str = json.dumps(field_value, ensure_ascii=False) # Use JSON for structured data
+            else:
+                value_str = str(field_value)
+
+            # Escape the value content
+            escaped_value = xml.sax.saxutils.escape(value_str)
+
+            # Handle multi-line content like 'content' or 'diff' - ensure newlines are preserved
+            if '\n' in value_str:
+                 # Add newline before closing tag for readability if content spans multiple lines
+                 xml_parts.append(f"<{field_name}>\n{escaped_value}\n</{field_name}>")
+            else:
+                 xml_parts.append(f"<{field_name}>{escaped_value}</{field_name}>")
+
+
+        xml_parts.append(f"</{tool_tag}>")
+        # Join with newline for readability, matching prompt examples
+        return "\n".join(xml_parts)
+
+
     def analyze(self, request: AgenticFilterRequest) -> Generator[Union[BaseTool, PlainTextOutput], None, None]:
         """
-        Analyzes the user request, interacts with the LLM using stream_chat_with_continue,
-        and parses the response into tools or plain text.
+        Analyzes the user request, iteratively interacts with the LLM,
+        parses responses, executes tools, and yields outputs until completion.
         """
-        # 1. Prepare the prompt and conversation history
-        system_prompt = self._analyze.prompt(request) # Note: _analyze prompt still uses {{files}} which is self.files.to_str()
-        # Simplified conversation history for this example
-        # In a real scenario, you'd manage conversation history appropriately
+        system_prompt = self._analyze.prompt(request)
         conversations = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": request.user_input}
         ]
+        logger.debug(f"Initial conversation history size: {len(conversations)}")
 
-        # 2. Use stream_chat_with_continue to get LLM response generator
-        logger.info("Starting LLM interaction using stream_chat_with_continue...")
-        llm_config = {} # Add any specific LLM config if needed
-        llm_response_generator = stream_chat_with_continue(
-            llm=self.llm,
-            conversations=conversations,
-            llm_config=llm_config,
-            args=self.args
-        )
+        while True:
+            logger.info(f"Starting LLM interaction cycle. History size: {len(conversations)}")
+            tool_executed_in_this_iteration = False
+            assistant_response_buffer = ""  # Buffer text before a tool call
 
-        # 3. Use stream_and_parse_llm_response to parse the generator
-        logger.info("Parsing LLM stream...")
-        parsed_item_generator = self.stream_and_parse_llm_response(llm_response_generator)
+            # 1. Call LLM with current conversation history
+            llm_config = {} # Add any specific LLM config if needed
+            llm_response_generator = stream_chat_with_continue(
+                llm=self.llm,
+                conversations=conversations,
+                llm_config=llm_config,
+                args=self.args
+            )
 
-        # 4. Yield the parsed items
-        # The caller of analyze will be responsible for handling these items (e.g., executing tools)
-        yield from parsed_item_generator
-        logger.info("Finished parsing LLM stream.")
+            # 2. Parse the LLM's response stream
+            logger.info("Parsing LLM stream for tools or text...")
+            parsed_item_generator = self.stream_and_parse_llm_response(llm_response_generator)
+
+            # 3. Process parsed items (text or tools)
+            for item in parsed_item_generator:
+                if isinstance(item, PlainTextOutput):
+                    logger.debug(f"LLM Output (Plain Text Chunk): '{item.text}'")
+                    assistant_response_buffer += item.text
+                    yield item # Yield plain text immediately for display
+
+                elif isinstance(item, AttemptCompletionTool):
+                    logger.info("AttemptCompletionTool received. Finalizing and stopping.")
+                    # Reconstruct the completion tool call XML
+                    tool_xml = self._reconstruct_tool_xml(item)
+                    # Add any preceding text and the tool call to history
+                    full_assistant_message = assistant_response_buffer + tool_xml
+                    conversations.append({"role": "assistant", "content": full_assistant_message})
+                    logger.debug(f"Added final assistant message to history (AttemptCompletion).")
+                    yield item # Yield the completion tool itself
+                    logger.info("AgenticEdit analyze loop finished due to AttemptCompletion.")
+                    return # End the entire analyze function
+
+                elif isinstance(item, BaseTool):
+                    tool_executed_in_this_iteration = True
+                    logger.info(f"Tool detected: {type(item).__name__}")
+
+                    # Reconstruct the tool call XML from the Pydantic object
+                    tool_xml = self._reconstruct_tool_xml(item)
+                    if tool_xml.startswith("<error>"):
+                        logger.error(f"Failed to reconstruct XML for tool {type(item).__name__}. Skipping.")
+                        yield PlainTextOutput(text=f"[SYSTEM ERROR] Failed to reconstruct XML for tool {type(item).__name__}. Skipping execution.")
+                        continue # Skip this malformed/unknown tool
+
+                    # Add assistant's response so far (text + tool call) to history
+                    full_assistant_message = assistant_response_buffer + tool_xml
+                    conversations.append({"role": "assistant", "content": full_assistant_message})
+                    logger.debug(f"Added assistant message to history (including tool call {type(item).__name__}).")
+                    assistant_response_buffer = "" # Reset buffer after adding to history
+
+                    # Find and execute the resolver
+                    resolver_class = TOOL_RESOLVER_MAP.get(type(item))
+                    if not resolver_class:
+                        logger.error(f"No resolver found for tool type {type(item).__name__}")
+                        # Format an error result to send back to the LLM
+                        result_content = f"<tool_result tool_name='{type(item).__name__}' success='false'><message>Error: Tool resolver not implemented.</message><content></content></tool_result>"
+                    else:
+                        try:
+                            resolver = resolver_class(agent=self, tool=item, args=self.args)
+                            logger.info(f"Executing tool: {type(item).__name__} with params: {item.model_dump()}")
+                            result: ToolResult = resolver.resolve()
+                            logger.info(f"Tool Result: Success={result.success}, Message='{result.message}'")
+
+                            # Escape message and content for XML safety
+                            escaped_message = xml.sax.saxutils.escape(result.message)
+                            # Ensure content is string and escape it; handle None
+                            content_str = str(result.content) if result.content is not None else ""
+                            escaped_content = xml.sax.saxutils.escape(content_str)
+
+                            # Format the result message for the LLM
+                            result_content = (
+                                f"<tool_result tool_name='{type(item).__name__}' success='{str(result.success).lower()}'>"
+                                f"<message>{escaped_message}</message>"
+                                f"<content>{escaped_content}</content>" # Keep content tag even if empty
+                                f"</tool_result>"
+                            )
+                        except Exception as e:
+                            logger.exception(f"Error resolving tool {type(item).__name__}: {e}")
+                            escaped_error = xml.sax.saxutils.escape(f"Critical Error during tool execution: {e}")
+                            result_content = f"<tool_result tool_name='{type(item).__name__}' success='false'><message>{escaped_error}</message><content></content></tool_result>"
+
+                    # Add tool result as a "user" message to history
+                    conversations.append({"role": "user", "content": result_content})
+                    logger.debug(f"Added tool result message to history (for tool {type(item).__name__}).")
+
+                    # Break from processing this LLM response stream and start the next cycle
+                    logger.info("Tool executed, breaking inner loop to start next LLM cycle.")
+                    break # Exit the 'for item in parsed_item_generator' loop
+
+            # 4. After iterating through the parsed items for this LLM response:
+            if not tool_executed_in_this_iteration:
+                # If the inner loop finished without breaking (meaning no tool was executed)
+                logger.info("LLM response finished without executing a tool. Ending analyze loop.")
+                # Add any remaining plain text from the assistant to the history
+                if assistant_response_buffer:
+                    conversations.append({"role": "assistant", "content": assistant_response_buffer})
+                    logger.debug("Added final assistant text message to history.")
+                break # Exit the 'while True' loop
+
+        logger.info("AgenticEdit analyze loop finished.")
 
 
     def stream_and_parse_llm_response(
