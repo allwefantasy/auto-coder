@@ -16,48 +16,13 @@ class WriteToFileToolResolver(BaseToolResolver):
         Parses the diff content into a list of (search_block, replace_block) tuples.
         """
         blocks = []
-        lines = diff_content.splitlines(keepends=True)
-
-        in_block = False
-        current_section = None
-        search_lines = []
-        replace_lines = []
-
-        i = 0
-        while i < len(lines):
-            line = lines[i]
-            if not in_block:
-                if line.strip() == "<<<<<<< SEARCH":
-                    in_block = True
-                    current_section = "search"
-                    search_lines = []
-                    replace_lines = []
-                    i += 1
-                    continue
-            else:
-                if line.strip() == "=======":
-                    current_section = "replace"
-                    i += 1
-                    continue
-                elif line.strip() == ">>>>>>> REPLACE":
-                    # Save current block
-                    search_block = ''.join(search_lines)
-                    replace_block = ''.join(replace_lines)
-                    blocks.append((search_block, replace_block))
-                    in_block = False
-                    current_section = None
-                    i += 1
-                    continue
-                else:
-                    if current_section == "search":
-                        search_lines.append(line)
-                    elif current_section == "replace":
-                        replace_lines.append(line)
-            i += 1
-
-        if not blocks and diff_content.strip():
+        # Regex to find SEARCH/REPLACE blocks, handling potential variations in line endings
+        pattern = re.compile(r"<<<<<<< SEARCH\r?\n(.*?)\r?\n=======\r?\n(.*?)\r?\n>>>>>>> REPLACE", re.DOTALL)
+        matches = pattern.findall(diff_content)
+        for search_block, replace_block in matches:
+            blocks.append((search_block, replace_block))
+        if not matches and diff_content.strip():
             logger.warning(f"Could not parse any SEARCH/REPLACE blocks from diff: {diff_content}")
-
         return blocks
 
     def resolve(self) -> ToolResult:
