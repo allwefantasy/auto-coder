@@ -16,14 +16,41 @@ class ReplaceInFileToolResolver(BaseToolResolver):
         Parses the diff content into a list of (search_block, replace_block) tuples.
         """
         blocks = []
-        # Regex to find SEARCH/REPLACE blocks, handling potential variations in line endings
-        pattern = re.compile(r"<<<<<<< SEARCH\r?\n(.*?)\r?\n=======\r?\n(.*?)\r?\n>>>>>>> REPLACE", re.DOTALL)
-        matches = pattern.findall(diff_content)
-        for search_block, replace_block in matches:
-            # Normalize line endings within blocks if needed, though exact match is preferred
-            blocks.append((search_block, replace_block))
-        if not matches and diff_content.strip():
-             logger.warning(f"Could not parse any SEARCH/REPLACE blocks from diff: {diff_content}")
+        lines = diff_content.splitlines(keepends=True)
+        i = 0
+        n = len(lines)
+
+        while i < n:
+            line = lines[i]
+            if line.strip() == "<<<<<<< SEARCH":
+                i += 1
+                search_lines = []
+                # Accumulate search block
+                while i < n and lines[i].strip() != "=======":
+                    search_lines.append(lines[i])
+                    i += 1
+                if i >= n:
+                    logger.warning("Unterminated SEARCH block found in diff content.")
+                    break
+                i += 1  # skip '======='
+                replace_lines = []
+                # Accumulate replace block
+                while i < n and lines[i].strip() != ">>>>>>> REPLACE":
+                    replace_lines.append(lines[i])
+                    i += 1
+                if i >= n:
+                    logger.warning("Unterminated REPLACE block found in diff content.")
+                    break
+                i += 1  # skip '>>>>>>> REPLACE'
+
+                search_block = ''.join(search_lines)
+                replace_block = ''.join(replace_lines)
+                blocks.append((search_block, replace_block))
+            else:
+                i += 1
+
+        if not blocks and diff_content.strip():
+            logger.warning(f"Could not parse any SEARCH/REPLACE blocks from diff: {diff_content}")
         return blocks
 
     def resolve(self) -> ToolResult:
