@@ -803,54 +803,25 @@ class AgenticEdit:
                         logger.debug(
                             f"Found end tag. Tool XML: '{tool_xml}', Remaining Buffer: '{buffer}'")
 
-                        # Special handling for replace_in_file diff content
-                        if current_tool_tag == "replace_in_file":
-                            try:
-                                # Replace special characters in diff content to make it XML compatible
-                                # This is a workaround because diff content may contain XML-invalid tokens like <<<<<<< etc.
-                                # So we will extract the diff content, escape it, then parse again
-                                # Find <diff>...</diff> inside tool_xml
-                                diff_start = tool_xml.find("<diff>")
-                                diff_end = tool_xml.find("</diff>")
-                                if diff_start != -1 and diff_end != -1:
-                                    diff_content_raw = tool_xml[diff_start + len("<diff>"):diff_end]
-                                    # Escape problematic XML characters in diff content
-                                    # Replace & first to avoid double escaping
-                                    diff_escaped = diff_content_raw.replace("&", "&amp;") \
-                                                                  .replace("<", "&lt;") \
-                                                                  .replace(">", "&gt;")
-                                    tool_xml_escaped = tool_xml[:diff_start + len("<diff>")] + diff_escaped + tool_xml[diff_end:]
-                                    root = ET.fromstring(tool_xml_escaped)
-                                else:
-                                    # fallback
-                                    root = ET.fromstring(tool_xml)
-                            except Exception as e:
-                                logger.error(f"Failed to parse replace_in_file tool XML with diff escaping: {e}")
-                                # fallback plain text
-                                yield PlainTextOutput(text=tool_xml)
-                                in_tool_block = False
-                                current_tool_tag = None
-                                continue
-                        else:
-                            try:
-                                root = ET.fromstring(tool_xml)
-                            except ET.ParseError as e:
-                                logger.error(
-                                    f"Failed to parse tool XML: {tool_xml}. Error: {e}")
-                                yield PlainTextOutput(text=tool_xml)
-                                in_tool_block = False
-                                current_tool_tag = None
-                                continue
-
                         try:
+                            # Parse the XML-like tool block
+                            # Ensure the root tag matches the expected tool tag
+                            if not tool_xml.startswith(f"<{current_tool_tag}>"):
+                                raise ET.ParseError(
+                                    "Root tag mismatch or malformed XML start.")
+
+                            root = ET.fromstring(tool_xml)
                             if root.tag != current_tool_tag:
                                 raise ET.ParseError(
                                     f"Root tag '{root.tag}' does not match expected '{current_tool_tag}'")
 
                             params = {}
+                            # Handle multi-line content within tags correctly
                             for child in root:
-                                text_val = child.text if child.text is not None else ""
-                                params[child.tag] = text_val
+                                params[child.tag] = child.text if child.text is not None else ""
+                                # If there's tail text immediately after the child open tag (rare but possible in mixed content)
+                                # if child.tail and child.tail.strip():
+                                #     params[child.tag] += child.tail.strip() # Append tail text if relevant
 
                             logger.debug(
                                 f"Parsing tool '{current_tool_tag}' with params: {params}")
@@ -859,9 +830,15 @@ class AgenticEdit:
                             logger.debug(
                                 f"Yielded tool model: {current_tool_tag}")
 
+                        except ET.ParseError as e:
+                            logger.error(
+                                f"Failed to parse tool XML: {tool_xml}. Error: {e}")
+                            # Fallback: yield the block as plain text
+                            yield PlainTextOutput(text=tool_xml)
                         except Exception as e:
                             logger.error(
                                 f"Failed to instantiate/validate tool model {current_tool_tag} with params: {params}. Error: {e}")
+                            # Fallback: yield the block as plain text
                             yield PlainTextOutput(text=tool_xml)
 
                         in_tool_block = False
