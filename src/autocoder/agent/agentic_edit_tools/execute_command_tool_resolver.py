@@ -17,7 +17,7 @@ class ExecuteCommandToolResolver(BaseToolResolver):
         printer = Printer()
         command = self.tool.command
         requires_approval = self.tool.requires_approval
-        source_dir = self.args.get("source_dir", ".")
+        source_dir = self.args.source_dir or "."
 
         # Basic security check (can be expanded)
         if ";" in command or "&&" in command or "|" in command or "`" in command:

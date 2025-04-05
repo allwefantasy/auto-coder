@@ -13,7 +13,7 @@ class ListFilesToolResolver(BaseToolResolver):
     def resolve(self) -> ToolResult:
         list_path_str = self.tool.path
         recursive = self.tool.recursive or False
-        source_dir = self.args.get("source_dir", ".")
+        source_dir = self.args.source_dir or "."
         absolute_list_path = os.path.abspath(os.path.join(source_dir, list_path_str))
 
         # Security check: Allow listing outside source_dir IF the original path is outside?

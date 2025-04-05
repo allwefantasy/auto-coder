@@ -16,7 +16,7 @@ class SearchFilesToolResolver(BaseToolResolver):
         search_path_str = self.tool.path
         regex_pattern = self.tool.regex
         file_pattern = self.tool.file_pattern or "*" # Default to all files
-        source_dir = self.args.get("source_dir", ".")
+        source_dir = self.args.source_dir or "."
         absolute_search_path = os.path.abspath(os.path.join(source_dir, search_path_str))
 
         # Security check

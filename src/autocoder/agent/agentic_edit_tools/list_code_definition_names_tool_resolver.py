@@ -30,7 +30,7 @@ class ListCodeDefinitionNamesToolResolver(BaseToolResolver):
         index_data = {item.module_name: item for item in index_items}
 
         target_path_str = self.tool.path
-        source_dir = self.args.get("source_dir", ".")
+        source_dir = self.args.source_dir or "."
         absolute_target_path = os.path.abspath(os.path.join(source_dir, target_path_str))
 
         # Security check
