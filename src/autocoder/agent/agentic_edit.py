@@ -30,8 +30,79 @@ from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
 from autocoder.run_context import get_run_context
+import re
+from typing import Iterator, Union, Type, Generator
+from xml.etree import ElementTree as ET
 from autocoder.common.stream_out_type import AgenticFilterStreamOutType
 from autocoder.common import SourceCodeList
+
+
+# Pydantic Models for Tools
+class BaseTool(BaseModel):
+    pass
+
+class ExecuteCommandTool(BaseTool):
+    command: str
+    requires_approval: bool
+
+class ReadFileTool(BaseTool):
+    path: str
+
+class WriteToFileTool(BaseTool):
+    path: str
+    content: str
+
+class ReplaceInFileTool(BaseTool):
+    path: str
+    diff: str
+
+class SearchFilesTool(BaseTool):
+    path: str
+    regex: str
+    file_pattern: Optional[str] = None
+
+class ListFilesTool(BaseTool):
+    path: str
+    recursive: Optional[bool] = False
+
+class ListCodeDefinitionNamesTool(BaseTool):
+    path: str
+
+class AskFollowupQuestionTool(BaseTool):
+    question: str
+    options: Optional[List[str]] = None
+
+class AttemptCompletionTool(BaseTool):
+    result: str
+    command: Optional[str] = None
+
+class PlanModeRespondTool(BaseTool):
+    response: str
+    options: Optional[List[str]] = None
+
+class UseMcpTool(BaseTool):
+    server_name: str
+    tool_name: str
+    arguments: Dict[str, Any]
+
+class PlainTextOutput(BaseModel):
+    text: str
+
+
+# Mapping from tool tag names to Pydantic models
+TOOL_MODEL_MAP: Dict[str, Type[BaseTool]] = {
+    "execute_command": ExecuteCommandTool,
+    "read_file": ReadFileTool,
+    "write_to_file": WriteToFileTool,
+    "replace_in_file": ReplaceInFileTool,
+    "search_files": SearchFilesTool,
+    "list_files": ListFilesTool,
+    "list_code_definition_names": ListCodeDefinitionNamesTool,
+    "ask_followup_question": AskFollowupQuestionTool,
+    "attempt_completion": AttemptCompletionTool,
+    "plan_mode_respond": PlanModeRespondTool,
+    "use_mcp_tool": UseMcpTool,
+}
 
 
 class AgenticFilterRequest(BaseModel):
@@ -1266,3 +1337,133 @@ class AgenticEdit:
                 "auto_command_failed", style="red", command=command, error=error_msg
             )
             raise Exception(v)
+
+    def stream_and_parse_llm_response(
+        self, generator: Iterator[str]
+    ) -> Generator[Union[BaseTool, PlainTextOutput], None, None]:
+        """
+        Streamingly parses the LLM response generator, distinguishing between
+        plain text and tool usage blocks, yielding corresponding Pydantic models.
+
+        Args:
+            generator: An iterator yielding string chunks from the LLM response.
+
+        Yields:
+            Union[BaseTool, PlainTextOutput]: Either a Pydantic model representing
+            a detected tool usage or a PlainTextOutput model for plain text segments.
+        """
+        buffer = ""
+        in_tool_block = False
+        current_tool_tag = None
+        # Regex to find the start tag, potentially with attributes, but we only care about the tag name
+        # It captures the tag name in group 1. Handles simple tags like <tool_name>
+        tool_start_pattern = re.compile(r"<([a-zA-Z0-9_]+?)>")
+        plain_text_buffer = ""
+
+        for chunk in generator:
+            buffer += chunk
+            logger.debug(f"Chunk received: '{chunk}', Buffer: '{buffer}'")
+
+            while True:
+                if not in_tool_block:
+                    # Try to find the start of a potential tool block
+                    match = tool_start_pattern.search(buffer)
+                    if match:
+                        tool_name = match.group(1)
+                        logger.debug(f"Potential tool start tag found: '{tool_name}' at index {match.start()}")
+                        if tool_name in TOOL_MODEL_MAP:
+                            start_index = match.start()
+                            # Yield any preceding plain text
+                            preceding_text = buffer[:start_index]
+                            if preceding_text:
+                                plain_text_buffer += preceding_text
+                                logger.debug(f"Yielding preceding plain text: '{plain_text_buffer}'")
+                                yield PlainTextOutput(text=plain_text_buffer)
+                                plain_text_buffer = ""
+
+                            # Keep the start tag and everything after it
+                            buffer = buffer[start_index:]
+                            in_tool_block = True
+                            current_tool_tag = tool_name
+                            logger.debug(f"Entering tool block: '{current_tool_tag}', Buffer: '{buffer}'")
+                            # Continue loop to check for end tag immediately
+                        else:
+                            # Not a recognized tool tag, treat up to the end of the match as plain text
+                            plain_text_buffer += buffer[:match.end()]
+                            buffer = buffer[match.end():]
+                            logger.debug(f"Tag '{tool_name}' not in TOOL_MODEL_MAP. Treating as plain text. Buffer: '{buffer}'")
+                            # Continue loop to search for next potential tag in the remaining buffer
+
+                    else:
+                        # No tool start tag found in the current buffer
+                        # Keep the last part of the buffer in case a tag spans chunks
+                        split_point = max(0, len(buffer) - 50) # Keep last 50 chars as a safety margin
+                        plain_text_buffer += buffer[:split_point]
+                        buffer = buffer[split_point:]
+                        logger.debug(f"No tool start tag found. Accumulating plain text. Buffer: '{buffer}'")
+                        break # Need more chunks
+
+                if in_tool_block:
+                    # Try to find the end of the current tool block
+                    end_tag = f"</{current_tool_tag}>"
+                    end_index = buffer.find(end_tag)
+                    logger.debug(f"Searching for end tag: '{end_tag}' in Buffer: '{buffer}'")
+
+                    if end_index != -1:
+                        tool_block_end_index = end_index + len(end_tag)
+                        tool_xml = buffer[:tool_block_end_index]
+                        buffer = buffer[tool_block_end_index:] # Consume the tool block
+                        logger.debug(f"Found end tag. Tool XML: '{tool_xml}', Remaining Buffer: '{buffer}'")
+
+                        try:
+                            # Parse the XML-like tool block
+                            # Ensure the root tag matches the expected tool tag
+                            if not tool_xml.startswith(f"<{current_tool_tag}>"):
+                                raise ET.ParseError("Root tag mismatch or malformed XML start.")
+
+                            root = ET.fromstring(tool_xml)
+                            if root.tag != current_tool_tag:
+                                raise ET.ParseError(f"Root tag '{root.tag}' does not match expected '{current_tool_tag}'")
+
+                            params = {}
+                            # Handle multi-line content within tags correctly
+                            for child in root:
+                                params[child.tag] = child.text if child.text is not None else ""
+                                # If there's tail text immediately after the child open tag (rare but possible in mixed content)
+                                # if child.tail and child.tail.strip():
+                                #     params[child.tag] += child.tail.strip() # Append tail text if relevant
+
+                            logger.debug(f"Parsing tool '{current_tool_tag}' with params: {params}")
+                            tool_model = TOOL_MODEL_MAP[current_tool_tag]
+                            yield tool_model(**params)
+                            logger.debug(f"Yielded tool model: {current_tool_tag}")
+
+                        except ET.ParseError as e:
+                            logger.error(f"Failed to parse tool XML: {tool_xml}. Error: {e}")
+                            # Fallback: yield the block as plain text
+                            yield PlainTextOutput(text=tool_xml)
+                        except Exception as e:
+                             logger.error(f"Failed to instantiate/validate tool model {current_tool_tag} with params: {params}. Error: {e}")
+                             # Fallback: yield the block as plain text
+                             yield PlainTextOutput(text=tool_xml)
+
+                        in_tool_block = False
+                        current_tool_tag = None
+                        # Continue processing the rest of the buffer in the same iteration loop
+                    else:
+                        # End tag not found yet, need more chunks
+                        logger.debug("End tag not found yet, need more data.")
+                        break # Break the inner loop to get the next chunk
+
+        # After the generator is exhausted, yield any remaining plain text
+        if plain_text_buffer:
+             logger.debug(f"Yielding final accumulated plain text: '{plain_text_buffer}'")
+             yield PlainTextOutput(text=plain_text_buffer)
+        # Yield remaining buffer content if it wasn't part of an incomplete tool block
+        if buffer and not in_tool_block:
+            logger.debug(f"Yielding final remaining buffer content: '{buffer}'")
+            yield PlainTextOutput(text=buffer)
+        elif buffer and in_tool_block:
+             logger.warning(f"Stream ended with incomplete tool block for '{current_tool_tag}': '{buffer}'")
+             # Optionally yield the incomplete block as text
+             yield PlainTextOutput(text=buffer)
