@@ -625,110 +625,88 @@ class AgenticEdit:
         ]
         logger.debug(f"Initial conversation history size: {len(conversations)}")
 
-        console = Console()
-        from rich.live import Live
-        from rich.markdown import Markdown
-        from rich.panel import Panel
+        while True:
+            logger.info(f"Starting LLM interaction cycle. History size: {len(conversations)}")
+            tool_executed = False
+            assistant_buffer = ""
 
-        with Live("", console=console, refresh_per_second=8) as live:
-            while True:
-                logger.info(f"Starting LLM interaction cycle. History size: {len(conversations)}")
-                tool_executed = False
-                assistant_buffer = ""
+            llm_response_gen = stream_chat_with_continue(
+                llm=self.llm,
+                conversations=conversations,
+                llm_config={},  # Placeholder for future LLM configs
+                args=self.args
+            )
 
-                llm_response_gen = stream_chat_with_continue(
-                    llm=self.llm,
-                    conversations=conversations,
-                    llm_config={},  # Placeholder for future LLM configs
-                    args=self.args
-                )
+            parsed_items = self.stream_and_parse_llm_response(llm_response_gen)
 
-                parsed_items = self.stream_and_parse_llm_response(llm_response_gen)
+            for item in parsed_items:
+                if isinstance(item, PlainTextOutput):
+                    assistant_buffer += item.text
+                    yield item
+                elif isinstance(item, AttemptCompletionTool):
+                    logger.info("AttemptCompletionTool received. Finalizing session.")
+                    tool_xml = self._reconstruct_tool_xml(item)
+                    conversations.append({
+                        "role": "assistant",
+                        "content": assistant_buffer + tool_xml
+                    })
+                    yield item
+                    logger.info("AgenticEdit analyze loop finished due to AttemptCompletion.")
+                    return
+                elif isinstance(item, BaseTool):
+                    tool_executed = True
 
-                for item in parsed_items:
-                    if isinstance(item, PlainTextOutput):
-                        assistant_buffer += item.text
-                        # Update the live console with current assistant_buffer
-                        # We can render as markdown inside a Panel
+                    tool_xml = self._reconstruct_tool_xml(item)
+                    if tool_xml.startswith("<error>"):
+                        logger.error(f"Failed to reconstruct XML for tool {type(item).__name__}. Skipping execution.")
+                        yield PlainTextOutput(text=f"[SYSTEM ERROR] Failed to reconstruct XML for tool {type(item).__name__}. Skipping execution.")
+                        continue
+
+                    conversations.append({
+                        "role": "assistant",
+                        "content": assistant_buffer + tool_xml
+                    })
+                    assistant_buffer = ""
+
+                    resolver_cls = TOOL_RESOLVER_MAP.get(type(item))
+                    if not resolver_cls:
+                        logger.error(f"No resolver implemented for tool {type(item).__name__}")
+                        result_content = f"<tool_result tool_name='{type(item).__name__}' success='false'><message>Error: Tool resolver not implemented.</message><content></content></tool_result>"
+                    else:
                         try:
-                            live.update(Panel(Markdown(assistant_buffer), title="Assistant"))
-                        except Exception:
-                            # Fallback to plain text if markdown rendering fails
-                            live.update(Panel(assistant_buffer, title="Assistant"))
-                        yield item
-                    elif isinstance(item, AttemptCompletionTool):
-                        logger.info("AttemptCompletionTool received. Finalizing session.")
-                        tool_xml = self._reconstruct_tool_xml(item)
-                        conversations.append({
-                            "role": "assistant",
-                            "content": assistant_buffer + tool_xml
-                        })
-                        # Final update to display the completed message
-                        try:
-                            live.update(Panel(Markdown(assistant_buffer), title="Assistant"))
-                        except Exception:
-                            live.update(Panel(assistant_buffer, title="Assistant"))
-                        yield item
-                        logger.info("AgenticEdit analyze loop finished due to AttemptCompletion.")
-                        return
-                    elif isinstance(item, BaseTool):
-                        tool_executed = True
+                            resolver = resolver_cls(agent=self, tool=item, args=self.args)
+                            logger.info(f"Executing tool: {type(item).__name__} with params: {item.model_dump()}")
+                            result: ToolResult = resolver.resolve()
+                            logger.info(f"Tool Result: Success={result.success}, Message='{result.message}'")
 
-                        tool_xml = self._reconstruct_tool_xml(item)
-                        if tool_xml.startswith("<error>"):
-                            logger.error(f"Failed to reconstruct XML for tool {type(item).__name__}. Skipping execution.")
-                            yield PlainTextOutput(text=f"[SYSTEM ERROR] Failed to reconstruct XML for tool {type(item).__name__}. Skipping execution.")
-                            continue
+                            escaped_message = xml.sax.saxutils.escape(result.message)
+                            content_str = str(result.content) if result.content is not None else ""
+                            escaped_content = xml.sax.saxutils.escape(content_str)
 
-                        conversations.append({
-                            "role": "assistant",
-                            "content": assistant_buffer + tool_xml
-                        })
-                        assistant_buffer = ""
+                            result_content = (
+                                f"<tool_result tool_name='{type(item).__name__}' success='{str(result.success).lower()}'>"
+                                f"<message>{escaped_message}</message>"
+                                f"<content>{escaped_content}</content>"
+                                f"</tool_result>"
+                            )
+                        except Exception as e:
+                            logger.exception(f"Error resolving tool {type(item).__name__}: {e}")
+                            escaped_error = xml.sax.saxutils.escape(f"Critical Error during tool execution: {e}")
+                            result_content = f"<tool_result tool_name='{type(item).__name__}' success='false'><message>{escaped_error}</message><content></content></tool_result>"
 
-                        resolver_cls = TOOL_RESOLVER_MAP.get(type(item))
-                        if not resolver_cls:
-                            logger.error(f"No resolver implemented for tool {type(item).__name__}")
-                            result_content = f"<tool_result tool_name='{type(item).__name__}' success='false'><message>Error: Tool resolver not implemented.</message><content></content></tool_result>"
-                        else:
-                            try:
-                                resolver = resolver_cls(agent=self, tool=item, args=self.args)
-                                logger.info(f"Executing tool: {type(item).__name__} with params: {item.model_dump()}")
-                                result: ToolResult = resolver.resolve()
-                                logger.info(f"Tool Result: Success={result.success}, Message='{result.message}'")
+                    conversations.append({
+                        "role": "user",
+                        "content": result_content
+                    })
+                    logger.debug(f"Added tool result to conversations for tool {type(item).__name__}")
+                    break  # After tool execution, break to start a new LLM cycle
 
-                                escaped_message = xml.sax.saxutils.escape(result.message)
-                                content_str = str(result.content) if result.content is not None else ""
-                                escaped_content = xml.sax.saxutils.escape(content_str)
-
-                                result_content = (
-                                    f"<tool_result tool_name='{type(item).__name__}' success='{str(result.success).lower()}'>"
-                                    f"<message>{escaped_message}</message>"
-                                    f"<content>{escaped_content}</content>"
-                                    f"</tool_result>"
-                                )
-                            except Exception as e:
-                                logger.exception(f"Error resolving tool {type(item).__name__}: {e}")
-                                escaped_error = xml.sax.saxutils.escape(f"Critical Error during tool execution: {e}")
-                                result_content = f"<tool_result tool_name='{type(item).__name__}' success='false'><message>{escaped_error}</message><content></content></tool_result>"
-
-                        conversations.append({
-                            "role": "user",
-                            "content": result_content
-                        })
-                        logger.debug(f"Added tool result to conversations for tool {type(item).__name__}")
-                        break  # After tool execution, break to start a new LLM cycle
-
-                if not tool_executed:
-                    # No tool executed in this cycle, so finish
-                    logger.info("LLM response finished without executing a tool. Ending analyze loop.")
-                    if assistant_buffer:
-                        try:
-                            live.update(Panel(Markdown(assistant_buffer), title="Assistant"))
-                        except Exception:
-                            live.update(Panel(assistant_buffer, title="Assistant"))
-                        conversations.append({"role": "assistant", "content": assistant_buffer})
-                    break
+            if not tool_executed:
+                # No tool executed in this cycle, so finish
+                logger.info("LLM response finished without executing a tool. Ending analyze loop.")
+                if assistant_buffer:
+                    conversations.append({"role": "assistant", "content": assistant_buffer})
+                break
 
         logger.info("AgenticEdit analyze loop finished.")
 
