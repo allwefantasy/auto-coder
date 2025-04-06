@@ -85,8 +85,9 @@ class AgenticConversation:
     def get_history(self) -> List[MessageType]:
         """
         Returns the latest 20 pairs of (user, assistant) conversation history.
+        Merges adjacent same-role messages into one, concatenated by newline.
         Ensures that each user message is paired with the subsequent assistant response,
-        and skips other message roles (e.g., tool calls/results).
+        skips other roles, and that the last message is always assistant (drops trailing user if unpaired).
         
         Returns:
             A list of message dictionaries, ordered chronologically.
@@ -94,29 +95,49 @@ class AgenticConversation:
         paired_history = []
         pair_count = 0
         pending_assistant = None
+        pending_user = None
 
-        # Traverse the history in reverse to collect the latest pairs
+        # Traverse history in reverse to collect latest pairs with merging
         for msg in reversed(self._history):
             role = msg.get("role")
             if role == "assistant":
-                # Only keep the latest assistant waiting for a user
                 if pending_assistant is None:
-                    pending_assistant = msg
+                    pending_assistant = dict(msg)
+                else:
+                    # Merge with previous assistant
+                    prev_content = pending_assistant.get("content", "")
+                    curr_content = msg.get("content", "")
+                    merged_content = (curr_content.strip() + "\n" + prev_content.strip()).strip()
+                    pending_assistant["content"] = merged_content
             elif role == "user":
+                if pending_user is None:
+                    pending_user = dict(msg)
+                else:
+                    # Merge with previous user
+                    prev_content = pending_user.get("content", "")
+                    curr_content = msg.get("content", "")
+                    merged_content = (curr_content.strip() + "\n" + prev_content.strip()).strip()
+                    pending_user["content"] = merged_content
+
                 if pending_assistant is not None:
-                    # Found a user with a pending assistant reply: form a pair
-                    paired_history.insert(0, msg)
+                    # Have a full pair, insert in order
+                    paired_history.insert(0, pending_user)
                     paired_history.insert(1, pending_assistant)
                     pair_count += 1
                     pending_assistant = None
+                    pending_user = None
                     if pair_count >= 20:
                         break
                 else:
-                    # User message with no assistant reply after it, skip
+                    # User without assistant yet, continue accumulating
                     continue
             else:
                 # Ignore other roles
                 continue
+
+        # Ensure last message is assistant, drop trailing user if unpaired
+        if paired_history and paired_history[-1].get("role") == "user":
+            paired_history.pop()
 
         return paired_history
 
