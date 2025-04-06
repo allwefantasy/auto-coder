@@ -126,17 +126,17 @@ class AgenticEdit:
             self.shadow_manager, verbose=False)
 
         self.mcp_server_info = ""
-        # try:
-        #     self.mcp_server = get_mcp_server()
-        #     mcp_server_info_response = self.mcp_server.send_request(
-        #         McpServerInfoRequest(
-        #             model=args.inference_model or args.model,
-        #             product_mode=args.product_mode,
-        #         )
-        #     )
-        #     self.mcp_server_info = mcp_server_info_response.result
-        # except Exception as e:
-        #     logger.error(f"Error getting MCP server info: {str(e)}")
+        try:
+            self.mcp_server = get_mcp_server()
+            mcp_server_info_response = self.mcp_server.send_request(
+                McpServerInfoRequest(
+                    model=args.inference_model or args.model,
+                    product_mode=args.product_mode,
+                )
+            )
+            self.mcp_server_info = mcp_server_info_response.result
+        except Exception as e:
+            logger.error(f"Error getting MCP server info: {str(e)}")
 
         # 变更跟踪信息
         # 格式: { file_path: FileChangeEntry(...) }
@@ -386,7 +386,7 @@ class AgenticEdit:
         </options>
         </plan_mode_respond>
 
-        ## MCP_TOOL
+        ## mcp_tool
         Description: Request to execute a tool via the Model Context Protocol (MCP) server. Use this when you need to execute a tool that is not natively supported by the agentic edit tools.
         Parameters:
         - server_name: (optional) The name of the MCP server to use. If not provided, the tool will automatically choose the best server based on the query.
@@ -472,24 +472,13 @@ class AgenticEdit:
         </diff>
         </replace_in_file>
 
-        ## Example 4: Another example of using an MCP tool (where the server name is a unique identifier such as a URL)
+        ## Example 4: Another example of using an MCP tool (where the server name is a unique identifier listed in MCP_SERVER_LIST)
 
         <use_mcp_tool>
-        <server_name>github.com/modelcontextprotocol/servers/tree/main/src/github</server_name>
+        <server_name>github</server_name>
         <tool_name>create_issue</tool_name>
-        <arguments>
-        {
-        "owner": "octocat",
-        "repo": "hello-world",
-        "title": "Found a bug",
-        "body": "I'm having a problem with this.",
-        "labels": ["bug", "help wanted"],
-        "assignees": ["octocat"]
-        }
-        </arguments>
-        </use_mcp_tool>`
-                : ""
-        }
+        <query>ower is octocat, repo is hello-world, title is Found a bug, body is I'm having a problem with this. labels is "bug" and "help wanted",assignees is "octocat"</query>        
+        </use_mcp_tool>                
 
         # Tool Use Guidelines
 
@@ -669,12 +658,12 @@ class AgenticEdit:
         4. Once you've completed the user's task, you must use the attempt_completion tool to present the result of the task to the user. You may also provide a CLI command to showcase the result of your task; this can be particularly useful for web development tasks, where you can run e.g. \`open index.html\` to show the website you've built.
         5. The user may provide feedback, which you can use to make improvements and try again. But DO NOT continue in pointless back and forth conversations, i.e. don't end your responses with questions or offers for further assistance.
 
-        {{ enable_active_context }}
+        {% if enable_active_context %}
         **Very Important Notice**
         Each directory has a description file stored separately. For example, the description for the directory `{{ current_project }}/src/abc/bbc` can be found in the file `{{ current_project }}/.auto-coder/active-context/src/abc/bbc/active.md`.
         You can use the tool  `read_file` to read these description files, which helps you decide exactly which files need detailed attention. Note that the `active.md` file does not contain information about all files within the directory—it only includes information 
         about the files that were recently changed.
-        {{ enable_active_context }}
+        {% endif %}
         """
         env_info = detect_env()
         shell_type = "bash"
@@ -744,8 +733,8 @@ class AgenticEdit:
         Analyzes the user request, interacts with the LLM, parses responses,
         executes tools, and yields structured events for visualization until completion or error.
         """
-        system_prompt = self._analyze.prompt(request)
-
+        system_prompt = self._analyze.prompt(request)  
+        # print(system_prompt)      
         conversations = [
             {"role": "system", "content": system_prompt},
         ] + self.conversation_manager.get_history()
@@ -946,19 +935,18 @@ class AgenticEdit:
                         params['requires_approval'] = params['requires_approval'].lower(
                         ) == 'true'
                     # Attempt to handle JSON parsing for arguments in use_mcp_tool
-                    if tool_tag == 'use_mcp_tool' and 'arguments' in params:
-                        try:
-                            params['arguments'] = json.loads(
-                                params['arguments'])
-                        except json.JSONDecodeError:
-                            logger.warning(
-                                f"Could not decode JSON arguments for use_mcp_tool: {params['arguments']}")
-                            # Keep as string or handle error? Let's keep as string for now.
-                            pass
+                    # if tool_tag == 'use_mcp_tool' and 'query' in params:
+                    #     try:
+                    #         params['arguments'] = json.loads(
+                    #             params['arguments'])
+                    #     except json.JSONDecodeError:
+                    #         logger.warning(
+                    #             f"Could not decode JSON arguments for use_mcp_tool: {params['arguments']}")
+                    #         # Keep as string or handle error? Let's keep as string for now.
+                    #         pass
                     # Handle recursive for list_files
                     if tool_tag == 'list_files' and 'recursive' in params:
-                        params['recursive'] = params['recursive'].lower() == 'true'
-
+                        params['recursive'] = params['recursive'].lower() == 'true'                    
                     return tool_cls(**params)
                 else:
                     logger.error(f"Tool class not found for tag: {tool_tag}")
@@ -996,7 +984,7 @@ class AgenticEdit:
                         break
 
                 # 2. Check for </tool_tag> if inside tool block
-                elif in_tool_block:
+                elif in_tool_block:                    
                     end_tag = f"</{current_tool_tag}>"
                     end_tool_pos = buffer.find(end_tag)
                     if end_tool_pos != -1:

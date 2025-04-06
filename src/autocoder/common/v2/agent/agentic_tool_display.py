@@ -165,7 +165,7 @@ def get_tool_display_message(tool: BaseTool) -> str:
             "options_text": options_text_zh if lang == 'zh' else options_text_en
         }
     elif isinstance(tool, UseMcpTool):
-        args_str = json.dumps(tool.arguments, ensure_ascii=False)
+        args_str = tool.query
         snippet = args_str[:100]
         context = {
             "server_name": tool.server_name,
