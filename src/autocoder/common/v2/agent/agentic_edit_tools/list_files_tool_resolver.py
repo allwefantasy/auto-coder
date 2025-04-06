@@ -31,38 +31,75 @@ class ListFilesToolResolver(BaseToolResolver):
              logger.warning(f"Listing path is outside the project source directory: {list_path_str}")
              # Add more checks if needed, e.g., prevent listing sensitive system dirs
 
-        if not os.path.exists(absolute_list_path):
+        # Check if shadow directory exists for this path
+        shadow_paths = []
+        shadow_exists = False
+        shadow_dir_path = None
+        if self.shadow_manager:
+            try:
+                shadow_dir_path = self.shadow_manager.to_shadow_path(absolute_list_path)
+                if os.path.exists(shadow_dir_path) and os.path.isdir(shadow_dir_path):
+                    shadow_exists = True
+            except Exception as e:
+                logger.warning(f"Error checking shadow path for {absolute_list_path}: {e}")
+
+        # Validate that at least one of the directories exists
+        if not os.path.exists(absolute_list_path) and not shadow_exists:
             return ToolResult(success=False, message=f"Error: Path not found: {list_path_str}")
-        if not os.path.isdir(absolute_list_path):
-             return ToolResult(success=False, message=f"Error: Path is not a directory: {list_path_str}")
+        if os.path.exists(absolute_list_path) and not os.path.isdir(absolute_list_path):
+            return ToolResult(success=False, message=f"Error: Path is not a directory: {list_path_str}")
+        if shadow_exists and not os.path.isdir(shadow_dir_path):
+            return ToolResult(success=False, message=f"Error: Shadow path is not a directory: {shadow_dir_path}")
 
-        file_list = []
-        try:
-            if recursive:
-                for root, dirs, files in os.walk(absolute_list_path):
-                    for name in files:
-                        full_path = os.path.join(root, name)
-                        # Return relative path if inside source_dir, else absolute
+        # Helper function to list files in a directory
+        def list_files_in_dir(base_dir: str) -> set:
+            result = set()
+            try:
+                if recursive:
+                    for root, dirs, files in os.walk(base_dir):
+                        for name in files:
+                            full_path = os.path.join(root, name)
+                            display_path = os.path.relpath(full_path, source_dir) if not is_outside_source else full_path
+                            result.add(display_path)
+                        for name in dirs:
+                            full_path = os.path.join(root, name)
+                            display_path = os.path.relpath(full_path, source_dir) if not is_outside_source else full_path
+                            result.add(display_path + "/")
+                else:
+                    for item in os.listdir(base_dir):
+                        full_path = os.path.join(base_dir, item)
                         display_path = os.path.relpath(full_path, source_dir) if not is_outside_source else full_path
-                        file_list.append(display_path)
-                    for name in dirs:
-                         # Optionally list directories too? The description implies files and dirs.
-                         full_path = os.path.join(root, name)
-                         display_path = os.path.relpath(full_path, source_dir) if not is_outside_source else full_path
-                         file_list.append(display_path + "/") # Indicate directory
-            else:
-                for item in os.listdir(absolute_list_path):
-                    full_path = os.path.join(absolute_list_path, item)
-                    display_path = os.path.relpath(full_path, source_dir) if not is_outside_source else full_path
-                    if os.path.isdir(full_path):
-                        file_list.append(display_path + "/")
-                    else:
-                        file_list.append(display_path)
+                        if os.path.isdir(full_path):
+                            result.add(display_path + "/")
+                        else:
+                            result.add(display_path)
+            except Exception as e:
+                logger.warning(f"Error listing files in {base_dir}: {e}")
+            return result
 
-            message = f"Successfully listed contents of '{list_path_str}' (Recursive: {recursive}). Found {len(file_list)} items."
+        # Collect files from shadow and/or source directory
+        shadow_files_set = set()
+        if shadow_exists:
+            shadow_files_set = list_files_in_dir(shadow_dir_path)
+
+        source_files_set = set()
+        if os.path.exists(absolute_list_path) and os.path.isdir(absolute_list_path):
+            source_files_set = list_files_in_dir(absolute_list_path)
+
+        # Merge results, prioritizing shadow files if exist
+        merged_files = set()
+        if shadow_exists:
+            # Use shadow files + source files that are NOT shadowed
+            merged_files = shadow_files_set.union(
+                {f for f in source_files_set if f not in shadow_files_set}
+            )
+        else:
+            merged_files = source_files_set
+
+        try:
+            message = f"Successfully listed contents of '{list_path_str}' (Recursive: {recursive}). Found {len(merged_files)} items."
             logger.info(message)
-            return ToolResult(success=True, message=message, content=sorted(file_list))
-
+            return ToolResult(success=True, message=message, content=sorted(merged_files))
         except Exception as e:
             logger.error(f"Error listing files in '{list_path_str}': {str(e)}")
             return ToolResult(success=False, message=f"An unexpected error occurred while listing files: {str(e)}")
