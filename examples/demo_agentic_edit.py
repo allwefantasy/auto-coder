@@ -20,13 +20,6 @@ from rich.syntax import Syntax
 from rich.markdown import Markdown
 from rich.markdown import Markdown
 
-from autocoder.common.v2.agent.agentic_edit_tools import (
-    ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
-    ReplaceInFileToolResolver, SearchFilesToolResolver, ListFilesToolResolver,
-    ListCodeDefinitionNamesToolResolver, AskFollowupQuestionToolResolver,
-    AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver
-)
-
 configure_logger()
 
 # --- Tool Display Customization is now handled by autocoder.agent.agentic_tool_display ---
