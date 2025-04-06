@@ -9,8 +9,9 @@ from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
 from prompt_toolkit import PromptSession
 from prompt_toolkit.styles import Style
-from prompt_toolkit.widgets import Text, Panel
-from prompt_toolkit.console import Console
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 
 if typing.TYPE_CHECKING:
     from autocoder.common.v2.agent.agentic_edit import AgenticEdit

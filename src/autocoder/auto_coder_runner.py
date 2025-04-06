@@ -2786,7 +2786,10 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
     if args.enable_agentic_edit:
         from autocoder.common.v2.agent.agentic_edit import AgenticEdit,AgenticEditRequest
         llm = get_single_llm(args.chat_model or args.model,product_mode=args.product_mode)    
-        agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=[]), memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory), command_config=CommandConfig)
+        agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=[]), 
+                            conversation_history=[],
+                            memory_config=MemoryConfig(memory=memory, 
+                            save_memory_func=save_memory), command_config=CommandConfig)
         agent.run_in_terminal(AgenticEditRequest(user_input=query))
         return
 

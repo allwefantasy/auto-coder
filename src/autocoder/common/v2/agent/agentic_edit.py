@@ -1257,11 +1257,11 @@ class AgenticEdit:
                                     lexer = "text"
 
                                 syntax_content = Syntax(
-                                    result.content, lexer, theme="default", line_numbers=True)
+                                    result.content[0:100], lexer, theme="default", line_numbers=True)
                             else:
                                 content_str = str(result.content)
                                 # Append simple string content directly
-                                panel_content.append(content_str)
+                                panel_content.append(content_str[0:100])
                         except Exception as e:
                             logger.warning(
                                 f"Error formatting tool result content: {e}")

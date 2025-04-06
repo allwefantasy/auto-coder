@@ -78,7 +78,7 @@ class ToolResultEvent(BaseModel):
 
 class TokenUsageEvent(BaseModel):
     """Represents the result of executing a tool."""
-    usage: Dict[str, Any]
+    usage: Any
 
 class CompletionEvent(BaseModel):
     """Represents the LLM attempting to complete the task."""
