@@ -374,8 +374,22 @@ class AgenticEdit:
         </plan_mode_respond>
 
         ## MCP_TOOL
-
+        Description: Request to execute a tool via the Model Context Protocol (MCP) server. Use this when you need to execute a tool that is not natively supported by the agentic edit tools.
+        Parameters:
+        - server_name: (optional) The name of the MCP server to use. If not provided, the tool will automatically choose the best server based on the query.
+        - tool_name: (optional) The name of the tool to execute. If not provided, the tool will automatically choose the best tool in the selected server based on the query.
+        - query: (required) The query to pass to the tool.
+        Usage:
+        <use_mcp_tool>
+        <server_name>xxx</server_name>
+        <tool_name>xxxx</tool_name>
+        <query>
+        Your query here
+        </query>
+        </use_mcp_tool> 
+        
         {%if mcp_server_info %}
+        ### MCP_SERVER_LIST
         {{mcp_server_info}}
         {%endif%}
 
@@ -1100,6 +1114,7 @@ class AgenticEdit:
                     event_manager.write_result(
                         content=content.to_dict(), metadata=metadata)
                 elif isinstance(agent_event, CompletionEvent):
+                    # 在这里完成实际合并                    
                     metadata.path = "/agent/edit/completion"
                     content = EventContentCreator.create_completion(
                         success_code="AGENT_COMPLETE",

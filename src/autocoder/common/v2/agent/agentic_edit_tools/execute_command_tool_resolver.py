@@ -34,11 +34,11 @@ class ExecuteCommandToolResolver(BaseToolResolver):
         # Approval mechanism (simplified)
         if requires_approval:
              # In a real scenario, this would involve user interaction
-             printer.print_warning(f"Command requires approval: {command}")
+             printer.print_str_in_terminal(f"Command requires approval: {command}")
              # For now, let's assume approval is granted in non-interactive mode or handled elsewhere
              pass
 
-        printer.print_message(f"Executing command: {command} in {os.path.abspath(source_dir)}")
+        printer.print_str_in_terminal(f"Executing command: {command} in {os.path.abspath(source_dir)}")
         try:
             # Determine shell based on OS
             shell = True

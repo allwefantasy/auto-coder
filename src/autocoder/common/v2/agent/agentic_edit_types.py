@@ -55,7 +55,7 @@ class PlanModeRespondTool(BaseTool):
 class UseMcpTool(BaseTool):
     server_name: str
     tool_name: str
-    arguments: Dict[str, Any]
+    query:str
 
 # Event Types for Rich Output Streaming
 class LLMOutputEvent(BaseModel):

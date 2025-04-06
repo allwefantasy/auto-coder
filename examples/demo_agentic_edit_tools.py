@@ -1,5 +1,3 @@
-Hello Replaced
-This is a dummy file.
 import os
 import sys
 import time
@@ -84,3 +82,52 @@ replace_tool = ReplaceInFileTool(path="dummy.txt", diff=replace_diff)
 replace_resolver = ReplaceInFileToolResolver(agent, replace_tool, args)
 replace_result = replace_resolver.resolve()
 
+print(replace_result)
+
+print("\n--- Testing ExecuteCommandTool ---")
+exec_tool = ExecuteCommandTool(command="echo Hello Tool", requires_approval=False)
+exec_resolver = ExecuteCommandToolResolver(agent, exec_tool, args)
+exec_result = exec_resolver.resolve()
+print(exec_result)
+
+print("\n--- Testing SearchFilesTool ---")
+search_tool = SearchFilesTool(path=".", regex="dummy", file_pattern="*.txt")
+search_resolver = SearchFilesToolResolver(agent, search_tool, args)
+search_result = search_resolver.resolve()
+print(search_result)
+
+print("\n--- Testing ListFilesTool ---")
+list_tool = ListFilesTool(path=".", recursive=True)
+list_resolver = ListFilesToolResolver(agent, list_tool, args)
+list_result = list_resolver.resolve()
+print(list_result)
+
+print("\n--- Testing ListCodeDefinitionNamesTool ---")
+list_defs_tool = ListCodeDefinitionNamesTool(path=dummy_file_path)
+list_defs_resolver = ListCodeDefinitionNamesToolResolver(agent, list_defs_tool, args)
+list_defs_result = list_defs_resolver.resolve()
+print(list_defs_result)
+
+print("\n--- Testing AskFollowupQuestionTool ---")
+ask_tool = AskFollowupQuestionTool(question="Is this okay?", options=["Yes", "No"])
+ask_resolver = AskFollowupQuestionToolResolver(agent, ask_tool, args)
+ask_result = ask_resolver.resolve()
+print(ask_result)
+
+print("\n--- Testing AttemptCompletionTool ---")
+attempt_tool = AttemptCompletionTool(result="All tasks complete.", command="echo Done")
+attempt_resolver = AttemptCompletionToolResolver(agent, attempt_tool, args)
+attempt_result = attempt_resolver.resolve()
+print(attempt_result)
+
+print("\n--- Testing PlanModeRespondTool ---")
+plan_tool = PlanModeRespondTool(response="Here is the plan.", options=["Proceed", "Revise"])
+plan_resolver = PlanModeRespondToolResolver(agent, plan_tool, args)
+plan_result = plan_resolver.resolve()
+print(plan_result)
+
+print("\n--- Testing UseMcpTool ---")
+use_mcp_tool = UseMcpTool(server_name="dummy_server", tool_name="dummy_tool", arguments={"param1": "value1"})
+use_mcp_resolver = UseMcpToolResolver(agent, use_mcp_tool, args)
+use_mcp_result = use_mcp_resolver.resolve()
+print(use_mcp_result)

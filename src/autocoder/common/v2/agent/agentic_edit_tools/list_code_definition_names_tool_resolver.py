@@ -22,11 +22,11 @@ class ListCodeDefinitionNamesToolResolver(BaseToolResolver):
     def __init__(self, agent: Optional['AgenticEdit'], tool: ListCodeDefinitionNamesTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: ListCodeDefinitionNamesTool = tool # For type hinting
+        self.llm = self.agent.llm
 
-    def _get_index(self):
-        sources = self._get_sources()
+    def _get_index(self):        
         index_manager = IndexManager(
-            llm=self.llm, sources=sources, args=self.args)
+            llm=self.llm, sources=[], args=self.args)
         return index_manager
     
     def resolve(self) -> ToolResult:
