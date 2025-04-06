@@ -1116,12 +1116,7 @@ class AgenticEdit:
                 elif isinstance(agent_event, CompletionEvent):
                     # 在这里完成实际合并
                     try:
-                        # 遍历变更记录 self.get_all_file_changes()，然后同步回原始项目目录
-                        for change in self.get_all_file_changes():
-                            file_path = change['file_path']
-                            content = change['content']
-                            with open(file_path, 'w', encoding='utf-8') as f:
-                                f.write(content)
+                        self.apply_changes()
                     except Exception as e:
                         logger.exception(f"Error merging shadow changes to project: {e}")
 
@@ -1166,6 +1161,16 @@ class AgenticEdit:
             event_manager.write_error(content=error_content.to_dict(), metadata=metadata.to_dict())
             # Re-raise the exception if needed, or handle appropriately
             # raise e
+
+    def apply_changes(self):
+        """
+        Apply all tracked file changes to the original project directory.
+        """
+        for change in self.get_all_file_changes():
+            file_path = change['file_path']
+            content = change['content']
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
 
     def run_in_terminal(self, request: AgenticEditRequest):
         """
