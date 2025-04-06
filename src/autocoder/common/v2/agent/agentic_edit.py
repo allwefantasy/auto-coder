@@ -1214,15 +1214,7 @@ class AgenticEdit:
                     self.printer.print_str_in_terminal(
                         self.git_require_msg(source_dir=self.args.source_dir, error=str(e)),
                         style="red"
-                    )
-            else:
-                self.print_merged_blocks(merged_blocks)
-            
-            self.printer.print_in_terminal("merge_success", 
-                                         num_files=len(file_content_mapping.keys()),
-                                         num_changes=len(changes_to_make),
-                                         total_blocks=len(codes))
-            
+                    )                                                
         else:
             self.printer.print_in_terminal("no_changes_made")        
 
