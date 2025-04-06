@@ -11,6 +11,7 @@ from autocoder.common.printer import Printer
 from rich.console import Console
 from rich.panel import Panel
 from pydantic import SkipValidation
+from byzerllm.utils.types import SingleOutputMeta
 
 # Removed ResultManager, stream_out, git_utils, AutoCommandTools, count_tokens, global_cancel, ActionYmlFileManager, get_event_manager, EventContentCreator, get_run_context, AgenticFilterStreamOutType
 from autocoder.common import AutoCoderArgs, git_utils, SourceCodeList, SourceCode
@@ -1142,7 +1143,7 @@ class AgenticEdit:
                         metadata={}
                     )
                     event_manager.write_result(
-                        content=content.to_dict(), metadata=metadata)
+                        content=content.to_dict(), metadata=metadata.to_dict())
                 elif isinstance(agent_event, PlanModeRespondEvent):
                     metadata.path = "/agent/edit/plan_mode_respond"                    
                     content = EventContentCreator.create_completion(
@@ -1154,6 +1155,34 @@ class AgenticEdit:
                     )
                     event_manager.write_completion(
                         content=content.to_dict(), metadata=metadata.to_dict())
+
+                elif isinstance(agent_event, TokenUsageEvent):                    
+                    last_meta: SingleOutputMeta = agent_event.usage                                                                           
+                    # Get model info for pricing
+                    from autocoder.utils import llms as llm_utils
+                    model_name = ",".join(llm_utils.get_llm_names(self.llm))
+                    model_info = llm_utils.get_model_info(
+                        model_name, self.args.product_mode) or {}
+                    input_price = model_info.get(
+                        "input_price", 0.0) if model_info else 0.0
+                    output_price = model_info.get(
+                        "output_price", 0.0) if model_info else 0.0
+
+                    # Calculate costs
+                    input_cost = (last_meta.input_tokens_count *
+                                  input_price) / 1000000  # Convert to millions
+                    # Convert to millions
+                    output_cost = (
+                        last_meta.generated_tokens_count * output_price) / 1000000
+                                      
+                    get_event_manager(self.args.event_file).write_result(
+                        EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                            model_name=model_name,
+                            elapsed_time=0.0,
+                            first_token_time=last_meta.first_token_time,
+                            input_tokens=last_meta.input_tokens_count,
+                            output_tokens=last_meta.generated_tokens_count,
+                        ).to_dict()),metadata=metadata.to_dict())
 
                 elif isinstance(agent_event, CompletionEvent):
                     # 在这里完成实际合并
