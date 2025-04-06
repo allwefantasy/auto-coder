@@ -60,6 +60,7 @@ from autocoder.common.conf_validator import ConfigValidator
 from autocoder import command_parser as CommandParser
 from loguru import logger as global_logger
 from autocoder.utils.project_structure import EnhancedFileAnalyzer
+from autocoder.common import SourceCodeList
 
 
 ## 对外API，用于第三方集成 auto-coder 使用。
@@ -2777,10 +2778,17 @@ def conf_import(path: str):
     import_conf(os.getcwd(), path)
 
 @run_in_raw_thread()
-def auto_command(query: str,extra_args: Dict[str,Any]={}):
-    """处理/auto指令"""
+def auto_command(query: str,extra_args: Dict[str,Any]={}):    
+    """处理/auto指令"""    
     from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
     args = get_final_config()       
+
+    if args.enable_agentic_edit:
+        from autocoder.common.v2.agent.agentic_edit import AgenticEdit,AgenticEditRequest
+        llm = get_single_llm(args.chat_model or args.model,product_mode=args.product_mode)    
+        agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=[]), memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory), command_config=CommandConfig)
+        agent.run_in_terminal(AgenticEditRequest(user_input=query))
+        return
 
     # 准备请求参数
     request = AutoCommandRequest(
