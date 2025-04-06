@@ -2821,8 +2821,8 @@ def generate_new_yaml(query: str):
 def auto_command(query: str,extra_args: Dict[str,Any]={}):    
     """处理/auto指令"""        
     args = get_final_config() 
-    memory = get_memory()            
-    if args.enable_agentic_edit:
+    memory = get_memory()         
+    if args.enable_agentic_edit:        
         from autocoder.run_context import get_run_context,RunMode
         execute_file,args = generate_new_yaml(query)
         args.file = execute_file                      
@@ -2832,19 +2832,19 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
             with open(file,"r",encoding="utf-8") as f:
                 sources.append(SourceCode(module_name=file,source_code=f.read()))  
                     
-            llm = get_single_llm(args.code_model or args.model,product_mode=args.product_mode)    
-            agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
-                                conversation_history=[],
-                                memory_config=MemoryConfig(memory=memory, 
-                                save_memory_func=save_memory), command_config=CommandConfig,
-                                conversation_name="current"
-                                )
-            if get_run_context() == RunMode.TERMINAL:
-                agent.run_in_terminal(AgenticEditRequest(user_input=query))
-            else:
-                agent.run_with_events(AgenticEditRequest(user_input=query))
-            return
-    
+        llm = get_single_llm(args.code_model or args.model,product_mode=args.product_mode)    
+        agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
+                            conversation_history=[],
+                            memory_config=MemoryConfig(memory=memory, 
+                            save_memory_func=save_memory), command_config=CommandConfig,
+                            conversation_name="current"
+                            )
+        if get_run_context() == RunMode.TERMINAL:
+            agent.run_in_terminal(AgenticEditRequest(user_input=query))
+        else:
+            agent.run_with_events(AgenticEditRequest(user_input=query))
+        return
+        
     args = get_final_config()  
     # 准备请求参数
     request = AutoCommandRequest(
