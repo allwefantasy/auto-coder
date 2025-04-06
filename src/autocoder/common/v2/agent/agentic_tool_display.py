@@ -129,11 +129,11 @@ def get_tool_display_message(tool: BaseTool) -> str:
             "ellipsis": '...' if len(tool.content) > 150 else ''
         }
     elif isinstance(tool, ReplaceInFileTool):
-        snippet = tool.diff[:200]
+        snippet = tool.diff
         context = {
             "path": tool.path,
             "diff_snippet": snippet,
-            "ellipsis": '...' if len(tool.diff) > 200 else ''
+            "ellipsis": ''
         }
     elif isinstance(tool, ExecuteCommandTool):
         context = {"command": tool.command, "requires_approval": tool.requires_approval}
