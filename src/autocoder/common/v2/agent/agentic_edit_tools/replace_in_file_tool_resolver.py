@@ -5,7 +5,6 @@ import typing
 from autocoder.common import AutoCoderArgs
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import ReplaceInFileTool, ToolResult  # Import ToolResult from types
-from autocoder.common.auto_coder_lang import get_message_with_format
 from loguru import logger
 if typing.TYPE_CHECKING:
     from autocoder.common.v2.agent.agentic_edit import AgenticEdit
@@ -67,7 +66,7 @@ class ReplaceInFileToolResolver(BaseToolResolver):
 
         # Security check
         if not abs_file_path.startswith(abs_project_dir):
-            return ToolResult(success=False, message=get_message_with_format("replace_access_denied", file_path=file_path))
+            return ToolResult(success=False, message=f"Error: Access denied. Attempted to modify file outside the project directory: {file_path}")
 
         # Determine target path: shadow file if shadow_manager exists
         target_path = abs_file_path
@@ -91,14 +90,14 @@ class ReplaceInFileToolResolver(BaseToolResolver):
                     f.write(original_content)
                 logger.info(f"[Shadow] Initialized shadow file from original: {target_path}")
             else:
-                return ToolResult(success=False, message=get_message_with_format("replace_file_not_found", file_path=file_path))
+                return ToolResult(success=False, message=f"Error: File not found at path: {file_path}")
         except Exception as e:
             logger.error(f"Error reading file for replace '{file_path}': {str(e)}")
-            return ToolResult(success=False, message=get_message_with_format("replace_read_error", error=str(e)))
+            return ToolResult(success=False, message=f"An error occurred while reading the file for replacement: {str(e)}")
 
         parsed_blocks = self.parse_diff(diff_content)
         if not parsed_blocks:
-            return ToolResult(success=False, message=get_message_with_format("replace_invalid_diff"))
+            return ToolResult(success=False, message="Error: No valid SEARCH/REPLACE blocks found in the provided diff.")
 
         current_content = original_content
         applied_count = 0
@@ -122,7 +121,7 @@ class ReplaceInFileToolResolver(BaseToolResolver):
                 # continue applying remaining blocks
 
         if applied_count == 0 and errors:
-            return ToolResult(success=False, message=get_message_with_format("replace_apply_failed", errors="\n".join(errors)))
+            return ToolResult(success=False, message=f"Failed to apply any changes. Errors:\n" + "\n".join(errors))
 
         try:
             os.makedirs(os.path.dirname(target_path), exist_ok=True)
@@ -130,7 +129,7 @@ class ReplaceInFileToolResolver(BaseToolResolver):
                 f.write(current_content)
             logger.info(f"Successfully applied {applied_count}/{len(parsed_blocks)} changes to file: {file_path}")
 
-            message = get_message_with_format("replace_success", applied_count=applied_count, total_blocks=len(parsed_blocks), file_path=file_path)
+            message = f"Successfully applied {applied_count}/{len(parsed_blocks)} changes to file: {file_path}."
             if errors:
                 message += "\nWarnings:\n" + "\n".join(errors)
 
@@ -142,4 +141,4 @@ class ReplaceInFileToolResolver(BaseToolResolver):
             return ToolResult(success=True, message=message, content=current_content)
         except Exception as e:
             logger.error(f"Error writing replaced content to file '{file_path}': {str(e)}")
-            return ToolResult(success=False, message=get_message_with_format("replace_write_error", error=str(e)))
+            return ToolResult(success=False, message=f"An error occurred while writing the modified file: {str(e)}")

@@ -124,17 +124,17 @@ class AgenticEdit:
             self.shadow_manager, verbose=False)    
             
         self.mcp_server_info = ""
-        try:
-            self.mcp_server = get_mcp_server()
-            mcp_server_info_response = self.mcp_server.send_request(
-                McpServerInfoRequest(
-                    model=args.inference_model or args.model,
-                    product_mode=args.product_mode,
-                )
-            )
-            self.mcp_server_info = mcp_server_info_response.result
-        except Exception as e:                        
-            logger.error(f"Error getting MCP server info: {str(e)}")
+        # try:
+        #     self.mcp_server = get_mcp_server()
+        #     mcp_server_info_response = self.mcp_server.send_request(
+        #         McpServerInfoRequest(
+        #             model=args.inference_model or args.model,
+        #             product_mode=args.product_mode,
+        #         )
+        #     )
+        #     self.mcp_server_info = mcp_server_info_response.result
+        # except Exception as e:
+        #     logger.error(f"Error getting MCP server info: {str(e)}")
 
         # 变更跟踪信息
         # 格式: { file_path: FileChangeEntry(...) }        
