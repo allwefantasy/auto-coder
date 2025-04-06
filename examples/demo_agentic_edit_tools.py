@@ -71,3 +71,12 @@ Hello World
 This is a dummy file.
 Hello Replaced
 This is a dummy file.
+=======
+Hello Replaced
+This is a dummy file.
+>>>>>>> REPLACE
+'''
+replace_tool = ReplaceInFileTool(path="dummy.txt", diff=replace_diff)
+replace_resolver = ReplaceInFileToolResolver(agent, replace_tool, args)
+replace_result = replace_resolver.resolve()
+

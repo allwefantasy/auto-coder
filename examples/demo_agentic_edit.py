@@ -120,14 +120,8 @@ agentic_editor = AgenticEdit(
     # command_config is optional
 )
 
-# # 9. Prepare the request
-# request = AgenticEditRequest(user_input=USER_QUERY)
+# 9. Prepare the request
+request = AgenticEditRequest(user_input=USER_QUERY)
 
-# # 10. Run the agent using the new run_in_terminal method
-# agentic_editor.run_in_terminal(request)
-
-from autocoder.common.v2.agent.agentic_edit_tools import SearchFilesToolResolver
-from autocoder.common.v2.agent.agentic_edit_types import SearchFilesTool
-tool = SearchFilesToolResolver(agentic_editor, SearchFilesTool(path=project_dir,regex="*SearchFilesTool*"), args)
-v  = tool.resolve()
-print(v)
+# 10. Run the agent using the new run_in_terminal method
+agentic_editor.run_in_terminal(request)
