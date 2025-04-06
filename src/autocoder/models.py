@@ -17,7 +17,8 @@ default_models_list = [
         "is_reasoning": True,
         "input_price": 0.0,  # 单位:M/百万 input tokens
         "output_price": 0.0,  # 单位:M/百万 output tokens
-        "average_speed": 0.0  # 单位:秒/请求
+        "average_speed": 0.0,  # 单位:秒/请求
+        "max_output_tokens": 8096
     },    
     {
         "name": "deepseek_chat",
@@ -29,7 +30,8 @@ default_models_list = [
         "is_reasoning": False,
         "input_price": 0.0,
         "output_price": 0.0,
-        "average_speed": 0.0
+        "average_speed": 0.0,
+        "max_output_tokens": 8096
     },
     {
         "name":"o1",
@@ -302,6 +304,8 @@ def update_model(name: str, model_data: Dict) -> Dict:
             - is_reasoning: 是否为推理模型
             - input_price: 输入价格
             - output_price: 输出价格
+            - max_output_tokens: 最大输出tokens
+            - average_speed: 平均速度
             
     Returns:
         Dict: 更新后的模型信息，如果未找到则返回None
@@ -327,6 +331,10 @@ def update_model(name: str, model_data: Dict) -> Dict:
                 model["input_price"] = float(model_data["input_price"])
             if "output_price" in model_data:
                 model["output_price"] = float(model_data["output_price"])
+            if "max_output_tokens" in model_data:
+                model["max_output_tokens"] = int(model_data["max_output_tokens"])
+            if "average_speed" in model_data:
+                model["average_speed"] = float(model_data["average_speed"])
             
             # 保存更新后的模型
             models[i] = model
