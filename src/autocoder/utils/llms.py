@@ -69,7 +69,8 @@ def get_single_llm(model_names: str, product_mode: str):
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
-                        "saas.is_reasoning": model_info["is_reasoning"]
+                        "saas.is_reasoning": model_info["is_reasoning"],
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
                     }
                 )
                 return target_llm
@@ -87,7 +88,8 @@ def get_single_llm(model_names: str, product_mode: str):
                     "saas.base_url": model_info["base_url"],
                     "saas.api_key": model_info["api_key"],
                     "saas.model": model_info["model_name"],
-                    "saas.is_reasoning": model_info["is_reasoning"]
+                    "saas.is_reasoning": model_info["is_reasoning"],
+                    "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
                 }
             )
             return target_llm

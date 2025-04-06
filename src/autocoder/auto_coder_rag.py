@@ -636,7 +636,8 @@ def main(input_args: Optional[List[str]] = None):
                     "saas.base_url": model_info["base_url"],
                     "saas.api_key": model_info["api_key"],
                     "saas.model": model_info["model_name"],
-                    "saas.is_reasoning": model_info["is_reasoning"]
+                    "saas.is_reasoning": model_info["is_reasoning"],
+                    "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
                 }
             )
 
@@ -652,7 +653,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
-                        "saas.is_reasoning": model_info["is_reasoning"]
+                        "saas.is_reasoning": model_info["is_reasoning"],
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
                     }
                 )
                 llm.setup_sub_client("recall_model", recall_model)
@@ -668,7 +670,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
-                        "saas.is_reasoning": model_info["is_reasoning"]
+                        "saas.is_reasoning": model_info["is_reasoning"],
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
                     }
                 )
                 llm.setup_sub_client("chunk_model", chunk_model)
@@ -684,7 +687,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
-                        "saas.is_reasoning": model_info["is_reasoning"]
+                        "saas.is_reasoning": model_info["is_reasoning"],
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
                     }
                 )
                 llm.setup_sub_client("qa_model", qa_model)
@@ -700,7 +704,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
-                        "saas.is_reasoning": False
+                        "saas.is_reasoning": False,
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
                     }
                 )
                 llm.setup_sub_client("emb_model", emb_model)
@@ -792,7 +797,8 @@ def main(input_args: Optional[List[str]] = None):
                     "saas.base_url": model_info["base_url"],
                     "saas.api_key": model_info["api_key"],
                     "saas.model": model_info["model_name"],
-                    "saas.is_reasoning": model_info["is_reasoning"]
+                    "saas.is_reasoning": model_info["is_reasoning"],
+                    "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
                 }
             )
 
@@ -806,7 +812,8 @@ def main(input_args: Optional[List[str]] = None):
                     "saas.base_url": model_info["base_url"],
                     "saas.api_key": model_info["api_key"],
                     "saas.model": model_info["model_name"],
-                    "saas.is_reasoning": False
+                    "saas.is_reasoning": False,
+                    "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
                 }
             )
             llm.setup_sub_client("emb_model", emb_model)
@@ -852,7 +859,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
-                        "saas.is_reasoning": model_info["is_reasoning"]
+                        "saas.is_reasoning": model_info["is_reasoning"],
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
                     }
                 )
 
@@ -882,7 +890,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.base_url": model_info["base_url"],
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
-                        "saas.is_reasoning": model_info["is_reasoning"]
+                        "saas.is_reasoning": model_info["is_reasoning"],
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
                     }
                 )
 
