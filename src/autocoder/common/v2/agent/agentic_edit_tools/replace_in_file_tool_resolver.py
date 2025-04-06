@@ -1,14 +1,16 @@
 import os
 import re
 from typing import Dict, Any, Optional, List, Tuple
+import typing
 from autocoder.common import AutoCoderArgs
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import ReplaceInFileTool, ToolResult # Import ToolResult from types
 from loguru import logger
-
+if typing.TYPE_CHECKING:
+    from autocoder.common.v2.agent.agentic_edit import AgenticEdit
 
 class ReplaceInFileToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional[Any], tool: ReplaceInFileTool, args: AutoCoderArgs):
+    def __init__(self, agent: Optional['AgenticEdit'], tool: ReplaceInFileTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: ReplaceInFileTool = tool # For type hinting
 

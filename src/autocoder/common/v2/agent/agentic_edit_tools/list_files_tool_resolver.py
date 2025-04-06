@@ -3,12 +3,18 @@ from typing import Dict, Any, Optional
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import ListFilesTool, ToolResult # Import ToolResult from types
 from loguru import logger
+import typing
+from autocoder.common import AutoCoderArgs
+
+if typing.TYPE_CHECKING:
+    from autocoder.common.v2.agent.agentic_edit import AgenticEdit
 
 
 class ListFilesToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional[Any], tool: ListFilesTool, args: Dict[str, Any]):
+    def __init__(self, agent: Optional['AgenticEdit'], tool: ListFilesTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: ListFilesTool = tool # For type hinting
+        self.shadow_manager = self.agent.shadow_manager
 
     def resolve(self) -> ToolResult:
         list_path_str = self.tool.path

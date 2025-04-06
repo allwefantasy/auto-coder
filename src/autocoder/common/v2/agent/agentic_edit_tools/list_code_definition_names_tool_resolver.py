@@ -11,10 +11,15 @@ from autocoder.index.symbols_utils import (
     SymbolType,
     symbols_info_to_str,
 )
+import typing
+from autocoder.common import AutoCoderArgs
+
+if typing.TYPE_CHECKING:
+    from autocoder.common.v2.agent.agentic_edit import AgenticEdit
 
 
 class ListCodeDefinitionNamesToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional[Any], tool: ListCodeDefinitionNamesTool, args: Dict[str, Any]):
+    def __init__(self, agent: Optional['AgenticEdit'], tool: ListCodeDefinitionNamesTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: ListCodeDefinitionNamesTool = tool # For type hinting
 

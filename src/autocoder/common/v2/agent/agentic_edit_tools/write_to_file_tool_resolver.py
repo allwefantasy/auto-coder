@@ -3,10 +3,14 @@ from typing import Dict, Any, Optional
 from autocoder.common.v2.agent.agentic_edit_types import WriteToFileTool, ToolResult # Import ToolResult from types
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from loguru import logger
+from autocoder.common import AutoCoderArgs
+import typing
 
+if typing.TYPE_CHECKING:
+    from autocoder.common.v2.agent.agentic_edit import AgenticEdit
 
 class WriteToFileToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional[Any], tool: WriteToFileTool, args: Dict[str, Any]):
+    def __init__(self, agent: Optional['AgenticEdit'], tool: WriteToFileTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: WriteToFileTool = tool # For type hinting
 

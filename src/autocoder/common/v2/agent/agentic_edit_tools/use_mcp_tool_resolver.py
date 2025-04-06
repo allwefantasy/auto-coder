@@ -1,13 +1,17 @@
 from typing import Dict, Any, Optional
+import typing
 from autocoder.common import AutoCoderArgs
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import UseMcpTool, ToolResult # Import ToolResult from types
 from autocoder.common.mcp_server import get_mcp_server
 from loguru import logger
 
+if typing.TYPE_CHECKING:
+    from autocoder.common.v2.agent.agentic_edit import AgenticEdit
+
 
 class UseMcpToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional[Any], tool: UseMcpTool, args: AutoCoderArgs):
+    def __init__(self, agent: Optional['AgenticEdit'], tool: UseMcpTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: UseMcpTool = tool # For type hinting
 

@@ -1,12 +1,17 @@
 import os
 from typing import Dict, Any, Optional
+from autocoder.common import AutoCoderArgs
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import ReadFileTool, ToolResult # Import ToolResult from types
 from loguru import logger
+import typing
+
+if typing.TYPE_CHECKING:
+    from autocoder.common.v2.agent.agentic_edit import AgenticEdit
 
 
 class ReadFileToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional[Any], tool: ReadFileTool, args: Dict[str, Any]):
+    def __init__(self, agent: Optional['AgenticEdit'], tool: ReadFileTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: ReadFileTool = tool # For type hinting
 

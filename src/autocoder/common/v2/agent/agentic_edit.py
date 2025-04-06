@@ -35,6 +35,9 @@ from rich.markdown import Markdown  # Added
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events.event_types import Event, EventType, EventMetadata
 from autocoder.events import event_content as EventContentCreator
+from autocoder.shadows.shadow_manager import ShadowManager
+from autocoder.linters.shadow_linter import ShadowLinter
+from autocoder.compilers.shadow_compiler import ShadowCompiler
 # Import the new display function
 from autocoder.common.v2.agent.agentic_tool_display import get_tool_display_message
 from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific resolvers
@@ -104,6 +107,12 @@ class AgenticEdit:
         self.command_config = command_config  # Note: command_config might be unused now
         self.project_type_analyzer = ProjectTypeAnalyzer(
             args=args, llm=self.llm)
+
+        self.shadow_manager = ShadowManager(
+            args.source_dir, args.event_file, args.ignore_clean_shadows)
+        self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
+        self.shadow_compiler = ShadowCompiler(
+            self.shadow_manager, verbose=False)    
             
         self.mcp_server_info = ""
         # try:

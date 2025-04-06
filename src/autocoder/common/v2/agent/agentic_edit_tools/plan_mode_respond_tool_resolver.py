@@ -1,10 +1,15 @@
 from typing import Dict, Any, Optional
+import typing
+from autocoder.common import AutoCoderArgs
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import PlanModeRespondTool, ToolResult # Import ToolResult from types
 from loguru import logger
 
+if typing.TYPE_CHECKING:
+    from autocoder.common.v2.agent.agentic_edit import AgenticEdit
+
 class PlanModeRespondToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional[Any], tool: PlanModeRespondTool, args: Dict[str, Any]):
+    def __init__(self, agent: Optional['AgenticEdit'], tool: PlanModeRespondTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: PlanModeRespondTool = tool # For type hinting
 

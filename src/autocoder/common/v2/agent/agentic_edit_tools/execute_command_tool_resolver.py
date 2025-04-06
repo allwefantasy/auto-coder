@@ -6,10 +6,14 @@ from autocoder.common.v2.agent.agentic_edit_types import ExecuteCommandTool, Too
 from autocoder.common import shells
 from autocoder.common.printer import Printer
 from loguru import logger
+import typing   
+from autocoder.common import AutoCoderArgs
 
+if typing.TYPE_CHECKING:
+    from autocoder.common.v2.agent.agentic_edit import AgenticEdit
 
 class ExecuteCommandToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional[Any], tool: ExecuteCommandTool, args: Dict[str, Any]):
+    def __init__(self, agent: Optional['AgenticEdit'], tool: ExecuteCommandTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: ExecuteCommandTool = tool # For type hinting
 
