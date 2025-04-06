@@ -668,8 +668,7 @@ def main():
             try:
                 # Shutdown all plugins before exiting
                 plugin_manager.shutdown_all()
-
-                save_memory()
+                # save_memory()
                 try:
                     if get_mcp_server():
                         get_mcp_server().stop()

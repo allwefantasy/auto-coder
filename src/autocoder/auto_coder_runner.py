@@ -60,7 +60,7 @@ from autocoder.common.conf_validator import ConfigValidator
 from autocoder import command_parser as CommandParser
 from loguru import logger as global_logger
 from autocoder.utils.project_structure import EnhancedFileAnalyzer
-from autocoder.common import SourceCodeList
+from autocoder.common import SourceCodeList,SourceCode
 
 
 ## 对外API，用于第三方集成 auto-coder 使用。
@@ -2785,8 +2785,13 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
 
     if args.enable_agentic_edit:
         from autocoder.common.v2.agent.agentic_edit import AgenticEdit,AgenticEditRequest
+        current_files = get_memory()["current_files"]["files"] or []
+        sources = []
+        for file in current_files:
+            with open(file,"r",encoding="utf-8") as f:
+                sources.append(SourceCode(module_name=file,source_code=f.read()))
         llm = get_single_llm(args.code_model or args.model,product_mode=args.product_mode)    
-        agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=[]), 
+        agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
                             conversation_history=[],
                             memory_config=MemoryConfig(memory=memory, 
                             save_memory_func=save_memory), command_config=CommandConfig)

@@ -259,8 +259,8 @@ class AgenticFilter:
         3.  **深入分析**:
             *   使用 `read_files` 读取关键文件的内容进行确认。如果文件过大，使用 `line_ranges` 参数分段读取。
             *   如有必要，使用 `run_python` 或 `execute_shell_command` 执行代码或命令进行更复杂的分析。
-        4.  **迭代决策**: 根据工具的返回结果，你可能需要多次调用不同的工具来逐步缩小范围或获取更多信息。
-        5.  **最终响应**: 当你确定了所有需要参考和修改的文件后，**必须**调用 `output_result` 工具，并提供符合其要求格式的JSON字符串作为其 `response` 参数。
+        4.  **迭代决策**: 根据工具的返回结果，你可能需要多次调用不同的工具来逐步缩小范围或获取更多信息。        
+        6.  **最终响应**: 当你确定了所有需要参考和修改的文件后，**必须**调用 `output_result` 工具，并提供符合其要求格式的JSON字符串作为其 `response` 参数。
             该json格式要求为：
             ```json
             {
@@ -273,9 +273,17 @@ class AgenticFilter:
                 "reasoning": "详细说明你是如何通过分析和使用工具得出这个文件列表的。"
             }
             ```
-
-
-        """
+        
+        {% if enable_active_context %}
+        ** 非常非常重要的提示 **
+        每一个目录都有一个描述信息，比如 {{ project_path }}/src/abc/bbc 的目录描述信息会放在 {{ project_path }}/.auto-coder/active-context/src/abc/bbc/active.md 文件中。
+        你可以使用 read_files 函数读取，从而帮助你更好的挑选要详细阅读哪个文件。值得注意的是，active.md 并不会包含该目录下所有的文件信息，只保存最近发生变更的文件的信息。
+        {% endif %}
+        """        
+        return {
+            "project_path": os.path.abspath(self.args.source_dir),
+            "enable_active_context": self.args.enable_active_context,
+        }
 
     @byzerllm.prompt()
     def _execute_command_result(self, result: str) -> str:
@@ -590,8 +598,7 @@ class AgenticFilter:
          - 如果未找到匹配项，会返回提示信息
 
         </usage>
-        </command>
-
+        </command>        
         <command>
         <n>execute_mcp_server</n>
         <description>执行MCP服务器</description>
