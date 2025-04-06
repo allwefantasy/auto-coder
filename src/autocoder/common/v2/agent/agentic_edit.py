@@ -40,6 +40,7 @@ from autocoder.linters.shadow_linter import ShadowLinter
 from autocoder.compilers.shadow_compiler import ShadowCompiler
 # Import the new display function
 from autocoder.common.v2.agent.agentic_tool_display import get_tool_display_message
+from autocoder.common.v2.agent.agentic_edit_types import FileChangeEntry
 from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific resolvers
     BaseToolResolver,
     ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
@@ -128,8 +129,7 @@ class AgenticEdit:
         #     logger.error(f"Error getting MCP server info: {str(e)}")
 
         # 变更跟踪信息
-        # 格式: { file_path: FileChangeEntry(...) }
-        from autocoder.common.v2.agent.agentic_edit_types import FileChangeEntry
+        # 格式: { file_path: FileChangeEntry(...) }        
         self.file_changes: Dict[str, FileChangeEntry] = {}
 
     def record_file_change(self, file_path: str, change_type: str, diff: Optional[str] = None, content: Optional[str] = None):
