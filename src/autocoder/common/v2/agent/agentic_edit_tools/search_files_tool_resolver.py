@@ -54,9 +54,14 @@ class SearchFilesToolResolver(BaseToolResolver):
             compiled_regex = re.compile(regex_pattern)
             search_glob_pattern = os.path.join(search_base_path, "**", file_pattern)
 
-            logger.info(f"Searching for regex '{regex_pattern}' in files matching '{file_pattern}' under '{search_base_path}' (shadow: {shadow_exists})")
+            ignored_dirs = ['.git', 'node_modules', '.mvn', '.idea', '__pycache__', '.venv', 'venv', 'dist', 'build', '.gradle']
+            logger.info(f"Searching for regex '{regex_pattern}' in files matching '{file_pattern}' under '{search_base_path}' (shadow: {shadow_exists}), ignoring directories: {ignored_dirs}")
 
             for filepath in glob.glob(search_glob_pattern, recursive=True):
+                normalized_path = filepath.replace("\\", "/")  # Normalize for Windows paths
+                if any(f"/{ignored_dir}/" in normalized_path or normalized_path.endswith(f"/{ignored_dir}") or f"/{ignored_dir}/" in normalized_path for ignored_dir in ignored_dirs):
+                    continue
+
                 if os.path.isfile(filepath):
                     try:
                         with open(filepath, 'r', encoding='utf-8', errors='replace') as f:

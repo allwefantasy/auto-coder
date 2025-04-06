@@ -13,6 +13,7 @@ from pydantic import SkipValidation
 
 # Removed ResultManager, stream_out, git_utils, AutoCommandTools, count_tokens, global_cancel, ActionYmlFileManager, get_event_manager, EventContentCreator, get_run_context, AgenticFilterStreamOutType
 from autocoder.common import AutoCoderArgs, git_utils, SourceCodeList, SourceCode
+from autocoder.common.global_cancel import global_cancel
 from autocoder.common import detect_env
 from autocoder.common import shells
 from loguru import logger
@@ -742,11 +743,12 @@ class AgenticEdit:
             f"Initial conversation history size: {len(conversations)}")
 
         while True:
+            global_cancel.check_and_raise()
             logger.info(
                 f"Starting LLM interaction cycle. History size: {len(conversations)}")
             tool_executed = False
             assistant_buffer = ""
-
+            
             llm_response_gen = stream_chat_with_continue(
                 llm=self.llm,
                 conversations=conversations,
@@ -759,6 +761,7 @@ class AgenticEdit:
                 llm_response_gen,meta_holder)
 
             for event in parsed_events:
+                global_cancel.check_and_raise()
                 if isinstance(event, (LLMOutputEvent, LLMThinkingEvent)):
                     assistant_buffer += event.text
                     yield event  # Yield text/thinking immediately for display
@@ -939,6 +942,8 @@ class AgenticEdit:
                 return None
 
         for content_chunk, metadata in generator:
+            global_cancel.check_and_raise()
+
             meta_holder.meta = metadata
             if not content_chunk:
                 continue
@@ -1170,17 +1175,16 @@ class AgenticEdit:
             )
             event_manager.write_error(content=error_content.to_dict(), metadata=metadata.to_dict())
             # Re-raise the exception if needed, or handle appropriately
-            # raise e
+            raise e
 
     def apply_changes(self):
         """
         Apply all tracked file changes to the original project directory.
-        """        
-        for change in self.get_all_file_changes():
-            file_path = change['file_path']
-            content = change['content']
+        """
+        print("开始合并应用....")        
+        for (file_path,change) in self.get_all_file_changes().items():            
             with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(content)
+                f.write(change.content)
 
         if len(self.get_all_file_changes()) > 0:
             if not self.args.skip_commit:
@@ -1264,8 +1268,7 @@ class AgenticEdit:
                     panel_content = [base_content]
                     syntax_content = None
 
-                    if result.content is not None:
-                        panel_content.append("[bold]Content:[/bold]\n")
+                    if result.content is not None:                        
                         content_str = ""
                         try:
                             if isinstance(result.content, (dict, list)):
@@ -1303,16 +1306,16 @@ class AgenticEdit:
                                     lexer = "text"
 
                                 syntax_content = Syntax(
-                                    result.content[0:100], lexer, theme="default", line_numbers=True)
+                                    result.content[0:100]+"...", lexer, theme="default", line_numbers=True)
                             else:
                                 content_str = str(result.content)
                                 # Append simple string content directly
-                                panel_content.append(content_str[0:100])
+                                panel_content.append(content_str[0:100]+"...")
                         except Exception as e:
                             logger.warning(
                                 f"Error formatting tool result content: {e}")
                             panel_content.append(
-                                str(result.content))  # Fallback
+                                str(result.content)[0:100]+"...")  # Fallback
 
                     # Print the base info panel
                     console.print(Panel("\n".join(
@@ -1344,5 +1347,6 @@ class AgenticEdit:
                 "An unexpected error occurred during agent execution:")
             console.print(Panel(
                 f"[bold red]FATAL ERROR:[/bold red]\n{str(e)}", title="🔥 System Error", border_style="red"))
+            raise e
         finally:
             console.rule("[bold cyan]Agentic Edit Finished[/]")
