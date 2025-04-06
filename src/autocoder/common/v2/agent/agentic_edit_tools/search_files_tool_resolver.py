@@ -16,6 +16,7 @@ class SearchFilesToolResolver(BaseToolResolver):
     def __init__(self, agent: Optional['AgenticEdit'], tool: SearchFilesTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: SearchFilesTool = tool # For type hinting
+        self.shadow_manager = self.agent.shadow_manager if self.agent else None
 
     def resolve(self) -> ToolResult:
         search_path_str = self.tool.path
@@ -28,17 +29,32 @@ class SearchFilesToolResolver(BaseToolResolver):
         if not absolute_search_path.startswith(os.path.abspath(source_dir)):
             return ToolResult(success=False, message=f"Error: Access denied. Attempted to search outside the project directory: {search_path_str}")
 
-        if not os.path.exists(absolute_search_path):
+        # Determine search base directory: prefer shadow if exists
+        search_base_path = absolute_search_path
+        shadow_exists = False
+        if self.shadow_manager:
+            try:
+                shadow_dir_path = self.shadow_manager.to_shadow_path(absolute_search_path)
+                if os.path.exists(shadow_dir_path) and os.path.isdir(shadow_dir_path):
+                    search_base_path = shadow_dir_path
+                    shadow_exists = True
+            except Exception as e:
+                logger.warning(f"Error checking shadow path for {absolute_search_path}: {e}")
+
+        # Validate that at least one of the directories exists
+        if not os.path.exists(absolute_search_path) and not shadow_exists:
             return ToolResult(success=False, message=f"Error: Search path not found: {search_path_str}")
-        if not os.path.isdir(absolute_search_path):
-             return ToolResult(success=False, message=f"Error: Search path is not a directory: {search_path_str}")
+        if os.path.exists(absolute_search_path) and not os.path.isdir(absolute_search_path):
+            return ToolResult(success=False, message=f"Error: Search path is not a directory: {search_path_str}")
+        if shadow_exists and not os.path.isdir(search_base_path):
+            return ToolResult(success=False, message=f"Error: Shadow search path is not a directory: {search_base_path}")
 
         results = []
         try:
             compiled_regex = re.compile(regex_pattern)
-            search_glob_pattern = os.path.join(absolute_search_path, "**", file_pattern)
+            search_glob_pattern = os.path.join(search_base_path, "**", file_pattern)
 
-            logger.info(f"Searching for regex '{regex_pattern}' in files matching '{file_pattern}' under '{absolute_search_path}'")
+            logger.info(f"Searching for regex '{regex_pattern}' in files matching '{file_pattern}' under '{search_base_path}' (shadow: {shadow_exists})")
 
             for filepath in glob.glob(search_glob_pattern, recursive=True):
                 if os.path.isfile(filepath):
@@ -51,7 +67,15 @@ class SearchFilesToolResolver(BaseToolResolver):
                                 context_start = max(0, i - 2)
                                 context_end = min(len(lines), i + 3)
                                 context = "".join([f"{j+1}: {lines[j]}" for j in range(context_start, context_end)])
-                                relative_path = os.path.relpath(filepath, source_dir)
+                                # For shadow files, convert to project-relative path
+                                if shadow_exists and self.shadow_manager:
+                                    try:
+                                        abs_project_path = self.shadow_manager.from_shadow_path(filepath)
+                                        relative_path = os.path.relpath(abs_project_path, source_dir)
+                                    except Exception:
+                                        relative_path = os.path.relpath(filepath, source_dir)
+                                else:
+                                    relative_path = os.path.relpath(filepath, source_dir)
                                 results.append({
                                     "path": relative_path,
                                     "line_number": i + 1,
