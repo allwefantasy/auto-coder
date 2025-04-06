@@ -1276,6 +1276,12 @@ class AgenticEdit:
                         console.print(syntax_content)
 
                 elif isinstance(event, CompletionEvent):
+                    # 在这里完成实际合并
+                    try:
+                        self.apply_changes()
+                    except Exception as e:
+                        logger.exception(f"Error merging shadow changes to project: {e}")
+
                     console.print(Panel(Markdown(event.completion.result),
                                   title="🏁 Task Completion", border_style="green", title_align="left"))
                     if event.completion.command:
