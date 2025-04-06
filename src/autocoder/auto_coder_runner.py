@@ -22,6 +22,8 @@ from autocoder.common.result_manager import ResultManager
 from autocoder.version import __version__
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.utils import get_last_yaml_file
+from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
+from autocoder.common.v2.agent.agentic_edit import AgenticEdit,AgenticEditRequest
 from autocoder.index.symbols_utils import (
     extract_symbols,
     SymbolType,
@@ -2817,14 +2819,12 @@ def generate_new_yaml(query: str):
 
 @run_in_raw_thread()
 def auto_command(query: str,extra_args: Dict[str,Any]={}):    
-    """处理/auto指令"""    
-    from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
-               
+    """处理/auto指令"""        
+    args = get_final_config() 
+    memory = get_memory()            
     if args.enable_agentic_edit:
         execute_file,args = generate_new_yaml(query)
-        args.file = execute_file
-        from autocoder.common.v2.agent.agentic_edit import AgenticEdit,AgenticEditRequest
-        memory = get_memory()        
+        args.file = execute_file                      
         current_files = memory.get("current_files",{}).get("files",[])
         sources = []
         for file in current_files:
