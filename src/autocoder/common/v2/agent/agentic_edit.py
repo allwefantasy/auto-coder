@@ -1114,7 +1114,20 @@ class AgenticEdit:
                     event_manager.write_result(
                         content=content.to_dict(), metadata=metadata)
                 elif isinstance(agent_event, CompletionEvent):
-                    # 在这里完成实际合并                    
+                    # 在这里完成实际合并
+                    try:
+                        # 将影子目录中的内容同步回原始项目目录
+                        if hasattr(self, 'shadow_manager') and self.shadow_manager is not None:
+                            self.shadow_manager._create_links(self.shadow_manager.source_dir, self.shadow_manager.source_dir)
+                            # 由于 _create_links 默认跳过 .auto-coder/.git 等隐藏目录，
+                            # 并且如果影子中有文件，则会替换源目录中的文件。
+                            # 这里相当于合并操作。
+                            logger.info("Project files updated from shadow system upon task completion.")
+                        else:
+                            logger.warning("No shadow manager found, skipping project merge on completion.")
+                    except Exception as e:
+                        logger.exception(f"Error merging shadow changes to project: {e}")
+
                     metadata.path = "/agent/edit/completion"
                     content = EventContentCreator.create_completion(
                         success_code="AGENT_COMPLETE",
