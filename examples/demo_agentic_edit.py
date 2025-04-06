@@ -5,8 +5,8 @@ from typing import Iterator, Union, Generator
 from autocoder.auto_coder_runner import load_tokenizer, configure_logger
 from autocoder.common import AutoCoderArgs, SourceCode, SourceCodeList
 from autocoder.utils.llms import get_single_llm
-from autocoder.agent.agentic_edit import AgenticEdit, MemoryConfig
-from autocoder.agent.agentic_edit_types import (
+from autocoder.common.v2.agent.agentic_edit import AgenticEdit, MemoryConfig
+from autocoder.common.v2.agent.agentic_edit_types import (
     AgenticEditRequest,
     LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
     ToolResultEvent, CompletionEvent, ErrorEvent

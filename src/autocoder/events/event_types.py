@@ -68,6 +68,7 @@ class EventMetadata(BaseModel):
     stream_out_type: str = field(default="") # 标记，比如当前这个流式是用于什么场景的，比如用于产生命令的还是啥
     is_streaming: bool = field(default=False) # 是否是流式输出
     output: str = field(default="") # result or delta, 在流式里，我们也可能会输出 ResultContent 类型
+    path: str = field(default="") # 唯一路径，比如 /agent/edit/tool/call
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert event metadata to dictionary for serialization"""

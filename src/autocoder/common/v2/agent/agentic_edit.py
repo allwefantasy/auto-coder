@@ -22,45 +22,46 @@ from autocoder.utils.auto_project_type import ProjectTypeAnalyzer
 from rich.text import Text
 from autocoder.common.mcp_server import get_mcp_server, McpServerInfoRequest
 from autocoder.common import SourceCodeList
-from autocoder.common.utils_code_auto_generate import stream_chat_with_continue # Added import
+from autocoder.common.utils_code_auto_generate import stream_chat_with_continue  # Added import
 import re
 import xml.sax.saxutils
-import time # Added for sleep
+import time  # Added for sleep
 from typing import Iterator, Union, Type, Generator
 from xml.etree import ElementTree as ET
-from rich.console import Console # Added
-from rich.panel import Panel # Added
-from rich.syntax import Syntax # Added
-from rich.markdown import Markdown # Added
+from rich.console import Console  # Added
+from rich.panel import Panel  # Added
+from rich.syntax import Syntax  # Added
+from rich.markdown import Markdown  # Added
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events.event_types import Event, EventType, EventMetadata
 from autocoder.events import event_content as EventContentCreator
-from .agentic_tool_display import get_tool_display_message # Import the new display function
-from autocoder.agent.agentic_edit_tools import ( # Import specific resolvers
+# Import the new display function
+from autocoder.common.v2.agent.agentic_tool_display import get_tool_display_message
+from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific resolvers
     BaseToolResolver,
     ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
     ReplaceInFileToolResolver, SearchFilesToolResolver, ListFilesToolResolver,
     ListCodeDefinitionNamesToolResolver, AskFollowupQuestionToolResolver,
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver
 )
-from autocoder.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
-                                                MemoryConfig, CommandConfig, BaseTool,
-                                                ExecuteCommandTool, ReadFileTool,
-                                                WriteToFileTool,
-                                                ReplaceInFileTool,
-                                                SearchFilesTool,
-                                                ListFilesTool,
-                                                ListCodeDefinitionNamesTool, AskFollowupQuestionTool,
-                                                AttemptCompletionTool, PlanModeRespondTool, UseMcpTool,
-                                                TOOL_MODEL_MAP,
-                                                # Event Types
-                                                LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
-                                                ToolResultEvent, CompletionEvent, ErrorEvent,
-                                                # Import specific tool types for display mapping
-                                                ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
-                                                ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
-                                                AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
-                                                                                                )
+from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
+                                                          MemoryConfig, CommandConfig, BaseTool,
+                                                          ExecuteCommandTool, ReadFileTool,
+                                                          WriteToFileTool,
+                                                          ReplaceInFileTool,
+                                                          SearchFilesTool,
+                                                          ListFilesTool,
+                                                          ListCodeDefinitionNamesTool, AskFollowupQuestionTool,
+                                                          AttemptCompletionTool, PlanModeRespondTool, UseMcpTool,
+                                                          TOOL_MODEL_MAP,
+                                                          # Event Types
+                                                          LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
+                                                          ToolResultEvent, CompletionEvent, ErrorEvent,
+                                                          # Import specific tool types for display mapping
+                                                          ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
+                                                          ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
+                                                          AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
+                                                          )
 
 
 # Map Pydantic Tool Models to their Resolver Classes
@@ -73,7 +74,7 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     ListFilesTool: ListFilesToolResolver,
     ListCodeDefinitionNamesTool: ListCodeDefinitionNamesToolResolver,
     AskFollowupQuestionTool: AskFollowupQuestionToolResolver,
-    AttemptCompletionTool: AttemptCompletionToolResolver, # Will stop the loop anyway
+    AttemptCompletionTool: AttemptCompletionToolResolver,  # Will stop the loop anyway
     PlanModeRespondTool: PlanModeRespondToolResolver,
     UseMcpTool: UseMcpToolResolver,
 }
@@ -97,9 +98,10 @@ class AgenticEdit:
         # Removed self.tools and self.result_manager
         self.files = files
         # Removed self.max_iterations
-        self.conversation_history = conversation_history # Note: This might need updating based on the new flow
+        # Note: This might need updating based on the new flow
+        self.conversation_history = conversation_history
         self.memory_config = memory_config
-        self.command_config = command_config # Note: command_config might be unused now
+        self.command_config = command_config  # Note: command_config might be unused now
         self.project_type_analyzer = ProjectTypeAnalyzer(
             args=args, llm=self.llm)
         self.mcp_server_info = ""
@@ -113,7 +115,7 @@ class AgenticEdit:
         #     )
         #     self.mcp_server_info = mcp_server_info_response.result
         # except Exception as e:
-        #     logger.error(f"Error getting MCP server info: {str(e)}")            
+        #     logger.error(f"Error getting MCP server info: {str(e)}")
 
     @byzerllm.prompt()
     def _analyze(self, request: AgenticEditRequest) -> str:
@@ -122,10 +124,10 @@ class AgenticEdit:
 
         ====
 
-        FILES
+        FILES CONTEXT
 
         The following files are provided to you as context for the user's task. You can use these files to understand the project structure and codebase, and to make informed decisions about which files to modify.
-        If you need to read more files, you can use the read_file tool.
+        If you need to read more files, you can use the tools to find and read more files.
 
         <files>
         {{files}}
@@ -574,8 +576,8 @@ class AgenticEdit:
             shell_type = "cmd"
         elif shells.is_running_in_powershell():
             shell_type = "powershell"
-        return {            
-            "conversation_history": self.conversation_history,            
+        return {
+            "conversation_history": self.conversation_history,
             "env_info": env_info,
             "shell_type": shell_type,
             "shell_encoding": shells.get_terminal_encoding(),
@@ -593,9 +595,11 @@ class AgenticEdit:
         """
         Reconstructs the XML representation of a tool call from its Pydantic model.
         """
-        tool_tag = next((tag for tag, model in TOOL_MODEL_MAP.items() if isinstance(tool, model)), None)
+        tool_tag = next(
+            (tag for tag, model in TOOL_MODEL_MAP.items() if isinstance(tool, model)), None)
         if not tool_tag:
-            logger.error(f"Cannot find tag name for tool type {type(tool).__name__}")
+            logger.error(
+                f"Cannot find tag name for tool type {type(tool).__name__}")
             # Return a placeholder or raise? Let's return an error XML string.
             return f"<error>Could not find tag for tool {type(tool).__name__}</error>"
 
@@ -607,7 +611,8 @@ class AgenticEdit:
             elif isinstance(field_value, (list, dict)):
                 # Simple string representation for list/dict for now.
                 # Consider JSON within the tag if needed and supported by the prompt/LLM.
-                value_str = json.dumps(field_value, ensure_ascii=False) # Use JSON for structured data
+                # Use JSON for structured data
+                value_str = json.dumps(field_value, ensure_ascii=False)
             else:
                 value_str = str(field_value)
 
@@ -616,16 +621,16 @@ class AgenticEdit:
 
             # Handle multi-line content like 'content' or 'diff' - ensure newlines are preserved
             if '\n' in value_str:
-                 # Add newline before closing tag for readability if content spans multiple lines
-                 xml_parts.append(f"<{field_name}>\n{escaped_value}\n</{field_name}>")
+                # Add newline before closing tag for readability if content spans multiple lines
+                xml_parts.append(
+                    f"<{field_name}>\n{escaped_value}\n</{field_name}>")
             else:
-                 xml_parts.append(f"<{field_name}>{escaped_value}</{field_name}>")
-
+                xml_parts.append(
+                    f"<{field_name}>{escaped_value}</{field_name}>")
 
         xml_parts.append(f"</{tool_tag}>")
         # Join with newline for readability, matching prompt examples
         return "\n".join(xml_parts)
-
 
     def analyze(self, request: AgenticEditRequest) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ToolResultEvent, CompletionEvent, ErrorEvent], None, None]:
         """
@@ -637,10 +642,12 @@ class AgenticEdit:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": request.user_input}
         ]
-        logger.debug(f"Initial conversation history size: {len(conversations)}")
+        logger.debug(
+            f"Initial conversation history size: {len(conversations)}")
 
         while True:
-            logger.info(f"Starting LLM interaction cycle. History size: {len(conversations)}")
+            logger.info(
+                f"Starting LLM interaction cycle. History size: {len(conversations)}")
             tool_executed = False
             assistant_buffer = ""
 
@@ -651,53 +658,66 @@ class AgenticEdit:
                 args=self.args
             )
 
-            parsed_events = self.stream_and_parse_llm_response(llm_response_gen)
+            parsed_events = self.stream_and_parse_llm_response(
+                llm_response_gen)
 
             for event in parsed_events:
                 if isinstance(event, (LLMOutputEvent, LLMThinkingEvent)):
                     assistant_buffer += event.text
-                    yield event # Yield text/thinking immediately for display
+                    yield event  # Yield text/thinking immediately for display
 
                 elif isinstance(event, ToolCallEvent):
                     tool_executed = True
                     tool_obj = event.tool
-                    tool_xml = event.tool_xml # Already reconstructed by parser
+                    tool_xml = event.tool_xml  # Already reconstructed by parser
 
                     # Append assistant's thoughts and the tool call to history
                     conversations.append({
                         "role": "assistant",
                         "content": assistant_buffer + tool_xml
                     })
-                    assistant_buffer = "" # Reset buffer after tool call
+                    assistant_buffer = ""  # Reset buffer after tool call
 
-                    yield event # Yield the ToolCallEvent for display
+                    yield event  # Yield the ToolCallEvent for display
 
                     # Handle AttemptCompletion separately as it ends the loop
                     if isinstance(tool_obj, AttemptCompletionTool):
-                        logger.info("AttemptCompletionTool received. Finalizing session.")
+                        logger.info(
+                            "AttemptCompletionTool received. Finalizing session.")
                         yield CompletionEvent(completion=tool_obj, completion_xml=tool_xml)
-                        logger.info("AgenticEdit analyze loop finished due to AttemptCompletion.")
+                        logger.info(
+                            "AgenticEdit analyze loop finished due to AttemptCompletion.")
                         return
 
                     # Resolve the tool
                     resolver_cls = TOOL_RESOLVER_MAP.get(type(tool_obj))
                     if not resolver_cls:
-                        logger.error(f"No resolver implemented for tool {type(tool_obj).__name__}")
-                        tool_result = ToolResult(success=False, message="Error: Tool resolver not implemented.", content=None)
-                        result_event = ToolResultEvent(tool_name=type(tool_obj).__name__, result=tool_result)
+                        logger.error(
+                            f"No resolver implemented for tool {type(tool_obj).__name__}")
+                        tool_result = ToolResult(
+                            success=False, message="Error: Tool resolver not implemented.", content=None)
+                        result_event = ToolResultEvent(tool_name=type(
+                            tool_obj).__name__, result=tool_result)
                         error_xml = f"<tool_result tool_name='{type(tool_obj).__name__}' success='false'><message>Error: Tool resolver not implemented.</message><content></content></tool_result>"
                     else:
                         try:
-                            resolver = resolver_cls(agent=self, tool=tool_obj, args=self.args)
-                            logger.info(f"Executing tool: {type(tool_obj).__name__} with params: {tool_obj.model_dump()}")
+                            resolver = resolver_cls(
+                                agent=self, tool=tool_obj, args=self.args)
+                            logger.info(
+                                f"Executing tool: {type(tool_obj).__name__} with params: {tool_obj.model_dump()}")
                             tool_result: ToolResult = resolver.resolve()
-                            logger.info(f"Tool Result: Success={tool_result.success}, Message='{tool_result.message}'")
-                            result_event = ToolResultEvent(tool_name=type(tool_obj).__name__, result=tool_result)
+                            logger.info(
+                                f"Tool Result: Success={tool_result.success}, Message='{tool_result.message}'")
+                            result_event = ToolResultEvent(tool_name=type(
+                                tool_obj).__name__, result=tool_result)
 
                             # Prepare XML for conversation history
-                            escaped_message = xml.sax.saxutils.escape(tool_result.message)
-                            content_str = str(tool_result.content) if tool_result.content is not None else ""
-                            escaped_content = xml.sax.saxutils.escape(content_str)
+                            escaped_message = xml.sax.saxutils.escape(
+                                tool_result.message)
+                            content_str = str(
+                                tool_result.content) if tool_result.content is not None else ""
+                            escaped_content = xml.sax.saxutils.escape(
+                                content_str)
                             error_xml = (
                                 f"<tool_result tool_name='{type(tool_obj).__name__}' success='{str(tool_result.success).lower()}'>"
                                 f"<message>{escaped_message}</message>"
@@ -705,25 +725,30 @@ class AgenticEdit:
                                 f"</tool_result>"
                             )
                         except Exception as e:
-                            logger.exception(f"Error resolving tool {type(tool_obj).__name__}: {e}")
+                            logger.exception(
+                                f"Error resolving tool {type(tool_obj).__name__}: {e}")
                             error_message = f"Critical Error during tool execution: {e}"
-                            tool_result = ToolResult(success=False, message=error_message, content=None)
-                            result_event = ToolResultEvent(tool_name=type(tool_obj).__name__, result=tool_result)
-                            escaped_error = xml.sax.saxutils.escape(error_message)
+                            tool_result = ToolResult(
+                                success=False, message=error_message, content=None)
+                            result_event = ToolResultEvent(tool_name=type(
+                                tool_obj).__name__, result=tool_result)
+                            escaped_error = xml.sax.saxutils.escape(
+                                error_message)
                             error_xml = f"<tool_result tool_name='{type(tool_obj).__name__}' success='false'><message>{escaped_error}</message><content></content></tool_result>"
 
-                    yield result_event # Yield the ToolResultEvent for display
+                    yield result_event  # Yield the ToolResultEvent for display
 
                     # Append the tool result (as user message) to history
                     conversations.append({
-                        "role": "user", # Simulating the user providing the tool result
+                        "role": "user",  # Simulating the user providing the tool result
                         "content": error_xml
                     })
-                    logger.debug(f"Added tool result to conversations for tool {type(tool_obj).__name__}")
-                    break # After tool execution and result, break to start a new LLM cycle
+                    logger.debug(
+                        f"Added tool result to conversations for tool {type(tool_obj).__name__}")
+                    break  # After tool execution and result, break to start a new LLM cycle
 
                 elif isinstance(event, ErrorEvent):
-                    yield event # Pass through errors
+                    yield event  # Pass through errors
                     # Optionally stop the process on parsing errors
                     # logger.error("Stopping analyze loop due to parsing error.")
                     # return
@@ -733,14 +758,14 @@ class AgenticEdit:
                 logger.info("LLM response finished without executing a tool.")
                 # Append any remaining assistant buffer to history if it wasn't followed by a tool
                 if assistant_buffer:
-                     conversations.append({"role": "assistant", "content": assistant_buffer})
+                    conversations.append(
+                        {"role": "assistant", "content": assistant_buffer})
                 # If the loop ends without AttemptCompletion, it means the LLM finished talking
                 # without signaling completion. We might just stop or yield a final message.
                 # Let's assume it stops here.
                 break
 
         logger.info("AgenticEdit analyze loop finished.")
-
 
     def stream_and_parse_llm_response(
         self, generator: Generator[Tuple[str, Any], None, None]
@@ -760,7 +785,8 @@ class AgenticEdit:
         in_tool_block = False
         in_thinking_block = False
         current_tool_tag = None
-        tool_start_pattern = re.compile(r"<([a-zA-Z0-9_]+)>") # Matches tool tags
+        tool_start_pattern = re.compile(
+            r"<([a-zA-Z0-9_]+)>")  # Matches tool tags
         thinking_start_tag = "<thinking>"
         thinking_end_tag = "</thinking>"
 
@@ -769,9 +795,11 @@ class AgenticEdit:
             params = {}
             try:
                 # Find content between <tool_tag> and </tool_tag>
-                inner_xml_match = re.search(rf"<{tool_tag}>(.*?)</{tool_tag}>", tool_xml, re.DOTALL)
+                inner_xml_match = re.search(
+                    rf"<{tool_tag}>(.*?)</{tool_tag}>", tool_xml, re.DOTALL)
                 if not inner_xml_match:
-                    logger.error(f"Could not find content within <{tool_tag}>...</{tool_tag}>")
+                    logger.error(
+                        f"Could not find content within <{tool_tag}>...</{tool_tag}>")
                     return None
                 inner_xml = inner_xml_match.group(1).strip()
 
@@ -787,25 +815,29 @@ class AgenticEdit:
                 if tool_cls:
                     # Attempt to handle boolean conversion specifically for requires_approval
                     if 'requires_approval' in params:
-                        params['requires_approval'] = params['requires_approval'].lower() == 'true'
+                        params['requires_approval'] = params['requires_approval'].lower(
+                        ) == 'true'
                     # Attempt to handle JSON parsing for arguments in use_mcp_tool
                     if tool_tag == 'use_mcp_tool' and 'arguments' in params:
-                         try:
-                             params['arguments'] = json.loads(params['arguments'])
-                         except json.JSONDecodeError:
-                             logger.warning(f"Could not decode JSON arguments for use_mcp_tool: {params['arguments']}")
-                             # Keep as string or handle error? Let's keep as string for now.
-                             pass
+                        try:
+                            params['arguments'] = json.loads(
+                                params['arguments'])
+                        except json.JSONDecodeError:
+                            logger.warning(
+                                f"Could not decode JSON arguments for use_mcp_tool: {params['arguments']}")
+                            # Keep as string or handle error? Let's keep as string for now.
+                            pass
                     # Handle recursive for list_files
                     if tool_tag == 'list_files' and 'recursive' in params:
-                         params['recursive'] = params['recursive'].lower() == 'true'
+                        params['recursive'] = params['recursive'].lower() == 'true'
 
                     return tool_cls(**params)
                 else:
                     logger.error(f"Tool class not found for tag: {tool_tag}")
                     return None
             except Exception as e:
-                logger.exception(f"Failed to parse tool XML for <{tool_tag}>: {e}\nXML:\n{tool_xml}")
+                logger.exception(
+                    f"Failed to parse tool XML for <{tool_tag}>: {e}\nXML:\n{tool_xml}")
                 return None
 
         for content_chunk, metadata in generator:
@@ -827,7 +859,7 @@ class AgenticEdit:
                         buffer = buffer[end_think_pos + len(thinking_end_tag):]
                         in_thinking_block = False
                         found_event = True
-                        continue # Restart loop with updated buffer/state
+                        continue  # Restart loop with updated buffer/state
                     else:
                         # Need more data to close thinking block
                         break
@@ -842,13 +874,14 @@ class AgenticEdit:
                         tool_obj = parse_tool_xml(tool_xml, current_tool_tag)
 
                         if tool_obj:
-                             # Reconstruct the XML accurately here AFTER successful parsing
-                             # This ensures the XML yielded matches what was parsed.
-                             reconstructed_xml = self._reconstruct_tool_xml(tool_obj)
-                             if reconstructed_xml.startswith("<error>"):
-                                 yield ErrorEvent(message=f"Failed to reconstruct XML for tool {current_tool_tag}")
-                             else:
-                                 yield ToolCallEvent(tool=tool_obj, tool_xml=reconstructed_xml)
+                            # Reconstruct the XML accurately here AFTER successful parsing
+                            # This ensures the XML yielded matches what was parsed.
+                            reconstructed_xml = self._reconstruct_tool_xml(
+                                tool_obj)
+                            if reconstructed_xml.startswith("<error>"):
+                                yield ErrorEvent(message=f"Failed to reconstruct XML for tool {current_tool_tag}")
+                            else:
+                                yield ToolCallEvent(tool=tool_obj, tool_xml=reconstructed_xml)
                         else:
                             yield ErrorEvent(message=f"Failed to parse tool: <{current_tool_tag}>")
                             # Optionally yield the raw XML as plain text?
@@ -858,7 +891,7 @@ class AgenticEdit:
                         in_tool_block = False
                         current_tool_tag = None
                         found_event = True
-                        continue # Restart loop
+                        continue  # Restart loop
                     else:
                         # Need more data to close tool block
                         break
@@ -879,16 +912,15 @@ class AgenticEdit:
                         first_tag_pos = start_think_pos
                         is_thinking = True
                     elif start_tool_pos != -1 and (start_think_pos == -1 or start_tool_pos < start_think_pos):
-                         # Check if it's a known tool
-                         if tool_name in TOOL_MODEL_MAP:
+                        # Check if it's a known tool
+                        if tool_name in TOOL_MODEL_MAP:
                             first_tag_pos = start_tool_pos
                             is_tool = True
-                         else:
-                             # Unknown tag, treat as text for now, let buffer grow
-                             pass
+                        else:
+                            # Unknown tag, treat as text for now, let buffer grow
+                            pass
 
-
-                    if first_tag_pos != -1: # Found either <thinking> or a known <tool>
+                    if first_tag_pos != -1:  # Found either <thinking> or a known <tool>
                         # Yield preceding text if any
                         preceding_text = buffer[:first_tag_pos]
                         if preceding_text:
@@ -896,42 +928,47 @@ class AgenticEdit:
 
                         # Transition state
                         if is_thinking:
-                            buffer = buffer[first_tag_pos + len(thinking_start_tag):]
+                            buffer = buffer[first_tag_pos +
+                                            len(thinking_start_tag):]
                             in_thinking_block = True
                         elif is_tool:
-                            buffer = buffer[first_tag_pos:] # Keep the starting tag
+                            # Keep the starting tag
+                            buffer = buffer[first_tag_pos:]
                             in_tool_block = True
                             current_tool_tag = tool_name
 
                         found_event = True
-                        continue # Restart loop
+                        continue  # Restart loop
 
                     else:
-                         # No tags found, or only unknown tags found. Need more data or end of stream.
-                         # Yield text chunk but keep some buffer for potential tag start
-                         split_point = max(0, len(buffer) - 100) # Keep last 100 chars
-                         text_to_yield = buffer[:split_point]
-                         if text_to_yield:
-                             yield LLMOutputEvent(text=text_to_yield)
-                             buffer = buffer[split_point:]
-                         break # Need more data
+                        # No tags found, or only unknown tags found. Need more data or end of stream.
+                        # Yield text chunk but keep some buffer for potential tag start
+                        # Keep last 100 chars
+                        split_point = max(0, len(buffer) - 100)
+                        text_to_yield = buffer[:split_point]
+                        if text_to_yield:
+                            yield LLMOutputEvent(text=text_to_yield)
+                            buffer = buffer[split_point:]
+                        break  # Need more data
 
                 # If no event was processed in this iteration, break inner loop
                 if not found_event:
                     break
 
-
         # After generator exhausted, yield any remaining content
         if in_thinking_block:
             # Unterminated thinking block
             yield ErrorEvent(message="Stream ended with unterminated <thinking> block.")
-            if buffer: yield LLMThinkingEvent(text=buffer) # Yield remaining as thinking
+            if buffer:
+                # Yield remaining as thinking
+                yield LLMThinkingEvent(text=buffer)
         elif in_tool_block:
-             # Unterminated tool block
-             yield ErrorEvent(message=f"Stream ended with unterminated <{current_tool_tag}> block.")
-             if buffer: yield LLMOutputEvent(text=buffer) # Yield remaining as text
+            # Unterminated tool block
+            yield ErrorEvent(message=f"Stream ended with unterminated <{current_tool_tag}> block.")
+            if buffer:
+                yield LLMOutputEvent(text=buffer)  # Yield remaining as text
         elif buffer:
-             # Yield remaining plain text
+            # Yield remaining plain text
             yield LLMOutputEvent(text=buffer)
 
     def run_with_events(self, request: AgenticEditRequest):
@@ -939,83 +976,99 @@ class AgenticEdit:
         Runs the agentic edit process, converting internal events to the
         standard event system format and writing them using the event manager.
         """
-        
 
         event_manager = get_event_manager(self.args.event_file)
-        logger.info(f"Starting agentic edit with event output to: {self.args.event_file}")
+        logger.info(
+            f"Starting agentic edit with event output to: {self.args.event_file}")
 
         try:
             event_stream = self.analyze(request)
-            for agent_event in event_stream:                
+            for agent_event in event_stream:
                 content = None
-                metadata = EventMetadata(action_file=self.args.event_file,is_streaming=False)
+                metadata = EventMetadata(
+                    action_file=self.args.event_file, 
+                    is_streaming=False, 
+                    stream_out_type="/agent/edit")
+                
                 if isinstance(agent_event, LLMThinkingEvent):
-                    content = EventContentCreator.create_stream_thinking(content=agent_event.text)
-                    metadata.is_streaming = True                    
-                    event_manager.write_stream(content=content.to_dict(), metadata=metadata)
-                elif isinstance(agent_event, LLMOutputEvent):                    
-                    content = EventContentCreator.create_stream_content(content=agent_event.text)
+                    content = EventContentCreator.create_stream_thinking(
+                        content=agent_event.text)
                     metadata.is_streaming = True
-                    event_manager.write_stream(content=content.to_dict(), metadata=metadata)
-                elif isinstance(agent_event, ToolCallEvent):                    
+                    metadata.path = "/agent/edit/thinking"
+                    event_manager.write_stream(
+                        content=content.to_dict(), metadata=metadata.to_dict())
+                elif isinstance(agent_event, LLMOutputEvent):
+                    content = EventContentCreator.create_stream_content(
+                        content=agent_event.text)
+                    metadata.is_streaming = True
+                    metadata.path = "/agent/edit/output"
+                    event_manager.write_stream(content=content.to_dict(),
+                                               metadata=metadata.to_dict())
+                elif isinstance(agent_event, ToolCallEvent):
                     tool_name = type(agent_event.tool).__name__
+                    metadata.path = "/agent/edit/tool/call"
                     content = EventContentCreator.create_result(
                         content={
                             "tool_name": tool_name,
-                            "tool_xml": agent_event.tool_xml,
-                            "tool_params": agent_event.tool.model_dump()
+                            **agent_event.tool.model_dump()
                         },
-                        metadata={"path": "/agent/tool/call"}
-                    )                    
-                    event_manager.write_result(content=content.to_dict(), metadata=metadata)
-                elif isinstance(agent_event, ToolResultEvent):                    
+                        metadata={}
+                    )
+                    event_manager.write_result(
+                        content=content.to_dict(), metadata=metadata.to_dict())
+                elif isinstance(agent_event, ToolResultEvent):
+                    metadata.path = "/agent/edit/tool/result"
                     content = EventContentCreator.create_result(
                         content={
                             "tool_name": agent_event.tool_name,
-                            "success": agent_event.result.success,
-                            "message": agent_event.result.message,
-                            "result_content": agent_event.result.content
+                            **agent_event.result.model_dump()
                         },
-                        metadata={"path": "/agent/tool/result"}
+                        metadata={}
                     )
-                    event_manager.write_result(content=content.to_dict(), metadata=metadata)
-                elif isinstance(agent_event, CompletionEvent):                    
+                    event_manager.write_result(
+                        content=content.to_dict(), metadata=metadata)
+                elif isinstance(agent_event, CompletionEvent):
+                    metadata.path = "/agent/edit/completion"
                     content = EventContentCreator.create_completion(
                         success_code="AGENT_COMPLETE",
                         success_message="Agent attempted task completion.",
                         result={
-                            "completion_result": agent_event.completion.result,
-                            "command": agent_event.completion.command
-                        }                        
-                    )  
-                    event_manager.write_completion(content=content.to_dict())
-                elif isinstance(agent_event, ErrorEvent):                    
+                            **agent_event.completion.model_dump()
+                        }
+                    )
+                    event_manager.write_completion(content=content.to_dict(), metadata=metadata.to_dict())
+                elif isinstance(agent_event, ErrorEvent):
+                    metadata.path = "/agent/edit/error"
                     content = EventContentCreator.create_error(
                         error_code="AGENT_ERROR",
                         error_message=agent_event.message,
                         details={"agent_event_type": "ErrorEvent"}
-                    )  
-                    event_manager.write_error(content=content.to_dict())
+                    )
+                    event_manager.write_error(content=content.to_dict(), metadata=metadata.to_dict())
                 else:
-                    logger.warning(f"Unhandled agent event type: {type(agent_event)}")
+                    metadata.path = "/agent/edit/error"
+                    logger.warning(
+                        f"Unhandled agent event type: {type(agent_event)}")
                     content = EventContentCreator.create_error(
                         error_code="AGENT_ERROR",
                         error_message=f"Unhandled agent event type: {type(agent_event)}",
-                        details={"agent_event_type": type(agent_event).__name__}
-                    )  
-                    event_manager.write_error(content=content.to_dict())                                                                        
+                        details={"agent_event_type": type(
+                            agent_event).__name__}
+                    )
+                    event_manager.write_error(content=content.to_dict(), metadata=metadata.to_dict())
 
         except Exception as e:
-            logger.exception("An unexpected error occurred during agent execution:")
+            logger.exception(
+                "An unexpected error occurred during agent execution:")
+            metadata.path = "/agent/edit/error"
             error_content = EventContentCreator.create_error(
                 error_code="AGENT_FATAL_ERROR",
                 error_message=f"An unexpected error occurred: {str(e)}",
                 details={"exception_type": type(e).__name__}
-            )            
-            event_manager.write_error(content=error_content.to_dict())
+            )
+            event_manager.write_error(content=error_content.to_dict(), metadata=metadata.to_dict())
             # Re-raise the exception if needed, or handle appropriately
             # raise e
-
 
     def run_in_terminal(self, request: AgenticEditRequest):
         """
@@ -1025,7 +1078,8 @@ class AgenticEdit:
         console = Console()
         project_name = os.path.basename(os.path.abspath(self.args.source_dir))
         console.rule(f"[bold cyan]Starting Agentic Edit: {project_name}[/]")
-        console.print(Panel(f"[bold]User Query:[/bold]\n{request.user_input}", title="Objective", border_style="blue"))
+        console.print(Panel(
+            f"[bold]User Query:[/bold]\n{request.user_input}", title="Objective", border_style="blue"))
 
         try:
             event_stream = self.analyze(request)
@@ -1039,17 +1093,18 @@ class AgenticEdit:
                 elif isinstance(event, ToolCallEvent):
                     # Skip displaying AttemptCompletionTool's tool call
                     if isinstance(event.tool, AttemptCompletionTool):
-                        continue # Do not display AttemptCompletionTool tool call
+                        continue  # Do not display AttemptCompletionTool tool call
 
                     tool_name = type(event.tool).__name__
                     # Use the new internationalized display function
                     display_content = get_tool_display_message(event.tool)
-                    console.print(Panel(display_content, title=f"🛠️ Action: {tool_name}", border_style="blue", title_align="left"))
+                    console.print(Panel(
+                        display_content, title=f"🛠️ Action: {tool_name}", border_style="blue", title_align="left"))
 
                 elif isinstance(event, ToolResultEvent):
                     # Skip displaying AttemptCompletionTool's result
                     if event.tool_name == "AttemptCompletionTool":
-                        continue # Do not display AttemptCompletionTool result
+                        continue  # Do not display AttemptCompletionTool result
 
                     result = event.result
                     title = f"✅ Tool Result: {event.tool_name}" if result.success else f"❌ Tool Result: {event.tool_name}"
@@ -1067,52 +1122,73 @@ class AgenticEdit:
                         try:
                             if isinstance(result.content, (dict, list)):
                                 import json
-                                content_str = json.dumps(result.content, indent=2, ensure_ascii=False)
-                                syntax_content = Syntax(content_str, "json", theme="default", line_numbers=False)
+                                content_str = json.dumps(
+                                    result.content, indent=2, ensure_ascii=False)
+                                syntax_content = Syntax(
+                                    content_str, "json", theme="default", line_numbers=False)
                             elif isinstance(result.content, str) and ('\n' in result.content or result.content.strip().startswith('<')):
                                 # Heuristic for code or XML/HTML
-                                lexer = "python" # Default guess
+                                lexer = "python"  # Default guess
                                 if event.tool_name == "ReadFileTool" and isinstance(event.result.message, str):
                                     # Try to guess lexer from file extension in message
-                                    if ".py" in event.result.message: lexer = "python"
-                                    elif ".js" in event.result.message: lexer = "javascript"
-                                    elif ".ts" in event.result.message: lexer = "typescript"
-                                    elif ".html" in event.result.message: lexer = "html"
-                                    elif ".css" in event.result.message: lexer = "css"
-                                    elif ".json" in event.result.message: lexer = "json"
-                                    elif ".xml" in event.result.message: lexer = "xml"
-                                    elif ".md" in event.result.message: lexer = "markdown"
-                                    else: lexer = "text" # Fallback lexer
+                                    if ".py" in event.result.message:
+                                        lexer = "python"
+                                    elif ".js" in event.result.message:
+                                        lexer = "javascript"
+                                    elif ".ts" in event.result.message:
+                                        lexer = "typescript"
+                                    elif ".html" in event.result.message:
+                                        lexer = "html"
+                                    elif ".css" in event.result.message:
+                                        lexer = "css"
+                                    elif ".json" in event.result.message:
+                                        lexer = "json"
+                                    elif ".xml" in event.result.message:
+                                        lexer = "xml"
+                                    elif ".md" in event.result.message:
+                                        lexer = "markdown"
+                                    else:
+                                        lexer = "text"  # Fallback lexer
                                 elif event.tool_name == "ExecuteCommandTool":
-                                     lexer = "shell"
+                                    lexer = "shell"
                                 else:
-                                     lexer = "text"
+                                    lexer = "text"
 
-                                syntax_content = Syntax(result.content, lexer, theme="default", line_numbers=True)
+                                syntax_content = Syntax(
+                                    result.content, lexer, theme="default", line_numbers=True)
                             else:
                                 content_str = str(result.content)
-                                panel_content.append(content_str) # Append simple string content directly
+                                # Append simple string content directly
+                                panel_content.append(content_str)
                         except Exception as e:
-                            logger.warning(f"Error formatting tool result content: {e}")
-                            panel_content.append(str(result.content)) # Fallback
+                            logger.warning(
+                                f"Error formatting tool result content: {e}")
+                            panel_content.append(
+                                str(result.content))  # Fallback
 
                     # Print the base info panel
-                    console.print(Panel("\n".join(panel_content), title=title, border_style=border_style, title_align="left"))
+                    console.print(Panel("\n".join(
+                        panel_content), title=title, border_style=border_style, title_align="left"))
                     # Print syntax highlighted content separately if it exists
                     if syntax_content:
                         console.print(syntax_content)
 
                 elif isinstance(event, CompletionEvent):
-                    console.print(Panel(Markdown(event.completion.result), title="🏁 Task Completion", border_style="green", title_align="left"))
+                    console.print(Panel(Markdown(event.completion.result),
+                                  title="🏁 Task Completion", border_style="green", title_align="left"))
                     if event.completion.command:
-                        console.print(f"[dim]Suggested command:[/dim] [bold cyan]{event.completion.command}[/]")
+                        console.print(
+                            f"[dim]Suggested command:[/dim] [bold cyan]{event.completion.command}[/]")
                 elif isinstance(event, ErrorEvent):
-                    console.print(Panel(f"[bold red]Error:[/bold red] {event.message}", title="🔥 Error", border_style="red", title_align="left"))
+                    console.print(Panel(
+                        f"[bold red]Error:[/bold red] {event.message}", title="🔥 Error", border_style="red", title_align="left"))
 
-                time.sleep(0.1) # Small delay for better visual flow
+                time.sleep(0.1)  # Small delay for better visual flow
 
         except Exception as e:
-            logger.exception("An unexpected error occurred during agent execution:")
-            console.print(Panel(f"[bold red]FATAL ERROR:[/bold red]\n{str(e)}", title="🔥 System Error", border_style="red"))
+            logger.exception(
+                "An unexpected error occurred during agent execution:")
+            console.print(Panel(
+                f"[bold red]FATAL ERROR:[/bold red]\n{str(e)}", title="🔥 System Error", border_style="red"))
         finally:
             console.rule("[bold cyan]Agentic Edit Finished[/]")

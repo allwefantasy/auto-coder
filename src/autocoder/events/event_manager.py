@@ -62,7 +62,7 @@ class EventManager:
         self.event_store.append_event(event)
         return event
     
-    def write_completion(self, content: Union[Dict[str, Any], Any]) -> Event:
+    def write_completion(self, content: Union[Dict[str, Any], Any], metadata: Dict[str, Any] = {}) -> Event:
         """
         Write a completion event.
         
@@ -74,11 +74,11 @@ class EventManager:
         """
         if not isinstance(content, dict):
             content = content.to_dict()
-        event = Event(event_type=EventType.COMPLETION, content=content)
+        event = Event(event_type=EventType.COMPLETION, content=content, metadata=metadata)
         self.event_store.append_event(event)
         return event
     
-    def write_error(self, content: Union[Dict[str, Any], Any]) -> Event:
+    def write_error(self, content: Union[Dict[str, Any], Any], metadata: Dict[str, Any] = {}) -> Event:
         """
         Write an error event.
         
@@ -90,7 +90,7 @@ class EventManager:
         """
         if not isinstance(content, dict):
             content = content.to_dict()
-        event = Event(event_type=EventType.ERROR, content=content)
+        event = Event(event_type=EventType.ERROR, content=content, metadata=metadata)
         self.event_store.append_event(event)
         return event
     

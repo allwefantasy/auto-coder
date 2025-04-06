@@ -1,7 +1,7 @@
 import json
 from typing import Dict, Callable, Type
 from autocoder.common.auto_coder_lang import get_system_language, format_str_jinja2
-from autocoder.agent.agentic_edit_types import (
+from autocoder.common.v2.agent.agentic_edit_types import (
     BaseTool,
     ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
     ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
