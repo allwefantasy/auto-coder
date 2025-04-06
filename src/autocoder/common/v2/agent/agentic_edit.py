@@ -56,7 +56,7 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           TOOL_MODEL_MAP,
                                                           # Event Types
                                                           LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
-                                                          ToolResultEvent, CompletionEvent, ErrorEvent,
+                                                          ToolResultEvent, CompletionEvent, ErrorEvent,TokenUsageEvent,
                                                           # Import specific tool types for display mapping
                                                           ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
                                                           ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
@@ -104,6 +104,7 @@ class AgenticEdit:
         self.command_config = command_config  # Note: command_config might be unused now
         self.project_type_analyzer = ProjectTypeAnalyzer(
             args=args, llm=self.llm)
+            
         self.mcp_server_info = ""
         # try:
         #     self.mcp_server = get_mcp_server()
@@ -657,9 +658,10 @@ class AgenticEdit:
                 llm_config={},  # Placeholder for future LLM configs
                 args=self.args
             )
-
+            
+            meta_holder = byzerllm.MetaHolder()
             parsed_events = self.stream_and_parse_llm_response(
-                llm_response_gen)
+                llm_response_gen,meta_holder)
 
             for event in parsed_events:
                 if isinstance(event, (LLMOutputEvent, LLMThinkingEvent)):
@@ -753,6 +755,7 @@ class AgenticEdit:
                     # logger.error("Stopping analyze loop due to parsing error.")
                     # return
 
+            yield TokenUsageEvent(usage=meta_holder.meta)
             if not tool_executed:
                 # No tool executed in this LLM response cycle
                 logger.info("LLM response finished without executing a tool.")
@@ -768,7 +771,7 @@ class AgenticEdit:
         logger.info("AgenticEdit analyze loop finished.")
 
     def stream_and_parse_llm_response(
-        self, generator: Generator[Tuple[str, Any], None, None]
+        self, generator: Generator[Tuple[str, Any], None, None],meta_holder: byzerllm.MetaHolder
     ) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ErrorEvent], None, None]:
         """
         Streamingly parses the LLM response generator, distinguishing between
@@ -841,6 +844,7 @@ class AgenticEdit:
                 return None
 
         for content_chunk, metadata in generator:
+            meta_holder.meta = metadata
             if not content_chunk:
                 continue
             buffer += content_chunk
@@ -976,10 +980,7 @@ class AgenticEdit:
         Runs the agentic edit process, converting internal events to the
         standard event system format and writing them using the event manager.
         """
-
-        event_manager = get_event_manager(self.args.event_file)
-        logger.info(
-            f"Starting agentic edit with event output to: {self.args.event_file}")
+        event_manager = get_event_manager(self.args.event_file)        
 
         try:
             event_stream = self.analyze(request)

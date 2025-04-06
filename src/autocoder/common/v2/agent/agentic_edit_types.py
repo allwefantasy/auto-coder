@@ -76,6 +76,10 @@ class ToolResultEvent(BaseModel):
     tool_name: str
     result: ToolResult
 
+class TokenUsageEvent(BaseModel):
+    """Represents the result of executing a tool."""
+    usage: Dict[str, Any]
+
 class CompletionEvent(BaseModel):
     """Represents the LLM attempting to complete the task."""
     completion: SkipValidation[AttemptCompletionTool] # Skip validation

@@ -1,11 +1,15 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
-from autocoder.agent.agentic_edit_types import BaseTool, ToolResult # Import ToolResult from types
+from autocoder.common.v2.agent.agentic_edit_types import BaseTool, ToolResult # Import ToolResult from types
 from autocoder.common import AutoCoderArgs
+import typing
+
+if typing.TYPE_CHECKING:
+    from autocoder.common.v2.agent.agentic_edit import AgenticEdit
 
 
 class BaseToolResolver(ABC):
-    def __init__(self, agent: Optional[Any], tool: BaseTool, args: AutoCoderArgs):
+    def __init__(self, agent: Optional['AgenticEdit'], tool: BaseTool, args: AutoCoderArgs):
         """
         Initializes the resolver.
 

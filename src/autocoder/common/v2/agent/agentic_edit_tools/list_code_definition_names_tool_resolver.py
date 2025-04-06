@@ -1,7 +1,7 @@
 import os
 from typing import Dict, Any, Optional
-from .base_tool_resolver import BaseToolResolver
-from autocoder.agent.agentic_edit_types import ListCodeDefinitionNamesTool, ToolResult # Import ToolResult from types
+from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
+from autocoder.common.v2.agent.agentic_edit_types import ListCodeDefinitionNamesTool, ToolResult # Import ToolResult from types
 import json
 from autocoder.index.index import IndexManager
 from loguru import logger

@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
-from .base_tool_resolver import BaseToolResolver
-from autocoder.agent.agentic_edit_types import AskFollowupQuestionTool, ToolResult # Import ToolResult from types
+from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
+from autocoder.common.v2.agent.agentic_edit_types import AskFollowupQuestionTool, ToolResult # Import ToolResult from types
 from loguru import logger
 
 class AskFollowupQuestionToolResolver(BaseToolResolver):
