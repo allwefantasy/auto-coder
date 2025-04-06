@@ -837,6 +837,42 @@ MESSAGES = {
 }
 
 
+# 新增 ReplaceInFileToolResolver 国际化消息
+MESSAGES.update({
+    "replace_in_file.access_denied": {
+        "en": "Error: Access denied. Attempted to modify file outside the project directory: {{file_path}}",
+        "zh": "错误：拒绝访问。尝试修改项目目录之外的文件：{{file_path}}"
+    },
+    "replace_in_file.file_not_found": {
+        "en": "Error: File not found at path: {{file_path}}",
+        "zh": "错误：未找到文件路径：{{file_path}}"
+    },
+    "replace_in_file.read_error": {
+        "en": "An error occurred while reading the file for replacement: {{error}}",
+        "zh": "读取待替换文件时发生错误：{{error}}"
+    },
+    "replace_in_file.no_valid_blocks": {
+        "en": "Error: No valid SEARCH/REPLACE blocks found in the provided diff.",
+        "zh": "错误：在提供的diff中未找到有效的SEARCH/REPLACE代码块。"
+    },
+    "replace_in_file.apply_failed": {
+        "en": "Failed to apply any changes. Errors:\n{{errors}}",
+        "zh": "未能应用任何更改。错误信息：\n{{errors}}"
+    },
+    "replace_in_file.apply_success": {
+        "en": "Successfully applied {{applied}}/{{total}} changes to file: {{file_path}}.",
+        "zh": "成功应用了 {{applied}}/{{total}} 个更改到文件：{{file_path}}。"
+    },
+    "replace_in_file.apply_success_with_warnings": {
+        "en": "Successfully applied {{applied}}/{{total}} changes to file: {{file_path}}.\nWarnings:\n{{errors}}",
+        "zh": "成功应用了 {{applied}}/{{total}} 个更改到文件：{{file_path}}。\n警告信息：\n{{errors}}"
+    },
+    "replace_in_file.write_error": {
+        "en": "An error occurred while writing the modified file: {{error}}",
+        "zh": "写入修改后的文件时发生错误：{{error}}"
+    }
+})
+
 def get_system_language():
     try:
         return locale.getdefaultlocale()[0][:2]
