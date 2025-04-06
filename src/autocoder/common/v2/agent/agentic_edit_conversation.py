@@ -84,14 +84,41 @@ class AgenticConversation:
 
     def get_history(self) -> List[MessageType]:
         """
-        Returns the current conversation history.
-
+        Returns the latest 20 pairs of (user, assistant) conversation history.
+        Ensures that each user message is paired with the subsequent assistant response,
+        and skips other message roles (e.g., tool calls/results).
+        
         Returns:
-            A list of message dictionaries.
+            A list of message dictionaries, ordered chronologically.
         """
-        # Return a deep copy might be safer if messages contain mutable objects,
-        # but a shallow copy is usually sufficient for typical message structures.
-        return self._history.copy()
+        paired_history = []
+        pair_count = 0
+        pending_assistant = None
+
+        # Traverse the history in reverse to collect the latest pairs
+        for msg in reversed(self._history):
+            role = msg.get("role")
+            if role == "assistant":
+                # Only keep the latest assistant waiting for a user
+                if pending_assistant is None:
+                    pending_assistant = msg
+            elif role == "user":
+                if pending_assistant is not None:
+                    # Found a user with a pending assistant reply: form a pair
+                    paired_history.insert(0, msg)
+                    paired_history.insert(1, pending_assistant)
+                    pair_count += 1
+                    pending_assistant = None
+                    if pair_count >= 20:
+                        break
+                else:
+                    # User message with no assistant reply after it, skip
+                    continue
+            else:
+                # Ignore other roles
+                continue
+
+        return paired_history
 
     def clear_history(self):
         """Clears the conversation history."""

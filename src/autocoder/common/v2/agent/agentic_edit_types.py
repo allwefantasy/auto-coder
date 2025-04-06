@@ -80,6 +80,11 @@ class TokenUsageEvent(BaseModel):
     """Represents the result of executing a tool."""
     usage: Any
 
+class PlanModeRespondEvent(BaseModel):
+    """Represents the LLM attempting to complete the task."""
+    completion: SkipValidation[PlanModeRespondTool] # Skip validation
+    completion_xml: str
+
 class CompletionEvent(BaseModel):
     """Represents the LLM attempting to complete the task."""
     completion: SkipValidation[AttemptCompletionTool] # Skip validation

@@ -2835,7 +2835,9 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
             agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
                                 conversation_history=[],
                                 memory_config=MemoryConfig(memory=memory, 
-                                save_memory_func=save_memory), command_config=CommandConfig)
+                                save_memory_func=save_memory), command_config=CommandConfig,
+                                conversation_name="current"
+                                )
             agent.run_in_terminal(AgenticEditRequest(user_input=query))
             return
     

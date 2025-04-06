@@ -93,7 +93,7 @@ TOOL_DISPLAY_MESSAGES: Dict[Type[BaseTool], Dict[str, str]] = {
             "[dim]工具：[/dim] [blue]{{ tool_name }}[/]\n"
             "[dim]参数：[/dim] {{ arguments_snippet }}{{ ellipsis }}"
         )
-    }
+    }    
     # AttemptCompletionTool is handled separately in the display loop
 }
 

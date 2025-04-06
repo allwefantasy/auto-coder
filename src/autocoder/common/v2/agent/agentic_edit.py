@@ -1,3 +1,4 @@
+from autocoder.common.v2.agent.agentic_edit_conversation import AgenticConversation
 from enum import Enum
 from enum import Enum
 import json
@@ -64,7 +65,7 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           TOOL_MODEL_MAP,
                                                           # Event Types
                                                           LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
-                                                          ToolResultEvent, CompletionEvent, ErrorEvent,TokenUsageEvent,
+                                                          ToolResultEvent, CompletionEvent, PlanModeRespondEvent, ErrorEvent, TokenUsageEvent,
                                                           # Import specific tool types for display mapping
                                                           ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
                                                           ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
@@ -87,7 +88,6 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     UseMcpTool: UseMcpToolResolver,
 }
 
-from autocoder.common.v2.agent.agentic_edit_conversation import AgenticConversation
 
 # --- Tool Display Customization is now handled by agentic_tool_display.py ---
 
@@ -101,6 +101,7 @@ class AgenticEdit:
         args: AutoCoderArgs,
         memory_config: MemoryConfig,
         command_config: Optional[CommandConfig] = None,
+        conversation_name: str = "current"
     ):
         self.llm = llm
         self.args = args
@@ -114,15 +115,16 @@ class AgenticEdit:
         self.command_config = command_config  # Note: command_config might be unused now
         self.project_type_analyzer = ProjectTypeAnalyzer(
             args=args, llm=self.llm)
-        
-        self.conversation_manager = AgenticConversation(args, self.conversation_history)
+
+        self.conversation_manager = AgenticConversation(
+            args, self.conversation_history, conversation_name=conversation_name)
 
         self.shadow_manager = ShadowManager(
             args.source_dir, args.event_file, args.ignore_clean_shadows)
         self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
         self.shadow_compiler = ShadowCompiler(
-            self.shadow_manager, verbose=False)    
-            
+            self.shadow_manager, verbose=False)
+
         self.mcp_server_info = ""
         # try:
         #     self.mcp_server = get_mcp_server()
@@ -137,7 +139,7 @@ class AgenticEdit:
         #     logger.error(f"Error getting MCP server info: {str(e)}")
 
         # 变更跟踪信息
-        # 格式: { file_path: FileChangeEntry(...) }        
+        # 格式: { file_path: FileChangeEntry(...) }
         self.file_changes: Dict[str, FileChangeEntry] = {}
 
     def record_file_change(self, file_path: str, change_type: str, diff: Optional[str] = None, content: Optional[str] = None):
@@ -152,7 +154,8 @@ class AgenticEdit:
         """
         entry = self.file_changes.get(file_path)
         if entry is None:
-            entry = FileChangeEntry(type=change_type, diffs=[], content=content)
+            entry = FileChangeEntry(
+                type=change_type, diffs=[], content=content)
             self.file_changes[file_path] = entry
         else:
             # 文件已经存在，可能之前是 added，现在又被 modified，或者多次 modified
@@ -189,8 +192,10 @@ class AgenticEdit:
             for fname in files:
                 shadow_file_path = os.path.join(root, fname)
                 try:
-                    project_file_path = self.shadow_manager.from_shadow_path(shadow_file_path)
-                    rel_path = os.path.relpath(project_file_path, self.args.source_dir)
+                    project_file_path = self.shadow_manager.from_shadow_path(
+                        shadow_file_path)
+                    rel_path = os.path.relpath(
+                        project_file_path, self.args.source_dir)
                     changed_files.append(rel_path)
                 except Exception:
                     # 非映射关系，忽略
@@ -395,7 +400,7 @@ class AgenticEdit:
         Your query here
         </query>
         </use_mcp_tool> 
-        
+
         {%if mcp_server_info %}
         ### MCP_SERVER_LIST
         {{mcp_server_info}}
@@ -740,10 +745,14 @@ class AgenticEdit:
         executes tools, and yields structured events for visualization until completion or error.
         """
         system_prompt = self._analyze.prompt(request)
+
         conversations = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": request.user_input}
-        ]        
+        ] + self.conversation_manager.get_history()
+        conversations.append({
+            "role": "user", "content": request.user_input
+        })
+        self.conversation_manager.add_user_message(request.user_input)
         logger.debug(
             f"Initial conversation history size: {len(conversations)}")
 
@@ -753,17 +762,17 @@ class AgenticEdit:
                 f"Starting LLM interaction cycle. History size: {len(conversations)}")
             tool_executed = False
             assistant_buffer = ""
-            
+
             llm_response_gen = stream_chat_with_continue(
                 llm=self.llm,
                 conversations=conversations,
                 llm_config={},  # Placeholder for future LLM configs
                 args=self.args
             )
-            
+
             meta_holder = byzerllm.MetaHolder()
             parsed_events = self.stream_and_parse_llm_response(
-                llm_response_gen,meta_holder)
+                llm_response_gen, meta_holder)
 
             for event in parsed_events:
                 global_cancel.check_and_raise()
@@ -781,6 +790,8 @@ class AgenticEdit:
                         "role": "assistant",
                         "content": assistant_buffer + tool_xml
                     })
+                    self.conversation_manager.add_assistant_message(
+                        assistant_buffer + tool_xml)
                     assistant_buffer = ""  # Reset buffer after tool call
 
                     yield event  # Yield the ToolCallEvent for display
@@ -792,6 +803,14 @@ class AgenticEdit:
                         yield CompletionEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to AttemptCompletion.")
+                        return
+
+                    if isinstance(tool_obj, PlanModeRespondTool):
+                        logger.info(
+                            "PlanModeRespondTool received. Finalizing session.")
+                        yield PlanModeRespondEvent(completion=tool_obj, completion_xml=tool_xml)
+                        logger.info(
+                            "AgenticEdit analyze loop finished due to PlanModeRespond.")
                         return
 
                     # Resolve the tool
@@ -848,6 +867,7 @@ class AgenticEdit:
                         "role": "user",  # Simulating the user providing the tool result
                         "content": error_xml
                     })
+                    self.conversation_manager.add_user_message(error_xml)
                     logger.debug(
                         f"Added tool result to conversations for tool {type(tool_obj).__name__}")
                     break  # After tool execution and result, break to start a new LLM cycle
@@ -866,18 +886,17 @@ class AgenticEdit:
                 if assistant_buffer:
                     conversations.append(
                         {"role": "assistant", "content": assistant_buffer})
+                    self.conversation_manager.add_assistant_message(
+                        assistant_buffer)
                 # If the loop ends without AttemptCompletion, it means the LLM finished talking
                 # without signaling completion. We might just stop or yield a final message.
                 # Let's assume it stops here.
                 break
-        
-        for message in conversations:
-            self.conversation_manager.add_message(message["role"], message["content"])        
-        
+
         logger.info("AgenticEdit analyze loop finished.")
 
     def stream_and_parse_llm_response(
-        self, generator: Generator[Tuple[str, Any], None, None],meta_holder: byzerllm.MetaHolder
+        self, generator: Generator[Tuple[str, Any], None, None], meta_holder: byzerllm.MetaHolder
     ) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ErrorEvent], None, None]:
         """
         Streamingly parses the LLM response generator, distinguishing between
@@ -1088,17 +1107,17 @@ class AgenticEdit:
         Runs the agentic edit process, converting internal events to the
         standard event system format and writing them using the event manager.
         """
-        event_manager = get_event_manager(self.args.event_file)        
+        event_manager = get_event_manager(self.args.event_file)
 
         try:
             event_stream = self.analyze(request)
             for agent_event in event_stream:
                 content = None
                 metadata = EventMetadata(
-                    action_file=self.args.event_file, 
-                    is_streaming=False, 
+                    action_file=self.args.event_file,
+                    is_streaming=False,
                     stream_out_type="/agent/edit")
-                
+
                 if isinstance(agent_event, LLMThinkingEvent):
                     content = EventContentCreator.create_stream_thinking(
                         content=agent_event.text)
@@ -1141,7 +1160,8 @@ class AgenticEdit:
                     try:
                         self.apply_changes()
                     except Exception as e:
-                        logger.exception(f"Error merging shadow changes to project: {e}")
+                        logger.exception(
+                            f"Error merging shadow changes to project: {e}")
 
                     metadata.path = "/agent/edit/completion"
                     content = EventContentCreator.create_completion(
@@ -1151,7 +1171,8 @@ class AgenticEdit:
                             **agent_event.completion.model_dump()
                         }
                     )
-                    event_manager.write_completion(content=content.to_dict(), metadata=metadata.to_dict())
+                    event_manager.write_completion(
+                        content=content.to_dict(), metadata=metadata.to_dict())
                 elif isinstance(agent_event, ErrorEvent):
                     metadata.path = "/agent/edit/error"
                     content = EventContentCreator.create_error(
@@ -1159,7 +1180,8 @@ class AgenticEdit:
                         error_message=agent_event.message,
                         details={"agent_event_type": "ErrorEvent"}
                     )
-                    event_manager.write_error(content=content.to_dict(), metadata=metadata.to_dict())
+                    event_manager.write_error(
+                        content=content.to_dict(), metadata=metadata.to_dict())
                 else:
                     metadata.path = "/agent/edit/error"
                     logger.warning(
@@ -1170,7 +1192,8 @@ class AgenticEdit:
                         details={"agent_event_type": type(
                             agent_event).__name__}
                     )
-                    event_manager.write_error(content=content.to_dict(), metadata=metadata.to_dict())
+                    event_manager.write_error(
+                        content=content.to_dict(), metadata=metadata.to_dict())
 
         except Exception as e:
             logger.exception(
@@ -1181,15 +1204,16 @@ class AgenticEdit:
                 error_message=f"An unexpected error occurred: {str(e)}",
                 details={"exception_type": type(e).__name__}
             )
-            event_manager.write_error(content=error_content.to_dict(), metadata=metadata.to_dict())
+            event_manager.write_error(
+                content=error_content.to_dict(), metadata=metadata.to_dict())
             # Re-raise the exception if needed, or handle appropriately
             raise e
 
     def apply_changes(self):
         """
         Apply all tracked file changes to the original project directory.
-        """            
-        for (file_path,change) in self.get_all_file_changes().items():            
+        """
+        for (file_path, change) in self.get_all_file_changes().items():
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(change.content)
 
@@ -1201,33 +1225,40 @@ class AgenticEdit:
                         self.args.source_dir,
                         f"{self.args.query}\nauto_coder_{file_name}",
                     )
-                    
-                    action_yml_file_manager = ActionYmlFileManager(self.args.source_dir)
+
+                    action_yml_file_manager = ActionYmlFileManager(
+                        self.args.source_dir)
                     action_file_name = os.path.basename(self.args.file)
                     add_updated_urls = []
                     commit_result.changed_files
                     for file in commit_result.changed_files:
-                        add_updated_urls.append(os.path.join(self.args.source_dir, file))
+                        add_updated_urls.append(
+                            os.path.join(self.args.source_dir, file))
 
                     self.args.add_updated_urls = add_updated_urls
-                    update_yaml_success = action_yml_file_manager.update_yaml_field(action_file_name, "add_updated_urls", add_updated_urls)
-                    if not update_yaml_success:                        
-                        self.printer.print_in_terminal("yaml_save_error", style="red", yaml_file=action_file_name)  
+                    update_yaml_success = action_yml_file_manager.update_yaml_field(
+                        action_file_name, "add_updated_urls", add_updated_urls)
+                    if not update_yaml_success:
+                        self.printer.print_in_terminal(
+                            "yaml_save_error", style="red", yaml_file=action_file_name)
 
                     if self.args.enable_active_context:
-                        active_context_manager = ActiveContextManager(self.llm, self.args.source_dir)
-                        task_id = active_context_manager.process_changes(self.args)
-                        self.printer.print_in_terminal("active_context_background_task", 
-                                                     style="blue",
-                                                     task_id=task_id)
+                        active_context_manager = ActiveContextManager(
+                            self.llm, self.args.source_dir)
+                        task_id = active_context_manager.process_changes(
+                            self.args)
+                        self.printer.print_in_terminal("active_context_background_task",
+                                                       style="blue",
+                                                       task_id=task_id)
                     git_utils.print_commit_info(commit_result=commit_result)
                 except Exception as e:
                     self.printer.print_str_in_terminal(
-                        self.git_require_msg(source_dir=self.args.source_dir, error=str(e)),
+                        self.git_require_msg(
+                            source_dir=self.args.source_dir, error=str(e)),
                         style="red"
-                    )                                                
+                    )
         else:
-            self.printer.print_in_terminal("no_changes_made")        
+            self.printer.print_in_terminal("no_changes_made")
 
     def run_in_terminal(self, request: AgenticEditRequest):
         """
@@ -1265,6 +1296,9 @@ class AgenticEdit:
                     if event.tool_name == "AttemptCompletionTool":
                         continue  # Do not display AttemptCompletionTool result
 
+                    if event.tool_name == "PlanModeRespondTool":
+                        continue
+
                     result = event.result
                     title = f"✅ Tool Result: {event.tool_name}" if result.success else f"❌ Tool Result: {event.tool_name}"
                     border_style = "green" if result.success else "red"
@@ -1281,7 +1315,7 @@ class AgenticEdit:
                     panel_content = [base_content]
                     syntax_content = None
 
-                    if result.content is not None:                        
+                    if result.content is not None:
                         content_str = ""
                         try:
                             if isinstance(result.content, (dict, list)):
@@ -1323,7 +1357,8 @@ class AgenticEdit:
                             else:
                                 content_str = str(result.content)
                                 # Append simple string content directly
-                                panel_content.append(_format_content(content_str))
+                                panel_content.append(
+                                    _format_content(content_str))
                         except Exception as e:
                             logger.warning(
                                 f"Error formatting tool result content: {e}")
@@ -1336,13 +1371,17 @@ class AgenticEdit:
                     # Print syntax highlighted content separately if it exists
                     if syntax_content:
                         console.print(syntax_content)
+                elif isinstance(event, PlanModeRespondEvent):
+                    console.print(Panel(Markdown(event.completion.response),
+                                  title="🏁 Task Completion", border_style="green", title_align="left"))
 
                 elif isinstance(event, CompletionEvent):
                     # 在这里完成实际合并
                     try:
                         self.apply_changes()
                     except Exception as e:
-                        logger.exception(f"Error merging shadow changes to project: {e}")
+                        logger.exception(
+                            f"Error merging shadow changes to project: {e}")
 
                     console.print(Panel(Markdown(event.completion.result),
                                   title="🏁 Task Completion", border_style="green", title_align="left"))
