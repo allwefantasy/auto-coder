@@ -2823,6 +2823,7 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
     args = get_final_config() 
     memory = get_memory()            
     if args.enable_agentic_edit:
+        from autocoder.run_context import get_run_context,RunMode
         execute_file,args = generate_new_yaml(query)
         args.file = execute_file                      
         current_files = memory.get("current_files",{}).get("files",[])
@@ -2838,7 +2839,10 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
                                 save_memory_func=save_memory), command_config=CommandConfig,
                                 conversation_name="current"
                                 )
-            agent.run_in_terminal(AgenticEditRequest(user_input=query))
+            if get_run_context() == RunMode.TERMINAL:
+                agent.run_in_terminal(AgenticEditRequest(user_input=query))
+            else:
+                agent.run_with_events(AgenticEditRequest(user_input=query))
             return
     
     args = get_final_config()  
