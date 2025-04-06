@@ -1,3 +1,5 @@
+Hello Replaced
+This is a dummy file.
 import os
 import sys
 import time
@@ -68,6 +70,8 @@ print(read_result)
 print("\n--- Testing ReplaceInFileTool ---")
 replace_diff = '''<<<<<<< SEARCH
 Hello World
+This is a dummy file.
+Hello Replaced
 This is a dummy file.
 Hello Replaced
 This is a dummy file.
