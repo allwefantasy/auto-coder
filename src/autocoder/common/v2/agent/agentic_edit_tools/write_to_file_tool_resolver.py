@@ -34,6 +34,12 @@ class WriteToFileToolResolver(BaseToolResolver):
                 with open(shadow_path, 'w', encoding='utf-8') as f:
                     f.write(content)
                 logger.info(f"[Shadow] Successfully wrote shadow file: {shadow_path}")
+
+                # 回调AgenticEdit，记录变更
+                if self.agent:
+                    rel_path = os.path.relpath(abs_file_path, abs_project_dir)
+                    self.agent.record_file_change(rel_path, "added", diff=None, content=content)
+
                 return ToolResult(success=True, message=f"Successfully wrote to file (shadow): {file_path}", content=content)
             else:
                 # No shadow manager fallback to original file
@@ -41,6 +47,11 @@ class WriteToFileToolResolver(BaseToolResolver):
                 with open(abs_file_path, 'w', encoding='utf-8') as f:
                     f.write(content)
                 logger.info(f"Successfully wrote to file: {file_path}")
+
+                if self.agent:
+                    rel_path = os.path.relpath(abs_file_path, abs_project_dir)
+                    self.agent.record_file_change(rel_path, "added", diff=None, content=content)
+
                 return ToolResult(success=True, message=f"Successfully wrote to file: {file_path}", content=content)
         except Exception as e:
             logger.error(f"Error writing to file '{file_path}': {str(e)}")

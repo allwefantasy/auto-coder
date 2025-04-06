@@ -127,6 +127,69 @@ class AgenticEdit:
         # except Exception as e:
         #     logger.error(f"Error getting MCP server info: {str(e)}")
 
+        # 变更跟踪信息
+        # 格式: { file_path: {"type": "added"/"modified", "diffs": [diff_blocks], "content": latest_content} }
+        self.file_changes: Dict[str, Dict[str, Any]] = {}
+
+    def record_file_change(self, file_path: str, change_type: str, diff: Optional[str] = None, content: Optional[str] = None):
+        """
+        记录单个文件的变更信息。
+
+        Args:
+            file_path: 相对路径
+            change_type: 'added' 或 'modified'
+            diff: 对于 replace_in_file，传入 diff 内容
+            content: 最新文件内容（可选，通常用于 write_to_file）
+        """
+        if file_path not in self.file_changes:
+            self.file_changes[file_path] = {
+                "type": change_type,
+                "diffs": [],
+                "content": content
+            }
+        else:
+            # 文件已经存在，可能之前是 added，现在又被 modified，或者多次 modified
+            # 简单起见，type 用 added 优先，否则为 modified
+            if self.file_changes[file_path]["type"] != "added":
+                self.file_changes[file_path]["type"] = change_type
+
+            # content 以最新为准
+            if content is not None:
+                self.file_changes[file_path]["content"] = content
+
+        if diff:
+            self.file_changes[file_path].setdefault("diffs", []).append(diff)
+
+    def get_all_file_changes(self) -> Dict[str, Dict[str, Any]]:
+        """
+        获取当前记录的所有文件变更信息。
+
+        Returns:
+            字典，key 为文件路径，value 为变更详情
+        """
+        return self.file_changes
+
+    def get_changed_files_from_shadow(self) -> List[str]:
+        """
+        获取影子系统当前有哪些文件被修改或新增。
+
+        Returns:
+            变更的文件路径列表
+        """
+        changed_files = []
+        shadow_root = self.shadow_manager.shadows_dir
+        for root, dirs, files in os.walk(shadow_root):
+            for fname in files:
+                shadow_file_path = os.path.join(root, fname)
+                try:
+                    project_file_path = self.shadow_manager.from_shadow_path(shadow_file_path)
+                    rel_path = os.path.relpath(project_file_path, self.args.source_dir)
+                    changed_files.append(rel_path)
+                except Exception:
+                    # 非映射关系，忽略
+                    continue
+        return changed_files
+
     @byzerllm.prompt()
     def _analyze(self, request: AgenticEditRequest) -> str:
         """        

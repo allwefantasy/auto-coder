@@ -133,6 +133,11 @@ class ReplaceInFileToolResolver(BaseToolResolver):
             if errors:
                 message += "\nWarnings:\n" + "\n".join(errors)
 
+            # 变更跟踪，回调AgenticEdit
+            if self.agent:
+                rel_path = os.path.relpath(abs_file_path, abs_project_dir)
+                self.agent.record_file_change(rel_path, "modified", diff=diff_content, content=current_content)
+
             return ToolResult(success=True, message=message, content=current_content)
         except Exception as e:
             logger.error(f"Error writing replaced content to file '{file_path}': {str(e)}")
