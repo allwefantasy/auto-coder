@@ -12,7 +12,7 @@ from rich.panel import Panel
 from pydantic import SkipValidation
 
 # Removed ResultManager, stream_out, git_utils, AutoCommandTools, count_tokens, global_cancel, ActionYmlFileManager, get_event_manager, EventContentCreator, get_run_context, AgenticFilterStreamOutType
-from autocoder.auto_coder import AutoCoderArgs
+from autocoder.common import AutoCoderArgs, git_utils, SourceCodeList, SourceCode
 from autocoder.common import detect_env
 from autocoder.common import shells
 from loguru import logger
@@ -34,10 +34,12 @@ from rich.syntax import Syntax  # Added
 from rich.markdown import Markdown  # Added
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events.event_types import Event, EventType, EventMetadata
+from autocoder.memory.active_context_manager import ActiveContextManager
 from autocoder.events import event_content as EventContentCreator
 from autocoder.shadows.shadow_manager import ShadowManager
 from autocoder.linters.shadow_linter import ShadowLinter
 from autocoder.compilers.shadow_compiler import ShadowCompiler
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 # Import the new display function
 from autocoder.common.v2.agent.agentic_tool_display import get_tool_display_message
 from autocoder.common.v2.agent.agentic_edit_types import FileChangeEntry
@@ -1173,12 +1175,56 @@ class AgenticEdit:
     def apply_changes(self):
         """
         Apply all tracked file changes to the original project directory.
-        """
+        """        
         for change in self.get_all_file_changes():
             file_path = change['file_path']
             content = change['content']
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(content)
+
+        if len(self.get_all_file_changes()) > 0:
+            if not self.args.skip_commit:
+                try:
+                    file_name = os.path.basename(self.args.file)
+                    commit_result = git_utils.commit_changes(
+                        self.args.source_dir,
+                        f"{self.args.query}\nauto_coder_{file_name}",
+                    )
+                    
+                    action_yml_file_manager = ActionYmlFileManager(self.args.source_dir)
+                    action_file_name = os.path.basename(self.args.file)
+                    add_updated_urls = []
+                    commit_result.changed_files
+                    for file in commit_result.changed_files:
+                        add_updated_urls.append(os.path.join(self.args.source_dir, file))
+
+                    self.args.add_updated_urls = add_updated_urls
+                    update_yaml_success = action_yml_file_manager.update_yaml_field(action_file_name, "add_updated_urls", add_updated_urls)
+                    if not update_yaml_success:                        
+                        self.printer.print_in_terminal("yaml_save_error", style="red", yaml_file=action_file_name)  
+
+                    if self.args.enable_active_context:
+                        active_context_manager = ActiveContextManager(self.llm, self.args.source_dir)
+                        task_id = active_context_manager.process_changes(self.args)
+                        self.printer.print_in_terminal("active_context_background_task", 
+                                                     style="blue",
+                                                     task_id=task_id)
+                    git_utils.print_commit_info(commit_result=commit_result)
+                except Exception as e:
+                    self.printer.print_str_in_terminal(
+                        self.git_require_msg(source_dir=self.args.source_dir, error=str(e)),
+                        style="red"
+                    )
+            else:
+                self.print_merged_blocks(merged_blocks)
+            
+            self.printer.print_in_terminal("merge_success", 
+                                         num_files=len(file_content_mapping.keys()),
+                                         num_changes=len(changes_to_make),
+                                         total_blocks=len(codes))
+            
+        else:
+            self.printer.print_in_terminal("no_changes_made")        
 
     def run_in_terminal(self, request: AgenticEditRequest):
         """
