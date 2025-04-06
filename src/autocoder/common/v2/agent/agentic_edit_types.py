@@ -109,6 +109,11 @@ TOOL_MODEL_MAP: Dict[str, Type[BaseTool]] = {
     "use_mcp_tool": UseMcpTool,
 }
 
+class FileChangeEntry(BaseModel):
+    type: str  # 'added' or 'modified'
+    diffs: List[str] = []
+    content: Optional[str] = None
+
 
 class AgenticEditRequest(BaseModel):
     user_input: str

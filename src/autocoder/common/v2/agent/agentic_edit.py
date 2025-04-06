@@ -128,8 +128,9 @@ class AgenticEdit:
         #     logger.error(f"Error getting MCP server info: {str(e)}")
 
         # 变更跟踪信息
-        # 格式: { file_path: {"type": "added"/"modified", "diffs": [diff_blocks], "content": latest_content} }
-        self.file_changes: Dict[str, Dict[str, Any]] = {}
+        # 格式: { file_path: FileChangeEntry(...) }
+        from autocoder.common.v2.agent.agentic_edit_types import FileChangeEntry
+        self.file_changes: Dict[str, FileChangeEntry] = {}
 
     def record_file_change(self, file_path: str, change_type: str, diff: Optional[str] = None, content: Optional[str] = None):
         """
@@ -141,26 +142,24 @@ class AgenticEdit:
             diff: 对于 replace_in_file，传入 diff 内容
             content: 最新文件内容（可选，通常用于 write_to_file）
         """
-        if file_path not in self.file_changes:
-            self.file_changes[file_path] = {
-                "type": change_type,
-                "diffs": [],
-                "content": content
-            }
+        entry = self.file_changes.get(file_path)
+        if entry is None:
+            entry = FileChangeEntry(type=change_type, diffs=[], content=content)
+            self.file_changes[file_path] = entry
         else:
             # 文件已经存在，可能之前是 added，现在又被 modified，或者多次 modified
             # 简单起见，type 用 added 优先，否则为 modified
-            if self.file_changes[file_path]["type"] != "added":
-                self.file_changes[file_path]["type"] = change_type
+            if entry.type != "added":
+                entry.type = change_type
 
             # content 以最新为准
             if content is not None:
-                self.file_changes[file_path]["content"] = content
+                entry.content = content
 
         if diff:
-            self.file_changes[file_path].setdefault("diffs", []).append(diff)
+            entry.diffs.append(diff)
 
-    def get_all_file_changes(self) -> Dict[str, Dict[str, Any]]:
+    def get_all_file_changes(self) -> Dict[str, FileChangeEntry]:
         """
         获取当前记录的所有文件变更信息。
 
