@@ -1143,6 +1143,18 @@ class AgenticEdit:
                     )
                     event_manager.write_result(
                         content=content.to_dict(), metadata=metadata)
+                elif isinstance(agent_event, PlanModeRespondEvent):
+                    metadata.path = "/agent/edit/plan_mode_respond"                    
+                    content = EventContentCreator.create_completion(
+                        success_code="AGENT_COMPLETE",
+                        success_message="Agent attempted task completion.",
+                        result={
+                            "response": agent_event.completion.response,
+                        }
+                    )
+                    event_manager.write_completion(
+                        content=content.to_dict(), metadata=metadata.to_dict())
+
                 elif isinstance(agent_event, CompletionEvent):
                     # 在这里完成实际合并
                     try:
@@ -1156,7 +1168,7 @@ class AgenticEdit:
                         success_code="AGENT_COMPLETE",
                         success_message="Agent attempted task completion.",
                         result={
-                            **agent_event.completion.model_dump()
+                            "response": agent_event.completion.result
                         }
                     )
                     event_manager.write_completion(
