@@ -1,6 +1,7 @@
 # src/autocoder/common/v2/agent/agentic_edit_conversation.py
 import os
 import json
+import uuid
 from typing import List, Dict, Any, Optional
 from autocoder.common import AutoCoderArgs
 
@@ -15,16 +16,32 @@ class AgenticConversation:
     and retrieving the history.
     """
 
-    def __init__(self, args: AutoCoderArgs, initial_history: Optional[List[MessageType]] = None):
+    def __init__(self, args: AutoCoderArgs, initial_history: Optional[List[MessageType]] = None, conversation_name: Optional[str] = None):
         """
         Initializes the conversation history.
 
         Args:
             initial_history: An optional list of messages to start with.
+            conversation_name: Optional conversation identifier. If provided, history is saved/loaded from a file named after it.
         """
         self.project_path = args.source_dir
         self._history: List[MessageType] = initial_history if initial_history is not None else []
-        self.memory_file_path = os.path.join(self.project_path, ".auto-coder", "memory", "agentic_edit_memory.json")
+
+        # Determine the memory directory
+        memory_dir = os.path.join(self.project_path, ".auto-coder", "memory", "agentic_edit_memory")
+        os.makedirs(memory_dir, exist_ok=True)
+
+        # Determine conversation file path
+        if conversation_name:
+            filename = f"{conversation_name}.json"
+        else:
+            conversation_name = str(uuid.uuid4())
+            filename = f"{conversation_name}.json"
+
+        self.conversation_name = conversation_name
+        self.memory_file_path = os.path.join(memory_dir, filename)
+
+        # Load existing history if file exists
         self._load_memory()
 
     def add_message(self, role: str, content: Any, **kwargs):

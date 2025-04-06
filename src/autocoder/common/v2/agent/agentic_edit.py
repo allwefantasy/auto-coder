@@ -87,6 +87,8 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     UseMcpTool: UseMcpToolResolver,
 }
 
+from autocoder.common.v2.agent.agentic_edit_conversation import AgenticConversation
+
 # --- Tool Display Customization is now handled by agentic_tool_display.py ---
 
 
@@ -112,6 +114,8 @@ class AgenticEdit:
         self.command_config = command_config  # Note: command_config might be unused now
         self.project_type_analyzer = ProjectTypeAnalyzer(
             args=args, llm=self.llm)
+        
+        self.conversation_manager = AgenticConversation(args, self.conversation_history)
 
         self.shadow_manager = ShadowManager(
             args.source_dir, args.event_file, args.ignore_clean_shadows)
@@ -739,7 +743,7 @@ class AgenticEdit:
         conversations = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": request.user_input}
-        ]
+        ]        
         logger.debug(
             f"Initial conversation history size: {len(conversations)}")
 
@@ -866,7 +870,10 @@ class AgenticEdit:
                 # without signaling completion. We might just stop or yield a final message.
                 # Let's assume it stops here.
                 break
-
+        
+        for message in conversations:
+            self.conversation_manager.add_message(message["role"], message["content"])        
+        
         logger.info("AgenticEdit analyze loop finished.")
 
     def stream_and_parse_llm_response(
