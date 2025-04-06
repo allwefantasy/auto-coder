@@ -41,6 +41,7 @@ from autocoder.shadows.shadow_manager import ShadowManager
 from autocoder.linters.shadow_linter import ShadowLinter
 from autocoder.compilers.shadow_compiler import ShadowCompiler
 from autocoder.common.action_yml_file_manager import ActionYmlFileManager
+from autocoder.common.auto_coder_lang import get_message
 # Import the new display function
 from autocoder.common.v2.agent.agentic_tool_display import get_tool_display_message
 from autocoder.common.v2.agent.agentic_edit_types import FileChangeEntry
@@ -1180,8 +1181,7 @@ class AgenticEdit:
     def apply_changes(self):
         """
         Apply all tracked file changes to the original project directory.
-        """
-        print("开始合并应用....")        
+        """            
         for (file_path,change) in self.get_all_file_changes().items():            
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(change.content)
@@ -1231,7 +1231,7 @@ class AgenticEdit:
         project_name = os.path.basename(os.path.abspath(self.args.source_dir))
         console.rule(f"[bold cyan]Starting Agentic Edit: {project_name}[/]")
         console.print(Panel(
-            f"[bold]User Query:[/bold]\n{request.user_input}", title="Objective", border_style="blue"))
+            f"[bold]{get_message('/agent/edit/user_query')}:[/bold]\n{request.user_input}", title=get_message("/agent/edit/objective"), border_style="blue"))
 
         try:
             event_stream = self.analyze(request)
@@ -1263,6 +1263,12 @@ class AgenticEdit:
                     border_style = "green" if result.success else "red"
                     base_content = f"[bold]Status:[/bold] {'Success' if result.success else 'Failure'}\n"
                     base_content += f"[bold]Message:[/bold] {result.message}\n"
+
+                    def _format_content(content):
+                        if len(content) > 200:
+                            return f"{content[:100]}\n...\n{content[-100:]}"
+                        else:
+                            return content
 
                     # Prepare panel for base info first
                     panel_content = [base_content]
@@ -1306,16 +1312,16 @@ class AgenticEdit:
                                     lexer = "text"
 
                                 syntax_content = Syntax(
-                                    result.content[0:100]+"...", lexer, theme="default", line_numbers=True)
+                                    _format_content(result.content), lexer, theme="default", line_numbers=True)
                             else:
                                 content_str = str(result.content)
                                 # Append simple string content directly
-                                panel_content.append(content_str[0:100]+"...")
+                                panel_content.append(_format_content(content_str))
                         except Exception as e:
                             logger.warning(
                                 f"Error formatting tool result content: {e}")
                             panel_content.append(
-                                str(result.content)[0:100]+"...")  # Fallback
+                                _format_content(str(result.content)))  # Fallback
 
                     # Print the base info panel
                     console.print(Panel("\n".join(

@@ -825,6 +825,14 @@ MESSAGES = {
     "/compile/check/end": {
         "en": "Finished compile error checking process.",
         "zh": "结束编译错误检查过程."
+    },
+    "/agent/edit/objective":{
+        "en":"Objective",
+        "zh":"目标"
+    },
+    "/agent/edit/user_query":{
+        "en":"User Query",
+        "zh":"用户查询"
     }
 }
 

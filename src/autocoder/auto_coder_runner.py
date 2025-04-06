@@ -2777,27 +2777,69 @@ def conf_import(path: str):
     from autocoder.common.conf_import_export import import_conf
     import_conf(os.getcwd(), path)
 
+def generate_new_yaml(query: str):
+    memory = get_memory()
+    conf = memory.get("conf",{})
+    current_files = memory.get("current_files",{}).get("files",[])
+    auto_coder_main(["next", "chat_action"])        
+    latest_yaml_file = get_last_yaml_file("actions")
+    if latest_yaml_file:
+        yaml_config = {
+            "include_file": ["./base/base.yml"],
+            "auto_merge": conf.get("auto_merge", "editblock"),
+            "human_as_model": conf.get("human_as_model", "false") == "true",
+            "skip_build_index": conf.get("skip_build_index", "true") == "true",
+            "skip_confirm": conf.get("skip_confirm", "true") == "true",
+            "silence": conf.get("silence", "true") == "true",
+            "include_project_structure": conf.get("include_project_structure", "true")
+            == "true",
+            "exclude_files": memory.get("exclude_files", []),
+        }
+        yaml_config["context"] = ""                    
+        for key, value in conf.items():
+            converted_value = convert_config_value(key, value)
+            if converted_value is not None:
+                yaml_config[key] = converted_value
+
+        yaml_config["urls"] = current_files + get_llm_friendly_package_docs(
+            return_paths=True
+        )
+        # handle image
+        v = Image.convert_image_paths_from(query)
+        yaml_config["query"] = v                    
+
+        yaml_content = convert_yaml_config_to_str(yaml_config=yaml_config)        
+
+        execute_file = os.path.join("actions", latest_yaml_file)
+        with open(os.path.join(execute_file), "w",encoding="utf-8") as f:
+            f.write(yaml_content)
+        return execute_file,convert_yaml_to_config(execute_file)
+
 @run_in_raw_thread()
 def auto_command(query: str,extra_args: Dict[str,Any]={}):    
     """处理/auto指令"""    
     from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
-    args = get_final_config()       
-
+               
     if args.enable_agentic_edit:
+        execute_file,args = generate_new_yaml(query)
+        args.file = execute_file
         from autocoder.common.v2.agent.agentic_edit import AgenticEdit,AgenticEditRequest
-        current_files = get_memory()["current_files"]["files"] or []
+        memory = get_memory()        
+        current_files = memory.get("current_files",{}).get("files",[])
         sources = []
         for file in current_files:
             with open(file,"r",encoding="utf-8") as f:
-                sources.append(SourceCode(module_name=file,source_code=f.read()))
-        llm = get_single_llm(args.code_model or args.model,product_mode=args.product_mode)    
-        agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
-                            conversation_history=[],
-                            memory_config=MemoryConfig(memory=memory, 
-                            save_memory_func=save_memory), command_config=CommandConfig)
-        agent.run_in_terminal(AgenticEditRequest(user_input=query))
-        return
-
+                sources.append(SourceCode(module_name=file,source_code=f.read()))  
+                    
+            llm = get_single_llm(args.code_model or args.model,product_mode=args.product_mode)    
+            agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
+                                conversation_history=[],
+                                memory_config=MemoryConfig(memory=memory, 
+                                save_memory_func=save_memory), command_config=CommandConfig)
+            agent.run_in_terminal(AgenticEditRequest(user_input=query))
+            return
+    
+    args = get_final_config()  
     # 准备请求参数
     request = AutoCommandRequest(
         user_input=query        
