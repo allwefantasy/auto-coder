@@ -57,6 +57,7 @@ class SuffixProject:
             "actions",
             ".idea",
             "venv",
+            ".next"
         ]
 
     @byzerllm.prompt()
