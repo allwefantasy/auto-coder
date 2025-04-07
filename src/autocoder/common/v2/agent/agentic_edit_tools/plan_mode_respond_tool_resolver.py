@@ -18,8 +18,7 @@ class PlanModeRespondToolResolver(BaseToolResolver):
         Packages the response and options for Plan Mode interaction.
         """
         response_text = self.tool.response
-        options = self.tool.options
-
+        options = self.tool.options        
         logger.info(f"Resolving PlanModeRespondTool: Response='{response_text[:100]}...', Options={options}")
 
         if not response_text:

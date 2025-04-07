@@ -93,8 +93,9 @@ def gengerate_event_file_path(project_path: Optional[str] = None) -> Tuple[str,s
     # 组合文件名
     file_name = f"{file_id}.jsonl"
     
+    # 要使用绝对路径，否则会被认为产生两个event_manager
     if project_path is None:
-        return os.path.join(".auto-coder", "events", file_name),file_id
+        return os.path.join(os.getcwd(),".auto-coder", "events", file_name),file_id
     else:   
         return os.path.join(project_path, ".auto-coder", "events", file_name),file_id
 

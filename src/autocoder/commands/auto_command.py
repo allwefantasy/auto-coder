@@ -787,11 +787,10 @@ class CommandAutoTuner:
         <name>list_files</name>
         <description>list_files 查看某个目录下的所有文件</description>
         <usage>
-         该命令不需要任何参数，直接使用即可。
-         使用例子：
-
-         list_files()
-
+        该工具用于列出指定目录下的所有文件（不包括子目录中的文件）。
+        输入参数 path: 要列出文件的目录路径
+        返回值是目录下所有文件的列表，以换行符分隔
+        list_files(path="/tmp")
         </usage>
         </command>        
 
@@ -1529,3 +1528,10 @@ class CommandAutoTuner:
                 query=f"Command: {command} Parameters: {json.dumps(parameters) if parameters else 'None'}",
                 response=f"Command execution failed: {error_msg}"
             )
+
+            self.result_manager = ResultManager()
+            result = f"command {command} with parameters {parameters} execution failed with error {error_msg}"
+            self.result_manager.add_result(content=result, meta={
+                "action": command,
+                "input": parameters
+            })

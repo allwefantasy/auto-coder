@@ -655,7 +655,7 @@ class AutoCommandTools:
         该工具用于列出指定目录下的所有文件（不包括子目录中的文件）。
         输入参数 path: 要列出文件的目录路径
         返回值是目录下所有文件的列表，以逗号分隔。
-        """
+        """        
         # 处理绝对路径和相对路径
         target_path = path
         if not os.path.isabs(path):
@@ -687,12 +687,10 @@ class AutoCommandTools:
         file_list = []
         for item in os.listdir(target_path):
             item_path = os.path.join(target_path, item)
-            # 只添加文件，不添加目录
-            if os.path.isfile(item_path):
-                file_list.append(item_path)
+            file_list.append(item_path)                
 
         # 生成以逗号分隔的文件列表
-        result = ",".join(file_list)
+        result = "\n".join(file_list)
 
         # 记录结果
         self.result_manager.add_result(content=result, meta={

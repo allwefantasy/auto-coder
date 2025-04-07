@@ -938,16 +938,23 @@ class AgenticEdit:
                     if 'requires_approval' in params:
                         params['requires_approval'] = params['requires_approval'].lower(
                         ) == 'true'
-                    # Attempt to handle JSON parsing for arguments in use_mcp_tool
-                    # if tool_tag == 'use_mcp_tool' and 'query' in params:
-                    #     try:
-                    #         params['arguments'] = json.loads(
-                    #             params['arguments'])
-                    #     except json.JSONDecodeError:
-                    #         logger.warning(
-                    #             f"Could not decode JSON arguments for use_mcp_tool: {params['arguments']}")
-                    #         # Keep as string or handle error? Let's keep as string for now.
-                    #         pass
+                    # Attempt to handle JSON parsing for ask_followup_question_tool
+                    if tool_tag == 'ask_followup_question' and 'options' in params:
+                        try:
+                            params['options'] = json.loads(
+                                params['options'])
+                        except json.JSONDecodeError:
+                            logger.warning(
+                                f"Could not decode JSON options for ask_followup_question_tool: {params['options']}")
+                            # Keep as string or handle error? Let's keep as string for now.
+                            pass
+                    if tool_tag == 'plan_mode_respond' and 'options' in params:
+                        try:
+                            params['options'] = json.loads(
+                                params['options'])
+                        except json.JSONDecodeError:
+                            logger.warning(
+                                f"Could not decode JSON options for plan_mode_respond_tool: {params['options']}")                               
                     # Handle recursive for list_files
                     if tool_tag == 'list_files' and 'recursive' in params:
                         params['recursive'] = params['recursive'].lower() == 'true'                    

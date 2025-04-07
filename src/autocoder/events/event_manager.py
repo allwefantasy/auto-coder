@@ -138,7 +138,7 @@ class EventManager:
         blocker = threading.Event()        
         self.event_store.append_event(event)            
         self._blocking_events[event.event_id] = blocker
-        logger.debug(f"self._blocking_events: {self._blocking_events}")
+        logger.info(f"ASK_USER: {self} {self.event_store.file_path} self._blocking_events: {self._blocking_events}")
         if callback:
             self._response_callbacks[event.event_id] = callback
             logger.debug(f"Registered callback for event: {event.event_id}")
@@ -194,7 +194,7 @@ class EventManager:
         Returns:
             The created response event
         """
-        logger.debug(f"respond_to_user called for event: {ask_event_id} with response: '{response}'")
+        logger.info(f"respond_to_user called for event: {ask_event_id} with response: '{response}'")
         
         # 创建响应事件
         event = ResponseEvent(
@@ -205,7 +205,7 @@ class EventManager:
         
         # 存储响应事件
         self.event_store.append_event(event)
-        logger.debug(f"Response event created and stored with ID: {event.event_id}")
+        logger.info(f"Response event created and stored with ID: {event.event_id}")
                 
         # 获取回调和阻塞器
         callback = None
@@ -214,29 +214,28 @@ class EventManager:
         if ask_event_id in self._response_callbacks:
             callback = self._response_callbacks[ask_event_id]
             # 暂时不删除回调，确保不会丢失
-            logger.debug(f"Retrieved callback for event: {ask_event_id}")
+            logger.info(f"Retrieved callback for event: {ask_event_id}")
         else:
-            logger.debug(f"No callback found for event: {ask_event_id}")
+            logger.info(f"No callback found for event: {ask_event_id}")
                             
         
         # 如果找到了回调，执行它
         if callback:
             try:
-                logger.debug(f"Executing callback for event: {ask_event_id}")
+                logger.info(f"Executing callback for event: {ask_event_id}")
                 callback(response)
-                logger.debug(f"Callback execution completed for event: {ask_event_id}")
-                
-                # 回调执行后再移除它                
+                logger.info(f"Callback execution completed for event: {ask_event_id}")
+                                
                 if ask_event_id in self._response_callbacks:
                     del self._response_callbacks[ask_event_id]
             except Exception as e:
                 logger.error(f"Error in response callback: {e}")   
 
         # 检查是否存在对应的阻塞事件        
-        logger.debug(f"self._blocking_events: {self._blocking_events}")
+        logger.info(f"RESPONSD_TO_USER: {self} {self.event_store.file_path} self._blocking_events: {self._blocking_events}")
         if ask_event_id in self._blocking_events:
             self._blocking_events[ask_event_id].set()
-            logger.debug(f"Unblocked event: {ask_event_id}")
+            logger.info(f"Unblocked event: {ask_event_id}")
         else:
             logger.warning(f"No blocking event found for event_id: {ask_event_id}")
         

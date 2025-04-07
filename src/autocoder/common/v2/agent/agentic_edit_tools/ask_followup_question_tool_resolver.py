@@ -12,6 +12,7 @@ from prompt_toolkit.styles import Style
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
+from autocoder.common.result_manager import ResultManager
 
 if typing.TYPE_CHECKING:
     from autocoder.common.v2.agent.agentic_edit import AgenticEdit
@@ -20,6 +21,7 @@ class AskFollowupQuestionToolResolver(BaseToolResolver):
     def __init__(self, agent: Optional['AgenticEdit'], tool: AskFollowupQuestionTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: AskFollowupQuestionTool = tool # For type hinting
+        self.result_manager = ResultManager()
 
     def resolve(self) -> ToolResult:
         """
@@ -28,17 +30,17 @@ class AskFollowupQuestionToolResolver(BaseToolResolver):
         """
         question = self.tool.question
         options = self.tool.options
-
+        options_text = "\n".join([f"{i+1}. {option}" for i, option in enumerate(options)])
         if get_run_context().is_web():
             answer = get_event_manager(
                 self.args.event_file).ask_user(prompt=question)
-            self.result_manager.append(content=answer, meta={
+            self.result_manager.append(content=answer + "\n" + options_text, meta={
                 "action": "ask_user",
                 "input": {
                     "question": question
                 }
             })
-            return answer
+            return ToolResult(success=True, message="Follow-up question prepared.", content=answer)
 
         console = Console()
 
