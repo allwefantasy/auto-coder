@@ -144,6 +144,7 @@ class AgenticConversation:
     def clear_history(self):
         """Clears the conversation history."""
         self._history = []
+        self._save_memory()
 
     def __len__(self) -> int:
         """Returns the number of messages in the history."""

@@ -2832,9 +2832,10 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
             with open(file,"r",encoding="utf-8") as f:
                 sources.append(SourceCode(module_name=file,source_code=f.read()))  
                     
-        llm = get_single_llm(args.code_model or args.model,product_mode=args.product_mode)    
+        llm = get_single_llm(args.code_model or args.model,product_mode=args.product_mode) 
+        conversation_history = extra_args.get("conversations",[])   
         agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
-                            conversation_history=[],
+                            conversation_history=conversation_history,
                             memory_config=MemoryConfig(memory=memory, 
                             save_memory_func=save_memory), command_config=CommandConfig,
                             conversation_name="current"

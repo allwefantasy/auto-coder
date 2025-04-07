@@ -119,6 +119,8 @@ class AgenticEdit:
 
         self.conversation_manager = AgenticConversation(
             args, self.conversation_history, conversation_name=conversation_name)
+        # 当前不开启历史记录，所以清空
+        self.conversation_manager.clear_history()
 
         self.shadow_manager = ShadowManager(
             args.source_dir, args.event_file, args.ignore_clean_shadows)
@@ -745,12 +747,13 @@ class AgenticEdit:
         self.conversation_manager.add_user_message(request.user_input)
         logger.debug(
             f"Initial conversation history size: {len(conversations)}")
-
+        
+        tool_executed = False
         while True:
             global_cancel.check_and_raise()
             logger.info(
                 f"Starting LLM interaction cycle. History size: {len(conversations)}")
-            tool_executed = False
+            
             assistant_buffer = ""
 
             llm_response_gen = stream_chat_with_continue(
@@ -1146,14 +1149,11 @@ class AgenticEdit:
                         content=content.to_dict(), metadata=metadata.to_dict())
                 elif isinstance(agent_event, PlanModeRespondEvent):
                     metadata.path = "/agent/edit/plan_mode_respond"                    
-                    content = EventContentCreator.create_completion(
-                        success_code="AGENT_COMPLETE",
-                        success_message="Agent attempted task completion.",
-                        result={
-                            "response": agent_event.completion.response,
-                        }
-                    )
-                    event_manager.write_completion(
+                    content = EventContentCreator.create_markdown_result(
+                        content=agent_event.completion.response,
+                        metadata={}
+                    )                    
+                    event_manager.write_result(
                         content=content.to_dict(), metadata=metadata.to_dict())
 
                 elif isinstance(agent_event, TokenUsageEvent):                    
@@ -1241,7 +1241,7 @@ class AgenticEdit:
     def apply_changes(self):
         """
         Apply all tracked file changes to the original project directory.
-        """
+        """        
         for (file_path, change) in self.get_all_file_changes().items():
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(change.content)
