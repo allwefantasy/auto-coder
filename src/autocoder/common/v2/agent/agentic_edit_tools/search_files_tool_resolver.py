@@ -54,7 +54,7 @@ class SearchFilesToolResolver(BaseToolResolver):
             compiled_regex = re.compile(regex_pattern)
             search_glob_pattern = os.path.join(search_base_path, "**", file_pattern)
 
-            ignored_dirs = ['.git', 'node_modules', '.mvn', '.idea', '__pycache__', '.venv', 'venv', 'dist', 'build', '.gradle']
+            ignored_dirs = ['.git',".auto-coder", 'node_modules', '.mvn', '.idea', '__pycache__', '.venv', 'venv', 'dist', 'build', '.gradle']
             logger.info(f"Searching for regex '{regex_pattern}' in files matching '{file_pattern}' under '{search_base_path}' (shadow: {shadow_exists}), ignoring directories: {ignored_dirs}")
 
             for filepath in glob.glob(search_glob_pattern, recursive=True):
