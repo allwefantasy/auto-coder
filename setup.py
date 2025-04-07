@@ -44,11 +44,11 @@ setup(
     package_data={
         "autocoder": ["data/**/*"],
     },
-    install_requires=install_requires,
-    classifiers=[        
-        "Topic :: Scientific/Engineering :: Artificial Intelligence",
-        "Programming Language :: Python :: 3.9",
+    install_requires=install_requires,    
+    classifiers=[                
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
-    requires_python=">=3.9",
+    requires_python=">=3.10, <=3.12"
 )
