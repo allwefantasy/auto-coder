@@ -1113,7 +1113,7 @@ class AgenticEdit:
             for agent_event in event_stream:
                 content = None
                 metadata = EventMetadata(
-                    action_file=self.args.event_file,
+                    action_file=self.args.file,
                     is_streaming=False,
                     stream_out_type="/agent/edit")
 
@@ -1189,6 +1189,8 @@ class AgenticEdit:
                             first_token_time=last_meta.first_token_time,
                             input_tokens=last_meta.input_tokens_count,
                             output_tokens=last_meta.generated_tokens_count,
+                            input_cost=input_cost,
+                            output_cost=output_cost
                         ).to_dict()),metadata=metadata.to_dict())
 
                 elif isinstance(agent_event, CompletionEvent):
