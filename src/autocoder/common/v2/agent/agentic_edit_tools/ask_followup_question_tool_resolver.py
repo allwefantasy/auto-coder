@@ -29,12 +29,12 @@ class AskFollowupQuestionToolResolver(BaseToolResolver):
         This resolver doesn't directly ask the user but prepares the data for it.
         """
         question = self.tool.question
-        options = self.tool.options
+        options = self.tool.options or []
         options_text = "\n".join([f"{i+1}. {option}" for i, option in enumerate(options)])
         if get_run_context().is_web():
             answer = get_event_manager(
                 self.args.event_file).ask_user(prompt=question)
-            self.result_manager.append(content=answer + "\n" + options_text, meta={
+            self.result_manager.append(content=answer + ("\n" + options_text if options_text else ""), meta={
                 "action": "ask_user",
                 "input": {
                     "question": question
