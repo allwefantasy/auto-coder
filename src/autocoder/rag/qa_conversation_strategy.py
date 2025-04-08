@@ -27,6 +27,9 @@ class MultiRoundStrategy(QAConversationStrategy):
     Multi-round strategy: First let the model read documents, then do Q&A.
     Creates multiple conversation turns.
     """
+    def __init__(self, args: AutoCoderArgs):
+        self.args = args
+
     def create_conversation(self, documents: List[Any], conversations: List[Dict[str,str]], local_image_host: str) -> List[Dict]:
         messages = []    
         messages.extend([
@@ -69,6 +72,72 @@ class MultiRoundStrategy(QAConversationStrategy):
         例如：/path/to/images/image.png， 返回 http://{{ local_image_host }}/static/path/to/images/image.png
         {% endif %}
         """
+    
+    @byzerllm.prompt()
+    def _read_docs_prompt_beta(
+        self, relevant_docs: List[str], local_image_host: str
+    ) -> Generator[str, None, None]:
+        """
+        You are a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
+
+        ====
+
+        FILES CONTEXT
+
+        The following files are provided to you as context for the user's task. Use these files to understand the project and answer questions strictly based on their content.
+
+        <documents>
+        {% for doc in relevant_docs %}
+        {{ doc }}
+        {% endfor %}
+        </documents>
+
+        ====
+
+        AUTO EXTENSION DOCS
+
+        The following extension documents are loaded dynamically to enhance your understanding or provide special instructions, rules, or context.
+
+        {% for key, value in extra_docs.items() %}
+        ### {{ key }}
+        {{ value }}
+        {% endfor %}
+
+        ====
+
+        INSTRUCTIONS
+
+        - Use ONLY the information from the provided documents and extension docs.
+        - If the documents do not contain enough information to answer, reply: "抱歉,文档中没有足够的信息来回答这个问题。"
+        - Do NOT invent, guess, or add information beyond what is provided.
+
+        - For Markdown images like ![image](/path/to/image.png):
+          - Analyze surrounding text to determine relevance.
+          - Include relevant images naturally in your answer, preserving image paths.
+          - Convert Windows paths to Linux style (e.g., C:\\path\\to\\img.png -> C:/path/to/img.png)
+          {% if local_image_host %}
+          - Prefix image URLs with http://{{ local_image_host }}/static/
+          {% endif %}
+
+        - Format your answer with Markdown for readability.
+
+        """
+
+        import os
+        extra_docs = {}
+        rules_dir = os.path.join(self.args.source_dir, ".autocoderrules")
+        if os.path.isdir(rules_dir):
+            for fname in os.listdir(rules_dir):
+                if fname.endswith(".md"):
+                    fpath = os.path.join(rules_dir, fname)
+                    try:
+                        with open(fpath, "r", encoding="utf-8") as f:
+                            content = f.read()
+                            key = os.path.splitext(fname)[0]
+                            extra_docs[key] = content
+                    except Exception:
+                        continue
+        return {"extra_docs": extra_docs}
 
 class SingleRoundStrategy(QAConversationStrategy):
     """
