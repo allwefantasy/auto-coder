@@ -1109,6 +1109,24 @@ class PluginManager:
 
         return processed_completions
 
+    def get_wrapped_functions(self) -> Dict[str, Callable]:
+        """获取所有已包装的函数。
+
+        Returns:
+            Dict[str, Callable]: 包含所有已包装函数的字典，键为函数名，值为包装后的函数
+        """
+        return self._wrapped_functions
+
+    def get_wrapped_function(self, func_name: str) -> Callable:
+        """获取已包装的函数。
+
+        Args:
+            func_name: 函数名
+
+        Returns:
+            已包装的函数，如果未找到则返回 None
+        """
+        return self._wrapped_functions.get(func_name)
 
 def register_global_plugin_dir(plugin_dir: str) -> None:
     """注册一个全局插件目录。
