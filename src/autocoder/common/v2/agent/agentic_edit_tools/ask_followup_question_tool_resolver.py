@@ -30,9 +30,7 @@ class AskFollowupQuestionToolResolver(BaseToolResolver):
         """
         question = self.tool.question
         options = self.tool.options
-        options_text = ""
-        if options:
-            options_text = "\n".join([f"{i+1}. {option}" for i, option in enumerate(options)])
+        options_text = "\n".join([f"{i+1}. {option}" for i, option in enumerate(options)])
         if get_run_context().is_web():
             answer = get_event_manager(
                 self.args.event_file).ask_user(prompt=question)
