@@ -37,6 +37,8 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
 
     def __init__(
         self,
+        args: 'AutoCoderArgs',
+        llm: 'ByzerLLM',
         path: str,
         ignore_spec,
         required_exts: list,
@@ -45,9 +47,12 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
         single_file_token_limit: int = 60000,
         disable_auto_window: bool = False,
         enable_hybrid_index: bool = False,
-        extra_params: Optional[AutoCoderArgs] = None,
-        emb_llm: Union[ByzerLLM, SimpleByzerLLM] = None,
+        extra_params: Optional['AutoCoderArgs'] = None,
+        emb_llm: Union['ByzerLLM', 'SimpleByzerLLM'] = None,
     ) -> None:
+        self.args = args
+        self.llm = llm
+
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
