@@ -52,7 +52,8 @@ from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific re
     ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
     ReplaceInFileToolResolver, SearchFilesToolResolver, ListFilesToolResolver,
     ListCodeDefinitionNamesToolResolver, AskFollowupQuestionToolResolver,
-    AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver
+    AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver,
+    ListPackageInfoToolResolver
 )
 
 from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
@@ -85,6 +86,7 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     SearchFilesTool: SearchFilesToolResolver,
     ListFilesTool: ListFilesToolResolver,
     ListCodeDefinitionNamesTool: ListCodeDefinitionNamesToolResolver,
+    ListPackageInfoTool: ListPackageInfoToolResolver,
     AskFollowupQuestionTool: AskFollowupQuestionToolResolver,
     AttemptCompletionTool: AttemptCompletionToolResolver,  # Will stop the loop anyway
     PlanModeRespondTool: PlanModeRespondToolResolver,
@@ -262,7 +264,7 @@ class AgenticEdit:
         </execute_command>
 
         ## list_package_info
-        Description: Request to retrieve information about a source code package, such as recent changes or documentation summary, to better understand the code context. It accepts a directory path (absolute or relative to the current project). It maps this directory to `.auto-coder/active-context/<relative_path>/active.md`. If the file exists, returns its content; otherwise, indicates no info found.
+        Description: Request to retrieve information about a source code package, such as recent changes or documentation summary, to better understand the code context. It accepts a directory path (absolute or relative to the current project).
         Parameters:
         - path: (required) The source code package directory path.
         Usage:
@@ -682,7 +684,7 @@ class AgenticEdit:
 
         {% if extra_docs %}
         ====
-        
+
         RULES PROVIDED BY USER
 
         The following rules are provided by the user, and you must follow them strictly.
@@ -695,7 +697,8 @@ class AgenticEdit:
         """
         import os
         extra_docs = {}
-        rules_dir = os.path.join(self.args.source_dir,".auto-coder", "autocoderrules")
+        rules_dir = os.path.join(self.args.source_dir,
+                                 ".auto-coder", "autocoderrules")
         if os.path.isdir(rules_dir):
             for fname in os.listdir(rules_dir):
                 if fname.endswith(".md"):
@@ -1149,6 +1152,7 @@ class AgenticEdit:
         standard event system format and writing them using the event manager.
         """
         event_manager = get_event_manager(self.args.event_file)
+        self.apply_pre_changes()
 
         try:
             event_stream = self.analyze(request)
@@ -1292,6 +1296,25 @@ class AgenticEdit:
             # Re-raise the exception if needed, or handle appropriately
             raise e
 
+    def apply_pre_changes(self):
+        # get the file name
+        file_name = os.path.basename(self.args.file)
+        if not self.args.skip_commit:
+            try:
+                get_event_manager(self.args.event_file).write_result(
+                    EventContentCreator.create_result(
+                        content=self.printer.get_message_from_key("/agent/edit/apply_pre_changes")), metadata=EventMetadata(
+                        action_file=self.args.file,
+                        is_streaming=False,
+                        path="/agent/edit/apply_pre_changes",
+                        stream_out_type="/agent/edit"))
+                git_utils.commit_changes(
+                    self.args.source_dir, f"auto_coder_pre_{file_name}")
+            except Exception as e:
+                self.printer.print_in_terminal("git_init_required",
+                                               source_dir=self.args.source_dir, error=str(e))
+                return
+
     def apply_changes(self):
         """
         Apply all tracked file changes to the original project directory.
@@ -1309,6 +1332,12 @@ class AgenticEdit:
                         f"{self.args.query}\nauto_coder_{file_name}",
                     )
 
+                    get_event_manager(self.args.event_file).write_result(
+                        EventContentCreator.create_result(
+                            content=self.printer.get_message_from_key("/agent/edit/apply_changes")), metadata=EventMetadata(
+                            action_file=self.args.file,
+                            is_streaming=False,
+                            stream_out_type="/agent/edit"))
                     action_yml_file_manager = ActionYmlFileManager(
                         self.args.source_dir)
                     action_file_name = os.path.basename(self.args.file)
@@ -1355,6 +1384,7 @@ class AgenticEdit:
             f"[bold]{get_message('/agent/edit/user_query')}:[/bold]\n{request.user_input}", title=get_message("/agent/edit/objective"), border_style="blue"))
 
         try:
+            self.apply_pre_changes()
             event_stream = self.analyze(request)
             for event in event_stream:
                 if isinstance(event, LLMThinkingEvent):
@@ -1446,7 +1476,8 @@ class AgenticEdit:
                             logger.warning(
                                 f"Error formatting tool result content: {e}")
                             panel_content.append(
-                                _format_content(str(result.content)))  # Fallback
+                                # Fallback
+                                _format_content(str(result.content)))
 
                     # Print the base info panel
                     console.print(Panel("\n".join(
