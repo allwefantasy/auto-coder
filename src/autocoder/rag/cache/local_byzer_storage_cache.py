@@ -1,20 +1,4 @@
-    def _load_failed_files(self):
-        if not os.path.exists(self.cache_dir):
-            os.makedirs(self.cache_dir, exist_ok=True)
-        if os.path.exists(self.failed_files_path):
-            try:
-                with open(self.failed_files_path, "r", encoding="utf-8") as f:
-                    return set(json.load(f))
-            except Exception:
-                return set()
-        return set()
-
-    def _save_failed_files(self):
-        try:
-            with open(self.failed_files_path, "w", encoding="utf-8") as f:
-                json.dump(list(self.failed_files), f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            logger.error(f"Error saving failed files list: {e}")
+from .failed_files_utils import load_failed_files, save_failed_files
 from autocoder.rag.cache.base_cache import (
     BaseCacheManager,
     DeleteEvent,
