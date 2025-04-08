@@ -253,14 +253,18 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                     logger.info(f"{file_info.file_path} is detected to be updated")
                     try:
                         result = process_file_local(file_info.file_path)
-                        if result:  # 只有当result不为空时才更新缓存
+                        if result:
+                            # 解析成功且非空
                             self.update_cache(self.fileinfo_to_tuple(file_info), result)
                             # 如果之前失败过且本次成功，移除失败记录
                             if file_info.file_path in self.failed_files:
                                 self.failed_files.remove(file_info.file_path)
                                 self._save_failed_files()
                         else:
-                            logger.warning(f"Empty result for file: {file_info.file_path}, skipping cache update")
+                            # 只要为空也认为解析失败，加入失败列表
+                            logger.warning(f"Empty result for file: {file_info.file_path}, treat as parse failed, skipping cache update")
+                            self.failed_files.add(file_info.file_path)
+                            self._save_failed_files()
                     except Exception as e:
                         logger.error(f"SimpleCache Error in process_queue: {e}")
                         # 解析失败则加入失败列表
