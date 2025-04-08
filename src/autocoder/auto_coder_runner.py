@@ -40,7 +40,7 @@ from rich.markdown import Markdown
 from byzerllm.utils.nontext import Image
 import git
 from autocoder.common import git_utils
-from autocoder.chat_auto_coder_lang import get_message
+from autocoder.chat_auto_coder_lang import get_message,get_message_with_format
 from autocoder.agent.auto_guess_query import AutoGuessQuery
 from autocoder.common.mcp_server import get_mcp_server
 from autocoder.common.mcp_server_types import (
@@ -273,8 +273,8 @@ def initialize_system(args:InitializeSystemRequest):
         else:
             print(f"  {message}")
 
-    def init_project():        
-        if not os.path.exists(".auto-coder"):
+    def init_project():           
+        if not os.path.exists(".auto-coder") or not os.path.exists("actions"):
             first_time[0] = True
             print_status(get_message("not_initialized"), "warning")
             init_choice = input(
@@ -295,8 +295,7 @@ def initialize_system(args:InitializeSystemRequest):
 
         if not os.path.exists(base_persist_dir):
             os.makedirs(base_persist_dir, exist_ok=True)
-            print_status(get_message("created_dir").format(
-                base_persist_dir), "success")
+            print_status(get_message_with_format("created_dir",path=base_persist_dir), "success")
 
         if first_time[0]:
             configure_project_type()
