@@ -971,6 +971,7 @@ class AgenticEdit:
             global_cancel.check_and_raise()
 
             meta_holder.meta = metadata
+            logger.info(f"metadata: {metadata.input_tokens_count}")
             if not content_chunk:
                 continue
             buffer += content_chunk

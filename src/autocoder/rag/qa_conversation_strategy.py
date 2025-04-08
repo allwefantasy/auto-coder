@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any,Generator
+from typing import List, Dict, Any, Generator
 import byzerllm
+from autocoder.common import AutoCoderArgs
 
 class QAConversationStrategy(ABC):
     """
@@ -121,25 +122,27 @@ class SingleRoundStrategy(QAConversationStrategy):
         {% endif %}
         """
 
-def get_qa_strategy(strategy_name: str) -> QAConversationStrategy:
+def get_qa_strategy(args: AutoCoderArgs) -> QAConversationStrategy:
     """
-    Factory method to get the appropriate conversation strategy
-    
+    Factory method to get the appropriate conversation strategy based on AutoCoderArgs
+
     Args:
-        strategy_name: Name of the strategy to use
-        
+        args: AutoCoderArgs instance containing configuration, including strategy name in `rag_qa_conversation_strategy`
+
     Returns:
         An instance of the requested strategy
-        
+
     Raises:
         ValueError: If the requested strategy doesn't exist
     """
+    strategy_name = getattr(args, 'rag_qa_conversation_strategy', None) or "multi_round"
+
     strategies = {
         "multi_round": MultiRoundStrategy,
         "single_round": SingleRoundStrategy,
     }
-    
+
     if strategy_name not in strategies:
         raise ValueError(f"Unknown strategy: {strategy_name}. Available strategies: {list(strategies.keys())}")
-    
+
     return strategies[strategy_name]()

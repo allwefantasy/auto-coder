@@ -841,8 +841,7 @@ class LongContextRAG:
                 self._print_rag_stats(rag_stat)
             else:
 
-                qa_strategy = get_qa_strategy(
-                    self.args.rag_qa_conversation_strategy)
+                qa_strategy = get_qa_strategy(self.args)
                 new_conversations = qa_strategy.create_conversation(
                     documents=[doc.source_code for doc in relevant_docs],
                     conversations=conversations, local_image_host=self.args.local_image_host
