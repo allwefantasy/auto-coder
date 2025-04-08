@@ -1,4 +1,20 @@
-from .failed_files_utils import load_failed_files, save_failed_files
+    def _load_failed_files(self):
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir, exist_ok=True)
+        if os.path.exists(self.failed_files_path):
+            try:
+                with open(self.failed_files_path, "r", encoding="utf-8") as f:
+                    return set(json.load(f))
+            except Exception:
+                return set()
+        return set()
+
+    def _save_failed_files(self):
+        try:
+            with open(self.failed_files_path, "w", encoding="utf-8") as f:
+                json.dump(list(self.failed_files), f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Error saving failed files list: {e}")
 from autocoder.rag.cache.base_cache import (
     BaseCacheManager,
     DeleteEvent,
@@ -163,7 +179,7 @@ class ByzerStorageCache(BaseCacheManager):
 
         # 失败文件路径
         self.failed_files_path = os.path.join(self.cache_dir, "failed_files.json")
-        self.failed_files = load_failed_files(self.failed_files_path)
+        self.failed_files = self._load_failed_files()
 
         # 创建缓存目录
         if not os.path.exists(self.cache_dir):
