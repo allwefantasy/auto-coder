@@ -93,18 +93,6 @@ class MultiRoundStrategy(QAConversationStrategy):
         </documents>
 
         ====
-        
-        {% if extra_docs %}
-        AUTO EXTENSION DOCS
-
-        The following extension documents are loaded dynamically to enhance your understanding or provide special instructions, rules, or context.
-
-        {% for key, value in extra_docs.items() %}
-        ### {{ key }}
-        {{ value }}
-        {% endfor %}
-
-        ====
         {% endif %}
 
         INSTRUCTIONS
@@ -123,6 +111,19 @@ class MultiRoundStrategy(QAConversationStrategy):
 
         - Format your answer with Markdown for readability.                
         - Always use the language used by the user in their question.
+
+        {% if extra_docs %}
+        ====
+
+        RULES PROVIDED BY USER
+
+        The following rules are provided by the user, and you must follow them strictly.
+
+        {% for key, value in extra_docs.items() %}
+        ### {{ key }}
+        {{ value }}
+        {% endfor %}        
+        {% endif %}
 
         """
 
@@ -214,17 +215,6 @@ class SingleRoundStrategy(QAConversationStrategy):
         </documents>
 
         ====
-        {% if extra_docs %}
-        AUTO EXTENSION DOCS
-
-        The following extension documents are loaded dynamically to enhance your understanding or provide special instructions, rules, or context.
-
-        {% for key, value in extra_docs.items() %}
-        ### {{ key }}
-        {{ value }}
-        {% endfor %}
-
-        ====
         {% endif %}
 
         USER CONVERSATION HISTORY
@@ -251,6 +241,19 @@ class SingleRoundStrategy(QAConversationStrategy):
 
         - Format your answer with Markdown for readability.        
         - Always use the language used by the user in their question.
+
+        {% if extra_docs %}
+        ====
+
+        RULES PROVIDED BY USER
+
+        The following rules are provided by the user, and you must follow them strictly.
+
+        {% for key, value in extra_docs.items() %}
+        ### {{ key }}
+        {{ value }}
+        {% endfor %}        
+        {% endif %}
 
         """
         import os

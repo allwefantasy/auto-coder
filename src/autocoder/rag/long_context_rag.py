@@ -183,6 +183,8 @@ class LongContextRAG:
                     "emb_llm is required for local byzer storage cache")
 
         self.document_retriever = retriever_class(
+            self.args,
+            self.llm,
             self.path,
             self.ignore_spec,
             self.required_exts,
