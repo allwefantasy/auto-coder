@@ -1,3 +1,20 @@
+    def _load_failed_files(self):
+        if not os.path.exists(self.cache_dir):
+            os.makedirs(self.cache_dir, exist_ok=True)
+        if os.path.exists(self.failed_files_path):
+            try:
+                with open(self.failed_files_path, "r", encoding="utf-8") as f:
+                    return set(json.load(f))
+            except Exception:
+                return set()
+        return set()
+
+    def _save_failed_files(self):
+        try:
+            with open(self.failed_files_path, "w", encoding="utf-8") as f:
+                json.dump(list(self.failed_files), f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Error saving failed files list: {e}")
 import hashlib
 import json
 import os
@@ -335,6 +352,10 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         self.thread.daemon = True
         self.thread.start()
 
+        # 失败文件路径
+        self.failed_files_path = os.path.join(self.cache_dir, "failed_files.json")
+        self.failed_files = self._load_failed_files()
+
         # 加载缓存
         self.cache = self._load_cache()
 
@@ -419,6 +440,10 @@ class LocalDuckDBStorageCache(BaseCacheManager):
 
         files_to_process = []
         for file_info in self.get_all_files():
+            # 如果是失败文件，跳过
+            if hasattr(self, 'failed_files') and file_info.file_path in self.failed_files:
+                logger.info(f"文件 {file_info.file_path} 之前解析失败，跳过此次构建")
+                continue
             if (
                     file_info.file_path not in self.cache
                     or self.cache[file_info.file_path].md5 != file_info.file_md5
@@ -444,28 +469,44 @@ class LocalDuckDBStorageCache(BaseCacheManager):
 
         items = []
         for file_info, result in zip(files_to_process, results):
-            content: List[SourceCode] = result
-            self.cache[file_info.file_path] = CacheItem(
-                file_path=file_info.file_path,
-                relative_path=file_info.relative_path,
-                content=[c.model_dump() for c in content],
-                modify_time=file_info.modify_time,
-                md5=file_info.file_md5,
-            )
+            try:
+                if not result:
+                    logger.warning(f"Empty result for file: {file_info.file_path}, treat as parse failed, skipping cache update")
+                    self.failed_files.add(file_info.file_path)
+                    self._save_failed_files()
+                    continue
 
-            for doc in content:
-                logger.info(f"Processing file: {doc.module_name}")
-                chunks = self._chunk_text(doc.source_code, self.chunk_size)
-                for chunk_idx, chunk in enumerate(chunks):
-                    chunk_item = {
-                        "_id": f"{doc.module_name}_{chunk_idx}",
-                        "file_path": file_info.file_path,
-                        "content": chunk,
-                        "raw_content": chunk,
-                        "vector": "",
-                        "mtime": file_info.modify_time,
-                    }
-                    items.append(chunk_item)
+                content: List[SourceCode] = result
+                self.cache[file_info.file_path] = CacheItem(
+                    file_path=file_info.file_path,
+                    relative_path=file_info.relative_path,
+                    content=[c.model_dump() for c in content],
+                    modify_time=file_info.modify_time,
+                    md5=file_info.file_md5,
+                )
+
+                # 成功则从失败列表移除
+                if file_info.file_path in self.failed_files:
+                    self.failed_files.remove(file_info.file_path)
+                    self._save_failed_files()
+
+                for doc in content:
+                    logger.info(f"Processing file: {doc.module_name}")
+                    chunks = self._chunk_text(doc.source_code, self.chunk_size)
+                    for chunk_idx, chunk in enumerate(chunks):
+                        chunk_item = {
+                            "_id": f"{doc.module_name}_{chunk_idx}",
+                            "file_path": file_info.file_path,
+                            "content": chunk,
+                            "raw_content": chunk,
+                            "vector": "",
+                            "mtime": file_info.modify_time,
+                        }
+                        items.append(chunk_item)
+            except Exception as e:
+                logger.error(f"Error processing file: {file_info.file_path}, error: {e}")
+                self.failed_files.add(file_info.file_path)
+                self._save_failed_files()
 
         # Save to local cache
         logger.info("Saving cache to local file")
@@ -573,6 +614,10 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                 for item in file_list.file_paths:
                     logger.info(f"{item} is detected to be removed")
                     del self.cache[item]
+                    # 删除时也从失败列表中移除（防止文件已修复）
+                    if hasattr(self, 'failed_files') and item in self.failed_files:
+                        self.failed_files.remove(item)
+                        self._save_failed_files()
                     # 创建一个临时的 FileInfo 对象
                     file_info = FileInfo(
                         file_path=item, relative_path="", modify_time=0, file_md5="")
@@ -582,18 +627,29 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                 for file_info in file_list.file_infos:
                     logger.info(
                         f"{file_info.file_path} is detected to be updated")
-                    # 处理文件并创建 CacheItem
-                    # content = process_file_local(
-                    #     self.fileinfo_to_tuple(file_info))
-                    content = process_file_local(file_info.file_path)
-                    self.cache[file_info.file_path] = CacheItem(
-                        file_path=file_info.file_path,
-                        relative_path=file_info.relative_path,
-                        content=[c.model_dump() for c in content],
-                        modify_time=file_info.modify_time,
-                        md5=file_info.file_md5,
-                    )
-                    self.update_storage(file_info, is_delete=False)
+                    try:
+                        content = process_file_local(file_info.file_path)
+                        if content:
+                            self.cache[file_info.file_path] = CacheItem(
+                                file_path=file_info.file_path,
+                                relative_path=file_info.relative_path,
+                                content=[c.model_dump() for c in content],
+                                modify_time=file_info.modify_time,
+                                md5=file_info.file_md5,
+                            )
+                            self.update_storage(file_info, is_delete=False)
+                            # 成功移除失败记录
+                            if file_info.file_path in self.failed_files:
+                                self.failed_files.remove(file_info.file_path)
+                                self._save_failed_files()
+                        else:
+                            logger.warning(f"Empty result for file: {file_info.file_path}, treat as parse failed, skipping cache update")
+                            self.failed_files.add(file_info.file_path)
+                            self._save_failed_files()
+                    except Exception as e:
+                        logger.error(f"Error processing file: {file_info.file_path}, error: {e}")
+                        self.failed_files.add(file_info.file_path)
+                        self._save_failed_files()
             self.write_cache()
 
     def trigger_update(self):
@@ -602,6 +658,10 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         current_files = set()
         for file_info in self.get_all_files():
             current_files.add(file_info.file_path)
+            # 如果曾经解析失败，跳过
+            if hasattr(self, 'failed_files') and file_info.file_path in self.failed_files:
+                logger.info(f"文件 {file_info.file_path} 之前解析失败，跳过此次更新")
+                continue
             if (
                     file_info.file_path not in self.cache
                     or self.cache[file_info.file_path].md5 != file_info.file_md5
