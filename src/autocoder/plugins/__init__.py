@@ -256,6 +256,7 @@ class PluginManager:
             "/plugins/dirs /remove",
             "/plugins/dirs /clear",
         ]
+        self._wrapped_functions: Dict[str, Callable] = {}
 
     @property
     def cached_discover_plugins(self) -> List[Type[Plugin]]:
@@ -561,6 +562,7 @@ class PluginManager:
                 return result
             return None
 
+        self._wrapped_functions[func_name] = wrapped
         return wrapped
 
     def register_function_interception(self, plugin_name: str, func_name: str) -> None:
