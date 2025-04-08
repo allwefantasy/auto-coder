@@ -1,10 +1,12 @@
 import os
 from typing import Dict, Any, Optional
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
-from autocoder.common.v2.agent.agentic_edit_types import ListFilesTool, ToolResult # Import ToolResult from types
+from autocoder.common.v2.agent.agentic_edit_types import ListFilesTool, ToolResult  # Import ToolResult from types
 from loguru import logger
 import typing
 from autocoder.common import AutoCoderArgs
+
+from autocoder.common.v2.agent.ignore_utils import load_ignore_spec, should_ignore, DEFAULT_IGNORED_DIRS
 
 if typing.TYPE_CHECKING:
     from autocoder.common.v2.agent.agentic_edit import AgenticEdit
@@ -13,26 +15,25 @@ if typing.TYPE_CHECKING:
 class ListFilesToolResolver(BaseToolResolver):
     def __init__(self, agent: Optional['AgenticEdit'], tool: ListFilesTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
-        self.tool: ListFilesTool = tool # For type hinting
+        self.tool: ListFilesTool = tool  # For type hinting
         self.shadow_manager = self.agent.shadow_manager
 
     def resolve(self) -> ToolResult:
         list_path_str = self.tool.path
         recursive = self.tool.recursive or False
         source_dir = self.args.source_dir or "."
+        absolute_source_dir = os.path.abspath(source_dir)
         absolute_list_path = os.path.abspath(os.path.join(source_dir, list_path_str))
 
+        # Load ignore spec from .autocoderignore if exists
+        ignore_spec = load_ignore_spec(absolute_source_dir)
+
         # Security check: Allow listing outside source_dir IF the original path is outside?
-        # For now, let's restrict to source_dir for safety, unless path explicitly starts absolute
-        # This needs careful consideration based on security requirements.
-        # Let's allow listing anywhere for now, but log a warning if outside source_dir.
-        is_outside_source = not absolute_list_path.startswith(os.path.abspath(source_dir))
+        is_outside_source = not absolute_list_path.startswith(absolute_source_dir)
         if is_outside_source:
-             logger.warning(f"Listing path is outside the project source directory: {list_path_str}")
-             # Add more checks if needed, e.g., prevent listing sensitive system dirs
+            logger.warning(f"Listing path is outside the project source directory: {list_path_str}")
 
         # Check if shadow directory exists for this path
-        shadow_paths = []
         shadow_exists = False
         shadow_dir_path = None
         if self.shadow_manager:
@@ -57,17 +58,23 @@ class ListFilesToolResolver(BaseToolResolver):
             try:
                 if recursive:
                     for root, dirs, files in os.walk(base_dir):
+                        # Modify dirs in-place to skip ignored dirs early
+                        dirs[:] = [d for d in dirs if not should_ignore(os.path.join(root, d), ignore_spec, DEFAULT_IGNORED_DIRS, absolute_source_dir)]
                         for name in files:
                             full_path = os.path.join(root, name)
+                            if should_ignore(full_path, ignore_spec, DEFAULT_IGNORED_DIRS, absolute_source_dir):
+                                continue
                             display_path = os.path.relpath(full_path, source_dir) if not is_outside_source else full_path
                             result.add(display_path)
-                        for name in dirs:
-                            full_path = os.path.join(root, name)
+                        for d in dirs:
+                            full_path = os.path.join(root, d)
                             display_path = os.path.relpath(full_path, source_dir) if not is_outside_source else full_path
                             result.add(display_path + "/")
                 else:
                     for item in os.listdir(base_dir):
                         full_path = os.path.join(base_dir, item)
+                        if should_ignore(full_path, ignore_spec, DEFAULT_IGNORED_DIRS, absolute_source_dir):
+                            continue
                         display_path = os.path.relpath(full_path, source_dir) if not is_outside_source else full_path
                         if os.path.isdir(full_path):
                             result.add(display_path + "/")
@@ -87,9 +94,7 @@ class ListFilesToolResolver(BaseToolResolver):
             source_files_set = list_files_in_dir(absolute_list_path)
 
         # Merge results, prioritizing shadow files if exist
-        merged_files = set()
         if shadow_exists:
-            # Use shadow files + source files that are NOT shadowed
             merged_files = shadow_files_set.union(
                 {f for f in source_files_set if f not in shadow_files_set}
             )

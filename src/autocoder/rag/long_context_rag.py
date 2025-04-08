@@ -268,6 +268,9 @@ class LongContextRAG:
 
     def _load_ignore_file(self):
         serveignore_path = os.path.join(self.path, ".serveignore")
+        if not os.path.exists(serveignore_path):
+            serveignore_path = os.path.join(self.path, ".autocoderignore")
+        
         gitignore_path = os.path.join(self.path, ".gitignore")
 
         if os.path.exists(serveignore_path):

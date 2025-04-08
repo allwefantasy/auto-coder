@@ -1,12 +1,15 @@
+
 import os
 import re
 import glob
 from typing import Dict, Any, Optional
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
-from autocoder.common.v2.agent.agentic_edit_types import SearchFilesTool, ToolResult # Import ToolResult from types
+from autocoder.common.v2.agent.agentic_edit_types import SearchFilesTool, ToolResult  # Import ToolResult from types
 from loguru import logger
 from autocoder.common import AutoCoderArgs
 import typing
+
+from autocoder.common.v2.agent.ignore_utils import load_ignore_spec, should_ignore, DEFAULT_IGNORED_DIRS
 
 if typing.TYPE_CHECKING:
     from autocoder.common.v2.agent.agentic_edit import AgenticEdit  
@@ -15,18 +18,22 @@ if typing.TYPE_CHECKING:
 class SearchFilesToolResolver(BaseToolResolver):
     def __init__(self, agent: Optional['AgenticEdit'], tool: SearchFilesTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
-        self.tool: SearchFilesTool = tool # For type hinting
+        self.tool: SearchFilesTool = tool
         self.shadow_manager = self.agent.shadow_manager if self.agent else None
 
     def resolve(self) -> ToolResult:
         search_path_str = self.tool.path
         regex_pattern = self.tool.regex
-        file_pattern = self.tool.file_pattern or "*" # Default to all files
+        file_pattern = self.tool.file_pattern or "*"
         source_dir = self.args.source_dir or "."
+        absolute_source_dir = os.path.abspath(source_dir)
         absolute_search_path = os.path.abspath(os.path.join(source_dir, search_path_str))
 
+        # Load ignore spec from .autocoderignore if exists
+        ignore_spec = load_ignore_spec(absolute_source_dir)
+
         # Security check
-        if not absolute_search_path.startswith(os.path.abspath(source_dir)):
+        if not absolute_search_path.startswith(absolute_source_dir):
             return ToolResult(success=False, message=f"Error: Access denied. Attempted to search outside the project directory: {search_path_str}")
 
         # Determine search base directory: prefer shadow if exists
@@ -54,12 +61,11 @@ class SearchFilesToolResolver(BaseToolResolver):
             compiled_regex = re.compile(regex_pattern)
             search_glob_pattern = os.path.join(search_base_path, "**", file_pattern)
 
-            ignored_dirs = ['.git',".auto-coder", 'node_modules', '.mvn', '.idea', '__pycache__', '.venv', 'venv', 'dist', 'build', '.gradle']
-            logger.info(f"Searching for regex '{regex_pattern}' in files matching '{file_pattern}' under '{search_base_path}' (shadow: {shadow_exists}), ignoring directories: {ignored_dirs}")
+            logger.info(f"Searching for regex '{regex_pattern}' in files matching '{file_pattern}' under '{search_base_path}' (shadow: {shadow_exists}) with ignore rules applied.")
 
             for filepath in glob.glob(search_glob_pattern, recursive=True):
-                normalized_path = filepath.replace("\\", "/")  # Normalize for Windows paths
-                if any(f"/{ignored_dir}/" in normalized_path or normalized_path.endswith(f"/{ignored_dir}") or f"/{ignored_dir}/" in normalized_path for ignored_dir in ignored_dirs):
+                abs_path = os.path.abspath(filepath)
+                if should_ignore(abs_path, ignore_spec, DEFAULT_IGNORED_DIRS, absolute_source_dir):
                     continue
 
                 if os.path.isfile(filepath):
@@ -68,11 +74,9 @@ class SearchFilesToolResolver(BaseToolResolver):
                             lines = f.readlines()
                         for i, line in enumerate(lines):
                             if compiled_regex.search(line):
-                                # Provide context (e.g., line number and surrounding lines)
                                 context_start = max(0, i - 2)
                                 context_end = min(len(lines), i + 3)
                                 context = "".join([f"{j+1}: {lines[j]}" for j in range(context_start, context_end)])
-                                # For shadow files, convert to project-relative path
                                 if shadow_exists and self.shadow_manager:
                                     try:
                                         abs_project_path = self.shadow_manager.from_shadow_path(filepath)
@@ -87,10 +91,9 @@ class SearchFilesToolResolver(BaseToolResolver):
                                     "match_line": line.strip(),
                                     "context": context.strip()
                                 })
-                                # Limit results per file? Or overall? For now, collect all.
                     except Exception as e:
                         logger.warning(f"Could not read or process file {filepath}: {e}")
-                        continue # Skip files that can't be read
+                        continue
 
             message = f"Search completed. Found {len(results)} matches."
             logger.info(message)
