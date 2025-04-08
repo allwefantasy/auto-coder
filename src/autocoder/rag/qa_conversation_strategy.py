@@ -119,9 +119,8 @@ class MultiRoundStrategy(QAConversationStrategy):
           - Prefix image URLs with http://{{ local_image_host }}/static/
           {% endif %}
 
-        - Format your answer with Markdown for readability.
-        
-        - 请始终使用用户提问时所用的语言来回复。
+        - Format your answer with Markdown for readability.                
+        - Always use the language used by the user in their question.
 
         """
 
@@ -247,9 +246,8 @@ class SingleRoundStrategy(QAConversationStrategy):
           - Prefix image URLs with http://{{ local_image_host }}/static/
           {% endif %}
 
-        - Format your answer with Markdown for readability.
-        
-        - 请始终使用用户提问时所用的语言来回复。
+        - Format your answer with Markdown for readability.        
+        - Always use the language used by the user in their question.
 
         """
         import os

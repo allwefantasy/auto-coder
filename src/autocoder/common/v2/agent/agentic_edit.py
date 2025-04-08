@@ -223,6 +223,15 @@ class AgenticEdit:
 
         ====
 
+        AUTO EXTENSION DOCS
+
+        {% for key, value in extra_docs.items() %}
+        ### {{ key }}
+        {{ value }}
+        {% endfor %}
+
+        ====
+
         TOOL USE
 
         You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
@@ -668,6 +677,21 @@ class AgenticEdit:
         about the files that were recently changed.
         {% endif %}
         """
+        import os
+        extra_docs = {}
+        rules_dir = os.path.join(self.args.source_dir, ".autocoderrules")
+        if os.path.isdir(rules_dir):
+            for fname in os.listdir(rules_dir):
+                if fname.endswith(".md"):
+                    fpath = os.path.join(rules_dir, fname)
+                    try:
+                        with open(fpath, "r", encoding="utf-8") as f:
+                            content = f.read()
+                            key = os.path.splitext(fname)[0]
+                            extra_docs[key] = content
+                    except Exception:
+                        continue
+
         env_info = detect_env()
         shell_type = "bash"
         if shells.is_running_in_cmd():
@@ -687,6 +711,7 @@ class AgenticEdit:
             "files": self.files.to_str(),
             "mcp_server_info": self.mcp_server_info,
             "enable_active_context": self.args.enable_active_context,
+            "extra_docs": extra_docs,
         }
 
     # Removed _execute_command_result and execute_auto_command methods
