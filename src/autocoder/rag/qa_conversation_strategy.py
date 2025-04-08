@@ -78,7 +78,7 @@ class MultiRoundStrategy(QAConversationStrategy):
         self, relevant_docs: List[str], local_image_host: str
     ) -> Generator[str, None, None]:
         """
-        You are a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
+        You are a knowledgeable assistant capable of answering any user question strictly based on the retrieved documents.
 
         ====
 
@@ -120,6 +120,8 @@ class MultiRoundStrategy(QAConversationStrategy):
           {% endif %}
 
         - Format your answer with Markdown for readability.
+        
+        - 请始终使用用户提问时所用的语言来回复。
 
         """
 
@@ -151,7 +153,7 @@ class SingleRoundStrategy(QAConversationStrategy):
         return messages
     
     @byzerllm.prompt()
-    def _single_round_answer_question(
+    def _single_round_answer_question_old(
         self, relevant_docs: List[str], conversations: List[Dict[str, str]], local_image_host: str
     ) -> Generator[str, None, None]:
         """        
@@ -192,11 +194,11 @@ class SingleRoundStrategy(QAConversationStrategy):
         """
     
     @byzerllm.prompt()
-    def _single_round_answer_question_beta(
+    def _single_round_answer_question(
         self, relevant_docs: List[str], conversations: List[Dict[str, str]], local_image_host: str
     ) -> Generator[str, None, None]:
         """
-        You are a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
+        You are a knowledgeable assistant capable of answering any user question strictly based on the retrieved documents.
 
         ====
 
@@ -246,6 +248,8 @@ class SingleRoundStrategy(QAConversationStrategy):
           {% endif %}
 
         - Format your answer with Markdown for readability.
+        
+        - 请始终使用用户提问时所用的语言来回复。
 
         """
         import os
