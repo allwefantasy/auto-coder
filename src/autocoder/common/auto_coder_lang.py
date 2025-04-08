@@ -833,6 +833,14 @@ MESSAGES = {
     "/agent/edit/user_query":{
         "en":"User Query",
         "zh":"用户查询"
+    },
+    "/agent/edit/apply_pre_changes":{
+        "en":"Commit user changes",
+        "zh":"提交用户修改"
+    },
+    "/agent/edit/apply_changes":{
+        "en":"Commit changes",
+        "zh":"提交修改"
     }
 }
 
