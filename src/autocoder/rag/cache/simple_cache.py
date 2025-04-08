@@ -98,18 +98,40 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         self.cache = {}  # 初始化为空字典，稍后通过 read_cache() 填充
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
-        
+
+        # 用于存放解析失败的文件路径集合
+        self.failed_files_path = os.path.join(self.path, ".cache", "failed_files.json")
+        self.failed_files = self._load_failed_files()
+
         # 启动处理队列的线程
         self.queue_thread = threading.Thread(target=self._process_queue)
         self.queue_thread.daemon = True
         self.queue_thread.start()
-        
+
         # 启动定时触发更新的线程
         self.update_thread = threading.Thread(target=self._periodic_update)
         self.update_thread.daemon = True
         self.update_thread.start()
-        
+
         self.cache = self.read_cache()
+
+    def _load_failed_files(self):
+        if not os.path.exists(os.path.dirname(self.failed_files_path)):
+            os.makedirs(os.path.dirname(self.failed_files_path), exist_ok=True)
+        if os.path.exists(self.failed_files_path):
+            try:
+                with open(self.failed_files_path, "r", encoding="utf-8") as f:
+                    return set(json.load(f))
+            except Exception:
+                return set()
+        return set()
+
+    def _save_failed_files(self):
+        try:
+            with open(self.failed_files_path, "w", encoding="utf-8") as f:
+                json.dump(list(self.failed_files), f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Error saving failed files list: {e}")
 
     def _process_queue(self):
         while not self.stop_event.is_set():
@@ -185,13 +207,18 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         files_to_process = []
         current_files = set()
         for file_info in self.get_all_files():
-            file_path, _, _, file_md5 = file_info
+            file_path, relative_path, modify_time, file_md5 = file_info
             current_files.add(file_path)
+            # 如果文件曾经解析失败，跳过本次增量更新
+            if file_path in self.failed_files:
+                logger.info(f"文件 {file_path} 之前解析失败，跳过此次更新")
+                continue
+            # 变更检测
             if (
                 file_path not in self.cache
-                or self.cache[file_path].get("md5","") != file_md5
+                or self.cache[file_path].get("md5", "") != file_md5
             ):
-                files_to_process.append(file_info)
+                files_to_process.append((file_path, relative_path, modify_time, file_md5))
 
         deleted_files = set(self.cache.keys()) - current_files
         logger.info(f"files_to_process: {files_to_process}")
@@ -215,7 +242,12 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             if isinstance(file_list, DeleteEvent):
                 for item in file_list.file_paths:
                     logger.info(f"{item} is detected to be removed")
-                    del self.cache[item]
+                    if item in self.cache:
+                        del self.cache[item]
+                    # 删除时也从失败列表中移除（防止文件已修复）
+                    if item in self.failed_files:
+                        self.failed_files.remove(item)
+                        self._save_failed_files()
             elif isinstance(file_list, AddOrUpdateEvent):
                 for file_info in file_list.file_infos:
                     logger.info(f"{file_info.file_path} is detected to be updated")
@@ -223,11 +255,17 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                         result = process_file_local(file_info.file_path)
                         if result:  # 只有当result不为空时才更新缓存
                             self.update_cache(self.fileinfo_to_tuple(file_info), result)
+                            # 如果之前失败过且本次成功，移除失败记录
+                            if file_info.file_path in self.failed_files:
+                                self.failed_files.remove(file_info.file_path)
+                                self._save_failed_files()
                         else:
                             logger.warning(f"Empty result for file: {file_info.file_path}, skipping cache update")
                     except Exception as e:
-                        logger.error(
-                            f"SimpleCache Error in process_queue: {e}")
+                        logger.error(f"SimpleCache Error in process_queue: {e}")
+                        # 解析失败则加入失败列表
+                        self.failed_files.add(file_info.file_path)
+                        self._save_failed_files()
 
             self.write_cache()
 
