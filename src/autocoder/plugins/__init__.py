@@ -256,6 +256,7 @@ class PluginManager:
             "/plugins/dirs /remove",
             "/plugins/dirs /clear",
         ]
+        self._wrapped_functions: Dict[str, Callable] = {}
 
     @property
     def cached_discover_plugins(self) -> List[Type[Plugin]]:
@@ -561,6 +562,7 @@ class PluginManager:
                 return result
             return None
 
+        self._wrapped_functions[func_name] = wrapped
         return wrapped
 
     def register_function_interception(self, plugin_name: str, func_name: str) -> None:
@@ -1107,6 +1109,24 @@ class PluginManager:
 
         return processed_completions
 
+    def get_wrapped_functions(self) -> Dict[str, Callable]:
+        """获取所有已包装的函数。
+
+        Returns:
+            Dict[str, Callable]: 包含所有已包装函数的字典，键为函数名，值为包装后的函数
+        """
+        return self._wrapped_functions
+
+    def get_wrapped_function(self, func_name: str) -> Callable:
+        """获取已包装的函数。
+
+        Args:
+            func_name: 函数名
+
+        Returns:
+            已包装的函数，如果未找到则返回 None
+        """
+        return self._wrapped_functions.get(func_name)
 
 def register_global_plugin_dir(plugin_dir: str) -> None:
     """注册一个全局插件目录。
