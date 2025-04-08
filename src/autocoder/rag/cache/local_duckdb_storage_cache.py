@@ -28,6 +28,7 @@ from autocoder.rag.cache.base_cache import (
 from autocoder.rag.utils import process_file_in_multi_process, process_file_local
 from autocoder.rag.variable_holder import VariableHolder
 from byzerllm import SimpleByzerLLM, ByzerLLM
+from .failed_files_utils import save_failed_files, load_failed_files
 
 if platform.system() != "Windows":
     import fcntl
@@ -581,7 +582,6 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                     # remove from failed files if present
                     if item in self.failed_files:
                         self.failed_files.remove(item)
-                        from .failed_files_utils import save_failed_files
                         save_failed_files(self.failed_files_path, self.failed_files)
                     # 创建一个临时的 FileInfo 对象
                     file_info = FileInfo(
@@ -606,17 +606,14 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                             # remove from failed files if present
                             if file_info.file_path in self.failed_files:
                                 self.failed_files.remove(file_info.file_path)
-                                from .failed_files_utils import save_failed_files
                                 save_failed_files(self.failed_files_path, self.failed_files)
                         else:
                             logger.warning(f"Empty result for file: {file_info.file_path}, treat as parse failed, skipping cache update")
                             self.failed_files.add(file_info.file_path)
-                            from .failed_files_utils import save_failed_files
                             save_failed_files(self.failed_files_path, self.failed_files)
                     except Exception as e:
                         logger.error(f"Error in process_queue: {e}")
                         self.failed_files.add(file_info.file_path)
-                        from .failed_files_utils import save_failed_files
                         save_failed_files(self.failed_files_path, self.failed_files)
 
             self.write_cache()

@@ -30,6 +30,7 @@ from typing import Union
 from byzerllm import SimpleByzerLLM, ByzerLLM
 from autocoder.rag.cache.cache_result_merge import CacheResultMerger, MergeStrategy
 import time
+from .failed_files_utils import save_failed_files, load_failed_files
 
 if platform.system() != "Windows":
     import fcntl
@@ -104,7 +105,6 @@ class LocalByzerStorageCache(BaseCacheManager):
             os.makedirs(self.cache_dir)
 
         # failed files support
-        from .failed_files_utils import load_failed_files
         self.failed_files_path = os.path.join(self.cache_dir, "failed_files.json")
         self.failed_files = load_failed_files(self.failed_files_path)
 
@@ -438,8 +438,7 @@ class LocalByzerStorageCache(BaseCacheManager):
                     del self.cache[item]
                     # remove from failed files if present
                     if item in self.failed_files:
-                        self.failed_files.remove(item)
-                        from .failed_files_utils import save_failed_files
+                        self.failed_files.remove(item)                        
                         save_failed_files(self.failed_files_path, self.failed_files)
                     # Create a temporary FileInfo object
                     file_info = FileInfo(
@@ -465,18 +464,15 @@ class LocalByzerStorageCache(BaseCacheManager):
                             self.update_storage(file_info, is_delete=False)
                             # remove from failed files if present
                             if file_info.file_path in self.failed_files:
-                                self.failed_files.remove(file_info.file_path)
-                                from .failed_files_utils import save_failed_files
+                                self.failed_files.remove(file_info.file_path)                                
                                 save_failed_files(self.failed_files_path, self.failed_files)
                         else:
                             logger.warning(f"Empty result for file: {file_info.file_path}, treat as parse failed, skipping cache update")
-                            self.failed_files.add(file_info.file_path)
-                            from .failed_files_utils import save_failed_files
+                            self.failed_files.add(file_info.file_path)                            
                             save_failed_files(self.failed_files_path, self.failed_files)
                     except Exception as e:
                         logger.error(f"Error in process_queue: {e}")
-                        self.failed_files.add(file_info.file_path)
-                        from .failed_files_utils import save_failed_files
+                        self.failed_files.add(file_info.file_path)                        
                         save_failed_files(self.failed_files_path, self.failed_files)
             self.write_cache()
         
