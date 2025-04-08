@@ -40,7 +40,7 @@ class MultiRoundStrategy(QAConversationStrategy):
         return messages
     
     @byzerllm.prompt()
-    def _read_docs_prompt(
+    def _read_docs_prompt_old(
         self, relevant_docs: List[str], local_image_host: str
     ) -> Generator[str, None, None]:
         """        
@@ -74,7 +74,7 @@ class MultiRoundStrategy(QAConversationStrategy):
         """
     
     @byzerllm.prompt()
-    def _read_docs_prompt_beta(
+    def _read_docs_prompt(
         self, relevant_docs: List[str], local_image_host: str
     ) -> Generator[str, None, None]:
         """
