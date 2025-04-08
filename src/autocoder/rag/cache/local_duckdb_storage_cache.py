@@ -1,20 +1,4 @@
-    def _load_failed_files(self):
-        if not os.path.exists(self.cache_dir):
-            os.makedirs(self.cache_dir, exist_ok=True)
-        if os.path.exists(self.failed_files_path):
-            try:
-                with open(self.failed_files_path, "r", encoding="utf-8") as f:
-                    return set(json.load(f))
-            except Exception:
-                return set()
-        return set()
-
-    def _save_failed_files(self):
-        try:
-            with open(self.failed_files_path, "w", encoding="utf-8") as f:
-                json.dump(list(self.failed_files), f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            logger.error(f"Error saving failed files list: {e}")
+from .failed_files_utils import load_failed_files, save_failed_files
 import hashlib
 import json
 import os
@@ -354,7 +338,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
 
         # 失败文件路径
         self.failed_files_path = os.path.join(self.cache_dir, "failed_files.json")
-        self.failed_files = self._load_failed_files()
+        self.failed_files = load_failed_files(self.failed_files_path)
 
         # 加载缓存
         self.cache = self._load_cache()
@@ -473,7 +457,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                 if not result:
                     logger.warning(f"Empty result for file: {file_info.file_path}, treat as parse failed, skipping cache update")
                     self.failed_files.add(file_info.file_path)
-                    self._save_failed_files()
+                    save_failed_files(self.failed_files_path, self.failed_files)
                     continue
 
                 content: List[SourceCode] = result
@@ -488,7 +472,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                 # 成功则从失败列表移除
                 if file_info.file_path in self.failed_files:
                     self.failed_files.remove(file_info.file_path)
-                    self._save_failed_files()
+                    save_failed_files(self.failed_files_path, self.failed_files)
 
                 for doc in content:
                     logger.info(f"Processing file: {doc.module_name}")
@@ -506,7 +490,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             except Exception as e:
                 logger.error(f"Error processing file: {file_info.file_path}, error: {e}")
                 self.failed_files.add(file_info.file_path)
-                self._save_failed_files()
+                save_failed_files(self.failed_files_path, self.failed_files)
 
         # Save to local cache
         logger.info("Saving cache to local file")
