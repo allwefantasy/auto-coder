@@ -1307,7 +1307,7 @@ class AgenticEdit:
                         action_file=self.args.file,
                         is_streaming=False,
                         path="/agent/edit/apply_pre_changes",
-                        stream_out_type="/agent/edit"))
+                        stream_out_type="/agent/edit").to_dict())
                 git_utils.commit_changes(
                     self.args.source_dir, f"auto_coder_pre_{file_name}")
             except Exception as e:
@@ -1337,7 +1337,7 @@ class AgenticEdit:
                             content=self.printer.get_message_from_key("/agent/edit/apply_changes")), metadata=EventMetadata(
                             action_file=self.args.file,
                             is_streaming=False,
-                            stream_out_type="/agent/edit"))
+                            stream_out_type="/agent/edit").to_dict())
                     action_yml_file_manager = ActionYmlFileManager(
                         self.args.source_dir)
                     action_file_name = os.path.basename(self.args.file)
