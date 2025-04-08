@@ -48,7 +48,7 @@ class AutoCoderRAGDocListener(BaseCacheManager):
         r"^test.*$",
     ]
 
-    def __init__(self, path: str, ignore_spec, required_exts: List) -> None:
+    def __init__(self, path: str, ignore_spec, required_exts: List, args=None, llm=None) -> None:
         """
         初始化文件监控缓存管理器。
         
@@ -89,6 +89,8 @@ class AutoCoderRAGDocListener(BaseCacheManager):
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
+        self.args = args
+        self.llm = llm
         self.stop_event = threading.Event()
 
         # connect list

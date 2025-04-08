@@ -45,7 +45,7 @@ def generate_content_md5(content: Union[str, bytes]) -> str:
 
 
 class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
-    def __init__(self, path: str, ignore_spec, required_exts: list, update_interval: int = 5):
+    def __init__(self, path: str, ignore_spec, required_exts: list, update_interval: int = 5, args=None, llm=None):
         """
         初始化异步更新队列，用于管理代码文件的缓存。
         
@@ -91,6 +91,8 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
+        self.args = args
+        self.llm = llm
         self.update_interval = update_interval
         self.queue = []
         self.cache = {}  # 初始化为空字典，稍后通过 read_cache() 填充

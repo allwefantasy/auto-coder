@@ -300,12 +300,16 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             ignore_spec,
             required_exts,
             extra_params: Optional[AutoCoderArgs] = None,
-            emb_llm: Union[ByzerLLM, SimpleByzerLLM] = None
+            emb_llm: Union[ByzerLLM, SimpleByzerLLM] = None,
+            args=None,
+            llm=None
     ):
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
         self.extra_params = extra_params
+        self.args = args
+        self.llm = llm
 
         self.storage = LocalDuckdbStorage(
             llm=emb_llm,

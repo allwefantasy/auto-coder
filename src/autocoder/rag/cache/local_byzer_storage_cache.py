@@ -70,6 +70,8 @@ class LocalByzerStorageCache(BaseCacheManager):
         emb_llm: Union[ByzerLLM, SimpleByzerLLM] = None,
         host: str = "127.0.0.1",
         port: int = 33333,
+        args=None,
+        llm=None,
     ):
         """
         初始化基于 Byzer Storage 的 RAG 缓存管理器。
@@ -135,6 +137,8 @@ class LocalByzerStorageCache(BaseCacheManager):
         self.path = path
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
+        self.args = args
+        self.llm = llm
         self.rag_build_name = extra_params.rag_build_name
         self.storage = LocalByzerStorage("byzerai_store",
             "rag_test", self.rag_build_name, host=host, port=port,emb_llm=emb_llm)

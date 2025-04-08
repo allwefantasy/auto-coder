@@ -65,6 +65,8 @@ class ByzerStorageCache(BaseCacheManager):
         ignore_spec,
         required_exts,
         extra_params: Optional[AutoCoderArgs] = None,
+        args=None,
+        llm=None,
     ):
         """
         初始化基于云端 Byzer Storage 的 RAG 缓存管理器。
@@ -133,6 +135,8 @@ class ByzerStorageCache(BaseCacheManager):
         self.ignore_spec = ignore_spec
         self.required_exts = required_exts
         self.extra_params = extra_params
+        self.args = args
+        self.llm = llm
         self.rag_build_name = extra_params.rag_build_name
         self.storage = ByzerStorage("byzerai_store", "rag", self.rag_build_name)
         self.queue = []
