@@ -2,7 +2,6 @@ import threading
 from typing import Dict, Generator, List, Tuple, Any, Optional,Union
 
 from byzerllm import ByzerLLM, SimpleByzerLLM
-
 from loguru import logger
 from autocoder.common import SourceCode
 from uuid import uuid4
@@ -37,8 +36,8 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
 
     def __init__(
         self,
-        args: 'AutoCoderArgs',
-        llm: 'ByzerLLM',
+        args: AutoCoderArgs,
+        llm: Union[ByzerLLM,SimpleByzerLLM],
         path: str,
         ignore_spec,
         required_exts: list,
