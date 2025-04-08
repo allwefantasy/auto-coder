@@ -69,27 +69,32 @@ class LocalDocumentRetriever(BaseDocumentRetriever):
         if self.enable_hybrid_index:
             if self.on_ray:
                 self.cacher = ByzerStorageCache(
-                    path, ignore_spec, required_exts, extra_params
+                    path, ignore_spec, required_exts, extra_params,
+                    args=self.args, llm=self.llm
                 )
             else:
                 if extra_params.rag_storage_type == "duckdb":
                     self.cacher = LocalDuckDBStorageCache(
                         path, ignore_spec, required_exts, extra_params,
-                        emb_llm=emb_llm
+                        emb_llm=emb_llm,
+                        args=self.args, llm=self.llm
                     )
                 elif extra_params.rag_storage_type in ["byzer-storage", "byzer_storage"]:
                     self.cacher = LocalByzerStorageCache(
                         path, ignore_spec, required_exts, extra_params,
-                        emb_llm=emb_llm
+                        emb_llm=emb_llm,
+                        args=self.args, llm=self.llm
                     )
         else:
             if self.monitor_mode:
                 self.cacher = AutoCoderRAGDocListener(
-                    path, ignore_spec, required_exts
+                    path, ignore_spec, required_exts,
+                    args=self.args, llm=self.llm
                 )
             else:
                 self.cacher = AutoCoderRAGAsyncUpdateQueue(
-                    path, ignore_spec, required_exts
+                    path, ignore_spec, required_exts,
+                    args=self.args, llm=self.llm
                 )
 
         logger.info(f"DocumentRetriever initialized with:")
