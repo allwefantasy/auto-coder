@@ -736,8 +736,8 @@ class AgenticEdit:
         Analyzes the user request, interacts with the LLM, parses responses,
         executes tools, and yields structured events for visualization until completion or error.
         """
-        system_prompt = self._analyze.prompt(request)  
-        # print(system_prompt)      
+        system_prompt = self._analyze.prompt(request)
+        # print(system_prompt)
         conversations = [
             {"role": "system", "content": system_prompt},
         ] + self.conversation_manager.get_history()
@@ -747,13 +747,13 @@ class AgenticEdit:
         self.conversation_manager.add_user_message(request.user_input)
         logger.debug(
             f"Initial conversation history size: {len(conversations)}")
-        
+
         tool_executed = False
         while True:
             global_cancel.check_and_raise()
             logger.info(
                 f"Starting LLM interaction cycle. History size: {len(conversations)}")
-            
+
             assistant_buffer = ""
 
             llm_response_gen = stream_chat_with_continue(
@@ -954,10 +954,10 @@ class AgenticEdit:
                                 params['options'])
                         except json.JSONDecodeError:
                             logger.warning(
-                                f"Could not decode JSON options for plan_mode_respond_tool: {params['options']}")                               
+                                f"Could not decode JSON options for plan_mode_respond_tool: {params['options']}")
                     # Handle recursive for list_files
                     if tool_tag == 'list_files' and 'recursive' in params:
-                        params['recursive'] = params['recursive'].lower() == 'true'                    
+                        params['recursive'] = params['recursive'].lower() == 'true'
                     return tool_cls(**params)
                 else:
                     logger.error(f"Tool class not found for tag: {tool_tag}")
@@ -995,7 +995,7 @@ class AgenticEdit:
                         break
 
                 # 2. Check for </tool_tag> if inside tool block
-                elif in_tool_block:                    
+                elif in_tool_block:
                     end_tag = f"</{current_tool_tag}>"
                     end_tool_pos = buffer.find(end_tag)
                     if end_tool_pos != -1:
@@ -1155,16 +1155,16 @@ class AgenticEdit:
                     event_manager.write_result(
                         content=content.to_dict(), metadata=metadata.to_dict())
                 elif isinstance(agent_event, PlanModeRespondEvent):
-                    metadata.path = "/agent/edit/plan_mode_respond"                    
+                    metadata.path = "/agent/edit/plan_mode_respond"
                     content = EventContentCreator.create_markdown_result(
                         content=agent_event.completion.response,
                         metadata={}
-                    )                    
+                    )
                     event_manager.write_result(
                         content=content.to_dict(), metadata=metadata.to_dict())
 
-                elif isinstance(agent_event, TokenUsageEvent):                    
-                    last_meta: SingleOutputMeta = agent_event.usage                                                                           
+                elif isinstance(agent_event, TokenUsageEvent):
+                    last_meta: SingleOutputMeta = agent_event.usage
                     # Get model info for pricing
                     from autocoder.utils import llms as llm_utils
                     model_name = ",".join(llm_utils.get_llm_names(self.llm))
@@ -1181,7 +1181,7 @@ class AgenticEdit:
                     # Convert to millions
                     output_cost = (
                         last_meta.generated_tokens_count * output_price) / 1000000
-                                      
+
                     get_event_manager(self.args.event_file).write_result(
                         EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
                             model_name=model_name,
@@ -1191,7 +1191,7 @@ class AgenticEdit:
                             output_tokens=last_meta.generated_tokens_count,
                             input_cost=input_cost,
                             output_cost=output_cost
-                        ).to_dict()),metadata=metadata.to_dict())
+                        ).to_dict()), metadata=metadata.to_dict())
 
                 elif isinstance(agent_event, CompletionEvent):
                     # 在这里完成实际合并
@@ -1236,7 +1236,10 @@ class AgenticEdit:
         except Exception as e:
             logger.exception(
                 "An unexpected error occurred during agent execution:")
-            metadata.path = "/agent/edit/error"
+            metadata = EventMetadata(
+                action_file=self.args.file,
+                is_streaming=False,
+                stream_out_type="/agent/edit/error")
             error_content = EventContentCreator.create_error(
                 error_code="AGENT_FATAL_ERROR",
                 error_message=f"An unexpected error occurred: {str(e)}",
@@ -1250,7 +1253,7 @@ class AgenticEdit:
     def apply_changes(self):
         """
         Apply all tracked file changes to the original project directory.
-        """        
+        """
         for (file_path, change) in self.get_all_file_changes().items():
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(change.content)
