@@ -57,6 +57,9 @@ class UseMcpTool(BaseTool):
     tool_name: str
     query:str
 
+class ListPackageInfoTool(BaseTool):
+    path: str  # 源码包目录，相对路径或绝对路径
+
 # Event Types for Rich Output Streaming
 class LLMOutputEvent(BaseModel):
     """Represents plain text output from the LLM."""
@@ -112,6 +115,7 @@ TOOL_MODEL_MAP: Dict[str, Type[BaseTool]] = {
     "attempt_completion": AttemptCompletionTool,
     "plan_mode_respond": PlanModeRespondTool,
     "use_mcp_tool": UseMcpTool,
+    "list_package_info": ListPackageInfoTool,
 }
 
 class FileChangeEntry(BaseModel):

@@ -93,7 +93,8 @@ class MultiRoundStrategy(QAConversationStrategy):
         </documents>
 
         ====
-
+        
+        {% if extra_docs %}
         AUTO EXTENSION DOCS
 
         The following extension documents are loaded dynamically to enhance your understanding or provide special instructions, rules, or context.
@@ -104,6 +105,7 @@ class MultiRoundStrategy(QAConversationStrategy):
         {% endfor %}
 
         ====
+        {% endif %}
 
         INSTRUCTIONS
 
@@ -212,7 +214,7 @@ class SingleRoundStrategy(QAConversationStrategy):
         </documents>
 
         ====
-
+        {% if extra_docs %}
         AUTO EXTENSION DOCS
 
         The following extension documents are loaded dynamically to enhance your understanding or provide special instructions, rules, or context.
@@ -223,6 +225,7 @@ class SingleRoundStrategy(QAConversationStrategy):
         {% endfor %}
 
         ====
+        {% endif %}
 
         USER CONVERSATION HISTORY
 

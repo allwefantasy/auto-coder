@@ -54,6 +54,7 @@ from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific re
     ListCodeDefinitionNamesToolResolver, AskFollowupQuestionToolResolver,
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver
 )
+
 from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
                                                           MemoryConfig, CommandConfig, BaseTool,
                                                           ExecuteCommandTool, ReadFileTool,
@@ -63,6 +64,7 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           ListFilesTool,
                                                           ListCodeDefinitionNamesTool, AskFollowupQuestionTool,
                                                           AttemptCompletionTool, PlanModeRespondTool, UseMcpTool,
+                                                          ListPackageInfoTool,
                                                           TOOL_MODEL_MAP,
                                                           # Event Types
                                                           LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
@@ -221,16 +223,7 @@ class AgenticEdit:
         {{files}}
         </files>
 
-        ====
-
-        AUTO EXTENSION DOCS
-
-        {% for key, value in extra_docs.items() %}
-        ### {{ key }}
-        {{ value }}
-        {% endfor %}
-
-        ====
+        ====        
 
         TOOL USE
 
@@ -254,6 +247,7 @@ class AgenticEdit:
 
         Always adhere to this format for the tool use to ensure proper parsing and execution.
 
+
         # Tools
 
         ## execute_command
@@ -266,6 +260,15 @@ class AgenticEdit:
         <command>Your command here</command>
         <requires_approval>true or false</requires_approval>
         </execute_command>
+
+        ## list_package_info
+        Description: Request to retrieve information about a source code package, such as recent changes or documentation summary, to better understand the code context. It accepts a directory path (absolute or relative to the current project). It maps this directory to `.auto-coder/active-context/<relative_path>/active.md`. If the file exists, returns its content; otherwise, indicates no info found.
+        Parameters:
+        - path: (required) The source code package directory path.
+        Usage:
+        <list_package_info>
+        <path>relative/or/absolute/package/path</path>
+        </list_package_info>
 
         ## read_file
         Description: Request to read the contents of a file at the specified path. Use this when you need to examine the contents of an existing file you do not know the contents of, for example to analyze code, review text files, or extract information from configuration files. Automatically extracts raw text from PDF and DOCX files. May not be suitable for other types of binary files, as it returns the raw content as a string.
@@ -676,10 +679,23 @@ class AgenticEdit:
         You can use the tool  `read_file` to read these description files, which helps you decide exactly which files need detailed attention. Note that the `active.md` file does not contain information about all files within the directory—it only includes information 
         about the files that were recently changed.
         {% endif %}
+
+        {% if extra_docs %}
+        ====
+        
+        RULES PROVIDED BY USER
+
+        The following rules are provided by the user, and you must follow them strictly.
+
+        {% for key, value in extra_docs.items() %}
+        ### {{ key }}
+        {{ value }}
+        {% endfor %}        
+        {% endif %}
         """
         import os
         extra_docs = {}
-        rules_dir = os.path.join(self.args.source_dir, ".autocoderrules")
+        rules_dir = os.path.join(self.args.source_dir,".auto-coder", "autocoderrules")
         if os.path.isdir(rules_dir):
             for fname in os.listdir(rules_dir):
                 if fname.endswith(".md"):
