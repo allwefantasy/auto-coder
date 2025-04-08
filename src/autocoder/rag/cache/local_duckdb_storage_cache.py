@@ -329,6 +329,11 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
 
+        # failed files support
+        from .failed_files_utils import load_failed_files
+        self.failed_files_path = os.path.join(self.cache_dir, "failed_files.json")
+        self.failed_files = load_failed_files(self.failed_files_path)
+
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
         self.thread = threading.Thread(target=self.process_queue)
@@ -573,6 +578,11 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                 for item in file_list.file_paths:
                     logger.info(f"{item} is detected to be removed")
                     del self.cache[item]
+                    # remove from failed files if present
+                    if item in self.failed_files:
+                        self.failed_files.remove(item)
+                        from .failed_files_utils import save_failed_files
+                        save_failed_files(self.failed_files_path, self.failed_files)
                     # 创建一个临时的 FileInfo 对象
                     file_info = FileInfo(
                         file_path=item, relative_path="", modify_time=0, file_md5="")
@@ -582,18 +592,33 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                 for file_info in file_list.file_infos:
                     logger.info(
                         f"{file_info.file_path} is detected to be updated")
-                    # 处理文件并创建 CacheItem
-                    # content = process_file_local(
-                    #     self.fileinfo_to_tuple(file_info))
-                    content = process_file_local(file_info.file_path)
-                    self.cache[file_info.file_path] = CacheItem(
-                        file_path=file_info.file_path,
-                        relative_path=file_info.relative_path,
-                        content=[c.model_dump() for c in content],
-                        modify_time=file_info.modify_time,
-                        md5=file_info.file_md5,
-                    )
-                    self.update_storage(file_info, is_delete=False)
+                    try:
+                        content = process_file_local(file_info.file_path)
+                        if content:
+                            self.cache[file_info.file_path] = CacheItem(
+                                file_path=file_info.file_path,
+                                relative_path=file_info.relative_path,
+                                content=[c.model_dump() for c in content],
+                                modify_time=file_info.modify_time,
+                                md5=file_info.file_md5,
+                            )
+                            self.update_storage(file_info, is_delete=False)
+                            # remove from failed files if present
+                            if file_info.file_path in self.failed_files:
+                                self.failed_files.remove(file_info.file_path)
+                                from .failed_files_utils import save_failed_files
+                                save_failed_files(self.failed_files_path, self.failed_files)
+                        else:
+                            logger.warning(f"Empty result for file: {file_info.file_path}, treat as parse failed, skipping cache update")
+                            self.failed_files.add(file_info.file_path)
+                            from .failed_files_utils import save_failed_files
+                            save_failed_files(self.failed_files_path, self.failed_files)
+                    except Exception as e:
+                        logger.error(f"Error in process_queue: {e}")
+                        self.failed_files.add(file_info.file_path)
+                        from .failed_files_utils import save_failed_files
+                        save_failed_files(self.failed_files_path, self.failed_files)
+
             self.write_cache()
 
     def trigger_update(self):
@@ -602,6 +627,10 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         current_files = set()
         for file_info in self.get_all_files():
             current_files.add(file_info.file_path)
+            # skip failed files
+            if file_info.file_path in self.failed_files:
+                logger.info(f"文件 {file_info.file_path} 之前解析失败，跳过此次更新")
+                continue
             if (
                     file_info.file_path not in self.cache
                     or self.cache[file_info.file_path].md5 != file_info.file_md5
