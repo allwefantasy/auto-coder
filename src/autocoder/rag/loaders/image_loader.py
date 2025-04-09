@@ -147,6 +147,7 @@ class ImageLoader:
                     # 处理单页结果
                     for line in result:
                         if isinstance(line, list) or isinstance(line, tuple):
+                            print(line)
                             txt = line[1][0]
                             lines.append(txt)
                 else:
