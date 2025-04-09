@@ -2,7 +2,7 @@
 import os
 from autocoder.auto_coder_runner import load_tokenizer
 from autocoder.utils.llms import get_single_llm
-from autocoder.rag.loaders.image_loader import extract_text_from_image, image_to_markdown
+from autocoder.rag.loaders.image_loader import ImageLoader
 
 def main():
     # 初始化tokenizer
@@ -18,12 +18,12 @@ def main():
     engine = "paddle_table"  # 或 "paddle_table"
 
     # 方法1：直接获取Markdown文本
-    markdown_text = extract_text_from_image(image_path, llm, engine=engine)
+    markdown_text = ImageLoader.extract_text_from_image(image_path, llm, engine=engine)
     print("=== Extracted Markdown Content ===")
     print(markdown_text)
 
     # 方法2：保存为同名md文件并返回内容
-    markdown_text2 = image_to_markdown(image_path, llm, engine=engine)
+    markdown_text2 = ImageLoader.image_to_markdown(image_path, llm, engine=engine)
     print("=== Saved Markdown Content ===")
     print(markdown_text2)
 
