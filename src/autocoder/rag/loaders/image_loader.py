@@ -420,15 +420,10 @@ class ImageLoader:
             '''
         
         # Run the prompt with the provided content
-        tool_response = _format_table.with_llm(llm).run(content) 
-
-        print(tool_response)   
-        
-        # Parse the tool response to extract replace_in_file tool calls
-        
+        tool_response = _format_table.with_llm(llm).run(content)                    
         
         # Extract tools from the response
-        tools = ImageLoader.extract_replace_in_file_tools(tool_response)
+        tools = ImageLoader.extract_replace_in_file_tools(tool_response)    
         
         # Process each tool to apply the replacements
         formatted_content = content
@@ -437,7 +432,7 @@ class ImageLoader:
             if tool.path == "content":
                 # Parse the diff to get search/replace blocks
                 blocks = ImageLoader.parse_diff(tool.diff)
-                # Apply each replacement to the content
+                # Apply each replacement to the content                
                 for search_block, replace_block in blocks:
                     formatted_content = formatted_content.replace(search_block, replace_block)
         
