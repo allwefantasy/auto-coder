@@ -280,6 +280,20 @@ class ImageLoader:
         except Exception:
             traceback.print_exc()
             return ""
+
+    @staticmethod
+    def extract_replace_in_file_tools(response)->List[ReplaceInFileTool]:
+        tools = []
+        # Pattern to match replace_in_file tool blocks
+        pattern = r'<replace_in_file>\s*<path>(.*?)</path>\s*<diff>(.*?)</diff>\s*</replace_in_file>'
+        matches = re.finditer(pattern, response, re.DOTALL)
+        
+        for match in matches:
+            path = match.group(1).strip()
+            diff = match.group(2).strip()
+            tools.append(ReplaceInFileTool(path=path, diff=diff))
+        
+        return tools        
     
     @staticmethod
     def format_table_in_content(content: str, llm=None) -> str:
@@ -406,24 +420,15 @@ class ImageLoader:
             '''
         
         # Run the prompt with the provided content
-        tool_response = _format_table.with_llm(llm).run(content)    
+        tool_response = _format_table.with_llm(llm).run(content) 
+
+        print(tool_response)   
         
         # Parse the tool response to extract replace_in_file tool calls
-        def extract_replace_in_file_tools(response):
-            tools = []
-            # Pattern to match replace_in_file tool blocks
-            pattern = r'<replace_in_file>\s*<path>(.*?)</path>\s*<diff>(.*?)</diff>\s*</replace_in_file>'
-            matches = re.finditer(pattern, response, re.DOTALL)
-            
-            for match in matches:
-                path = match.group(1).strip()
-                diff = match.group(2).strip()
-                tools.append(ReplaceInFileTool(path=path, diff=diff))
-            
-            return tools
+        
         
         # Extract tools from the response
-        tools = extract_replace_in_file_tools(tool_response)
+        tools = ImageLoader.extract_replace_in_file_tools(tool_response)
         
         # Process each tool to apply the replacements
         formatted_content = content
