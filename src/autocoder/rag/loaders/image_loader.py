@@ -167,26 +167,17 @@ class ImageLoader:
                                     # Check structure: [points, (text, confidence)]
                                     if isinstance(line_info, (list, tuple)) and len(line_info) == 2 and \
                                        isinstance(line_info[1], (list, tuple)) and len(line_info[1]) >= 1:
-                                        potential_text = line_info[1][0]
-                                        # Convert potential_text to string if possible, otherwise skip
-                                        if isinstance(potential_text, str):
-                                            lines.append(potential_text)
-                                        elif isinstance(potential_text, list):
-                                            # Join elements if it's a list
-                                            try:
-                                                processed_text = " ".join(map(str, potential_text))
-                                                lines.append(processed_text)
-                                                logger.warning(f"Extracted text was a list: {potential_text}. Joined as: '{processed_text}'.")
-                                            except Exception as join_err:
-                                                logger.warning(f"Could not join list elements: {potential_text}. Error: {join_err}. Skipping.")
+                                        txt = line_info[1][0]
+                                        if isinstance(txt, str):
+                                            lines.append(txt)
                                         else:
-                                            # Attempt to convert other types to string, log warning if skipped
-                                            try:
-                                                converted_text = str(potential_text)
-                                                lines.append(converted_text)
-                                                logger.warning(f"Extracted text was type {type(potential_text)}, converted to string: '{converted_text}'.")
-                                            except Exception as convert_err:
-                                                 logger.warning(f"Extracted text is not a string or list and failed conversion: {potential_text} (type: {type(potential_text)}). Error: {convert_err}. Skipping.")
+                                            # Handle potential nested lists in text: join them? Or log?
+                                            if isinstance(txt, list):
+                                                processed_txt = " ".join(map(str, txt))
+                                                logger.warning(f"Extracted text is a list in Image: {txt}. Joined as: '{processed_txt}'.")
+                                                lines.append(processed_txt) # Attempt to join if it's a list of strings/convertibles
+                                            else:
+                                                logger.warning(f"Extracted text is not a string in Image: {txt} (type: {type(txt)}). Skipping.")
                                     else:
                                         logger.warning(f"Unexpected line_info structure in Image: {line_info}. Skipping.")
                                 except Exception as e:
