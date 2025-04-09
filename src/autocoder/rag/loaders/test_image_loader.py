@@ -106,13 +106,16 @@ def test_format_table_in_content_apply_diff(dummy_llm):
 
     # patch _format_table 方法，让它直接返回llm_response
     def dummy_prompt(*args, **kwargs):
-        class DummyPrompt:
-            def with_llm(self, llm_obj):
-                class Runner:
-                    def run(self_inner, content):
-                        return llm_response
-                return Runner()
-        return DummyPrompt()
+        def decorator(func):
+            class FakePromptWrapper:
+                def with_llm(self, llm_obj):
+                    class Runner:
+                        def run(self_inner, content):
+                            return llm_response
+                    return Runner()
+            return FakePromptWrapper()
+        return decorator
+
     import byzerllm
     orig_prompt = byzerllm.prompt
     byzerllm.prompt = dummy_prompt
