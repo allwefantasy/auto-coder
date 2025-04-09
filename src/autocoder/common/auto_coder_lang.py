@@ -836,11 +836,11 @@ MESSAGES = {
     },
     "/agent/edit/apply_pre_changes":{
         "en":"Commit user changes",
-        "zh":"提交用户修改"
+        "zh":"检查用户是否有手动修改(如有，会自动提交)..."
     },
     "/agent/edit/apply_changes":{
-        "en":"Commit changes",
-        "zh":"提交修改"
+        "en":"Commit the changes in preview steps",
+        "zh":"提交前面步骤的修改"
     }
 }
 
