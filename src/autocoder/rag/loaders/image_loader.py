@@ -12,45 +12,53 @@ except ImportError:
 import byzerllm
 from byzerllm.utils.client import code_utils
 
-def extract_text_from_image(image_path: str, llm) -> str:
+def extract_text_from_image(image_path: str, llm, engine: str = "vl") -> str:
     """
     识别图片中的所有文本内容，包括表格（以markdown table格式）
-    优先使用vl_model识别，失败则fallback到paddleocr
+    
+    Args:
+        image_path: 图片路径
+        llm: LLM对象
+        engine: 选择使用的识别引擎
+            - "vl": 使用视觉语言模型 (默认)
+            - "paddle": 使用paddleocr
     """
     markdown_content = ""
-    try:
-        vl_model = llm.get_sub_client("vl_model") if llm.get_sub_client("vl_model") else llm
 
-        @byzerllm.prompt()
-        def analyze_image(image_path):
-            """
-            {{ image }}
-            你是一名图像理解专家，请识别这张图片中的所有内容，优先识别文字和表格。
-            对于普通文字，输出为段落文本。
-            对于表格截图，转换成markdown table格式输出。
-            请根据内容顺序，整合成一份markdown文档。
-            只返回markdown内容，不要添加额外解释。
-            """
-            image = byzerllm.Image.load_image_from_path(image_path)
-            return {"image": image}
+    if engine == "vl":
+        try:
+            vl_model = llm.get_sub_client("vl_model") if llm.get_sub_client("vl_model") else llm
 
-        result = analyze_image.with_llm(vl_model).run(image_path)
-        # 解析模型返回，提取markdown
-        # 尝试从代码块中提取
-        md_blocks = code_utils.extract_code(result, language="markdown")
-        if md_blocks:
-            markdown_content = md_blocks[-1][1]
-        else:
-            markdown_content = result.strip()
-        if not markdown_content:
-            raise ValueError("Empty markdown from vl_model")
-        return markdown_content
+            @byzerllm.prompt()
+            def analyze_image(image_path):
+                """
+                {{ image }}
+                你是一名图像理解专家，请识别这张图片中的所有内容，优先识别文字和表格。
+                对于普通文字，输出为段落文本。
+                对于表格截图，转换成markdown table格式输出。
+                请根据内容顺序，整合成一份markdown文档。
+                只返回markdown内容，不要添加额外解释。
+                """
+                image = byzerllm.Image.load_image_from_path(image_path)
+                return {"image": image}
 
-    except Exception:
-        traceback.print_exc()
-        # fallback to paddleocr
+            result = analyze_image.with_llm(vl_model).run(image_path)
+            md_blocks = code_utils.extract_code(result, language="markdown")
+            if md_blocks:
+                markdown_content = md_blocks[-1][1]
+            else:
+                markdown_content = result.strip()
+            if not markdown_content:
+                raise ValueError("Empty markdown from vl_model")
+            return markdown_content
+
+        except Exception:
+            traceback.print_exc()
+            return ""
+
+    elif engine == "paddle":
         if PaddleOCR is None:
-            print("paddleocr not installed, and vl_model failed")
+            print("paddleocr not installed")
             return ""
 
         try:
@@ -68,11 +76,20 @@ def extract_text_from_image(image_path: str, llm) -> str:
             traceback.print_exc()
             return ""
 
-def image_to_markdown(image_path: str, llm) -> str:
+    else:
+        print(f"Unknown engine type: {engine}. Supported engines are 'vl' and 'paddle'.")
+        return ""
+
+def image_to_markdown(image_path: str, llm, engine: str = "vl") -> str:
     """
     识别图片内容，生成markdown文件
+
+    Args:
+        image_path: 图片路径
+        llm: LLM对象
+        engine: 选择识别引擎，"vl" 或 "paddle"，默认为"vl"
     """
-    md_content = extract_text_from_image(image_path, llm)
+    md_content = extract_text_from_image(image_path, llm, engine=engine)
 
     md_path = os.path.splitext(image_path)[0] + ".md"
     try:
