@@ -2839,6 +2839,7 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
                             save_memory_func=save_memory), command_config=CommandConfig,
                             conversation_name="current"
                             )
+        print("=========2")                            
         if get_run_context() == RunMode.TERMINAL:
             agent.run_in_terminal(AgenticEditRequest(user_input=query))
         else:
