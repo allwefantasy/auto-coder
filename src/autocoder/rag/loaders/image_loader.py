@@ -268,7 +268,7 @@ class ImageLoader:
         """    
             
         @byzerllm.prompt()
-        def _format_table(content: str):
+        def _format_table(content: str)->str:
             '''
             # 表格格式化任务
             
