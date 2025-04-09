@@ -8,6 +8,11 @@ try:
 except ImportError:
     PaddleOCR = None
 
+try:
+    import paddlex as paddlex_module
+except ImportError:
+    paddlex_module = None
+
 import byzerllm
 from byzerllm.utils.client import code_utils
 from autocoder.utils.llms import get_single_llm
@@ -92,6 +97,98 @@ def paddleocr_extract_text(
         traceback.print_exc()
         return ""
 
+def paddlex_table_extract_markdown(image_path):
+    """
+    使用 PaddleX 表格识别pipeline，抽取表格并转换为markdown格式
+
+    Args:
+        image_path: 图片路径
+    Returns:
+        markdown格式的表格字符串
+    """
+    if paddlex_module is None:
+        print("paddlex not installed")
+        return ""
+
+    try:
+        # 创建 pipeline
+        pipeline = paddlex_module.create_pipeline(pipeline='table_recognition')
+        # 预测
+        outputs = pipeline.predict([image_path])
+        if not outputs:
+            return ""
+
+        md_results = []
+        for res in outputs:
+            # 获取HTML表格
+            html = None
+            try:
+                html = res.to_html() if hasattr(res, "to_html") else None
+            except Exception:
+                html = None
+
+            # 如果没有to_html方法，尝试res.print()内容中提取，或跳过
+            if html is None:
+                try:
+                    from io import StringIO
+                    import sys
+                    buffer = StringIO()
+                    sys_stdout = sys.stdout
+                    sys.stdout = buffer
+                    res.print()
+                    sys.stdout = sys_stdout
+                    html = buffer.getvalue()
+                except Exception:
+                    html = ""
+
+            # 转markdown
+            md = html_table_to_markdown(html)
+            md_results.append(md)
+
+        return "\n\n".join(md_results)
+    except Exception:
+        traceback.print_exc()
+        return ""
+
+def html_table_to_markdown(html):
+    """
+    简单将HTML table转换为markdown table
+    """
+    try:
+        from bs4 import BeautifulSoup
+    except ImportError:
+        print("BeautifulSoup4 not installed, cannot convert HTML to markdown")
+        return ""
+
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+        table = soup.find("table")
+        if table is None:
+            return ""
+
+        rows = []
+        for tr in table.find_all("tr"):
+            cells = tr.find_all(["td", "th"])
+            row = [cell.get_text(strip=True) for cell in cells]
+            rows.append(row)
+
+        if not rows:
+            return ""
+
+        # 生成markdown
+        md_lines = []
+        header = rows[0]
+        md_lines.append("| " + " | ".join(header) + " |")
+        md_lines.append("|" + "|".join(["---"] * len(header)) + "|")
+
+        for row in rows[1:]:
+            md_lines.append("| " + " | ".join(row) + " |")
+
+        return "\n".join(md_lines)
+    except Exception:
+        traceback.print_exc()
+        return ""
+
 def extract_text_from_image(
     image_path: str,
     llm,
@@ -108,6 +205,7 @@ def extract_text_from_image(
         engine: 选择识别引擎
             - "vl": 视觉语言模型
             - "paddle": PaddleOCR
+            - "paddle_table": PaddleX表格识别
         product_mode: get_single_llm的参数
         paddle_kwargs: dict，传递给PaddleOCR的参数
     Returns:
@@ -156,8 +254,12 @@ def extract_text_from_image(
         markdown_content = paddleocr_extract_text(image_path, **paddle_kwargs)
         return markdown_content
 
+    elif engine == "paddle_table":
+        markdown_content = paddlex_table_extract_markdown(image_path)
+        return markdown_content
+
     else:
-        print(f"Unknown engine type: {engine}. Supported engines are 'vl' and 'paddle'.")
+        print(f"Unknown engine type: {engine}. Supported engines are 'vl', 'paddle', and 'paddle_table'.")
         return ""
 
 def image_to_markdown(
@@ -173,7 +275,7 @@ def image_to_markdown(
     Args:
         image_path: 文件路径
         llm: LLM对象或字符串
-        engine: 'vl'或'paddle'
+        engine: 'vl'、'paddle'或'paddle_table'
         product_mode: LLM参数
         paddle_kwargs: dict，传递给PaddleOCR参数
     Returns:
