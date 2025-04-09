@@ -124,39 +124,64 @@ class ImageLoader:
 
             # 处理PDF
             if ext == ".pdf":
-                result = ocr.ocr(file_path, cls=True)
+                result = ocr.ocr(file_path, cls=True) # result is list of pages, each page is list of lines
                 lines = []
-                for page in result:
-                    if isinstance(page, list):
-                        for line in page:
-                            if isinstance(line, list) or isinstance(line, tuple):
-                                txt = line[1][0]
-                                lines.append(txt)
+                if result and isinstance(result, list):
+                    for page in result:
+                        if page and isinstance(page, list):
+                            for line_info in page: # line_info is [points, (text, confidence)]
+                                try:
+                                    # Check structure: [points, (text, confidence)]
+                                    if isinstance(line_info, (list, tuple)) and len(line_info) == 2 and \
+                                       isinstance(line_info[1], (list, tuple)) and len(line_info[1]) >= 1:
+                                        txt = line_info[1][0]
+                                        if isinstance(txt, str):
+                                            lines.append(txt)
+                                        else:
+                                            logger.warning(f"Extracted text is not a string in PDF: {txt} (type: {type(txt)}). Skipping.")
+                                    else:
+                                        logger.warning(f"Unexpected line_info structure in PDF: {line_info}. Skipping.")
+                                except Exception as e:
+                                    logger.warning(f"Error processing line_info in PDF: {line_info}. Error: {e}")
                 return "\n".join(lines)
 
             # 处理图片
-            else:
-                # 使用滑动窗口参数
+            else: # Image processing
                 if slice_params is not None:
                     result = ocr.ocr(file_path, cls=True, slice=slice_params)
                 else:
-                    result = ocr.ocr(file_path, cls=True)
+                    result = ocr.ocr(file_path, cls=True) # result is [[[points, (text, confidence)], ...]] for single image
 
                 lines = []
-                if isinstance(result, list):
-                    # 处理单页结果
-                    for line in result:
-                        if isinstance(line, list) or isinstance(line, tuple):
-                            print(line)
-                            txt = line[1][0]
-                            lines.append(txt)
-                else:
-                    # 处理多页结果
-                    for page in result:
-                        for line in page:
-                            if isinstance(line, list) or isinstance(line, tuple):
-                                txt = line[1][0]
-                                lines.append(txt)
+                # Standardize handling: PaddleOCR often returns a list containing one item for single images.
+                # result = [page_result] where page_result = [[line1_info], [line2_info], ...]
+                if result and isinstance(result, list):
+                     # Heuristic: Treat 'result' as the list of pages directly.
+                     # This handles both single image wrapped in list and multi-page PDFs consistently.
+                     page_list = result
+
+                     for page in page_list:
+                        if page and isinstance(page, list):
+                            for line_info in page: # line_info is [points, (text, confidence)]
+                                try:
+                                    # Check structure: [points, (text, confidence)]
+                                    if isinstance(line_info, (list, tuple)) and len(line_info) == 2 and \
+                                       isinstance(line_info[1], (list, tuple)) and len(line_info[1]) >= 1:
+                                        txt = line_info[1][0]
+                                        if isinstance(txt, str):
+                                            lines.append(txt)
+                                        else:
+                                            # Handle potential nested lists in text: join them? Or log?
+                                            if isinstance(txt, list):
+                                                processed_txt = " ".join(map(str, txt))
+                                                logger.warning(f"Extracted text is a list in Image: {txt}. Joined as: '{processed_txt}'.")
+                                                lines.append(processed_txt) # Attempt to join if it's a list of strings/convertibles
+                                            else:
+                                                logger.warning(f"Extracted text is not a string in Image: {txt} (type: {type(txt)}). Skipping.")
+                                    else:
+                                        logger.warning(f"Unexpected line_info structure in Image: {line_info}. Skipping.")
+                                except Exception as e:
+                                    logger.warning(f"Error processing line_info in Image: {line_info}. Error: {e}")
                 return "\n".join(lines)
         except Exception:
             traceback.print_exc()
