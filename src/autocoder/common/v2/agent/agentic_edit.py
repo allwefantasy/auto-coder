@@ -212,18 +212,7 @@ class AgenticEdit:
     @byzerllm.prompt()
     def _analyze(self, request: AgenticEditRequest) -> str:
         """        
-        You are a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.
-
-        ====
-
-        FILES CONTEXT
-
-        The following files are provided to you as context for the user's task. You can use these files to understand the project structure and codebase, and to make informed decisions about which files to modify.
-        If you need to read more files, you can use the tools to find and read more files.
-
-        <files>
-        {{files}}
-        </files>
+        You are a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices.        
 
         ====        
 
@@ -786,11 +775,24 @@ class AgenticEdit:
         # print(system_prompt)
         conversations = [
             {"role": "system", "content": system_prompt},
-        ] + self.conversation_manager.get_history()
+        ] 
+        
+        conversations.append({
+            "role":"user","content":self.files.to_str()
+        })
+
+        conversations.append({
+            "role":"assistant","content":"你提供的最新的文档和代码，我已经阅读过了"
+        })
+
+        conversations.extend(self.conversation_manager.get_history())
+        
+
         conversations.append({
             "role": "user", "content": request.user_input
         })
         self.conversation_manager.add_user_message(request.user_input)
+        
         logger.debug(
             f"Initial conversation history size: {len(conversations)}")
 
