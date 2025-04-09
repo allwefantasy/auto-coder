@@ -11,6 +11,7 @@ except ImportError:
 
 import byzerllm
 from byzerllm.utils.client import code_utils
+from autocoder.utils.llms import get_single_llm
 
 def extract_text_from_image(image_path: str, llm, engine: str = "vl") -> str:
     """
@@ -18,11 +19,15 @@ def extract_text_from_image(image_path: str, llm, engine: str = "vl") -> str:
     
     Args:
         image_path: 图片路径
-        llm: LLM对象
+        llm: LLM对象或字符串（模型名）
         engine: 选择使用的识别引擎
             - "vl": 使用视觉语言模型 (默认)
             - "paddle": 使用paddleocr
     """
+    # 支持llm为字符串，自动转换为llm实例
+    if isinstance(llm, str):
+        llm = get_single_llm(llm)
+
     markdown_content = ""
 
     if engine == "vl":
