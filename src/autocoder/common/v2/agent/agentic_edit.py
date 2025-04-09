@@ -778,16 +778,17 @@ class AgenticEdit:
         ] 
         
         conversations.append({
-            "role":"user","content":self.files.to_str()
+            "role":"user","content":f'''
+Below are some files the user is focused on, and the content is up to date. These entries show the file paths along with their full text content, which can help you better understand the user's needs. If the information is insufficient, you can use tools such as read_file to retrieve more details.
+<files>
+{self.files.to_str()}
+</files>'''
         })
 
         conversations.append({
-            "role":"assistant","content":"你提供的最新的文档和代码，我已经阅读过了"
+            "role":"assistant","content":"Ok"
         })
-
-        conversations.extend(self.conversation_manager.get_history())
-        
-
+        conversations.extend(self.conversation_manager.get_history())        
         conversations.append({
             "role": "user", "content": request.user_input
         })

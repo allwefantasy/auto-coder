@@ -2838,12 +2838,12 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
                             memory_config=MemoryConfig(memory=memory, 
                             save_memory_func=save_memory), command_config=CommandConfig,
                             conversation_name="current"
-                            )
-        print(f"=========2 {get_run_context()} {get_run_context() == RunMode.TERMINAL}" )                            
-        if get_run_context() == RunMode.TERMINAL:
-            agent.run_in_terminal(AgenticEditRequest(user_input=query))
-        else:
+                            )                                    
+        if get_run_context() == RunMode.WEB:
             agent.run_with_events(AgenticEditRequest(user_input=query))
+        else:
+            agent.run_in_terminal(AgenticEditRequest(user_input=query))
+            
         return
         
     args = get_final_config()  
