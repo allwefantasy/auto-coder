@@ -295,7 +295,50 @@ class ImageLoader:
         
         return tools        
     
-            [转换后的Markdown表格]
+    @staticmethod
+    def format_table_in_content(content: str, llm=None) -> str:
+        """Format table content from OCR results into markdown format.
+        
+        Args:
+            content: The OCR text content that may contain tables
+            llm: The language model to use for formatting
+            
+        Returns:
+            Formatted content with tables converted to markdown
+        """    
+            
+        @byzerllm.prompt()
+        def _format_table(content: str)->str:
+            '''
+            # 表格格式化任务
+            
+            你是一个专业的OCR后处理专家，擅长将OCR识别出的表格数据转换为规范的Markdown表格。
+            
+            ## 输入内容分析
+            
+            OCR识别的表格通常会有以下特点：
+            1. 每个单元格可能被识别为单独的一行
+            2. 表格的行列结构可能不明显
+            3. 可能包含非表格的文本内容
+            4. 可能存在多个表格
+            
+            ## 你的任务
+            
+            1. 识别内容中的表格数据
+            2. 将表格数据转换为标准Markdown格式
+            3. 保留非表格的文本内容
+            4. 使用replace_in_file工具格式输出结果
+            
+            ## 输出格式
+            
+            必须使用以下格式输出结果：
+            
+            ```
+            <replace_in_file>
+            <path>content</path>
+            <diff>
+            <<<<<<< SEARCH
+            [原始表格文本，精确匹配]
             =======
             [转换后的Markdown表格]
             >>>>>>> REPLACE
