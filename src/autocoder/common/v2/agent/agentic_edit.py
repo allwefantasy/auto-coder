@@ -1015,9 +1015,7 @@ class AgenticEdit:
 
         for content_chunk, metadata in generator:
             global_cancel.check_and_raise()
-
-            meta_holder.meta = metadata
-            logger.info(f"metadata: {metadata.input_tokens_count}")
+            meta_holder.meta = metadata            
             if not content_chunk:
                 continue
             buffer += content_chunk
@@ -1129,8 +1127,8 @@ class AgenticEdit:
                         break  # Need more data
 
                 # If no event was processed in this iteration, break inner loop
-                if not found_event:
-                    break
+            if not found_event:
+                break
 
         # After generator exhausted, yield any remaining content
         if in_thinking_block:
