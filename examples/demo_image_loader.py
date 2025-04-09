@@ -20,7 +20,7 @@ def main():
     load_tokenizer()
 
     # 获取LLM对象
-    llm = get_single_llm("v3_chat", product_mode="lite")
+    llm = get_single_llm("gemini-2.5-pro-exp-03-25", product_mode="lite")
 
     # 需要识别的图片路径，请替换为你自己的图片文件
     image_path = "/Users/allwefantasy/projects/brags/_images/年卡大促活动开卡率分析（知识库测试）.pdf/image_9.bmp"  # TODO: 替换为真实图片路径
