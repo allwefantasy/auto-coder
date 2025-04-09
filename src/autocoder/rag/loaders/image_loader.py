@@ -13,7 +13,7 @@ import byzerllm
 from byzerllm.utils.client import code_utils
 from autocoder.utils.llms import get_single_llm
 
-def extract_text_from_image(image_path: str, llm, engine: str = "vl") -> str:
+def extract_text_from_image(image_path: str, llm, engine: str = "vl", product_mode: str = "lite") -> str:
     """
     识别图片中的所有文本内容，包括表格（以markdown table格式）
     
@@ -23,10 +23,11 @@ def extract_text_from_image(image_path: str, llm, engine: str = "vl") -> str:
         engine: 选择使用的识别引擎
             - "vl": 使用视觉语言模型 (默认)
             - "paddle": 使用paddleocr
+        product_mode: 传递给 get_single_llm 的 product_mode 参数，默认为 "lite"
     """
     # 支持llm为字符串，自动转换为llm实例
     if isinstance(llm, str):
-        llm = get_single_llm(llm)
+        llm = get_single_llm(llm, product_mode=product_mode)
 
     markdown_content = ""
 
@@ -85,16 +86,17 @@ def extract_text_from_image(image_path: str, llm, engine: str = "vl") -> str:
         print(f"Unknown engine type: {engine}. Supported engines are 'vl' and 'paddle'.")
         return ""
 
-def image_to_markdown(image_path: str, llm, engine: str = "vl") -> str:
+def image_to_markdown(image_path: str, llm, engine: str = "vl", product_mode: str = "lite") -> str:
     """
     识别图片内容，生成markdown文件
 
     Args:
         image_path: 图片路径
-        llm: LLM对象
+        llm: LLM对象或字符串
         engine: 选择识别引擎，"vl" 或 "paddle"，默认为"vl"
+        product_mode: 传递给 get_single_llm 的 product_mode 参数，默认为 "lite"
     """
-    md_content = extract_text_from_image(image_path, llm, engine=engine)
+    md_content = extract_text_from_image(image_path, llm, engine=engine, product_mode=product_mode)
 
     md_path = os.path.splitext(image_path)[0] + ".md"
     try:
