@@ -1127,8 +1127,8 @@ class AgenticEdit:
                         break  # Need more data
 
                 # If no event was processed in this iteration, break inner loop
-            if not found_event:
-                break
+                if not found_event:
+                    break
 
         # After generator exhausted, yield any remaining content
         if in_thinking_block:
