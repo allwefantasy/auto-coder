@@ -12,10 +12,10 @@ def main():
     llm = get_single_llm("v3_chat", product_mode="lite")
 
     # 需要识别的图片路径，请替换为你自己的图片文件
-    image_path = "your_image_path.png"  # TODO: 替换为真实图片路径
+    image_path = "/Users/allwefantasy/projects/brags/_images/年卡大促活动开卡率分析（知识库测试）.pdf/image_9.bmp"  # TODO: 替换为真实图片路径
 
     # 选择识别引擎: "vl" 或 "paddle"
-    engine = "vl"  # 或 "paddle"
+    engine = "paddle"  # 或 "paddle"
 
     # 方法1：直接获取Markdown文本
     markdown_text = extract_text_from_image(image_path, llm, engine=engine)
