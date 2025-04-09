@@ -690,8 +690,10 @@ class AgenticEdit:
         The following rules are provided by the user, and you must follow them strictly.
 
         {% for key, value in extra_docs.items() %}
-        ### {{ key }}
+        <user_rule>
+        ##File: {{ key }}
         {{ value }}
+        </user_rule>
         {% endfor %}        
         {% endif %}
         """
@@ -706,7 +708,7 @@ class AgenticEdit:
                     try:
                         with open(fpath, "r", encoding="utf-8") as f:
                             content = f.read()
-                            key = os.path.splitext(fname)[0]
+                            key = fpath
                             extra_docs[key] = content
                     except Exception:
                         continue
