@@ -68,6 +68,15 @@ class AgenticConversation:
         """Adds an assistant message (potentially containing text response)."""
         self.add_message(role="assistant", content=content)
 
+    def append_to_last_message(self, content: str, role: str = "assistant"):
+        """Appends content to the last message."""
+        if self._history:
+            last_message = self._history[-1]  
+            if role and last_message["role"] == role:
+                last_message["content"] += content   
+            elif not role:
+                last_message["content"] += content
+
     def add_assistant_tool_call_message(self, tool_calls: List[Dict[str, Any]], content: Optional[str] = None):
          """
          Adds a message representing one or more tool calls from the assistant.
