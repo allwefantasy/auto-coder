@@ -8,7 +8,7 @@ MODELS_JSON = os.path.expanduser("~/.auto-coder/keys/models.json")
 # Default built-in models
 default_models_list = [
     {
-        "name": "deepseek_r1_chat",
+        "name": "deepseek/r1",
         "description": "DeepSeek Reasoner is for design/review",
         "model_name": "deepseek-reasoner",
         "model_type": "saas/openai",
@@ -21,7 +21,7 @@ default_models_list = [
         "max_output_tokens": 8096
     },    
     {
-        "name": "deepseek_chat",
+        "name": "deepseek/v3",
         "description": "DeepSeek Chat is for coding",
         "model_name": "deepseek-chat",
         "model_type": "saas/openai",
@@ -34,16 +34,56 @@ default_models_list = [
         "max_output_tokens": 8096
     },
     {
-        "name":"o1",
-        "description": "o1 is for design/review",
-        "model_name": "o1-2024-12-17",
+        "name": "ark/deepseek-v3-250324",
+        "description": "DeepSeek Chat is for coding",
+        "model_name": "deepseek-v3-250324",
         "model_type": "saas/openai",
-        "base_url": "https://api.openai.com/v1",
+        "base_url": "https://ark.cn-beijing.volces.com/api/v3",
         "api_key_path": "",
-        "is_reasoning": True,
+        "is_reasoning": False,
+        "input_price": 2.0,
+        "output_price": 8.0,
+        "average_speed": 0.0,
+        "max_output_tokens": 8096
+    },    
+    {
+        "name": "ark/deepseek-v3-250324",
+        "description": "DeepSeek Chat is for coding",
+        "model_name": "deepseek-v3-250324",
+        "model_type": "saas/openai",
+        "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+        "api_key_path": "",
+        "is_reasoning": False,
+        "input_price": 2.0,
+        "output_price": 8.0,
+        "average_speed": 0.0,
+        "max_output_tokens": 8096
+    },    
+    {
+        "name": "openrouter/quasar-alpha",
+        "description": "",
+        "model_name": "openrouter/quasar-alpha",
+        "model_type": "saas/openai",
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key_path": "",
+        "is_reasoning": False,
         "input_price": 0.0,
         "output_price": 0.0,
-        "average_speed": 0.0
+        "average_speed": 0.0,
+        "max_output_tokens": 8096*2
+    },    
+    {
+        "name": "google/gemini-2.5-pro-preview-03-25",
+        "description": "",
+        "model_name": "google/gemini-2.5-pro-preview-03-25",
+        "model_type": "saas/openai",
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key_path": "",
+        "is_reasoning": False,
+        "input_price": 0.0,
+        "output_price": 0.0,
+        "average_speed": 0.0,
+        "max_output_tokens": 8096*2
     }
 ]
 
