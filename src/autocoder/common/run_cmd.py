@@ -9,6 +9,26 @@ import psutil
 
 
 def run_cmd(command, verbose=False, error_print=None, cwd=None):
+    """
+    执行一条命令，根据不同系统和环境选择最合适的执行方式（交互式或非交互式）。
+
+    适用场景：
+    - 需要跨平台运行命令，自动判断是否使用pexpect（支持交互式）还是subprocess。
+    - 希望获得命令的执行状态及输出内容。
+    - 在CLI工具、自动化脚本、REPL中执行shell命令。
+
+    参数：
+    - command (str): 需要执行的命令字符串。
+    - verbose (bool): 是否打印详细调试信息，默认为False。
+    - error_print (callable|None): 自定义错误打印函数，默认为None，使用print。
+    - cwd (str|None): 指定命令的工作目录，默认为None。
+
+    返回：
+    - tuple: (exit_code, output)，其中exit_code为整型退出码，output为命令输出内容。
+
+    异常：
+    - 捕获OSError异常，返回错误信息。
+    """
     try:
         if sys.stdin.isatty() and hasattr(pexpect, "spawn") and platform.system() != "Windows":
             return run_cmd_pexpect(command, verbose, cwd)
@@ -24,6 +44,22 @@ def run_cmd(command, verbose=False, error_print=None, cwd=None):
 
 
 def get_windows_parent_process_name():
+    """
+    获取当前进程的父进程名（仅在Windows系统下有意义）。
+
+    适用场景：
+    - 判断命令是否由PowerShell或cmd.exe启动，以便调整命令格式。
+    - 在Windows平台上进行父进程分析。
+
+    参数：
+    - 无
+
+    返回：
+    - str|None: 父进程名（小写字符串，如"powershell.exe"或"cmd.exe"），如果无法获取则为None。
+
+    异常：
+    - 捕获所有异常，返回None。
+    """
     try:
         current_process = psutil.Process()
         while True:
@@ -41,11 +77,24 @@ def get_windows_parent_process_name():
 
 def run_cmd_subprocess(command, verbose=False, cwd=None, encoding=sys.stdout.encoding):
     """
-    以生成器方式运行命令，逐步yield输出内容块。
+    使用subprocess运行命令，将命令输出逐步以生成器方式yield出来。
 
-    用法：
-    for chunk in run_cmd_subprocess(command):
-        # 实时处理chunk
+    适用场景：
+    - 运行无需交互的命令。
+    - 希望实时逐步处理命令输出（如日志打印、进度监控）。
+    - 在Linux、macOS、Windows等多平台环境下安全运行命令。
+
+    参数：
+    - command (str): 需要执行的命令字符串。
+    - verbose (bool): 是否打印详细调试信息，默认为False。
+    - cwd (str|None): 指定命令的工作目录，默认为None。
+    - encoding (str): 输出解码使用的字符编码，默认为当前stdout编码。
+
+    返回：
+    - 生成器: 逐块yield命令的输出字符串。
+
+    异常：
+    - 捕获所有异常，yield错误信息字符串。
     """
     if verbose:
         print("Using run_cmd_subprocess:", command)
@@ -94,11 +143,23 @@ def run_cmd_subprocess(command, verbose=False, cwd=None, encoding=sys.stdout.enc
 
 def run_cmd_pexpect(command, verbose=False, cwd=None):
     """
-    Run a shell command interactively using pexpect, capturing all output.
+    使用pexpect以交互方式运行命令，捕获完整输出。
 
-    :param command: The command to run as a string.
-    :param verbose: If True, print output in real-time.
-    :return: A tuple containing (exit_status, output)
+    适用场景：
+    - 执行需要用户交互的命令（如登录、密码输入等）。
+    - 在Linux、macOS等Unix系统下模拟终端操作。
+    - 希望完整捕获交互式命令的输出。
+
+    参数：
+    - command (str): 需要执行的命令字符串。
+    - verbose (bool): 是否打印详细调试信息，默认为False。
+    - cwd (str|None): 指定命令的工作目录，默认为None。
+
+    返回：
+    - tuple: (exit_code, output)，exit_code为退出状态码，output为命令完整输出内容。
+
+    异常：
+    - 捕获pexpect相关异常，返回错误信息。
     """
     if verbose:
         print("Using run_cmd_pexpect:", command)
