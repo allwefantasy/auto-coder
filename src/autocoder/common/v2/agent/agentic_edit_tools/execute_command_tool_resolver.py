@@ -1,6 +1,7 @@
 import subprocess
 import os
 from typing import Dict, Any, Optional
+from autocoder.common.run_cmd import run_cmd
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import ExecuteCommandTool, ToolResult # Import ToolResult from types
 from autocoder.common import shells
@@ -40,34 +41,19 @@ class ExecuteCommandToolResolver(BaseToolResolver):
 
         printer.print_str_in_terminal(f"Executing command: {command} in {os.path.abspath(source_dir)}")
         try:            
-            # Execute the command
-            process = subprocess.Popen(
-                command,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=source_dir,
-                text=True,
-                encoding=shells.get_terminal_encoding(),
-                errors='replace' # Handle potential decoding errors
-            )
-
-            stdout, stderr = process.communicate()
-            returncode = process.returncode
+            # 使用封装的run_cmd方法执行命令，兼容交互/非交互场景
+            exit_code, output = run_cmd(command, verbose=True, cwd=source_dir)
 
             logger.info(f"Command executed: {command}")
-            logger.info(f"Return Code: {returncode}")
-            if stdout:
-                logger.info(f"stdout:\n{stdout}")
-            if stderr:
-                logger.info(f"stderr:\n{stderr}")
+            logger.info(f"Return Code: {exit_code}")
+            if output:
+                logger.info(f"Output:\n{output}")
 
-
-            if returncode == 0:
-                return ToolResult(success=True, message="Command executed successfully.", content=stdout)
+            if exit_code == 0:
+                return ToolResult(success=True, message="Command executed successfully.", content=output)
             else:
-                error_message = f"Command failed with return code {returncode}.\nStderr:\n{stderr}\nStdout:\n{stdout}"
-                return ToolResult(success=False, message=error_message, content={"stdout": stdout, "stderr": stderr, "returncode": returncode})
+                error_message = f"Command failed with return code {exit_code}.\nOutput:\n{output}"
+                return ToolResult(success=False, message=error_message, content={"output": output, "returncode": exit_code})
 
         except FileNotFoundError:
             return ToolResult(success=False, message=f"Error: The command '{command.split()[0]}' was not found. Please ensure it is installed and in the system's PATH.")
