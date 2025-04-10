@@ -2246,7 +2246,7 @@ def manage_models(query: str):
             printer.print_in_terminal("models_speed_usage", style="red")
 
     elif subcmd == "/speed-test":
-        from autocoder.common.model_speed_test import render_speed_test_in_terminal
+        from autocoder.common.model_speed_tester import render_speed_test_in_terminal
         test_rounds = 1  # 默认测试轮数
 
         enable_long_context = False

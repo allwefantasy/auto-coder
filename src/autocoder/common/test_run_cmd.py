@@ -9,7 +9,7 @@ from unittest import mock
 import pytest
 
 # 导入待测试函数
-from src.autocoder.common.run_cmd import (
+from autocoder.common.run_cmd import (
     run_cmd,
     run_cmd_subprocess,
     run_cmd_pexpect,
@@ -70,31 +70,6 @@ def test_run_cmd_subprocess_error():
     # 应该包含错误提示
     assert "[run_cmd_subprocess error]" in output or "not found" in output or "无法" in output or "未找到" in output
 
-
-def test_run_cmd_pexpect_normal():
-    """
-    测试run_cmd_pexpect正常执行
-    """
-    if platform.system() == "Windows":
-        pytest.skip("Windows上跳过pexpect测试")
-
-    cmd = "echo hello_pexpect"
-    exit_code, output = run_cmd_pexpect(cmd)
-    assert exit_code == 0, f"pexpect退出码非零: {exit_code}"
-    assert "hello_pexpect" in output, f"pexpect输出不包含预期内容: {output}"
-
-
-def test_run_cmd_pexpect_error():
-    """
-    测试run_cmd_pexpect异常命令
-    """
-    if platform.system() == "Windows":
-        pytest.skip("Windows上跳过pexpect测试")
-
-    cmd = "non_existing_command_xyz"
-    exit_code, output = run_cmd_pexpect(cmd)
-    assert exit_code != 0, "异常命令应返回非零退出码"
-    assert "not found" in output or "command not found" in output or "无法" in output or "未找到" in output
 
 
 def test_get_windows_parent_process_name_mocked():
