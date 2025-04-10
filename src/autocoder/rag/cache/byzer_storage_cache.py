@@ -1,3 +1,4 @@
+from token import OP
 from autocoder.rag.cache.base_cache import (
     BaseCacheManager,
     DeleteEvent,
@@ -31,6 +32,8 @@ from pydantic import BaseModel
 from autocoder.rag.cache.cache_result_merge import CacheResultMerger, MergeStrategy
 from .failed_files_utils import save_failed_files, load_failed_files
 import time
+from byzerllm import ByzerLLM, SimpleByzerLLM
+from autocoder.utils.llms import get_llm_names
 
 if platform.system() != "Windows":
     import fcntl
@@ -66,8 +69,8 @@ class ByzerStorageCache(BaseCacheManager):
         ignore_spec,
         required_exts,
         extra_params: Optional[AutoCoderArgs] = None,
-        args=None,
-        llm=None,
+        args:Optional[AutoCoderArgs]=None,
+        llm:Optional[ByzerLLM,SimpleByzerLLM,str]=None,
     ):
         """
         初始化基于云端 Byzer Storage 的 RAG 缓存管理器。
@@ -78,6 +81,7 @@ class ByzerStorageCache(BaseCacheManager):
         self.extra_params = extra_params
         self.args = args
         self.llm = llm
+        self.product_mode = self.args.product_mode
         self.rag_build_name = extra_params.rag_build_name
         self.storage = ByzerStorage("byzerai_store", "rag", self.rag_build_name)
         self.queue = []
@@ -218,6 +222,8 @@ class ByzerStorageCache(BaseCacheManager):
         from autocoder.rag.token_counter import initialize_tokenizer
 
         logger.info("[BUILD CACHE] Starting parallel file processing...")
+        llm_name = get_llm_names(self.llm)[0] if self.llm else None
+        product_mode = self.product_mode
         start_time = time.time()
         with Pool(
             processes=os.cpu_count(),
@@ -227,7 +233,7 @@ class ByzerStorageCache(BaseCacheManager):
             target_files_to_process = []
             for file_info in files_to_process:
                 target_files_to_process.append(self.fileinfo_to_tuple(file_info))
-            results = pool.map(process_file_in_multi_process, target_files_to_process)
+            results = pool.map(process_file_in_multi_process, target_files_to_process, llm=llm_name, product_mode=product_mode)
         processing_time = time.time() - start_time
         logger.info(f"[BUILD CACHE] File processing completed, time elapsed: {processing_time:.2f}s")
 

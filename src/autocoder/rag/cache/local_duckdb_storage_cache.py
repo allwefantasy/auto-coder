@@ -9,7 +9,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Optional, Tuple, Union
 import numpy as np
 from loguru import logger
-
+from typing import Union
+from byzerllm import SimpleByzerLLM, ByzerLLM
+from autocoder.utils.llms import get_llm_names
 try:
     import duckdb
 except ImportError:
@@ -302,8 +304,8 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             required_exts,
             extra_params: Optional[AutoCoderArgs] = None,
             emb_llm: Union[ByzerLLM, SimpleByzerLLM] = None,
-            args=None,
-            llm=None
+            args:Optional[AutoCoderArgs]=None,
+            llm:Optional[ByzerLLM,SimpleByzerLLM,str]=None,
     ):
         self.path = path
         self.ignore_spec = ignore_spec
@@ -435,6 +437,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             return
 
         from autocoder.rag.token_counter import initialize_tokenizer
+        llm_name = get_llm_names(self.llm)[0] if self.llm else None
 
         with Pool(
                 processes=os.cpu_count(),
@@ -445,8 +448,8 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             for file_info in files_to_process:
                 target_files_to_process.append(
                     self.fileinfo_to_tuple(file_info))
-            worker_func = functools.partial(process_file_in_multi_process, llm=self.llm, product_mode=self.product_mode)
-results = pool.map(worker_func, target_files_to_process)
+            worker_func = functools.partial(process_file_in_multi_process, llm=llm_name, product_mode=self.product_mode)
+            results = pool.map(worker_func, target_files_to_process)
 
         items = []
         for file_info, result in zip(files_to_process, results):

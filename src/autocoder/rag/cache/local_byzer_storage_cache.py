@@ -30,7 +30,9 @@ from typing import Union
 from byzerllm import SimpleByzerLLM, ByzerLLM
 from autocoder.rag.cache.cache_result_merge import CacheResultMerger, MergeStrategy
 import time
+from typing import Optional,Union
 from .failed_files_utils import save_failed_files, load_failed_files
+from autocoder.utils.llms import get_llm_names
 
 if platform.system() != "Windows":
     import fcntl
@@ -71,8 +73,8 @@ class LocalByzerStorageCache(BaseCacheManager):
         emb_llm: Union[ByzerLLM, SimpleByzerLLM] = None,
         host: str = "127.0.0.1",
         port: int = 33333,
-        args=None,
-        llm=None,
+        args:Optional[AutoCoderArgs]=None,
+        llm:Optional[ByzerLLM,SimpleByzerLLM,str]=None,
     ):
         """
         初始化基于 Byzer Storage 的 RAG 缓存管理器。
@@ -225,6 +227,8 @@ class LocalByzerStorageCache(BaseCacheManager):
         from autocoder.rag.token_counter import initialize_tokenizer
 
         logger.info("[BUILD CACHE] Starting parallel file processing...")
+        llm_name = get_llm_names(self.llm)[0] if self.llm else None
+        product_mode = self.args.product_mode
         start_time = time.time()
         with Pool(
             processes=os.cpu_count(),
@@ -235,8 +239,9 @@ class LocalByzerStorageCache(BaseCacheManager):
             for file_info in files_to_process:
                 target_files_to_process.append(
                     self.fileinfo_to_tuple(file_info))
-            worker_func = functools.partial(process_file_in_multi_process, llm=self.llm, product_mode=self.product_mode)
-results = pool.map(worker_func, target_files_to_process)
+            worker_func = functools.partial(process_file_in_multi_process, llm=llm_name, product_mode=product_mode)
+            results = pool.map(worker_func, target_files_to_process)
+        
         processing_time = time.time() - start_time
         logger.info(f"[BUILD CACHE] File processing completed, time elapsed: {processing_time:.2f}s")
 

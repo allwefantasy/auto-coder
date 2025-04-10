@@ -4,22 +4,27 @@ from autocoder.rag.loaders.pdf_loader import extract_text_from_pdf
 from autocoder.rag.loaders.docx_loader import extract_text_from_docx
 from autocoder.rag.loaders.excel_loader import extract_text_from_excel
 from autocoder.rag.loaders.ppt_loader import extract_text_from_ppt
-from typing import List, Tuple
+from typing import List, Tuple,Optional
 import time
 from loguru import logger
 import traceback
+from byzerllm import SimpleByzerLLM, ByzerLLM
+from autocoder.utils.llms import get_single_llm
 
 
 def process_file_in_multi_process(
     file_info: Tuple[str, str, float, str],
-    llm=None,
+    llm:Optional[ByzerLLM, SimpleByzerLLM, str] =None,
     product_mode="lite"
 ) -> List[SourceCode]:
+    if llm and isinstance(llm,str):
+        llm = get_single_llm(llm)
+        
     start_time = time.time()
     file_path, relative_path, _, _ = file_info
     try:
         if file_path.endswith(".pdf"):
-            content = extract_text_from_pdf(file_path)
+            content = extract_text_from_pdf(file_path, llm, product_mode)
             v = [
                 SourceCode(
                     module_name=file_path,
@@ -75,12 +80,14 @@ def process_file_in_multi_process(
         return []
 
 
-def process_file_local(file_path: str, llm=None, product_mode="lite") -> List[SourceCode]:
+def process_file_local(file_path: str, llm:Optional[ByzerLLM, SimpleByzerLLM, str] =None, product_mode="lite") -> List[SourceCode]:
     start_time = time.time()
+    if llm and isinstance(llm,str):
+        llm = get_single_llm(llm)
     try:
         if file_path.endswith(".pdf"):
-            content = extract_text_from_pdf(file_path)
-            v = [
+            content = extract_text_from_pdf(file_path, llm, product_mode)
+            v = [   
                 SourceCode(
                     module_name=file_path,
                     source_code=content,
