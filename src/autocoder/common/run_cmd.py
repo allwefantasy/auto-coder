@@ -40,6 +40,13 @@ def get_windows_parent_process_name():
 
 
 def run_cmd_subprocess(command, verbose=False, cwd=None, encoding=sys.stdout.encoding):
+    """
+    以生成器方式运行命令，逐步yield输出内容块。
+
+    用法：
+    for chunk in run_cmd_subprocess(command):
+        # 实时处理chunk
+    """
     if verbose:
         print("Using run_cmd_subprocess:", command)
 
@@ -47,7 +54,7 @@ def run_cmd_subprocess(command, verbose=False, cwd=None, encoding=sys.stdout.enc
         shell = os.environ.get("SHELL", "/bin/sh")
         parent_process = None
 
-        # Determine the appropriate shell
+        # Windows下调整命令
         if platform.system() == "Windows":
             parent_process = get_windows_parent_process_name()
             if parent_process == "powershell.exe":
@@ -67,23 +74,22 @@ def run_cmd_subprocess(command, verbose=False, cwd=None, encoding=sys.stdout.enc
             shell=True,
             encoding=encoding,
             errors="replace",
-            bufsize=0,  # Set bufsize to 0 for unbuffered output
+            bufsize=0,
             universal_newlines=True,
             cwd=cwd,
         )
 
-        output = []
         while True:
             chunk = process.stdout.read(1)
             if not chunk:
                 break
-            print(chunk, end="", flush=True)  # Print the chunk in real-time
-            output.append(chunk)  # Store the chunk for later use
+            print(chunk, end="", flush=True)
+            yield chunk
 
         process.wait()
-        return process.returncode, "".join(output)
     except Exception as e:
-        return 1, str(e)
+        # 出错时yield异常信息，也可以raise
+        yield f"[run_cmd_subprocess error]: {str(e)}"
 
 
 def run_cmd_pexpect(command, verbose=False, cwd=None):
