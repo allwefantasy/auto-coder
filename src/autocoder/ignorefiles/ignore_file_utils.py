@@ -6,7 +6,7 @@ import pathspec
 
 DEFAULT_EXCLUDES = [
     '.git', '.auto-coder', 'node_modules', '.mvn', '.idea',
-    '__pycache__', '.venv', 'venv', 'dist', 'build', '.gradle'
+    '__pycache__', '.venv', 'venv', 'dist', 'build', '.gradle',".next"
 ]
 
 
