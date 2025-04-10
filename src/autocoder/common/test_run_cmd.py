@@ -9,7 +9,7 @@ from unittest import mock
 import pytest
 
 # 导入待测试函数
-from autocoder.common.run_cmd import (
+from src.autocoder.common.run_cmd import (
     run_cmd,
     run_cmd_subprocess,
     run_cmd_pexpect,
