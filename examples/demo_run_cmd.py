@@ -1,7 +1,7 @@
 
 import sys
 import time
-from src.autocoder.common.run_cmd import run_cmd_subprocess_generator, run_cmd_pexpect
+from autocoder.common.run_cmd import run_cmd_subprocess_generator, run_cmd_pexpect
 
 def demo_subprocess_generator():
     print("=== 使用 run_cmd_subprocess_generator 执行命令，逐步输出内容 ===")

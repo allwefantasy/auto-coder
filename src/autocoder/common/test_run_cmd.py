@@ -9,6 +9,7 @@ import pytest
 from autocoder.common.run_cmd import (
     run_cmd,
     run_cmd_subprocess,
+    run_cmd_subprocess_generator,
     run_cmd_pexpect,
     get_windows_parent_process_name,
 )
@@ -27,7 +28,7 @@ def test_run_cmd_subprocess_normal():
     测试run_cmd_subprocess正常执行命令，逐步输出。
     """
     cmd = "echo hello_subprocess"
-    gen = run_cmd_subprocess(cmd)
+    gen = run_cmd_subprocess_generator(cmd)
     output = ""
     try:
         for chunk in gen:
@@ -41,7 +42,7 @@ def test_run_cmd_subprocess_error():
     测试run_cmd_subprocess执行错误命令时能否正确返回异常信息。
     """
     cmd = "non_existing_command_xyz"
-    gen = run_cmd_subprocess(cmd)
+    gen = run_cmd_subprocess_generator(cmd)
     output = ""
     for chunk in gen:
         output += chunk
