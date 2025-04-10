@@ -21,6 +21,7 @@ from autocoder.rag.utils import process_file_in_multi_process, process_file_loca
 from autocoder.rag.variable_holder import VariableHolder
 import hashlib
 from .failed_files_utils import load_failed_files, save_failed_files
+from autocoder.common import AutoCoderArgs
 
 
 default_ignore_dirs = [
@@ -47,7 +48,7 @@ def generate_content_md5(content: Union[str, bytes]) -> str:
 
 
 class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
-    def __init__(self, path: str, ignore_spec, required_exts: list, update_interval: int = 5, args=None, llm=None):
+    def __init__(self, path: str, ignore_spec, required_exts: list, update_interval: int = 5, args:Optional[AutoCoderArgs]=None, llm=None):
         """
         初始化异步更新队列，用于管理代码文件的缓存。
         
@@ -95,7 +96,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         self.required_exts = required_exts
         self.args = args
         self.llm = llm
-        self.product_mode = args.get("product_mode", "lite") if args else "lite"
+        self.product_mode = args.product_mode or "lite"
         self.update_interval = update_interval
         self.queue = []
         self.cache = {}  # 初始化为空字典，稍后通过 read_cache() 填充
