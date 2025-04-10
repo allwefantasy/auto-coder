@@ -5,7 +5,18 @@ from typing import Dict, Optional
 from loguru import logger
 
 class FilterRuleManager:
-    # 全局共享缓存
+    '''
+    {
+        "whitelist": [
+            "glob:*.png",
+            "regex:^/tmp/.*hidden.*"
+        ],
+        "blacklist": [
+            "glob:*/private/*",
+            "regex:.*/secret/.*\\.jpg$"
+        ]
+        }
+    '''    
     _cache_rules: Optional[Dict] = None
     _cache_mtime: Optional[float] = None
 
