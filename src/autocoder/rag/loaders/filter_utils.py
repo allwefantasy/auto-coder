@@ -70,4 +70,4 @@ class FilterRuleManager:
                 return True
 
         # 默认允许
-        return True
+        return False
