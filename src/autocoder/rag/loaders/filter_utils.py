@@ -51,23 +51,45 @@ class FilterRuleManager:
         """
         判断某个文件是否需要对图片进行解析。
 
+        支持规则格式：
+        - glob通配符匹配，示例："glob:*.png" 或 "*.png"
+        - 正则表达式匹配，示例："regex:^/tmp/.*hidden.*"
+
         返回:
             True 表示应该解析
             False 表示不解析
         """
+        import fnmatch
+        import re
+
         rules = self.load_filter_rules()
         whitelist = rules.get("whitelist", [])
         blacklist = rules.get("blacklist", [])
 
+        def match_pattern(pattern: str, path: str) -> bool:
+            if pattern.startswith("glob:"):
+                pat = pattern[len("glob:"):]
+                return fnmatch.fnmatch(path, pat)
+            elif pattern.startswith("regex:"):
+                pat = pattern[len("regex:"):]
+                try:
+                    return re.search(pat, path) is not None
+                except re.error:
+                    logger.warning(f"Invalid regex pattern: {pat}")
+                    return False
+            else:
+                # 默认按glob处理
+                return fnmatch.fnmatch(path, pattern)
+
         # 优先匹配黑名单
         for pattern in blacklist:
-            if pattern in file_path:
+            if match_pattern(pattern, file_path):
                 return False
 
         # 再匹配白名单
         for pattern in whitelist:
-            if pattern in file_path:
+            if match_pattern(pattern, file_path):
                 return True
 
-        # 默认允许
+        # 默认不解析
         return False
