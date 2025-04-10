@@ -806,9 +806,17 @@ Below are some files the user is focused on, and the content is up to date. Thes
         iteration_count = 0
         tool_executed = False
         while True:
-            iteration_count += 1
+            iteration_count += 1            
             logger.info(f"Starting LLM interaction cycle #{iteration_count}")
             global_cancel.check_and_raise()
+            last_message = conversations[-1]
+            if last_message["role"] == "assistant":
+                logger.info(f"Last message is assistant, skipping LLM interaction cycle")
+                yield CompletionEvent(completion=AttemptCompletionTool(
+                    result=last_message["content"],
+                    command=""
+                ), completion_xml="")
+                break
             logger.info(
                 f"Starting LLM interaction cycle. History size: {len(conversations)}")
 
