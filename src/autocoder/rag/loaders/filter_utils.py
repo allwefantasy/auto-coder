@@ -13,15 +13,16 @@ _cache_rules: Optional[Dict] = None
 
 def load_filter_rules() -> Dict:
     global _cache_rules
-    if _cache_rules is not None:
-        return _cache_rules
-    _cache_rules = {"whitelist": [], "blacklist": []}
-    try:
-        if os.path.exists(FILTER_RULES_PATH):
-            with open(FILTER_RULES_PATH, "r", encoding="utf-8") as f:
-                _cache_rules = json.load(f)
-    except Exception as e:
-        logger.warning(f"Failed to load filterrules: {e}")
+    if _cache_rules is None:
+        # 只在第一次调用时加载（或初始化默认值）
+        _cache_rules = {"whitelist": [], "blacklist": []}
+        try:
+            if os.path.exists(FILTER_RULES_PATH):
+                with open(FILTER_RULES_PATH, "r", encoding="utf-8") as f:
+                    _cache_rules = json.load(f)
+        except Exception as e:
+            logger.warning(f"Failed to load filterrules: {e}")
+    # 后续始终返回缓存
     return _cache_rules
 
 def should_parse_image(file_path: str) -> bool:
