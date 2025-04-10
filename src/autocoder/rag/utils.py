@@ -11,7 +11,9 @@ import traceback
 
 
 def process_file_in_multi_process(
-    file_info: Tuple[str, str, float, str]
+    file_info: Tuple[str, str, float, str],
+    llm=None,
+    product_mode="lite"
 ) -> List[SourceCode]:
     start_time = time.time()
     file_path, relative_path, _, _ = file_info
@@ -73,7 +75,7 @@ def process_file_in_multi_process(
         return []
 
 
-def process_file_local(file_path: str) -> List[SourceCode]:
+def process_file_local(file_path: str, llm=None, product_mode="lite") -> List[SourceCode]:
     start_time = time.time()
     try:
         if file_path.endswith(".pdf"):
