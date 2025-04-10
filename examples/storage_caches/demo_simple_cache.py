@@ -9,6 +9,8 @@ from autocoder.rag.variable_holder import VariableHolder
 from tokenizers import Tokenizer
 import pkg_resources
 
+from examples.storage_caches.sample_code_utils import create_sample_files
+
 # 初始化tokenizer
 try:
     tokenizer_path = pkg_resources.resource_filename(
@@ -20,39 +22,6 @@ except FileNotFoundError:
     logger.error("Tokenizer文件未找到，请确保autocoder正确安装")
     tokenizer_path = None
 
-
-def create_sample_files(base_dir: str):
-    os.makedirs(base_dir, exist_ok=True)
-    
-    calculator_content = """
-class Calculator:
-    def __init__(self):
-        self.history = []
-        
-    def add(self, a: int, b: int) -> int:
-        result = a + b
-        self.history.append(f"{a} + {b} = {result}")
-        return result
-        
-    def subtract(self, a: int, b: int) -> int:
-        result = a - b
-        self.history.append(f"{a} - {b} = {result}")
-        return result
-        
-    def multiply(self, a: int, b: int) -> int:
-        result = a * b
-        self.history.append(f"{a} * {b} = {result}")
-        return result
-        
-    def divide(self, a: int, b: int) -> float:
-        if b == 0:
-            raise ValueError("Cannot divide by zero")
-        result = a / b
-        self.history.append(f"{a} / {b} = {result}")
-        return result
-"""
-    with open(os.path.join(base_dir, "calculator.py"), "w", encoding="utf-8") as f:
-        f.write(calculator_content)
 
 def main():
     base_dir = "sample_code_simple_cache"
