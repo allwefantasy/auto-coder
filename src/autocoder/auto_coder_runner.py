@@ -2019,9 +2019,9 @@ def manage_models(query: str):
       /models /add_model name=xxx base_url=xxx ... - Add model with custom params
       /models /remove <name> - Remove model by name
     """
-    printer = Printer()
     console = Console()
-
+    printer = Printer(console=console)    
+    
     product_mode = memory.get("product_mode", "lite")
     if product_mode != "lite":
         printer.print_in_terminal("models_lite_only", style="red")
@@ -2274,7 +2274,7 @@ def manage_models(query: str):
 
     elif subcmd == "/add":
         # Support both simplified and legacy formats
-        args = query.strip().split(" ")        
+        args = query.strip().split(" ")               
         if len(args) == 2:
             # Simplified: /models /add <name> <api_key>
             name, api_key = args[0], args[1]            
@@ -2295,9 +2295,10 @@ def manage_models(query: str):
                     }
                 })
                 printer.print_in_terminal("models_add_failed", style="red", name=name)
-        else:
-            printer.print_in_terminal("models_add_usage", style="red")
-            result_manager.add_result(content=printer.get_message_from_key("models_add_usage"),meta={
+        else:            
+            models_list = "\n".join([m["name"] for m in models_module.default_models_list])                     
+            printer.print_in_terminal("models_add_usage", style="red", models=models_list)
+            result_manager.add_result(content=printer.get_message_from_key_with_format("models_add_usage",models=models_list),meta={
                 "action": "models",
                 "input": {
                     "query": query

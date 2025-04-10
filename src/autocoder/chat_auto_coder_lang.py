@@ -387,8 +387,8 @@ MESSAGES = {
         "zh": "添加模型 '{{name}}' 失败。在默认模型中未找到该模型。"
     },
     "models_add_usage": {
-        "en": "Usage: /models /add <name> <api_key> or\n/models /add <name> <model_type> <model_name> <base_url> <api_key_path> [description]",
-        "zh": "用法: /models /add <name> <api_key> 或\n/models /add <name> <model_type> <model_name> <base_url> <api_key_path> [description]"
+        "en": "Usage: /models /add <name> <api_key> \n Available models: \n{{models}}",
+        "zh": "用法: /models /add <name> <api_key> \n 可用模型: \n{{models}}"
     },
     "models_add_model_params": {
         "en": "Please provide parameters in key=value format",
@@ -582,7 +582,9 @@ def get_system_language():
 
 def get_message(key):
     lang = get_system_language()
-    return MESSAGES.get(key, {}).get(lang, MESSAGES[key].get("en", ""))
+    if key in MESSAGES:
+        return MESSAGES[key].get(lang, MESSAGES[key].get("en", ""))
+    return ""
 
 
 def get_message_with_format(msg_key: str, **kwargs):

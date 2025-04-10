@@ -73,7 +73,7 @@ default_models_list = [
         "max_output_tokens": 8096*2
     },    
     {
-        "name": "google/gemini-2.5-pro-preview-03-25",
+        "name": "openrouter/google/gemini-2.5-pro-preview-03-25",
         "description": "",
         "model_name": "google/gemini-2.5-pro-preview-03-25",
         "model_type": "saas/openai",

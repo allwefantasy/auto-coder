@@ -15,19 +15,18 @@ class Printer:
 
     def get_message_from_key(self, msg_key: str):
         try:
-            return get_message(msg_key)
+            v = get_message(msg_key)
+            if not v:
+                return get_chat_message(msg_key)
         except Exception as e:
             return get_chat_message(msg_key)
 
-    def get_message_from_key_with_format(self, msg_key: str, **kwargs):
-        try:
-            return format_str_jinja2(self.get_message_from_key(msg_key), **kwargs)
-        except Exception as e:
-            return format_str_jinja2(self.get_chat_message_from_key(msg_key), **kwargs)
-
+    def get_message_from_key_with_format(self, msg_key: str, **kwargs):        
+        return format_str_jinja2(self.get_message_from_key(msg_key), **kwargs)
+        
     def print_in_terminal(self, msg_key: str, style: str = None,**kwargs):     
         try:
-            if style:
+            if style:                
                 self.console.print(format_str_jinja2(self.get_message_from_key(msg_key),**kwargs), style=style)
             else:
                 self.console.print(format_str_jinja2(self.get_message_from_key(msg_key),**kwargs))
