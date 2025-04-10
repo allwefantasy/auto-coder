@@ -303,7 +303,7 @@ def update_model_with_api_key(name: str, api_key: str) -> Dict:
     if not found_model:
         return None
             
-    api_key_path = name
+    api_key_path = name.replace("/", "_")  # 替换 / 为 _，保证文件名合法
     if api_key_path:
         found_model["api_key_path"] = api_key_path
         
