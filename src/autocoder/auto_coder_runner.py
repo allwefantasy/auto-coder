@@ -2828,8 +2828,11 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
         current_files = memory.get("current_files",{}).get("files",[])
         sources = []
         for file in current_files:
-            with open(file,"r",encoding="utf-8") as f:
-                sources.append(SourceCode(module_name=file,source_code=f.read()))  
+            try:
+                with open(file,"r",encoding="utf-8") as f:
+                    sources.append(SourceCode(module_name=file,source_code=f.read()))  
+            except Exception as e:
+                global_logger.error(f"Failed to read file {file}: {e}")
                     
         llm = get_single_llm(args.code_model or args.model,product_mode=args.product_mode) 
         conversation_history = extra_args.get("conversations",[])   
@@ -2895,4 +2898,4 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
         title=printer.get_message_from_key_with_format("auto_command_reasoning_title"),
         border_style="blue",
         padding=(1, 2)
-    ))    
+    ))
