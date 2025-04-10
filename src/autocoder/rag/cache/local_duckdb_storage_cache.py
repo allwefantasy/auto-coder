@@ -445,8 +445,8 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             for file_info in files_to_process:
                 target_files_to_process.append(
                     self.fileinfo_to_tuple(file_info))
-            results = pool.map(process_file_in_multi_process,
-                               target_files_to_process)
+            worker_func = functools.partial(process_file_in_multi_process, llm=self.llm, product_mode=self.product_mode)
+results = pool.map(worker_func, target_files_to_process)
 
         items = []
         for file_info, result in zip(files_to_process, results):
@@ -593,7 +593,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                     logger.info(
                         f"{file_info.file_path} is detected to be updated")
                     try:
-                        content = process_file_local(file_info.file_path)
+                        content = process_file_local(file_info.file_path, llm=self.llm, product_mode=self.product_mode)
                         if content:
                             self.cache[file_info.file_path] = CacheItem(
                                 file_path=file_info.file_path,

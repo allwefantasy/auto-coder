@@ -235,8 +235,8 @@ class LocalByzerStorageCache(BaseCacheManager):
             for file_info in files_to_process:
                 target_files_to_process.append(
                     self.fileinfo_to_tuple(file_info))
-            results = pool.map(process_file_in_multi_process,
-                               target_files_to_process)
+            worker_func = functools.partial(process_file_in_multi_process, llm=self.llm, product_mode=self.product_mode)
+results = pool.map(worker_func, target_files_to_process)
         processing_time = time.time() - start_time
         logger.info(f"[BUILD CACHE] File processing completed, time elapsed: {processing_time:.2f}s")
 
@@ -452,7 +452,7 @@ class LocalByzerStorageCache(BaseCacheManager):
                         f"[QUEUE PROCESSING] Processing file update: {file_info.file_path}")
                     try:
                         content = process_file_local(
-                            self.fileinfo_to_tuple(file_info))
+                            self.fileinfo_to_tuple(file_info), llm=self.llm, product_mode=self.product_mode)
                         if content:
                             self.cache[file_info.file_path] = CacheItem(
                                 file_path=file_info.file_path,

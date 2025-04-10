@@ -148,7 +148,7 @@ class AutoCoderRAGDocListener(BaseCacheManager):
             2. 将解析结果序列化并存储在缓存中
             3. 日志记录更新的文件及当前缓存状态
         """
-        source_code = process_file_local(file_path)
+        source_code = process_file_local(file_path, llm=self.llm, product_mode=self.product_mode)
         self.cache[file_path] = {
             "file_path": file_path,
             "content": [c.model_dump() for c in source_code],

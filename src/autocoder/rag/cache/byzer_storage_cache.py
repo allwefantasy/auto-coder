@@ -417,7 +417,7 @@ class ByzerStorageCache(BaseCacheManager):
                 for file_info in file_list.file_infos:
                     logger.info(f"[QUEUE PROCESSING] Processing file update: {file_info.file_path}")
                     try:
-                        content = process_file_local(self.fileinfo_to_tuple(file_info))
+                        content = process_file_local(self.fileinfo_to_tuple(file_info), llm=self.llm, product_mode=self.product_mode)
                         if content:
                             self.cache[file_info.file_path] = CacheItem(
                                 file_path=file_info.file_path,
