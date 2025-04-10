@@ -48,6 +48,8 @@ from autocoder.common.mcp_server_types import (
     McpListRunningRequest, McpRefreshRequest
 )
 
+from src.autocoder.ignorefiles.ignore_file_utils import should_ignore
+
 
 @byzerllm.prompt()
 def detect_rm_command(command: str) -> Bool:
@@ -745,10 +747,15 @@ class AutoCommandTools:
         搜索不区分大小写。
         """
         matched_files = []
-        for root, _, files in os.walk(self.args.source_dir):
+        for root, dirs, files in os.walk(self.args.source_dir):
+            # 过滤忽略的目录，避免递归进入
+            dirs[:] = [d for d in dirs if not should_ignore(os.path.join(root, d))]
             for file in files:
+                file_path = os.path.join(root, file)
+                if should_ignore(file_path):
+                    continue
                 if keyword.lower() in file.lower():
-                    matched_files.append(os.path.join(root, file))
+                    matched_files.append(file_path)
 
         v = ",".join(matched_files)
         
