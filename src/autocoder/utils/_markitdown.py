@@ -618,13 +618,7 @@ class PdfConverter(DocumentConverter):
                                 content.append(
                                     f"![Image {local_image_count}]({image_path})\n"
                                 )
-                                # ===== 新增：根据filter_utils判断是否需要解析图片
-                                if filter_utils.should_parse_image(image_path):
-                                    try:
-                                        _ = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
-                                    except Exception:
-                                        import traceback; traceback.print_exc()
-                                # =====
+                                try_parse_image(image_path)
                                 local_image_count += 1
                                 continue
                             elif colorspace == "DeviceGray":
@@ -635,13 +629,7 @@ class PdfConverter(DocumentConverter):
                                 content.append(
                                     f"![Image {local_image_count}]({image_path})\n"
                                 )
-                                # ===== 新增：根据filter_utils判断是否需要解析图片
-                                if filter_utils.should_parse_image(image_path):
-                                    try:
-                                        _ = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
-                                    except Exception:
-                                        import traceback; traceback.print_exc()
-                                # =====
+                                try_parse_image(image_path)
                                 local_image_count += 1
                                 continue
                     except Exception as e:
@@ -654,12 +642,7 @@ class PdfConverter(DocumentConverter):
 
                     content.append(f"![Image {local_image_count}]({image_path})\n")
                     # ===== 新增：根据filter_utils判断是否需要解析图片
-                    if filter_utils.should_parse_image(image_path):
-                        try:
-                            _ = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
-                        except Exception:
-                            import traceback; traceback.print_exc()
-                    # =====
+                    try_parse_image(image_path)
                     local_image_count += 1
 
             # Handle text
@@ -1352,3 +1335,16 @@ class MarkItDown:
     def register_page_converter(self, converter: DocumentConverter) -> None:
         """Register a page text converter."""
         self._page_converters.insert(0, converter)
+
+
+def try_parse_image(image_path: str):
+    """
+    根据filter_utils判断是否需要解析图片，如果需要则调用ImageLoader.image_to_markdown。
+    解析失败会自动捕获异常。
+    """
+    if filter_utils.should_parse_image(image_path):
+        try:
+            _ = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
+        except Exception:
+            import traceback; traceback.print_exc()
+
