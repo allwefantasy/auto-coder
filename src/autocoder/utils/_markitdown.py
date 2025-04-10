@@ -34,6 +34,10 @@ from pdfminer.image import ImageWriter
 import numpy as np
 from PIL import Image
 
+# 新增导入
+from autocoder.rag.loaders import filter_utils
+from autocoder.rag.loaders.image_loader import ImageLoader
+
 # File-format detection
 import puremagic
 import requests
@@ -578,6 +582,14 @@ class PdfConverter(DocumentConverter):
                             image_output_dir, f"image_{local_image_count}{suffix}")
                         os.rename(temp_path, image_path)
                         content.append(f"![Image {local_image_count}]({image_path})")
+                        # ===== 新增：根据filter_utils判断是否需要解析图片
+                        if filter_utils.should_parse_image(image_path):
+                            try:
+                                _ = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
+                                # image_to_markdown会自动生成md文件
+                            except Exception:
+                                import traceback; traceback.print_exc()
+                        # =====
                         local_image_count += 1
                         continue
                     try:
@@ -606,6 +618,13 @@ class PdfConverter(DocumentConverter):
                                 content.append(
                                     f"![Image {local_image_count}]({image_path})\n"
                                 )
+                                # ===== 新增：根据filter_utils判断是否需要解析图片
+                                if filter_utils.should_parse_image(image_path):
+                                    try:
+                                        _ = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
+                                    except Exception:
+                                        import traceback; traceback.print_exc()
+                                # =====
                                 local_image_count += 1
                                 continue
                             elif colorspace == "DeviceGray":
@@ -616,6 +635,13 @@ class PdfConverter(DocumentConverter):
                                 content.append(
                                     f"![Image {local_image_count}]({image_path})\n"
                                 )
+                                # ===== 新增：根据filter_utils判断是否需要解析图片
+                                if filter_utils.should_parse_image(image_path):
+                                    try:
+                                        _ = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
+                                    except Exception:
+                                        import traceback; traceback.print_exc()
+                                # =====
                                 local_image_count += 1
                                 continue
                     except Exception as e:
@@ -627,6 +653,13 @@ class PdfConverter(DocumentConverter):
                         img_file.write(image_data)
 
                     content.append(f"![Image {local_image_count}]({image_path})\n")
+                    # ===== 新增：根据filter_utils判断是否需要解析图片
+                    if filter_utils.should_parse_image(image_path):
+                        try:
+                            _ = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
+                        except Exception:
+                            import traceback; traceback.print_exc()
+                    # =====
                     local_image_count += 1
 
             # Handle text
