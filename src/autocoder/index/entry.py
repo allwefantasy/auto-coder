@@ -120,6 +120,8 @@ def build_index_and_filter_files(
                 response = tuner.analyze(
                     AgenticFilterRequest(user_input=args.query))
                 if response:
+                    print("收集文件。。。。。。")
+                    print(response)
                     for file in response.files:
                         final_files[file.path] = TargetFile(
                             file_path=file.path, reason="Agentic Filter")

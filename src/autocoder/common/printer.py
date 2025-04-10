@@ -18,6 +18,8 @@ class Printer:
             v = get_message(msg_key)
             if not v:
                 return get_chat_message(msg_key)
+            else:
+                return v
         except Exception as e:
             return get_chat_message(msg_key)
 

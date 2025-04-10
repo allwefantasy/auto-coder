@@ -394,7 +394,13 @@ class AutoCommandTools:
         # 解析文件路径列表（如果提供了）
         file_path_list = []
         if file_paths:
-            file_path_list = [path.strip() for path in file_paths.split(",")]
+            # 处理可能是列表或字符串的file_paths
+            if isinstance(file_paths, list):
+                file_path_list = file_paths
+            elif isinstance(file_paths, str):
+                file_path_list = [path.strip() for path in file_paths.split(",")]
+            else:
+                file_path_list = [str(file_paths)]
 
         for k in index_data.values():
             value = {}

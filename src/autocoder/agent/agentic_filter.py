@@ -933,4 +933,9 @@ class AgenticFilter:
             v = self.printer.get_message_from_key_with_format(
                 "auto_command_failed", style="red", command=command, error=error_msg
             )
-            raise Exception(v)
+            self.result_manager = ResultManager()
+            result = f"command {command} with parameters {parameters} execution failed with error {error_msg}"
+            self.result_manager.add_result(content=result, meta={
+                "action": command,
+                "input": parameters
+            })
