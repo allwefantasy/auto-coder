@@ -9,7 +9,8 @@ from autocoder.common.printer import Printer
 from loguru import logger
 import typing   
 from autocoder.common import AutoCoderArgs
-
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.run_context import get_run_context
 if typing.TYPE_CHECKING:
     from autocoder.common.v2.agent.agentic_edit import AgenticEdit
 
@@ -41,7 +42,15 @@ class ExecuteCommandToolResolver(BaseToolResolver):
 
         printer.print_str_in_terminal(f"Executing command: {command} in {os.path.abspath(source_dir)}")
         try:            
-            # 使用封装的run_cmd方法执行命令，兼容交互/非交互场景
+            # 使用封装的run_cmd方法执行命令
+            if get_run_context().is_web():
+                answer = get_event_manager(
+                    self.args.event_file).ask_user(prompt=f"Allow to execute the `{command}`?",options=["yes","no"])
+                if answer == "yes":
+                    pass
+                else:
+                    return ToolResult(success=False, message=f"Command '{command}' execution denied by user.")
+            
             exit_code, output = run_cmd_subprocess(command, verbose=True, cwd=source_dir)
 
             logger.info(f"Command executed: {command}")
