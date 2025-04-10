@@ -76,6 +76,52 @@ def get_windows_parent_process_name():
 
 
 def run_cmd_subprocess(command, verbose=False, cwd=None, encoding=sys.stdout.encoding):
+    if verbose:
+        print("Using run_cmd_subprocess:", command)
+
+    try:
+        shell = os.environ.get("SHELL", "/bin/sh")
+        parent_process = None
+
+        # Determine the appropriate shell
+        if platform.system() == "Windows":
+            parent_process = get_windows_parent_process_name()
+            if parent_process == "powershell.exe":
+                command = f"powershell -Command {command}"
+
+        if verbose:
+            print("Running command:", command)
+            print("SHELL:", shell)
+            if platform.system() == "Windows":
+                print("Parent process:", parent_process)
+
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            shell=True,
+            encoding=encoding,
+            errors="replace",
+            bufsize=0,  # Set bufsize to 0 for unbuffered output
+            universal_newlines=True,
+            cwd=cwd,
+        )
+
+        output = []
+        while True:
+            chunk = process.stdout.read(1)
+            if not chunk:
+                break
+            print(chunk, end="", flush=True)  # Print the chunk in real-time
+            output.append(chunk)  # Store the chunk for later use
+
+        process.wait()
+        return process.returncode, "".join(output)
+    except Exception as e:
+        return 1, str(e)
+
+def run_cmd_subprocess_generator(command, verbose=False, cwd=None, encoding=sys.stdout.encoding):
     """
     使用subprocess运行命令，将命令输出逐步以生成器方式yield出来。
 
@@ -131,8 +177,7 @@ def run_cmd_subprocess(command, verbose=False, cwd=None, encoding=sys.stdout.enc
         while True:
             chunk = process.stdout.read(1)
             if not chunk:
-                break
-            print(chunk, end="", flush=True)
+                break            
             yield chunk
 
         process.wait()
