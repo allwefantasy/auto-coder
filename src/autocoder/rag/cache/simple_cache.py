@@ -1,4 +1,5 @@
 from multiprocessing import Pool
+import functools
 from autocoder.common import SourceCode
 from autocoder.rag.cache.base_cache import (
     BaseCacheManager, DeleteEvent, AddOrUpdateEvent,
@@ -94,6 +95,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         self.required_exts = required_exts
         self.args = args
         self.llm = llm
+        self.product_mode = args.get("product_mode", "lite") if args else "lite"
         self.update_interval = update_interval
         self.queue = []
         self.cache = {}  # 初始化为空字典，稍后通过 read_cache() 填充
@@ -175,8 +177,8 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 initializer=initialize_tokenizer,
                 initargs=(VariableHolder.TOKENIZER_PATH,),
             ) as pool:
-                results = pool.map(
-                    process_file_in_multi_process, files_to_process)
+                worker_func = functools.partial(process_file_in_multi_process, llm=self.llm, product_mode=self.product_mode)
+                results = pool.map(worker_func, files_to_process)
 
             for file_info, result in zip(files_to_process, results):
                 if result:  # 只有当result不为空时才更新缓存
@@ -236,7 +238,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 for file_info in file_list.file_infos:
                     logger.info(f"{file_info.file_path} is detected to be updated")
                     try:
-                        result = process_file_local(file_info.file_path)
+                        result = process_file_local(file_info.file_path, llm=self.llm, product_mode=self.product_mode)
                         if result:
                             # 解析成功且非空
                             self.update_cache(self.fileinfo_to_tuple(file_info), result)
