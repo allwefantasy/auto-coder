@@ -9,7 +9,7 @@ from autocoder.rag.variable_holder import VariableHolder
 from tokenizers import Tokenizer
 import pkg_resources
 
-from examples.storage_caches.sample_code_utils import create_sample_files
+from autocoder.helper.rag_doc_creator import create_sample_files
 
 # 初始化tokenizer
 try:

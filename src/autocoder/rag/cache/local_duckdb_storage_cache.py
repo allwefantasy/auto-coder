@@ -5,6 +5,7 @@ import time
 import platform
 import threading
 from multiprocessing import Pool
+import functools
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Optional, Tuple, Union
 import numpy as np
@@ -12,10 +13,13 @@ from loguru import logger
 from typing import Union
 from byzerllm import SimpleByzerLLM, ByzerLLM
 from autocoder.utils.llms import get_llm_names
+
 try:
     import duckdb
 except ImportError:
-    logger.error("DuckDB is not installed, please install it using 'pip install duckdb'")
+    logger.error(
+        "DuckDB is not installed, please install it using 'pip install duckdb'"
+    )
     raise
 
 from autocoder.common import AutoCoderArgs
@@ -25,7 +29,7 @@ from autocoder.rag.cache.base_cache import (
     DeleteEvent,
     AddOrUpdateEvent,
     FileInfo,
-    CacheItem
+    CacheItem,
 )
 from autocoder.rag.utils import process_file_in_multi_process, process_file_local
 from autocoder.rag.variable_holder import VariableHolder
@@ -38,11 +42,7 @@ else:
     fcntl = None
 
 
-default_ignore_dirs = [
-    "__pycache__",
-    "node_modules",
-    "_images"
-]
+default_ignore_dirs = ["__pycache__", "node_modules", "_images"]
 
 
 def generate_file_md5(file_path: str) -> str:
@@ -82,16 +82,19 @@ class DuckDBLocalContext:
 class LocalDuckdbStorage:
 
     def __init__(
-            self, llm: Union[ByzerLLM, SimpleByzerLLM] = None, database_name: str = ":memory:",
-            table_name: str = "documents",
-            embed_dim: Optional[int] = None, persist_dir: str = "./storage"
+        self,
+        llm: Union[ByzerLLM, SimpleByzerLLM] = None,
+        database_name: str = ":memory:",
+        table_name: str = "documents",
+        embed_dim: Optional[int] = None,
+        persist_dir: str = "./storage",
     ) -> None:
         self.llm = llm
         self.database_name = database_name
         self.table_name = table_name
         self.embed_dim = embed_dim
         self.persist_dir = persist_dir
-        self.cache_dir = os.path.join(self.persist_dir, '.cache')
+        self.cache_dir = os.path.join(self.persist_dir, ".cache")
         logger.info(f"正在启动 DuckDBVectorStore.")
 
         if self.database_name != ":memory:":
@@ -107,8 +110,10 @@ class LocalDuckdbStorage:
                     os.makedirs(self.cache_dir)
                 self._initialize()
             self._conn = None
-        logger.info(f"DuckDBVectorStore 初始化完成, 存储目录: {self.cache_dir}, "
-                    f"数据库名称: {self.database_name}, 数据表名称: {self.table_name}")
+        logger.info(
+            f"DuckDBVectorStore 初始化完成, 存储目录: {self.cache_dir}, "
+            f"数据库名称: {self.database_name}, 数据表名称: {self.table_name}"
+        )
 
     @classmethod
     def class_name(cls) -> str:
@@ -129,37 +134,47 @@ class LocalDuckdbStorage:
         # 生成固定随机投影矩阵（避免每次调用重新生成）
         np.random.seed(42)  # 固定随机种子保证一致性
         source_dim = len(embedding)
-        projection_matrix = np.random.randn(source_dim, target_dim) / np.sqrt(source_dim)
+        projection_matrix = np.random.randn(source_dim, target_dim) / np.sqrt(
+            source_dim
+        )
 
         # 执行投影
         reduced = np.dot(embedding, projection_matrix)
         return reduced
 
-    def _embedding(self, context: str, norm: bool = True, dim: int | None = None) -> List[float]:
+    def _embedding(
+        self, context: str, norm: bool = True, dim: int | None = None
+    ) -> List[float]:
         max_retries = 3
         retry_count = 0
-        
+
         while retry_count < max_retries:
             try:
                 embedding = self.llm.emb_query(context)[0].output
-                
+
                 if dim:
-                    embedding = self._apply_pca(embedding, target_dim=dim)  # 降维后形状 (1024,)
-                
+                    embedding = self._apply_pca(
+                        embedding, target_dim=dim
+                    )  # 降维后形状 (1024,)
+
                 if norm:
                     embedding = embedding / np.linalg.norm(embedding)
-                
+
                 return embedding.tolist()
             except Exception as e:
                 retry_count += 1
                 if retry_count >= max_retries:
-                    logger.error(f"Failed to get embedding after {max_retries} attempts: {str(e)}")
+                    logger.error(
+                        f"Failed to get embedding after {max_retries} attempts: {str(e)}"
+                    )
                     raise
-                
+
                 # Sleep between 1-5 seconds before retrying
                 sleep_time = 1 + (retry_count * 1.5)
-                logger.warning(f"Embedding API call failed (attempt {retry_count}/{max_retries}). "
-                              f"Error: {str(e)}. Retrying in {sleep_time:.1f} seconds...")
+                logger.warning(
+                    f"Embedding API call failed (attempt {retry_count}/{max_retries}). "
+                    f"Error: {str(e)}. Retrying in {sleep_time:.1f} seconds..."
+                )
                 time.sleep(sleep_time)
 
     def _initialize(self) -> None:
@@ -202,9 +217,7 @@ class LocalDuckdbStorage:
 
     def query_by_path(self, file_path: str):
         _exists_query = f"""SELECT _id FROM {self.table_name} WHERE file_path = ?"""
-        query_params = [
-            file_path
-        ]
+        query_params = [file_path]
         _final_results = []
         if self.database_name == ":memory:":
             _final_results = self._conn.execute(_exists_query, query_params).fetchall()
@@ -215,9 +228,7 @@ class LocalDuckdbStorage:
 
     def delete_by_ids(self, _ids: List[str]):
         _delete_query = f"""DELETE FROM {self.table_name} WHERE _id IN (?);"""
-        query_params = [
-            ','.join(_ids)
-        ]
+        query_params = [",".join(_ids)]
         if self.database_name == ":memory:":
             _final_results = self._conn.execute(_delete_query, query_params).fetchall()
         elif self.database_path is not None:
@@ -225,14 +236,16 @@ class LocalDuckdbStorage:
                 _final_results = _conn.execute(_delete_query, query_params).fetchall()
         return _final_results
 
-    def _node_to_table_row(self, context_chunk: Dict[str, str | float], dim: int | None = None) -> Any:
+    def _node_to_table_row(
+        self, context_chunk: Dict[str, str | float], dim: int | None = None
+    ) -> Any:
         return (
             context_chunk["_id"],
             context_chunk["file_path"],
             context_chunk["content"],
             context_chunk["raw_content"],
             self._embedding(context_chunk["raw_content"], norm=True, dim=dim),
-            context_chunk["mtime"]
+            context_chunk["mtime"],
         )
 
     def add_doc(self, context_chunk: Dict[str, str | float], dim: int | None = None):
@@ -257,7 +270,11 @@ class LocalDuckdbStorage:
                 _table.insert(_row)
 
     def vector_search(
-            self, query: str, similarity_value: float = 0.7, similarity_top_k: int = 10, query_dim: int | None = None
+        self,
+        query: str,
+        similarity_value: float = 0.7,
+        similarity_top_k: int = 10,
+        query_dim: int | None = None,
     ):
         """
         list_cosine_similarity: 计算两个列表之间的余弦相似度
@@ -289,23 +306,19 @@ class LocalDuckdbStorage:
         return _final_results
 
 
-efault_ignore_dirs = [
-    "__pycache__",
-    "node_modules",
-    "_images"
-]
+efault_ignore_dirs = ["__pycache__", "node_modules", "_images"]
 
 
 class LocalDuckDBStorageCache(BaseCacheManager):
     def __init__(
-            self,
-            path,
-            ignore_spec,
-            required_exts,
-            extra_params: Optional[AutoCoderArgs] = None,
-            emb_llm: Union[ByzerLLM, SimpleByzerLLM] = None,
-            args:Optional[AutoCoderArgs]=None,
-            llm:Optional[Union[ByzerLLM,SimpleByzerLLM,str]]=None,
+        self,
+        path,
+        ignore_spec,
+        required_exts,
+        extra_params: Optional[AutoCoderArgs] = None,
+        emb_llm: Union[ByzerLLM, SimpleByzerLLM] = None,
+        args: Optional[AutoCoderArgs] = None,
+        llm: Optional[Union[ByzerLLM, SimpleByzerLLM, str]] = None,
     ):
         self.path = path
         self.ignore_spec = ignore_spec
@@ -318,7 +331,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             llm=emb_llm,
             database_name="byzerai_store_duckdb.db",
             table_name="rag_duckdb",
-            persist_dir=self.path
+            persist_dir=self.path,
         )
         self.queue = []
         self.chunk_size = 1000
@@ -334,6 +347,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
 
         # failed files support
         from .failed_files_utils import load_failed_files
+
         self.failed_files_path = os.path.join(self.cache_dir, "failed_files.json")
         self.failed_files = load_failed_files(self.failed_files_path)
 
@@ -419,7 +433,12 @@ class LocalDuckDBStorageCache(BaseCacheManager):
 
     @staticmethod
     def fileinfo_to_tuple(file_info: FileInfo) -> Tuple[str, str, float, str]:
-        return file_info.file_path, file_info.relative_path, file_info.modify_time, file_info.file_md5
+        return (
+            file_info.file_path,
+            file_info.relative_path,
+            file_info.modify_time,
+            file_info.file_md5,
+        )
 
     def build_cache(self):
         """Build the cache by reading files and storing in DuckDBVectorStore"""
@@ -428,8 +447,8 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         files_to_process = []
         for file_info in self.get_all_files():
             if (
-                    file_info.file_path not in self.cache
-                    or self.cache[file_info.file_path].md5 != file_info.file_md5
+                file_info.file_path not in self.cache
+                or self.cache[file_info.file_path].md5 != file_info.file_md5
             ):
                 files_to_process.append(file_info)
 
@@ -437,18 +456,20 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             return
 
         from autocoder.rag.token_counter import initialize_tokenizer
-        llm_name = get_llm_names(self.llm)[0] if self.llm else None
 
+        llm_name = get_llm_names(self.llm)[0] if self.llm else None
+        product_mode = self.args.product_mode
         with Pool(
-                processes=os.cpu_count(),
-                initializer=initialize_tokenizer,
-                initargs=(VariableHolder.TOKENIZER_PATH,),
+            processes=os.cpu_count(),
+            initializer=initialize_tokenizer,
+            initargs=(VariableHolder.TOKENIZER_PATH,),
         ) as pool:
             target_files_to_process = []
             for file_info in files_to_process:
-                target_files_to_process.append(
-                    self.fileinfo_to_tuple(file_info))
-            worker_func = functools.partial(process_file_in_multi_process, llm=llm_name, product_mode=self.product_mode)
+                target_files_to_process.append(self.fileinfo_to_tuple(file_info))
+            worker_func = functools.partial(
+                process_file_in_multi_process, llm=llm_name, product_mode=product_mode
+            )
             results = pool.map(worker_func, target_files_to_process)
 
         items = []
@@ -483,37 +504,43 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         if items:
             logger.info("[BUILD CACHE] Clearing existing cache from DuckDB  Storage")
             self.storage.truncate_table()
-            logger.info(f"[BUILD CACHE] Preparing to write to DuckDB  Storage, "
-                        f"total chunks: {len(items)}, total files: {len(files_to_process)}")
+            logger.info(
+                f"[BUILD CACHE] Preparing to write to DuckDB  Storage, "
+                f"total chunks: {len(items)}, total files: {len(files_to_process)}"
+            )
 
             # Use a fixed optimal batch size instead of dividing by worker count
             batch_size = 100  # Optimal batch size for Byzer Storage
-            item_batches = [items[i:i + batch_size] for i in range(0, len(items), batch_size)]
+            item_batches = [
+                items[i : i + batch_size] for i in range(0, len(items), batch_size)
+            ]
 
             total_batches = len(item_batches)
             completed_batches = 0
 
-            logger.info(f"[BUILD CACHE] Starting to write to DuckDB Storage using {batch_size} items per batch, "
-                        f"total batches: {total_batches}")
+            logger.info(
+                f"[BUILD CACHE] Starting to write to DuckDB Storage using {batch_size} items per batch, "
+                f"total batches: {total_batches}"
+            )
             start_time = time.time()
 
-            # Use more workers to process the smaller batches efficiently            
-            max_workers = min(self.extra_params.rag_index_build_workers, total_batches)  # Cap at 10 workers or total batch count
-            logger.info(f"[BUILD CACHE] Using {max_workers} parallel workers for processing")
+            # Use more workers to process the smaller batches efficiently
+            max_workers = min(
+                self.extra_params.rag_index_build_workers, total_batches
+            )  # Cap at 10 workers or total batch count
+            logger.info(
+                f"[BUILD CACHE] Using {max_workers} parallel workers for processing"
+            )
 
             def batch_add_doc(_batch):
                 for b in _batch:
                     self.storage.add_doc(b, dim=self.extra_params.rag_duckdb_vector_dim)
 
-            with (ThreadPoolExecutor(max_workers=max_workers) as executor):
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = []
                 # Submit all batches to the executor upfront (non-blocking)
                 for batch in item_batches:
-                    futures.append(
-                        executor.submit(
-                            batch_add_doc, batch
-                        )
-                    )
+                    futures.append(executor.submit(batch_add_doc, batch))
 
                 # Wait for futures to complete
                 for future in as_completed(futures):
@@ -521,13 +548,19 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                         future.result()
                         completed_batches += 1
                         elapsed = time.time() - start_time
-                        estimated_total = elapsed / completed_batches * total_batches if completed_batches > 0 else 0
+                        estimated_total = (
+                            elapsed / completed_batches * total_batches
+                            if completed_batches > 0
+                            else 0
+                        )
                         remaining = estimated_total - elapsed
 
                         # Only log progress at reasonable intervals to reduce log spam
-                        if ((completed_batches == 1) or
-                                (completed_batches == total_batches) or
-                                (completed_batches % max(1, total_batches // 10) == 0)):
+                        if (
+                            (completed_batches == 1)
+                            or (completed_batches == total_batches)
+                            or (completed_batches % max(1, total_batches // 10) == 0)
+                        ):
                             logger.info(
                                 f"[BUILD CACHE] Progress: {completed_batches}/{total_batches} batches completed "
                                 f"({(completed_batches / total_batches * 100):.1f}%) "
@@ -536,11 +569,15 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                     except Exception as e:
                         logger.error(f"[BUILD CACHE] Error saving batch: {str(e)}")
                         # Add more detailed error information
-                        logger.error(f"[BUILD CACHE] Error details: batch size: "
-                                     f"{len(batch) if 'batch' in locals() else 'unknown'}")
+                        logger.error(
+                            f"[BUILD CACHE] Error details: batch size: "
+                            f"{len(batch) if 'batch' in locals() else 'unknown'}"
+                        )
 
             total_time = time.time() - start_time
-            logger.info(f"[BUILD CACHE] All chunks written, total time: {total_time:.2f}s")
+            logger.info(
+                f"[BUILD CACHE] All chunks written, total time: {total_time:.2f}s"
+            )
 
     def update_storage(self, file_info: FileInfo, is_delete: bool):
         results = self.storage.query_by_path(file_info.file_path)
@@ -551,7 +588,8 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         items = []
         if not is_delete:
             content = [
-                SourceCode.model_validate(doc) for doc in self.cache[file_info.file_path].content
+                SourceCode.model_validate(doc)
+                for doc in self.cache[file_info.file_path].content
             ]
             modify_time = self.cache[file_info.file_path].modify_time
             for doc in content:
@@ -570,7 +608,9 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         if items:
             for _chunk in items:
                 try:
-                    self.storage.add_doc(_chunk, dim=self.extra_params.rag_duckdb_vector_dim)
+                    self.storage.add_doc(
+                        _chunk, dim=self.extra_params.rag_duckdb_vector_dim
+                    )
                     time.sleep(self.extra_params.anti_quota_limit)
                 except Exception as err:
                     logger.error(f"Error in saving chunk: {str(err)}")
@@ -588,15 +628,19 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                         save_failed_files(self.failed_files_path, self.failed_files)
                     # 创建一个临时的 FileInfo 对象
                     file_info = FileInfo(
-                        file_path=item, relative_path="", modify_time=0, file_md5="")
+                        file_path=item, relative_path="", modify_time=0, file_md5=""
+                    )
                     self.update_storage(file_info, is_delete=True)
 
             elif isinstance(file_list, AddOrUpdateEvent):
                 for file_info in file_list.file_infos:
-                    logger.info(
-                        f"{file_info.file_path} is detected to be updated")
+                    logger.info(f"{file_info.file_path} is detected to be updated")
                     try:
-                        content = process_file_local(file_info.file_path, llm=self.llm, product_mode=self.product_mode)
+                        content = process_file_local(
+                            file_info.file_path,
+                            llm=self.llm,
+                            product_mode=self.product_mode,
+                        )
                         if content:
                             self.cache[file_info.file_path] = CacheItem(
                                 file_path=file_info.file_path,
@@ -609,9 +653,13 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                             # remove from failed files if present
                             if file_info.file_path in self.failed_files:
                                 self.failed_files.remove(file_info.file_path)
-                                save_failed_files(self.failed_files_path, self.failed_files)
+                                save_failed_files(
+                                    self.failed_files_path, self.failed_files
+                                )
                         else:
-                            logger.warning(f"Empty result for file: {file_info.file_path}, treat as parse failed, skipping cache update")
+                            logger.warning(
+                                f"Empty result for file: {file_info.file_path}, treat as parse failed, skipping cache update"
+                            )
                             self.failed_files.add(file_info.file_path)
                             save_failed_files(self.failed_files_path, self.failed_files)
                     except Exception as e:
@@ -632,8 +680,8 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                 logger.info(f"文件 {file_info.file_path} 之前解析失败，跳过此次更新")
                 continue
             if (
-                    file_info.file_path not in self.cache
-                    or self.cache[file_info.file_path].md5 != file_info.file_md5
+                file_info.file_path not in self.cache
+                or self.cache[file_info.file_path].md5 != file_info.file_md5
             ):
                 files_to_process.append(file_info)
 
@@ -650,8 +698,11 @@ class LocalDuckDBStorageCache(BaseCacheManager):
     def get_all_files(self) -> List[FileInfo]:
         all_files = []
         for root, dirs, files in os.walk(self.path, followlinks=True):
-            dirs[:] = [d for d in dirs if not d.startswith(
-                ".") and d not in default_ignore_dirs]
+            dirs[:] = [
+                d
+                for d in dirs
+                if not d.startswith(".") and d not in default_ignore_dirs
+            ]
 
             if self.ignore_spec:
                 relative_root = os.path.relpath(root, self.path)
@@ -668,7 +719,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
 
             for file in files:
                 if self.required_exts and not any(
-                        file.endswith(ext) for ext in self.required_exts
+                    file.endswith(ext) for ext in self.required_exts
                 ):
                     continue
 
@@ -681,18 +732,22 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                         file_path=file_path,
                         relative_path=relative_path,
                         modify_time=modify_time,
-                        file_md5=file_md5))
+                        file_md5=file_md5,
+                    )
+                )
 
         return all_files
 
-    def _get_single_cache(self, query: str, options: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _get_single_cache(
+        self, query: str, options: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """
         使用单个查询检索缓存文档
-        
+
         参数:
             query: 查询字符串
             options: 包含查询选项的字典
-            
+
         返回:
             包含文档信息的字典列表，每个字典包含_id、file_path、mtime和score字段
         """
@@ -706,38 +761,35 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                 query,
                 similarity_value=self.extra_params.rag_duckdb_query_similarity,
                 similarity_top_k=self.extra_params.rag_duckdb_query_top_k,
-                query_dim=self.extra_params.rag_duckdb_vector_dim
+                query_dim=self.extra_params.rag_duckdb_vector_dim,
             )
-            
+
             # Convert tuples to dictionaries for the merger
             for _id, file_path, mtime, score in search_results:
-                results.append({
-                    "_id": _id,
-                    "file_path": file_path,
-                    "mtime": mtime,
-                    "score": score
-                })
-        
+                results.append(
+                    {"_id": _id, "file_path": file_path, "mtime": mtime, "score": score}
+                )
+
         logger.info(f"查询 '{query}' 返回 {len(results)} 条记录")
         return results
-        
+
     def _process_search_results(self, results: List[Dict[str, Any]]) -> Dict[str, Dict]:
         """
         处理搜索结果，提取文件路径并构建结果字典
-        
+
         参数:
             results: 搜索结果列表，每项包含文档信息的字典
-            
+
         返回:
             匹配文档的字典，键为文件路径，值为文件内容
-            
+
         说明:
             该方法会根据查询结果从缓存中提取文件内容，并记录累计token数，
             当累计token数超过max_output_tokens时，将停止处理并返回已处理的结果。
         """
         # 记录被处理的总tokens数
         total_tokens = 0
-        
+
         # Group results by file_path and reconstruct documents while preserving order
         # 这里还可以有排序优化，综合考虑一篇内容出现的次数以及排序位置
         file_paths = []
@@ -758,64 +810,84 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                         logger.info(
                             f"当前检索已超出用户设置 Hybrid Index Max Tokens:{self.max_output_tokens}，"
                             f"累计tokens: {total_tokens}, "
-                            f"经过向量搜索共检索出 {len(result.keys())} 个文档, 共 {len(self.cache.keys())} 个文档")
+                            f"经过向量搜索共检索出 {len(result.keys())} 个文档, 共 {len(self.cache.keys())} 个文档"
+                        )
                         return result
                     total_tokens += doc["tokens"]
                 result[file_path] = cached_data.model_dump()
         logger.info(
             f"用户Hybrid Index Max Tokens设置为:{self.max_output_tokens}，"
             f"累计tokens: {total_tokens}, "
-            f"经过向量搜索共检索出 {len(result.keys())} 个文档, 共 {len(self.cache.keys())} 个文档")
+            f"经过向量搜索共检索出 {len(result.keys())} 个文档, 共 {len(self.cache.keys())} 个文档"
+        )
         return result
 
     def get_cache(self, options: Optional[Dict[str, Any]] = None) -> Dict[str, Dict]:
         """
         获取缓存中的文档信息
-        
+
         参数:
             options: 包含查询参数的字典，可以包含以下键：
                 - queries: 查询列表，可以是单个查询或多个查询
                 - enable_vector_search: 是否启用向量搜索，默认为True
                 - merge_strategy: 多查询时的合并策略，默认为WEIGHTED_RANK
                 - max_results: 最大结果数，默认为None表示不限制
-                
+
         返回:
             匹配文档的字典，键为文件路径，值为文件内容
         """
         self.trigger_update()  # 检查更新
 
         if options is None or "queries" not in options:
-            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
+            return {
+                file_path: self.cache[file_path].model_dump()
+                for file_path in self.cache
+            }
 
         queries = options.get("queries", [])
-        
+
         # 如果没有查询或只有一个查询，使用原来的方法
         if not queries:
-            return {file_path: self.cache[file_path].model_dump() for file_path in self.cache}
+            return {
+                file_path: self.cache[file_path].model_dump()
+                for file_path in self.cache
+            }
         elif len(queries) == 1:
             results = self._get_single_cache(queries[0], options)
             return self._process_search_results(results)
-        
+
         # 导入合并策略
-        from autocoder.rag.cache.cache_result_merge import CacheResultMerger, MergeStrategy
-        
+        from autocoder.rag.cache.cache_result_merge import (
+            CacheResultMerger,
+            MergeStrategy,
+        )
+
         # 获取合并策略
-        merge_strategy_name = options.get("merge_strategy", MergeStrategy.WEIGHTED_RANK.value)
+        merge_strategy_name = options.get(
+            "merge_strategy", MergeStrategy.WEIGHTED_RANK.value
+        )
         try:
             merge_strategy = MergeStrategy(merge_strategy_name)
         except ValueError:
-            logger.warning(f"未知的合并策略: {merge_strategy_name}, 使用默认策略 WEIGHTED_RANK")
+            logger.warning(
+                f"未知的合并策略: {merge_strategy_name}, 使用默认策略 WEIGHTED_RANK"
+            )
             merge_strategy = MergeStrategy.WEIGHTED_RANK
-        
+
         # 限制最大结果数
         max_results = options.get("max_results", None)
         merger = CacheResultMerger(max_results=max_results)
-        
+
         # 并发处理多个查询
-        logger.info(f"处理多查询请求，查询数量: {len(queries)}, 合并策略: {merge_strategy}")
+        logger.info(
+            f"处理多查询请求，查询数量: {len(queries)}, 合并策略: {merge_strategy}"
+        )
         query_results = []
         with ThreadPoolExecutor(max_workers=min(len(queries), 10)) as executor:
-            future_to_query = {executor.submit(self._get_single_cache, query, options): query for query in queries}
+            future_to_query = {
+                executor.submit(self._get_single_cache, query, options): query
+                for query in queries
+            }
             for future in as_completed(future_to_query):
                 query = future_to_query[future]
                 try:
@@ -824,12 +896,12 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                     query_results.append((query, query_result))
                 except Exception as e:
                     logger.error(f"处理查询 '{query}' 时出错: {str(e)}")
-        
+
         logger.info(f"所有查询共返回 {sum(len(r) for _, r in query_results)} 条记录")
-        
+
         # 使用策略合并结果
         merged_results = merger.merge(query_results, strategy=merge_strategy)
         logger.info(f"合并后的结果共 {len(merged_results)} 条记录")
-        
+
         # 处理合并后的结果
         return self._process_search_results(merged_results)

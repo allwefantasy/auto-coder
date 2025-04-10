@@ -8,6 +8,7 @@ from autocoder.rag.cache.base_cache import (
 from typing import Generator, List, Dict, Any, Optional, Tuple
 from autocoder.common import SourceCode
 from loguru import logger
+import functools
 import pathspec
 import os
 import uuid
