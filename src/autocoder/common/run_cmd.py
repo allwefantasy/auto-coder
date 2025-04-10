@@ -178,6 +178,9 @@ def run_cmd_subprocess_generator(command, verbose=False, cwd=None, encoding=sys.
             chunk = process.stdout.read(1)
             if not chunk:
                 break            
+            # 确保始终yield字符串，避免因字节或其他类型导致异常
+            if not isinstance(chunk, str):
+                chunk = str(chunk)
             yield chunk
 
         process.wait()
