@@ -1,14 +1,11 @@
 
 import sys
 import platform
-import types
-import io
-import os
 from unittest import mock
+import io
 
 import pytest
 
-# 导入待测试函数
 from autocoder.common.run_cmd import (
     run_cmd,
     run_cmd_subprocess,
@@ -16,36 +13,18 @@ from autocoder.common.run_cmd import (
     get_windows_parent_process_name,
 )
 
-
-def test_run_cmd():
+def test_run_cmd_basic():
     """
     测试run_cmd函数，确保其正确执行命令并返回预期结果。
     """
     cmd = "echo hello"
-
-    result = run_cmd(cmd)
-
-    if isinstance(result, tuple):
-        # pexpect模式
-        exit_code, output = result
-        assert exit_code == 0, f"命令退出码非零: {exit_code}"
-        assert "hello" in output, f"输出不包含hello: {output}"
-    elif isinstance(result, types.GeneratorType):
-        # subprocess生成器模式
-        output_str = ""
-        try:
-            for chunk in result:
-                output_str += chunk
-        except Exception as e:
-            pytest.fail(f"运行命令时发生异常: {e}")
-        assert "hello" in output_str, f"输出不包含hello: {output_str}"
-    else:
-        pytest.fail(f"run_cmd返回了未知类型: {type(result)}")
-
+    exit_code, output = run_cmd(cmd)
+    assert exit_code == 0, f"命令退出码非零: {exit_code}"
+    assert "hello" in output, f"输出不包含hello: {output}"
 
 def test_run_cmd_subprocess_normal():
     """
-    测试run_cmd_subprocess正常执行
+    测试run_cmd_subprocess正常执行命令，逐步输出。
     """
     cmd = "echo hello_subprocess"
     gen = run_cmd_subprocess(cmd)
@@ -57,10 +36,9 @@ def test_run_cmd_subprocess_normal():
         pytest.fail(f"run_cmd_subprocess异常: {e}")
     assert "hello_subprocess" in output
 
-
 def test_run_cmd_subprocess_error():
     """
-    测试run_cmd_subprocess异常命令
+    测试run_cmd_subprocess执行错误命令时能否正确返回异常信息。
     """
     cmd = "non_existing_command_xyz"
     gen = run_cmd_subprocess(cmd)
@@ -70,7 +48,23 @@ def test_run_cmd_subprocess_error():
     # 应该包含错误提示
     assert "[run_cmd_subprocess error]" in output or "not found" in output or "无法" in output or "未找到" in output
 
+def test_run_cmd_pexpect_mock():
+    """
+    测试run_cmd_pexpect函数，mock pexpect交互行为。
+    """
+    with mock.patch("pexpect.spawn") as mock_spawn:
+        mock_child = mock.MagicMock()
+        mock_child.exitstatus = 0
+        mock_child.interact.side_effect = lambda output_filter=None: output_filter(b"mock output\n")
+        mock_child.close.return_value = None
+        mock_child.exitstatus = 0
+        mock_child.getvalue = lambda: b"mock output\n"
+        mock_spawn.return_value = mock_child
 
+        # 由于run_cmd_pexpect内部会decode BytesIO内容
+        exit_code, output = run_cmd_pexpect("echo hello", verbose=False)
+        assert exit_code == 0
+        assert "mock output" in output
 
 def test_get_windows_parent_process_name_mocked():
     """
@@ -110,7 +104,6 @@ def test_get_windows_parent_process_name_mocked():
     with mock.patch("psutil.Process") as MockProcess:
         MockProcess.return_value = FakeProcess("python.exe", other_proc)
         assert get_windows_parent_process_name() is None
-
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__]))
