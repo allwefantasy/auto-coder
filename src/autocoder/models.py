@@ -47,15 +47,15 @@ default_models_list = [
         "max_output_tokens": 8096
     },    
     {
-        "name": "ark/deepseek-v3-250324",
-        "description": "DeepSeek Chat is for coding",
-        "model_name": "deepseek-v3-250324",
+        "name": "ark/deepseek-r1-250120",
+        "description": "DeepSeek Reasoner is for design/review",
+        "model_name": "deepseek-r1-250120",
         "model_type": "saas/openai",
         "base_url": "https://ark.cn-beijing.volces.com/api/v3",
         "api_key_path": "",
-        "is_reasoning": False,
-        "input_price": 2.0,
-        "output_price": 8.0,
+        "is_reasoning": True,
+        "input_price": 4.0,
+        "output_price": 16.0,
         "average_speed": 0.0,
         "max_output_tokens": 8096
     },    
