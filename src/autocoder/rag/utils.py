@@ -4,7 +4,7 @@ from autocoder.rag.loaders.pdf_loader import extract_text_from_pdf
 from autocoder.rag.loaders.docx_loader import extract_text_from_docx
 from autocoder.rag.loaders.excel_loader import extract_text_from_excel
 from autocoder.rag.loaders.ppt_loader import extract_text_from_ppt
-from typing import List, Tuple,Optional
+from typing import List, Tuple, Optional, Union
 import time
 from loguru import logger
 import traceback
@@ -14,12 +14,12 @@ from autocoder.utils.llms import get_single_llm
 
 def process_file_in_multi_process(
     file_info: Tuple[str, str, float, str],
-    llm:Optional[ByzerLLM, SimpleByzerLLM, str] =None,
-    product_mode="lite"
+    llm: Optional[Union[ByzerLLM, SimpleByzerLLM, str]] = None,
+    product_mode="lite",
 ) -> List[SourceCode]:
-    if llm and isinstance(llm,str):
+    if llm and isinstance(llm, str):
         llm = get_single_llm(llm)
-        
+
     start_time = time.time()
     file_path, relative_path, _, _ = file_info
     try:
@@ -53,8 +53,7 @@ def process_file_in_multi_process(
             ]
         elif file_path.endswith(".pptx"):
             slides = extract_text_from_ppt(file_path)
-            content = "".join(
-                f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
+            content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
             v = [
                 SourceCode(
                     module_name=f"##File: {file_path}",
@@ -80,14 +79,18 @@ def process_file_in_multi_process(
         return []
 
 
-def process_file_local(file_path: str, llm:Optional[ByzerLLM, SimpleByzerLLM, str] =None, product_mode="lite") -> List[SourceCode]:
+def process_file_local(
+    file_path: str,
+    llm: Optional[Union[ByzerLLM, SimpleByzerLLM, str]] = None,
+    product_mode="lite",
+) -> List[SourceCode]:
     start_time = time.time()
-    if llm and isinstance(llm,str):
+    if llm and isinstance(llm, str):
         llm = get_single_llm(llm)
     try:
         if file_path.endswith(".pdf"):
             content = extract_text_from_pdf(file_path, llm, product_mode)
-            v = [   
+            v = [
                 SourceCode(
                     module_name=file_path,
                     source_code=content,
@@ -115,8 +118,7 @@ def process_file_local(file_path: str, llm:Optional[ByzerLLM, SimpleByzerLLM, st
             ]
         elif file_path.endswith(".pptx"):
             slides = extract_text_from_ppt(file_path)
-            content = "".join(
-                f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
+            content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
             v = [
                 SourceCode(
                     module_name=f"##File: {file_path}",

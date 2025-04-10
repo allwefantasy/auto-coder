@@ -50,7 +50,7 @@ def generate_content_md5(content: Union[str, bytes]) -> str:
 
 
 class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
-    def __init__(self, path: str, ignore_spec, required_exts: list, update_interval: int = 5, args: Optional[AutoCoderArgs] = None, llm: Optional[ByzerLLM, SimpleByzerLLM, str] = None):
+    def __init__(self, path: str, ignore_spec, required_exts: list, update_interval: int = 5, args: Optional[AutoCoderArgs] = None, llm: Optional[Union[ByzerLLM, SimpleByzerLLM, str]] = None):
         """
         初始化异步更新队列，用于管理代码文件的缓存。
 

@@ -74,7 +74,7 @@ class LocalByzerStorageCache(BaseCacheManager):
         host: str = "127.0.0.1",
         port: int = 33333,
         args:Optional[AutoCoderArgs]=None,
-        llm:Optional[ByzerLLM,SimpleByzerLLM,str]=None,
+        llm:Optional[Union[ByzerLLM,SimpleByzerLLM,str]]=None,
     ):
         """
         初始化基于 Byzer Storage 的 RAG 缓存管理器。

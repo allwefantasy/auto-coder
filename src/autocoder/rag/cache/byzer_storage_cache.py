@@ -70,7 +70,7 @@ class ByzerStorageCache(BaseCacheManager):
         required_exts,
         extra_params: Optional[AutoCoderArgs] = None,
         args:Optional[AutoCoderArgs]=None,
-        llm:Optional[ByzerLLM,SimpleByzerLLM,str]=None,
+        llm:Optional[Union[ByzerLLM,SimpleByzerLLM,str]]=None,
     ):
         """
         初始化基于云端 Byzer Storage 的 RAG 缓存管理器。

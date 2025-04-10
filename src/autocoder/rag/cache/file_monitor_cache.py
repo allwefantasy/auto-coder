@@ -50,7 +50,7 @@ class AutoCoderRAGDocListener(BaseCacheManager):
         r"^test.*$",
     ]
 
-    def __init__(self, path: str, ignore_spec, required_exts: List, args: Optional[AutoCoderArgs] = None, llm: Optional[ByzerLLM, SimpleByzerLLM, str] = None) -> None:
+    def __init__(self, path: str, ignore_spec, required_exts: List, args: Optional[AutoCoderArgs] = None, llm: Optional[Union[ByzerLLM, SimpleByzerLLM, str]] = None) -> None:
         """
         初始化文件监控缓存管理器。
 

@@ -305,7 +305,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             extra_params: Optional[AutoCoderArgs] = None,
             emb_llm: Union[ByzerLLM, SimpleByzerLLM] = None,
             args:Optional[AutoCoderArgs]=None,
-            llm:Optional[ByzerLLM,SimpleByzerLLM,str]=None,
+            llm:Optional[Union[ByzerLLM,SimpleByzerLLM,str]]=None,
     ):
         self.path = path
         self.ignore_spec = ignore_spec
