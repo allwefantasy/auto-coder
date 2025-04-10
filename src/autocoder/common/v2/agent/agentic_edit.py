@@ -821,6 +821,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
                 if isinstance(event, (LLMOutputEvent, LLMThinkingEvent)):
                     assistant_buffer += event.text
                     yield event  # Yield text/thinking immediately for display
+                    print("===1")
 
                 elif isinstance(event, ToolCallEvent):
                     tool_executed = True
@@ -837,6 +838,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
                     assistant_buffer = ""  # Reset buffer after tool call
 
                     yield event  # Yield the ToolCallEvent for display
+                    print("===2")
 
                     # Handle AttemptCompletion separately as it ends the loop
                     if isinstance(tool_obj, AttemptCompletionTool):
@@ -903,6 +905,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
                             error_xml = f"<tool_result tool_name='{type(tool_obj).__name__}' success='false'><message>{escaped_error}</message><content></content></tool_result>"
 
                     yield result_event  # Yield the ToolResultEvent for display
+                    print("===3")
 
                     # Append the tool result (as user message) to history
                     conversations.append({
@@ -924,6 +927,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
             if not tool_executed:
                 # No tool executed in this LLM response cycle
                 logger.info("LLM response finished without executing a tool.")
+                print("===4")
                 # Append any remaining assistant buffer to history if it wasn't followed by a tool
                 if assistant_buffer:
                     last_message = conversations[-1]
@@ -934,7 +938,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
                             assistant_buffer)
                     elif last_message["role"] == "assistant":
                         last_message["content"] += assistant_buffer
-                        self.conversation_manager.append_to_last_message(assistant_buffer)
+                        self.conversation_manager.append_to_last_message(assistant_buffer)                        
                 # If the loop ends without AttemptCompletion, it means the LLM finished talking
                 # without signaling completion. We might just stop or yield a final message.
                 # Let's assume it stops here.
