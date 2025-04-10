@@ -1323,6 +1323,11 @@ Below are some files the user is focused on, and the content is up to date. Thes
         Apply all tracked file changes to the original project directory.
         """
         for (file_path, change) in self.get_all_file_changes().items():
+            # Ensure the directory exists before writing the file
+            dir_path = os.path.dirname(file_path)
+            if dir_path: # Ensure dir_path is not empty (for files in root)
+                 os.makedirs(dir_path, exist_ok=True)
+
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(change.content)
 
