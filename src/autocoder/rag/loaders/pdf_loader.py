@@ -14,9 +14,9 @@ def extract_text_from_pdf_old(file_path):
         text += page.extract_text()
     return text
 
-def extract_text_from_pdf(file_path):
-    try:        
-        md_converter = MarkItDown()
+def extract_text_from_pdf(file_path, llm=None, product_mode="lite"):
+    try:
+        md_converter = MarkItDown(llm=llm, product_mode=product_mode)
         result = md_converter.convert(file_path)
         return result.text_content
     except (BaseException, Exception) as e:

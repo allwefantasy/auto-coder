@@ -1086,6 +1086,8 @@ class MarkItDown:
         requests_session: Optional[requests.Session] = None,
         mlm_client: Optional[Any] = None,
         mlm_model: Optional[Any] = None,
+        llm: Optional[Any] = None,
+        product_mode: Optional[str] = None,
     ):
         if requests_session is None:
             self._requests_session = requests.Session()
@@ -1094,6 +1096,10 @@ class MarkItDown:
 
         self._mlm_client = mlm_client
         self._mlm_model = mlm_model
+
+        # 新增：保存llm和product_mode
+        self._llm = llm
+        self._product_mode = product_mode
 
         self._page_converters: List[DocumentConverter] = []
 
