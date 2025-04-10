@@ -925,16 +925,16 @@ Below are some files the user is focused on, and the content is up to date. Thes
                 # No tool executed in this LLM response cycle
                 logger.info("LLM response finished without executing a tool.")
                 # Append any remaining assistant buffer to history if it wasn't followed by a tool
-                if assistant_buffer:
-                    last_message = conversations[-1]
-                    if last_message["role"] != "assistant":
-                        conversations.append(
-                            {"role": "assistant", "content": assistant_buffer})
-                        self.conversation_manager.add_assistant_message(
-                            assistant_buffer)
-                    elif last_message["role"] == "assistant":
-                        last_message["content"] += assistant_buffer
-                        self.conversation_manager.append_to_last_message(assistant_buffer)
+                # if assistant_buffer:
+                #     last_message = conversations[-1]
+                #     if last_message["role"] != "assistant":
+                #         conversations.append(
+                #             {"role": "assistant", "content": assistant_buffer})
+                #         self.conversation_manager.add_assistant_message(
+                #             assistant_buffer)
+                #     elif last_message["role"] == "assistant":
+                #         last_message["content"] += assistant_buffer
+                #         self.conversation_manager.append_to_last_message(assistant_buffer)
                 # If the loop ends without AttemptCompletion, it means the LLM finished talking
                 # without signaling completion. We might just stop or yield a final message.
                 # Let's assume it stops here.
