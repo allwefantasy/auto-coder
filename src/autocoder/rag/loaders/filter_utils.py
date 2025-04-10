@@ -10,19 +10,34 @@ FILTER_RULES_PATH = os.path.join(
 )
 
 _cache_rules: Optional[Dict] = None
+_cache_mtime: Optional[float] = None
 
 def load_filter_rules() -> Dict:
-    global _cache_rules
+    global _cache_rules, _cache_mtime
+
+    try:
+        current_mtime = os.path.getmtime(FILTER_RULES_PATH) if os.path.exists(FILTER_RULES_PATH) else None
+    except Exception:
+        current_mtime = None
+
+    need_reload = False
+
+    # 如果缓存为空，或者文件已更新，触发重新加载
     if _cache_rules is None:
-        # 只在第一次调用时加载（或初始化默认值）
+        need_reload = True
+    elif current_mtime is not None and _cache_mtime != current_mtime:
+        need_reload = True
+
+    if need_reload:
         _cache_rules = {"whitelist": [], "blacklist": []}
         try:
             if os.path.exists(FILTER_RULES_PATH):
                 with open(FILTER_RULES_PATH, "r", encoding="utf-8") as f:
                     _cache_rules = json.load(f)
+            _cache_mtime = current_mtime
         except Exception as e:
             logger.warning(f"Failed to load filterrules: {e}")
-    # 后续始终返回缓存
+
     return _cache_rules
 
 def should_parse_image(file_path: str) -> bool:
