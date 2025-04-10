@@ -39,17 +39,7 @@ class ExecuteCommandToolResolver(BaseToolResolver):
              pass
 
         printer.print_str_in_terminal(f"Executing command: {command} in {os.path.abspath(source_dir)}")
-        try:
-            # Determine shell based on OS
-            shell = True
-            executable = None
-            if shells.is_windows():
-                # Decide between cmd and powershell if needed, default is cmd
-                pass # shell=True uses default shell
-            else:
-                # Use bash or zsh? Default is usually fine.
-                pass # shell=True uses default shell
-
+        try:            
             # Execute the command
             process = subprocess.Popen(
                 command,
