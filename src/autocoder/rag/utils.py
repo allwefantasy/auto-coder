@@ -18,7 +18,7 @@ def process_file_in_multi_process(
     product_mode="lite",
 ) -> List[SourceCode]:
     if llm and isinstance(llm, str):
-        llm = get_single_llm(llm)
+        llm = get_single_llm(llm,product_mode)
 
     start_time = time.time()
     file_path, relative_path, _, _ = file_info
@@ -86,7 +86,7 @@ def process_file_local(
 ) -> List[SourceCode]:
     start_time = time.time()
     if llm and isinstance(llm, str):
-        llm = get_single_llm(llm)
+        llm = get_single_llm(llm,product_mode)
     try:
         if file_path.endswith(".pdf"):
             content = extract_text_from_pdf(file_path, llm, product_mode)

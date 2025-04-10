@@ -136,7 +136,7 @@ class Calculator:
     logger.info("已更新文件，触发增量更新...")
     cache_manager.trigger_update()
     
-    time.sleep(3)  # 等待更新完成
+    time.sleep(10)  # 等待更新完成
     
     cache = cache_manager.get_cache()
     logger.info(f"增量更新后缓存文件数: {len(cache)}")
