@@ -18,6 +18,7 @@ from byzerllm.utils.client import code_utils
 from autocoder.utils.llms import get_single_llm
 from loguru import logger
 from typing import List, Tuple, Optional
+from autocoder.common.text import TextSimilarity
 from pydantic import BaseModel
 
 
@@ -428,13 +429,34 @@ class ImageLoader:
         # Process each tool to apply the replacements
         formatted_content = content
         for tool in tools:
-            # For in-memory content replacement (not actual file modification)
-            if tool.path == "content":
-                # Parse the diff to get search/replace blocks
-                blocks = ImageLoader.parse_diff(tool.diff)
-                # Apply each replacement to the content                
-                for search_block, replace_block in blocks:
-                    formatted_content = formatted_content.replace(search_block, replace_block)
+            # For in-memory content replacement (not actual file modification)            
+            # Parse the diff to get search/replace blocks
+            blocks = ImageLoader.parse_diff(tool.diff)
+            # Apply each replacement to the content                
+            for search_block, replace_block in blocks:
+                # Check if the search_block exists in the content
+                if search_block in formatted_content:
+                    # Replace and verify the replacement occurred
+                    new_content = formatted_content.replace(search_block, replace_block)
+                    if new_content == formatted_content:
+                        logger.warning(f"Replacement failed despite search block found. Search block length: {len(search_block)}")
+                        print(f"\n=== FAILED SEARCH BLOCK ===\n{search_block}\n=== END FAILED SEARCH BLOCK ===\n")
+                    formatted_content = new_content
+                else:
+                    # Fallback to similarity matching when exact match fails
+                    logger.warning(f"Search block not found in content. Trying similarity matching. Search block length: {len(search_block)}")
+                    print(f"\n=== NOT FOUND SEARCH BLOCK (trying similarity) ===\n{search_block}\n=== END NOT FOUND SEARCH BLOCK ===\n")
+                    
+                    # Use TextSimilarity to find the best matching window
+                    similarity, best_window = TextSimilarity(search_block, formatted_content).get_best_matching_window()
+                    similarity_threshold = 0.8  # Can be adjusted based on needs
+                    
+                    if similarity > similarity_threshold:
+                        logger.info(f"Found similar block with similarity {similarity:.2f}")
+                        print(f"\n=== SIMILAR BLOCK FOUND (similarity: {similarity:.2f}) ===\n{best_window}\n=== END SIMILAR BLOCK ===\n")
+                        formatted_content = formatted_content.replace(best_window, replace_block, 1)
+                    else:
+                        logger.warning(f"No similar block found. Best similarity: {similarity:.2f}")
         
         return formatted_content
     

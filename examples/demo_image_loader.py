@@ -151,17 +151,17 @@ index
 ```    
 '''
     def extract_replace_in_file_tools(response):
-                tools = []
-                # Pattern to match replace_in_file tool blocks
-                pattern = r'<replace_in_file>\s*<path>(.*?)</path>\s*<diff>(.*?)</diff>\s*</replace_in_file>'
-                matches = re.finditer(pattern, response, re.DOTALL)
-                
-                for match in matches:
-                    path = match.group(1).strip()
-                    diff = match.group(2).strip()
-                    tools.append(ReplaceInFileTool(path=path, diff=diff))
-                
-                return tools
+        tools = []
+        # Pattern to match replace_in_file tool blocks
+        pattern = r'<replace_in_file>\s*<path>(.*?)</path>\s*<diff>(.*?)</diff>\s*</replace_in_file>'
+        matches = re.finditer(pattern, response, re.DOTALL)
+        
+        for match in matches:
+            path = match.group(1).strip()
+            diff = match.group(2).strip()
+            tools.append(ReplaceInFileTool(path=path, diff=diff))
+        
+        return tools
     
     tools = extract_replace_in_file_tools(t)
     print(tools)
