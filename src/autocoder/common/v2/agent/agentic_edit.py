@@ -771,12 +771,16 @@ class AgenticEdit:
         Analyzes the user request, interacts with the LLM, parses responses,
         executes tools, and yields structured events for visualization until completion or error.
         """
+        logger.info(f"Starting analyze method with user input: {request.user_input[:50]}...")
         system_prompt = self._analyze.prompt(request)
+        logger.info(f"Generated system prompt with length: {len(system_prompt)}")
+        
         # print(system_prompt)
         conversations = [
             {"role": "system", "content": system_prompt},
         ] 
         
+        logger.info("Adding initial files context to conversation")
         conversations.append({
             "role":"user","content":f'''
 Below are some files the user is focused on, and the content is up to date. These entries show the file paths along with their full text content, which can help you better understand the user's needs. If the information is insufficient, you can use tools such as read_file to retrieve more details.
@@ -788,23 +792,28 @@ Below are some files the user is focused on, and the content is up to date. Thes
         conversations.append({
             "role":"assistant","content":"Ok"
         })
+        
+        logger.info("Adding conversation history")
         conversations.extend(self.conversation_manager.get_history())        
         conversations.append({
             "role": "user", "content": request.user_input
         })
         self.conversation_manager.add_user_message(request.user_input)
         
-        logger.debug(
+        logger.info(
             f"Initial conversation history size: {len(conversations)}")
 
+        iteration_count = 0
         tool_executed = False
         while True:
+            iteration_count += 1
+            logger.info(f"Starting LLM interaction cycle #{iteration_count}")
             global_cancel.check_and_raise()
             logger.info(
                 f"Starting LLM interaction cycle. History size: {len(conversations)}")
 
             assistant_buffer = ""
-
+            logger.info("Initializing stream chat with LLM")
             llm_response_gen = stream_chat_with_continue(
                 llm=self.llm,
                 conversations=conversations,
@@ -813,22 +822,29 @@ Below are some files the user is focused on, and the content is up to date. Thes
             )
 
             meta_holder = byzerllm.MetaHolder()
+            logger.info("Starting to parse LLM response stream")
             parsed_events = self.stream_and_parse_llm_response(
                 llm_response_gen, meta_holder)
 
+            event_count = 0
             for event in parsed_events:
+                event_count += 1
+                logger.info(f"Processing event #{event_count}: {type(event).__name__}")
                 global_cancel.check_and_raise()
                 if isinstance(event, (LLMOutputEvent, LLMThinkingEvent)):
                     assistant_buffer += event.text
-                    yield event  # Yield text/thinking immediately for display
-                    print("===1")
+                    logger.debug(f"Accumulated {len(assistant_buffer)} chars in assistant buffer")
+                    yield event  # Yield text/thinking immediately for display                    
 
                 elif isinstance(event, ToolCallEvent):
                     tool_executed = True
                     tool_obj = event.tool
+                    tool_name = type(tool_obj).__name__
+                    logger.info(f"Tool call detected: {tool_name}")
                     tool_xml = event.tool_xml  # Already reconstructed by parser
 
                     # Append assistant's thoughts and the tool call to history
+                    logger.info(f"Adding assistant message with tool call to conversation history")
                     conversations.append({
                         "role": "assistant",
                         "content": assistant_buffer + tool_xml
@@ -838,12 +854,13 @@ Below are some files the user is focused on, and the content is up to date. Thes
                     assistant_buffer = ""  # Reset buffer after tool call
 
                     yield event  # Yield the ToolCallEvent for display
-                    print("===2")
+                    logger.info("Yielded ToolCallEvent")
 
                     # Handle AttemptCompletion separately as it ends the loop
                     if isinstance(tool_obj, AttemptCompletionTool):
                         logger.info(
                             "AttemptCompletionTool received. Finalizing session.")
+                        logger.info(f"Completion result: {tool_obj.result[:50]}...")
                         yield CompletionEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to AttemptCompletion.")
@@ -852,6 +869,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
                     if isinstance(tool_obj, PlanModeRespondTool):
                         logger.info(
                             "PlanModeRespondTool received. Finalizing session.")
+                        logger.info(f"Plan mode response: {tool_obj.response[:50]}...")
                         yield PlanModeRespondEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to PlanModeRespond.")
@@ -869,6 +887,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
                         error_xml = f"<tool_result tool_name='{type(tool_obj).__name__}' success='false'><message>Error: Tool resolver not implemented.</message><content></content></tool_result>"
                     else:
                         try:
+                            logger.info(f"Creating resolver for tool: {tool_name}")
                             resolver = resolver_cls(
                                 agent=self, tool=tool_obj, args=self.args)
                             logger.info(
@@ -880,6 +899,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
                                 tool_obj).__name__, result=tool_result)
 
                             # Prepare XML for conversation history
+                            logger.info("Preparing XML for conversation history")
                             escaped_message = xml.sax.saxutils.escape(
                                 tool_result.message)
                             content_str = str(
@@ -904,47 +924,55 @@ Below are some files the user is focused on, and the content is up to date. Thes
                                 error_message)
                             error_xml = f"<tool_result tool_name='{type(tool_obj).__name__}' success='false'><message>{escaped_error}</message><content></content></tool_result>"
 
-                    yield result_event  # Yield the ToolResultEvent for display
-                    print("===3")
+                    yield result_event  # Yield the ToolResultEvent for display    
+                    logger.info("Yielded ToolResultEvent")
 
                     # Append the tool result (as user message) to history
+                    logger.info("Adding tool result to conversation history")
                     conversations.append({
                         "role": "user",  # Simulating the user providing the tool result
                         "content": error_xml
                     })
                     self.conversation_manager.add_user_message(error_xml)
-                    logger.debug(
+                    logger.info(
                         f"Added tool result to conversations for tool {type(tool_obj).__name__}")
+                    logger.info(f"Breaking LLM cycle after executing tool: {tool_name}")
                     break  # After tool execution and result, break to start a new LLM cycle
 
                 elif isinstance(event, ErrorEvent):
+                    logger.error(f"Error event occurred: {event.message}")
                     yield event  # Pass through errors
                     # Optionally stop the process on parsing errors
                     # logger.error("Stopping analyze loop due to parsing error.")
                     # return
 
+            logger.info("Yielding token usage event")
             yield TokenUsageEvent(usage=meta_holder.meta)
+            
             if not tool_executed:
                 # No tool executed in this LLM response cycle
-                logger.info("LLM response finished without executing a tool.")
-                print("===4")
+                logger.info("LLM response finished without executing a tool.")                
                 # Append any remaining assistant buffer to history if it wasn't followed by a tool
                 if assistant_buffer:
+                    logger.info(f"Appending assistant buffer to history: {len(assistant_buffer)} chars")
                     last_message = conversations[-1]
                     if last_message["role"] != "assistant":
+                        logger.info("Adding new assistant message")
                         conversations.append(
                             {"role": "assistant", "content": assistant_buffer})
                         self.conversation_manager.add_assistant_message(
                             assistant_buffer)
                     elif last_message["role"] == "assistant":
+                        logger.info("Appending to existing assistant message")
                         last_message["content"] += assistant_buffer
                         self.conversation_manager.append_to_last_message(assistant_buffer)                        
                 # If the loop ends without AttemptCompletion, it means the LLM finished talking
                 # without signaling completion. We might just stop or yield a final message.
                 # Let's assume it stops here.
+                logger.info("No tool executed and LLM finished. Breaking out of main loop.")
                 break
 
-        logger.info("AgenticEdit analyze loop finished.")
+        logger.info(f"AgenticEdit analyze loop finished after {iteration_count} iterations.")
 
     def stream_and_parse_llm_response(
         self, generator: Generator[Tuple[str, Any], None, None], meta_holder: byzerllm.MetaHolder
