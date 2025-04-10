@@ -1,7 +1,7 @@
 import subprocess
 import os
 from typing import Dict, Any, Optional
-from autocoder.common.run_cmd import run_cmd
+from autocoder.common.run_cmd import run_cmd_subprocess
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import ExecuteCommandTool, ToolResult # Import ToolResult from types
 from autocoder.common import shells
@@ -42,7 +42,7 @@ class ExecuteCommandToolResolver(BaseToolResolver):
         printer.print_str_in_terminal(f"Executing command: {command} in {os.path.abspath(source_dir)}")
         try:            
             # 使用封装的run_cmd方法执行命令，兼容交互/非交互场景
-            exit_code, output = run_cmd(command, verbose=True, cwd=source_dir)
+            exit_code, output = run_cmd_subprocess(command, verbose=True, cwd=source_dir)
 
             logger.info(f"Command executed: {command}")
             logger.info(f"Return Code: {exit_code}")
