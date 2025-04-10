@@ -204,7 +204,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             current_files.add(file_path)
             # 如果文件曾经解析失败，跳过本次增量更新
             if file_path in self.failed_files:
-                logger.info(f"文件 {file_path} 之前解析失败，跳过此次更新")
+                # logger.info(f"文件 {file_path} 之前解析失败，跳过此次更新")
                 continue
             # 变更检测
             if (

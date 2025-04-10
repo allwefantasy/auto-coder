@@ -92,8 +92,7 @@ class MultiRoundStrategy(QAConversationStrategy):
         {% endfor %}
         </documents>
 
-        ====
-        {% endif %}
+        ====        
 
         INSTRUCTIONS
 
@@ -214,8 +213,7 @@ class SingleRoundStrategy(QAConversationStrategy):
         {% endfor %}
         </documents>
 
-        ====
-        {% endif %}
+        ====        
 
         USER CONVERSATION HISTORY
 
@@ -295,4 +293,4 @@ def get_qa_strategy(args: AutoCoderArgs) -> QAConversationStrategy:
     if strategy_name not in strategies:
         raise ValueError(f"Unknown strategy: {strategy_name}. Available strategies: {list(strategies.keys())}")
 
-    return strategies[strategy_name]()
+    return strategies[strategy_name](args)
