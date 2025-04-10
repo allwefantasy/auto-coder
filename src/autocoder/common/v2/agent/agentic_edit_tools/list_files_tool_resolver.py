@@ -6,7 +6,7 @@ from loguru import logger
 import typing
 from autocoder.common import AutoCoderArgs
 
-from autocoder.common.v2.agent.ignore_utils import load_ignore_spec, should_ignore, DEFAULT_IGNORED_DIRS
+from autocoder.ignorefiles.ignore_file_utils import should_ignore
 
 if typing.TYPE_CHECKING:
     from autocoder.common.v2.agent.agentic_edit import AgenticEdit
@@ -24,9 +24,6 @@ class ListFilesToolResolver(BaseToolResolver):
         source_dir = self.args.source_dir or "."
         absolute_source_dir = os.path.abspath(source_dir)
         absolute_list_path = os.path.abspath(os.path.join(source_dir, list_path_str))
-
-        # Load ignore spec from .autocoderignore if exists
-        ignore_spec = load_ignore_spec(absolute_source_dir)
 
         # Security check: Allow listing outside source_dir IF the original path is outside?
         is_outside_source = not absolute_list_path.startswith(absolute_source_dir)
@@ -59,10 +56,10 @@ class ListFilesToolResolver(BaseToolResolver):
                 if recursive:
                     for root, dirs, files in os.walk(base_dir):
                         # Modify dirs in-place to skip ignored dirs early
-                        dirs[:] = [d for d in dirs if not should_ignore(os.path.join(root, d), ignore_spec, DEFAULT_IGNORED_DIRS, absolute_source_dir)]
+                        dirs[:] = [d for d in dirs if not should_ignore(os.path.join(root, d))]
                         for name in files:
                             full_path = os.path.join(root, name)
-                            if should_ignore(full_path, ignore_spec, DEFAULT_IGNORED_DIRS, absolute_source_dir):
+                            if should_ignore(full_path):
                                 continue
                             display_path = os.path.relpath(full_path, source_dir) if not is_outside_source else full_path
                             result.add(display_path)
@@ -73,7 +70,7 @@ class ListFilesToolResolver(BaseToolResolver):
                 else:
                     for item in os.listdir(base_dir):
                         full_path = os.path.join(base_dir, item)
-                        if should_ignore(full_path, ignore_spec, DEFAULT_IGNORED_DIRS, absolute_source_dir):
+                        if should_ignore(full_path):
                             continue
                         display_path = os.path.relpath(full_path, source_dir) if not is_outside_source else full_path
                         if os.path.isdir(full_path):

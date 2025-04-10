@@ -9,7 +9,7 @@ from loguru import logger
 from autocoder.common import AutoCoderArgs
 import typing
 
-from autocoder.common.v2.agent.ignore_utils import load_ignore_spec, should_ignore, DEFAULT_IGNORED_DIRS
+from autocoder.ignorefiles.ignore_file_utils import should_ignore
 
 if typing.TYPE_CHECKING:
     from autocoder.common.v2.agent.agentic_edit import AgenticEdit  
@@ -28,9 +28,6 @@ class SearchFilesToolResolver(BaseToolResolver):
         source_dir = self.args.source_dir or "."
         absolute_source_dir = os.path.abspath(source_dir)
         absolute_search_path = os.path.abspath(os.path.join(source_dir, search_path_str))
-
-        # Load ignore spec from .autocoderignore if exists
-        ignore_spec = load_ignore_spec(absolute_source_dir)
 
         # Security check
         if not absolute_search_path.startswith(absolute_source_dir):
@@ -65,7 +62,7 @@ class SearchFilesToolResolver(BaseToolResolver):
 
             for filepath in glob.glob(search_glob_pattern, recursive=True):
                 abs_path = os.path.abspath(filepath)
-                if should_ignore(abs_path, ignore_spec, DEFAULT_IGNORED_DIRS, absolute_source_dir):
+                if should_ignore(abs_path):
                     continue
 
                 if os.path.isfile(filepath):
