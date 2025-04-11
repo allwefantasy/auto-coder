@@ -71,7 +71,20 @@ default_models_list = [
         "output_price": 0.0,
         "average_speed": 0.0,
         "max_output_tokens": 8096*2
-    },    
+    },
+    {
+        "name": "openrouter/optimus-alpha",
+        "description": "",
+        "model_name": "openrouter/optimus-alpha",
+        "model_type": "saas/openai",
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key_path": "",
+        "is_reasoning": False,
+        "input_price": 0.0,
+        "output_price": 0.0,
+        "average_speed": 0.0,
+        "max_output_tokens": 8096*2
+    },     
     {
         "name": "openrouter/google/gemini-2.5-pro-preview-03-25",
         "description": "",

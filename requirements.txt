@@ -86,5 +86,6 @@ pydub
 youtube-transcript-api
 SpeechRecognition
 pathvalidate
+pexpect
 mcp ; python_version >= '3.10'
 setuptools
