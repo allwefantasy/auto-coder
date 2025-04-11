@@ -1177,6 +1177,8 @@ Below are some files the user is focused on, and the content is up to date. Thes
                 # If no event was processed in this iteration, break inner loop
                 if not found_event:
                     break
+        
+        yield TokenUsageEvent(usage=meta_holder.meta)        
 
         # After generator exhausted, yield any remaining content
         if in_thinking_block:
@@ -1440,6 +1442,37 @@ Below are some files the user is focused on, and the content is up to date. Thes
             self.apply_pre_changes()
             event_stream = self.analyze(request)
             for event in event_stream:
+                if isinstance(event, TokenUsageEvent):
+                    last_meta: SingleOutputMeta = event.usage
+                    # Get model info for pricing
+                    from autocoder.utils import llms as llm_utils
+                    model_name = ",".join(llm_utils.get_llm_names(self.llm))
+                    model_info = llm_utils.get_model_info(
+                        model_name, self.args.product_mode) or {}
+                    input_price = model_info.get(
+                        "input_price", 0.0) if model_info else 0.0
+                    output_price = model_info.get(
+                        "output_price", 0.0) if model_info else 0.0
+
+                    # Calculate costs
+                    input_cost = (last_meta.input_tokens_count *
+                                  input_price) / 1000000  # Convert to millions
+                    # Convert to millions
+                    output_cost = (
+                        last_meta.generated_tokens_count * output_price) / 1000000
+
+                    self.printer.print_in_terminal(
+                            "code_generation_complete",
+                            duration=0.0,
+                            input_tokens=last_meta.input_tokens_count,
+                            output_tokens=last_meta.generated_tokens_count,
+                            input_cost=input_cost,
+                            output_cost=output_cost,
+                            speed=0.0,
+                            model_names=model_name,
+                            sampling_count=1
+                        )
+                    
                 if isinstance(event, LLMThinkingEvent):
                     # Render thinking within a less prominent style, maybe grey?
                     console.print(f"[grey50]{event.text}[/grey50]", end="")

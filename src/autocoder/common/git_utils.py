@@ -64,7 +64,7 @@ def commit_changes(repo_path: str, message: str) -> CommitResult:
     try:
         repo.git.add(all=True)
         if repo.is_dirty():
-            commit = repo.index.commit(message)
+            commit = repo.index.commit(message,skip_hooks=True)
             result = CommitResult(
                 success=True,
                 commit_message=message,
