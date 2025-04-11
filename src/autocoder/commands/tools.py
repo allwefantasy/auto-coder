@@ -634,21 +634,12 @@ class AutoCommandTools:
         for item in index_items:
             symbols = extract_symbols(item.symbols)
             for symbol_info in symbols:
-                # 确保symbol_info是对象而不是元组
-                if hasattr(symbol_info, 'name'):
-                    # 进行精确匹配和模糊匹配
-                    if (symbol_info.name == symbol or
-                            symbol.lower() in symbol_info.name.lower()):
-                        # 检查是否已经添加过该文件路径
-                        if hasattr(symbol_info, 'module_name') and symbol_info.module_name not in result:
-                            result.append(symbol_info.module_name)
-                # 处理symbol_info是元组的情况
-                elif isinstance(symbol_info, tuple) and len(symbol_info) >= 2:
-                    name = symbol_info[0]
-                    module_name = symbol_info[1] if len(symbol_info) > 1 else ""
-                    if (name == symbol or symbol.lower() in name.lower()):
-                        if module_name and module_name not in result:
-                            result.append(module_name)
+                # 进行精确匹配和模糊匹配
+                if (symbol_info.name == symbol or
+                        symbol.lower() in symbol_info.name.lower()):
+                    # 检查是否已经添加过该文件路径
+                    if symbol_info.module_name not in result:
+                        result.append(symbol_info.module_name)
 
         # 生成以逗号分隔的文件路径列表
         file_paths = ",".join(result)
