@@ -13,7 +13,7 @@ from pathlib import Path
 
 # 尝试导入 AutoCoderRulesManager
 try:
-    from autocoder.rulefiles.autocoderrules_utils import (
+    from autocoder.common.rulefiles.autocoderrules_utils import (
         get_all_rules,
         get_rule_content,
         get_rules_by_tag,

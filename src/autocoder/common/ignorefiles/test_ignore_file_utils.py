@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from src.autocoder.ignorefiles import ignore_file_utils
+from src.autocoder.common.ignorefiles import ignore_file_utils
 
 @pytest.fixture(autouse=True)
 def cleanup_ignore_manager(monkeypatch):
