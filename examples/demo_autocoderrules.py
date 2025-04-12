@@ -22,9 +22,12 @@
 #
 # 示例代码：
 
-from autocoder.common.rulefiles import get_rules
+from autocoder.common.file_monitor.monitor import FileMonitor
+from autocoder.common.rulefiles.autocoderrules_utils import get_rules
 
 if __name__ == "__main__":
+    monitor = FileMonitor(".")
+    monitor.start()
     rules = get_rules()  # 获取所有规则文件内容，返回 {文件路径: 文件内容} 字典
     for path, content in rules.items():
         print(f"规则文件: {path}")

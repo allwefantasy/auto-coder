@@ -7,13 +7,9 @@ AutoCoder 规则文件管理模块
 """
 
 from .autocoderrules_utils import (
-    get_all_rules,
-    get_rule_content,
-    get_rules_by_tag,
+    get_rules,
 )
 
 __all__ = [
-    'get_all_rules',
-    'get_rule_content',
-    'get_rules_by_tag',
+    'get_rules',
 ]

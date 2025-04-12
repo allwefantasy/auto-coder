@@ -4,13 +4,14 @@ from pathlib import Path
 from threading import Lock
 import threading
 from typing import Dict, List, Optional
+from loguru import logger
 
 # 尝试导入 FileMonitor
 try:
     from autocoder.common.file_monitor.monitor import FileMonitor, Change
 except ImportError:
     # 如果导入失败，提供一个空的实现
-    print("警告: 无法导入 FileMonitor，规则文件变更监控将不可用")
+    logger.warning("警告: 无法导入 FileMonitor，规则文件变更监控将不可用")
     FileMonitor = None
     Change = None
 
@@ -74,11 +75,11 @@ class AutocoderRulesManager:
                 break
         
         if not found_dir:
-            print("未找到规则目录")
+            logger.info("未找到规则目录")
             return
         
         self._rules_dir = found_dir
-        print(f"使用规则目录: {self._rules_dir}")
+        logger.info(f"使用规则目录: {self._rules_dir}")
         
         # 加载目录中的所有 .md 文件
         try:
@@ -89,12 +90,12 @@ class AutocoderRulesManager:
                         with open(fpath, "r", encoding="utf-8") as f:
                             content = f.read()
                             self._rules[fpath] = content
-                            print(f"已加载规则文件: {fpath}")
+                            logger.info(f"已加载规则文件: {fpath}")
                     except Exception as e:
-                        print(f"加载规则文件 {fpath} 时出错: {e}")
+                        logger.info(f"加载规则文件 {fpath} 时出错: {e}")
                         continue
         except Exception as e:
-            print(f"读取规则目录 {self._rules_dir} 时出错: {e}")
+            logger.info(f"读取规则目录 {self._rules_dir} 时出错: {e}")
 
     def _setup_file_monitor(self):
         """设置文件监控，当规则文件或目录变化时重新加载规则"""

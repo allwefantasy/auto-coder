@@ -31,7 +31,7 @@ class FileMonitor:
     _instance = None
     _instance_lock = threading.Lock()
 
-    def __new__(cls, root_dir: str = None):
+    def __new__(cls, root_dir: Optional[str] = None):
         """
         实现单例模式。确保只创建一个 FileMonitor 实例。
         
