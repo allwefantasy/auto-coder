@@ -76,11 +76,7 @@ class IgnoreFileManager:
             
             # 注册忽略文件的回调
             self._file_monitor.register(self._ignore_file_path, self._on_ignore_file_changed)
-            
-            # 启动监控
-            if not self._file_monitor.is_running():
-                self._file_monitor.start()
-                print(f"已启动对忽略文件的监控: {self._ignore_file_path}")
+                        
         except Exception as e:
             print(f"设置忽略文件监控时出错: {e}")
 
