@@ -23,14 +23,42 @@ class FileMonitor:
     使用 watchfiles 库监控指定根目录下文件或目录的变化。
 
     允许动态注册特定路径的回调函数，当这些路径发生变化时触发。
+    
+    此类实现了单例模式，确保全局只有一个监控实例。
     """
+    
+    # 单例实例
+    _instance = None
+    _instance_lock = threading.Lock()
+
+    def __new__(cls, root_dir: str = None):
+        """
+        实现单例模式。确保只创建一个 FileMonitor 实例。
+        
+        :param root_dir: 需要监控的根目录。如果已存在实例且提供了新的根目录，不会更改现有实例的根目录。
+        :return: FileMonitor 的单例实例
+        """
+        with cls._instance_lock:
+            if cls._instance is None:
+                if root_dir is None:
+                    raise ValueError("First initialization of FileMonitor requires a valid root_dir")
+                cls._instance = super(FileMonitor, cls).__new__(cls)
+                cls._instance._initialized = False  # 标记是否已初始化
+            elif root_dir is not None and cls._instance.root_dir != os.path.abspath(root_dir):
+                print(f"Warning: FileMonitor is already initialized with root directory '{cls._instance.root_dir}'.")
+                print(f"New root directory '{root_dir}' will be ignored.")
+        return cls._instance
 
     def __init__(self, root_dir: str):
         """
-        初始化 FileMonitor。
+        初始化 FileMonitor。由于是单例，只有首次创建实例时才会执行初始化。
 
         :param root_dir: 需要监控的根目录。watchfiles 将监控此目录及其所有子目录。
         """
+        # 如果已经初始化过，则跳过
+        if hasattr(self, '_initialized') and self._initialized:
+            return
+            
         if watch is None:
              raise ImportError("watchfiles is not installed or could not be imported.")
 
@@ -47,7 +75,30 @@ class FileMonitor:
         self._monitor_thread: Optional[threading.Thread] = None
         self._watch_stop_event = threading.Event() # watchfiles 停止事件
 
-        print(f"FileMonitor initialized for root directory: {self.root_dir}")
+        self._initialized = True
+        print(f"FileMonitor singleton initialized for root directory: {self.root_dir}")
+
+    @classmethod
+    def get_instance(cls) -> Optional['FileMonitor']:
+        """
+        获取 FileMonitor 的单例实例。
+        
+        :return: FileMonitor 实例，如果尚未初始化则返回 None
+        """
+        return cls._instance
+
+    @classmethod
+    def reset_instance(cls):
+        """
+        重置单例实例。
+        如果当前实例正在运行，则先停止它。
+        """
+        with cls._instance_lock:
+            if cls._instance is not None:
+                if cls._instance.is_running():
+                    cls._instance.stop()
+                cls._instance = None
+                print("FileMonitor singleton has been reset.")
 
     def register(self, path: Union[str, Path], callback: Callable[[Change, str], None]):
         """

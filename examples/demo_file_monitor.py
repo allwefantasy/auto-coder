@@ -28,12 +28,21 @@ except ImportError as e:
     print("请确保项目根目录在 PYTHONPATH 中，或者调整导入路径。")
     # 提供一个假的 FileMonitor 以便脚本至少能运行（但监控无效）
     class FileMonitor:
+        _instance = None
+        def __new__(cls, *args, **kwargs):
+            if cls._instance is None:
+                cls._instance = super(FileMonitor, cls).__new__(cls)
+            return cls._instance
         def __init__(self, root_dir: str): print("警告：FileMonitor 未正确导入，监控将无法工作。")
         def register(self, path, callback): pass
         def unregister(self, path, callback=None): pass
         def start(self): pass
         def stop(self): pass
         def is_running(self): return False
+        @classmethod
+        def get_instance(cls): return cls._instance
+        @classmethod
+        def reset_instance(cls): cls._instance = None
 
 
 # --- 示例用法 ---
@@ -81,18 +90,36 @@ if __name__ == '__main__':
         def any_change_callback(change_type: Change, changed_path: str):
             print(f"CALLBACK [Any Change in Root]: Change '{change_type.name}' detected in '{changed_path}' (triggered by root dir watch)")
 
-
-        # 初始化监控器
-        monitor = FileMonitor(root_dir=temp_root_dir)
+        # 演示单例模式前清理任何可能存在的实例
+        print("\n--- 重置 FileMonitor 单例，确保从一个干净的状态开始 ---")
+        FileMonitor.reset_instance()
+        
+        # 初始化监控器 - 第一个实例将成为唯一的实例
+        print("\n--- 创建第一个 FileMonitor 实例 ---")
+        monitor1 = FileMonitor(root_dir=temp_root_dir)
 
         # 注册回调
-        monitor.register(file_in_root, root_file_callback)
-        monitor.register(sub_dir, subdir_callback_1)
-        monitor.register(sub_dir, subdir_callback_2) # 同一个目录注册第二个回调
-        monitor.register(temp_root_dir, any_change_callback) # 监控根目录下的任何变化
+        monitor1.register(file_in_root, root_file_callback)
+        monitor1.register(sub_dir, subdir_callback_1)
+        
+        # 演示单例模式 - 第二个实例实际上是同一个对象
+        print("\n--- 尝试创建第二个 FileMonitor 实例（会返回相同的单例） ---")
+        monitor2 = FileMonitor(root_dir=os.path.join(temp_root_dir, "另一个目录"))  # 不同的目录，但会被忽略
+        
+        # 验证这是同一个实例
+        print(f"monitor1 与 monitor2 是同一个对象: {monitor1 is monitor2}")
+        
+        # 使用第二个引用来添加更多回调
+        monitor2.register(sub_dir, subdir_callback_2)  # 同一个目录注册第二个回调
+        monitor2.register(temp_root_dir, any_change_callback)  # 监控根目录下的任何变化
+
+        # 通过类方法获取实例
+        print("\n--- 通过类方法获取实例 ---")
+        monitor3 = FileMonitor.get_instance()
+        print(f"通过 get_instance() 获取的实例与 monitor1 相同: {monitor1 is monitor3}")
 
         # 启动监控
-        monitor.start()
+        monitor1.start()  # 使用任何实例引用都可以
         print("Monitor started. Waiting for changes...")
         time.sleep(1) # 给点时间让监控器稳定
 
@@ -119,7 +146,7 @@ if __name__ == '__main__':
             time.sleep(1.5)
 
             print("\n--- Unregistering one subdir callback ---")
-            monitor.unregister(sub_dir, subdir_callback_1)
+            monitor3.unregister(sub_dir, subdir_callback_1)  # 使用第三个引用来取消注册
             time.sleep(0.5)
 
             print("\n--- Modifying file in subdir again (only one subdir callback should fire) ---")
@@ -135,8 +162,10 @@ if __name__ == '__main__':
         finally:
             # 停止监控
             print("\n--- Stopping monitor ---")
-            monitor.stop()
-
+            # 可以使用任何实例引用或类方法来停止
+            print("使用 monitor2 停止监控...")
+            monitor2.stop()
+            
             # 清理临时文件和目录
             print("--- Cleaning up temporary directory ---")
             # shutil.rmtree(temp_root_dir, ignore_errors=True) # ignore_errors 以防万一
@@ -155,6 +184,8 @@ if __name__ == '__main__':
                         print(f"Error: Could not remove temporary directory {temp_root_dir} after multiple attempts.")
                     time.sleep(1)
 
-
-            print(f"Is monitor running? {monitor.is_running()}")
+            # 最后，重置单例
+            print("\n--- 重置 FileMonitor 单例 ---")
+            FileMonitor.reset_instance()
+            print(f"监控器实例是否已重置? {FileMonitor.get_instance() is None}")
             print("Example finished.")
