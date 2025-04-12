@@ -31,103 +31,6 @@ from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
 from autocoder.run_context import get_run_context
 from autocoder.common.stream_out_type import AutoCommandStreamOutType
-class CommandMessage(BaseModel):
-    role: str
-    content: str
-
-
-class ExtendedCommandMessage(BaseModel):
-    message: CommandMessage
-    timestamp: str
-
-
-class CommandConversation(BaseModel):
-    history: Dict[str, ExtendedCommandMessage]
-    current_conversation: List[ExtendedCommandMessage]
-
-
-def load_memory_file(args: AutoCoderArgs) -> CommandConversation:
-    """Load command conversations from memory file"""
-
-    memory_dir = os.path.join(".auto-coder", "memory")
-    file_path = os.path.join(memory_dir, "command_chat_history.json")
-    if os.path.exists(file_path):
-        with open(file_path, "r", encoding="utf-8") as f:
-            try:
-                conversation = CommandConversation.model_validate_json(
-                    f.read())
-                return conversation
-            except Exception:
-                return CommandConversation(history={}, current_conversation=[])
-    return CommandConversation(history={}, current_conversation=[])
-
-
-class TimeBasedStrategy:
-    def __init__(self, max_idle_time=3600*24):  # 24 hour in seconds
-        self.max_idle_time = max_idle_time
-
-    def should_archive(self, last_message_time):
-        """Check if the conversation should be archived based on last message time"""
-        current_time = time.time()
-        return current_time - last_message_time > self.max_idle_time
-
-
-def save_to_memory_file(query: str, response: str):
-    """Save command conversation to memory file using CommandConversation structure"""
-    memory_dir = os.path.join(".auto-coder", "memory")
-    os.makedirs(memory_dir, exist_ok=True)
-    file_path = os.path.join(memory_dir, "command_chat_history.json")
-
-    # Initialize time-based strategy
-    time_strategy = TimeBasedStrategy()
-
-    # Create new message objects
-    current_time = time.time()
-    user_msg = CommandMessage(role="user", content=query)
-    assistant_msg = CommandMessage(role="assistant", content=response)
-
-    extended_user_msg = ExtendedCommandMessage(
-        message=user_msg,
-        timestamp=str(int(current_time))
-    )
-    extended_assistant_msg = ExtendedCommandMessage(
-        message=assistant_msg,
-        timestamp=str(int(current_time))
-    )
-
-    # Load existing conversation or create new
-    if os.path.exists(file_path):
-        with open(file_path, "r", encoding="utf-8") as f:
-            try:
-                existing_conv = CommandConversation.model_validate_json(
-                    f.read())
-                # Check if we should archive current conversation
-                if existing_conv.current_conversation:
-                    last_message_time = float(
-                        existing_conv.current_conversation[-1].timestamp)
-                    if time_strategy.should_archive(last_message_time):
-                        # Move current conversation to history
-                        timestamp = str(int(last_message_time))
-                        existing_conv.history[timestamp] = existing_conv.current_conversation
-                        existing_conv.current_conversation = []
-            except Exception:
-                existing_conv = CommandConversation(
-                    history={},
-                    current_conversation=[]
-                )
-    else:
-        existing_conv = CommandConversation(
-            history={},
-            current_conversation=[]
-        )
-
-    existing_conv.current_conversation.append(extended_user_msg)
-    existing_conv.current_conversation.append(extended_assistant_msg)
-    # Save updated conversation
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(existing_conv.model_dump_json(indent=2))
-
-
 class CommandSuggestion(BaseModel):
     command: str
     parameters: Dict[str, Any]
@@ -203,12 +106,7 @@ class CommandAutoTuner:
             self.mcp_server_info = mcp_server_info_response.result
         except Exception as e:
             logger.error(f"Error getting MCP server info: {str(e)}")
-            self.mcp_server_info = ""
-
-    def get_conversations(self) -> List[CommandMessage]:
-        """Get conversation history from memory file"""
-        conversation = load_memory_file(args=self.args)
-        return [command_message.message for command_message in conversation.current_conversation]
+            self.mcp_server_info = ""    
 
     @byzerllm.prompt()
     def _analyze(self, request: AutoCommandRequest) -> str:
@@ -326,7 +224,7 @@ class CommandAutoTuner:
         return {
             "user_input": request.user_input,
             "current_files": self.memory_config.memory["current_files"]["files"],
-            "conversation_history": self.get_conversations(),
+            "conversation_history": [],
             "available_commands": self._command_readme.prompt(),
             "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),
             "env_info": env_info,
@@ -515,12 +413,7 @@ class CommandAutoTuner:
         conversations.append({"role": "assistant", "content": result})
         # 提取 JSON 并转换为 AutoCommandResponse
         response = to_model(result, AutoCommandResponse)
-
-        # 保存对话记录
-        save_to_memory_file(
-            query=request.user_input,
-            response=response.model_dump_json(indent=2)
-        )
+        
         result_manager = ResultManager()
 
         while True:
@@ -678,12 +571,7 @@ class CommandAutoTuner:
                 # 提取 JSON 并转换为 AutoCommandResponse
                 response = to_model(result, AutoCommandResponse)
                 if not response or not response.suggestions:
-                    break
-
-                save_to_memory_file(
-                    query=request.user_input,
-                    response=response.model_dump_json(indent=2)
-                )                                               
+                    break                                                             
             else:
                 temp_content = printer.get_message_from_key_with_format("auto_command_break",  command=command)
                 printer.print_str_in_terminal(temp_content,style="yellow")
@@ -1522,13 +1410,7 @@ class CommandAutoTuner:
             error_msg = str(e)
             self.printer.print_in_terminal(
                 "auto_command_failed", style="red", command=command, error=error_msg)
-
-            # Save failed command execution
-            save_to_memory_file(
-                query=f"Command: {command} Parameters: {json.dumps(parameters) if parameters else 'None'}",
-                response=f"Command execution failed: {error_msg}"
-            )
-
+            
             self.result_manager = ResultManager()
             result = f"command {command} with parameters {parameters} execution failed with error {error_msg}"
             self.result_manager.add_result(content=result, meta={
