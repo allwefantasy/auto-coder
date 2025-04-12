@@ -63,6 +63,7 @@ from autocoder import command_parser as CommandParser
 from loguru import logger as global_logger
 from autocoder.utils.project_structure import EnhancedFileAnalyzer
 from autocoder.common import SourceCodeList,SourceCode
+from autocoder.common.file_monitor import FileMonitor
 
 
 ## 对外API，用于第三方集成 auto-coder 使用。
@@ -95,6 +96,7 @@ memory = {
 }
 
 project_root = os.getcwd()
+
 
 base_persist_dir = os.path.join(project_root,".auto-coder", "plugins", "chat-auto-coder")
 
@@ -254,6 +256,12 @@ def configure_logger():
     )
 
 configure_logger()
+
+try:
+    FileMonitor(project_root).start()
+except Exception as e:
+    global_logger.error(f"Failed to start file monitor: {e}")
+    global_logger.exception(e)
 
 def initialize_system(args:InitializeSystemRequest):
     from autocoder.utils.model_provider_selector import ModelProviderSelector

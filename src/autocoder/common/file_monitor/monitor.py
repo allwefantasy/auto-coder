@@ -162,7 +162,7 @@ class FileMonitor:
                     continue
 
                 # changes 是一个集合: {(Change.added, '/path/to/file'), (Change.modified, '/path/to/another')}
-                print(f"Detected changes: {changes}")
+                # print(f"Detected changes: {changes}")
                 triggered_callbacks: List[Tuple[Callable, Change, str]] = []
 
                 with self._callback_lock:
@@ -188,7 +188,7 @@ class FileMonitor:
 
                 # 在锁外部执行回调，避免阻塞监控循环
                 if triggered_callbacks:
-                    print(f"Triggering {len(triggered_callbacks)} callbacks...")
+                    # print(f"Triggering {len(triggered_callbacks)} callbacks...")
                     for cb, ct, cp in triggered_callbacks:
                         try:
                             cb(ct, cp)
