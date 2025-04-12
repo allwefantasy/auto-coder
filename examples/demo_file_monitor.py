@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 import os
 import threading
@@ -10,7 +9,7 @@ from typing import Callable, Optional
 
 # 尝试导入 watchfiles，如果失败则提示用户安装
 try:
-    from watchfiles import watch, Change, StopEvent
+    from watchfiles import watch, Change
 except ImportError:
     print("错误：需要安装 'watchfiles' 库。请运行: pip install watchfiles")
     # 可以选择抛出异常或退出，这里仅打印信息
@@ -18,7 +17,6 @@ except ImportError:
     # 或者提供一个空的实现或禁用该功能
     Change = None # type: ignore
     watch = None # type: ignore
-    StopEvent = None # type: ignore
 
 # 从原始模块导入 FileMonitor 类
 # 注意：确保 PYTHONPATH 包含项目根目录，或者使用相对导入（如果结构允许）

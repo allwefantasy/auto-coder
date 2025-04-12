@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 import os
 import threading
@@ -9,7 +8,7 @@ from typing import Callable, Dict, List, Set, Tuple, Union, Optional
 
 # 尝试导入 watchfiles，如果失败则提示用户安装
 try:
-    from watchfiles import watch, Change, StopEvent
+    from watchfiles import watch, Change
 except ImportError:
     print("错误：需要安装 'watchfiles' 库。请运行: pip install watchfiles")
     # 可以选择抛出异常或退出，这里仅打印信息
@@ -17,7 +16,6 @@ except ImportError:
     # 或者提供一个空的实现或禁用该功能
     Change = None # type: ignore
     watch = None # type: ignore
-    StopEvent = None # type: ignore
 
 
 class FileMonitor:
@@ -47,7 +45,7 @@ class FileMonitor:
 
         self._stop_event = threading.Event() # 用于通知监控循环停止
         self._monitor_thread: Optional[threading.Thread] = None
-        self._watch_stop_event = StopEvent() # watchfiles 内部停止事件
+        self._watch_stop_event = threading.Event() # watchfiles 停止事件
 
         print(f"FileMonitor initialized for root directory: {self.root_dir}")
 
