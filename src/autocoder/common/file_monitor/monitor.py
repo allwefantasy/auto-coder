@@ -5,9 +5,7 @@ import time
 from collections import defaultdict
 from pathlib import Path
 from typing import Callable, Dict, List, Set, Tuple, Union, Optional
-import logging
-
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 # 尝试导入 watchfiles，如果失败则提示用户安装
 try:
