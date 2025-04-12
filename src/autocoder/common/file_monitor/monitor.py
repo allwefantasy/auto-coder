@@ -5,12 +5,15 @@ import time
 from collections import defaultdict
 from pathlib import Path
 from typing import Callable, Dict, List, Set, Tuple, Union, Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 尝试导入 watchfiles，如果失败则提示用户安装
 try:
     from watchfiles import watch, Change
 except ImportError:
-    print("错误：需要安装 'watchfiles' 库。请运行: pip install watchfiles")
+    logger.error("错误：需要安装 'watchfiles' 库。请运行: pip install watchfiles")
     # 可以选择抛出异常或退出，这里仅打印信息
     # raise ImportError("watchfiles is required for FileMonitor")
     # 或者提供一个空的实现或禁用该功能
@@ -45,8 +48,8 @@ class FileMonitor:
                 cls._instance = super(FileMonitor, cls).__new__(cls)
                 cls._instance._initialized = False  # 标记是否已初始化
             elif root_dir is not None and cls._instance.root_dir != os.path.abspath(root_dir):
-                print(f"Warning: FileMonitor is already initialized with root directory '{cls._instance.root_dir}'.")
-                print(f"New root directory '{root_dir}' will be ignored.")
+                logger.warning(f"FileMonitor is already initialized with root directory '{cls._instance.root_dir}'.")
+                logger.warning(f"New root directory '{root_dir}' will be ignored.")
         return cls._instance
 
     def __init__(self, root_dir: str):
@@ -76,7 +79,7 @@ class FileMonitor:
         self._watch_stop_event = threading.Event() # watchfiles 停止事件
 
         self._initialized = True
-        print(f"FileMonitor singleton initialized for root directory: {self.root_dir}")
+        logger.info(f"FileMonitor singleton initialized for root directory: {self.root_dir}")
 
     @classmethod
     def get_instance(cls) -> Optional['FileMonitor']:
@@ -98,7 +101,7 @@ class FileMonitor:
                 if cls._instance.is_running():
                     cls._instance.stop()
                 cls._instance = None
-                print("FileMonitor singleton has been reset.")
+                logger.info("FileMonitor singleton has been reset.")
 
     def register(self, path: Union[str, Path], callback: Callable[[Change, str], None]):
         """
@@ -115,12 +118,12 @@ class FileMonitor:
 
         # 检查路径是否在 root_dir 内部
         if not abs_path.startswith(self.root_dir):
-            print(f"Warning: Path '{abs_path}' is outside the monitored root directory '{self.root_dir}' and cannot be registered.")
+            logger.warning(f"Path '{abs_path}' is outside the monitored root directory '{self.root_dir}' and cannot be registered.")
             return
 
         with self._callback_lock:
             self._callbacks[abs_path].append(callback)
-            print(f"Registered callback for path: {abs_path}")
+            logger.info(f"Registered callback for path: {abs_path}")
 
     def unregister(self, path: Union[str, Path], callback: Optional[Callable[[Change, str], None]] = None):
         """
@@ -135,34 +138,33 @@ class FileMonitor:
                 if callback:
                     try:
                         self._callbacks[abs_path].remove(callback)
-                        print(f"Unregistered specific callback for path: {abs_path}")
+                        logger.info(f"Unregistered specific callback for path: {abs_path}")
                         if not self._callbacks[abs_path]: # 如果列表为空，则删除键
                             del self._callbacks[abs_path]
                     except ValueError:
-                        print(f"Warning: Callback not found for path: {abs_path}")
+                        logger.warning(f"Callback not found for path: {abs_path}")
                 else:
                     del self._callbacks[abs_path]
-                    print(f"Unregistered all callbacks for path: {abs_path}")
+                    logger.info(f"Unregistered all callbacks for path: {abs_path}")
             else:
-                 print(f"Warning: No callbacks registered for path: {abs_path}")
+                 logger.warning(f"No callbacks registered for path: {abs_path}")
 
     def _monitor_loop(self):
         """
         监控线程的主循环，使用 watchfiles.watch。
         """
-        print(f"File monitor loop started for {self.root_dir}...")
+        logger.info(f"File monitor loop started for {self.root_dir}...")
         try:
             # watchfiles.watch 会阻塞直到 stop_event 被设置或发生错误
             for changes in watch(self.root_dir, stop_event=self._watch_stop_event, yield_on_timeout=True):
                 if self._stop_event.is_set(): # 检查外部停止信号
-                    print("External stop signal received.")
+                    logger.info("External stop signal received.")
                     break
 
                 if not changes: # 超时时 changes 可能为空
                     continue
 
                 # changes 是一个集合: {(Change.added, '/path/to/file'), (Change.modified, '/path/to/another')}
-                # print(f"Detected changes: {changes}")
                 triggered_callbacks: List[Tuple[Callable, Change, str]] = []
 
                 with self._callback_lock:
@@ -188,17 +190,16 @@ class FileMonitor:
 
                 # 在锁外部执行回调，避免阻塞监控循环
                 if triggered_callbacks:
-                    # print(f"Triggering {len(triggered_callbacks)} callbacks...")
                     for cb, ct, cp in triggered_callbacks:
                         try:
                             cb(ct, cp)
                         except Exception as e:
-                            print(f"Error executing callback {cb.__name__} for change {ct} on {cp}: {e}")
+                            logger.error(f"Error executing callback {getattr(cb, '__name__', str(cb))} for change {ct} on {cp}: {e}")
 
         except Exception as e:
-            print(f"Error in file monitor loop: {e}")
+            logger.error(f"Error in file monitor loop: {e}")
         finally:
-            print("File monitor loop stopped.")
+            logger.info("File monitor loop stopped.")
 
     def start(self):
         """
@@ -206,25 +207,25 @@ class FileMonitor:
         如果监控已在运行，则不执行任何操作。
         """
         if self._monitor_thread is not None and self._monitor_thread.is_alive():
-            print("Monitor is already running.")
+            logger.info("Monitor is already running.")
             return
 
-        print("Starting file monitor...")
+        logger.info("Starting file monitor...")
         self._stop_event.clear() # 重置外部停止事件
         self._watch_stop_event.clear() # 重置 watchfiles 停止事件
         self._monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
         self._monitor_thread.start()
-        print("File monitor started in background thread.")
+        logger.info("File monitor started in background thread.")
 
     def stop(self):
         """
         停止文件监控线程。
         """
         if self._monitor_thread is None or not self._monitor_thread.is_alive():
-            print("Monitor is not running.")
+            logger.info("Monitor is not running.")
             return
 
-        print("Stopping file monitor...")
+        logger.info("Stopping file monitor...")
         self._stop_event.set() # 设置外部停止标志
         self._watch_stop_event.set() # 触发 watchfiles 内部停止
 
@@ -233,12 +234,12 @@ class FileMonitor:
              # join() 超时是为了防止 watch() 因某些原因卡住导致主线程无限等待
              self._monitor_thread.join(timeout=5.0)
              if self._monitor_thread.is_alive():
-                 print("Warning: Monitor thread did not stop gracefully after 5 seconds.")
+                 logger.warning("Monitor thread did not stop gracefully after 5 seconds.")
              else:
-                 print("Monitor thread joined.")
+                 logger.info("Monitor thread joined.")
 
         self._monitor_thread = None
-        print("File monitor stopped.")
+        logger.info("File monitor stopped.")
 
     def is_running(self) -> bool:
         """
