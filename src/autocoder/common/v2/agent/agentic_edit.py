@@ -119,12 +119,7 @@ class AgenticEdit:
         self.memory_config = memory_config
         self.command_config = command_config  # Note: command_config might be unused now
         self.project_type_analyzer = ProjectTypeAnalyzer(
-            args=args, llm=self.llm)
-
-        self.conversation_manager = AgenticConversation(
-            args, self.conversation_history, conversation_name=conversation_name)
-        # 当前不开启历史记录，所以清空
-        self.conversation_manager.clear_history()
+            args=args, llm=self.llm)        
 
         self.shadow_manager = ShadowManager(
             args.source_dir, args.event_file, args.ignore_clean_shadows)
@@ -780,12 +775,10 @@ Below are some files the user is focused on, and the content is up to date. Thes
             "role":"assistant","content":"Ok"
         })
         
-        logger.info("Adding conversation history")
-        conversations.extend(self.conversation_manager.get_history())        
+        logger.info("Adding conversation history")        
         conversations.append({
             "role": "user", "content": request.user_input
-        })
-        self.conversation_manager.add_user_message(request.user_input)
+        })        
         
         logger.info(
             f"Initial conversation history size: {len(conversations)}")
@@ -843,9 +836,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
                     conversations.append({
                         "role": "assistant",
                         "content": assistant_buffer + tool_xml
-                    })
-                    self.conversation_manager.add_assistant_message(
-                        assistant_buffer + tool_xml)
+                    })                    
                     assistant_buffer = ""  # Reset buffer after tool call
 
                     yield event  # Yield the ToolCallEvent for display
@@ -928,7 +919,6 @@ Below are some files the user is focused on, and the content is up to date. Thes
                         "role": "user",  # Simulating the user providing the tool result
                         "content": error_xml
                     })
-                    self.conversation_manager.add_user_message(error_xml)
                     logger.info(
                         f"Added tool result to conversations for tool {type(tool_obj).__name__}")
                     logger.info(f"Breaking LLM cycle after executing tool: {tool_name}")
@@ -955,12 +945,9 @@ Below are some files the user is focused on, and the content is up to date. Thes
                         logger.info("Adding new assistant message")
                         conversations.append(
                             {"role": "assistant", "content": assistant_buffer})
-                        self.conversation_manager.add_assistant_message(
-                            assistant_buffer)
                     elif last_message["role"] == "assistant":
                         logger.info("Appending to existing assistant message")
                         last_message["content"] += assistant_buffer
-                        self.conversation_manager.append_to_last_message(assistant_buffer)                        
                 # If the loop ends without AttemptCompletion, it means the LLM finished talking
                 # without signaling completion. We might just stop or yield a final message.
                 # Let's assume it stops here.
