@@ -31,6 +31,7 @@ from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
 from autocoder.run_context import get_run_context
 from autocoder.common.stream_out_type import AutoCommandStreamOutType
+from autocoder.common.rulefiles.autocoderrules_utils import get_rules
 class CommandSuggestion(BaseModel):
     command: str
     parameters: Dict[str, Any]
@@ -112,6 +113,8 @@ class CommandAutoTuner:
     def _analyze(self, request: AutoCommandRequest) -> str:
         """
         你是 auto-coder.chat 软件，帮助用户完成编程方面的需求。我们的目标是根据用户输入和当前上下文，组合多个函数来完成用户的需求。
+        
+        ====
 
         ## 当前用户环境信息如下:
         <os_info>
@@ -152,6 +155,8 @@ class CommandAutoTuner:
         {{ current_conf }}
         </current_conf>
 
+        ====
+
         ## 可用函数列表:
         {{ available_commands }}
 
@@ -160,6 +165,8 @@ class CommandAutoTuner:
 
         ## 函数组合说明：        
         {{ command_combination_readme }}
+
+        ====
 
         ## active-context 项目追踪文档系统
         
@@ -177,15 +184,28 @@ class CommandAutoTuner:
         - query: 用户需求
         - urls： 用户提供的上下文文件列表
         - dynamic_urls： auto-coder.chat 自动感知的一些文件列表
-        - add_updated_urls: 这次需求发生变更的文件列表        
-        
+        - add_updated_urls: 这次需求发生变更的文件列表                        
+
         {% if conversation_history %}
+        ====
         ## 历史对话:
         <conversation_history>
         {% for conv in conversation_history %}
         ({{ conv.role }}): {{ conv.content }}
         {% endfor %}
         </conversation_history>
+        {% endif %}
+        
+        {% if rules %}
+        ====
+        
+        用户提供的规则文件，你必须严格遵守。
+        {% for key, value in rules.items() %}
+        <user_rule>
+        ##File: {{ key }}
+        {{ value }}
+        </user_rule>
+        {% endfor %}        
         {% endif %}
 
         ## 用户需求: 
@@ -225,6 +245,7 @@ class CommandAutoTuner:
             "user_input": request.user_input,
             "current_files": self.memory_config.memory["current_files"]["files"],
             "conversation_history": [],
+            "rules": get_rules(),
             "available_commands": self._command_readme.prompt(),
             "current_conf": json.dumps(self.memory_config.memory["conf"], indent=2),
             "env_info": env_info,
