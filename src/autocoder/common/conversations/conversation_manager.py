@@ -289,74 +289,79 @@ class ConversationManager:
         self._save_conversation(conversation)
         return True
     
-    def get_history(self, conv_id: str, max_pairs: int = 20) -> List[Message]:
+    def get_history(self, conv_id: str, max_pairs: int = -1) -> List[Message]:
         """
-        Get the conversation history as pairs of user and assistant messages.
-        
+        Get the conversation history.
+
+        If max_pairs == -1, return all messages as-is (no pairing/merging).
+        If max_pairs != -1, return the latest max_pairs user-assistant pairs,
+        with pairing/merging logic for all conversation types.
+
         Args:
             conv_id: Conversation ID.
-            max_pairs: Maximum number of user-assistant pairs to return.
-            
+            max_pairs: Maximum number of user-assistant pairs to return. 
+                       If -1, returns all messages directly.
+
         Returns:
             List of messages representing the conversation history.
         """
         conversation = self._conversations.get(conv_id)
         if not conversation:
             return []
-            
-        # For agentic_edit conversations, implement special pairing/merging logic
-        if conversation.type == ConversationType.AGENTIC_EDIT:
-            paired_history = []
-            pair_count = 0
-            pending_assistant = None
-            pending_user = None
-            
-            # Traverse history in reverse to collect latest pairs with merging
-            for msg in reversed(conversation.messages):
-                role = msg.role
-                if role == "assistant":
-                    if pending_assistant is None:
-                        pending_assistant = msg
-                    else:
-                        # Merge with previous assistant
-                        prev_content = pending_assistant.content or ""
-                        curr_content = msg.content or ""
-                        merged_content = (curr_content.strip() + "\n" + prev_content.strip()).strip()
-                        pending_assistant.content = merged_content
-                elif role == "user":
-                    if pending_user is None:
-                        pending_user = msg
-                    else:
-                        # Merge with previous user
-                        prev_content = pending_user.content or ""
-                        curr_content = msg.content or ""
-                        merged_content = (curr_content.strip() + "\n" + prev_content.strip()).strip()
-                        pending_user.content = merged_content
-                        
-                    if pending_assistant is not None:
-                        # Have a full pair, insert in order
-                        paired_history.insert(0, pending_user)
-                        paired_history.insert(1, pending_assistant)
-                        pair_count += 1
-                        pending_assistant = None
-                        pending_user = None
-                        if pair_count >= max_pairs:
-                            break
-                    else:
-                        # User without assistant yet, continue accumulating
-                        continue
+
+        if max_pairs == -1:
+            # No pairing/merging, return all messages as-is
+            return conversation.messages
+
+        # Pairing/merging logic for all conversation types when max_pairs != -1
+        paired_history = []
+        pair_count = 0
+        pending_assistant = None
+        pending_user = None
+
+        # Traverse history in reverse to collect latest pairs with merging
+        for msg in reversed(conversation.messages):
+            role = msg.role
+            if role == "assistant":
+                if pending_assistant is None:
+                    pending_assistant = msg
                 else:
-                    # Ignore other roles
+                    # Merge with previous assistant
+                    prev_content = pending_assistant.content or ""
+                    curr_content = msg.content or ""
+                    merged_content = (curr_content.strip() + "\n" + prev_content.strip()).strip()
+                    pending_assistant.content = merged_content
+            elif role == "user":
+                if pending_user is None:
+                    pending_user = msg
+                else:
+                    # Merge with previous user
+                    prev_content = pending_user.content or ""
+                    curr_content = msg.content or ""
+                    merged_content = (curr_content.strip() + "\n" + prev_content.strip()).strip()
+                    pending_user.content = merged_content
+
+                if pending_assistant is not None:
+                    # Have a full pair, insert in order
+                    paired_history.insert(0, pending_user)
+                    paired_history.insert(1, pending_assistant)
+                    pair_count += 1
+                    pending_assistant = None
+                    pending_user = None
+                    if pair_count >= max_pairs:
+                        break
+                else:
+                    # User without assistant yet, continue accumulating
                     continue
-                    
-            # Ensure last message is assistant, drop trailing user if unpaired
-            if paired_history and paired_history[-1].role == "user":
-                paired_history.pop()
-                
-            return paired_history
-        else:
-            # Standard history for other conversation types
-            return conversation.messages[-max_pairs*2:]
+            else:
+                # Ignore other roles
+                continue
+
+        # Ensure last message is assistant, drop trailing user if unpaired
+        if paired_history and paired_history[-1].role == "user":
+            paired_history.pop()
+
+        return paired_history
     
     def get_history_as_dict_list(self, conv_id: str, max_pairs: int = 20) -> List[Dict[str, Any]]:
         """
