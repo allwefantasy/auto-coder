@@ -1,104 +1,159 @@
 
 # -*- coding: utf-8 -*-
 import os
-import time
 import threading
-from typing import Callable, Dict, List, Union, Optional
+import time
+from collections import defaultdict
+from pathlib import Path
+from typing import Callable, Dict, List, Set, Tuple, Union, Optional
+
+# 尝试导入 watchfiles，如果失败则提示用户安装
+try:
+    from watchfiles import watch, Change, StopEvent
+except ImportError:
+    print("错误：需要安装 'watchfiles' 库。请运行: pip install watchfiles")
+    # 可以选择抛出异常或退出，这里仅打印信息
+    # raise ImportError("watchfiles is required for FileMonitor")
+    # 或者提供一个空的实现或禁用该功能
+    Change = None # type: ignore
+    watch = None # type: ignore
+    StopEvent = None # type: ignore
+
 
 class FileMonitor:
     """
-    监控指定文件或目录的变化。
+    使用 watchfiles 库监控指定根目录下文件或目录的变化。
 
-    当检测到文件或目录的最后修改时间发生变化时，触发回调函数。
+    允许动态注册特定路径的回调函数，当这些路径发生变化时触发。
     """
 
-    def __init__(self, callback: Callable[[List[str]], None], interval: float = 1.0):
+    def __init__(self, root_dir: str):
         """
         初始化 FileMonitor。
 
-        :param callback: 当文件发生变化时调用的回调函数。回调函数接收一个包含已更改文件路径的列表。
-        :param interval: 检查文件变化的间隔时间（秒）。
+        :param root_dir: 需要监控的根目录。watchfiles 将监控此目录及其所有子目录。
         """
-        self._monitored_items: Dict[str, float] = {}  # 存储监控项及其最后修改时间
-        self._callback = callback
-        self._interval = interval
-        self._stop_event = threading.Event()
+        if watch is None:
+             raise ImportError("watchfiles is not installed or could not be imported.")
+
+        self.root_dir = os.path.abspath(root_dir)
+        if not os.path.isdir(self.root_dir):
+            raise ValueError(f"Root directory '{self.root_dir}' does not exist or is not a directory.")
+
+        # 存储回调: {absolute_path: [callback1, callback2, ...]}
+        # 回调函数签名: callback(change_type: Change, changed_path: str)
+        self._callbacks: Dict[str, List[Callable[[Change, str], None]]] = defaultdict(list)
+        self._callback_lock = threading.Lock() # 保护 _callbacks 的访问
+
+        self._stop_event = threading.Event() # 用于通知监控循环停止
         self._monitor_thread: Optional[threading.Thread] = None
-        self._lock = threading.Lock() # 用于保护 _monitored_items 的访问
+        self._watch_stop_event = StopEvent() # watchfiles 内部停止事件
 
-    def register(self, path: Union[str, List[str]]):
+        print(f"FileMonitor initialized for root directory: {self.root_dir}")
+
+    def register(self, path: Union[str, Path], callback: Callable[[Change, str], None]):
         """
-        注册要监控的文件或目录。
+        注册一个文件或目录路径以及对应的回调函数。
 
-        如果注册的是目录，将监控该目录下所有文件的变化（非递归）。
-        如果文件或目录不存在，会打印警告但不会抛出错误。
+        如果注册的是目录，则该目录本身或其内部任何文件的变化都会触发回调。
+        路径必须位于初始化时指定的 root_dir 内部。
 
-        :param path: 要监控的文件或目录的路径，或路径列表。
+        :param path: 要监控的文件或目录的路径（绝对或相对于当前工作目录）。
+        :param callback: 当路径发生变化时调用的回调函数。
+                         接收两个参数：变化类型 (watchfiles.Change) 和变化的文件/目录路径 (str)。
         """
-        paths_to_register = [path] if isinstance(path, str) else path
-        with self._lock:
-            for p in paths_to_register:
-                abs_path = os.path.abspath(p)
-                if os.path.exists(abs_path):
+        abs_path = os.path.abspath(str(path))
+
+        # 检查路径是否在 root_dir 内部
+        if not abs_path.startswith(self.root_dir):
+            print(f"Warning: Path '{abs_path}' is outside the monitored root directory '{self.root_dir}' and cannot be registered.")
+            return
+
+        with self._callback_lock:
+            self._callbacks[abs_path].append(callback)
+            print(f"Registered callback for path: {abs_path}")
+
+    def unregister(self, path: Union[str, Path], callback: Optional[Callable[[Change, str], None]] = None):
+        """
+        取消注册一个文件或目录路径的回调函数。
+
+        :param path: 要取消注册的文件或目录路径。
+        :param callback: 要取消注册的特定回调函数。如果为 None，则移除该路径的所有回调。
+        """
+        abs_path = os.path.abspath(str(path))
+        with self._callback_lock:
+            if abs_path in self._callbacks:
+                if callback:
                     try:
-                        last_modified_time = os.path.getmtime(abs_path)
-                        self._monitored_items[abs_path] = last_modified_time
-                        print(f"Registered '{abs_path}' for monitoring.")
-                    except OSError as e:
-                        print(f"Warning: Could not get modification time for '{abs_path}': {e}")
+                        self._callbacks[abs_path].remove(callback)
+                        print(f"Unregistered specific callback for path: {abs_path}")
+                        if not self._callbacks[abs_path]: # 如果列表为空，则删除键
+                            del self._callbacks[abs_path]
+                    except ValueError:
+                        print(f"Warning: Callback not found for path: {abs_path}")
                 else:
-                    print(f"Warning: Path '{abs_path}' does not exist and cannot be monitored.")
-
-
-    def _check_files(self):
-        """
-        检查已注册文件或目录的修改时间。
-        如果检测到变化，则调用回调函数。
-        """
-        changed_files: List[str] = []
-        with self._lock:
-            items_to_check = list(self._monitored_items.keys()) # 创建副本以避免在迭代时修改字典
-
-            for path in items_to_check:
-                if not os.path.exists(path):
-                    print(f"Warning: Monitored path '{path}' no longer exists. Removing from monitor.")
-                    del self._monitored_items[path]
-                    continue
-
-                try:
-                    current_mtime = os.path.getmtime(path)
-                    last_mtime = self._monitored_items.get(path)
-
-                    if last_mtime is None: # 可能在检查期间被移除
-                         continue
-
-                    if current_mtime != last_mtime:
-                        changed_files.append(path)
-                        self._monitored_items[path] = current_mtime # 更新最后修改时间
-                except OSError as e:
-                    print(f"Warning: Could not check modification time for '{path}': {e}. Skipping check.")
-
-
-        if changed_files:
-            try:
-                self._callback(changed_files)
-            except Exception as e:
-                print(f"Error executing callback for changed files {changed_files}: {e}")
+                    del self._callbacks[abs_path]
+                    print(f"Unregistered all callbacks for path: {abs_path}")
+            else:
+                 print(f"Warning: No callbacks registered for path: {abs_path}")
 
     def _monitor_loop(self):
         """
-        监控线程的主循环。
+        监控线程的主循环，使用 watchfiles.watch。
         """
-        print("File monitor loop started.")
-        while not self._stop_event.is_set():
-            self._check_files()
-            # 等待指定间隔或直到停止事件被设置
-            self._stop_event.wait(self._interval)
-        print("File monitor loop stopped.")
+        print(f"File monitor loop started for {self.root_dir}...")
+        try:
+            # watchfiles.watch 会阻塞直到 stop_event 被设置或发生错误
+            for changes in watch(self.root_dir, stop_event=self._watch_stop_event, yield_on_timeout=True):
+                if self._stop_event.is_set(): # 检查外部停止信号
+                    print("External stop signal received.")
+                    break
+
+                if not changes: # 超时时 changes 可能为空
+                    continue
+
+                # changes 是一个集合: {(Change.added, '/path/to/file'), (Change.modified, '/path/to/another')}
+                print(f"Detected changes: {changes}")
+                triggered_callbacks: List[Tuple[Callable, Change, str]] = []
+
+                with self._callback_lock:
+                    # 检查每个变化是否与注册的路径匹配
+                    for change_type, changed_path in changes:
+                        abs_changed_path = os.path.abspath(changed_path)
+
+                        # 检查是否有完全匹配的回调
+                        if abs_changed_path in self._callbacks:
+                            for cb in self._callbacks[abs_changed_path]:
+                                triggered_callbacks.append((cb, change_type, abs_changed_path))
+
+                        # 检查是否有父目录匹配的回调（如果变化发生在注册的目录下）
+                        for registered_path, callbacks in self._callbacks.items():
+                             # 确保检查的是目录且不是完全匹配（避免重复添加）
+                            if os.path.isdir(registered_path) and \
+                               abs_changed_path != registered_path and \
+                               abs_changed_path.startswith(registered_path + os.sep):
+                                for cb in callbacks:
+                                     # 避免重复添加同一回调对于同一事件
+                                     if (cb, change_type, abs_changed_path) not in triggered_callbacks:
+                                        triggered_callbacks.append((cb, change_type, abs_changed_path))
+
+                # 在锁外部执行回调，避免阻塞监控循环
+                if triggered_callbacks:
+                    print(f"Triggering {len(triggered_callbacks)} callbacks...")
+                    for cb, ct, cp in triggered_callbacks:
+                        try:
+                            cb(ct, cp)
+                        except Exception as e:
+                            print(f"Error executing callback {cb.__name__} for change {ct} on {cp}: {e}")
+
+        except Exception as e:
+            print(f"Error in file monitor loop: {e}")
+        finally:
+            print("File monitor loop stopped.")
 
     def start(self):
         """
-        启动文件监控线程。
+        启动文件监控后台线程。
         如果监控已在运行，则不执行任何操作。
         """
         if self._monitor_thread is not None and self._monitor_thread.is_alive():
@@ -106,10 +161,11 @@ class FileMonitor:
             return
 
         print("Starting file monitor...")
-        self._stop_event.clear() # 确保停止标志未设置
+        self._stop_event.clear() # 重置外部停止事件
+        self._watch_stop_event.clear() # 重置 watchfiles 停止事件
         self._monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
         self._monitor_thread.start()
-        print("File monitor started.")
+        print("File monitor started in background thread.")
 
     def stop(self):
         """
@@ -120,8 +176,18 @@ class FileMonitor:
             return
 
         print("Stopping file monitor...")
-        self._stop_event.set()
-        self._monitor_thread.join() # 等待线程结束
+        self._stop_event.set() # 设置外部停止标志
+        self._watch_stop_event.set() # 触发 watchfiles 内部停止
+
+        if self._monitor_thread:
+             # 等待一小段时间让 watch() 循环检测到事件并退出
+             # join() 超时是为了防止 watch() 因某些原因卡住导致主线程无限等待
+             self._monitor_thread.join(timeout=5.0)
+             if self._monitor_thread.is_alive():
+                 print("Warning: Monitor thread did not stop gracefully after 5 seconds.")
+             else:
+                 print("Monitor thread joined.")
+
         self._monitor_thread = None
         print("File monitor stopped.")
 
@@ -131,72 +197,119 @@ class FileMonitor:
         """
         return self._monitor_thread is not None and self._monitor_thread.is_alive()
 
-    def get_monitored_items(self) -> List[str]:
-        """
-        获取当前正在监控的文件/目录列表。
-        """
-        with self._lock:
-            return list(self._monitored_items.keys())
-
-# 示例用法 (可选，通常在单独的测试文件中)
+# --- 示例用法 ---
 if __name__ == '__main__':
     import tempfile
     import shutil
 
-    # 创建临时目录和文件用于测试
-    temp_dir = tempfile.mkdtemp()
-    temp_file1 = os.path.join(temp_dir, 'test1.txt')
-    temp_file2 = os.path.join(temp_dir, 'test2.txt')
+    # 确保 watchfiles 可用
+    if watch is None:
+        print("Cannot run example: watchfiles is not installed.")
+    else:
+        # 创建临时目录作为监控根目录
+        temp_root_dir = tempfile.mkdtemp(prefix="fm_root_")
+        print(f"Created temporary root directory: {temp_root_dir}")
 
-    with open(temp_file1, 'w') as f:
-        f.write('Initial content 1')
-    with open(temp_file2, 'w') as f:
-        f.write('Initial content 2')
+        # 在根目录下创建子目录和文件
+        sub_dir = os.path.join(temp_root_dir, "subdir")
+        os.makedirs(sub_dir)
+        file_in_root = os.path.join(temp_root_dir, "root_file.txt")
+        file_in_sub = os.path.join(sub_dir, "sub_file.txt")
 
-    def my_callback(changed_paths: List[str]):
-        print(f"Detected changes in: {changed_paths}")
+        with open(file_in_root, "w") as f:
+            f.write("Root content")
+        with open(file_in_sub, "w") as f:
+            f.write("Sub content")
 
-    monitor = FileMonitor(callback=my_callback, interval=0.5)
+        print(f"Created test files/dirs:\n - {file_in_root}\n - {sub_dir}\n - {file_in_sub}")
 
-    # 注册文件和目录
-    monitor.register(temp_file1)
-    monitor.register([temp_file2, temp_dir]) # 也可以注册列表
+        # 定义回调函数
+        def root_file_callback(change_type: Change, changed_path: str):
+            print(f"CALLBACK [Root File Specific]: Change '{change_type.name}' detected in '{changed_path}'")
 
-    print(f"Monitoring: {monitor.get_monitored_items()}")
+        def subdir_callback_1(change_type: Change, changed_path: str):
+            print(f"CALLBACK [Subdir 1]: Change '{change_type.name}' detected in '{changed_path}' (triggered by subdir watch)")
 
-    monitor.start()
+        def subdir_callback_2(change_type: Change, changed_path: str):
+             print(f"CALLBACK [Subdir 2]: Change '{change_type.name}' detected in '{changed_path}' (another callback for subdir)")
 
-    try:
-        print("Monitoring started. Modifying files...")
-        time.sleep(2)
+        def any_change_callback(change_type: Change, changed_path: str):
+            print(f"CALLBACK [Any Change in Root]: Change '{change_type.name}' detected in '{changed_path}' (triggered by root dir watch)")
 
-        # 修改文件1
-        print("Modifying file 1...")
-        with open(temp_file1, 'w') as f:
-            f.write('Updated content 1')
-        time.sleep(2) # 等待监控检测到变化
 
-        # 修改文件2
-        print("Modifying file 2...")
-        with open(temp_file2, 'a') as f:
-            f.write('\nAppended content')
-        time.sleep(2) # 等待监控检测到变化
+        # 初始化监控器
+        monitor = FileMonitor(root_dir=temp_root_dir)
 
-        # 修改目录 (创建新文件) - 注意：当前实现仅监控目录本身的mtime
-        # 如果需要监控目录下文件的增删，需要更复杂的逻辑 (e.g., using watchdog)
-        # temp_file3 = os.path.join(temp_dir, 'test3.txt')
-        # print("Creating file 3...")
-        # with open(temp_file3, 'w') as f:
-        #     f.write('New file')
-        # time.sleep(2)
+        # 注册回调
+        monitor.register(file_in_root, root_file_callback)
+        monitor.register(sub_dir, subdir_callback_1)
+        monitor.register(sub_dir, subdir_callback_2) # 同一个目录注册第二个回调
+        monitor.register(temp_root_dir, any_change_callback) # 监控根目录下的任何变化
 
-        print("Finished modifications.")
+        # 启动监控
+        monitor.start()
+        print("Monitor started. Waiting for changes...")
+        time.sleep(1) # 给点时间让监控器稳定
 
-    finally:
-        print("Stopping monitor...")
-        monitor.stop()
-        # 清理临时文件和目录
-        shutil.rmtree(temp_dir)
-        print("Cleanup complete.")
-        print(f"Is monitor running? {monitor.is_running()}")
+        try:
+            # --- 执行一些文件操作来触发回调 ---
+            print("\n--- Modifying root file ---")
+            with open(file_in_root, "w") as f:
+                f.write("Updated root content")
+            time.sleep(1.5) # 等待 watchfiles 检测并处理
 
+            print("\n--- Modifying file in subdir ---")
+            with open(file_in_sub, "a") as f:
+                f.write("\nAppended sub content")
+            time.sleep(1.5)
+
+            print("\n--- Creating new file in subdir ---")
+            new_file_in_sub = os.path.join(sub_dir, "new_sub.txt")
+            with open(new_file_in_sub, "w") as f:
+                f.write("Newly created")
+            time.sleep(1.5)
+
+            print("\n--- Deleting file in subdir ---")
+            os.remove(new_file_in_sub)
+            time.sleep(1.5)
+
+            print("\n--- Unregistering one subdir callback ---")
+            monitor.unregister(sub_dir, subdir_callback_1)
+            time.sleep(0.5)
+
+            print("\n--- Modifying file in subdir again (only one subdir callback should fire) ---")
+            with open(file_in_sub, "w") as f:
+                f.write("Final sub content")
+            time.sleep(1.5)
+
+
+            print("\n--- Finished file operations ---")
+
+        except Exception as e:
+            print(f"An error occurred during file operations: {e}")
+        finally:
+            # 停止监控
+            print("\n--- Stopping monitor ---")
+            monitor.stop()
+
+            # 清理临时文件和目录
+            print("--- Cleaning up temporary directory ---")
+            # shutil.rmtree(temp_root_dir, ignore_errors=True) # ignore_errors 以防万一
+            # 在某些系统上，即使监控停止，文件句柄可能不会立即释放，导致 rmtree 失败
+            # 增加一点延迟或重试逻辑可能有助于解决这个问题
+            attempts = 3
+            while attempts > 0:
+                try:
+                    shutil.rmtree(temp_root_dir)
+                    print(f"Successfully removed temporary directory: {temp_root_dir}")
+                    break
+                except OSError as e:
+                    attempts -= 1
+                    print(f"Warning: Failed to remove temp directory (attempt {3-attempts}): {e}. Retrying in 1 second...")
+                    if attempts == 0:
+                        print(f"Error: Could not remove temporary directory {temp_root_dir} after multiple attempts.")
+                    time.sleep(1)
+
+
+            print(f"Is monitor running? {monitor.is_running()}")
+            print("Example finished.")
