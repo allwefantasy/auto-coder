@@ -29,6 +29,7 @@ from autocoder.common.mcp_server import get_mcp_server, McpServerInfoRequest
 from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
+from autocoder.events.event_types import Event, EventType, EventMetadata
 from autocoder.run_context import get_run_context
 from autocoder.common.stream_out_type import AutoCommandStreamOutType
 from autocoder.common.rulefiles.autocoderrules_utils import get_rules
@@ -456,7 +457,8 @@ class CommandAutoTuner:
                                                                parameters=parameters
                                                            ).to_dict()),metadata=EventMetadata(
                                                                stream_out_type=AutoCommandStreamOutType.COMMAND_PREPARE.value,
-                                                               path="/agentic/agent/command_prepare"
+                                                               path="/agentic/agent/command_prepare",
+                                                               action_file=self.args.file
                                                            ).to_dict())
             
             self.execute_auto_command(command, parameters)
@@ -484,7 +486,13 @@ class CommandAutoTuner:
                         "auto_command_action_break", command=command, action=action)
                     printer.print_str_in_terminal(temp_content,style="yellow")
                     get_event_manager(self.args.event_file).write_result(
-                        EventContentCreator.create_result(content=temp_content))
+                        EventContentCreator.create_result(content=temp_content),
+                        metadata=EventMetadata(
+                            stream_out_type="command_break",
+                            path="/agentic/agent/command_break",
+                            action_file=self.args.file
+                        ).to_dict()
+                    )
                     break
 
                 if command == "response_user":
@@ -494,7 +502,12 @@ class CommandAutoTuner:
                     EventContentCreator.create_result(content=EventContentCreator.ResultCommandExecuteStatContent(
                         command=command,
                         content=content
-                    ).to_dict()))
+                    ).to_dict()),metadata=EventMetadata(
+                        stream_out_type="command_execute",
+                        path="/agentic/agent/command_execute",
+                        action_file=self.args.file
+                    ).to_dict()
+                    )
 
                 # 打印执行结果
                 console = Console()
@@ -601,7 +614,13 @@ class CommandAutoTuner:
                 temp_content = printer.get_message_from_key_with_format("auto_command_break",  command=command)
                 printer.print_str_in_terminal(temp_content,style="yellow")
                 get_event_manager(self.args.event_file).write_result(
-                    EventContentCreator.create_result(content=temp_content))
+                    EventContentCreator.create_result(content=temp_content),
+                    metadata=EventMetadata(
+                        stream_out_type="command_break",
+                        path="/agentic/agent/command_break",
+                        action_file=self.args.file
+                    ).to_dict()
+                )
                 break
 
         return response
