@@ -380,7 +380,8 @@ class CommandAutoTuner:
             display_func=extract_command_response,
             args=self.args,
             extra_meta={
-                "stream_out_type": AutoCommandStreamOutType.COMMAND_SUGGESTION.value
+                "stream_out_type": AutoCommandStreamOutType.COMMAND_SUGGESTION.value,
+                "path": "/agentic/agent/command_suggestion"
             }
         )
 
@@ -453,7 +454,10 @@ class CommandAutoTuner:
                                                            EventContentCreator.ResultCommandPrepareStatContent(
                                                                command=command,
                                                                parameters=parameters
-                                                           ).to_dict()))                           
+                                                           ).to_dict()),metadata=EventMetadata(
+                                                               stream_out_type=AutoCommandStreamOutType.COMMAND_PREPARE.value,
+                                                               path="/agentic/agent/command_prepare"
+                                                           ).to_dict())
             
             self.execute_auto_command(command, parameters)
             content = ""

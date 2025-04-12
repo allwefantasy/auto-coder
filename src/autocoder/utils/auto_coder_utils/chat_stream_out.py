@@ -292,6 +292,7 @@ def stream_out(
                 get_event_manager(args.event_file).write_stream(content.to_dict(),  
                     metadata=EventMetadata(
                         stream_out_type=extra_meta.get("stream_out_type", ""),
+                        path=extra_meta.get("path", ""),
                         is_streaming=True,
                         output="delta",
                         action_file=args.file
