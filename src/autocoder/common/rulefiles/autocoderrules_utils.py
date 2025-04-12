@@ -53,8 +53,8 @@ class AutocoderRulesManager:
         按优先级顺序加载规则文件。
         优先级顺序：
         1. .autocoderrules/
-        2. .auto-coder/autocoderrules/
-        3. .auto-coder/autocoderules/
+        2. .auto-coder/.autocoderrules/
+        3. .auto-coder/autocoderrules/
         """
         self._rules = {}
         project_root = os.getcwd()
@@ -62,8 +62,8 @@ class AutocoderRulesManager:
         # 按优先级顺序定义可能的规则目录
         rules_dirs = [
             os.path.join(project_root, ".autocoderrules"),
-            os.path.join(project_root, ".auto-coder", "autocoderrules"),
-            os.path.join(project_root, ".auto-coder", "autocoderules")
+            os.path.join(project_root, ".auto-coder", ".autocoderrules"),
+            os.path.join(project_root, ".auto-coder", "autocoderrules")
         ]
         
         # 按优先级查找第一个存在的目录
@@ -111,8 +111,8 @@ class AutocoderRulesManager:
             # 监控所有可能的规则目录
             self._monitored_dirs = [
                 os.path.join(project_root, ".autocoderrules"),
-                os.path.join(project_root, ".auto-coder", "autocoderrules"),
-                os.path.join(project_root, ".auto-coder", "autocoderules")
+                os.path.join(project_root, ".auto-coder", ".autocoderrules"),
+                os.path.join(project_root, ".auto-coder", "autocoderrules")
             ]
             
             # 注册目录监控

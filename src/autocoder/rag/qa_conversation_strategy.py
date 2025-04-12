@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Generator
 import byzerllm
 from autocoder.common import AutoCoderArgs
+from autocoder.common.rulefiles.autocoderrules_utils import get_rules
 
 class QAConversationStrategy(ABC):
     """
@@ -124,22 +125,8 @@ class MultiRoundStrategy(QAConversationStrategy):
         {% endfor %}        
         {% endif %}
 
-        """
-
-        import os
-        extra_docs = {}
-        rules_dir = os.path.join(self.args.source_dir, ".autocoderrules")
-        if os.path.isdir(rules_dir):
-            for fname in os.listdir(rules_dir):
-                if fname.endswith(".md"):
-                    fpath = os.path.join(rules_dir, fname)
-                    try:
-                        with open(fpath, "r", encoding="utf-8") as f:
-                            content = f.read()
-                            key = os.path.splitext(fname)[0]
-                            extra_docs[key] = content
-                    except Exception:
-                        continue
+        """        
+        extra_docs = get_rules()
         return {"extra_docs": extra_docs}
 
 class SingleRoundStrategy(QAConversationStrategy):
@@ -255,19 +242,7 @@ class SingleRoundStrategy(QAConversationStrategy):
 
         """
         import os
-        extra_docs = {}
-        rules_dir = os.path.join(getattr(self, 'args', None).source_dir if getattr(self, 'args', None) else ".", ".autocoderrules")
-        if os.path.isdir(rules_dir):
-            for fname in os.listdir(rules_dir):
-                if fname.endswith(".md"):
-                    fpath = os.path.join(rules_dir, fname)
-                    try:
-                        with open(fpath, "r", encoding="utf-8") as f:
-                            content = f.read()
-                            key = os.path.splitext(fname)[0]
-                            extra_docs[key] = content
-                    except Exception:
-                        continue
+        extra_docs = extra_docs = get_rules()
         return {"extra_docs": extra_docs}
 
 def get_qa_strategy(args: AutoCoderArgs) -> QAConversationStrategy:

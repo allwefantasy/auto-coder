@@ -55,7 +55,7 @@ from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific re
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver,
     ListPackageInfoToolResolver
 )
-
+from autocoder.common.rulefiles.autocoderrules_utils import get_rules
 from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
                                                           MemoryConfig, CommandConfig, BaseTool,
                                                           ExecuteCommandTool, ReadFileTool,
@@ -687,21 +687,8 @@ class AgenticEdit:
         {% endif %}
         """
         import os
-        extra_docs = {}
-        rules_dir = os.path.join(self.args.source_dir,
-                                 ".auto-coder", "autocoderrules")
-        if os.path.isdir(rules_dir):
-            for fname in os.listdir(rules_dir):
-                if fname.endswith(".md"):
-                    fpath = os.path.join(rules_dir, fname)
-                    try:
-                        with open(fpath, "r", encoding="utf-8") as f:
-                            content = f.read()
-                            key = fpath
-                            extra_docs[key] = content
-                    except Exception:
-                        continue
-
+        extra_docs = get_rules()
+        
         env_info = detect_env()
         shell_type = "bash"
         if shells.is_running_in_cmd():
