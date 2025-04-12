@@ -7,7 +7,7 @@ from pathlib import Path
 
 # 尝试导入 IgnoreFileManager 和相关函数
 try:
-    from autocoder.ignorefiles.ignore_file_utils import should_ignore, IgnoreFileManager, DEFAULT_EXCLUDES
+    from autocoder.common.ignorefiles.ignore_file_utils import should_ignore, IgnoreFileManager, DEFAULT_EXCLUDES
     from autocoder.common.file_monitor.monitor import FileMonitor, Change
 except ImportError as e:
     print(f"无法导入所需模块: {e}")

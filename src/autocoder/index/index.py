@@ -462,7 +462,7 @@ class IndexManager:
     def filter_exclude_files(self, file_path, exclude_patterns):
         # 增加 ignore_file_utils 的过滤
         try:
-            from src.autocoder.ignorefiles import ignore_file_utils
+            from autocoder.common.ignorefiles import ignore_file_utils
             if ignore_file_utils.should_ignore(file_path):
                 return True
         except Exception:

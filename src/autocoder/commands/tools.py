@@ -48,7 +48,7 @@ from autocoder.common.mcp_server_types import (
     McpListRunningRequest, McpRefreshRequest
 )
 
-from autocoder.ignorefiles.ignore_file_utils import should_ignore
+from autocoder.common.ignorefiles.ignore_file_utils import should_ignore
 
 
 @byzerllm.prompt()

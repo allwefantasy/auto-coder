@@ -6,7 +6,7 @@ from loguru import logger
 import typing
 from autocoder.common import AutoCoderArgs
 
-from autocoder.ignorefiles.ignore_file_utils import should_ignore
+from autocoder.common.ignorefiles.ignore_file_utils import should_ignore
 
 if typing.TYPE_CHECKING:
     from autocoder.common.v2.agent.agentic_edit import AgenticEdit
