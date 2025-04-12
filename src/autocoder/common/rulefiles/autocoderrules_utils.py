@@ -122,15 +122,15 @@ class AutocoderRulesManager:
                 os.makedirs(dir_path, exist_ok=True)
                 # 注册监控
                 self._file_monitor.register(dir_path, self._on_rules_changed)
-                print(f"已注册规则目录监控: {dir_path}")
+                logger.info(f"已注册规则目录监控: {dir_path}")
             
             # 启动监控
             if not self._file_monitor.is_running():
                 self._file_monitor.start()
-                print("规则文件监控已启动")
+                logger.info("规则文件监控已启动")
                 
         except Exception as e:
-            print(f"设置规则文件监控时出错: {e}")
+            logger.warning(f"设置规则文件监控时出错: {e}")
 
     def _on_rules_changed(self, change_type: Change, changed_path: str):
         """当规则文件或目录发生变化时的回调函数"""
@@ -152,10 +152,10 @@ class AutocoderRulesManager:
                     break
         
         if is_rule_related:
-            print(f"检测到规则相关变化 ({change_type.name}): {changed_path}")
+            logger.info(f"检测到规则相关变化 ({change_type.name}): {changed_path}")
             # 重新加载规则
             self._load_rules()
-            print("已重新加载规则")
+            logger.info("已重新加载规则")
 
     def get_rules(self) -> Dict[str, str]:
         """获取所有规则文件内容"""
