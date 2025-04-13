@@ -21,7 +21,7 @@ from autocoder.common import shells
 from loguru import logger
 from autocoder.utils import llms as llms_utils
 from autocoder.rag.token_counter import count_tokens
-from autocoder.common.global_cancel import global_cancel
+from autocoder.common.global_cancel import global_cancel,CancelRequestedException
 from autocoder.common.auto_configure import config_readme
 from autocoder.utils.auto_project_type import ProjectTypeAnalyzer
 from rich.text import Text
@@ -456,7 +456,7 @@ class CommandAutoTuner:
                                                                command=command,
                                                                parameters=parameters
                                                            ).to_dict()),metadata=EventMetadata(
-                                                               stream_out_type=AutoCommandStreamOutType.COMMAND_PREPARE.value,
+                                                               stream_out_type="command_prepare",
                                                                path="/agentic/agent/command_prepare",
                                                                action_file=self.args.file
                                                            ).to_dict())
@@ -1449,6 +1449,8 @@ class CommandAutoTuner:
                 command_map[command](**parameters)
             else:
                 command_map[command]()
+        except CancelRequestedException as e:
+            raise e        
 
         except Exception as e:
             error_msg = str(e)

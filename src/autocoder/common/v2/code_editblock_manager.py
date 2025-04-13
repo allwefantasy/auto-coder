@@ -396,24 +396,36 @@ class CodeEditBlockManager:
         def _format_blocks(merge: MergeCodeWithoutEffect) -> Tuple[str, str]:
             unmerged_formatted_text = ""
             for file_path, head, update in merge.failed_blocks:
-                unmerged_formatted_text += "```lang\n"
-                unmerged_formatted_text += f"##File: {file_path}\n"
-                unmerged_formatted_text += "<<<<<<< SEARCH\n"
+                unmerged_formatted_text += "```lang"
+                unmerged_formatted_text += "\n"
+                unmerged_formatted_text += f"##File: {file_path}"
+                unmerged_formatted_text += "\n"
+                unmerged_formatted_text += "<<<<<<< SEARCH"
+                unmerged_formatted_text += "\n"
                 unmerged_formatted_text += head
-                unmerged_formatted_text += "=======\n"
+                unmerged_formatted_text += "\n"
+                unmerged_formatted_text += "======="
+                unmerged_formatted_text += "\n"
                 unmerged_formatted_text += update
-                unmerged_formatted_text += ">>>>>>> REPLACE\n"
+                unmerged_formatted_text += "\n"
+                unmerged_formatted_text += ">>>>>>> REPLACE"
+                unmerged_formatted_text += "\n"
                 unmerged_formatted_text += "```"
                 unmerged_formatted_text += "\n"
 
             merged_formatted_text = ""
             if merge.merged_blocks:
                 for file_path, head, update in merge.merged_blocks:
-                    merged_formatted_text += "```lang\n"
-                    merged_formatted_text += f"##File: {file_path}\n"
+                    merged_formatted_text += "```lang"
+                    merged_formatted_text += "\n"
+                    merged_formatted_text += f"##File: {file_path}"
+                    merged_formatted_text += "\n"
                     merged_formatted_text += head
-                    merged_formatted_text += "=======\n"
+                    merged_formatted_text += "\n"
+                    merged_formatted_text += "======="
+                    merged_formatted_text += "\n"
                     merged_formatted_text += update
+                    merged_formatted_text += "\n"
                     merged_formatted_text += "```"
                     merged_formatted_text += "\n"
 
