@@ -35,7 +35,7 @@ import numpy as np
 from PIL import Image
 
 # 新增导入
-from autocoder.rag.loaders import filter_utils
+from autocoder.rag.loaders.filter_utils import FilterRuleManager
 from autocoder.rag.loaders.image_loader import ImageLoader
 
 # File-format detection
@@ -582,8 +582,8 @@ class PdfConverter(DocumentConverter):
                             image_output_dir, f"image_{local_image_count}{suffix}")
                         os.rename(temp_path, image_path)
                         content.append(f"![Image {local_image_count}]({image_path})")
-                        # ===== 新增：根据filter_utils判断是否需要解析图片
-                        if filter_utils.should_parse_image(image_path):
+                        # ===== 修改：通过FilterRuleManager单例实例判断是否需要解析图片
+                        if FilterRuleManager._instance.should_parse_image(image_path):
                             try:
                                 _ = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
                                 # image_to_markdown会自动生成md文件
@@ -1089,6 +1089,8 @@ class MarkItDown:
         llm: Optional[Any] = None,
         product_mode: Optional[str] = None,
     ):
+        # 初始化FilterRuleManager单例实例
+        self._filter_rule_manager = FilterRuleManager(llm, os.getcwd())
         if requests_session is None:
             self._requests_session = requests.Session()
         else:
@@ -1345,10 +1347,10 @@ class MarkItDown:
 
 def try_parse_image(image_path: str):
     """
-    根据filter_utils判断是否需要解析图片，如果需要则调用ImageLoader.image_to_markdown。
+    根据FilterRuleManager单例实例判断是否需要解析图片，如果需要则调用ImageLoader.image_to_markdown。
     解析失败会自动捕获异常。
     """
-    if filter_utils.should_parse_image(image_path):
+    if FilterRuleManager._instance.should_parse_image(image_path):
         try:
             _ = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
         except Exception:
