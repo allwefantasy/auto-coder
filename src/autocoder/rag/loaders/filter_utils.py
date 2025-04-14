@@ -16,10 +16,7 @@ class FilterRuleManager:
             "regex:.*/secret/.*\\.jpg$"
         ]
         }
-    '''    
-    _cache_rules: Optional[Dict] = None
-    _cache_mtime: Optional[float] = None
-
+    '''
     def __init__(self, llm, source_dir: str):
         """
         初始化过滤规则管理器
@@ -31,6 +28,8 @@ class FilterRuleManager:
         self.llm = llm
         self.source_dir = source_dir
         self.filter_rules_path = os.path.join(self.source_dir, ".cache", "filterrules")
+        self._cache_rules: Optional[Dict] = None
+        self._cache_mtime: Optional[float] = None
 
     def load_filter_rules(self) -> Dict:
         try:
@@ -41,22 +40,22 @@ class FilterRuleManager:
         need_reload = False
 
         # 如果缓存为空，或者文件已更新，触发重新加载
-        if FilterRuleManager._cache_rules is None:
+        if self._cache_rules is None:
             need_reload = True
-        elif current_mtime is not None and FilterRuleManager._cache_mtime != current_mtime:
+        elif current_mtime is not None and self._cache_mtime != current_mtime:
             need_reload = True
 
         if need_reload:
-            FilterRuleManager._cache_rules = {"whitelist": [], "blacklist": []}
+            self._cache_rules = {"whitelist": [], "blacklist": []}
             try:
                 if os.path.exists(self.filter_rules_path):
                     with open(self.filter_rules_path, "r", encoding="utf-8") as f:
-                        FilterRuleManager._cache_rules = json.load(f)
-                FilterRuleManager._cache_mtime = current_mtime
+                        self._cache_rules = json.load(f)
+                self._cache_mtime = current_mtime
             except Exception as e:
                 logger.warning(f"Failed to load filterrules: {e}")
 
-        return FilterRuleManager._cache_rules or {"whitelist": [], "blacklist": []}
+        return self._cache_rules or {"whitelist": [], "blacklist": []}
 
     def should_parse_image(self, file_path: str) -> bool:
         """
