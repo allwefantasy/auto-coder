@@ -2,8 +2,9 @@ from autocoder.common import SourceCode
 from autocoder.rag.token_counter import count_tokens_worker, count_tokens
 from autocoder.rag.loaders.pdf_loader import extract_text_from_pdf
 from autocoder.rag.loaders.docx_loader import extract_text_from_docx
-from autocoder.rag.loaders.excel_loader import extract_text_from_excel
+from autocoder.rag.loaders.excel_loader import extract_text_from_excel 
 from autocoder.rag.loaders.ppt_loader import extract_text_from_ppt
+from autocoder.rag.loaders.image_loader import ImageLoader
 from typing import List, Tuple, Optional, Union
 import time
 from loguru import logger
@@ -54,6 +55,15 @@ def process_file_in_multi_process(
         elif file_path.endswith(".pptx"):
             slides = extract_text_from_ppt(file_path)
             content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens_worker(content),
+                )
+            ]
+        elif file_path.lower().endswith((".png", ".jpg", ".jpeg", ".bmp", ".gif")):
+            content = ImageLoader.image_to_markdown(file_path, llm, product_mode)
             v = [
                 SourceCode(
                     module_name=f"##File: {file_path}",
@@ -119,6 +129,15 @@ def process_file_local(
         elif file_path.endswith(".pptx"):
             slides = extract_text_from_ppt(file_path)
             content = "".join(f"#{slide[0]}\n{slide[1]}\n\n" for slide in slides)
+            v = [
+                SourceCode(
+                    module_name=f"##File: {file_path}",
+                    source_code=content,
+                    tokens=count_tokens(content),
+                )
+            ]
+        elif file_path.lower().endswith((".png", ".jpg", ".jpeg", ".bmp", ".gif")):
+            content = ImageLoader.image_to_markdown(file_path, llm, product_mode)
             v = [
                 SourceCode(
                     module_name=f"##File: {file_path}",
