@@ -727,18 +727,7 @@ def main(input_args: Optional[List[str]] = None):
             auto_coder_args.rag_build_name = generate_unique_name_from_path("")
             rag = RAGFactory.get_rag(llm=llm, args=auto_coder_args, path="")
 
-        # Start FileMonitor if source_dir is provided
-        file_monitor = None
-        if server_args.source_dir and os.path.exists(server_args.source_dir):
-            from autocoder.rag.cache.file_monitor_cache import AutoCoderRAGDocListener
-            file_monitor = AutoCoderRAGDocListener(
-                path=server_args.source_dir,
-                ignore_spec=None,
-                required_exts=server_args.required_exts.split(",") if server_args.required_exts else None
-            )
-            logger.info(f"Started FileMonitor for source directory: {server_args.source_dir}")
-
-        llm_wrapper = LLWrapper(llm=llm, rag=rag, file_monitor=file_monitor)
+        llm_wrapper = LLWrapper(llm=llm, rag=rag)
         # Save service info    
         service_info = RAGServiceInfo(
             host=server_args.host or "127.0.0.1",
@@ -753,12 +742,7 @@ def main(input_args: Optional[List[str]] = None):
         except Exception as e:
             logger.warning(f"Failed to save service info: {str(e)}")
         
-        try:
-            serve(llm=llm_wrapper, args=server_args)
-        finally:
-            if file_monitor:
-                file_monitor.stop()
-                logger.info("Stopped FileMonitor")
+        serve(llm=llm_wrapper, args=server_args)
     elif args.command == "build_hybrid_index":        
         auto_coder_args = AutoCoderArgs(
             **{
