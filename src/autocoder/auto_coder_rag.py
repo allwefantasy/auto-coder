@@ -21,7 +21,6 @@ import hashlib
 from loguru import logger
 import asyncio
 from datetime import datetime
-from autocoder.rag.monitor import FileMonitor
 
 from autocoder.rag.utils import process_file_local
 import pkg_resources
@@ -743,27 +742,7 @@ def main(input_args: Optional[List[str]] = None):
         except Exception as e:
             logger.warning(f"Failed to save service info: {str(e)}")
         
-        # Start file monitor if source_dir is provided
-        file_monitor = None
-        if server_args.source_dir:
-            def file_change_callback(file_path: str):
-                logger.info(f"File changed: {file_path}")
-                # TODO: Add logic to handle file changes
-                pass
-
-            file_monitor = FileMonitor(
-                path=server_args.source_dir,
-                callback=file_change_callback,
-                required_exts=server_args.required_exts.split(",") if server_args.required_exts else None
-            )
-            if not file_monitor.start():
-                logger.warning("Failed to start file monitor")
-
-        try:
-            serve(llm=llm_wrapper, args=server_args)
-        finally:
-            if file_monitor:
-                file_monitor.stop()
+        serve(llm=llm_wrapper, args=server_args)
     elif args.command == "build_hybrid_index":        
         auto_coder_args = AutoCoderArgs(
             **{
