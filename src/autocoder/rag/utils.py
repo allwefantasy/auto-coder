@@ -63,7 +63,7 @@ def process_file_in_multi_process(
                 )
             ]
         elif file_path.lower().endswith((".png", ".jpg", ".jpeg", ".bmp", ".gif")):
-            content = ImageLoader.image_to_markdown(file_path, llm, product_mode)
+            content = ImageLoader.image_to_markdown(file_path, llm=llm, product_mode=product_mode)
             v = [
                 SourceCode(
                     module_name=f"##File: {file_path}",
@@ -137,7 +137,7 @@ def process_file_local(
                 )
             ]
         elif file_path.lower().endswith((".png", ".jpg", ".jpeg", ".bmp", ".gif")):
-            content = ImageLoader.image_to_markdown(file_path, llm, product_mode)
+            content = ImageLoader.image_to_markdown(file_path, llm=llm, product_mode=product_mode)
             v = [
                 SourceCode(
                     module_name=f"##File: {file_path}",

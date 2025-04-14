@@ -538,7 +538,7 @@ class ImageLoader:
     def image_to_markdown(
         image_path: str,
         llm,
-        engine: str = "vl",
+        engine: str = "paddle",
         product_mode: str = "lite",
         paddle_kwargs: dict = None
     ) -> str:
