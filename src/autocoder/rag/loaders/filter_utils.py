@@ -1,6 +1,7 @@
 
 import os
 import json
+import threading
 from typing import Dict, Optional
 from loguru import logger
 
@@ -17,6 +18,16 @@ class FilterRuleManager:
         ]
         }
     '''
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super(FilterRuleManager, cls).__new__(cls)
+                cls._instance._initialized = False
+        return cls._instance
+
     def __init__(self, llm, source_dir: str):
         """
         初始化过滤规则管理器
@@ -25,11 +36,15 @@ class FilterRuleManager:
             llm: 大模型对象，当前未使用，预留
             source_dir: 项目根目录路径
         """
+        if self._initialized:
+            return
+            
         self.llm = llm
         self.source_dir = source_dir
         self.filter_rules_path = os.path.join(self.source_dir, ".cache", "filterrules")
         self._cache_rules: Optional[Dict] = None
         self._cache_mtime: Optional[float] = None
+        self._initialized = True
 
     def load_filter_rules(self) -> Dict:
         try:
