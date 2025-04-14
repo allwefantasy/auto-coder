@@ -28,19 +28,18 @@ class FilterRuleManager:
                 cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, llm, source_dir: str):
-        """
-        初始化过滤规则管理器
+    @classmethod
+    def get_instance(cls):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = cls()
+            return cls._instance
 
-        参数:
-            llm: 大模型对象，当前未使用，预留
-            source_dir: 项目根目录路径
-        """
-        if self._initialized:
+    def __init__(self):
+        if hasattr(self, '_initialized') and self._initialized:
             return
             
-        self.llm = llm
-        self.source_dir = source_dir
+        self.source_dir = os.getcwd()
         self.filter_rules_path = os.path.join(self.source_dir, ".cache", "filterrules")
         self._cache_rules: Optional[Dict] = None
         self._cache_mtime: Optional[float] = None
