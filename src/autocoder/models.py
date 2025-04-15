@@ -80,8 +80,8 @@ default_models_list = [
         "base_url": "https://openrouter.ai/api/v1",
         "api_key_path": "",
         "is_reasoning": False,
-        "input_price": 0.0,
-        "output_price": 0.0,
+        "input_price": 14.0,
+        "output_price": 42.0,
         "average_speed": 0.0,
         "max_output_tokens": 8096*3
     },   
