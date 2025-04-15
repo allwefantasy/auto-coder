@@ -41,7 +41,7 @@ from autocoder.rag.qa_conversation_strategy import get_qa_strategy
 from autocoder.rag.searchable import SearchableResults
 from autocoder.rag.conversation_to_queries import extract_search_queries
 from autocoder.common import openai_content as OpenAIContentProcessor
-from autocoder.rag.save_formatted_log import save_formatted_log
+from autocoder.common.save_formatted_log import save_formatted_log
 import json, os
 try:
     from autocoder_pro.rag.llm_compute import LLMComputeEngine

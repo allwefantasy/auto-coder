@@ -1,6 +1,6 @@
 import os
 import json
-from autocoder.rag.save_formatted_log import save_formatted_log
+from autocoder.common.save_formatted_log import save_formatted_log
 
 if __name__ == "__main__":
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
