@@ -368,7 +368,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     segment_ratio: Optional[float] = 0.2
     buff_ratio: Optional[float] = 0.1
 
-    disable_inference_enhance: Optional[bool] = False
+    disable_inference_enhance: Optional[bool] = True
     inference_deep_thought: Optional[bool] = False
     inference_slow_without_deep_thought: Optional[bool] = False
     inference_compute_precision: int = 64

@@ -162,6 +162,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             self.trigger_update()
         except Exception as e:
             logger.error(f"Error in file change handler: {e}")
+            logger.exception(e)
 
     def stop(self):
         self.stop_event.set()
@@ -186,7 +187,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         with self.lock:
             if self.cache:
                 return
-            files_to_process = []
+            files_to_process = []            
             for file_info in self.get_all_files():
                 file_path, _, modify_time, file_md5 = file_info
                 if (
@@ -213,9 +214,6 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 results = pool.map(worker_func, files_to_process)            
             
             for file_info, result in zip(files_to_process, results):
-                logger.info("================================================")
-                logger.info(f"result: {result}")
-                logger.info("================================================")
                 if result:  # 只有当result不为空时才更新缓存
                     self.update_cache(file_info, result)
                 else:
@@ -232,16 +230,15 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             file_path, relative_path, modify_time, file_md5 = file_info
             current_files.add(file_path)
             # 如果文件曾经解析失败，跳过本次增量更新
-            if file_path in self.failed_files:
-                # logger.info(f"文件 {file_path} 之前解析失败，跳过此次更新")
+            if file_path in self.failed_files:                
                 continue
-            # 变更检测
+            # 变更检测            
             if (
                 file_path not in self.cache
                 or self.cache[file_path].get("md5", "") != file_md5
             ):
                 files_to_process.append(
-                    (file_path, relative_path, modify_time, file_md5))
+                    (file_path, relative_path, modify_time, file_md5))            
 
         deleted_files = set(self.cache.keys()) - current_files
         logger.info(f"files_to_process: {files_to_process}")
@@ -424,6 +421,5 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 modify_time = os.path.getmtime(file_path)
                 file_md5 = generate_file_md5(file_path)
                 all_files.append(
-                    (file_path, relative_path, modify_time, file_md5))
-        logger.info(f"all_files: {all_files}")
+                    (file_path, relative_path, modify_time, file_md5))        
         return all_files

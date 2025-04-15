@@ -187,9 +187,16 @@ async def serve_static_file(full_path: str, request: Request):
         # 直接使用规范化的路径
         file_path = os.path.join("/", os.path.normpath(unquote(full_path)))
         
+        # 获取允许的静态文件目录
+        allowed_static_abs = request.app.state.allowed_static_abs
+        logger.info(f"==allowed_static_abs==: {allowed_static_abs}")
+        
+        if file_path.startswith(("/_images","_images")):            
+            file_path = os.path.join(allowed_static_abs, file_path)  
+
         # 检查文件是否存在
         if not os.path.exists(file_path):
-            raise FileNotFoundError(f"File not found: {file_path}")
+            raise FileNotFoundError(f"File not found: {file_path}")          
         
         # 如果启用了Nginx X-Accel-Redirect，使用X-Accel特性
         if hasattr(request.app.state, "enable_nginx_x_accel") and request.app.state.enable_nginx_x_accel:
@@ -273,6 +280,9 @@ def serve(llm:ByzerLLM, args: ServerArgs):
     allowed_static_abs = os.path.abspath(allowed_static_dir)
     logger.info(f"Static files root directory: {allowed_static_abs}")
     
+    # 将允许的静态文件目录存储到应用状态中
+    router_app.state.allowed_static_abs = allowed_static_abs
+    
     router_app.add_middleware(
         CORSMiddleware,
         allow_origins=args.allowed_origins,
@@ -309,9 +319,11 @@ def serve(llm:ByzerLLM, args: ServerArgs):
                 
                 # Check if path is in allowed directory
                 abs_path = os.path.abspath(os.path.join("/", normalized_path))
+                if abs_path.startswith("/_images"):
+                    return await call_next(request)
                 
                 # 使用预先计算好的allowed_static_abs
-                is_allowed = abs_path.startswith(allowed_static_abs)
+                is_allowed = abs_path.startswith(request.app.state.allowed_static_abs)
                 
                 if not is_allowed:
                     logger.warning(f"Unauthorized path access: {abs_path}")
