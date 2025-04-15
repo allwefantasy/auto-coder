@@ -554,7 +554,13 @@ class ImageLoader:
         Returns:
             markdown内容字符串
         """
-        logger.info(f"image_path: {image_path} engine: {engine} product_mode: {product_mode} paddle_kwargs: {paddle_kwargs}")
+        logger.info(f"image_path: {image_path} engine: {engine} product_mode: {product_mode} paddle_kwargs: {paddle_kwargs}")        
+
+        # 新增：如果 engine 为 paddle 且 PaddleOCR 为 None，直接返回空字符串
+        if engine == "paddle" and PaddleOCR is None:
+            logger.warning("PaddleOCR 未安装，无法识别图片内容，直接返回空字符串。")
+            return ""
+
         md_content = ImageLoader.extract_text_from_image(
             image_path,
             llm,

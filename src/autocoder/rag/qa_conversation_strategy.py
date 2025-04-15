@@ -126,7 +126,7 @@ class MultiRoundStrategy(QAConversationStrategy):
         {% endif %}
 
         """        
-        extra_docs = get_rules()
+        extra_docs = get_rules()               
         return {"extra_docs": extra_docs}
 
 class SingleRoundStrategy(QAConversationStrategy):
@@ -240,8 +240,7 @@ class SingleRoundStrategy(QAConversationStrategy):
         {% endfor %}        
         {% endif %}
 
-        """
-        import os
+        """        
         extra_docs = extra_docs = get_rules()
         return {"extra_docs": extra_docs}
 

@@ -41,6 +41,8 @@ from autocoder.rag.qa_conversation_strategy import get_qa_strategy
 from autocoder.rag.searchable import SearchableResults
 from autocoder.rag.conversation_to_queries import extract_search_queries
 from autocoder.common import openai_content as OpenAIContentProcessor
+from autocoder.rag.save_formatted_log import save_formatted_log
+import json, os
 try:
     from autocoder_pro.rag.llm_compute import LLMComputeEngine
     pro_version = version("auto-coder-pro")
@@ -848,6 +850,15 @@ class LongContextRAG:
                     documents=[doc.source_code for doc in relevant_docs],
                     conversations=conversations, local_image_host=self.args.local_image_host
                 )
+
+                # 保存 new_conversations
+                try:                    
+                    logger.info(f"Saving new_conversations log to {self.args.source_dir}/.cache/logs")
+                    project_root = self.args.source_dir
+                    json_text = json.dumps(new_conversations, ensure_ascii=False)
+                    save_formatted_log(project_root, json_text, "rag_conversation")
+                except Exception as e:
+                    logger.warning(f"Failed to save new_conversations log: {e}")
 
                 chunks = target_llm.stream_chat_oai(
                     conversations=new_conversations,

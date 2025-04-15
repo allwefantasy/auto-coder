@@ -1,4 +1,3 @@
-
 import os
 from pathlib import Path
 from threading import Lock
@@ -26,7 +25,7 @@ class AutocoderRulesManager:
     _instance = None
     _lock = Lock()
 
-    def __new__(cls):
+    def __new__(cls, project_root: Optional[str] = None):
         if not cls._instance:
             with cls._lock:
                 if not cls._instance:
@@ -34,7 +33,7 @@ class AutocoderRulesManager:
                     cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self):
+    def __init__(self, project_root: Optional[str] = None):
         if self._initialized:
             return
         self._initialized = True
@@ -43,6 +42,7 @@ class AutocoderRulesManager:
         self._rules_dir: Optional[str] = None  # 当前使用的规则目录
         self._file_monitor = None  # FileMonitor 实例
         self._monitored_dirs: List[str] = []  # 被监控的目录列表
+        self._project_root = project_root if project_root is not None else os.getcwd()  # 项目根目录
         
         # 加载规则
         self._load_rules()
@@ -58,7 +58,7 @@ class AutocoderRulesManager:
         3. .auto-coder/autocoderrules/
         """
         self._rules = {}
-        project_root = os.getcwd()
+        project_root = self._project_root
         
         # 按优先级顺序定义可能的规则目录
         rules_dirs = [
@@ -104,7 +104,7 @@ class AutocoderRulesManager:
         
         try:
             # 获取项目根目录
-            project_root = os.getcwd()
+            project_root = self._project_root
             
             # 创建 FileMonitor 实例
             self._file_monitor = FileMonitor(root_dir=project_root)
@@ -163,8 +163,11 @@ class AutocoderRulesManager:
 
 
 # 对外提供单例
-_rules_manager = AutocoderRulesManager()
+_rules_manager = None
 
-def get_rules() -> Dict[str, str]:
-    """获取所有规则文件内容"""
+def get_rules(project_root: Optional[str] = None) -> Dict[str, str]:
+    """获取所有规则文件内容，可指定项目根目录"""
+    global _rules_manager
+    if _rules_manager is None:
+        _rules_manager = AutocoderRulesManager(project_root=project_root)
     return _rules_manager.get_rules()

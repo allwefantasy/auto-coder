@@ -30,6 +30,7 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 import pptx
 from pdfminer.image import ImageWriter
+import time
 
 import numpy as np
 from PIL import Image
@@ -504,6 +505,11 @@ class PdfConverter(DocumentConverter):
     Converts PDFs to Markdown with support for extracting and including images.
     """
 
+    def __init__(self, llm=None, product_mode="lite"):
+        super().__init__()
+        self.llm = llm
+        self.product_mode = product_mode
+
     def convert(self, local_path, **kwargs) -> Union[None, DocumentConverterResult]:
         # Bail if not a PDF
         extension = kwargs.get("file_extension", "")
@@ -584,7 +590,7 @@ class PdfConverter(DocumentConverter):
                         os.rename(temp_path, image_path)
                         content.append(f"![Image {local_image_count}]({image_path})")
                         # ===== 修改：通过FilterRuleManager单例实例判断是否需要解析图片
-                        v = try_parse_image(image_path)
+                        v = try_parse_image(image_path,self.llm)
                         if v:
                             content.append("<image_content>")
                             content.append(v)
@@ -618,7 +624,7 @@ class PdfConverter(DocumentConverter):
                                 content.append(
                                     f"![Image {local_image_count}]({image_path})\n"
                                 )
-                                v = try_parse_image(image_path)
+                                v = try_parse_image(image_path,self.llm)
                                 if v:
                                     content.append("<image_content>")
                                     content.append(v)
@@ -633,7 +639,7 @@ class PdfConverter(DocumentConverter):
                                 content.append(
                                     f"![Image {local_image_count}]({image_path})\n"
                                 )
-                                v = try_parse_image(image_path)
+                                v = try_parse_image(image_path,self.llm)
                                 if v:
                                     content.append("<image_content>")
                                     content.append(v)
@@ -650,7 +656,7 @@ class PdfConverter(DocumentConverter):
 
                     content.append(f"![Image {local_image_count}]({image_path})\n")
                     # ===== 新增：图片解析
-                    v = try_parse_image(image_path)
+                    v = try_parse_image(image_path,self.llm)
                     if v:
                         content.append("<image_content>")
                         content.append(v)
@@ -1131,7 +1137,7 @@ class MarkItDown:
         self.register_page_converter(WavConverter())
         self.register_page_converter(Mp3Converter())
         self.register_page_converter(ImageConverter())
-        self.register_page_converter(PdfConverter())
+        self.register_page_converter(PdfConverter(llm,product_mode))
 
     def convert(
         self, source: Union[str, requests.Response], **kwargs: Any
@@ -1356,18 +1362,36 @@ class MarkItDown:
         self._page_converters.insert(0, converter)
 
 
-def try_parse_image(image_path: str):
+def try_parse_image(image_path: str, llm=None):
     """
     根据FilterRuleManager单例实例判断是否需要解析图片，如果需要则调用ImageLoader.image_to_markdown。
     解析失败会自动捕获异常。
     """
-    logger.info(f"try_parse_image image_path: {image_path}")
+    import uuid
+    start_time = time.time()
+    req_id = str(uuid.uuid4())[:8]
+    logger.info(f"\n==== [try_parse_image] START | req_id={req_id} ====")
+    logger.info(f"[try_parse_image][{req_id}] image_path: {image_path}, llm: {llm}")
     if FilterRuleManager.get_instance().should_parse_image(image_path):
+        logger.info(f"[try_parse_image][{req_id}] should_parse_image=True, start parsing...")
         try:
-            v = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
+            v = ImageLoader.image_to_markdown(image_path, llm=llm, engine="paddle")
+            logger.info(f"[try_parse_image][{req_id}] image_to_markdown result: {str(v)[:200]}")
+            if llm:
+                v = ImageLoader.format_table_in_content(v, llm)
+                logger.info(f"[try_parse_image][{req_id}] format_table_in_content result: {str(v)[:200]}")
+            elapsed = time.time() - start_time
+            logger.info(f"[try_parse_image][{req_id}] SUCCESS | execution time: {elapsed:.3f} seconds")
+            logger.info(f"==== [try_parse_image] END | req_id={req_id} ====")
             return v
-        except Exception:
-            import traceback; 
-            traceback.print_exc()
+        except Exception as e:
+            elapsed = time.time() - start_time
+            logger.error(f"[try_parse_image][{req_id}] EXCEPTION | execution time: {elapsed:.3f} seconds | image_path: {image_path} | llm: {llm}")
+            logger.exception(e)
+            logger.info(f"==== [try_parse_image] END (EXCEPTION) | req_id={req_id} ====")
             return ""
+    else:
+        logger.info(f"[try_parse_image][{req_id}] should_parse_image=False, skip parsing.")
+        logger.info(f"==== [try_parse_image] END (SKIP) | req_id={req_id} ====")
+        return ""
 

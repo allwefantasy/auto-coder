@@ -1,3 +1,6 @@
+import logging
+logging.getLogger("ppocr").setLevel(logging.WARNING)
+
 import argparse
 from typing import Optional, List
 import byzerllm
@@ -23,6 +26,7 @@ import sys
 import asyncio
 from datetime import datetime
 from autocoder.common.file_monitor.monitor import FileMonitor
+from autocoder.common.rulefiles.autocoderrules_utils import get_rules
 
 from autocoder.rag.utils import process_file_local
 import pkg_resources
@@ -569,6 +573,7 @@ def main(input_args: Optional[List[str]] = None):
         # Generate unique name for RAG build if doc_dir exists
         if server_args.doc_dir:
             auto_coder_args.rag_build_name = generate_unique_name_from_path(server_args.doc_dir)
+            auto_coder_args.source_dir = server_args.doc_dir
             logger.info(f"Generated RAG build name: {auto_coder_args.rag_build_name}")        
 
         if auto_coder_args.enable_hybrid_index and args.product_mode == "pro":
@@ -745,23 +750,26 @@ def main(input_args: Optional[List[str]] = None):
             logger.warning(f"Failed to save service info: {str(e)}")
 
         # Start FileMonitor if monitor_mode is enabled and source_dir is provided
-        if args.source_dir:
+        if server_args.doc_dir:
             try:
                 # Use singleton pattern to get/create monitor instance
                 # FileMonitor ensures only one instance runs per root_dir
-                monitor = FileMonitor(args.source_dir)
+                monitor = FileMonitor(server_args.doc_dir)
                 if not monitor.is_running():
                     # TODO: Register specific callbacks here if needed in the future
                     # Example: monitor.register(os.path.join(args.source_dir, "specific_file.py"), my_callback)
                     monitor.start()
-                    logger.info(f"File monitor started for directory: {args.source_dir}")
+                    logger.info(f"File monitor started for directory: {server_args.doc_dir}")
                 else:
                     # Log if monitor was already running (e.g., started by another part of the app)
                     # Check if the existing monitor's root matches the current request
-                    if monitor.root_dir == os.path.abspath(args.source_dir):
+                    if monitor.root_dir == os.path.abspath(server_args.doc_dir):
                          logger.info(f"File monitor already running for directory: {monitor.root_dir}")
                     else:
                          logger.warning(f"File monitor is running for a different directory ({monitor.root_dir}), cannot start a new one for {args.source_dir}.")
+                
+                logger.info(f"Getting rules for {server_args.doc_dir}")
+                _ = get_rules(server_args.doc_dir)         
 
             except ValueError as ve: # Catch specific error if root_dir is invalid during init
                  logger.error(f"Failed to initialize file monitor for {args.source_dir}: {ve}")

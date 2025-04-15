@@ -60,22 +60,22 @@ default_models_list = [
         "max_output_tokens": 8096
     },    
     {
-        "name": "openrouter/quasar-alpha",
+        "name": "openai/gpt-4.1-mini",
         "description": "",
-        "model_name": "openrouter/quasar-alpha",
+        "model_name": "openai/gpt-4.1-mini",
         "model_type": "saas/openai",
         "base_url": "https://openrouter.ai/api/v1",
         "api_key_path": "",
         "is_reasoning": False,
-        "input_price": 0.0,
-        "output_price": 0.0,
+        "input_price": 2.8,
+        "output_price": 11.2,
         "average_speed": 0.0,
-        "max_output_tokens": 8096*2
+        "max_output_tokens": 8096*3
     },
     {
-        "name": "openrouter/optimus-alpha",
+        "name": "openai/gpt-4.1",
         "description": "",
-        "model_name": "openrouter/optimus-alpha",
+        "model_name": "openai/gpt-4.1",
         "model_type": "saas/openai",
         "base_url": "https://openrouter.ai/api/v1",
         "api_key_path": "",
@@ -83,8 +83,21 @@ default_models_list = [
         "input_price": 0.0,
         "output_price": 0.0,
         "average_speed": 0.0,
-        "max_output_tokens": 8096*2
-    },     
+        "max_output_tokens": 8096*3
+    },   
+    {
+        "name": "openai/gpt-4.1-nano",
+        "description": "",
+        "model_name": "openai/gpt-4.1-nano",
+        "model_type": "saas/openai",
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key_path": "",
+        "is_reasoning": False,
+        "input_price": 0.0,
+        "output_price": 0.0,
+        "average_speed": 0.0,
+        "max_output_tokens": 8096*3
+    },  
     {
         "name": "openrouter/google/gemini-2.5-pro-preview-03-25",
         "description": "",
