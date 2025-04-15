@@ -554,6 +554,7 @@ class ImageLoader:
         Returns:
             markdown内容字符串
         """
+        logger.info(f"image_path: {image_path} engine: {engine} product_mode: {product_mode} paddle_kwargs: {paddle_kwargs}")
         md_content = ImageLoader.extract_text_from_image(
             image_path,
             llm,
@@ -561,8 +562,13 @@ class ImageLoader:
             product_mode=product_mode,
             paddle_kwargs=paddle_kwargs
         )
-
-        md_path = os.path.splitext(image_path)[0] + ".md"
+            
+        # Get directory and filename separately
+        dir_name = os.path.dirname(image_path)
+        file_name = os.path.basename(image_path)
+        base_name = os.path.splitext(file_name)[0]
+        # Create new path with dot before filename
+        md_path = os.path.join(dir_name, f".{base_name}.md")
         try:
             with open(md_path, "w", encoding="utf-8") as f:
                 f.write(md_content)

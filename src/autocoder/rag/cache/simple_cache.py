@@ -24,6 +24,7 @@ from .failed_files_utils import load_failed_files, save_failed_files
 from autocoder.common import AutoCoderArgs
 from byzerllm import SimpleByzerLLM, ByzerLLM
 from autocoder.utils.llms import get_llm_names
+from autocoder.common.file_monitor.monitor import get_file_monitor, Change
 
 
 default_ignore_dirs = [
@@ -50,7 +51,7 @@ def generate_content_md5(content: Union[str, bytes]) -> str:
 
 
 class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
-    def __init__(self, path: str, ignore_spec, required_exts: list, update_interval: int = 5, args: Optional[AutoCoderArgs] = None, llm: Optional[Union[ByzerLLM, SimpleByzerLLM, str]] = None):
+    def __init__(self, path: str, ignore_spec, required_exts: list, args: Optional[AutoCoderArgs] = None, llm: Optional[Union[ByzerLLM, SimpleByzerLLM, str]] = None):
         """
         初始化异步更新队列，用于管理代码文件的缓存。
 
@@ -58,7 +59,8 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             path: 需要索引的代码库根目录
             ignore_spec: 指定哪些文件/目录应被忽略的规则
             required_exts: 需要处理的文件扩展名列表
-            update_interval: 自动触发更新的时间间隔（秒），默认为5秒
+            args: AutoCoderArgs 对象，包含配置信息
+            llm: 用于代码分析的 LLM 实例
 
         缓存结构 (self.cache):
             self.cache 是一个字典，其结构如下:
@@ -99,7 +101,6 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         self.args = args
         self.llm = llm
         self.product_mode = args.product_mode or "lite"
-        self.update_interval = update_interval
         self.queue = []
         self.cache = {}  # 初始化为空字典，稍后通过 read_cache() 填充
         self.lock = threading.Lock()
@@ -115,10 +116,16 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
         self.queue_thread.daemon = True
         self.queue_thread.start()
 
-        # 启动定时触发更新的线程
-        self.update_thread = threading.Thread(target=self._periodic_update)
-        self.update_thread.daemon = True
-        self.update_thread.start()
+        # 注册文件监控回调
+        self.file_monitor = get_file_monitor(self.path)
+        # 注册根目录的监控，这样可以捕获所有子目录和文件的变化
+        self.file_monitor.register(self.path, self._on_file_change)
+        # 确保监控器已启动
+        if not self.file_monitor.is_running():
+            self.file_monitor.start()
+            logger.info(f"Started file monitor for {self.path}")
+        else:
+            logger.info(f"File monitor already running for {self.path}")
 
         self.cache = self.read_cache()
 
@@ -130,30 +137,49 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 logger.error(f"Error in process_queue: {e}")
             time.sleep(1)  # 避免过于频繁的检查
 
-    def _periodic_update(self):
-        """定时触发文件更新检查"""
-        while not self.stop_event.is_set():
-            try:
-                logger.debug(
-                    f"Periodic update triggered (every {self.update_interval}s)")
-                # 如果没有被初始化过，不会增量触发
-                if not self.cache:
-                    time.sleep(self.update_interval)
-                    continue
-                self.trigger_update()
-            except Exception as e:
-                logger.error(f"Error in periodic update: {e}")
-            time.sleep(self.update_interval)
+    def _on_file_change(self, change_type: Change, file_path: str):
+        """
+        文件监控回调函数，当文件发生变化时触发更新
+        
+        参数:
+            change_type: 变化类型 (Change.added, Change.modified, Change.deleted)
+            file_path: 发生变化的文件路径
+        """
+        try:
+            # 如果缓存还没有初始化，跳过触发
+            if not self.cache:
+                return
+                
+            # 检查文件扩展名，如果不在需要处理的扩展名列表中，跳过
+            if self.required_exts and not any(file_path.endswith(ext) for ext in self.required_exts):
+                return
+                
+            # 检查是否在忽略规则中
+            if self.ignore_spec and self.ignore_spec.match_file(os.path.relpath(file_path, self.path)):
+                return
+                
+            logger.info(f"File change detected: {change_type} - {file_path}")
+            self.trigger_update()
+        except Exception as e:
+            logger.error(f"Error in file change handler: {e}")
 
     def stop(self):
         self.stop_event.set()
-        self.queue_thread.join()
-        self.update_thread.join()
+        # 取消注册文件监控回调
+        try:
+            self.file_monitor.unregister(self.path, self._on_file_change)
+            logger.info(f"Unregistered file monitor callback for {self.path}")
+        except Exception as e:
+            logger.error(f"Error unregistering file monitor callback: {e}")
+        # 只等待队列处理线程结束
+        if hasattr(self, 'queue_thread') and self.queue_thread.is_alive():
+            self.queue_thread.join(timeout=2.0)
 
     def fileinfo_to_tuple(self, file_info: FileInfo) -> Tuple[str, str, float, str]:
         return (file_info.file_path, file_info.relative_path, file_info.modify_time, file_info.file_md5)
 
     def __del__(self):
+        # 确保在对象被销毁时停止监控并清理资源
         self.stop()
 
     def load_first(self):
@@ -175,7 +201,7 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             #     [process_file.remote(file_info) for file_info in files_to_process]
             # )
             from autocoder.rag.token_counter import initialize_tokenizer
-            llm_name = get_llm_names(self.llm)[0] if self.llm else None
+            llm_name = get_llm_names(self.llm)[0] if self.llm else None            
             with Pool(
                 processes=os.cpu_count(),
                 initializer=initialize_tokenizer,
@@ -184,9 +210,12 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 
                 worker_func = functools.partial(
                     process_file_in_multi_process, llm=llm_name, product_mode=self.product_mode)
-                results = pool.map(worker_func, files_to_process)
-
+                results = pool.map(worker_func, files_to_process)            
+            
             for file_info, result in zip(files_to_process, results):
+                logger.info("================================================")
+                logger.info(f"result: {result}")
+                logger.info("================================================")
                 if result:  # 只有当result不为空时才更新缓存
                     self.update_cache(file_info, result)
                 else:
@@ -289,6 +318,8 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 for line in f:
                     data = json.loads(line)
                     cache[data["file_path"]] = data
+        else:
+            self.load_first()            
         return cache
 
     def write_cache(self):
@@ -366,6 +397,9 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
             dirs[:] = [d for d in dirs if not d.startswith(
                 ".") and d not in default_ignore_dirs]
 
+            # Filter out files that start with a dot
+            files[:] = [f for f in files if not f.startswith(".")]
+
             if self.ignore_spec:
                 relative_root = os.path.relpath(root, self.path)
                 dirs[:] = [
@@ -391,5 +425,5 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 file_md5 = generate_file_md5(file_path)
                 all_files.append(
                     (file_path, relative_path, modify_time, file_md5))
-
+        logger.info(f"all_files: {all_files}")
         return all_files

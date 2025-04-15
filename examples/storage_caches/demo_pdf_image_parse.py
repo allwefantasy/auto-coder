@@ -46,7 +46,6 @@ def main():
         path=pdf_dir,
         ignore_spec=None,
         required_exts=[".pdf"],
-        update_interval=5,
         args=args,
         llm=llm
     )

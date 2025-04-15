@@ -19,8 +19,10 @@ from rich.table import Table
 import os
 import hashlib
 from loguru import logger
+import sys
 import asyncio
 from datetime import datetime
+from autocoder.common.file_monitor.monitor import FileMonitor
 
 from autocoder.rag.utils import process_file_local
 import pkg_resources
@@ -741,9 +743,35 @@ def main(input_args: Optional[List[str]] = None):
             service_info.save()
         except Exception as e:
             logger.warning(f"Failed to save service info: {str(e)}")
+
+        # Start FileMonitor if monitor_mode is enabled and source_dir is provided
+        if args.source_dir:
+            try:
+                # Use singleton pattern to get/create monitor instance
+                # FileMonitor ensures only one instance runs per root_dir
+                monitor = FileMonitor(args.source_dir)
+                if not monitor.is_running():
+                    # TODO: Register specific callbacks here if needed in the future
+                    # Example: monitor.register(os.path.join(args.source_dir, "specific_file.py"), my_callback)
+                    monitor.start()
+                    logger.info(f"File monitor started for directory: {args.source_dir}")
+                else:
+                    # Log if monitor was already running (e.g., started by another part of the app)
+                    # Check if the existing monitor's root matches the current request
+                    if monitor.root_dir == os.path.abspath(args.source_dir):
+                         logger.info(f"File monitor already running for directory: {monitor.root_dir}")
+                    else:
+                         logger.warning(f"File monitor is running for a different directory ({monitor.root_dir}), cannot start a new one for {args.source_dir}.")
+
+            except ValueError as ve: # Catch specific error if root_dir is invalid during init
+                 logger.error(f"Failed to initialize file monitor for {args.source_dir}: {ve}")
+            except ImportError as ie: # Catch if watchfiles is not installed
+                 logger.error(f"Failed to start file monitor: {ie}")
+            except Exception as e:
+                logger.error(f"An unexpected error occurred while starting file monitor for {args.source_dir}: {e}")
         
         serve(llm=llm_wrapper, args=server_args)
-    elif args.command == "build_hybrid_index":        
+    elif args.command == "build_hybrid_index":
         auto_coder_args = AutoCoderArgs(
             **{
                 arg: getattr(args, arg)

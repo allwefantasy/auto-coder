@@ -1,6 +1,5 @@
 from io import BytesIO
 from pypdf import PdfReader
-from autocoder.utils._markitdown import MarkItDown
 import traceback
 
 
@@ -15,7 +14,8 @@ def extract_text_from_pdf_old(file_path):
     return text
 
 def extract_text_from_pdf(file_path, llm=None, product_mode="lite"):
-    try:
+    try:        
+        from autocoder.utils._markitdown import MarkItDown
         md_converter = MarkItDown(llm=llm, product_mode=product_mode)
         result = md_converter.convert(file_path)
         return result.text_content

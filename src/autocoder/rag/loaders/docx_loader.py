@@ -1,5 +1,4 @@
 from io import BytesIO
-from autocoder.utils._markitdown import MarkItDown
 import traceback
 
 def extract_text_from_docx_old(docx_path):
@@ -13,6 +12,7 @@ def extract_text_from_docx_old(docx_path):
 
 def extract_text_from_docx(docx_path):
     try:
+        from autocoder.utils._markitdown import MarkItDown
         md_converter = MarkItDown()
         result = md_converter.convert(docx_path)
         return result.text_content

@@ -42,6 +42,7 @@ from autocoder.rag.loaders.image_loader import ImageLoader
 import puremagic
 import requests
 from bs4 import BeautifulSoup
+from loguru import logger
 
 # Optional Transcription support
 try:
@@ -507,8 +508,7 @@ class PdfConverter(DocumentConverter):
         # Bail if not a PDF
         extension = kwargs.get("file_extension", "")
         if extension.lower() != ".pdf":
-            return None
-
+            return None        
         image_output_dir = None
         if kwargs.get("image_output_dir", None):
             image_output_dir = kwargs.get("image_output_dir")
@@ -531,17 +531,18 @@ class PdfConverter(DocumentConverter):
             rsrcmgr = PDFResourceManager()
             laparams = LAParams()
             device = PDFPageAggregator(rsrcmgr, laparams=laparams)
-            interpreter = PDFPageInterpreter(rsrcmgr, device)
+            interpreter = PDFPageInterpreter(rsrcmgr, device)            
 
             # Process each page
             for page in PDFPage.create_pages(document):
                 interpreter.process_page(page)
-                layout = device.get_result()
+                layout = device.get_result()                
 
                 # Extract text and images from the page
                 page_content = self._process_layout(
                     layout, image_output_dir, image_count
                 )
+                
                 text_content.extend(page_content)
                 image_count += len([c for c in page_content if c.startswith("![Image")])
 
@@ -583,12 +584,11 @@ class PdfConverter(DocumentConverter):
                         os.rename(temp_path, image_path)
                         content.append(f"![Image {local_image_count}]({image_path})")
                         # ===== 修改：通过FilterRuleManager单例实例判断是否需要解析图片
-                        if FilterRuleManager.get_instance().should_parse_image(image_path):
-                            try:
-                                _ = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
-                                # image_to_markdown会自动生成md文件
-                            except Exception:
-                                import traceback; traceback.print_exc()
+                        v = try_parse_image(image_path)
+                        if v:
+                            content.append("<image_content>")
+                            content.append(v)
+                            content.append("</image_content>")
                         # =====
                         local_image_count += 1
                         continue
@@ -618,7 +618,11 @@ class PdfConverter(DocumentConverter):
                                 content.append(
                                     f"![Image {local_image_count}]({image_path})\n"
                                 )
-                                try_parse_image(image_path)
+                                v = try_parse_image(image_path)
+                                if v:
+                                    content.append("<image_content>")
+                                    content.append(v)
+                                    content.append("</image_content>")
                                 local_image_count += 1
                                 continue
                             elif colorspace == "DeviceGray":
@@ -629,7 +633,11 @@ class PdfConverter(DocumentConverter):
                                 content.append(
                                     f"![Image {local_image_count}]({image_path})\n"
                                 )
-                                try_parse_image(image_path)
+                                v = try_parse_image(image_path)
+                                if v:
+                                    content.append("<image_content>")
+                                    content.append(v)
+                                    content.append("</image_content>")
                                 local_image_count += 1
                                 continue
                     except Exception as e:
@@ -641,8 +649,12 @@ class PdfConverter(DocumentConverter):
                         img_file.write(image_data)
 
                     content.append(f"![Image {local_image_count}]({image_path})\n")
-                    # ===== 新增：根据filter_utils判断是否需要解析图片
-                    try_parse_image(image_path)
+                    # ===== 新增：图片解析
+                    v = try_parse_image(image_path)
+                    if v:
+                        content.append("<image_content>")
+                        content.append(v)
+                        content.append("</image_content>")
                     local_image_count += 1
 
             # Handle text
@@ -1128,8 +1140,7 @@ class MarkItDown:
         Args:
             - source: can be a string representing a path or url, or a requests.response object
             - extension: specifies the file extension to use when interpreting the file. If None, infer from source (path, uri, content-type, etc.)
-        """
-
+        """        
         # Local path or url
         if isinstance(source, str):
             if (
@@ -1350,9 +1361,13 @@ def try_parse_image(image_path: str):
     根据FilterRuleManager单例实例判断是否需要解析图片，如果需要则调用ImageLoader.image_to_markdown。
     解析失败会自动捕获异常。
     """
-    if FilterRuleManager._instance.should_parse_image(image_path):
+    logger.info(f"try_parse_image image_path: {image_path}")
+    if FilterRuleManager.get_instance().should_parse_image(image_path):
         try:
-            _ = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
+            v = ImageLoader.image_to_markdown(image_path, llm=None, engine="paddle")
+            return v
         except Exception:
-            import traceback; traceback.print_exc()
+            import traceback; 
+            traceback.print_exc()
+            return ""
 

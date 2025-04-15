@@ -44,8 +44,7 @@ def main():
     cache_manager = AutoCoderRAGAsyncUpdateQueue(
         path=base_dir,
         ignore_spec=None,
-        required_exts=required_exts,
-        update_interval=5,
+        required_exts=required_exts,        
         args=args,
         llm=llm
     )

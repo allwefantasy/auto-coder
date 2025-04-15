@@ -22,7 +22,7 @@ def process_file_in_multi_process(
         llm = get_single_llm(llm,product_mode)
 
     start_time = time.time()
-    file_path, relative_path, _, _ = file_info
+    file_path, relative_path, _, _ = file_info    
     try:
         if file_path.endswith(".pdf"):
             content = extract_text_from_pdf(file_path, llm, product_mode)
