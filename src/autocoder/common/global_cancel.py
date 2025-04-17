@@ -18,27 +18,18 @@ class GlobalCancel:
     
     def register_token(self, token: str) -> None:
         """注册一个 token，表示一个操作开始，但尚未请求取消"""
-        with self._lock:
-            if token not in self._token_flags:
-                self._token_flags[token] = False
-            # 即使 token 已存在（可能之前被取消过），也将其加入 active_tokens
+        with self._lock:            
+            self._token_flags[token] = False            
             self._active_tokens.add(token)
-
-    @property
-    def requested(self) -> bool:
-        """检查是否请求了全局取消（向后兼容）"""
-        with self._lock:
-            return self._global_flag
     
     def is_requested(self, token: Optional[str] = None) -> bool:
         """检查是否请求了特定token或全局的取消"""
-        with self._lock:
-            # 全局标志总是优先
-            if self._global_flag:
-                return True
-            # 如果提供了token，检查该token的标志
+        with self._lock:            
             if token is not None and token in self._token_flags:
                 return self._token_flags[token]
+            
+            if self._global_flag:
+                return True
             return False        
 
     def set(self, token: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> None:
@@ -71,7 +62,8 @@ class GlobalCancel:
                 del self._token_flags[token]
             if "tokens" in self._context and token in self._context["tokens"]:
                 del self._context["tokens"][token]
-            self._active_tokens.discard(token) # 从活跃集合中移除
+            if token:    
+                self._active_tokens.discard(token) # 从活跃集合中移除
 
     def reset(self, token: Optional[str] = None) -> None:
         """重置特定token或全局的取消标志"""
@@ -88,7 +80,8 @@ class GlobalCancel:
                     del self._token_flags[token]
                 if "tokens" in self._context and token in self._context["tokens"]:
                     del self._context["tokens"][token]
-                self._active_tokens.discard(token) # 从活跃集合中移除
+                if token:
+                    self._active_tokens.discard(token) # 从活跃集合中移除
     
     def get_context(self, token: Optional[str] = None) -> Dict[str, Any]:
         """获取与取消相关的上下文信息"""

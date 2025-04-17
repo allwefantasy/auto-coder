@@ -16,6 +16,7 @@ from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.completion import Completer, Completion
 from autocoder.plugins import PluginManager
 from autocoder.events.event_manager_singleton import gengerate_event_file_path
+from autocoder.common.global_cancel import global_cancel
 from autocoder.auto_coder_runner import (
     auto_command,
     load_memory,
@@ -482,6 +483,7 @@ def main():
             ):
                 event_file, file_id = gengerate_event_file_path()
                 configure(f"event_file:{event_file}")
+                global_cancel.register_token(event_file)
                 auto_command(user_input)
 
             elif memory["mode"] == "voice_input" and not user_input.startswith("/"):
@@ -508,6 +510,9 @@ def main():
                 index_query(query)
 
             elif user_input.startswith("/index/build"):
+                event_file, file_id = gengerate_event_file_path()
+                configure(f"event_file:{event_file}")
+                global_cancel.register_token(event_file)
                 index_build()
 
             elif user_input.startswith("/index/export"):
@@ -592,14 +597,16 @@ def main():
             elif user_input.startswith("/coding"):
                 event_file, file_id = gengerate_event_file_path()
                 configure(f"event_file:{event_file}")
+                global_cancel.register_token(event_file)
                 query = user_input[len("/coding") :].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
                     continue
-                coding(query)
+                coding(query)                
             elif user_input.startswith("/chat"):
                 event_file, file_id = gengerate_event_file_path()
                 configure(f"event_file:{event_file}")
+                global_cancel.register_token(event_file)
                 query = user_input[len("/chat") :].strip()
                 if not query:
                     print("\033[91mPlease enter your request.\033[0m")
@@ -656,6 +663,7 @@ def main():
                     else:
                         if command.startswith("/chat"):
                             event_file, file_id = gengerate_event_file_path()
+                            global_cancel.register_token(event_file)
                             configure(f"event_file:{event_file}")
                             command = command[len("/chat") :].strip()
                             gen_and_exec_shell_command(command)
