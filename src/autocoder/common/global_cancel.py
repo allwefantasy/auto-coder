@@ -14,7 +14,16 @@ class GlobalCancel:
         self._token_flags: Dict[str, bool] = {}
         self._lock = threading.Lock()
         self._context: Dict[str, Any] = {}  # 存储与取消相关的上下文信息
+        self._active_tokens: set[str] = set() # 存储当前正在运行的token
     
+    def register_token(self, token: str) -> None:
+        """注册一个 token，表示一个操作开始，但尚未请求取消"""
+        with self._lock:
+            if token not in self._token_flags:
+                self._token_flags[token] = False
+            # 即使 token 已存在（可能之前被取消过），也将其加入 active_tokens
+            self._active_tokens.add(token)
+
     @property
     def requested(self) -> bool:
         """检查是否请求了全局取消（向后兼容）"""
@@ -39,7 +48,8 @@ class GlobalCancel:
                 self._global_flag = True
             else:
                 self._token_flags[token] = True
-            
+                self._active_tokens.add(token)  # 标记为活跃
+
             # 存储上下文
             if context:
                 if token is None:
@@ -61,6 +71,7 @@ class GlobalCancel:
                 del self._token_flags[token]
             if "tokens" in self._context and token in self._context["tokens"]:
                 del self._context["tokens"][token]
+            self._active_tokens.discard(token) # 从活跃集合中移除
 
     def reset(self, token: Optional[str] = None) -> None:
         """重置特定token或全局的取消标志"""
@@ -70,12 +81,14 @@ class GlobalCancel:
                 self._global_flag = False
                 self._token_flags.clear()
                 self._context.clear()
+                self._active_tokens.clear() # 清空活跃集合
             else:
                 # 特定token重置
                 if token in self._token_flags:
                     del self._token_flags[token]
                 if "tokens" in self._context and token in self._context["tokens"]:
                     del self._context["tokens"][token]
+                self._active_tokens.discard(token) # 从活跃集合中移除
     
     def get_context(self, token: Optional[str] = None) -> Dict[str, Any]:
         """获取与取消相关的上下文信息"""
