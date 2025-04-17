@@ -201,6 +201,9 @@ def main(input_args: Optional[List[str]] = None):
             ".idea/",
             "*.bak",
             "*.tmp",
+            ".mypy_cache/",
+            ".pytest_cache/",
+            ".ruff_cache/",
         ]
         try:
             with open(autocoderignore_path, "w", encoding="utf-8") as f_ignore:
