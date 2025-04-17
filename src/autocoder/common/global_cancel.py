@@ -49,6 +49,19 @@ class GlobalCancel:
                         self._context["tokens"] = {}
                     self._context["tokens"][token] = context
     
+    def reset_global(self) -> None:
+        """重置全局取消标志"""
+        with self._lock:
+            self._global_flag = False 
+
+    def reset_token(self, token: str) -> None:
+        """重置特定token的取消标志"""
+        with self._lock:
+            if token in self._token_flags:
+                del self._token_flags[token]
+            if "tokens" in self._context and token in self._context["tokens"]:
+                del self._context["tokens"][token]
+
     def reset(self, token: Optional[str] = None) -> None:
         """重置特定token或全局的取消标志"""
         with self._lock:
@@ -77,6 +90,10 @@ class GlobalCancel:
         """检查是否请求了取消，如果是则抛出异常"""
         if self.is_requested(token):
             context = self.get_context(token)
+            if token:
+                self.reset_token(token)
+            else:
+                self.reset_global()
             raise CancelRequestedException(token, context.get("message", "Operation was cancelled"))
 
 global_cancel = GlobalCancel()

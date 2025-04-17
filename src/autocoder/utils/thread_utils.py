@@ -53,9 +53,7 @@ def run_in_raw_thread(token: Optional[str] = None, context: Optional[Dict[str, A
                 except Exception as e:
                     # 存储其他异常
                     exception_raised[0] = e
-                finally:
-                    # 无论如何执行完毕后，重置取消标志并标记线程已终止
-                    global_cancel.reset(thread_token)
+                finally:                                                            
                     thread_terminated.set()
             
             # Create and start thread with a meaningful name
@@ -80,10 +78,7 @@ def run_in_raw_thread(token: Optional[str] = None, context: Optional[Dict[str, A
                         printer.print_in_terminal("force_terminating_thread")
                         break
                     
-                    # 检查线程间的取消请求
-                    if global_cancel.is_requested(thread_token):
-                        # 传播取消请求到工作线程
-                        raise CancelRequestedException(thread_token)
+                    global_cancel.check_and_raise()
 
                 # 如果工作线程出现了异常，在主线程中重新抛出
                 if exception_raised[0] is not None:
@@ -94,9 +89,7 @@ def run_in_raw_thread(token: Optional[str] = None, context: Optional[Dict[str, A
                 
             except KeyboardInterrupt:
                 # 设置取消标志
-                cancel_context = {"message": get_message("task_cancelled_by_user"), "source": "keyboard_interrupt"}
-                cancel_context.update(thread_context)
-                global_cancel.set(thread_token, cancel_context)
+                global_cancel.set()
                 printer.print_in_terminal("cancellation_requested")
 
                 # 标记为键盘中断取消
