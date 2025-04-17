@@ -184,6 +184,32 @@ def main(input_args: Optional[List[str]] = None):
             f.write("\n/actions/")
             f.write("\n/output.txt")
 
+        # Create .autocoderignore file
+        autocoderignore_path = os.path.join(source_dir, ".autocoderignore")
+        autocoderignore_patterns = [
+            "*.lock",
+            "*.log",
+            "*.pyc",
+            "*.swp",
+            ".DS_Store",
+            "__pycache__/",
+            ".env",
+            "node_modules/",
+            "build/",
+            "dist/",
+            ".vscode/",
+            ".idea/",
+            "*.bak",
+            "*.tmp",
+        ]
+        try:
+            with open(autocoderignore_path, "w", encoding="utf-8") as f_ignore:
+                f_ignore.write("\n".join(autocoderignore_patterns) + "\n")
+            logger.info(f"Created .autocoderignore file at {autocoderignore_path}")
+        except Exception as e:
+            logger.error(f"Failed to create .autocoderignore file: {e}")
+
+
         print(
             f"""Successfully initialized auto-coder project in {os.path.abspath(args.source_dir)}."""
         )
