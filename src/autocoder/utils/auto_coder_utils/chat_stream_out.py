@@ -231,7 +231,7 @@ def stream_out(
             console=console
         ) as live:
             for res in stream_generator:
-                global_cancel.check_and_raise(cancel_token)
+                global_cancel.check_and_raise(args.event_file)
                     
                 last_meta = res[1]                
                 content = res[0]

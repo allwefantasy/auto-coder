@@ -785,7 +785,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
         while True:
             iteration_count += 1            
             logger.info(f"Starting LLM interaction cycle #{iteration_count}")
-            global_cancel.check_and_raise()
+            global_cancel.check_and_raise(token=self.args.event_file)
             last_message = conversations[-1]
             if last_message["role"] == "assistant":
                 logger.info(f"Last message is assistant, skipping LLM interaction cycle")
@@ -815,7 +815,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
             for event in parsed_events:
                 event_count += 1
                 logger.info(f"Processing event #{event_count}: {type(event).__name__}")
-                global_cancel.check_and_raise()
+                global_cancel.check_and_raise(token=self.args.event_file)
                 if isinstance(event, (LLMOutputEvent, LLMThinkingEvent)):
                     assistant_buffer += event.text
                     logger.debug(f"Accumulated {len(assistant_buffer)} chars in assistant buffer")
@@ -1033,7 +1033,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
                 return None
 
         for content_chunk, metadata in generator:
-            global_cancel.check_and_raise()
+            global_cancel.check_and_raise(token=self.args.event_file)
             meta_holder.meta = metadata            
             if not content_chunk:
                 continue

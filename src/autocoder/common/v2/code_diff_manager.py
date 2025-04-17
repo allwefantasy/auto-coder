@@ -251,7 +251,7 @@ class CodeDiffManager:
         
         # 最多尝试修复5次
         for attempt in range(self.max_correction_attempts):
-            global_cancel.check_and_raise()
+            global_cancel.check_and_raise(token=self.args.event_file)
             # 代码生成结果更新到影子文件里去
             shadow_files = self._create_shadow_files_from_edits(generation_result)
             
@@ -326,7 +326,7 @@ class CodeDiffManager:
         """
         # 生成代码并自动修复lint错误
         generation_result = self.generate_and_fix(query, source_code_list)
-        global_cancel.check_and_raise()
+        global_cancel.check_and_raise(token=self.args.event_file)
         # 合并代码        
         self.code_merger.merge_code(generation_result)
         

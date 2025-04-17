@@ -113,7 +113,7 @@ class ActionTSProject(BaseAction):
                     f"Content(send to model) is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}"
                 )
 
-        global_cancel.check_and_raise()
+        global_cancel.check_and_raise(token=self.args.event_file)
 
         if (args.enable_auto_fix_merge or args.enable_auto_fix_lint) and args.execute and args.auto_merge=="editblock":
             code_merge_manager = CodeEditBlockManager(llm=self.llm, args=self.args,action=self)
@@ -179,7 +179,7 @@ class ActionTSProject(BaseAction):
                     action_file=self.args.file
                 ).to_dict())
 
-            global_cancel.check_and_raise()
+            global_cancel.check_and_raise(token=self.args.event_file)
 
             merge_result = None
             if args.execute and args.auto_merge:
@@ -267,7 +267,7 @@ class ActionPyProject(BaseAction):
                     max_length=self.args.model_max_input_length
                 )
 
-        global_cancel.check_and_raise()
+        global_cancel.check_and_raise(token=self.args.event_file)
 
         if (args.enable_auto_fix_merge or args.enable_auto_fix_lint) and args.execute and args.auto_merge=="editblock":
             code_merge_manager = CodeEditBlockManager(llm=self.llm, args=self.args,action=self)
@@ -334,7 +334,7 @@ class ActionPyProject(BaseAction):
                     action_file=self.args.file
                 ).to_dict())
 
-            global_cancel.check_and_raise()
+            global_cancel.check_and_raise(token=self.args.event_file)
 
             merge_result = None
             if args.execute and args.auto_merge:
@@ -415,7 +415,7 @@ class ActionSuffixProject(BaseAction):
                     f"Content(send to model) is {content_length} tokens, which is larger than the maximum input length {self.args.model_max_input_length}"
                 )
 
-        global_cancel.check_and_raise()
+        global_cancel.check_and_raise(token=self.args.event_file)
 
         if (args.enable_auto_fix_merge or args.enable_auto_fix_lint) and args.execute and args.auto_merge=="editblock":
             code_merge_manager = CodeEditBlockManager(llm=self.llm, args=self.args,action=self)
@@ -481,7 +481,7 @@ class ActionSuffixProject(BaseAction):
                     action_file=self.args.file
                 ).to_dict())
 
-        global_cancel.check_and_raise()
+        global_cancel.check_and_raise(token=self.args.event_file)
 
         merge_result = None
         if args.execute and args.auto_merge:

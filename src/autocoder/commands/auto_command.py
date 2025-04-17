@@ -440,7 +440,7 @@ class CommandAutoTuner:
         result_manager = ResultManager()
 
         while True:
-            global_cancel.check_and_raise()
+            global_cancel.check_and_raise(token=self.args.event_file)
             # 执行命令
             command = response.suggestions[0].command
             parameters = response.suggestions[0].parameters

@@ -676,7 +676,7 @@ class AgenticFilter:
         )
 
         while True:
-            global_cancel.check_and_raise()
+            global_cancel.check_and_raise(token=self.args.event_file)
             # print(json.dumps(conversations, ensure_ascii=False, indent=4))
             model_name = ",".join(llms_utils.get_llm_names(self.llm))
             start_time = time.monotonic()

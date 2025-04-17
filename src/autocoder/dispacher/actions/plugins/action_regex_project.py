@@ -67,7 +67,7 @@ class ActionRegexProject:
 
         start_time = time.time()
         
-        global_cancel.check_and_raise()
+        global_cancel.check_and_raise(token=self.args.event_file)
 
         if (args.enable_auto_fix_merge or args.enable_auto_fix_lint) and args.execute and args.auto_merge=="editblock":
             code_merge_manager = CodeEditBlockManager(llm=self.llm, args=self.args,action=self)
@@ -128,7 +128,7 @@ class ActionRegexProject:
                     action_file=self.args.file
                 ).to_dict())
 
-            global_cancel.check_and_raise()
+            global_cancel.check_and_raise(token=self.args.event_file)
             
             merge_result = None
             if args.execute and args.auto_merge:

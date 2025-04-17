@@ -433,7 +433,7 @@ class CodeEditBlockManager:
             return (unmerged_formatted_text, merged_formatted_text)
 
         for attempt in range(self.args.auto_fix_merge_max_attempts):
-            global_cancel.check_and_raise()
+            global_cancel.check_and_raise(token=self.args.event_file)
             unmerged_formatted_text, merged_formatted_text = _format_blocks(
                 merge)
             fix_prompt = self.fix_unmerged_blocks.prompt(
@@ -544,7 +544,7 @@ class CodeEditBlockManager:
         token_cost_calculator = TokenCostCalculator(args=self.args)
 
         for attempt in range(self.auto_fix_lint_max_attempts):
-            global_cancel.check_and_raise()
+            global_cancel.check_and_raise(token=self.args.event_file)
             # 代码生成结果更新到影子文件里去
             self.shadow_manager.clean_shadows()
             shadow_files = self._create_shadow_files_from_edits(
@@ -657,7 +657,7 @@ class CodeEditBlockManager:
         token_cost_calculator = TokenCostCalculator(args=self.args)
 
         for attempt in range(self.auto_fix_compile_max_attempts):
-            global_cancel.check_and_raise()
+            global_cancel.check_and_raise(token=self.args.event_file)
             # 先更新增量影子系统的文件
             self.shadow_manager.clean_shadows()
             shadow_files = self._create_shadow_files_from_edits(
@@ -804,7 +804,7 @@ class CodeEditBlockManager:
         # 生成代码并自动修复lint错误
 
         generation_result = self.generate_and_fix(query, source_code_list)
-        global_cancel.check_and_raise()
+        global_cancel.check_and_raise(token=self.args.event_file)
 
         # 合并代码
         self.code_merger.merge_code(generation_result)

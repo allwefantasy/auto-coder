@@ -30,8 +30,8 @@ class GlobalCancel:
             # 如果提供了token，检查该token的标志
             if token is not None and token in self._token_flags:
                 return self._token_flags[token]
-            return False
-    
+            return False        
+
     def set(self, token: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> None:
         """设置特定token或全局的取消标志"""
         with self._lock:

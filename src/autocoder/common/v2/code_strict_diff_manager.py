@@ -32,6 +32,7 @@ class CodeStrictDiffManager:
         self.code_merger = CodeAutoMergeStrictDiff(llm, args)
         self.shadow_manager = ShadowManager(args.source_dir, args.event_file)
         self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
+        self.args = args
 
     @byzerllm.prompt()
     def fix_linter_errors(self, query: str, lint_issues: str) -> str:
@@ -159,7 +160,7 @@ class CodeStrictDiffManager:
         
         # 最多尝试修复5次
         for attempt in range(self.max_correction_attempts):
-            global_cancel.check_and_raise()
+            global_cancel.check_and_raise(token=self.args.event_file)
             # 代码生成结果更新到影子文件里去
             shadow_files = self._create_shadow_files_from_edits(generation_result)
             
@@ -234,7 +235,7 @@ class CodeStrictDiffManager:
         """
         # 生成代码并自动修复lint错误
         generation_result = self.generate_and_fix(query, source_code_list)
-        global_cancel.check_and_raise()
+        global_cancel.check_and_raise(token=self.args.event_file)
         # 合并代码        
         self.code_merger.merge_code(generation_result)
         
