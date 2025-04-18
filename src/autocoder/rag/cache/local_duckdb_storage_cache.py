@@ -88,6 +88,7 @@ class LocalDuckdbStorage:
         table_name: str = "documents",
         embed_dim: Optional[int] = None,
         persist_dir: str = "./storage",
+        args: Optional[AutoCoderArgs] = None,
     ) -> None:
         self.llm = llm
         self.database_name = database_name
@@ -95,6 +96,7 @@ class LocalDuckdbStorage:
         self.embed_dim = embed_dim
         self.persist_dir = persist_dir
         self.cache_dir = os.path.join(self.persist_dir, ".cache")
+        self.args = args
         logger.info(f"正在启动 DuckDBVectorStore.")
 
         if self.database_name != ":memory:":
@@ -239,6 +241,11 @@ class LocalDuckdbStorage:
     def _node_to_table_row(
         self, context_chunk: Dict[str, str | float], dim: int | None = None
     ) -> Any:
+        
+        if not context_chunk["raw_content"]:
+            context_chunk["raw_content"] = "empty"        
+        context_chunk["raw_content"] = context_chunk["raw_content"][: self.args.rag_emb_text_size]
+            
         return (
             context_chunk["_id"],
             context_chunk["file_path"],
@@ -332,6 +339,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             database_name="byzerai_store_duckdb.db",
             table_name="rag_duckdb",
             persist_dir=self.path,
+            args=args,
         )
         self.queue = []
         self.chunk_size = 1000

@@ -269,7 +269,7 @@ class LocalByzerStorageCache(BaseCacheManager):
                         "file_path": file_info.file_path,
                         "content": chunk[0:self.chunk_size*2],
                         "raw_content": chunk[0:self.chunk_size*2],
-                        "vector": chunk[0:self.chunk_size*2],
+                        "vector": chunk[0:self.args.rag_emb_text_size],
                         "mtime": file_info.modify_time,
                     }
                     items.append(chunk_item)
