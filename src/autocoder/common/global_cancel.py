@@ -37,10 +37,9 @@ class GlobalCancel:
         return False 
 
     def set_active_tokens(self) -> None:
-        """启用所有活跃的token"""
-        with self._lock:
-            for token in self._active_tokens:
-                self.set(token)
+        """启用所有活跃的token"""        
+        for token in self._active_tokens:
+            self.set(token)            
 
     def set(self, token: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> None:
         """设置特定token或全局的取消标志"""
@@ -109,7 +108,6 @@ class GlobalCancel:
     
     def check_and_raise(self, token: Optional[str] = None) -> None:
         """检查是否请求了取消，如果是则抛出异常"""
-        print(f"检查取消: {token} {self.is_requested(token)}")
         if self.is_requested(token):
             context = self.get_context(token)
             if token:
