@@ -208,17 +208,21 @@ class CommandCompleterV2(Completer):
 
     def _handle_remove_files(self, document: Document, complete_event: CompleteEvent, word: str, text: str) -> Iterable[Completion]:
         """Handles completions for /remove_files command."""
-        args_text = text[len("/remove_files"):].lstrip()
-        parts = args_text.split()
-        last_part = parts[-1] if parts and not text.endswith(" ") else ""
+        # 'word' is document.get_word_before_cursor(WORD=True)
 
-        # Complete /all
-        if "/all".startswith(last_part):
-             yield Completion("/all", start_position=-len(last_part))
+        # Complete /all subcommand
+        if "/all".startswith(word):
+            yield Completion("/all", start_position=-len(word))
 
-        # Complete from current files
-        yield from self._complete_items(last_part, [os.path.basename(f) for f in self.current_file_names])
-        yield from self._complete_items(last_part, self.current_file_names)        
+        # Complete from current file paths (relative paths)
+        relative_current_files = [os.path.relpath(f, self.file_system_model.project_root) for f in self.current_file_names]
+        yield from self._complete_items(word, relative_current_files)
+
+        # Also complete from just the base filenames
+        current_basenames = [os.path.basename(f) for f in self.current_file_names]
+        # Avoid duplicates if basename is same as relative path (e.g., top-level file)
+        unique_basenames = [b for b in current_basenames if b not in relative_current_files]
+        yield from self._complete_items(word, unique_basenames)
 
 
     def _handle_exclude_dirs(self, document: Document, complete_event: CompleteEvent, word: str, text: str) -> Iterable[Completion]:
