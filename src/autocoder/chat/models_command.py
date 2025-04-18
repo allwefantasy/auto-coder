@@ -26,6 +26,11 @@ def handle_models_command(query: str, memory: Dict[str, Any]):
         printer.print_in_terminal("models_lite_only", style="red")
         return
 
+    # Check if the query is empty or only whitespace
+    if not query.strip():
+        printer.print_in_terminal("models_usage")
+        return
+
     models_data = models_module.load_models()
     subcmd = ""
     if "/list" in query:
