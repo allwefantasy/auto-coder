@@ -230,10 +230,8 @@ def stream_out(
             refresh_per_second=4,
             console=console
         ) as live:
-            for res in stream_generator:
-                print(args.event_file)
-                global_cancel.check_and_raise(args.event_file)
-                    
+            for res in stream_generator:  
+                global_cancel.check_and_raise(args.event_file)                                  
                 last_meta = res[1]                
                 content = res[0]
 
@@ -242,7 +240,7 @@ def stream_out(
                     reasoning_content = last_meta.reasoning_content
 
                 if reasoning_content == "" and content == "":
-                    continue
+                    continue             
                 
                 if first_token_time == 0.0:
                     first_token_time = time.time() - first_token_time_start

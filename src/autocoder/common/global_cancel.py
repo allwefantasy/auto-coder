@@ -28,14 +28,13 @@ class GlobalCancel:
             return self._active_tokens.copy()
     
     def is_requested(self, token: Optional[str] = None) -> bool:
-        """检查是否请求了特定token或全局的取消"""
-        with self._lock:            
-            if token is not None and token in self._token_flags:
-                return self._token_flags[token]
-            
-            if self._global_flag:
-                return True
-            return False 
+        """检查是否请求了特定token或全局的取消"""                  
+        if token is not None and token in self._token_flags:
+            return self._token_flags[token]
+        
+        if self._global_flag:
+            return True
+        return False 
 
     def set_active_tokens(self) -> None:
         """启用所有活跃的token"""
@@ -110,6 +109,7 @@ class GlobalCancel:
     
     def check_and_raise(self, token: Optional[str] = None) -> None:
         """检查是否请求了取消，如果是则抛出异常"""
+        print(f"检查取消: {token} {self.is_requested(token)}")
         if self.is_requested(token):
             context = self.get_context(token)
             if token:
