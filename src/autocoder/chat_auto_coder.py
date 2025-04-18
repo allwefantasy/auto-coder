@@ -21,9 +21,9 @@ from autocoder.auto_coder_runner import (
     auto_command,
     load_memory,
     save_memory,
-    configure,
+    configure, # Keep configure if it's used elsewhere or by handle_conf_command internally (though we adapted handle_conf_command not to)
     manage_models,
-    print_conf,
+    # print_conf, # Removed
     exclude_dirs,
     exclude_files,
     ask,
@@ -53,6 +53,7 @@ from autocoder.auto_coder_runner import (
     get_memory,
     active_context,
 )
+# Ensure the correct import is present
 from autocoder.chat.conf_command import handle_conf_command
 
 # Create a global plugin manager
@@ -554,7 +555,9 @@ def main():
             elif user_input.startswith("/conf"):
                 # Extract everything after "/conf"
                 command_args = user_input[len("/conf"):].strip()
-                handle_conf_command(command_args, memory) # Pass args and memory
+                # Call the handler from conf_command.py and print its string result
+                result_message = handle_conf_command(command_args, memory)
+                print(result_message)
             elif user_input.startswith("/revert"):
                 revert()
             elif user_input.startswith("/commit"):

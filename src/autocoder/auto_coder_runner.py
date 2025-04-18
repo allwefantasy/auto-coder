@@ -34,7 +34,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.live import Live
-from rich.text import Text
+# Removed Text import as it's only used in the deleted print_conf
 from rich.live import Live
 from rich.markdown import Markdown
 from byzerllm.utils.nontext import Image
@@ -670,55 +670,8 @@ completer = CommandCompleter(commands,
                                                                 get_symbol_list=get_symbol_list
                                                                 ),
                              memory_model=CCMemoryModel(memory=memory,
-                                                        save_memory_func=save_memory))
+                                                         save_memory_func=save_memory))
 
-
-
-
-def print_conf(content:Dict[str,Any]):        
-        """Display configuration dictionary in a Rich table format with enhanced visual styling.
-
-        Args:
-            conf (Dict[str, Any]): Configuration dictionary to display
-        """
-        console = Console()
-
-        # Create a styled table with rounded borders
-        table = Table(
-            show_header=True,
-            header_style="bold magenta",
-            title=get_message("conf_title"),
-            title_style="bold blue",
-            border_style="blue",
-            show_lines=True            
-        )
-
-        # Add columns with explicit width and alignment
-        table.add_column(get_message("conf_key"), style="cyan", justify="right", width=30, no_wrap=False)
-        table.add_column(get_message("conf_value"), style="green", justify="left", width=50, no_wrap=False)
-
-        # Sort keys for consistent display
-        for key in sorted(content.keys()):
-            value = content[key]
-            # Format value based on type
-            if isinstance(value, (dict, list)):
-                formatted_value = Text(json.dumps(value, indent=2), style="yellow")
-            elif isinstance(value, bool):
-                formatted_value = Text(str(value), style="bright_green" if value else "red")
-            elif isinstance(value, (int, float)):
-                formatted_value = Text(str(value), style="bright_cyan")
-            else:
-                formatted_value = Text(str(value), style="green")
-
-            table.add_row(str(key), formatted_value)
-
-        # Add padding and print with a panel
-        console.print(Panel(
-            table,
-            padding=(1, 2),
-            subtitle=f"[italic]{get_message('conf_subtitle')}[/italic]",
-            border_style="blue"
-        ))
 
 def revert():
     result_manager = ResultManager()
