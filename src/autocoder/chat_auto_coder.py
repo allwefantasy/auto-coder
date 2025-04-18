@@ -53,6 +53,7 @@ from autocoder.auto_coder_runner import (
     get_memory,
     active_context,
 )
+from autocoder.chat.conf_command import handle_conf_command
 
 # Create a global plugin manager
 plugin_manager = PluginManager()
@@ -543,27 +544,17 @@ def main():
             elif user_input.startswith("/conf/export"):
                 from autocoder.common.conf_import_export import export_conf
 
-                export_path = user_input[len("/conf/export") :].strip()
-                export_conf(os.getcwd(), export_path)
-
-            elif user_input.startswith("/conf/import"):
-                from autocoder.common.conf_import_export import import_conf
-
-                import_path = user_input[len("/conf/import") :].strip()
-                import_conf(os.getcwd(), import_path)
-
             elif user_input.startswith("/plugins"):
                 # 提取命令参数并交由 plugin_manager 处理
                 args = user_input[len("/plugins") :].strip().split()
                 result = plugin_manager.handle_plugins_command(args)
                 print(result, end="")
 
+            # Handle /conf and its subcommands like /conf /export, /conf /import
             elif user_input.startswith("/conf"):
-                conf = user_input[len("/conf") :].strip()
-                if not conf:
-                    print_conf(memory["conf"])
-                else:
-                    configure(conf)
+                # Extract everything after "/conf"
+                command_args = user_input[len("/conf"):].strip()
+                handle_conf_command(command_args, memory) # Pass args and memory
             elif user_input.startswith("/revert"):
                 revert()
             elif user_input.startswith("/commit"):
