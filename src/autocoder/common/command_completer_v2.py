@@ -209,15 +209,16 @@ class CommandCompleterV2(Completer):
     def _handle_remove_files(self, document: Document, complete_event: CompleteEvent, word: str, text: str) -> Iterable[Completion]:
         """Handles completions for /remove_files command."""
         args_text = text[len("/remove_files"):].lstrip()
-        current_word = args_text.split(",")[-1].strip() # Get the last part after comma
+        parts = args_text.split()
+        last_part = parts[-1] if parts and not text.endswith(" ") else ""
 
         # Complete /all
-        if "/all".startswith(current_word):
-             yield Completion("/all", start_position=-len(current_word))
+        if "/all".startswith(last_part):
+             yield Completion("/all", start_position=-len(last_part))
 
         # Complete from current files
-        yield from self._complete_items(current_word, [os.path.basename(f) for f in self.current_file_names])
-        yield from self._complete_items(current_word, self.current_file_names)
+        yield from self._complete_items(last_part, [os.path.basename(f) for f in self.current_file_names])
+        yield from self._complete_items(last_part, self.current_file_names)        
 
 
     def _handle_exclude_dirs(self, document: Document, complete_event: CompleteEvent, word: str, text: str) -> Iterable[Completion]:
@@ -259,7 +260,7 @@ class CommandCompleterV2(Completer):
                 if sub_cmd.startswith(last_part):
                     yield Completion(sub_cmd, start_position=-len(last_part))
             # Also complete config keys directly
-            yield from self._complete_config_keys(last_part, add_colon=True)
+            yield from self._complete_config_keys(last_part, add_colon=False)
 
         # Complete config keys after /drop or /get
         elif parts and parts[0] in ["/drop", "/get"]:
@@ -274,12 +275,12 @@ class CommandCompleterV2(Completer):
              yield from self._complete_config_keys(last_part, add_colon=True)
 
          # Complete values after colon
-         elif ":" in args_text:
-             key_part = args_text.split(":", 1)[0].strip()
-             value_part = args_text.split(":", 1)[1].strip() if ":" in args_text else ""
-             yield from self._complete_config_values(key_part, value_part)
-             # Example: Complete enum values or suggest file paths for path-like keys
-             pass # Placeholder for future value completions
+        elif ":" in args_text:
+            key_part = args_text.split(":", 1)[0].strip()
+            value_part = args_text.split(":", 1)[1].strip() if ":" in args_text else ""
+            yield from self._complete_config_values(key_part, value_part)
+            # Example: Complete enum values or suggest file paths for path-like keys
+            pass # Placeholder for future value completions
 
     def _complete_config_values(self, key: str, value: str) -> Iterable[Completion]:
         """Helper to complete configuration values based on the key."""
@@ -288,9 +289,9 @@ class CommandCompleterV2(Completer):
         # Model name completion for keys containing "model"
         if key.endswith("_model") or key == "model":
             # Refresh model names if they can change dynamically
-            # self.refresh_model_names()
+            # self.refresh_model_names()            
             for model_name in self.model_names:
-                if model_name.startswith(value):
+                if model_name.startswith(value) or value==":":
                     yield Completion(model_name, start_position=start_pos)
             # If a model name matched, we might prioritize these completions.
             # Consider returning here if model names are the only relevant values.
