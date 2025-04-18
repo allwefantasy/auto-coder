@@ -53,6 +53,7 @@ from autocoder.common.memory_manager import get_global_memory_file_paths
 from autocoder import models as models_module
 import shlex
 from autocoder.utils.llms import get_single_llm
+import fnmatch
 import pkg_resources
 from autocoder.common.printer import Printer
 from autocoder.utils.thread_utils import run_in_raw_thread
@@ -988,32 +989,56 @@ def remove_files(file_names: List[str]):
         memory["current_files"]["files"] = []
         memory["current_files"]["current_groups"] = []
         printer.print_in_terminal("remove_files_all", style="green")
-        result_manager.append(content="All files removed.", 
+        result_manager.append(content="All files removed.",
                               meta={"action": "remove_files","success":True, "input":{ "file_names": file_names}})
     else:
-        removed_files = []
-        for file in memory["current_files"]["files"]:
-            if os.path.basename(file) in file_names:
-                removed_files.append(file)
-            elif file in file_names:
-                removed_files.append(file)
-        for file in removed_files:
-            memory["current_files"]["files"].remove(file)
+        files_to_remove = set()
+        current_files_abs = memory["current_files"]["files"]
 
-        if removed_files:
-            table = Table(                
-                show_header=True, 
+        for pattern in file_names:
+            pattern = pattern.strip() # Remove leading/trailing whitespace
+            if not pattern:
+                continue
+
+            is_wildcard = "*" in pattern or "?" in pattern
+
+            for file_path_abs in current_files_abs:
+                relative_path = os.path.relpath(file_path_abs, project_root)
+                basename = os.path.basename(file_path_abs)
+
+                matched = False
+                if is_wildcard:
+                    # Match pattern against relative path or basename
+                    if fnmatch.fnmatch(relative_path, pattern) or fnmatch.fnmatch(basename, pattern):
+                        matched = True
+                else:
+                    # Exact match against relative path, absolute path, or basename
+                    if relative_path == pattern or file_path_abs == pattern or basename == pattern:
+                        matched = True
+
+                if matched:
+                    files_to_remove.add(file_path_abs)
+
+        removed_files_list = list(files_to_remove)
+        if removed_files_list:
+            # Update memory by filtering out the files to remove
+            memory["current_files"]["files"] = [
+                f for f in current_files_abs if f not in files_to_remove
+            ]
+
+            table = Table(
+                show_header=True,
                 header_style="bold magenta"
             )
-            table.add_column("File", style="green")
-            for f in removed_files:
+            table.add_column(printer.get_message_from_key("file_column_title"), style="green")
+            for f in removed_files_list:
                 table.add_row(os.path.relpath(f, project_root))
 
             console = Console()
             console.print(
                 Panel(table, border_style="green",
-                      title=printer.get_message_from_key("files_removed"))) 
-            result_manager.append(content=f"Removed files: {', '.join(removed_files)}", 
+                      title=printer.get_message_from_key("files_removed")))
+            result_manager.append(content=f"Removed files: {', '.join(removed_files_list)}",
                               meta={"action": "remove_files","success":True, "input":{ "file_names": file_names}})
         else:
             printer.print_in_terminal("remove_files_none", style="yellow")
