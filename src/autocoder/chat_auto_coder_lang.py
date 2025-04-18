@@ -377,26 +377,26 @@ MESSAGES = {
     "models_usage": {
         "en": '''Usage: /models <command>
 Available subcommands:
-  /list               - List all models
-  /add <name> <api_key> - Add/Activate a built-in model with API key
-  /add_model          - Add a custom model (use key=value pairs)
-  /remove <name>      - Remove a model
-  /input_price <name> <value> - Set model input price (M/token)
-  /output_price <name> <value> - Set model output price (M/token)
-  /speed <name> <value> - Set model speed (s/request)
-  /speed-test         - Test models speed
-  /speed-test /long_context - Test models speed with long context''',
+  /list               - List all configured models (built-in + custom).
+  /add <name> <api_key> - Add or activate a built-in model and set its API key.
+  /add_model          - Add a custom model. Provide parameters in 'key=value' format, e.g., name=my_model model_name=gpt-4 base_url=... api_key=...
+  /remove <name>      - Remove a configured model by its name.
+  /input_price <name> <value> - Set the input price for a model (unit: Million tokens).
+  /output_price <name> <value> - Set the output price for a model (unit: Million tokens).
+  /speed <name> <value> - Set the average speed for a model (unit: seconds per request).
+  /speed-test [<rounds>] - Test the speed of configured models. Optionally specify the number of rounds.
+  /speed-test /long_context [<rounds>] - Test model speed using a long context. Optionally specify the number of rounds.''',
         "zh": '''用法: /models <命令>
 可用的子命令:
-  /list               - 列出所有模型
-  /add <名称> <API密钥> - 添加/激活内置模型并设置API密钥
-  /add_model          - 添加自定义模型 (使用 key=value 格式)
-  /remove <名称>      - 移除模型
-  /input_price <名称> <价格> - 设置模型输入价格 (M/token)
-  /output_price <名称> <价格> - 设置模型输出价格 (M/token)
-  /speed <名称> <速度> - 设置模型速度 (秒/请求)
-  /speed-test         - 测试模型速度
-  /speed-test /long_context - 使用长文本上下文测试模型速度'''
+  /list               - 列出所有已配置的模型 (包括内置和自定义)。
+  /add <名称> <API密钥> - 添加或激活一个内置模型，并设置其 API 密钥。
+  /add_model          - 添加一个自定义模型。参数使用 'key=value' 格式提供，例如：name=my_model model_name=gpt-4 base_url=... api_key=...
+  /remove <名称>      - 根据名称移除一个已配置的模型。
+  /input_price <名称> <价格> - 设置指定模型的输入价格 (单位: 百万 Token)。
+  /output_price <名称> <价格> - 设置指定模型的输出价格 (单位: 百万 Token)。
+  /speed <名称> <速度> - 设置指定模型的平均速度 (单位: 秒/请求)。
+  /speed-test [<轮数>] - 测试已配置模型的速度。可以指定测试轮数 (可选)。
+  /speed-test /long_context [<轮数>] - 使用长文本上下文测试模型速度。可以指定测试轮数 (可选)。'''
     },
     "models_added": {
         "en": "Added/Updated model '{{name}}' successfully.",
