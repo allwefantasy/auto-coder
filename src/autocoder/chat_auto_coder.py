@@ -17,6 +17,7 @@ from prompt_toolkit.completion import Completer, Completion
 from autocoder.plugins import PluginManager
 from autocoder.events.event_manager_singleton import gengerate_event_file_path
 from autocoder.common.global_cancel import global_cancel
+from autocoder.chat.models_command import handle_models_command
 from autocoder.auto_coder_runner import (
     auto_command,
     load_memory,
@@ -530,10 +531,7 @@ def main():
 
             elif user_input.startswith("/models"):
                 query = user_input[len("/models") :].strip()
-                if not query:
-                    print("Please enter your query.")
-                else:
-                    handle_models_command(query, memory)
+                handle_models_command(query, get_memory())                    
 
             elif user_input.startswith("/mode"):
                 conf = user_input[len("/mode") :].strip()

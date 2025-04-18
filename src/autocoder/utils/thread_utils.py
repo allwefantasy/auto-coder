@@ -88,6 +88,8 @@ def run_in_raw_thread(token: Optional[str] = None, context: Optional[Dict[str, A
                 
             except KeyboardInterrupt:            
                 # 取消所有任务    
+                for token in global_cancel.get_active_tokens():
+                    print(f"Cancelling job: {token}")
                 global_cancel.set_active_tokens()
                 printer.print_in_terminal("cancellation_requested")
 
