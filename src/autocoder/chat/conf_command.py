@@ -169,15 +169,12 @@ def _handle_help(memory: Dict[str, Any], args: List[str]) -> str:
 
     help_text = """
 /conf command usage:
-  /conf [pattern]    - Show configurations. Optional wildcard pattern (e.g., *_model, api*).
-  /conf list [pattern]- Alias for showing configurations with optional pattern.
+  /conf [pattern]    - Show configurations. Optional wildcard pattern (e.g., *_model, api*).  
   /conf get <key>    - Get the value of a specific configuration key.
-  /conf set <key> <value> - Set or update a configuration key.
+  /conf set <key>:<value> - Set or update a configuration key.
                        Value parsed (bool, int, float, None) or treated as string.
                        Use quotes ("value with spaces") for explicit strings.
-  /conf delete <key> - Delete a configuration key.
-  /conf del <key>    - Alias for 'delete'.
-  /conf rm <key>     - Alias for 'delete'.
+  /conf /drop <key> - Delete a configuration key.
   /conf /export <path> - Export current configuration to a file.
   /conf /import <path> - Import configuration from a file.
   /conf help         - Show this help message.

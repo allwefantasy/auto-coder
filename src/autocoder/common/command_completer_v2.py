@@ -16,7 +16,7 @@ from autocoder import models as models_module
 COMMAND_HIERARCHY = {
     "/add_files": {"/group": {"/add", "/drop", "/reset", "/set"}, "/refresh": {}},
     "/remove_files": {"/all"},
-    "/conf": {"/drop", "/export", "/import", "/list", "/get"}, # Added list/get for clarity
+    "/conf": {"/drop", "/export", "/import","/get"}, # Added list/get for clarity
     "/coding": {"/apply", "/next"},
     "/chat": {"/new", "/save", "/copy", "/mcp", "/rag", "/review", "/learn", "/no_context"},
     "/mcp": {"/add", "/remove", "/list", "/list_running", "/refresh", "/info"},

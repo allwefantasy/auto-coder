@@ -68,16 +68,7 @@ def run_in_raw_thread(token: Optional[str] = None, context: Optional[Dict[str, A
                 
                 while thread.is_alive():
                     # 每次等待较短时间，以便能够及时响应中断
-                    thread.join(0.1)
-                    
-                    # 检查是否已经超过最大等待时间（仅适用于已取消的情况）
-                    elapsed_time = time.time() - wait_start_time
-                    if cancelled_by_keyboard and elapsed_time > max_wait_time:
-                        printer.print_in_terminal("force_terminating_thread")
-                        break
-                    
-                    for token in global_cancel.get_active_tokens():
-                        global_cancel.check_and_raise(token)
+                    thread.join(0.1)                                                                          
 
                 # 如果工作线程出现了异常，在主线程中重新抛出
                 if exception_raised[0] is not None:
@@ -91,10 +82,7 @@ def run_in_raw_thread(token: Optional[str] = None, context: Optional[Dict[str, A
                 for token in global_cancel.get_active_tokens():
                     print(f"Cancelling job: {token}")
                 global_cancel.set_active_tokens()
-                printer.print_in_terminal("cancellation_requested")
-
-                # 标记为键盘中断取消
-                cancelled_by_keyboard = True
+                printer.print_in_terminal("cancellation_requested")                
                 wait_start_time = time.time()
                 
                 # 等待线程终止或检测到取消
