@@ -22,7 +22,7 @@ from autocoder.auto_coder_runner import (
     load_memory,
     save_memory,
     configure, # Keep configure if it's used elsewhere or by handle_conf_command internally (though we adapted handle_conf_command not to)
-    manage_models,
+    # manage_models, # Removed
     # print_conf, # Removed
     exclude_dirs,
     exclude_files,
@@ -533,7 +533,7 @@ def main():
                 if not query:
                     print("Please enter your query.")
                 else:
-                    manage_models(query)
+                    handle_models_command(query, memory)
 
             elif user_input.startswith("/mode"):
                 conf = user_input[len("/mode") :].strip()
