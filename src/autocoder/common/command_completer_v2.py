@@ -252,10 +252,9 @@ class CommandCompleterV2(Completer):
         """Handles completions for /conf command."""
         args_text = text[len("/conf"):].lstrip()
         parts = args_text.split()
-        last_part = parts[-1] if parts and not text.endswith(" ") else ""
-
+        last_part = parts[-1] if parts and not text.endswith(" ") else ""                
         # Complete subcommands like /drop, /export, /import, /list, /get
-        if not args_text or (len(parts) == 1 and not text.endswith(" ")):
+        if not args_text or (len(parts) == 1 and not text.endswith(" ") and ":" not in text):
             for sub_cmd in COMMAND_HIERARCHY["/conf"]:
                 if sub_cmd.startswith(last_part):
                     yield Completion(sub_cmd, start_position=-len(last_part))
@@ -271,24 +270,23 @@ class CommandCompleterV2(Completer):
              yield from self._complete_file_paths(word, text) # Use word here as it's likely the path
 
         # Complete config keys for setting (key:value)
-        elif ":" not in last_part:
+        elif ":" not in last_part:             
              yield from self._complete_config_keys(last_part, add_colon=True)
 
         # Potentially complete values after colon (more complex, depends on key)
-        # Example: complete boolean values
-        elif ":" in args_text:
+        # Example: complete boolean values        
+        elif ":" in args_text:                          
              key_part = args_text.split(":", 1)[0].strip()
-             value_part = args_text.split(":", 1)[1].strip() if ":" in args_text else ""
-
+             value_part = args_text.split(":", 1)[1].strip() if ":" in args_text else ""                          
              # Model name completion for keys containing "model"
-             if "model" in key_part:
-                 # Refresh model names if they can change dynamically
-                 self.refresh_model_names()
-                 for model_name in self.model_names:
-                     if model_name.startswith(value_part):
-                         yield Completion(model_name, start_position=-len(value_part))
-                 # Prioritize model completion if key matches
-                 return # Exit after providing model completions
+             if key_part.endswith("_model") or key_part == "model":
+                # Refresh model names if they can change dynamically
+                #  self.refresh_model_names()                                
+                for model_name in self.model_names:
+                    if model_name.startswith(value_part):
+                        yield Completion(model_name, start_position=-len(value_part))
+                # Prioritize model completion if key matches
+                # return # Exit after providing model completions
 
              field_info = AutoCoderArgs.model_fields.get(key_part)
              if field_info and field_info.annotation == bool:
@@ -500,7 +498,7 @@ class CommandCompleterV2(Completer):
         suffix = ":" if add_colon else ""
         for key in self.config_keys:
             if key.startswith(word):
-                yield Completion(key + suffix, start_position=-len(word))
+                yield Completion(key + suffix, start_position=-len(word))        
 
     def _complete_file_paths(self, name: str, text: str, is_symbol: bool = False) -> Iterable[Completion]:
         """Helper to complete file paths (@ completion or general path)."""
