@@ -1,10 +1,12 @@
+import os
+import pydantic
+from typing import Callable,Dict,Any # Added import
+from pydantic import BaseModel,SkipValidation # Added import
 from prompt_toolkit.completion import Completer, Completion, CompleteEvent
 from prompt_toolkit.document import Document
-import pydantic
-from typing import Callable,Dict,Any
-from pydantic import BaseModel,SkipValidation
-from autocoder.common import AutoCoderArgs
-import os
+
+from autocoder import models as models_module # Import models module
+from autocoder.common import AutoCoderArgs # Ensure AutoCoderArgs is imported
 
 COMMANDS = {
     "/add_files": {
@@ -366,10 +368,13 @@ class CommandCompleter(Completer):
         self.file_system_model = file_system_model
         self.memory_model = memory_model
         self.all_file_names = file_system_model.get_all_file_names_in_project()
-        self.all_files = file_system_model.get_all_file_in_project()
-        self.all_dir_names = file_system_model.get_all_dir_names_in_project()
-        self.all_files_with_dot = file_system_model.get_all_file_in_project_with_dot()
-        self.symbol_list = file_system_model.get_symbol_list()
+        self.all_files = self.file_system_model.get_all_file_in_project()
+        self.all_dir_names = self.file_system_model.get_all_dir_names_in_project()
+        self.all_files_with_dot = self.file_system_model.get_all_file_in_project_with_dot()
+        self.symbol_list = self.file_system_model.get_symbol_list()
+        # Refresh model names if they can change dynamically (optional)
+        self.all_model_names = [m['name'] for m in models_module.load_models()]
+        self.all_model_names = [m['name'] for m in models_module.load_models()] # Load model names
         self.current_file_names = []
 
     def get_completions(self, document, complete_event):
@@ -544,9 +549,49 @@ class CommandCompleter(Completer):
                         for field_name in AutoCoderArgs.model_fields.keys()
                         if field_name.startswith(current_word)
                     ]
+                # /conf key:[cursor] or /conf key:v[cursor]
+                elif ":" in text: # Check if colon exists anywhere after /conf
+                    parts = text[len("/conf"):].strip().split(":", 1)
+                    if len(parts) == 2:
+                        key = parts[0].strip()
+                        value_part = parts[1] # This is the part after the colon
 
+                        # Determine the word being completed (part after colon)
+                        # Find the start of the current word after the colon
+                        space_pos = value_part.rfind(" ")
+                        if space_pos != -1:
+                            current_value_word = value_part[space_pos + 1:]
+                        else:
+                            current_value_word = value_part
+
+                        # Model name completion
+                        if "model" in key:
+                            for model_name in self.all_model_names:
+                                if model_name.startswith(current_value_word):
+                                    yield Completion(model_name, start_position=-len(current_value_word))
+                            # Prioritize model completion if key matches
+                            return # Exit after providing model completions
+
+                        # Boolean completion
+                        bool_keys = {name for name, field in AutoCoderArgs.model_fields.items() if field.annotation == bool}
+                        if key in bool_keys:
+                            if "true".startswith(current_value_word):
+                                yield Completion("true", start_position=-len(current_value_word))
+                            if "false".startswith(current_value_word):
+                                yield Completion("false", start_position=-len(current_value_word))
+                            # Prioritize boolean completion if key matches
+                            return # Exit after providing boolean completions
+
+                        # Add other value completions based on key if needed here
+
+                        # No specific value completions matched, so no yield from here
+                        return # Exit if we were trying value completion
+
+                # Default completion for keys or /drop if no value completion logic was triggered above
                 for completion in completions:
-                    yield Completion(completion, start_position=-len(current_word))
+                     # Adjust start_position based on whether we are completing key or /drop
+                     yield Completion(completion, start_position=-len(current_word))
+
             elif words[0] in ["/chat", "/coding","/auto"]:
                 image_extensions = (
                     ".png",
@@ -894,6 +939,7 @@ class CommandCompleter(Completer):
 
     def update_current_files(self, files):
         self.current_file_names = [f for f in files]
+
 
     def refresh_files(self):
         self.all_file_names = self.file_system_model.get_all_file_names_in_project()
