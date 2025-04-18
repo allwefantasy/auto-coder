@@ -1,5 +1,6 @@
 import json
 import shlex
+import fnmatch # Add fnmatch for wildcard matching
 from typing import Dict, Any
 from rich.console import Console
 from rich.table import Table
@@ -80,14 +81,22 @@ def handle_models_command(query: str, memory: Dict[str, Any]):
         printer.print_in_terminal("models_usage")        
 
     result_manager = ResultManager()
-    if subcmd == "/list":                    
-        if models_data:
+    if subcmd == "/list":
+        pattern = query.strip() # Get the filter pattern from the query
+        filtered_models_data = models_data
+
+        if pattern: # Apply filter if a pattern is provided
+            filtered_models_data = [
+                m for m in models_data if fnmatch.fnmatch(m.get("name", ""), pattern)
+            ]
+
+        if filtered_models_data:
             # Sort models by speed (average_speed)
-            sorted_models = sorted(models_data, key=lambda x: float(x.get('average_speed', 0)))
+            sorted_models = sorted(filtered_models_data, key=lambda x: float(x.get('average_speed', 0)))
             sorted_models.reverse()
 
             table = Table(
-                title=printer.get_message_from_key("models_title"),
+                title=printer.get_message_from_key("models_title") + (f" (Filtered by: '{pattern}')" if pattern else ""),
                 expand=True,
                 show_lines=True
             )
@@ -116,18 +125,28 @@ def handle_models_command(query: str, memory: Dict[str, Any]):
                     f"{m.get('average_speed', 0.0):.3f}"
                 )
             console.print(table)
-            result_manager.add_result(content=json.dumps(sorted_models,ensure_ascii=False),meta={
+            result_manager.add_result(content=json.dumps(sorted_models, ensure_ascii=False), meta={
                 "action": "models",
                 "input": {
-                    "query": query
+                    "query": query # Keep original query for logging
                 }
             })
-
         else:
-            printer.print_in_terminal("models_no_models", style="yellow")
-            result_manager.add_result(content="No models found",meta={
-                "action": "models",
-                "input": {
+            if pattern:
+                # Use a specific message if filtering resulted in no models
+                printer.print_in_terminal("models_no_models_matching_pattern", style="yellow", pattern=pattern)
+                result_manager.add_result(content=f"No models found matching pattern: {pattern}", meta={
+                    "action": "models",
+                    "input": {
+                        "query": query
+                    }
+                })
+            else:
+                # Original message if no models exist at all
+                printer.print_in_terminal("models_no_models", style="yellow")
+                result_manager.add_result(content="No models found", meta={
+                    "action": "models",
+                    "input": {
                     "query": query
                 }
             })

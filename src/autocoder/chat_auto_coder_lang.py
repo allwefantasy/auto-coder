@@ -478,6 +478,10 @@ Available subcommands:
         "en": "No models found.",
         "zh": "未找到任何模型。"
     },
+    "models_no_models_matching_pattern": {
+        "en": "No models found matching pattern: {{pattern}}",
+        "zh": "未找到匹配模式的模型: {{pattern}}"
+    },
     "models_lite_only": {
         "en": "The /models command is only available in lite mode",
         "zh": "/models 命令仅在 lite 模式下可用"
