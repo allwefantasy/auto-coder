@@ -21,6 +21,11 @@ class GlobalCancel:
         with self._lock:            
             self._token_flags[token] = False            
             self._active_tokens.add(token)
+
+    def get_active_tokens(self) -> set[str]:
+        """获取当前正在运行的token"""
+        with self._lock:
+            return self._active_tokens
     
     def is_requested(self, token: Optional[str] = None) -> bool:
         """检查是否请求了特定token或全局的取消"""
@@ -30,7 +35,13 @@ class GlobalCancel:
             
             if self._global_flag:
                 return True
-            return False        
+            return False 
+
+    def set_active_tokens(self) -> None:
+        """启用所有活跃的token"""
+        with self._lock:
+            for token in self._active_tokens:
+                self._token_flags[token] = True
 
     def set(self, token: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> None:
         """设置特定token或全局的取消标志"""
@@ -82,6 +93,12 @@ class GlobalCancel:
                     del self._context["tokens"][token]
                 if token:
                     self._active_tokens.discard(token) # 从活跃集合中移除
+    
+    def reset_active_tokens(self) -> None:
+        """重置所有活跃的token"""
+        with self._lock:
+            for token in self._active_tokens.copy():
+                self.reset_token(token)            
     
     def get_context(self, token: Optional[str] = None) -> Dict[str, Any]:
         """获取与取消相关的上下文信息"""

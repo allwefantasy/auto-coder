@@ -36,9 +36,7 @@ def run_in_raw_thread(token: Optional[str] = None, context: Optional[Dict[str, A
         def wrapper(*args, **kwargs):
             # Store thread results
             result = []
-            exception_raised = [None]  # 存储工作线程中的异常
-            thread_token = token
-            thread_context = context or {}
+            exception_raised = [None]  # 存储工作线程中的异常            
             thread_terminated = threading.Event()  # 用于标记线程是否已终止
             
             def worker():
@@ -78,7 +76,7 @@ def run_in_raw_thread(token: Optional[str] = None, context: Optional[Dict[str, A
                         printer.print_in_terminal("force_terminating_thread")
                         break
                     
-                    global_cancel.check_and_raise()
+                    global_cancel.check_and_raise(global_cancel.get_active_tokens())
 
                 # 如果工作线程出现了异常，在主线程中重新抛出
                 if exception_raised[0] is not None:
@@ -87,9 +85,9 @@ def run_in_raw_thread(token: Optional[str] = None, context: Optional[Dict[str, A
                 # 返回结果
                 return result[0] if result else None            
                 
-            except KeyboardInterrupt:
-                # 设置取消标志
-                global_cancel.set()
+            except KeyboardInterrupt:            
+                # 取消所有任务    
+                global_cancel.set_active_tokens()
                 printer.print_in_terminal("cancellation_requested")
 
                 # 标记为键盘中断取消

@@ -71,7 +71,7 @@ class EventManagerSingleton:
 
 def get_event_file_path(file_id:str,project_path: Optional[str] = None) -> str:
     if project_path is None:
-        return os.path.join(".auto-coder", "events", f"{file_id}.jsonl")
+        return os.path.join(os.getcwd(),".auto-coder", "events", f"{file_id}.jsonl")
     else:
         return os.path.join(project_path, ".auto-coder", "events", f"{file_id}.jsonl")
 
