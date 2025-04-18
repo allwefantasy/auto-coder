@@ -279,10 +279,23 @@ class CommandCompleterV2(Completer):
         elif ":" in args_text:
              key_part = args_text.split(":", 1)[0].strip()
              value_part = args_text.split(":", 1)[1].strip() if ":" in args_text else ""
+
+             # Model name completion for keys containing "model"
+             if "model" in key_part:
+                 # Refresh model names if they can change dynamically
+                 self.refresh_model_names()
+                 for model_name in self.model_names:
+                     if model_name.startswith(value_part):
+                         yield Completion(model_name, start_position=-len(value_part))
+                 # Prioritize model completion if key matches
+                 return # Exit after providing model completions
+
              field_info = AutoCoderArgs.model_fields.get(key_part)
              if field_info and field_info.annotation == bool:
                  if "true".startswith(value_part): yield Completion("true", start_position=-len(value_part))
                  if "false".startswith(value_part): yield Completion("false", start_position=-len(value_part))
+                 # Prioritize boolean completion if key matches
+                 return # Exit after providing boolean completions
              # Add more value completions based on key if needed
 
 
