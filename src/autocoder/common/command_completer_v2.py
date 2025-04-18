@@ -9,6 +9,7 @@ from prompt_toolkit.document import Document
 
 from autocoder.common import AutoCoderArgs
 from autocoder.common.command_completer import FileSystemModel, MemoryConfig # Reuse models
+from autocoder import models as models_module
 
 # Define command structure in a more structured way if needed,
 # but primarily rely on handlers for logic.
@@ -96,8 +97,7 @@ class CommandCompleterV2(Completer):
         self.group_names = list(self.memory_model.memory.get("current_files", {}).get("groups", {}).keys())
         self.lib_names = list(self.memory_model.memory.get("libs", {}).keys())
         # In a real scenario, might fetch model names from models_module
-        try:
-            from autocoder import models as models_module
+        try:            
             self.model_names = [m.get("name","") for m in models_module.load_models()]
         except ImportError:
             self.model_names = [] # Fallback if models module not available
