@@ -49,8 +49,7 @@ class GlobalCancel:
             if token is None:
                 self._global_flag = True
             else:
-                self._token_flags[token] = True
-                self._active_tokens.add(token)  # 标记为活跃
+                self._token_flags[token] = True                
 
             # 存储上下文
             if context:

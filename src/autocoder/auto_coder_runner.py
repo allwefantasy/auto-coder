@@ -541,7 +541,7 @@ def find_files_in_project(patterns: List[str]) -> List[str]:
 def convert_config_value(key, value):
     field_info = AutoCoderArgs.model_fields.get(key)
     if field_info:
-        if value.lower() in ["true", "false"]:
+        if isinstance(value, str) and value.lower() in ["true", "false"]:
             return value.lower() == "true"
         elif "int" in str(field_info.annotation):
             return int(value)
