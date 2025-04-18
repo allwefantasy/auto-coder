@@ -80,7 +80,7 @@ class MemoryConfig(BaseModel):
     """
     A model to encapsulate memory configuration and operations.
     """
-    memory: Dict[str, Any]
+    get_memory_func: SkipValidation[Callable]
     save_memory_func: SkipValidation[Callable]
 
     class Config:

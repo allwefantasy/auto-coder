@@ -93,9 +93,9 @@ class CommandCompleterV2(Completer):
 
     def _update_dynamic_data(self):
         """Load or update data that changes during runtime (groups, libs, current files)."""
-        self.current_file_names = self.memory_model.memory.get("current_files", {}).get("files", [])
-        self.group_names = list(self.memory_model.memory.get("current_files", {}).get("groups", {}).keys())
-        self.lib_names = list(self.memory_model.memory.get("libs", {}).keys())
+        self.current_file_names = self.memory_model.get_memory_func().get("current_files", {}).get("files", [])
+        self.group_names = list(self.memory_model.get_memory_func().get("current_files", {}).get("groups", {}).keys())
+        self.lib_names = list(self.memory_model.get_memory_func().get("libs", {}).keys())
         # In a real scenario, might fetch model names from models_module
         try:            
             self.model_names = [m.get("name","") for m in models_module.load_models()]
@@ -111,10 +111,6 @@ class CommandCompleterV2(Completer):
         self.symbol_list = self.file_system_model.get_symbol_list()
         self._update_dynamic_data() # Also refresh dynamic data
 
-    def update_current_files(self, files: List[str]):
-        """Update the list of currently active files."""
-        self.current_file_names = files
-        # No need to save memory here, just update local state for completion
 
     # --- Main Completion Logic ---
 
@@ -123,7 +119,7 @@ class CommandCompleterV2(Completer):
         word_before_cursor = document.get_word_before_cursor(WORD=True)
 
         # Update dynamic data on each completion request
-        self._update_dynamic_data()
+        self._update_dynamic_data()        
 
         if not text.strip(): # Empty input
             yield from self._handle_base_command(document, complete_event, word_before_cursor, text)
@@ -215,14 +211,14 @@ class CommandCompleterV2(Completer):
             yield Completion("/all", start_position=-len(word))
 
         # Complete from current file paths (relative paths)
-        relative_current_files = [os.path.relpath(f, self.file_system_model.project_root) for f in self.current_file_names]
-        yield from self._complete_items(word, relative_current_files)
+        relative_current_files = [os.path.relpath(f, self.file_system_model.project_root) for f in self.current_file_names]        
+        yield from self._complete_items_with_in(word, relative_current_files)
 
         # Also complete from just the base filenames
         current_basenames = [os.path.basename(f) for f in self.current_file_names]
         # Avoid duplicates if basename is same as relative path (e.g., top-level file)
         unique_basenames = [b for b in current_basenames if b not in relative_current_files]
-        yield from self._complete_items(word, unique_basenames)
+        yield from self._complete_items_with_in(word, unique_basenames)
 
 
     def _handle_exclude_dirs(self, document: Document, complete_event: CompleteEvent, word: str, text: str) -> Iterable[Completion]:
@@ -244,7 +240,7 @@ class CommandCompleterV2(Completer):
 
         elif parts and parts[0] == "/drop":
              current_word = last_part
-             yield from self._complete_items(current_word, self.memory_model.memory.get("exclude_files", []))
+             yield from self._complete_items(current_word, self.memory_model.get_memory_func().get("exclude_files", []))
         else:
              # Suggest prefix for regex
              if not last_part:
@@ -501,9 +497,16 @@ class CommandCompleterV2(Completer):
 
     # --- Helper Methods ---
 
+    def _complete_items_with_in(self, word: str, items: Iterable[str]) -> Iterable[Completion]:
+        """Generic helper to complete a word from a list of items."""        
+        for item in items:
+            if item and word in item:
+                yield Completion(item, start_position=-len(word))
+
     def _complete_items(self, word: str, items: Iterable[str]) -> Iterable[Completion]:
         """Generic helper to complete a word from a list of items."""
-        if word is None: word = ""
+        if word is None: 
+            word = ""
         for item in items:
             if item and item.startswith(word):
                 yield Completion(item, start_position=-len(word))

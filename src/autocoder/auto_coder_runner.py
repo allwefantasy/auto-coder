@@ -652,25 +652,13 @@ def load_memory():
             _memory = json.load(f)
         # clear memory
         memory.clear()
-        memory.update(_memory)
-    completer.update_current_files(memory["current_files"]["files"])
+        memory.update(_memory)    
     return memory
 
 def get_memory():    
     return load_memory()    
 
 
-# completer = CommandCompleter(commands,
-#                              file_system_model=CCFileSystemModel(project_root=project_root,
-#                                                                 defaut_exclude_dirs=defaut_exclude_dirs,
-#                                                                 get_all_file_names_in_project=get_all_file_names_in_project,
-#                                                                 get_all_file_in_project=get_all_file_in_project,
-#                                                                 get_all_dir_names_in_project=get_all_dir_names_in_project,
-#                                                                 get_all_file_in_project_with_dot=get_all_file_in_project_with_dot,
-#                                                                 get_symbol_list=get_symbol_list
-#                                                                 ),
-#                              memory_model=CCMemoryModel(memory=memory,
-#                                                          save_memory_func=save_memory))
 from autocoder.common.command_completer_v2 import CommandCompleterV2
 completer = CommandCompleterV2(commands,
                              file_system_model=CCFileSystemModel(project_root=project_root,
@@ -681,7 +669,7 @@ completer = CommandCompleterV2(commands,
                                                                 get_all_file_in_project_with_dot=get_all_file_in_project_with_dot,
                                                                 get_symbol_list=get_symbol_list
                                                                 ),
-                             memory_model=CCMemoryModel(memory=memory,
+                             memory_model=CCMemoryModel(get_memory_func=get_memory,
                                                          save_memory_func=save_memory))
 def revert():
     result_manager = ResultManager()
@@ -988,7 +976,6 @@ def add_files(args: List[str]):
             result_manager.append(content=f"No files matched.", 
                               meta={"action": "add_files","success":False, "input":{ "args": args}})
 
-    completer.update_current_files(memory["current_files"]["files"])
     save_memory()
 
 
@@ -1031,9 +1018,7 @@ def remove_files(file_names: List[str]):
         else:
             printer.print_in_terminal("remove_files_none", style="yellow")
             result_manager.append(content=printer.get_message_from_key("remove_files_none"), 
-                              meta={"action": "remove_files","success":False, "input":{ "file_names": file_names}})
-
-    completer.update_current_files(memory["current_files"]["files"])
+                              meta={"action": "remove_files","success":False, "input":{ "file_names": file_names}})    
     save_memory()
 
 @run_in_raw_thread()
