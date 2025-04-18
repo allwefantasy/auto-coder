@@ -5,19 +5,22 @@ from typing import Dict, Any
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
-
+import byzerllm
+from typing import Generator
 from autocoder import models as models_module
 from autocoder.common.printer import Printer
 from autocoder.common.result_manager import ResultManager
 from autocoder.common.model_speed_tester import render_speed_test_in_terminal
+from autocoder.utils.llms import get_single_llm
 
 def handle_models_command(query: str, memory: Dict[str, Any]):
     """    
     Handle /models subcommands:
       /models /list - List all models (default + custom)
-      /models /add <name> <api_key> - Add model with simplified params
+      /models /add <n> <api_key> - Add model with simplified params
       /models /add_model name=xxx base_url=xxx ... - Add model with custom params
-      /models /remove <name> - Remove model by name
+      /models /remove <n> - Remove model by name
+      /models /chat <content> - Chat with a model
     """
     console = Console()
     printer = Printer(console=console)    
@@ -74,6 +77,10 @@ def handle_models_command(query: str, memory: Dict[str, Any]):
     if "/speed" in query:
         subcmd = "/speed"
         query = query.replace("/speed", "", 1).strip()
+        
+    if "/chat" in query:
+        subcmd = "/chat"
+        query = query.replace("/chat", "", 1).strip()
 
 
 
@@ -100,9 +107,9 @@ def handle_models_command(query: str, memory: Dict[str, Any]):
                 expand=True,
                 show_lines=True
             )
-            table.add_column("Name", style="cyan", width=30, overflow="fold", no_wrap=False)
+            table.add_column("Name", style="cyan", width=40, overflow="fold", no_wrap=False)
             table.add_column("Model Name", style="magenta", width=30, overflow="fold", no_wrap=False)
-            table.add_column("Base URL", style="white", width=40, overflow="fold", no_wrap=False)
+            table.add_column("Base URL", style="white", width=30, overflow="fold", no_wrap=False)
             table.add_column("Input Price (M)", style="magenta", width=15, overflow="fold", no_wrap=False)
             table.add_column("Output Price (M)", style="magenta", width=15, overflow="fold", no_wrap=False)
             table.add_column("Speed (s/req)", style="blue", width=15, overflow="fold", no_wrap=False)
@@ -406,6 +413,68 @@ def handle_models_command(query: str, memory: Dict[str, Any]):
                 "query": query
             }
         })
+    elif subcmd == "/chat":
+        if not query.strip():
+            printer.print_in_terminal("Please provide content in format: <model_name> <question>", style="yellow")
+            result_manager.add_result(content="Please provide content in format: <model_name> <question>", meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
+            return
+            
+        # 分离模型名称和用户问题
+        parts = query.strip().split(' ', 1)  # 只在第一个空格处分割
+        if len(parts) < 2:
+            printer.print_in_terminal("Correct format should be: <model_name> <question>, where question can contain spaces", style="yellow")
+            result_manager.add_result(content="Correct format should be: <model_name> <question>, where question can contain spaces", meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
+            return
+            
+        model_name = parts[0]
+        user_question = parts[1]  # 这将包含所有剩余文本，保留空格
+        product_mode = memory.get("product_mode", "lite")
+        
+        try:
+            # Get the model
+            llm = get_single_llm(model_name, product_mode=product_mode)
+            
+            @byzerllm.prompt()
+            def chat_func(content: str) -> Generator[str, None, None]:
+                """
+                {{ content }}
+                """
+            
+            # Support custom llm_config parameters
+            result = chat_func.with_llm(llm).run(user_question)
+            output_text = ""            
+            for res in result:
+                output_text += res
+                print(res, end="", flush=True)
+            print("\n")    
+            
+            # Print the result
+            
+            result_manager.add_result(content=output_text, meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
+        except Exception as e:
+            error_message = f"Error chatting with model: {str(e)}"
+            printer.print_str_in_terminal(error_message, style="red")
+            result_manager.add_result(content=error_message, meta={
+                "action": "models",
+                "input": {
+                    "query": query
+                }
+            })
     else:
         printer.print_in_terminal("models_unknown_subcmd", style="yellow", subcmd=subcmd)
         result_manager.add_result(content=printer.get_message_from_key_with_format("models_unknown_subcmd",subcmd=subcmd),meta={ 

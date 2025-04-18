@@ -21,7 +21,7 @@ COMMAND_HIERARCHY = {
     "/chat": {"/new", "/save", "/copy", "/mcp", "/rag", "/review", "/learn", "/no_context"},
     "/mcp": {"/add", "/remove", "/list", "/list_running", "/refresh", "/info"},
     "/lib": {"/add", "/remove", "/list", "/set-proxy", "/refresh", "/get"},
-    "/models": {"/add", "/add_model", "/remove", "/list", "/speed", "/speed-test", "/input_price", "/output_price", "/activate"},
+    "/models": {"/chat", "/add", "/add_model", "/remove", "/list", "/speed", "/speed-test", "/input_price", "/output_price", "/activate"},
     "/auto": {},
     "/shell": {"/chat"},
     "/active_context": {"/list", "/run"},
@@ -356,8 +356,8 @@ class CommandCompleterV2(Completer):
                  if sub_cmd.startswith(last_part):
                       yield Completion(sub_cmd, start_position=-len(last_part))
 
-        # Complete model names for add/remove/speed/input_price/output_price/activate
-        elif parts and parts[0] in ["/add", "/remove", "/speed", "/input_price", "/output_price", "/activate"]:
+        # Complete model names for add/remove/speed/input_price/output_price/activate/chat
+        elif parts and parts[0] in ["/add", "/remove", "/speed", "/input_price", "/output_price", "/activate", "/chat"]:
              yield from self._complete_items(last_part, self.model_names)
 
         # Complete parameters for /add_model (e.g., name=, base_url=)
