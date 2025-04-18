@@ -377,6 +377,28 @@ class CommandCompleter(Completer):
         self.all_model_names = [m['name'] for m in models_module.load_models()] # Load model names
         self.current_file_names = []
 
+    def _complete_config_values(self, key_part, value_part):
+        """Helper method to yield completions for configuration values."""
+        # Model name completion
+        if "model" in key_part:
+            for model_name in self.all_model_names:
+                if model_name.startswith(value_part):
+                    yield Completion(model_name, start_position=-len(value_part))
+            # Don't return early here, let the caller handle exit
+
+        # Boolean completion (only if not a model key)
+        else:
+            bool_keys = {name for name, field in AutoCoderArgs.model_fields.items() if field.annotation == bool}
+            if key_part in bool_keys:
+                if "true".startswith(value_part):
+                    yield Completion("true", start_position=-len(value_part))
+                if "false".startswith(value_part):
+                    yield Completion("false", start_position=-len(value_part))
+                # Don't return early here
+
+        # Add other value completions based on key if needed here
+        # ...
+
     def get_completions(self, document, complete_event):
         text = document.text_before_cursor
         words = text.split()
@@ -564,28 +586,11 @@ class CommandCompleter(Completer):
                         else:
                             current_value_word = value_part
 
-                        # Model name completion
-                        if "model" in key:
-                            for model_name in self.all_model_names:
-                                if model_name.startswith(current_value_word):
-                                    yield Completion(model_name, start_position=-len(current_value_word))
-                            # Prioritize model completion if key matches
-                            return # Exit after providing model completions
+                        # Delegate value completion to the helper method
+                        yield from self._complete_config_values(key, current_value_word)
 
-                        # Boolean completion
-                        bool_keys = {name for name, field in AutoCoderArgs.model_fields.items() if field.annotation == bool}
-                        if key in bool_keys:
-                            if "true".startswith(current_value_word):
-                                yield Completion("true", start_position=-len(current_value_word))
-                            if "false".startswith(current_value_word):
-                                yield Completion("false", start_position=-len(current_value_word))
-                            # Prioritize boolean completion if key matches
-                            return # Exit after providing boolean completions
-
-                        # Add other value completions based on key if needed here
-
-                        # No specific value completions matched, so no yield from here
-                        return # Exit if we were trying value completion
+                        # Exit after attempting value completions, replicating original logic
+                        return
 
                 # Default completion for keys or /drop if no value completion logic was triggered above
                 for completion in completions:
