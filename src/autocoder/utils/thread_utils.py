@@ -76,7 +76,8 @@ def run_in_raw_thread(token: Optional[str] = None, context: Optional[Dict[str, A
                         printer.print_in_terminal("force_terminating_thread")
                         break
                     
-                    global_cancel.check_and_raise(global_cancel.get_active_tokens())
+                    for token in global_cancel.get_active_tokens():
+                        global_cancel.check_and_raise(token)
 
                 # 如果工作线程出现了异常，在主线程中重新抛出
                 if exception_raised[0] is not None:

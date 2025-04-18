@@ -25,7 +25,7 @@ class GlobalCancel:
     def get_active_tokens(self) -> set[str]:
         """获取当前正在运行的token"""
         with self._lock:
-            return self._active_tokens
+            return self._active_tokens.copy()
     
     def is_requested(self, token: Optional[str] = None) -> bool:
         """检查是否请求了特定token或全局的取消"""
@@ -41,7 +41,7 @@ class GlobalCancel:
         """启用所有活跃的token"""
         with self._lock:
             for token in self._active_tokens:
-                self._token_flags[token] = True
+                self.set(token)
 
     def set(self, token: Optional[str] = None, context: Optional[Dict[str, Any]] = None) -> None:
         """设置特定token或全局的取消标志"""
