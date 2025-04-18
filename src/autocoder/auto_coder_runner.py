@@ -992,33 +992,57 @@ def remove_files(file_names: List[str]):
                               meta={"action": "remove_files","success":True, "input":{ "file_names": file_names}})
     else:
         removed_files = []
-        for file in memory["current_files"]["files"]:
-            if os.path.basename(file) in file_names:
-                removed_files.append(file)
-            elif file in file_names:
-                removed_files.append(file)
-        for file in removed_files:
-            memory["current_files"]["files"].remove(file)
+        current_files = memory["current_files"]["files"] # 获取当前文件列表
+        files_to_keep = [] # 创建一个新列表来存储要保留的文件
 
+        for file in current_files:
+            try:
+                # 计算相对路径
+                rel_path = os.path.relpath(file, project_root)
+            except ValueError:
+                # 如果文件不在项目根目录下（例如绝对路径在其他地方），无法计算相对路径，跳过相对路径检查
+                rel_path = None
+
+            # 检查文件名、绝对路径或相对路径是否在要删除的列表中
+            should_remove = (
+                os.path.basename(file) in file_names or
+                file in file_names or
+                (rel_path and rel_path in file_names)
+            )
+
+            if should_remove:
+                removed_files.append(file)
+            else:
+                files_to_keep.append(file) # 如果不删除，则保留
+
+        # 更新内存中的文件列表
+        memory["current_files"]["files"] = files_to_keep
+
+        # 打印结果
         if removed_files:
-            table = Table(                
-                show_header=True, 
+            table = Table(
+                show_header=True,
                 header_style="bold magenta"
             )
             table.add_column("File", style="green")
             for f in removed_files:
-                table.add_row(os.path.relpath(f, project_root))
+                # 尝试打印相对路径，如果失败则打印原始路径
+                try:
+                    display_path = os.path.relpath(f, project_root)
+                except ValueError:
+                    display_path = f
+                table.add_row(display_path)
 
             console = Console()
             console.print(
                 Panel(table, border_style="green",
-                      title=printer.get_message_from_key("files_removed"))) 
-            result_manager.append(content=f"Removed files: {', '.join(removed_files)}", 
+                      title=printer.get_message_from_key("files_removed")))
+            result_manager.append(content=f"Removed files: {', '.join(removed_files)}",
                               meta={"action": "remove_files","success":True, "input":{ "file_names": file_names}})
         else:
             printer.print_in_terminal("remove_files_none", style="yellow")
-            result_manager.append(content=printer.get_message_from_key("remove_files_none"), 
-                              meta={"action": "remove_files","success":False, "input":{ "file_names": file_names}})    
+            result_manager.append(content=printer.get_message_from_key("remove_files_none"),
+                              meta={"action": "remove_files","success":False, "input":{ "file_names": file_names}})
     save_memory()
 
 @run_in_raw_thread()
