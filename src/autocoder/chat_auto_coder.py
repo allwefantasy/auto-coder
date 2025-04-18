@@ -382,7 +382,7 @@ def main():
     enhanced_completer = EnhancedCompleter(completer, plugin_manager)
 
     # Define the path for the history file
-    history_file_path = os.path.join(".auto-coder", "chat_history.txt")
+    history_file_path = os.path.join(os.getcwd(), ".auto-coder", "auto-coder.chat", "history", "command_history.txt")
     # Ensure the directory exists
     os.makedirs(os.path.dirname(history_file_path), exist_ok=True)
 
