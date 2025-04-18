@@ -273,28 +273,38 @@ class CommandCompleterV2(Completer):
         elif ":" not in last_part:             
              yield from self._complete_config_keys(last_part, add_colon=True)
 
-        # Potentially complete values after colon (more complex, depends on key)
-        # Example: complete boolean values        
-        elif ":" in args_text:                          
+         # Complete values after colon
+         elif ":" in args_text:
              key_part = args_text.split(":", 1)[0].strip()
-             value_part = args_text.split(":", 1)[1].strip() if ":" in args_text else ""                          
-             # Model name completion for keys containing "model"
-             if key_part.endswith("_model") or key_part == "model":
-                # Refresh model names if they can change dynamically
-                #  self.refresh_model_names()                                
-                for model_name in self.model_names:
-                    if model_name.startswith(value_part):
-                        yield Completion(model_name, start_position=-len(value_part))
-                # Prioritize model completion if key matches
-                # return # Exit after providing model completions
+             value_part = args_text.split(":", 1)[1].strip() if ":" in args_text else ""
+             yield from self._complete_config_values(key_part, value_part)
+             # Example: Complete enum values or suggest file paths for path-like keys
+             pass # Placeholder for future value completions
 
-             field_info = AutoCoderArgs.model_fields.get(key_part)
-             if field_info and field_info.annotation == bool:
-                 if "true".startswith(value_part): yield Completion("true", start_position=-len(value_part))
-                 if "false".startswith(value_part): yield Completion("false", start_position=-len(value_part))
-                 # Prioritize boolean completion if key matches
-                 return # Exit after providing boolean completions
-             # Add more value completions based on key if needed
+    def _complete_config_values(self, key: str, value: str) -> Iterable[Completion]:
+        """Helper to complete configuration values based on the key."""
+        start_pos = -len(value)
+
+        # Model name completion for keys containing "model"
+        if key.endswith("_model") or key == "model":
+            # Refresh model names if they can change dynamically
+            # self.refresh_model_names()
+            for model_name in self.model_names:
+                if model_name.startswith(value):
+                    yield Completion(model_name, start_position=start_pos)
+            # If a model name matched, we might prioritize these completions.
+            # Consider returning here if model names are the only relevant values.
+
+        # Boolean value completion
+        field_info = AutoCoderArgs.model_fields.get(key)
+        if field_info and field_info.annotation == bool:
+            if "true".startswith(value): yield Completion("true", start_position=start_pos)
+            if "false".startswith(value): yield Completion("false", start_position=start_pos)
+            # If boolean matched, we might prioritize these completions.
+            # Consider returning here if boolean is the only relevant value type.
+
+        # Add more value completions based on key type or name here
+        # e.g., enums, file paths, specific string formats
 
 
     def _handle_lib(self, document: Document, complete_event: CompleteEvent, word: str, text: str) -> Iterable[Completion]:
