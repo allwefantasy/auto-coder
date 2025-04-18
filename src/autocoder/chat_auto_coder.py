@@ -7,7 +7,7 @@ import argparse
 import os
 from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.history import InMemoryHistory, FileHistory  # Import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.styles import Style
 from autocoder.version import __version__
@@ -381,8 +381,13 @@ def main():
     # 创建一个继承Completer的增强补全器
     enhanced_completer = EnhancedCompleter(completer, plugin_manager)
 
+    # Define the path for the history file
+    history_file_path = os.path.join(".auto-coder", "chat_history.txt")
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(history_file_path), exist_ok=True)
+
     session = PromptSession(
-        history=InMemoryHistory(),
+        history=FileHistory(history_file_path),  # Use FileHistory
         auto_suggest=AutoSuggestFromHistory(),
         enable_history_search=False,
         completer=enhanced_completer,
