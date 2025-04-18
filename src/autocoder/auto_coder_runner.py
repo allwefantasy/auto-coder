@@ -660,7 +660,19 @@ def get_memory():
     return load_memory()    
 
 
-completer = CommandCompleter(commands,
+# completer = CommandCompleter(commands,
+#                              file_system_model=CCFileSystemModel(project_root=project_root,
+#                                                                 defaut_exclude_dirs=defaut_exclude_dirs,
+#                                                                 get_all_file_names_in_project=get_all_file_names_in_project,
+#                                                                 get_all_file_in_project=get_all_file_in_project,
+#                                                                 get_all_dir_names_in_project=get_all_dir_names_in_project,
+#                                                                 get_all_file_in_project_with_dot=get_all_file_in_project_with_dot,
+#                                                                 get_symbol_list=get_symbol_list
+#                                                                 ),
+#                              memory_model=CCMemoryModel(memory=memory,
+#                                                          save_memory_func=save_memory))
+from autocoder.common.command_completer_v2 import CommandCompleterV2
+completer = CommandCompleterV2(commands,
                              file_system_model=CCFileSystemModel(project_root=project_root,
                                                                 defaut_exclude_dirs=defaut_exclude_dirs,
                                                                 get_all_file_names_in_project=get_all_file_names_in_project,
@@ -671,8 +683,6 @@ completer = CommandCompleter(commands,
                                                                 ),
                              memory_model=CCMemoryModel(memory=memory,
                                                          save_memory_func=save_memory))
-
-
 def revert():
     result_manager = ResultManager()
     last_yaml_file = get_last_yaml_file("actions")

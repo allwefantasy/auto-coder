@@ -7,7 +7,7 @@ import argparse
 import os
 from prompt_toolkit import PromptSession
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.history import InMemoryHistory, FileHistory  # Import FileHistory
+from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.styles import Style
 from autocoder.version import __version__
