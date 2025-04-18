@@ -554,11 +554,10 @@ class CommandCompleterV2(Completer):
         for symbol in self.symbol_list:
             # Assuming symbol has attributes symbol_name, file_name, symbol_type
             if name in symbol.symbol_name:
-                file_name = symbol.file_name
-                rel_path = os.path.relpath(file_name, self.file_system_model.project_root)
-                display_name = self._get_display_path(file_name)
-                completion_text = f"{symbol.symbol_name}" # Just complete the name
+                file_name = symbol.file_name                
+                display_name = self._get_display_path(file_name)                
                 display_text = f"{symbol.symbol_name} ({display_name}/{symbol.symbol_type})"
+                completion_text = f"{symbol.symbol_name} ({file_name}/{symbol.symbol_type})"
                 yield Completion(completion_text, start_position=start_pos, display=display_text)
 
     def _get_display_path(self, file_path: str, max_parts: int = 3) -> str:
