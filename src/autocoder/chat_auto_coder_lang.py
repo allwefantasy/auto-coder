@@ -375,8 +375,28 @@ MESSAGES = {
         "zh": "管理模型配置，仅在lite模式下可用"
     },
     "models_usage": {
-        "en": "Usage: /models <command>\nAvailable subcommands:\n  /list - List all models\n  /add <name> <api_key> - Add a built-in model\n  /add_model - Add a custom model\n  /remove <name> - Remove a model\n  /input_price <name> <value> - Set model input price\n  /output_price <name> <value> - Set model output price\n  /speed <name> <value> - Set model speed\n  /speed-test - Test models speed\n  /speed-test-long - Test models speed with long context",
-        "zh": "用法: /models <命令>\n可用的子命令:\n  /list - 列出所有模型\n  /add <名称> <API密钥> - 添加内置模型\n  /add_model - 添加自定义模型\n  /remove <名称> - 移除模型\n  /input_price <名称> <价格> - 设置模型输入价格\n  /output_price <名称> <价格> - 设置模型输出价格\n  /speed <名称> <速度> - 设置模型速度\n  /speed-test - 测试模型速度\n  /speed-test-long - 使用长文本上下文测试模型速度"
+        "en": '''Usage: /models <command>
+Available subcommands:
+  /list               - List all models
+  /add <name> <api_key> - Add/Activate a built-in model with API key
+  /add_model          - Add a custom model (use key=value pairs)
+  /remove <name>      - Remove a model
+  /input_price <name> <value> - Set model input price (M/token)
+  /output_price <name> <value> - Set model output price (M/token)
+  /speed <name> <value> - Set model speed (s/request)
+  /speed-test         - Test models speed
+  /speed-test /long_context - Test models speed with long context''',
+        "zh": '''用法: /models <命令>
+可用的子命令:
+  /list               - 列出所有模型
+  /add <名称> <API密钥> - 添加/激活内置模型并设置API密钥
+  /add_model          - 添加自定义模型 (使用 key=value 格式)
+  /remove <名称>      - 移除模型
+  /input_price <名称> <价格> - 设置模型输入价格 (M/token)
+  /output_price <名称> <价格> - 设置模型输出价格 (M/token)
+  /speed <名称> <速度> - 设置模型速度 (秒/请求)
+  /speed-test         - 测试模型速度
+  /speed-test /long_context - 使用长文本上下文测试模型速度'''
     },
     "models_added": {
         "en": "Added/Updated model '{{name}}' successfully.",
