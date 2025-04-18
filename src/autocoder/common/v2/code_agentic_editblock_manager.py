@@ -347,7 +347,7 @@ class CodeEditBlockManager:
 
         # 计算这次修复缺失上下文花费的token情况
         token_cost_calculator.track_token_usage_by_generate(
-            llm=self.llm,
+            llm=self.code_generator.llms[0],
             generate=generation_result,
             operation_name="code_generation_complete",
             start_time=start_time,
@@ -470,7 +470,7 @@ class CodeEditBlockManager:
 
             # 计算这次修复未合并块花费的token情况
             token_cost_calculator.track_token_usage_by_generate(
-                llm=self.llm,
+                llm=self.code_generator.llms[0],
                 generate=generation_result,
                 operation_name="code_generation_complete",
                 start_time=start_time,
@@ -611,7 +611,7 @@ class CodeEditBlockManager:
 
             # 计算这次修复lint问题花费的token情况
             token_cost_calculator.track_token_usage_by_generate(
-                llm=self.llm,
+                llm=self.code_generator.llms[0],
                 generate=generation_result,
                 operation_name="code_generation_complete",
                 start_time=start_time,
@@ -710,7 +710,7 @@ class CodeEditBlockManager:
 
             # 计算这次修复compile问题花费的token情况
             token_cost_calculator.track_token_usage_by_generate(
-                llm=self.llm,
+                llm=self.code_generator.llms[0],
                 generate=generation_result,
                 operation_name="code_generation_complete",
                 start_time=start_time,
@@ -749,7 +749,7 @@ class CodeEditBlockManager:
 
         token_cost_calculator = TokenCostCalculator(args=self.args)
         token_cost_calculator.track_token_usage_by_generate(
-            llm=self.llm,
+            llm=self.code_generator.llms[0],
             generate=generation_result,
             operation_name="code_generation_complete",
             start_time=start_time,

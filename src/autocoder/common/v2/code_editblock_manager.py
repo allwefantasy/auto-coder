@@ -24,6 +24,7 @@ from autocoder.shadows.shadow_manager import ShadowManager
 from autocoder.linters.shadow_linter import ShadowLinter
 from autocoder.linters.models import IssueSeverity
 from loguru import logger
+from autocoder.utils.llms import get_llm_names
 from autocoder.common.global_cancel import global_cancel
 from autocoder.linters.models import ProjectLintResult
 from autocoder.common.token_cost_caculate import TokenCostCalculator
@@ -347,7 +348,7 @@ class CodeEditBlockManager:
 
         # 计算这次修复缺失上下文花费的token情况
         token_cost_calculator.track_token_usage_by_generate(
-            llm=self.llm,
+            llm=self.code_generator.llms[0],
             generate=generation_result,
             operation_name="code_generation_complete",
             start_time=start_time,
@@ -482,7 +483,7 @@ class CodeEditBlockManager:
 
             # 计算这次修复未合并块花费的token情况
             token_cost_calculator.track_token_usage_by_generate(
-                llm=self.llm,
+                llm=self.code_generator.llms[0],
                 generate=generation_result,
                 operation_name="code_generation_complete",
                 start_time=start_time,
@@ -623,7 +624,7 @@ class CodeEditBlockManager:
 
             # 计算这次修复lint问题花费的token情况
             token_cost_calculator.track_token_usage_by_generate(
-                llm=self.llm,
+                llm=self.code_generator.llms[0],
                 generate=generation_result,
                 operation_name="code_generation_complete",
                 start_time=start_time,
@@ -722,7 +723,7 @@ class CodeEditBlockManager:
 
             # 计算这次修复compile问题花费的token情况
             token_cost_calculator.track_token_usage_by_generate(
-                llm=self.llm,
+                llm=self.code_generator.llms[0],
                 generate=generation_result,
                 operation_name="code_generation_complete",
                 start_time=start_time,
@@ -759,9 +760,9 @@ class CodeEditBlockManager:
         generation_result = self.code_generator.single_round_run(
             query, source_code_list)
 
-        token_cost_calculator = TokenCostCalculator(args=self.args)
+        token_cost_calculator = TokenCostCalculator(args=self.args)        
         token_cost_calculator.track_token_usage_by_generate(
-            llm=self.llm,
+            llm=self.code_generator.llms[0],
             generate=generation_result,
             operation_name="code_generation_complete",
             start_time=start_time,
