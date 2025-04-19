@@ -6,6 +6,7 @@ from rich.console import Console
 from autocoder.common.printer import Printer
 from autocoder.common import AutoCoderArgs
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
+from autocoder.common import SourceCode,SourceCodeList
 
 class AutoLearn:
     def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],
@@ -130,5 +131,3 @@ class AutoLearn:
         except Exception as e:
             self.printer.print_in_terminal("代码分析时出错", style="red", error=str(e))
             return None
-
-```
