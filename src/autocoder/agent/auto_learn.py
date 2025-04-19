@@ -26,20 +26,20 @@ class AutoLearn:
         self.printer = Printer()
 
     @byzerllm.prompt()
-    def analyze_modules(self, module_paths: List[str], module_contents: Dict[str, str], query: str) -> str:
+    def analyze_modules(self, sources: SourceCodeList, query: str) -> str:
         """
         你作为一名高级 Python 工程师，对以下模块进行分析，总结出其中具有通用价值、可在其他场景下复用的功能点，并给出每个功能点的典型用法示例（代码片段）。每个示例需包含必要的 import、初始化、参数说明及调用方式，便于他人在不同项目中快速上手复用。
 
         分析目标模块路径：
-        {% for path in module_paths %}
-        - {{ path }}
+        {% for source in sources.sources %}
+        - {{ source.module_name }}
         {% endfor %}
 
         下面是这些模块的内容：
-        {% for path, content in module_contents.items() %}
-        ## File: {{ path }}
+        {% for source in sources.sources %}
+        ## File: {{ source.module_name }}
         ```python
-        {{ content }}
+        {{ source.source_code }}
         ```
         {% endfor %}
 
@@ -78,37 +78,26 @@ class AutoLearn:
             self.printer.print_in_terminal(f"读取文件时出错 {file_path}: {e}", style="red")
             return None
 
-    def analyze(self, module_paths: List[str], query: str, conversations: List[Dict] = []) -> Optional[Generator[str, None, None]]:
+    def analyze(self, sources: SourceCodeList, query: str, conversations: List[Dict] = []) -> Optional[Generator[str, None, None]]:
         """
         分析给定的模块文件，根据用户需求生成可复用功能点的总结。
 
         Args:
-            module_paths: 需要分析的模块文件路径列表。
+            sources: 包含模块路径和内容的 SourceCodeList 对象。
             query: 用户的具体分析要求。
             conversations: 之前的对话历史 (可选)。
 
         Returns:
             Optional[Generator]: LLM 返回的分析结果生成器，如果出错则返回 None。
         """
-        module_contents = {}
-        valid_module_paths = []
-        for path in module_paths:
-            content = self.read_file_content(path)
-            if content is not None:
-                module_contents[path] = content
-                valid_module_paths.append(path)
-            else:
-                self.printer.print_in_terminal(f"跳过无法读取的文件: {path}", style="yellow")
-
-        if not module_contents:
+        if not sources or not sources.sources:
             self.printer.print_in_terminal("没有提供有效的模块文件进行分析。", style="red")
             return None
 
         try:
             # 准备 Prompt
             prompt_content = self.analyze_modules.prompt(
-                module_paths=valid_module_paths,
-                module_contents=module_contents,
+                sources=sources,
                 query=query
             )
 
