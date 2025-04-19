@@ -27,8 +27,7 @@ from autocoder.rag.relevant_utils import (
     DocFilterResult
 )
 from autocoder.rag.token_checker import check_token_limit
-from autocoder.rag.token_counter import RemoteTokenCounter, TokenCounter
-from autocoder.common.token_counter import count_tokens
+from autocoder.rag.token_counter import RemoteTokenCounter, TokenCounter,count_tokens
 from autocoder.rag.token_limiter import TokenLimiter
 from tokenizers import Tokenizer
 from autocoder.rag.variable_holder import VariableHolder

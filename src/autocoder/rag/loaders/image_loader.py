@@ -33,6 +33,9 @@ class ImageLoader:
     and converting the content to markdown format.
     """
     
+    # 存储不同参数组合的PaddleOCR实例
+    _ocr_instances = {}
+    
     @staticmethod
     def parse_diff(diff_content: str) -> List[Tuple[str, str]]:
         """
@@ -106,19 +109,28 @@ class ImageLoader:
             print("paddleocr not installed")
             return ""
 
-        # 初始化 OCR
-        try:
-            ocr = PaddleOCR(
-                use_angle_cls=use_angle_cls,
-                lang=lang,
-                page_num=page_num,
-                det_model_dir=det_model_dir,
-                rec_model_dir=rec_model_dir,
-                **kwargs
-            )
-        except Exception:
-            traceback.print_exc()
-            return ""
+        # 创建一个参数的哈希键，用于在缓存中存储OCR实例
+        param_key = f"{lang}_{use_angle_cls}_{page_num}_{det_model_dir}_{rec_model_dir}_{hash(frozenset(kwargs.items()) if kwargs else 0)}"
+        
+        # 检查是否已经有对应参数的OCR实例
+        if param_key not in ImageLoader._ocr_instances:
+            try:
+                # 初始化OCR并缓存
+                ImageLoader._ocr_instances[param_key] = PaddleOCR(
+                    use_angle_cls=use_angle_cls,
+                    lang=lang,
+                    page_num=page_num,
+                    det_model_dir=det_model_dir,
+                    rec_model_dir=rec_model_dir,
+                    **kwargs
+                )
+                logger.info(f"初始化新的PaddleOCR实例，参数：{param_key}")
+            except Exception:
+                traceback.print_exc()
+                return ""
+        
+        # 使用缓存的OCR实例
+        ocr = ImageLoader._ocr_instances[param_key]
 
         try:
             ext = os.path.splitext(file_path)[1].lower()
