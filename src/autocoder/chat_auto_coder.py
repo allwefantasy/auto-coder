@@ -53,6 +53,7 @@ from autocoder.auto_coder_runner import (
     summon,
     get_memory,
     active_context,
+    rules
 )
 # Ensure the correct import is present
 from autocoder.chat.conf_command import handle_conf_command
@@ -627,6 +628,10 @@ def main():
             elif user_input.startswith("/lib"):
                 args = user_input[len("/lib") :].strip().split()
                 lib_command(args)
+
+            elif user_input.startswith("/rules"):
+                query = user_input[len("/rules") :].strip()
+                rules(query)                    
 
             elif user_input.startswith("/mcp"):
                 query = user_input[len("/mcp") :].strip()

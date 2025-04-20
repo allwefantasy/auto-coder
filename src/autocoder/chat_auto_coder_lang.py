@@ -593,6 +593,112 @@ Available subcommands:
     "marketplace_add_error": {
         "en": "Error adding marketplace item: {{name}} - {{error}}",
         "zh": "添加市场项目时出错：{{name}} - {{error}}"
+    },
+    "rules_desc": {
+        "en": "Analyze current files with rules and create code learning notes",
+        "zh": "使用规则分析当前文件并创建代码学习笔记"
+    },
+    "rules_file_list_title": {
+        "en": "Rules Files List (Pattern: {{pattern}})",
+        "zh": "规则文件列表 (匹配: {{pattern}})"
+    },
+    "rules_file_path": {
+        "en": "File Path",
+        "zh": "文件路径"
+    },
+    "rules_content_length": {
+        "en": "Content Length",
+        "zh": "内容长度"
+    },
+    "rules_help_subtitle": {
+        "en": "Use '/rules help' for more information",
+        "zh": "使用 '/rules help' 获取更多帮助"
+    },
+    "rules_no_files_found": {
+        "en": "No rules files found. Use '/rules /help' to learn how to add rules.",
+        "zh": "未找到任何规则文件。请使用 '/rules /help' 了解如何添加规则。"
+    },
+    "rules_no_matching_files": {
+        "en": "No rules files found matching pattern '{{pattern}}'.",
+        "zh": "没有找到匹配模式 '{{pattern}}' 的规则文件。"
+    },
+    "rules_remove_param_required": {
+        "en": "Error: 'remove' command requires a parameter (file pattern). Usage: /rules /remove <pattern>",
+        "zh": "错误: 'remove' 命令需要一个参数（文件匹配模式）。用法: /rules /remove <匹配模式>"
+    },
+    "rules_no_files_to_remove": {
+        "en": "No rules files found matching pattern '{{pattern}}'.",
+        "zh": "没有找到匹配模式 '{{pattern}}' 的规则文件。"
+    },
+    "rules_delete_error": {
+        "en": "Error deleting file '{{file_path}}': {{error}}",
+        "zh": "删除文件 '{{file_path}}' 时出错: {{error}}"
+    },
+    "rules_delete_success": {
+        "en": "Successfully deleted {{count}} rules files.",
+        "zh": "成功删除了 {{count}} 个规则文件。"
+    },
+    "rules_no_active_files": {
+        "en": "Error: No files selected for analysis. Please use 'add_files' command to add files first.",
+        "zh": "错误: 没有选择任何文件进行分析。请先使用 'add_files' 命令添加文件。"
+    },
+    "rules_file_read_error": {
+        "en": "Error reading file '{{file_path}}': {{error}}",
+        "zh": "读取文件 '{{file_path}}' 时出错: {{error}}"
+    },
+    "rules_analysis_error": {
+        "en": "Error analyzing code: {{error}}",
+        "zh": "分析代码时出错: {{error}}"
+    },
+    "rules_help_text": {
+        "en": """
+/rules command usage:
+  /rules [query]       - Analyze current added files, optionally provide specific query content.  
+  /rules /list [pattern] - List all rules files. Optionally provide wildcard pattern (e.g. *.md).
+  /rules /remove <pattern> - Delete rules files matching the specified pattern.
+  /rules /get <pattern> - Display the content of rules files matching the specified pattern.
+  /rules /help or /rules help - Show this help message.
+
+Rules file usage:
+  Rules files are stored in the project's .autocoderrules/ directory, in Markdown format.
+  The system automatically monitors changes to this directory and updates rules.
+        """,
+        "zh": """
+/rules 命令用法:
+  /rules [查询内容]    - 分析当前已添加的文件，可选提供具体查询内容。  
+  /rules /list [匹配模式] - 列出所有规则文件。可选提供通配符匹配模式 (例如: *.md)。
+  /rules /remove <匹配模式> - 删除匹配指定模式的规则文件。
+  /rules /get <匹配模式> - 显示匹配指定模式的规则文件内容。
+  /rules /help 或 /rules help - 显示此帮助信息。
+
+规则文件用法:
+  规则文件存储在项目的 .autocoderrules/ 目录下，为 Markdown 格式。
+  系统会自动监控该目录的变化并更新规则。
+        """
+    },
+    "rules_unknown_command": {
+        "en": "Unknown subcommand '/rules {{subcommand}}'. Use '/rules /help' for help.",
+        "zh": "未知的子命令 '/rules {{subcommand}}'。请使用 '/rules /help' 获取帮助。"
+    },
+    "rules_command_error": {
+        "en": "Error executing '/rules {{subcommand}}': {{error}}",
+        "zh": "执行 '/rules {{subcommand}}' 时发生错误: {{error}}"
+    },
+    "rules_get_param_required": {
+        "en": "Error: 'get' command requires a parameter (file pattern). Usage: /rules /get <pattern>",
+        "zh": "错误: 'get' 命令需要一个参数（文件匹配模式）。用法: /rules /get <匹配模式>"
+    },
+    "rules_get_no_matching_files": {
+        "en": "No rules files found matching pattern '{{pattern}}'.",
+        "zh": "没有找到匹配模式 '{{pattern}}' 的规则文件。"
+    },
+    "rules_get_file_title": {
+        "en": "Rule File: {{file_path}}",
+        "zh": "规则文件: {{file_path}}"
+    },
+    "rules_get_read_error": {
+        "en": "Error reading file '{{file_path}}': {{error}}",
+        "zh": "读取文件 '{{file_path}}' 时出错: {{error}}"
     }
 }
 

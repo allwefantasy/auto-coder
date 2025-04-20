@@ -112,6 +112,7 @@ commands = [
     "/chat",
     "/ask",
     "/commit",
+    "/rules",
     "/revert",
     "/index/query",
     "/index/build",
@@ -1617,6 +1618,12 @@ def coding(query: str):
     save_memory()
     completer.refresh_files()
 
+@run_in_raw_thread()
+def rules(query: str):
+    from autocoder.chat.rules_command import handle_rules_command
+    memory = get_memory()
+    result = handle_rules_command(query, memory)
+    print(result)
 
 @byzerllm.prompt()
 def code_review(query: str) -> str:
