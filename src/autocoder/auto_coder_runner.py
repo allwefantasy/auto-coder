@@ -439,18 +439,10 @@ def initialize_system(args:InitializeSystemRequest):
             configure_success[0] = True
 
     if first_time[0] and args.product_mode == "pro" and configure_success[0]:
-        configure(f"model:v3_chat", skip_print=True)
-        configure(f"chat_model:r1_chat", skip_print=True)
-        configure(f"generate_rerank_model:r1_chat", skip_print=True)
-        configure(f"code_model:v3_chat", skip_print=True)
-        configure(f"index_filter_model:r1_chat", skip_print=True)  
+        configure(f"model:v3_chat", skip_print=True)        
 
     if first_time[0] and args.product_mode == "lite" and models_module.check_model_exists("v3_chat"):
-        configure(f"model:v3_chat", skip_print=True)
-        configure(f"chat_model:r1_chat", skip_print=True)
-        configure(f"generate_rerank_model:r1_chat", skip_print=True)
-        configure(f"code_model:v3_chat", skip_print=True)
-        configure(f"index_filter_model:r1_chat", skip_print=True)
+        configure(f"model:v3_chat", skip_print=True)        
 
 
 def convert_yaml_config_to_str(yaml_config):
