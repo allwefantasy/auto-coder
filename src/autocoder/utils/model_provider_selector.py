@@ -26,7 +26,7 @@ PROVIDER_INFO_LIST = [
         name="volcano",
         endpoint="https://ark.cn-beijing.volces.com/api/v3",   
         r1_model="deepseek-r1-250120",
-        v3_model="deepseek-v3-241226",
+        v3_model="deepseek-v3-250324",
         api_key="",
         r1_input_price=2.0,
         r1_output_price=8.0,
@@ -55,6 +55,17 @@ PROVIDER_INFO_LIST = [
         v3_input_price=2.0,
         v3_output_price=8.0,
     ),
+    ProviderInfo(
+        name="openrouter",
+        endpoint="https://openrouter.ai/api/v1",
+        r1_model="deepseek/deepseek-r1",
+        v3_model="deepseek/deepseek-chat-v3-0324",
+        api_key="",
+        r1_input_price=0.0,
+        r1_output_price=0.0,
+        v3_input_price=0.0,
+        v3_output_price=0.0,
+    )
 ]
 
 dialog_style = Style.from_dict({
@@ -147,7 +158,8 @@ class ModelProviderSelector:
             values=[
                 ("volcano", self.printer.get_message_from_key("model_provider_volcano")),
                 ("siliconflow", self.printer.get_message_from_key("model_provider_siliconflow")),
-                ("deepseek", self.printer.get_message_from_key("model_provider_deepseek"))
+                ("deepseek", self.printer.get_message_from_key("model_provider_deepseek")),
+                ("openrouter", self.printer.get_message_from_key("model_provider_openrouter"))
             ],
             style=dialog_style
         ).run()
