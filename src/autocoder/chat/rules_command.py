@@ -18,6 +18,7 @@ from autocoder.auto_coder_runner import get_final_config, get_single_llm
 from autocoder.chat_auto_coder_lang import get_message, get_message_with_format
 from autocoder.rag.token_counter import count_tokens
 from autocoder.common.printer import Printer
+from autocoder.command_parser import CommandParser
 
 printer = Printer()
 
@@ -190,6 +191,29 @@ def _handle_remove_rules(memory: Dict[str, Any], args: List[str]) -> str:
     printer.print_str_in_terminal(message)
     return message
 
+def _handle_commit_rules(memory: Dict[str, Any], args: List[str],commit_id: str, coding_func=None) -> str:
+    """Handles analyzing current files with rules."""
+    query = " ".join(args) if args else ""
+    
+    args = get_final_config()    
+    llm = get_single_llm(args.model, product_mode=args.product_mode)    
+    auto_learn = AutoLearn(llm=llm, args=args)
+    changes = auto_learn.get_commit_changes(commit_id)        
+    
+    try:
+        result = auto_learn.analyze_commit.prompt(
+            querie_with_urls_and_changes=changes,            
+            new_query=query
+        )
+        # 如果传入了 coding_func，则执行
+        if coding_func is not None:
+            coding_func(query=result)
+        return result
+    except Exception as e:
+        message = get_message_with_format("rules_analysis_error", error=str(e))
+        printer.print_str_in_terminal(message)
+        return message
+
 def _handle_analyze_rules(memory: Dict[str, Any], args: List[str], coding_func=None) -> str:
     """Handles analyzing current files with rules."""
     query = " ".join(args) if args else ""
@@ -302,9 +326,74 @@ def _handle_get_rules(memory: Dict[str, Any], args: List[str]) -> str:
 
 def _handle_help(memory: Dict[str, Any], args: List[str]) -> str:
     """Provides help text for the /rules command."""
-    message = get_message("rules_help_text")
-    printer.print_str_in_terminal(message)
-    return message
+    help_text = get_message("rules_help_text")
+    if not help_text:
+        # 如果没有翻译好的帮助文本，提供默认的中文帮助文本
+        help_text = """
+/rules 命令帮助:
+  /rules /list [通配符]            - 列出规则文件，可选通配符过滤
+  /rules /get [通配符]             - 查看规则文件内容，可选通配符过滤
+  /rules /remove [通配符]          - 删除规则文件，使用通配符匹配
+  /rules /analyze [查询]           - 分析当前文件，可选提供查询内容
+  /rules /commit <提交ID> /query <查询> - 分析特定提交，必须提供提交ID和查询内容
+  /rules /help                    - 显示此帮助信息
+  
+默认情况下，直接使用 /rules [查询] 相当于 /rules /analyze [查询]
+        """
+    
+    printer.print_str_in_terminal(help_text)
+    return help_text
+
+def _handle_commit_rules(memory: Dict[str, Any], args: List[str]) -> str:
+    """处理 commit 命令，要求格式为 /commit <commit_id> /query <查询内容>"""
+    if not args:
+        message = get_message("rules_commit_param_required")
+        printer.print_str_in_terminal(message)
+        return message
+    
+    # 构建要解析的完整命令字符串
+    command_str = " ".join(args)
+
+    # 使用 CommandParser 解析命令
+    parser = CommandParser()
+
+    ## 传递过来的命令行是没有 /commit 子命令的，需要补充上
+    commands = parser.parse(f"/commit {command_str}")
+    
+    # 验证必须包含 commit 和 query 命令
+    if not commands.get('commit') or not commands.get('query'):
+        message = get_message("rules_commit_format_error")
+        printer.print_str_in_terminal(message)
+        return message
+    
+    # 获取 commit_id 和查询内容
+    commit_args = commands.get('commit', {}).get('args', [])
+    if not commit_args:
+        message = get_message("rules_commit_id_required")
+        printer.print_str_in_terminal(message)
+        return message
+    
+    commit_id = commit_args[0]
+    
+    # 获取查询内容
+    query_args = commands.get('query', {}).get('args', [])
+    if not query_args:
+        message = get_message("rules_query_required")
+        printer.print_str_in_terminal(message)
+        return message
+    
+    query = " ".join(query_args)
+    
+    # 实现实际的 commit 分析逻辑...
+    try:
+        _handle_analyze_rules(memory, [rules_str], coding_func=coding_func) 
+        message = get_message_with_format("rules_commit_success", commit_id=commit_id, query=query)
+        printer.print_str_in_terminal(message)
+        return message
+    except Exception as e:
+        message = get_message_with_format("rules_commit_error", commit_id=commit_id, error=str(e))
+        printer.print_str_in_terminal(message)
+        return message
 
 # Command dispatch table
 COMMAND_HANDLERS: Dict[str, Callable[[Dict[str, Any], List[str]], str]] = {
@@ -313,6 +402,7 @@ COMMAND_HANDLERS: Dict[str, Callable[[Dict[str, Any], List[str]], str]] = {
     "get": _handle_get_rules,
     "analyze": _handle_analyze_rules,  # 默认行为
     "help": _handle_help,
+    "commit": _handle_commit_rules,  # 添加新的命令处理函数
 }
 
 def handle_rules_command(command_args: str, memory: Dict[str, Any], coding_func=None) -> str:

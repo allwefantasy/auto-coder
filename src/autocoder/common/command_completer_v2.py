@@ -41,6 +41,7 @@ COMMAND_HIERARCHY = {
     "/clear": {},
     "/cls": {},
     "/debug": {},
+    "/rules": {"/list", "/get", "/remove", "/analyze", "/commit", "/help"},
 }
 
 class CommandCompleterV2(Completer):
@@ -86,6 +87,7 @@ class CommandCompleterV2(Completer):
             "/ask": self._handle_text_with_symbols, # Treat like chat for @/@@
             "/summon": self._handle_text_with_symbols,
             "/design": self._handle_design,
+            "/rules": self._handle_rules,
             # Add handlers for other commands if they need specific logic beyond @/@@
             # Default handler for plain text or commands not explicitly handled
             "default": self._handle_text_with_symbols,
@@ -437,6 +439,43 @@ class CommandCompleterV2(Completer):
              yield from self._handle_double_at_completion(document, complete_event, word, text)
         elif word.startswith("<"): # Potential tag completion
              yield from self._handle_img_tag(document, complete_event, word, text)
+
+    def _handle_rules(self, document: Document, complete_event: CompleteEvent, word: str, text: str) -> Iterable[Completion]:
+        """处理 /rules 命令的补全，支持子命令和规则文件路径。同时支持 @ 和 @@ 符号。"""
+        args_text = text[len("/rules"):].lstrip()
+        parts = args_text.split()
+        last_part = parts[-1] if parts and not text.endswith(" ") else ""
+
+        # 补全子命令
+        if not args_text or (len(parts) == 1 and not text.endswith(" ") and parts[0].startswith("/")):
+            for sub_cmd in COMMAND_HIERARCHY["/rules"]:
+                if sub_cmd.startswith(last_part):
+                    yield Completion(sub_cmd, start_position=-len(last_part))
+            return
+
+        # 根据子命令补全参数
+        if parts and parts[0] == "/list" or parts[0] == "/get" or parts[0] == "/remove":
+            # 获取规则文件或目录补全，可以是通配符
+            # 这里可以简单地提供文件路径补全
+            yield from self._complete_file_paths(last_part, text)
+            # 也可以添加常用通配符补全
+            common_patterns = ["*.md", "*.rules", "*.txt"]
+            for pattern in common_patterns:
+                if pattern.startswith(last_part):
+                    yield Completion(pattern, start_position=-len(last_part))
+            return
+
+        # 对于 /commit 子命令，补全 /query
+        if parts and parts[0] == "/commit":
+            if "/query".startswith(last_part):
+                yield Completion("/query", start_position=-len(last_part))
+            return
+
+        # 支持 @ 和 @@ 符号的补全，不管当前命令是什么
+        if word.startswith("@") and not word.startswith("@@"):
+            yield from self._handle_at_completion(document, complete_event, word, text)
+        elif word.startswith("@@"):
+            yield from self._handle_double_at_completion(document, complete_event, word, text)
 
 
     # --- Symbol/Tag Handlers ---

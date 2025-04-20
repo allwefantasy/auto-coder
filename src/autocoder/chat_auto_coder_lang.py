@@ -666,7 +666,7 @@ Rules file usage:
         "zh": """
 /rules 命令用法:
   /rules [查询内容]    - 分析当前已添加的文件，可选提供具体查询内容。  
-  /rules /list [匹配模式] - 列出所有规则文件。可选提供通配符匹配模式 (例如: *.md)。
+  /rules /list [匹配模式] - 列出所有规则文件。可选提供通配符匹配模式 (例如: *.md).
   /rules /remove <匹配模式> - 删除匹配指定模式的规则文件。
   /rules /get <匹配模式> - 显示匹配指定模式的规则文件内容。
   /rules /help 或 /rules help - 显示此帮助信息。
@@ -699,6 +699,30 @@ Rules file usage:
     "rules_get_read_error": {
         "en": "Error reading file '{{file_path}}': {{error}}",
         "zh": "读取文件 '{{file_path}}' 时出错: {{error}}"
+    },
+    "rules_commit_param_required": {
+        "en": "Error: 'commit' command requires parameters. Usage: /rules /commit <commit_id> /query <query>",
+        "zh": "错误: 'commit' 命令需要参数。用法: /rules /commit <commit_id> /query <查询内容>"
+    },
+    "rules_commit_format_error": {
+        "en": "Error: Command format must be '/rules /commit <commit_id> /query <query>'",
+        "zh": "错误：命令格式必须为 '/rules /commit <commit_id> /query <你的需求>'"
+    },
+    "rules_commit_id_required": {
+        "en": "Error: Commit ID must be provided",
+        "zh": "错误：必须提供 commit ID"
+    },
+    "rules_query_required": {
+        "en": "Error: Query content must be provided",
+        "zh": "错误：必须提供查询内容"
+    },
+    "rules_commit_success": {
+        "en": "Successfully analyzed commit {{commit_id}}, query: {{query}}",
+        "zh": "成功分析 commit {{commit_id}}，查询：{{query}}"
+    },
+    "rules_commit_error": {
+        "en": "Error analyzing commit {{commit_id}}: {{error}}",
+        "zh": "分析 commit {{commit_id}} 时出错：{{error}}"
     }
 }
 
