@@ -29,27 +29,39 @@ class AutoLearn:
     @byzerllm.prompt()
     def analyze_modules(self, sources: SourceCodeList, query: str) -> str:
         """
-        你作为一名高级软件工程师，对以下模块进行分析，总结出其中具有通用价值、可在其他场景下复用的功能点，并给出每个功能点的典型用法示例（代码片段）。每个示例需包含必要的 import、初始化、参数说明及调用方式，便于他人在不同项目中快速上手复用。
-        通常而言，这些流程会成为 rules 放到当前项目的 .autocoderrules 目录下。        
-
-        项目根目录:
-        {{ project_root }}
-
-        分析目标模块路径：
+        作为高级软件工程师，请对提供的模块代码进行深入分析，提取具有通用价值的功能模式和设计模式，转化为可在其他项目中复用的代码规则（rules）。
+        
+        ## 任务目标
+        - 识别代码中具有普遍应用价值的功能点和模式
+        - 将这些功能点提炼为结构化规则，便于在其他项目中快速复用
+        - 生成清晰的使用示例，包含完整依赖和调用方式
+        - 这些规则将被存储在项目的 .autocoderrules 目录，供后续自动化代码生成使用
+        
+        项目根目录: {{ project_root }}
+        
+        ## 分析对象                
+        {% if sources.sources %}
+        分析目标文件:
         {% for source in sources.sources %}
         - {{ source.module_name }}
         {% endfor %}
-
-        下面是这些模块的内容：
+        {% else %}
+        前面提供的文件。
+        {% endif %}
+        
+        {% if sources.sources %}
+        ## 源代码内容
         <files>
         {% for source in sources.sources %}
         ##File: {{ source.module_name }}        
         {{ source.source_code }}        
         {% endfor %}
         </files>
+        {% endif %}
 
         {% if index_file_content %}
-        index.md 当前内容如下：        
+        ## 现有索引内容
+        index.md 当前内容:        
         <files>  
         <file>
         ##File: 
@@ -58,97 +70,194 @@ class AutoLearn:
         </files>
         {% endif %}
         
-        用户的具体要求是：
+        ## 用户需求
         {{ query }}
-
-        请按照如下格式输出：
-
-        首先是文件头，包含简要描述，相关文件，以及是否每次都会被应用读取。
-        ---
-        description: RPC Service boilerplate
-        globs: "src/services/rpc_service.py"
-        alwaysApply: false
-        ---
-        接下来是功能点列表，每个功能点包含名称、简要说明、典型用法、依赖说明、学习来源。
         
-        # 功能点名称
-       （例如：自动 Commit Review）
-        ## 简要说明
-        <该功能点的作用、适用场景>
-        ## 典型用法
-        ```python
-        # 代码片段，包含 import、初始化、参数说明和调用方法
-        ```
-        ## 依赖说明
-        <如有特殊依赖或初始化要求，需说明>
-        ## 学习来源
-        <从哪个文件的那部分代码学习到的>
-
-        下面是一个简单的示例:
+        ## 输出格式要求
+        
+        请按照以下结构(<markdown>...</markdown>包裹的内容)输出规则文件内容:
 
         <markdown>
         ---
-        description: RPC Service boilerplate
-        globs: "src/services/rpc_service.py"
-        alwaysApply: false
+        description: [简明描述规则的功能，20字以内]
+        globs: [匹配应用此规则的文件路径，如"src/services/*.py"]
+        alwaysApply: [是否总是应用，通常为false]
         ---
-
-        # RPC Service boilerplate
+        
+        # [规则主标题]
         
         ## 简要说明
-        快速生成RPC服务基础代码模板，包含服务定义、处理器实现和客户端调用代码。适用于需要构建新的微服务或API服务时快速搭建框架。
+        [该规则的功能、适用场景和价值，100字以内]
         
         ## 典型用法
         ```python
-        # 服务端定义
+        # 完整的代码示例，包含:
+        # 1. 必要的import语句
+        # 2. 类/函数定义
+        # 3. 参数说明
+        # 4. 调用方式
+        # 5. 关键注释        
+        
+        ## 依赖说明
+        - [必要的依赖库及版本]
+        - [环境要求]
+        - [初始化流程(如有)]
+        
+        ## 学习来源
+        [从哪个模块的哪部分代码中提取的该功能点]
+        </markdown>        
+        
+        ## 示例
+        
+        <markdown>
+        ---
+        description: RPC服务模板
+        globs: "src/services/rpc_service.py"
+        alwaysApply: false
+        ---
+        
+        # RPC服务快速实现模板
+        
+        ## 简要说明
+        提供gRPC服务端与客户端的标准实现模板，包含服务定义、请求处理、错误处理和客户端调用。适用于需要高性能RPC通信的微服务架构。
+        
+        ## 典型用法
+        ```python
+        # 服务端实现
         import grpc
         from concurrent import futures
+        import logging
+        import time
+        from typing import Dict, Any
+        
         import service_pb2
         import service_pb2_grpc
         
-        class MyServiceHandler(service_pb2_grpc.MyServiceServicer):
-            def ProcessRequest(self, request, context):
-                # 处理请求逻辑
-                response = service_pb2.Response(
-                    status=200,
-                    message="成功处理请求",
-                    data={"result": request.param1 + request.param2}
-                )
-                return response
+        class ServiceImplementation(service_pb2_grpc.MyServiceServicer):
+            def __init__(self, config: Dict[str, Any] = None):
+                self.config = config or {}
+                logging.info("RPC服务初始化完成")
+            
+            def ProcessRequest(self, request, context):                
+                try:
+                    # 业务逻辑处理
+                    result = self._process_business_logic(request)
+                    
+                    # 构建响应
+                    return service_pb2.Response(
+                        status=200,
+                        message="处理成功",
+                        data=result
+                    )
+                except Exception as e:
+                    logging.error(f"处理请求时发生错误: {str(e)}")
+                    context.set_code(grpc.StatusCode.INTERNAL)
+                    context.set_details(f"服务器内部错误: {str(e)}")
+                    return service_pb2.Response(
+                        status=500,
+                        message=f"处理失败: {str(e)}",
+                        data={}
+                    )
+            
+            def _process_business_logic(self, request):
+                # 实际业务逻辑处理
+                return {"result": request.param1 + request.param2}
                 
-        def serve():
-            server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-            service_pb2_grpc.add_MyServiceServicer_to_server(MyServiceHandler(), server)
-            server.add_insecure_port('[::]:50051')
+        def serve(port=50051, max_workers=10):            
+            server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
+            service_pb2_grpc.add_MyServiceServicer_to_server(
+                ServiceImplementation(), server
+            )
+            server.add_insecure_port(f'[::]:{port}')
             server.start()
-            server.wait_for_termination()
+            logging.info(f"服务已启动，监听端口: {port}")
+            
+            try:
+                while True:
+                    time.sleep(86400)  # 一天
+            except KeyboardInterrupt:
+                server.stop(0)
+                logging.info("服务已停止")
             
         if __name__ == '__main__':
+            logging.basicConfig(level=logging.INFO)
             serve()
         ```
         
         ## 依赖说明
-        - 需要安装grpcio和grpcio-tools包
-        - 需要先生成proto文件对应的Python代码：`python -m grpc_tools.protoc -I./protos --python_out=. --grpc_python_out=. ./protos/service.proto`
+        - 需要安装 grpcio>=1.44.0 和 grpcio-tools>=1.44.0
+        - 需要预先定义proto文件并生成对应Python代码:
+          ```bash
+          python -m grpc_tools.protoc -I./protos --python_out=. --grpc_python_out=. ./protos/service.proto
+          ```
+        - 示例proto文件结构:
+          ```protobuf
+          syntax = "proto3";
+          
+          service MyService {
+            rpc ProcessRequest (Request) returns (Response) {}
+          }
+          
+          message Request {
+            int32 param1 = 1;
+            int32 param2 = 2;
+          }
+          
+          message Response {
+            int32 status = 1;
+            string message = 2;
+            map<string, string> data = 3;
+          }
+          ```
         
         ## 学习来源
-        从项目中的src/services/rpc_service.py文件中的服务实现部分学习而来
+        从src/services/rpc_service.py模块中的Server类和RequestHandler实现提取
         </markdown>
-
-        请覆盖所有具有独立复用价值的功能点，避免遗漏。输出内容务必简明、准确、易于迁移和复用。
-
-        注意： 无论是新建还是修改 rules 文件，请务必更新 index.md 文件。该文件记录了所有 rules 文件的列表，以及每个 rules 文件的作用。
-        如果 index.md 文件内容为空，则按<markdown></markdown> 包裹的格式生成：
+        
+        ## 索引文件更新说明
+        
+        除了生成规则文件外，请务必更新index.md索引文件，记录所有规则及其作用。如果index.md不存在或为空，请按如下格式创建:
+        
         <markdown>        
-        # <rules 文件路径>
-        ## 作用
-        <rules 文件的作用>        
+        # Rules索引
+        
+        本文档记录项目中所有可用的代码规则(rules)及其用途。
+        
+        ## [规则文件路径]
+        [规则文件的主要功能和适用场景简述]    
         </markdown>
+        
+        ## 评价标准
+        - 提取的功能点必须具备独立价值，能在其他项目中实际复用
+        - 代码示例必须完整、可执行，包含所有必要组件
+        - 文档结构清晰，遵循规定格式
+        - 依赖说明明确具体，便于用户快速配置环境
         """
 
+        # 检查索引文件是否在 sources 中
+        index_file_path = os.path.join(os.path.abspath(self.args.source_dir), ".autocoderrules", "index.md")
+        index_file_content = ""
+        
+        # 检查 sources 中是否包含 index.md
+        index_in_sources = False
+        if sources and sources.sources:
+            for source in sources.sources:
+                if source.module_name.endswith("index.md") or ".autocoderrules" in source.module_name:
+                    index_in_sources = True
+                    break
+        
+        # 如果索引文件不在 sources 中，尝试读取它
+        if not index_in_sources:
+            try:
+                if os.path.exists(index_file_path):
+                    with open(index_file_path, 'r', encoding='utf-8') as f:
+                        index_file_content = f.read()
+            except Exception as e:
+                self.printer.print_str_in_terminal(f"读取索引文件时出错: {str(e)}", style="yellow")
+        
         return {
             "project_root": os.path.abspath(self.args.source_dir),
-            "index_file_content": ""
+            "index_file_content": index_file_content
         }
 
     def analyze(self, sources: SourceCodeList, query: str, conversations: List[Dict] = []) -> Optional[Generator[str, None, None]]:

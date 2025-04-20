@@ -1622,8 +1622,7 @@ def coding(query: str):
 def rules(query: str):
     from autocoder.chat.rules_command import handle_rules_command
     memory = get_memory()
-    result = handle_rules_command(query, memory)
-    print(result)
+    result = handle_rules_command(query, memory,coding_func=coding)    
 
 @byzerllm.prompt()
 def code_review(query: str) -> str:
