@@ -4,6 +4,9 @@ from threading import Lock
 import threading
 from typing import Dict, List, Optional
 from loguru import logger
+import re
+import yaml
+from pydantic import BaseModel, Field
 
 # 尝试导入 FileMonitor
 try:
@@ -13,6 +16,15 @@ except ImportError:
     logger.warning("警告: 无法导入 FileMonitor，规则文件变更监控将不可用")
     FileMonitor = None
     Change = None
+
+
+class RuleFile(BaseModel):
+    """规则文件的Pydantic模型"""
+    description: str = Field(default="", description="规则的描述")
+    globs: List[str] = Field(default_factory=list, description="文件匹配模式列表")
+    always_apply: bool = Field(default=False, alias="alwaysApply", description="是否总是应用规则")
+    content: str = Field(default="", description="规则文件的正文内容")
+    file_path: str = Field(default="", description="规则文件的路径")
 
 
 class AutocoderRulesManager:
@@ -157,9 +169,66 @@ class AutocoderRulesManager:
             self._load_rules()
             logger.info("已重新加载规则")
 
+    def parse_rule_file(self, file_path: str) -> RuleFile:
+        """
+        解析规则文件并返回结构化的Pydantic模型对象
+        
+        Args:
+            file_path: 规则文件的路径
+            
+        Returns:
+            RuleFile: 包含规则文件结构化内容的Pydantic模型
+        """
+        if not os.path.exists(file_path) or not file_path.endswith('.md'):
+            logger.warning(f"无效的规则文件路径: {file_path}")
+            return RuleFile(file_path=file_path)
+            
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                
+            # 解析YAML头部和Markdown内容
+            yaml_pattern = re.compile(r'^---\s*\n(.*?)\n---\s*\n', re.DOTALL)
+            yaml_match = yaml_pattern.search(content)
+            
+            metadata = {}
+            markdown_content = content
+            
+            if yaml_match:
+                yaml_content = yaml_match.group(1)
+                try:
+                    metadata = yaml.safe_load(yaml_content)
+                    # 移除YAML部分，仅保留Markdown内容
+                    markdown_content = content[yaml_match.end():]
+                except Exception as e:
+                    logger.warning(f"解析规则文件YAML头部时出错: {e}")
+            
+            # 创建并返回Pydantic模型
+            rule = RuleFile(
+                description=metadata.get('description', ''),
+                globs=metadata.get('globs', []),
+                always_apply=metadata.get('alwaysApply', False),
+                content=markdown_content.strip(),
+                file_path=file_path
+            )
+            
+            return rule
+            
+        except Exception as e:
+            logger.warning(f"解析规则文件时出错: {file_path}, 错误: {e}")
+            return RuleFile(file_path=file_path)
+
     def get_rules(self) -> Dict[str, str]:
         """获取所有规则文件内容"""
         return self._rules.copy()
+        
+    def get_parsed_rules(self) -> List[RuleFile]:
+        """获取所有解析后的规则文件"""
+        parsed_rules = []
+        for file_path in self._rules:
+            parsed_rule = self.parse_rule_file(file_path)
+            parsed_rules.append(parsed_rule)
+        return parsed_rules
 
 
 # 对外提供单例
@@ -171,3 +240,17 @@ def get_rules(project_root: Optional[str] = None) -> Dict[str, str]:
     if _rules_manager is None:
         _rules_manager = AutocoderRulesManager(project_root=project_root)
     return _rules_manager.get_rules()
+
+def get_parsed_rules(project_root: Optional[str] = None) -> List[RuleFile]:
+    """获取所有解析后的规则文件，可指定项目根目录"""
+    global _rules_manager
+    if _rules_manager is None:
+        _rules_manager = AutocoderRulesManager(project_root=project_root)
+    return _rules_manager.get_parsed_rules()
+
+def parse_rule_file(file_path: str, project_root: Optional[str] = None) -> RuleFile:
+    """解析指定的规则文件，可指定项目根目录"""
+    global _rules_manager
+    if _rules_manager is None:
+        _rules_manager = AutocoderRulesManager(project_root=project_root)
+    return _rules_manager.parse_rule_file(file_path)
