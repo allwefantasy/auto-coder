@@ -106,6 +106,10 @@ MESSAGES = {
         "en": "DeepSeek Official",
         "zh": "DeepSeek官方"
     },
+    "model_provider_openrouter": {
+        "en": "OpenRouter",
+        "zh": "OpenRouter"
+    },
     "model_provider_api_key_title": {
         "en": "API Key",
         "zh": "API密钥"
@@ -113,6 +117,10 @@ MESSAGES = {
     "model_provider_volcano_api_key_text": {
         "en": "Please enter your Volcano Engine API key:",
         "zh": "请输入您的火山方舟API密钥："
+    },
+    "model_provider_openrouter_api_key_text": {
+        "en": "Please enter your OpenRouter API key:",
+        "zh": "请输入您的OpenRouter API密钥："
     },
     "model_provider_volcano_r1_text": {
         "en": "Please enter your Volcano Engine R1 endpoint (format: ep-20250204215011-vzbsg):",
@@ -129,15 +137,7 @@ MESSAGES = {
     "model_provider_deepseek_api_key_text": {
         "en": "Please enter your DeepSeek API key:",
         "zh": "请输入您的DeepSeek API密钥："
-    },
-    "model_provider_openrouter": {
-        "en": "OpenRouter",
-        "zh": "OpenRouter"
-    },
-    "model_provider_openrouter_api_key_text": {
-        "en": "Please enter your OpenRouter API key:",
-        "zh": "请输入您的OpenRouter API密钥："
-    },
+    },    
     "model_provider_selected": {
         "en": "Provider configuration completed successfully! You can use /models command to view, add and modify all models later.",
         "zh": "供应商配置已成功完成！后续你可以使用 /models 命令，查看，新增和修改所有模型"
