@@ -225,7 +225,10 @@ class AutoLearn:
         - 文档结构清晰，遵循规定格式
         - 依赖说明明确具体，便于用户快速配置环境
         """
-        pass
+        return {
+            "project_root": os.path.abspath(self.args.source_dir),
+            "index_file_content": self._get_index_file_content()
+        }
 
     @byzerllm.prompt()
     def analyze_modules(self, sources: SourceCodeList, query: str) -> str:
@@ -541,10 +544,8 @@ class AutoLearn:
         try:
             # 获取prompt内容
             prompt_content = self.analyze_commit.prompt(
-                changes,
-                query,
-                project_root=os.path.abspath(self.args.source_dir),
-                index_file_content=self._get_index_file_content()
+                querie_with_urls_and_changes=changes,
+                new_query=query
             )
 
             # 准备对话历史

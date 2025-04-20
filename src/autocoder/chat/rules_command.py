@@ -2,7 +2,6 @@ import os
 import io
 import fnmatch
 import json
-from loguru import logger
 import pathspec
 from typing import Dict, Any, List, Callable, Optional
 from rich.console import Console
@@ -19,6 +18,7 @@ from autocoder.chat_auto_coder_lang import get_message, get_message_with_format
 from autocoder.rag.token_counter import count_tokens
 from autocoder.common.printer import Printer
 from autocoder.command_parser import CommandParser
+from loguru import logger
 
 printer = Printer()
 
@@ -191,16 +191,16 @@ def _handle_remove_rules(memory: Dict[str, Any], args: List[str]) -> str:
     printer.print_str_in_terminal(message)
     return message
 
-def _handle_commit_rules(memory: Dict[str, Any], args: List[str],commit_id: str, coding_func=None) -> str:
+def _handle_analyze_commit_rules(memory: Dict[str, Any], args: List[str],commit_id: str, coding_func=None) -> str:
     """Handles analyzing current files with rules."""
     query = " ".join(args) if args else ""
     
     args = get_final_config()    
     llm = get_single_llm(args.model, product_mode=args.product_mode)    
     auto_learn = AutoLearn(llm=llm, args=args)
-    changes = auto_learn.get_commit_changes(commit_id)        
+    changes, _ = auto_learn.get_commit_changes(commit_id)        
     
-    try:
+    try:        
         result = auto_learn.analyze_commit.prompt(
             querie_with_urls_and_changes=changes,            
             new_query=query
@@ -210,8 +210,11 @@ def _handle_commit_rules(memory: Dict[str, Any], args: List[str],commit_id: str,
             coding_func(query=result)
         return result
     except Exception as e:
+        logger.exception(e)
+        import traceback
+        traceback.print_exc()
         message = get_message_with_format("rules_analysis_error", error=str(e))
-        printer.print_str_in_terminal(message)
+        printer.print_str_in_terminal(message)        
         return message
 
 def _handle_analyze_rules(memory: Dict[str, Any], args: List[str], coding_func=None) -> str:
@@ -344,7 +347,7 @@ def _handle_help(memory: Dict[str, Any], args: List[str]) -> str:
     printer.print_str_in_terminal(help_text)
     return help_text
 
-def _handle_commit_rules(memory: Dict[str, Any], args: List[str]) -> str:
+def _handle_commit_rules(memory: Dict[str, Any], args: List[str], coding_func=None) -> str:
     """处理 commit 命令，要求格式为 /commit <commit_id> /query <查询内容>"""
     if not args:
         message = get_message("rules_commit_param_required")
@@ -385,8 +388,8 @@ def _handle_commit_rules(memory: Dict[str, Any], args: List[str]) -> str:
     query = " ".join(query_args)
     
     # 实现实际的 commit 分析逻辑...
-    try:
-        _handle_analyze_rules(memory, [rules_str], coding_func=coding_func) 
+    try:        
+        _handle_analyze_commit_rules(memory, [query], commit_id=commit_id, coding_func=coding_func)
         message = get_message_with_format("rules_commit_success", commit_id=commit_id, query=query)
         printer.print_str_in_terminal(message)
         return message
@@ -434,6 +437,8 @@ def handle_rules_command(command_args: str, memory: Dict[str, Any], coding_func=
             try:
                 # 仅 analyze 需要 coding_func
                 if subcommand == "analyze":
+                    return handler(memory, args, coding_func=coding_func)
+                elif subcommand == "commit":
                     return handler(memory, args, coding_func=coding_func)
                 else:
                     return handler(memory, args)
