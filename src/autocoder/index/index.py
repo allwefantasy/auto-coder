@@ -487,6 +487,7 @@ class IndexManager:
                 keys_to_remove.append(file_path)
 
         # 删除被排除的文件
+        exclude_patterns = []
         try:
             exclude_patterns = self.parse_exclude_files(
                 self.args.exclude_files)
@@ -498,7 +499,7 @@ class IndexManager:
                 "index_exclude_files_error",
                 style="red",
                 error=str(e)
-            )
+            )            
 
         # 删除无效条目并记录日志
         for key in set(keys_to_remove):
@@ -526,6 +527,9 @@ class IndexManager:
                     continue
 
                 if self.should_skip(file_path):
+                    continue
+
+                if self.filter_exclude_files(file_path, exclude_patterns):
                     continue
 
                 source_code = source.source_code
