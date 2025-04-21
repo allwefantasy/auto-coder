@@ -4,28 +4,8 @@ import time
 import shutil
 import tempfile
 from pathlib import Path
+from autocoder.common.file_monitor.monitor import FileMonitor, Change
 
-# 尝试导入 IgnoreFileManager 和相关函数
-try:
-    from autocoder.common.ignorefiles.ignore_file_utils import should_ignore, IgnoreFileManager, DEFAULT_EXCLUDES
-    from autocoder.common.file_monitor.monitor import FileMonitor, Change
-except ImportError as e:
-    print(f"无法导入所需模块: {e}")
-    print("请确保项目根目录在 PYTHONPATH 中，或者调整导入路径。")
-    # 提供假的实现以便脚本至少能运行
-    DEFAULT_EXCLUDES = ['.git', '.auto-coder', 'node_modules', '.mvn', '.idea', '__pycache__', '.venv', 'venv', 'dist', 'build', '.gradle', '.next']
-    def should_ignore(path): print(f"警告：should_ignore 未正确导入，将始终返回 False"); return False
-    class IgnoreFileManager:
-        def __init__(self): pass
-        def should_ignore(self, path): return False
-    class FileMonitor:
-        def __new__(cls, *args, **kwargs): return super(FileMonitor, cls).__new__(cls)
-        def __init__(self, root_dir): pass
-        def register(self, path, callback): pass
-        def start(self): pass
-        def stop(self): pass
-        @classmethod
-        def reset_instance(cls): pass
 
 # --- 示例用法 ---
 if __name__ == '__main__':
@@ -75,20 +55,13 @@ if __name__ == '__main__':
     
     print("创建了测试文件结构和 .autocoderignore 文件")
     
-    # 重置 FileMonitor 单例，确保从干净状态开始
-    FileMonitor.reset_instance()
+    # 进入新的工作目录
+    os.chdir(example_run_dir)
+    from autocoder.common.ignorefiles.ignore_file_utils import should_ignore, _ignore_manager    
     
     # 初始化 FileMonitor 以便 IgnoreFileManager 可以监控 .autocoderignore 文件
     monitor = FileMonitor(root_dir=example_run_dir)
     monitor.start()
-    
-    # 创建一个 IgnoreFileManager 实例
-    # 注意：在实际使用中，我们通常使用 should_ignore 函数而不是直接实例化 IgnoreFileManager
-    # 这里为了演示，我们直接创建一个实例
-    ignore_manager = IgnoreFileManager()
-    
-    # 等待一下，确保 FileMonitor 已经启动并注册了回调
-    time.sleep(1)
     
     # 测试哪些文件应该被忽略
     print("\n--- 测试哪些文件应该被忽略 ---")
@@ -117,21 +90,28 @@ if __name__ == '__main__':
     
     with open(ignore_file_path, "a") as f:
         f.write("# 添加 not_ignored 目录到忽略列表\n")
-        f.write("not_ignored/\n")
+        f.write("not_ignored\n")
     
     # 等待文件监控检测到变化并重新加载
     print("等待文件监控检测到变化...")
-    time.sleep(2)
+    time.sleep(10)
     
     # 再次测试 not_ignored_file 是否现在被忽略
     should_be_ignored_now = should_ignore(not_ignored_file)
     print(f"路径: {not_ignored_file}")
-    print(f"  - 修改后是否应该被忽略: {should_be_ignored_now}")
+    print(f"相对路径: {os.path.relpath(not_ignored_file, os.getcwd())}")
+    print(f"当前工作目录: {os.getcwd()}")
     
-    # 输出默认排除目录列表
-    print("\n--- 默认排除目录列表 ---")
-    for exclude in DEFAULT_EXCLUDES:
-        print(f"  - {exclude}")
+    # 获取 IgnoreFileManager 实例并打印规则
+    from autocoder.common.ignorefiles.ignore_file_utils import _ignore_manager
+    print(f"忽略规则文件路径: {_ignore_manager._ignore_file_path}")        
+    print(f"  - 修改后是否应该被忽略: {should_be_ignored_now}")
+
+    print(should_ignore("not_ignored/not_ignored.txt"))
+    
+    # 打印忽略规则文件
+    with open(_ignore_manager._ignore_file_path, 'r', encoding='utf-8') as f:
+        print(f"\n--- 忽略规则文件内容 ---\n{f.read()}")
     
     # 停止文件监控
     print("\n--- 停止文件监控 ---")

@@ -12,11 +12,6 @@ from autocoder.db.store import Store
 from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 
 from autocoder.utils.llms import get_llm_names
-from autocoder.utils.queue_communicate import (
-    queue_communicate,
-    CommunicateEvent,
-    CommunicateEventType,
-)
 
 from byzerllm.utils.client import EventCallbackResult, EventName
 from prompt_toolkit import prompt
