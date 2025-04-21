@@ -186,9 +186,7 @@ def main(input_args: Optional[List[str]] = None):
 
         # 生成 .autocoderignore 文件，采用 .gitignore 格式
         autocoderignore_path = os.path.join(source_dir, ".autocoderignore")
-        autocoderignore_content = (
-            "target\n"
-        )
+        autocoderignore_content = "target\n"
         with open(autocoderignore_path, "w", encoding="utf-8") as f:
             f.write(autocoderignore_content)
 
