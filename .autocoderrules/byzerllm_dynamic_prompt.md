@@ -7,30 +7,37 @@ alwaysApply: false
 # Dynamic LLM Prompt Construction with Context using @byzerllm.prompt()
 
 ## 简要说明
-利用 `byzerllm` 库的 `@byzerllm.prompt()` 装饰器和 Jinja2 模板引擎，动态构建结构复杂、包含丰富上下文信息的 LLM prompt。适用于需要向 LLM 提供如代码片段、项目结构、外部规则、历史变更等动态数据的场景，例如代码生成、代码分析、问答系统等。
+如何给 @byzerllm.prompt() 函数使用autocoderrules_utils工具添加用户自定义规则文档，同时也演示了，如果添加额外的上下文信息，如何动态生成复杂的 LLM Prompt。
 
 ## 典型用法
 
 ```python
+# 导入必要的库
 import byzerllm
 from typing import Dict, Optional, List
-from autocoder.common.rulefiles.autocoderrules_utils import get_rules # Step 1: Import get_rules
 
-# 假设存在一个函数用于获取 *显式传递* 的外部规则
+# 步骤 1: 导入 get_rules 函数，用于自动加载用户自定义规则文件
+from autocoder.common.rulefiles.autocoderrules_utils import get_rules
+
+# 示例：获取显式传递的外部规则
 def get_explicit_external_rules() -> Dict[str, str]:
-    # 在实际应用中，这会从文件或其他来源加载规则
+    """获取显式传递的外部规则，这些规则可以由用户直接提供"""
+    # 实际应用中可能从配置文件或API获取
     return {
-        "rule1.txt": "Always use snake_case for variable names.",
-        "rule2.json": '{"max_line_length": 88}'
+        "code_style.txt": "Always use snake_case for variable names.",
+        "formatting.json": '{"max_line_length": 88, "use_spaces": true}'
     }
 
-# 假设存在一个函数获取项目结构
+# 示例：获取项目结构信息
 def get_project_structure() -> str:
-    # 在实际应用中，这会扫描目录生成结构树
+    """获取项目的目录结构"""
+    # 实际应用中可能使用 os.walk 或其他方法动态生成
     return """
 project_root/
 ├── src/
-│   └── main.py
+│   ├── main.py
+│   └── utils/
+│       └── helpers.py
 ├── docs/
 │   └── usage.md
 └── README.md
@@ -38,7 +45,11 @@ project_root/
 
 class DynamicPromptBuilder:
     def __init__(self, args: Optional[Dict] = None):
-        # args 可以包含控制 prompt 生成的配置项
+        """初始化 DynamicPromptBuilder
+        
+        Args:
+            args: 可选的配置参数，用于控制 prompt 生成的行为
+        """
         self.args = args or {}
 
     @byzerllm.prompt()
@@ -48,9 +59,12 @@ class DynamicPromptBuilder:
                              project_structure: Optional[str] = None,
                              extra_context: Optional[str] = None,
                              external_rules: Optional[Dict[str, str]] = None
-                             ) -> Dict: # Return type is Dict for template variables
+                             ) -> Dict: # 返回类型是 Dict，用于传递模板变量
         """
-        根据用户指令生成代码。
+        根据用户指令生成代码的提示模板。
+        
+        使用 Jinja2 语法构建模板，根据传入的参数动态生成最终的提示文本。
+        模板中的条件语句确保只有提供了相应参数时才会包含对应部分。
 
         {%- if project_structure %}
         项目结构:
@@ -106,56 +120,69 @@ class DynamicPromptBuilder:
 
         请根据上述信息和指令生成代码。
         """
-        # Step 2: Call get_rules() inside the method
+        # 步骤 2: 在方法内部调用 get_rules() 获取用户自定义规则
         extra_docs = get_rules()
 
-        # 这个 return 语句用于传递需要在模板渲染时计算或获取的变量
-        # 实际的 prompt 方法返回值是渲染后的字符串
+        # 返回包含模板变量的字典
+        # 注意：@byzerllm.prompt() 装饰器会使用这些变量渲染模板，并返回最终的字符串
         return {
-            "project_structure": project_structure,  # 将参数直接传递给模板
-            "extra_docs": extra_docs # Step 3: Add loaded rules to the template context
+            # 将参数直接传递给模板
+            "project_structure": project_structure,
+            # 步骤 3: 将加载的规则添加到模板上下文中
+            "extra_docs": extra_docs
         }
 
 # === 调用示例 ===
 if __name__ == "__main__":
+    # 创建 DynamicPromptBuilder 实例
     builder = DynamicPromptBuilder()
 
     # 准备动态数据
     instruction = "Implement a function to calculate the factorial of a number."
+    
+    # 代码片段示例 - 可以是项目中已有的代码
     code_snippets = {
-        "src/utils.py": "def helper_function():\n    pass"
+        "src/utils.py": "def helper_function():\n    # 辅助函数\n    pass"
     }
+    
+    # 获取项目结构
     project_structure_str = get_project_structure()
-    extra_context_info = "The function should handle non-negative integers only."
-    # 获取 *显式传递* 的规则
+    
+    # 额外上下文信息
+    extra_context_info = "The function should handle non-negative integers only and raise ValueError for negative inputs."
+    
+    # 获取显式传递的规则
     explicit_rules = get_explicit_external_rules()
 
-    # 调用 prompt 方法生成最终的 prompt 字符串
-    # 注意：所有在模板中使用的变量 (instruction, code_snippets, project_structure, etc.)
-    # 都需要作为关键字参数传递给 .prompt() 方法。
-    # 模板中使用的 extra_docs 会在方法内部通过 get_rules() 自动加载并填充。
+    # 示例 1: 基本用法 - 调用 prompt 方法生成最终的 prompt 字符串
+    # 注意: 所有在模板中使用的变量都需要作为关键字参数传递
+    # extra_docs 会在方法内部通过 get_rules() 自动加载，无需手动传递
     final_prompt = builder.generate_code_prompt.prompt(
         instruction=instruction,
         code_snippets=code_snippets,
-        project_structure=project_structure_str, # 显式传递 project_structure
+        project_structure=project_structure_str,  # 显式传递项目结构
         extra_context=extra_context_info,
-        external_rules=explicit_rules # 传递显式规则
+        external_rules=explicit_rules  # 传递显式规则
     )
 
-    print("===== Generated Prompt =====")
+    print("===== 生成的提示内容 =====")
     print(final_prompt)
 
-    # 也可以在调用时覆盖或添加模板变量
+    # 示例 2: 高级用法 - 在调用时使用不同的参数
     modified_prompt = builder.generate_code_prompt.prompt(
-        instruction="Refactor the existing factorial function for clarity.",
-        code_snippets={"src/math_lib.py": "def factorial(n):\n # ... implementation ..."},
-        project_structure=project_structure_str, # 显式传递 project_structure
-        extra_context="Focus on readability.",
-        external_rules=explicit_rules, # 传递显式规则
-        # new_variable="This value was not in the original signature" # 仍然可以添加新变量
+        instruction="Refactor the existing factorial function for better performance and readability.",
+        code_snippets={
+            "src/math_lib.py": "def factorial(n):\n    if n <= 1:\n        return 1\n    return n * factorial(n-1)"
+        },
+        project_structure=project_structure_str,
+        extra_context="Optimize for both time and space complexity. Consider using iteration instead of recursion.",
+        external_rules=explicit_rules,
+        # 可以添加模板中未定义的新变量
+        # additional_context="This value will be available in the template if referenced"
     )
-    # print("\n===== Modified Prompt =====")
-    # print(modified_prompt)
+    
+    print("\n===== 修改后的提示内容 =====")
+    print(modified_prompt)
 
 ```
 

@@ -365,6 +365,13 @@ def serve(llm:ByzerLLM, args: ServerArgs):
         server_model_name=args.served_model_name,
         prompt_template=args.prompt_template
     )
+    
+    # Patch _check_model方法，使其永远返回None
+    async def always_return_none(*args, **kwargs):
+        return None
+    
+    openai_serving_chat._check_model = always_return_none
+    openai_serving_completion._check_model = always_return_none
 
     # 如果使用workers>1或reload=True，必须使用导入字符串而不是应用实例    
     uvicorn.run(

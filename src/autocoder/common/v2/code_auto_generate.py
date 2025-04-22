@@ -16,6 +16,7 @@ from autocoder.utils import llms as llm_utils
 from autocoder.common import SourceCodeList
 from autocoder.memory.active_context_manager import ActiveContextManager
 from loguru import logger
+from autocoder.common.rulefiles.autocoderrules_utils import get_rules
 
 class CodeAutoGenerate:
     def __init__(
@@ -35,6 +36,88 @@ class CodeAutoGenerate:
         self.llms = self.llm.get_sub_client("code_model") or [self.llm]
         if not isinstance(self.llms, list):
             self.llms = [self.llms]
+
+    @byzerllm.prompt(llm=lambda self: self.llm)
+    def single_round_instruction(
+        self, instruction: str, content: str, context: str = "", package_context: str = ""
+    ) -> str:
+        """
+        {%- if structure %}
+        ====
+        {{ structure }}
+        {%- endif %}
+
+        {%- if content %}
+        ====
+        下面是一些文件路径以及每个文件对应的源码：
+
+        {{ content }}
+        {%- endif %}
+
+        {%- if package_context %}
+        ====
+        下面是上面文件的一些信息（包括最近的变更情况）：
+        <package_context>
+        {{ package_context }}
+        </package_context>
+        {%- endif %}
+
+        {%- if context %}
+        ====        
+        {{ context }}
+        {%- endif %}
+
+        {%- if extra_docs %}
+        ====
+
+        RULES PROVIDED BY USER
+
+        The following rules are provided by the user, and you must follow them strictly.
+
+        {% for key, value in extra_docs.items() %}
+        <user_rule>
+        ##File: {{ key }}
+        {{ value }}
+        </user_rule>
+        {% endfor %}        
+        {% endif %}
+
+        下面是用户的需求：
+
+        {{ instruction }}
+
+        如果你需要生成代码，你生成的代码要符合这个格式：
+
+        ```{lang}
+        ##File: {FILE_PATH}
+        {CODE}
+        ```
+
+        ```{lang}
+        ##File: {FILE_PATH}
+        {CODE}
+        ```
+
+        其中，{lang}是代码的语言，{CODE}是代码的内容, {FILE_PATH} 是文件的路径(请尽量使用绝对路径)，他们都在代码块中，请严格按上面的格式进行内容生成。
+
+        请确保每份代码的完整性，而不要只生成修改部分。
+        """
+        
+        if not self.args.include_project_structure:
+            return {
+                "structure": "",                
+            }
+        
+        extra_docs = get_rules()    
+        
+        return {
+            "structure": (
+                self.action.pp.get_tree_like_directory_structure()
+                if self.action
+                else ""
+            ),
+            "extra_docs": extra_docs,
+        }        
 
     def single_round_run(
         self, query: str, source_code_list: SourceCodeList        

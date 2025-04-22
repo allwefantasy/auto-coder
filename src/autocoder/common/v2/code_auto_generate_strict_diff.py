@@ -16,6 +16,7 @@ from autocoder.utils import llms as llm_utils
 from autocoder.common import SourceCodeList
 from autocoder.privacy.model_filter import ModelPathFilter
 from autocoder.memory.active_context_manager import ActiveContextManager
+from autocoder.common.rulefiles.autocoderrules_utils import get_rules
 class CodeAutoGenerateStrictDiff:
     def __init__(
         self, llm: byzerllm.ByzerLLM, args: AutoCoderArgs, action=None
@@ -118,10 +119,12 @@ class CodeAutoGenerateStrictDiff:
         现在让我们开始一个新的任务:
 
         {%- if structure %}
+        ====
         {{ structure }}
         {%- endif %}
 
         {%- if content %}
+        ====
         下面是一些文件路径以及每个文件对应的源码：
         <files>
         {{ content }}
@@ -129,6 +132,7 @@ class CodeAutoGenerateStrictDiff:
         {%- endif %}
 
         {%- if package_context %}
+        ====
         下面是上面文件的一些信息（包括最近的变更情况）：
         <package_context>
         {{ package_context }}
@@ -136,14 +140,29 @@ class CodeAutoGenerateStrictDiff:
         {%- endif %}
 
         {%- if context %}
+        ====
         <extra_context>
         {{ context }}
         </extra_context>
         {%- endif %}
 
-        下面是用户的需求：
+        {%- if extra_docs %}
+        ====
 
-        {{ instruction }}
+        RULES PROVIDED BY USER
+
+        The following rules are provided by the user, and you must follow them strictly.
+
+        {% for key, value in extra_docs.items() %}
+        <user_rule>
+        ##File: {{ key }}
+        {{ value }}
+        </user_rule>
+        {% endfor %}
+        {% endif %}
+
+        ====
+        下面是用户的需求：
 
         每次生成一个文件的diff，然后询问我是否继续，当我回复继续，继续生成下一个文件的diff。当没有后续任务时，请回复 "__完成__" 或者 "__EOF__"。
         """
@@ -152,13 +171,16 @@ class CodeAutoGenerateStrictDiff:
             return {
                 "structure": "",                
             }
+        
+        extra_docs = get_rules()
 
         return {
             "structure": (
                 self.action.pp.get_tree_like_directory_structure()
                 if self.action
                 else ""
-            )
+            ),
+            "extra_docs": extra_docs,
         }
 
     @byzerllm.prompt(llm=lambda self: self.llm)
