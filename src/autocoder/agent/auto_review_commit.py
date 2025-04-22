@@ -96,12 +96,13 @@ class AutoReviewCommit:
            - 依赖关系：组件耦合是否合理
            - 复用性：是否有重复代码
 
-        评审结果包含以下内容：
-        1. issues: 发现的具体问题列表
-        2. suggestions: 对应的改进建议列表
-        3. severity: 问题的严重程度(low/medium/high)
+        评审结果包含以下内容（以美观易于阅读的Markdown格式输出）：
+        1. issues: 发现的具体问题列表        
+        3. severity: 问题的严重程度(low/medium/high)，从高到底进行描述。
+        4. suggestions: 对应的改进建议列表
         4. affected_files: 受影响的文件列表
         5. summary: 总体评价
+        6. action: 1. 修改完美，可以继续。 2. 用户需要revert 代码，然后重新修改提示词，你推荐的提示词是什么。 3. 用户可以在现在的基础上，再做一些迭代，来完成这次，应该怎么提供提示词。
 
         {% if query %}
         用户额外 review 需求：
@@ -116,7 +117,7 @@ class AutoReviewCommit:
         3. 严重程度的判断要考虑问题对系统的潜在影响
         4. 建议应该符合项目的技术栈和开发规范        
         """
-        pass
+        return {}
 
 
     def parse_history_tasks(self,commit_file_name: Optional[str] = None) -> List[Dict]:
