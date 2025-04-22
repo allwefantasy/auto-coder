@@ -66,4 +66,5 @@ notebooks/generated_image.png
 /notebooks/test_project
 /notebooks/*.txt
 /examples/test_project
+/package-lock.json/
 
