@@ -59,16 +59,19 @@ class CodeAutoGenerate:
     ) -> str:
         """
         {%- if structure %}
+        ====
         {{ structure }}
         {%- endif %}
 
         {%- if content %}
+        ====
         下面是一些文件路径以及每个文件对应的源码：
 
         {{ content }}
         {%- endif %}
 
         {%- if package_context %}
+        ====
         下面是上面文件的一些信息（包括最近的变更情况）：
         <package_context>
         {{ package_context }}
@@ -76,8 +79,26 @@ class CodeAutoGenerate:
         {%- endif %}
 
         {%- if context %}
+        ====
         {{ context }}
         {%- endif %}
+
+        {%- if extra_docs %}
+        ====
+
+        RULES PROVIDED BY USER
+
+        The following rules are provided by the user, and you must follow them strictly.
+
+        {% for key, value in extra_docs.items() %}
+        <user_rule>
+        ##File: {{ key }}
+        {{ value }}
+        </user_rule>
+        {% endfor %}        
+        {% endif %}
+
+        ====
 
         下面是用户的需求：
 
