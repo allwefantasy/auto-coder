@@ -8,3 +8,6 @@
 
 ## byzerllm_dynamic_prompt.md
 如何给 @byzerllm.prompt() 函数添加用户自定义规则文档。同时也演示了，如果添加额外的上下文信息，如何动态生成复杂的 LLM Prompt。
+
+## to_ignore_files.md
+使用 .autocoderignore 文件中的规则来判断是否应忽略某个文件或目录。
