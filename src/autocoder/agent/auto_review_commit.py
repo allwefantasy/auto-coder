@@ -47,7 +47,7 @@ class AutoReviewCommit:
     @byzerllm.prompt()
     def review(self, querie_with_urls_and_changes: List[Tuple[str, List[str], Dict[str, Tuple[str, str]]]], query: str) -> Generator[str,None,None]:
         """
-        如果前面我们对话提供了文档，请参考上面的文档对提交的代码变更进行审查，提供改进建议。
+        如果前面我们对话提供了文档，请参考上面的文档对提交的代码变更进行审查，提供改进建议，你所有的输出都要以markdown语法输出。
 
         下面包含最新一次提交的信息：        
         <commit>
@@ -96,7 +96,7 @@ class AutoReviewCommit:
            - 依赖关系：组件耦合是否合理
            - 复用性：是否有重复代码
 
-        评审结果包含以下内容（以美观易于阅读的Markdown格式输出）：
+        评审结果包含以下内容
         1. issues: 发现的具体问题列表        
         3. severity: 问题的严重程度(low/medium/high)，从高到底进行描述。
         4. suggestions: 对应的改进建议列表
@@ -115,7 +115,9 @@ class AutoReviewCommit:
         1. 评审意见应该具体且可操作，而不是泛泛而谈
         2. 对于每个问题都应该提供明确的改进建议
         3. 严重程度的判断要考虑问题对系统的潜在影响
-        4. 建议应该符合项目的技术栈和开发规范        
+        4. 建议应该符合项目的技术栈和开发规范     
+
+        注意，请以「纯 Markdown」输出，不要出现 <markdown>、</markdown> 之类标签。   
         """
         return {}
 
