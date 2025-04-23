@@ -11,9 +11,3 @@
 
 ## to_ignore_files.md
 使用 .autocoderignore 文件中的规则来判断是否应忽略某个文件或目录。
-
-## file_monitor_rule.md
-使用 watchfiles 实现高效的文件系统监控。
-
-## rule_file_manager_rule.md
-管理和加载 .autocoderrules 目录下的规则文件，并支持热加载。
