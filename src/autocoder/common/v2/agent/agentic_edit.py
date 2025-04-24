@@ -656,7 +656,7 @@ class AgenticEdit:
         4. Once you've completed the user's task, you must use the attempt_completion tool to present the result of the task to the user. You may also provide a CLI command to showcase the result of your task; this can be particularly useful for web development tasks, where you can run e.g. \`open index.html\` to show the website you've built.
         5. The user may provide feedback, which you can use to make improvements and try again. But DO NOT continue in pointless back and forth conversations, i.e. don't end your responses with questions or offers for further assistance.
 
-        {% if enable_active_context_in_generate %}
+        {% if enable_active_context %}
         **Very Important Notice**
         Each directory has a description file stored separately. For example, the description for the directory `{{ current_project }}/src/abc/bbc` can be found in the file `{{ current_project }}/.auto-coder/active-context/src/abc/bbc/active.md`.
         You can use the tool  `read_file` to read these description files, which helps you decide exactly which files need detailed attention. Note that the `active.md` file does not contain information about all files within the directory—it only includes information 
@@ -699,7 +699,7 @@ class AgenticEdit:
             "home_dir": os.path.expanduser("~"),
             "files": self.files.to_str(),
             "mcp_server_info": self.mcp_server_info,
-            "enable_active_context": self.args.enable_active_context_in_generate,
+            "enable_active_context": self.args.enable_active_context,
             "extra_docs": extra_docs,
         }
 
@@ -1380,7 +1380,7 @@ Below are some files the user is focused on, and the content is up to date. Thes
                         self.printer.print_in_terminal(
                             "yaml_save_error", style="red", yaml_file=action_file_name)
 
-                    if self.args.enable_active_context_in_generate:
+                    if self.args.enable_active_context:
                         active_context_manager = ActiveContextManager(
                             self.llm, self.args.source_dir)
                         task_id = active_context_manager.process_changes(
