@@ -699,6 +699,7 @@ class AgenticEdit:
             "home_dir": os.path.expanduser("~"),
             "files": self.files.to_str(),
             "mcp_server_info": self.mcp_server_info,
+            "enable_active_context": self.args.enable_active_context,
             "extra_docs": extra_docs,
         }
 
