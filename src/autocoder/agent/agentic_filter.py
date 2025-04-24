@@ -282,7 +282,7 @@ class AgenticFilter:
         """        
         return {
             "project_path": os.path.abspath(self.args.source_dir),
-            "enable_active_context": self.args.enable_active_context,
+            "enable_active_context": True,
         }
 
     @byzerllm.prompt()
