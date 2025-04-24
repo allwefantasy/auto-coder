@@ -21,8 +21,7 @@ from autocoder.utils import llms as llm_utils
 from autocoder.common import SourceCodeList
 from autocoder.memory.active_context_manager import ActiveContextManager
 from autocoder.common.rulefiles.autocoderrules_utils import get_rules
-
-
+from autocoder.run_context import get_run_context,RunMode
 
 class CodeAutoGenerateEditBlock:
     def __init__(
@@ -518,7 +517,7 @@ class CodeAutoGenerateEditBlock:
                                   generate_mode="editblock"
                                   )
 
-        if not self.args.human_as_model:
+        if not self.args.human_as_model or get_run_context().mode == RunMode.WEB:
             with ThreadPoolExecutor(max_workers=len(self.llms) * self.generate_times_same_model) as executor:
                 futures = []
                 count = 0

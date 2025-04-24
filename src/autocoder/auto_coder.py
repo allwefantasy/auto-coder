@@ -52,7 +52,7 @@ from autocoder.common.mcp_server_types import (
     McpRequest, McpInstallRequest, McpRemoveRequest, McpListRequest, 
     McpListRunningRequest, McpRefreshRequest
 )
-
+from autocoder.run_context import get_run_context,RunMode
 console = Console()
 
 
@@ -438,7 +438,7 @@ def main(input_args: Optional[List[str]] = None):
                 llm.setup_sub_client("index_filter_model", index_filter_model)
             
 
-        if args.human_as_model:
+        if get_run_context().mode != RunMode.WEB and args.human_as_model:
 
             def intercept_callback(
                 llm, model: str, input_value: List[Dict[str, Any]]
@@ -1157,7 +1157,7 @@ def main(input_args: Optional[List[str]] = None):
             loaded_conversations = pre_conversations + \
                 chat_history["ask_conversation"]              
 
-            if args.human_as_model:
+            if get_run_context().mode != RunMode.WEB and args.human_as_model:
                 console = Console()
 
                 @byzerllm.prompt()
