@@ -153,7 +153,7 @@ class FileMonitor:
         """
         # 将单个模式转换为pathspec格式
         # 使用GitWildMatchPattern，它支持.gitignore样式的通配符，功能最全面
-        return pathspec.PathSpec.from_patterns([pattern], pathspec.patterns.GitWildMatchPattern)
+        return pathspec.PathSpec([pathspec.patterns.GitWildMatchPattern(pattern)])
 
     def register(self, path: Union[str, Path], callback: Callable[[Change, str], None]):
         """

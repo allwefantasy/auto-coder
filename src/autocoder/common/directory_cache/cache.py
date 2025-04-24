@@ -1,10 +1,10 @@
-
 from __future__ import annotations
 import os, fnmatch, asyncio
 from watchfiles import Change
 from autocoder.common.ignorefiles.ignore_file_utils import should_ignore
 from autocoder.common.file_monitor.monitor import get_file_monitor
 import logging
+import functools
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +15,7 @@ class DirectoryCache:
         self.root = os.path.abspath(root)
         self.files_set: set[str] = set()
         self.lock = asyncio.Lock()
+        self._main_loop = asyncio.get_event_loop()  # 保存主事件循环引用
         logger.info(f"Initializing DirectoryCache for root: {self.root}")
 
     # ---------- 单例获取 ----------
@@ -58,7 +59,6 @@ class DirectoryCache:
             logger.info(f"Registering file monitor for {self.root}")
             mon = get_file_monitor(self.root)
             # 使用 functools.partial 包装异步回调
-            import functools
             async_callback_wrapper = functools.partial(self._on_change_wrapper)
             mon.register("**/*", async_callback_wrapper) # 监听所有文件变化
             if not mon.is_running():
@@ -70,19 +70,26 @@ class DirectoryCache:
 
     # Wrapper to run the async callback in the event loop
     def _on_change_wrapper(self, change: Change, path: str):
-        # Ensure the async function runs in the correct event loop
-        # If the monitor runs in a separate thread, you might need asyncio.run_coroutine_threadsafe
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-             asyncio.create_task(self._on_change(change, path))
-        else:
-             # Handle cases where the loop might not be running or accessible directly
-             # This might depend on how watchfiles integrates with asyncio in your setup
-             logger.warning("Event loop not running or accessible for _on_change_wrapper. Change might be missed.")
-             # Fallback or alternative execution method might be needed here.
-             # For simplicity in this example, we'll log and potentially miss the update
-             # A more robust solution might involve ensuring the monitor runs within an asyncio context
-             # or using threadsafe mechanisms if the monitor runs in a different thread.
+        try:
+            # 使用run_coroutine_threadsafe在主事件循环中运行协程
+            # 注意：主事件循环必须在其他地方运行，如主线程中
+            asyncio.run_coroutine_threadsafe(self._on_change(change, path), self._main_loop)
+        except Exception as e:
+            logger.error(f"Error executing _on_change_wrapper: {e}", exc_info=True)
+            # 如果run_coroutine_threadsafe失败，可以考虑一个同步的备用处理方法
+            try:
+                # 同步备份处理
+                ap = os.path.abspath(path)
+                if should_ignore(ap):
+                    return
+                
+                if change is Change.added:
+                    self.files_set.add(ap)
+                elif change is Change.deleted:
+                    self.files_set.discard(ap)
+                # Change.modified不需要更新集合
+            except Exception as backup_error:
+                logger.error(f"Backup handler also failed: {backup_error}", exc_info=True)
 
 
     async def _on_change(self, change: Change, path: str) -> None:
