@@ -960,12 +960,17 @@ The following are context files that the user is currently focusing on. These fi
                     elif last_message["role"] == "assistant":
                         logger.info("Appending to existing assistant message")
                         last_message["content"] += assistant_buffer
-                # If the loop ends without AttemptCompletion, it means the LLM finished talking
-                # without signaling completion. We might just stop or yield a final message.
-                # Let's assume it stops here.
-                logger.info("No tool executed and LLM finished. Breaking out of main loop.")
-                break
-
+                
+                # 添加系统提示，要求LLM必须使用工具或明确结束，而不是直接退出
+                logger.info("Adding system reminder to use tools or attempt completion")
+                conversations.append({
+                    "role": "user",
+                    "content": "NOTE: You must use an appropriate tool (such as read_file, write_to_file, execute_command, etc.) or explicitly complete the task (using attempt_completion). Do not provide text responses without taking concrete actions. Please select a suitable tool to continue based on the user's task."
+                })
+                # 继续循环，让 LLM 再思考，而不是 break
+                logger.info("Continuing the LLM interaction loop without breaking")
+                continue
+            
         logger.info(f"AgenticEdit analyze loop finished after {iteration_count} iterations.")
 
     def stream_and_parse_llm_response(
