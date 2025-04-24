@@ -777,7 +777,7 @@ class AgenticEdit:
         logger.info("Adding initial files context to conversation")
         conversations.append({
             "role":"user","content":f'''
-Below are some files the user is focused on, and the content is up to date. These entries show the file paths along with their full text content, which can help you better understand the user's needs. If the information is insufficient, you can use tools such as read_file to retrieve more details.
+The following are context files that the user is currently focusing on. These files are presented with their complete paths and up-to-date content, providing essential context to help you better understand the user's needs. If you need more detailed information about specific files or directories not shown here, you can use tools like read_file, search_files, or list_files to explore the codebase further.
 <files>
 {self.files.to_str()}
 </files>'''
