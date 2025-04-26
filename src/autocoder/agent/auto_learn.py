@@ -215,7 +215,7 @@ class AutoLearn:
         - 文档结构清晰，遵循规定格式
         - 依赖说明明确具体，便于用户快速配置环境
 
-        请根据要求生成或者更新规则文件，并将规则文件存储在项目的 {{ project_root }}/.autocoderrules 目录，供后续自动化代码生成使用。
+        请根据要求生成或者更新规则文件(markdown文件)，并将规则文件存储在项目的 {{ project_root }}/.autocoderrules 目录，供后续自动化代码生成使用。
         """
         return {
             "project_root": os.path.abspath(self.args.source_dir),
@@ -422,7 +422,7 @@ class AutoLearn:
         - 文档结构清晰，遵循规定格式
         - 依赖说明明确具体，便于用户快速配置环境
 
-        请根据要求生成或者更新规则文件，并将规则文件存储在项目的 {{ project_root }}/.autocoderrules 目录，供后续自动化代码生成使用。
+        请根据要求生成或者更新规则文件(markdown文件)，并将规则文件存储在项目的 {{ project_root }}/.autocoderrules 目录，供后续自动化代码生成使用。
         """
 
         # 获取索引文件内容
