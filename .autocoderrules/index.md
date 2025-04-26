@@ -11,6 +11,3 @@
 
 ## to_ignore_files.md
 使用 .autocoderignore 文件中的规则来判断是否应忽略某个文件或目录。
-
-## parallel_token_counting.md
-使用 multiprocessing.Pool 并行计算 Token 数量
