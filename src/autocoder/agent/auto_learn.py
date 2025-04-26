@@ -40,9 +40,7 @@ class AutoLearn:
         - 识别代码变更中具有普遍应用价值的功能点和模式
         - 将这些功能点提炼为结构化规则，便于在其他项目中快速复用
         - 生成清晰的使用示例，包含完整依赖和调用方式
-        - 这些规则将被存储在项目的 .autocoderrules 目录，供后续自动化代码生成使用
-
-        项目根目录: {{ project_root }}
+        - 这些规则将被存储在项目的 {{ project_root }}/.autocoderrules 目录，供后续自动化代码生成使用        
 
         ## 分析对象        
         下面是本次提交的代码变更：
@@ -86,144 +84,138 @@ class AutoLearn:
         ## 用户需求
         {{ new_query }}
 
-        ## 输出格式要求
+        ## 生成或者更新的规则文件结构
 
-        请按照以下结构(<markdown>...</markdown>包裹的内容)输出规则文件内容:
+            ---
+            description: [简明描述规则的功能，20字以内]
+            globs: [匹配应用此规则的文件路径，如"src/services/*.py"]
+            alwaysApply: [是否总是应用，通常为false]
+            ---
 
-        <markdown>
-        ---
-        description: [简明描述规则的功能，20字以内]
-        globs: [匹配应用此规则的文件路径，如"src/services/*.py"]
-        alwaysApply: [是否总是应用，通常为false]
-        ---
+            # [规则主标题]
 
-        # [规则主标题]
+            ## 简要说明
+            [该规则的功能、适用场景和价值，100字以内]
 
-        ## 简要说明
-        [该规则的功能、适用场景和价值，100字以内]
+            ## 典型用法
+            ```python
+            # 完整的代码示例，包含:
+            # 1. 必要的import语句
+            # 2. 类/函数定义
+            # 3. 参数说明
+            # 4. 调用方式
+            # 5. 关键注释        
+            ```
 
-        ## 典型用法
-        ```python
-        # 完整的代码示例，包含:
-        # 1. 必要的import语句
-        # 2. 类/函数定义
-        # 3. 参数说明
-        # 4. 调用方式
-        # 5. 关键注释        
-        ```
+            ## 依赖说明
+            - [必要的依赖库及版本]
+            - [环境要求]
+            - [初始化流程(如有)]
 
-        ## 依赖说明
-        - [必要的依赖库及版本]
-        - [环境要求]
-        - [初始化流程(如有)]
+            ## 学习来源
+            [从哪个提交变更的哪部分代码中提取的该功能点]                
 
-        ## 学习来源
-        [从哪个提交变更的哪部分代码中提取的该功能点]
-        </markdown>        
+        ## 生成或者更新的规则文件示例
+        
+            ---
+            description: Git提交分析工具
+            globs: "src/utils/git_analyzer.py"
+            alwaysApply: false
+            ---
 
-        ## 示例
+            # Git提交分析工具
 
-        <markdown>
-        ---
-        description: Git提交分析工具
-        globs: "src/utils/git_analyzer.py"
-        alwaysApply: false
-        ---
+            ## 简要说明
+            提供从Git仓库中获取提交变更并分析差异的工具函数，支持首次提交和普通提交的差异获取，适用于代码审查、变更追踪和自动化分析场景。
 
-        # Git提交分析工具
+            ## 典型用法
+            ```python
+            import git
+            from typing import Dict, Tuple, List, Optional
 
-        ## 简要说明
-        提供从Git仓库中获取提交变更并分析差异的工具函数，支持首次提交和普通提交的差异获取，适用于代码审查、变更追踪和自动化分析场景。
+            def get_commit_changes(repo_path: str, commit_id: str) -> Dict[str, Tuple[Optional[str], Optional[str]]]:
+                '''
+                获取指定commit的文件变更内容
 
-        ## 典型用法
-        ```python
-        import git
-        from typing import Dict, Tuple, List, Optional
+                Args:
+                    repo_path: Git仓库路径
+                    commit_id: 提交ID
 
-        def get_commit_changes(repo_path: str, commit_id: str) -> Dict[str, Tuple[Optional[str], Optional[str]]]:
-            '''
-            获取指定commit的文件变更内容
+                Returns:
+                    Dict[str, Tuple[Optional[str], Optional[str]]]: 文件路径到(变更前内容,变更后内容)的映射
+                '''
+                changes = {}
+                try:
+                    repo = git.Repo(repo_path)
+                    commit = repo.commit(commit_id)
 
-            Args:
-                repo_path: Git仓库路径
-                commit_id: 提交ID
-
-            Returns:
-                Dict[str, Tuple[Optional[str], Optional[str]]]: 文件路径到(变更前内容,变更后内容)的映射
-            '''
-            changes = {}
-            try:
-                repo = git.Repo(repo_path)
-                commit = repo.commit(commit_id)
-
-                # 检查是否是首次提交（没有父提交）
-                if not commit.parents:
-                    # 首次提交，获取所有文件
-                    for item in commit.tree.traverse():
-                        if item.type == 'blob':  # 只处理文件，不处理目录
-                            file_path = item.path
-                            # 首次提交前没有内容
-                            before_content = None
-                            # 获取提交后的内容
-                            after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
-                            changes[file_path] = (before_content, after_content)
-                else:
-                    # 获取parent commit
-                    parent = commit.parents[0]
-                    # 获取变更的文件列表
-                    for diff_item in parent.diff(commit):
-                        file_path = diff_item.a_path if diff_item.a_path else diff_item.b_path
-
-                        # 获取变更前内容
-                        before_content = None
-                        try:
-                            if diff_item.a_blob:
-                                before_content = repo.git.show(f"{parent.hexsha}:{file_path}")
-                        except git.exc.GitCommandError:
-                            pass  # 文件可能是新增的
-
-                        # 获取变更后内容
-                        after_content = None
-                        try:
-                            if diff_item.b_blob:
+                    # 检查是否是首次提交（没有父提交）
+                    if not commit.parents:
+                        # 首次提交，获取所有文件
+                        for item in commit.tree.traverse():
+                            if item.type == 'blob':  # 只处理文件，不处理目录
+                                file_path = item.path
+                                # 首次提交前没有内容
+                                before_content = None
+                                # 获取提交后的内容
                                 after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
-                        except git.exc.GitCommandError:
-                            pass  # 文件可能被删除
+                                changes[file_path] = (before_content, after_content)
+                    else:
+                        # 获取parent commit
+                        parent = commit.parents[0]
+                        # 获取变更的文件列表
+                        for diff_item in parent.diff(commit):
+                            file_path = diff_item.a_path if diff_item.a_path else diff_item.b_path
 
-                        changes[file_path] = (before_content, after_content)
+                            # 获取变更前内容
+                            before_content = None
+                            try:
+                                if diff_item.a_blob:
+                                    before_content = repo.git.show(f"{parent.hexsha}:{file_path}")
+                            except git.exc.GitCommandError:
+                                pass  # 文件可能是新增的
 
-                return changes
-            except Exception as e:
-                print(f"获取提交变更时出错: {str(e)}")
-                return {}
-        ```
+                            # 获取变更后内容
+                            after_content = None
+                            try:
+                                if diff_item.b_blob:
+                                    after_content = repo.git.show(f"{commit.hexsha}:{file_path}")
+                            except git.exc.GitCommandError:
+                                pass  # 文件可能被删除
 
-        ## 依赖说明
-        - GitPython>=3.1.0
-        - Python>=3.7
+                            changes[file_path] = (before_content, after_content)
 
-        ## 学习来源
-        从代码提交变更中提取的Git仓库差异分析功能
-        </markdown>
+                    return changes
+                except Exception as e:
+                    print(f"获取提交变更时出错: {str(e)}")
+                    return {}
+            ```
+
+            ## 依赖说明
+            - GitPython>=3.1.0
+            - Python>=3.7
+
+            ## 学习来源
+            从代码提交变更中提取的Git仓库差异分析功能        
 
         ## 索引文件更新说明
 
         除了生成规则文件外，请务必更新index.md索引文件，记录所有规则及其作用。如果 index.md 当前内容为空，请按如下格式创建:
-
-        <markdown>        
+              
         # Rules索引
 
         本文档记录项目中所有可用的代码规则(rules)及其用途。
 
         ## [规则文件路径]
         [规则文件的主要功能和适用场景简述]    
-        </markdown>
 
         ## 评价标准
         - 提取的功能点必须具备独立价值，能在其他项目中实际复用
         - 代码示例必须完整、可执行，包含所有必要组件
         - 文档结构清晰，遵循规定格式
         - 依赖说明明确具体，便于用户快速配置环境
+
+        请根据要求生成或者更新规则文件，并将规则文件存储在项目的 .autocoderrules 目录，供后续自动化代码生成使用。
         """
         return {
             "project_root": os.path.abspath(self.args.source_dir),
@@ -233,19 +225,19 @@ class AutoLearn:
     @byzerllm.prompt()
     def analyze_modules(self, sources: SourceCodeList, query: str) -> str:
         """
-        作为高级软件工程师，请对提供的模块代码进行深入分析，提取具有通用价值的功能模式和设计模式，转化为可在其他项目中复用的代码规则（rules）。
+        作为专业代码架构师，请对提供的模块代码进行深入分析，提取高价值的可复用模式，转化为标准化代码规则。
 
-        ## 任务目标
-        - 识别代码中具有普遍应用价值的功能点和模式
-        - 将这些功能点提炼为结构化规则，便于在其他项目中快速复用
-        - 生成清晰的使用示例，包含完整依赖和调用方式
-        - 这些规则将被存储在项目的 .autocoderrules 目录，供后续自动化代码生成使用
+        ## 分析目标
+        1. 识别代码中具有**普遍应用价值**和**技术亮点**的功能模块、设计模式和最佳实践
+        2. 优先提取那些解决常见开发痛点、提高代码质量或开发效率的模式
+        3. 将这些模式标准化为结构化规则，确保它们能在不同项目中直接复用
+        4. 生成包含完整依赖、初始化和调用方式的使用示例
 
         项目根目录: {{ project_root }}
 
         ## 分析对象                
         {% if sources.sources %}
-        分析目标文件:
+        目标文件列表:
         {% for source in sources.sources %}
         - {{ source.module_name }}
         {% endfor %}
@@ -277,165 +269,170 @@ class AutoLearn:
         ## 用户需求
         {{ query }}
 
-        ## 输出格式要求
+        ## 高价值模式识别指南
+        请重点关注以下类型的代码模式：
+        1. 通用工具函数/类：能解决特定领域常见问题的代码
+        2. 设计模式实现：优雅实现的设计模式，如工厂、装饰器、观察者等
+        3. 架构组件：如服务注册、配置管理、中间件等核心架构组件
+        4. 技术整合模式：多个技术栈协同工作的标准模式
+        5. 性能优化技巧：提高代码执行效率的实用模式
+        6. 错误处理机制：健壮的异常处理和故障恢复方案
 
-        请按照以下结构(<markdown>...</markdown>包裹的内容)输出规则文件内容:
+        ## 规则文件格式规范
+        
+            ---
+            description: [简明描述规则功能，20字以内]
+            globs: [匹配适用此规则的文件路径，如"src/services/*.py"]
+            alwaysApply: [是否默认应用，通常为false]
+            ---
 
-        <markdown>
-        ---
-        description: [简明描述规则的功能，20字以内]
-        globs: [匹配应用此规则的文件路径，如"src/services/*.py"]
-        alwaysApply: [是否总是应用，通常为false]
-        ---
+            # [规则主标题]
 
-        # [规则主标题]
+            ## 功能概述
+            [该规则的核心功能、适用场景和技术价值，100字以内]
 
-        ## 简要说明
-        [该规则的功能、适用场景和价值，100字以内]
+            ## 使用示例
+            ```python
+            # 完整可执行的代码示例，包含:
+            # 1. 必要的import语句
+            # 2. 类/函数完整定义
+            # 3. 参数详细说明
+            # 4. 标准调用方式
+            # 5. 关键处理逻辑注释
+            ```
 
-        ## 典型用法
-        ```python
-        # 完整的代码示例，包含:
-        # 1. 必要的import语句
-        # 2. 类/函数定义
-        # 3. 参数说明
-        # 4. 调用方式
-        # 5. 关键注释        
+            ## 依赖要求
+            - [必要的库及精确版本要求]
+            - [运行环境要求]
+            - [初始化/配置流程]
 
-        ## 依赖说明
-        - [必要的依赖库及版本]
-        - [环境要求]
-        - [初始化流程(如有)]
+            ## 源代码参考
+            [标明从哪个模块的哪些具体部分提取了该模式]       
 
-        ## 学习来源
-        [从哪个模块的哪部分代码中提取的该功能点]
-        </markdown>        
+        ## 规则文件示例
+        
+            ---
+            description: RPC服务快速实现框架
+            globs: "src/services/rpc*.py"
+            alwaysApply: false
+            ---
 
-        ## 示例
+            # RPC服务标准化实现模板
 
-        <markdown>
-        ---
-        description: RPC服务模板
-        globs: "src/services/rpc_service.py"
-        alwaysApply: false
-        ---
+            ## 功能概述
+            提供生产级gRPC服务的标准化实现模板，包含服务定义、请求处理、错误管理和性能优化。适用于构建高可靠、高性能的微服务通信架构。
 
-        # RPC服务快速实现模板
+            ## 使用示例
+            ```python
+            # 服务端实现
+            import grpc
+            from concurrent import futures
+            import logging
+            import time
+            from typing import Dict, Any
 
-        ## 简要说明
-        提供gRPC服务端与客户端的标准实现模板，包含服务定义、请求处理、错误处理和客户端调用。适用于需要高性能RPC通信的微服务架构。
+            import service_pb2
+            import service_pb2_grpc
 
-        ## 典型用法
-        ```python
-        # 服务端实现
-        import grpc
-        from concurrent import futures
-        import logging
-        import time
-        from typing import Dict, Any
+            class ServiceImplementation(service_pb2_grpc.MyServiceServicer):
+                def __init__(self, config: Dict[str, Any] = None):
+                    self.config = config or {}
+                    logging.info("RPC服务初始化完成")
 
-        import service_pb2
-        import service_pb2_grpc
+                def ProcessRequest(self, request, context):                
+                    try:
+                        # 业务逻辑处理
+                        result = self._process_business_logic(request)
 
-        class ServiceImplementation(service_pb2_grpc.MyServiceServicer):
-            def __init__(self, config: Dict[str, Any] = None):
-                self.config = config or {}
-                logging.info("RPC服务初始化完成")
+                        # 构建响应
+                        return service_pb2.Response(
+                            status=200,
+                            message="处理成功",
+                            data=result
+                        )
+                    except Exception as e:
+                        logging.error(f"处理请求时发生错误: {str(e)}")
+                        context.set_code(grpc.StatusCode.INTERNAL)
+                        context.set_details(f"服务器内部错误: {str(e)}")
+                        return service_pb2.Response(
+                            status=500,
+                            message=f"处理失败: {str(e)}",
+                            data={}
+                        )
 
-            def ProcessRequest(self, request, context):                
+                def _process_business_logic(self, request):
+                    # 实际业务逻辑处理
+                    return {"result": request.param1 + request.param2}
+
+            def serve(port=50051, max_workers=10):            
+                server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
+                service_pb2_grpc.add_MyServiceServicer_to_server(
+                    ServiceImplementation(), server
+                )
+                server.add_insecure_port(f'[::]:{port}')
+                server.start()
+                logging.info(f"服务已启动，监听端口: {port}")
+
                 try:
-                    # 业务逻辑处理
-                    result = self._process_business_logic(request)
+                    while True:
+                        time.sleep(86400)  # 一天
+                except KeyboardInterrupt:
+                    server.stop(0)
+                    logging.info("服务已停止")
 
-                    # 构建响应
-                    return service_pb2.Response(
-                        status=200,
-                        message="处理成功",
-                        data=result
-                    )
-                except Exception as e:
-                    logging.error(f"处理请求时发生错误: {str(e)}")
-                    context.set_code(grpc.StatusCode.INTERNAL)
-                    context.set_details(f"服务器内部错误: {str(e)}")
-                    return service_pb2.Response(
-                        status=500,
-                        message=f"处理失败: {str(e)}",
-                        data={}
-                    )
+            if __name__ == '__main__':
+                logging.basicConfig(level=logging.INFO)
+                serve()
+            ```
 
-            def _process_business_logic(self, request):
-                # 实际业务逻辑处理
-                return {"result": request.param1 + request.param2}
+            ## 依赖要求
+            - grpcio>=1.44.0
+            - grpcio-tools>=1.44.0
+            - 需要预先定义proto文件并生成对应Python代码:
+            ```bash
+            python -m grpc_tools.protoc -I./protos --python_out=. --grpc_python_out=. ./protos/service.proto
+            ```
+            - 示例proto文件结构:
+            ```protobuf
+            syntax = "proto3";
 
-        def serve(port=50051, max_workers=10):            
-            server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
-            service_pb2_grpc.add_MyServiceServicer_to_server(
-                ServiceImplementation(), server
-            )
-            server.add_insecure_port(f'[::]:{port}')
-            server.start()
-            logging.info(f"服务已启动，监听端口: {port}")
+            service MyService {
+                rpc ProcessRequest (Request) returns (Response) {}
+            }
 
-            try:
-                while True:
-                    time.sleep(86400)  # 一天
-            except KeyboardInterrupt:
-                server.stop(0)
-                logging.info("服务已停止")
+            message Request {
+                int32 param1 = 1;
+                int32 param2 = 2;
+            }
 
-        if __name__ == '__main__':
-            logging.basicConfig(level=logging.INFO)
-            serve()
-        ```
+            message Response {
+                int32 status = 1;
+                string message = 2;
+                map<string, string> data = 3;
+            }
+            ```
 
-        ## 依赖说明
-        - 需要安装 grpcio>=1.44.0 和 grpcio-tools>=1.44.0
-        - 需要预先定义proto文件并生成对应Python代码:
-          ```bash
-          python -m grpc_tools.protoc -I./protos --python_out=. --grpc_python_out=. ./protos/service.proto
-          ```
-        - 示例proto文件结构:
-          ```protobuf
-          syntax = "proto3";
+            ## 源代码参考
+            从src/services/rpc_service.py模块中的Server类和RequestHandler实现提取        
 
-          service MyService {
-            rpc ProcessRequest (Request) returns (Response) {}
-          }
+        ## 索引文件规范
 
-          message Request {
-            int32 param1 = 1;
-            int32 param2 = 2;
-          }
+        除了生成规则文件外，请更新index.md索引文件，确保项目中所有规则可被快速检索。索引格式如下:
+               
+        # 代码规则索引库
 
-          message Response {
-            int32 status = 1;
-            string message = 2;
-            map<string, string> data = 3;
-          }
-          ```
-
-        ## 学习来源
-        从src/services/rpc_service.py模块中的Server类和RequestHandler实现提取
-        </markdown>
-
-        ## 索引文件更新说明
-
-        除了生成规则文件外，请务必更新index.md索引文件，记录所有规则及其作用。如果 index.md 当前内容为空，请按如下格式创建:
-
-        <markdown>        
-        # Rules索引
-
-        本文档记录项目中所有可用的代码规则(rules)及其用途。
+        本文档索引了项目中所有可复用的代码规则，按功能分类组织。
 
         ## [规则文件路径]
-        [规则文件的主要功能和适用场景简述]    
-        </markdown>
+        [规则核心功能和应用场景，30字以内]    
 
-        ## 评价标准
-        - 提取的功能点必须具备独立价值，能在其他项目中实际复用
-        - 代码示例必须完整、可执行，包含所有必要组件
-        - 文档结构清晰，遵循规定格式
-        - 依赖说明明确具体，便于用户快速配置环境
+        ## 质量评估标准
+        - 独立价值：规则必须能独立解决特定领域问题，具有通用复用价值
+        - 代码完整：示例代码必须完整可执行，包含所有必要组件和初始化流程
+        - 文档规范：结构清晰，遵循统一格式，包含必要的使用说明和限制条件
+        - 依赖明确：明确列出所有依赖库、版本要求和环境配置
+
+        生成的规则文件将存储在项目的.autocoderrules目录，用于后续自动化代码生成。请确保每个规则都遵循上述格式，且具有独立的实用价值。
         """
 
         # 获取索引文件内容
