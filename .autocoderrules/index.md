@@ -11,3 +11,6 @@
 
 ## to_ignore_files.md
 使用 .autocoderignore 文件中的规则来判断是否应忽略某个文件或目录。
+
+## token_counter_local.md
+使用 tokenizers 和 multiprocessing 高效本地统计文本Token数
