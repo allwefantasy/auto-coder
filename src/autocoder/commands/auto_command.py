@@ -628,72 +628,67 @@ class CommandAutoTuner:
     @byzerllm.prompt()
     def _command_readme(self) -> str:
         '''
-        你有如下函数可供使用：
+        函数列表：
 
-        <commands>
-
-        <command>
+        <functions>
+        <function>
         <name>add_files</name>
         <description>
-          添加文件到一个活跃区，活跃区当你使用 chat,coding 函数时，活跃区的文件一定会被他们使用。
-          支持通过模式匹配添加文件，支持 glob 语法，例如 *.py。可以使用相对路径或绝对路径。
-          如果你检测到用户的coding执行结果，缺少必要的文件修改，可以尝试使用该函数先添加文件再执行coding。
+          添加文件到活跃区，在使用 chat 或 coding 函数时，活跃区的文件会被自动包含在上下文中。
+          支持多种添加方式：具体文件路径、模式匹配（glob 语法如 *.py）、相对路径或绝对路径。
+          
+          使用场景：
+          1. 在执行 coding 前准备上下文
+          2. 当 coding 执行结果缺少必要文件修改时进行补充，然后重新执行 coding 函数,或者在coding函数中的query显示 @需要的文件或者符号。          
+          3. 用户可能会主动要求你帮他添加一些文件或者管理文件分组
         </description>
         <usage>
-         该方法只有一个参数 args，args 是一个列表，列表的元素是字符串。
+         该方法只有一个参数 args，为字符串列表类型。
+         
+         # 基本用法 - 直接添加文件
 
-         如果没有包含子指令，单纯的添加文件，那么 args 列表的元素是文件路径，注意我们需要使用绝对路径。
-
-         使用例子：
-
+         ## 添加单个文件（推荐使用绝对路径）
          add_files(args=["/absolute/path/to/file1.py"])
+         
+         ## 添加多个文件
+         add_files(args=["/path/to/file1.py", "/path/to/file2.py"])
 
-         也支持glob 语法，例如：
+         ## 使用模式匹配（支持 glob 语法）
+         add_files(args=["**/*.py"])        # 添加所有 .py 文件
+         add_files(args=["src/**/*.ts"])    # 添加 src 目录下所有 .ts 文件
+         
+         # 注意：添加文件时应尽量精确，避免添加过多无关文件
+         
+         # 子命令功能
 
-         add_files(args=["**/*.py"])
+         ## 刷新文件列表
+         add_files(args=["/refresh"])
 
-         这样会把项目根目录下的所有.py文件添加到活跃区，尽量确保少的添加文件。
-
-         如果是有子指令，参考下面是常见的子指令说明。
-
-         ## /refresh 刷新文件列表
-         刷新文件列表
-
-         ## /group 文件分组管理 
-
-         ### /add 
-         创建新组并将当前文件列表保存到该组。
-         使用例子：
-
-         /group /add my_group
-
-         ### /drop
-         删除指定组及其文件列表
-         使用例子：
-
-         /group /drop my_group
-
-         ### /set
-         设置组的描述信息，用于说明该组的用途
-         使用例子：
-
-         /group /set my_group "用于说明该组的用途"
-
-         ### /list
-         列出所有已定义的组及其文件
-         使用例子：
-
-         /group /list
-
-         ### /reset
-         重置当前活跃组，但保留文件列表
-         使用例子：         
-         /group /reset
-
+         ## 文件分组管理
+         
+         ### 创建新组并保存当前文件列表
+         add_files(args=["/group", "/add", "my_group"])
+         
+         ### 删除指定组
+         add_files(args=["/group", "/drop", "my_group"])
+         
+         ### 设置组描述信息
+         add_files(args=["/group", "/set", "my_group", "这个组用于前端组件开发"])
+         
+         ### 列出所有已定义的组
+         add_files(args=["/group", "/list"])
+         
+         ### 重置当前活跃组（保留文件列表）
+         add_files(args=["/group", "/reset"])
+         
+         # 实用技巧：
+         # - 可以先使用 find_files_by_name 或 find_files_by_content 查找相关文件
+         # - 然后将结果添加到活跃区
+         # - 对于大型项目，可以创建不同的文件组用于不同功能的开发
         </usage>        
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>remove_files</name>
         <description>从活跃区移除文件。可以指定多个文件，支持文件名或完整路径。</description>
         <usage>
@@ -713,20 +708,47 @@ class CommandAutoTuner:
          remove_files(file_names=["/path/to/file1.py,file2.py"])
 
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>list_files</name>
-        <description>list_files 查看某个目录下的所有文件</description>
+        <description>
+          列出指定目录下的所有文件，帮助快速了解项目结构和文件组织。
+          
+          使用场景：
+          1. 探索项目结构，了解特定目录包含哪些文件
+          2. 在使用 read_files 或 add_files 前先确认目标文件
+          3. 当 get_project_structure 返回内容过多时作为替代选择
+          4. 寻找特定类型的文件（如配置文件、测试文件）
+        </description>
         <usage>
-        该工具用于列出指定目录下的所有文件（不包括子目录中的文件）。
-        输入参数 path: 要列出文件的目录路径
-        返回值是目录下所有文件的列表，以换行符分隔
-        list_files(path="/tmp")
+         该函数接受一个参数 path，表示要列出文件的目录路径。
+         
+         # 基本用法
+         
+         ## 列出当前目录文件
+         list_files(path=".")
+         
+         ## 列出指定目录文件
+         list_files(path="/absolute/path/to/directory")
+         list_files(path="src/components")
+         
+         ## 列出系统目录文件
+         list_files(path="/tmp")
+         
+         # 注意事项：
+         # - 只列出指定目录下的直接文件，不包括子目录中的文件
+         # - 返回结果包含文件名，以换行符分隔
+         # - 可与其他函数配合使用，如获取目录后通过 read_files 读取感兴趣的文件
+         
+         # 实用技巧：
+         # - 结合 find_files_by_name 深入查找特定文件
+         # - 遍历项目结构时可以先列出顶层目录，再逐层深入
+         # - 查看构建输出或日志目录时特别有用
         </usage>
-        </command>        
+        </function>        
 
-        <command>
+        <function>
         <name>revert</name>
         <description>
         撤销最后一次代码修改，恢复到修改前的状态。同时会删除对应的操作记录文件，
@@ -743,9 +765,9 @@ class CommandAutoTuner:
          - 撤销后会同时删除对应的操作记录文件
          - 如果没有可撤销的操作会提示错误
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>help</name>
         <description>
          显示帮助信息,也可以执行一些配置需求。
@@ -784,58 +806,108 @@ class CommandAutoTuner:
         ** 特别注意，这些配置参数会影响 coding,chat 的执行效果或者结果 根据返回调用该函数做合理的配置**
 
         </usage>
-        </command>        
+        </function>        
 
-        <command>
+        <function>
         <name>chat</name>
-        <description>进入聊天模式，与AI进行交互对话。支持多轮对话和上下文理解。</description>
+        <description>进入聊天模式，与AI进行交互对话。支持多轮对话、上下文理解和代码分析能力，是与系统进行自然交流的主要方式。</description>
         <usage>
-         该命令支持多种交互方式和特殊功能。
+         该命令支持丰富的交互方式和特殊功能，是你与AI交流的主要入口。
 
-         ## 基础对话
-         直接输入对话内容
-         使用例子：
-
+         ## 基础用法
+         
+         ### 基础对话
+         直接输入对话内容，系统会结合上下文进行回答
+         ```
          chat(query="这个项目使用了什么技术栈？")
+         chat(query="如何优化当前代码的性能？")
+         ```
 
-         ## 新会话
-         使用 /new 开启新对话
-         使用例子：
+         ### 会话管理
+         使用 /new 开启全新对话，清除历史上下文
+         ```
+         chat(query="/new 让我们讨论新的话题")
+         ```         
 
-         chat(query="/new 让我们讨论新的话题")         
-
-         ## 代码审查
-         使用 /review 请求代码审查
-         使用例子：
-
+         ## 代码分析功能
+         
+         ### 代码审查
+         使用 /review 请求对特定文件的代码审查
+         ```
          chat(query="/review @main.py")
+         chat(query="/review @src/components/Button.tsx 分析这个组件有什么可以改进的地方")
+         ```
+         
+         ### 提交审查
+         对最后一次代码提交进行审查
+         ```
+         chat(query="/review /commit")
+         ```
 
          ## 特殊功能
-         - /no_context：不使用当前文件上下文
-         - /mcp：获取 MCP 服务内容
-         - /rag：使用检索增强生成。 如果用户配置了 rag_url, 那可以设置query参数类似 `/rag 查询mcp该如何开发`
-         - /copy：chat 函数执行后的结果会被复制到黏贴版
-         - /save：chat 函数执行后的结果会被保存到全局记忆中，后续会自动加到 coding,chat 的上下文中
+         
+         ### 上下文控制
+         - `/no_context`：不使用当前文件上下文，适合纯粹的概念讨论
+         ```
+         chat(query="/no_context 解释一下什么是依赖注入")
+         ```
+         
+         ### 高级检索
+         - `/mcp`：获取 MCP 服务内容
+         - `/rag`：使用检索增强生成，可结合外部知识库
+         ```
+         chat(query="/rag 查询如何开发插件")
+         ```
+         
+         ### 结果管理
+         - `/copy`：自动将结果复制到剪贴板
+         - `/save`：将结果保存到全局记忆，自动加入后续上下文
+         ```
+         chat(query="/copy 生成一个处理用户登录的函数")
+         chat(query="/save 总结这个项目的架构")
+         ```
 
          ## 引用语法
-         - @文件名：引用特定文件
-         - @@符号：引用函数或类
-         - <img>图片路径</img>：引入图片         
-
-         使用例子：
-
+         
+         ### 文件引用
+         使用 @ 引用特定文件，使回答更加针对性
+         ```
          chat(query="@utils.py 这个文件的主要功能是什么？")
+         chat(query="@src/models/User.js 这个模型有什么需要改进的地方？")
+         ```
+         
+         ### 符号引用
+         使用 @@ 引用特定函数或类，分析特定代码块
+         ```
          chat(query="@@process_data 这个函数的实现有什么问题？")
-         chat(query="<img>screenshots/error.png</img> 这个错误如何解决？")
+         chat(query="@@UserController 这个类的设计是否合理？")
+         ```
+         
+         ### 图片引用
+         使用特殊标记引入图片，分析视觉内容
+         ```
+         chat(query="<_image_>screenshots/error.png</_image_> 这个错误如何解决？")
+         chat(query="<_image_>design/flowchart.png</_image_> 根据这个流程图实现代码")
+         ```
 
-         ## 对最后一次commit 进行review
-         使用例子：
-         chat(query="/review /commit")
+         ## 使用场景推荐
+         
+         - 项目探索：使用 chat 快速了解项目结构和关键组件
+         - 代码分析：结合 @ 引用分析特定文件或组件
+         - 问题诊断：遇到错误时，可以将错误信息发送给AI分析
+         - 设计讨论：在编码前先讨论设计方案和架构选择
+         - 学习辅助：询问特定技术或框架的使用方法
 
+         ## 注意事项
+         
+         - 参考特定代码时尽量使用 @ 引用，可获得更精准的回答
+         - 复杂问题可以分步提问，逐步深入
+         - 使用 /save 保存重要信息，避免上下文丢失
+         - 大型项目中建议指定文件范围，避免上下文过大
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>coding</name>
         <description>代码生成函数，用于生成、修改和重构代码。</description>
         <usage>
@@ -856,11 +928,7 @@ class CommandAutoTuner:
 
          coding(query="/apply 根据我们的历史对话实现代码,请不要遗漏任何细节。")
 
-         ## 预测下一步
-         使用 /next 分析并建议后续步骤
-         使用例子：
-
-         coding(query="/next")
+         *** 但我们推荐你直接自己讲 chat 返回的有用的信息直接放到 query 里 *** 而不是通过 /apply 带入。
 
          ## 引用语法
          - @文件名：引用特定文件
@@ -873,11 +941,11 @@ class CommandAutoTuner:
          coding(query="@@login 优化错误处理")
          coding(query="<img>design/flow.png</img> 实现这个流程图的功能")
 
-         在使用 coding 函数时，建议通过 ask_user 来确认是否执行 coding 函数，除非用户明确说不要询问，直接执行。
+         特别注意，在使用 coding 函数时，通过 ask_user 来确认是否执行 coding 函数，除非用户明确说不要询问，直接执行。
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>lib</name>
         <description>库管理命令，用于管理项目依赖和文档。</description>
         <usage>
@@ -924,9 +992,9 @@ class CommandAutoTuner:
         目前仅支持用于大模型的 byzer-llm 包，用于数据分析的 byzer-sql 包。
 
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>models</name>
         <description>模型控制面板命令，用于管理和控制AI模型。</description>
         <usage>
@@ -1010,9 +1078,9 @@ class CommandAutoTuner:
 
 
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>ask_user</name>
         <description>
         如果你对用户的问题有什么疑问，或者你想从用户收集一些额外信息，可以调用此方法。
@@ -1026,9 +1094,9 @@ class CommandAutoTuner:
          使用例子：
          ask_user(question="请输入火山引擎的 R1 模型推理点")
 
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>run_python</name>
         <description>运行指定的Python代码。主要用于执行一些Python脚本或测试代码。</description>
         <usage>
@@ -1043,9 +1111,9 @@ class CommandAutoTuner:
          - 可以访问项目中的所有文件
          - 输出结果会返回给用户
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>execute_shell_command</name>
         <description>运行指定的Shell脚本。主要用于编译、运行、测试等任务。</description>
         <usage>
@@ -1062,9 +1130,9 @@ class CommandAutoTuner:
          - 输出结果会返回给用户
          - 执行该命令的时候，需要通过 ask_user 询问用户是否同意执行，如果用户拒绝，则不再执行当前想执行的脚本呢。
         </usage>
-        </command> 
+        </function> 
 
-        <command>
+        <function>
         <name>generate_shell_command</name>
         <description>
         根据用户需求描述，生成shell脚本。 
@@ -1074,10 +1142,10 @@ class CommandAutoTuner:
           的看到生成的脚本。然后配合 ask_user, execute_shell_command 两个函数，最终完成
           脚本执行。
         </usage>
-        </command>  
+        </function>  
 
 
-        <command>
+        <function>
         <name>get_project_structure</name>
         <description>返回当前项目结构</description>
         <usage>
@@ -1091,9 +1159,9 @@ class CommandAutoTuner:
          感兴趣，可以配合 read_files 函数来读取文件内容，从而帮你做更好的决策
 
         </usage>
-        </command>        
+        </function>        
 
-        <command>
+        <function>
         <name>get_project_map</name>
         <description>返回项目中指定文件包括文件用途、导入的包、定义的类、函数、变量等。</description>
         <usage>
@@ -1116,9 +1184,9 @@ class CommandAutoTuner:
          - 返回值为JSON格式文本
          - 只能返回已被索引的文件
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>read_files</name>
         <description>读取指定文件的内容（支持指定行范围），支持文件名或绝对路径。</description>
         <usage>
@@ -1160,9 +1228,9 @@ class CommandAutoTuner:
         特别注意：使用 read_files 时，一次性读取文件数量不要超过1个,每次只读取200行。如果发现读取的内容不够，则继续读取下面200行。
 
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>find_files_by_name</name>
         <description>根据文件名中的关键字搜索文件。</description>
         <usage>
@@ -1176,9 +1244,9 @@ class CommandAutoTuner:
          - 搜索不区分大小写
          - 返回所有匹配的文件路径，逗号分隔
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>find_files_by_content</name>
         <description>根据文件内容中的关键字搜索文件。</description>
         <usage>
@@ -1192,9 +1260,9 @@ class CommandAutoTuner:
          - 搜索不区分大小写
          - 如果结果过多，只返回前10个匹配项
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>read_file_with_keyword_ranges</name>
         <description>读取包含指定关键字的行及其前后指定范围的行。</description>
         <usage>
@@ -1223,9 +1291,9 @@ class CommandAutoTuner:
          - 如果文件中有多个匹配的关键字，会返回多个内容块
          - 搜索不区分大小写
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>conf_export</name>
         <description>配置管理命令，用于管理和控制配置。</description>
         <usage>
@@ -1235,9 +1303,9 @@ class CommandAutoTuner:
          conf_export(path="导出路径,通常是.json文件")
 
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>conf_import</name>
         <description>配置管理命令，用于管理和控制配置。</description>
         <usage>
@@ -1247,9 +1315,9 @@ class CommandAutoTuner:
          conf_import(path="导入路径,通常是.json文件")
 
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>index_export</name>
         <description>索引管理命令，用于管理和控制索引。</description>
         <usage>
@@ -1259,9 +1327,9 @@ class CommandAutoTuner:
          index_export(path="导出路径,通常是.json文件")
 
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>index_import</name>
         <description>索引管理命令，用于管理和控制索引。</description>
         <usage>
@@ -1271,9 +1339,9 @@ class CommandAutoTuner:
          index_import(path="导入路径，通常最后是.json文件")
 
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>exclude_files</name>
         <description>排除指定文件。</description>
         <usage>
@@ -1295,9 +1363,9 @@ class CommandAutoTuner:
          exclude_files(query="/list")
          exclude_files(query="/drop regex://.*/package-lock\.json")
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>get_project_type</name>
         <description>获取项目类型。</description>
         <usage>
@@ -1308,9 +1376,9 @@ class CommandAutoTuner:
 
          此时会返回诸如 "ts,py,java,go,js,ts" 这样的字符串，表示项目类型。
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>response_user</name>
         <description>响应用户。</description>
         <usage>
@@ -1320,9 +1388,9 @@ class CommandAutoTuner:
          你可以通过如下方式来回答：
          response_user(response="你好，我是 auto-coder")
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>count_file_tokens</name>
         <description>计算指定文件的token数量。</description>
         <usage>
@@ -1335,9 +1403,9 @@ class CommandAutoTuner:
          - 返回值为int类型，表示文件的token数量。
 
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <name>count_string_tokens</name>
         <description>计算指定字符串的token数量。</description>
         <usage>
@@ -1350,9 +1418,9 @@ class CommandAutoTuner:
          - 返回值为int类型，表示文本的token数量。
 
         </usage>
-        </command>
+        </function>
 
-        <command>
+        <function>
         <n>find_symbol_definition</n>
         <description>查找指定符号的定义所在的文件路径。</description>
         <usage>
@@ -1368,9 +1436,9 @@ class CommandAutoTuner:
          - 如果未找到匹配项，会返回提示信息
 
         </usage>
-        </command>        
+        </function>        
 
-        <command>
+        <function>
         <n>execute_mcp_server</n>
         <description>执行MCP服务器</description>
         <usage>
@@ -1384,7 +1452,7 @@ class CommandAutoTuner:
          </mcp_server_info>
 
         </usage>
-        </command>                        
+        </function>                        
         '''
         return {
             "config_readme": config_readme.prompt(),
