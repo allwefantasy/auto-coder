@@ -11,3 +11,6 @@
 
 ## to_ignore_files.md
 使用 .autocoderignore 文件中的规则来判断是否应忽略某个文件或目录。
+
+## token_counter_service.md
+提供标准化的Token计数服务实现，包括本地、远程和多进程计数方式，适用于LLM API调用成本控制等场景。
