@@ -789,7 +789,7 @@ try to use tool read_file to get the content of the following files when you beg
 
         conversations.append({
             "role":"assistant","content":"Ok"
-        })
+        }) 
         
         logger.info("Adding conversation history")        
         conversations.append({
@@ -798,6 +798,8 @@ try to use tool read_file to get the content of the following files when you beg
         
         logger.info(
             f"Initial conversation history size: {len(conversations)}")
+        
+        logger.info(f"Conversation history: {json.dumps(conversations, indent=2,ensure_ascii=False)}")
 
         iteration_count = 0
         tool_executed = False
