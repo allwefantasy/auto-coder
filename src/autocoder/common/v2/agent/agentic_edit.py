@@ -1272,6 +1272,9 @@ The following are context files that the user is currently focusing on. These fi
                     output_cost = (
                         last_meta.generated_tokens_count * output_price) / 1000000
 
+                    # 添加日志记录
+                    logger.info(f"Token Usage Details: Model={model_name}, Input Tokens={last_meta.input_tokens_count}, Output Tokens={last_meta.generated_tokens_count}, Input Cost=${input_cost:.6f}, Output Cost=${output_cost:.6f}")
+
                     get_event_manager(self.args.event_file).write_result(
                         EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
                             model_name=model_name,
