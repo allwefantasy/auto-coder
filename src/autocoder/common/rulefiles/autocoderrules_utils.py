@@ -285,9 +285,9 @@ class RuleSelector:
         """
         判断规则是否适用于当前任务。
 
-        规则文件路径: {{ rule.file_path }}
-        规则描述: {{ rule.description }}
-        规则适用模式 (Globs): {{ rule.globs | join(', ') }}
+        规则描述:
+        {{ rule.description }}
+
         规则内容摘要 (前200字符):
         {{ rule.content[:200] }}
 
@@ -296,8 +296,8 @@ class RuleSelector:
         {{ context | tojson(indent=2) }}
         {% endif %}
 
-        基于上述规则信息和任务上下文，这条规则是否与当前任务的目标或涉及的文件相关，并应该被应用？
-        请仅回答 "yes" 或 "no"。
+        基于以上信息，这条规则 (路径: {{ rule.file_path }}) 是否与当前任务相关并应该被应用？
+        请回答 "yes" 或 "no"。
         """
         # 注意：确保 rule 对象和 context 字典能够被 Jinja2 正确访问。
         # Pydantic模型可以直接在Jinja2中使用其属性。
