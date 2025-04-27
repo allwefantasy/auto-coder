@@ -1,9 +1,9 @@
-
 import os
 from pathlib import Path
 from threading import Lock
 import pathspec
 import threading
+from typing import Optional  # 添加Optional导入
 
 # 尝试导入 FileMonitor
 try:
@@ -24,7 +24,7 @@ class IgnoreFileManager:
     _instance = None
     _lock = Lock()
 
-    def __new__(cls):
+    def __new__(cls, project_root: Optional[str] = None):
         if not cls._instance:
             with cls._lock:
                 if not cls._instance:
@@ -32,20 +32,21 @@ class IgnoreFileManager:
                     cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self):
+    def __init__(self, project_root: Optional[str] = None):
         if self._initialized:
             return
         self._initialized = True
         self._spec = None
         self._ignore_file_path = None
         self._file_monitor = None
+        self._project_root = project_root if project_root is not None else os.getcwd()
         self._load_ignore_spec()
         self._setup_file_monitor()
 
     def _load_ignore_spec(self):
         """加载忽略规则文件并解析规则"""
         ignore_patterns = []
-        project_root = Path(os.getcwd())
+        project_root = Path(self._project_root)
 
         ignore_file_paths = [
             project_root / '.autocoderignore',
@@ -89,15 +90,18 @@ class IgnoreFileManager:
 
     def should_ignore(self, path: str) -> bool:
         """判断指定路径是否应该被忽略"""
-        rel_path = os.path.relpath(path, os.getcwd())
+        rel_path = os.path.relpath(path, self._project_root)
         # 标准化分隔符
         rel_path = rel_path.replace(os.sep, '/')
         return self._spec.match_file(rel_path)
 
 
-# 对外提供单例
-_ignore_manager = IgnoreFileManager()
+# 对外提供的单例管理器
+_ignore_manager = None
 
-def should_ignore(path: str) -> bool:
+def should_ignore(path: str, project_root: Optional[str] = None) -> bool:
     """判断指定路径是否应该被忽略"""
+    global _ignore_manager
+    if _ignore_manager is None:
+        _ignore_manager = IgnoreFileManager(project_root=project_root)
     return _ignore_manager.should_ignore(path)

@@ -259,11 +259,24 @@ def configure_logger():
 
 configure_logger()
 
-try:
-    FileMonitor(project_root).start()
-except Exception as e:
-    global_logger.error(f"Failed to start file monitor: {e}")
-    global_logger.exception(e)
+def init_singleton_instances():
+    # 初始化文件监控系统
+    try:
+        FileMonitor(project_root).start()
+    except Exception as e:
+        global_logger.error(f"Failed to start file monitor: {e}")
+        global_logger.exception(e)
+    
+    # 初始化规则文件管理器
+    from autocoder.common.rulefiles.autocoderrules_utils import get_rules
+    get_rules(project_root=project_root)
+
+    # 初始化忽略文件管理器
+    from autocoder.common.ignorefiles.ignore_file_utils import IgnoreFileManager
+    _ = IgnoreFileManager(project_root=project_root)
+
+
+init_singleton_instances()
 
 def initialize_system(args:InitializeSystemRequest):
     from autocoder.utils.model_provider_selector import ModelProviderSelector
