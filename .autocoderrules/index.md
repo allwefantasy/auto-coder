@@ -14,3 +14,6 @@
 
 ## token_counter_service.md
 提供标准化的Token计数服务实现，包括本地、远程和多进程计数方式，适用于LLM API调用成本控制等场景。
+
+## event_system_usage.md
+标准化事件系统用法，用于模块间解耦通信和记录交互。
