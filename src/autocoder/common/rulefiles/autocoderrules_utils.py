@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-import json # Added import
 from threading import Lock
 import threading
 from typing import Dict, List, Optional
@@ -298,7 +297,7 @@ class RuleSelector:
         {% endif %}
 
         基于以上信息，这条规则 (路径: {{ rule.file_path }}) 是否与当前任务相关并应该被应用？
-        请以 JSON 格式响应，例如 {"selection": "yes"} 或 {"selection": "no"}。
+        请回答 "yes" 或 "no"。
         """
         # 注意：确保 rule 对象和 context 字典能够被 Jinja2 正确访问。
         # Pydantic模型可以直接在Jinja2中使用其属性。
@@ -337,32 +336,32 @@ class RuleSelector:
                 logger.debug(f"为规则 '{os.path.basename(rule.file_path)}' 生成的判断 Prompt (片段): {prompt[:200]}...")
 
                 # **** 实际LLM调用 ****
-                if self.llm:
+                # 确保 self.llm 实例已正确初始化并可用
+                if self.llm: # Check if llm is not None
                     response = self.llm.chat_oai([{"role": "user", "content": prompt}])
                     response_text = ""
                     if response and hasattr(response[0], 'output') and response[0].output:
-                        response_text = response[0].output.strip()
+                       response_text = response[0].output.strip().lower()
                     else:
-                        logger.warning(f"LLM 未能为规则 '{os.path.basename(rule.file_path)}' 提供有效响应。")
-                        continue
-
-                    # 解析 JSON 响应
-                    try:
-                        parsed_response = json.loads(response_text)
-                        selection = parsed_response.get("selection", "").lower()
-                        if selection == "yes":
-                            selected_rules.append(rule)
-                            logger.info(f"规则 '{os.path.basename(rule.file_path)}' (AlwaysApply=False) 已被 LLM 选择。")
-                        else:
-                            logger.debug(f"规则 '{os.path.basename(rule.file_path)}' (AlwaysApply=False) 未被 LLM 选择 (响应: {response_text})。")
-                    except json.JSONDecodeError:
-                        logger.warning(f"无法将 LLM 响应解析为 JSON: '{response_text}'")
-                        # 对于非 JSON 响应，可以根据需要决定如何处理，例如记录日志并跳过
-                        logger.debug(f"规则 '{os.path.basename(rule.file_path)}' 因非 JSON 响应而被跳过。")
-
-                else:
-                    logger.warning(f"LLM instance is None, cannot evaluate rule '{os.path.basename(rule.file_path)}'.")
+                       logger.warning(f"LLM 未能为规则 '{os.path.basename(rule.file_path)}' 提供有效响应。")
+                       # 根据需要决定是否跳过或默认不选
+                       continue # 跳过此规则
+                else: # Handle case where self.llm is None after the initial check
+                    logger.warning(f"LLM instance became None unexpectedly for rule '{os.path.basename(rule.file_path)}'.")
                     continue
+
+                # **** 模拟LLM调用 (用于测试/开发) ****
+                # 注释掉模拟部分，使用上面的实际调用
+                # simulated_response = "yes" if "always" in rule.description.lower() or "index" in rule.description.lower() else "no"
+                # logger.warning(f"模拟LLM判断规则 '{os.path.basename(rule.file_path)}': {simulated_response}")
+                # response_text = simulated_response
+                # **** 结束模拟 ****
+
+                if response_text == "yes":
+                    selected_rules.append(rule)
+                    logger.info(f"规则 '{os.path.basename(rule.file_path)}' (AlwaysApply=False) 已被 LLM 选择。")
+                else:
+                    logger.debug(f"规则 '{os.path.basename(rule.file_path)}' (AlwaysApply=False) 未被 LLM 选择 (响应: {response_text})。")
 
             except Exception as e:
                 logger.error(f"使用 LLM 判断规则 '{os.path.basename(rule.file_path)}' 时出错: {e}", exc_info=True)
