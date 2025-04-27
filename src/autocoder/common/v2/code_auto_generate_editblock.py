@@ -215,8 +215,10 @@ class CodeAutoGenerateEditBlock:
 
         ====
         下面是用户的需求：
-
+        
+        <user_instruction>
         {{ instruction }}
+        </user_instruction>
 
         """
         if not self.args.include_project_structure:

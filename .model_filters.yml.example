@@ -1,22 +1,43 @@
-# Example model filter configuration
-# This file defines which file paths are forbidden for specific models
+# 模型过滤器配置示例
+# 此文件定义了特定模型的文件访问权限
 
 model_filters:
-  # Model-specific configurations
+  # 模型特定配置
   doubao_v3_chat:
-    forbidden_paths:
-      - ".*\.env$"              # Block all .env files
-      - ".*/secrets/.*"         # Block anything in secrets directory
-      - ".*/tests/.*\.py$"       # Block all Python files in tests directory
+    rules:
+      - pattern: "*.env"                 # 禁止访问所有 .env 文件
+        permission: DENY                 # DENY 完全禁止访问
+      - pattern: "**/secrets/**"         
+        permission: DENY_WRITE           # DENY_WRITE 允许读取但禁止写入
+      - pattern: "**/tests/**/*.py"      
+        permission: DENY_WRITE           # 允许读取测试文件但禁止修改
+        line_ranges:                     # 可选: 指定行范围限制
+          - start: 100                   # 从第100行开始
+            end: 300                     # 到第300行结束
+      - pattern: "**/config.json"
+        permission: ALLOW                # ALLOW 显式允许访问(优先级高于DENY)
   
   qwen_32b_chat:
-    forbidden_paths:
-      - ".*/private/.*"         # Block anything in private directory
-      - ".*\.key$"              # Block all .key files
-      - ".*/config/.*\.json$"    # Block all JSON files in config directory
+    rules:
+      - pattern: "**/private/**"        
+        permission: DENY                 # 完全禁止访问private目录
+      - pattern: "*.key"                
+        permission: DENY                 # 禁止访问所有.key文件
+      - pattern: "**/config/**/*.json"  
+        permission: DENY_READ            # DENY_READ 允许写入但禁止读取
+      - pattern: "**/src/core/**"
+        permission: DENY_WRITE           # 允许读取核心代码但禁止修改
+        line_ranges:
+          - start: 1                     # 可以指定多个行范围
+            end: 50
+          - start: 200
+            end: 350
 
-# Default rules (applied to all models if no model-specific rules exist)
-default_forbidden:
-  - ".*/node_modules/.*"       # Block node_modules directory
-  - ".*/\.git/.*"               # Block .git directory
-  - ".*\.lock$"                 # Block all lock files
+# 默认规则（当没有模型特定规则时应用于所有模型）
+default_rules:
+  - pattern: "**/node_modules/**"      
+    permission: DENY                   # 禁止访问node_modules目录
+  - pattern: "**/.git/**"              
+    permission: DENY                   # 禁止访问.git目录
+  - pattern: "*.lock"                  
+    permission: DENY_WRITE             # 允许读取但禁止修改lock文件
