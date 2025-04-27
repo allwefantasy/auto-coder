@@ -6,7 +6,9 @@ from typing import Dict, List, Optional
 from loguru import logger
 import re
 import yaml
+import byzerllm # Added import
 from pydantic import BaseModel, Field
+from typing import List, Dict, Optional, Any # Added Any
 
 # 尝试导入 FileMonitor
 try:
@@ -254,3 +256,133 @@ def parse_rule_file(file_path: str, project_root: Optional[str] = None) -> RuleF
     if _rules_manager is None:
         _rules_manager = AutocoderRulesManager(project_root=project_root)
     return _rules_manager.parse_rule_file(file_path)
+
+
+class RuleSelector:
+    """
+    根据LLM的判断和规则元数据选择适用的规则。
+    """
+    def __init__(self, llm: Optional[byzerllm.ByzerLLM], args: Optional[Any] = None, project_root: Optional[str] = None):
+        """
+        初始化RuleSelector。
+
+        Args:
+            llm: ByzerLLM 实例，用于判断规则是否适用。如果为 None，则只选择 always_apply=True 的规则。
+            args: 传递给 Agent 的参数，可能包含用于规则选择的上下文信息。
+            project_root: 项目根目录，用于初始化 AutocoderRulesManager。
+        """
+        self.llm = llm
+        self.args = args
+        # 获取 AutocoderRulesManager 实例 (确保单例被正确初始化)
+        global _rules_manager
+        if _rules_manager is None:
+             _rules_manager = AutocoderRulesManager(project_root=project_root)
+        self._rules_manager = _rules_manager
+        logger.info(f"RuleSelector initialized. LLM provided: {self.llm is not None}")
+
+    @byzerllm.prompt(render="jinja2")
+    def _build_selection_prompt(self, rule: RuleFile, context: Optional[Dict] = None) -> str:
+        """
+        判断规则是否适用于当前任务。
+
+        规则描述:
+        {{ rule.description }}
+
+        规则内容摘要 (前200字符):
+        {{ rule.content[:200] }}
+
+        {% if context %}
+        任务上下文:
+        {{ context | tojson(indent=2) }}
+        {% endif %}
+
+        基于以上信息，这条规则 (路径: {{ rule.file_path }}) 是否与当前任务相关并应该被应用？
+        请回答 "yes" 或 "no"。
+        """
+        # 注意：确保 rule 对象和 context 字典能够被 Jinja2 正确访问。
+        # Pydantic模型可以直接在Jinja2中使用其属性。
+        return {
+            "rule": rule,
+            "context": context
+        }
+
+    def select_rules(self, context: Optional[Dict] = None) -> List[RuleFile]:
+        """
+        选择适用于当前上下文的规则。
+
+        Args:
+            context: 可选的字典，包含用于规则选择的上下文信息 (例如，用户指令、目标文件等)。
+
+        Returns:
+            List[RuleFile]: 选定的规则列表。
+        """
+        all_rules = self._rules_manager.get_parsed_rules()
+        selected_rules: List[RuleFile] = []
+        logger.info(f"开始选择规则，总规则数: {len(all_rules)}")
+
+        for rule in all_rules:
+            if rule.always_apply:
+                selected_rules.append(rule)
+                logger.debug(f"规则 '{os.path.basename(rule.file_path)}' (AlwaysApply=True) 已自动选择。")
+                continue
+
+            if self.llm is None:
+                 logger.debug(f"规则 '{os.path.basename(rule.file_path)}' (AlwaysApply=False) 已跳过，因为未提供 LLM。")
+                 continue
+
+            # 对于 alwaysApply=False 的规则，使用 LLM 判断
+            try:
+                prompt = self._build_selection_prompt.prompt(rule=rule, context=context)
+                logger.debug(f"为规则 '{os.path.basename(rule.file_path)}' 生成的判断 Prompt (片段): {prompt[:200]}...")
+
+                # **** 实际LLM调用 ****
+                # 确保 self.llm 实例已正确初始化并可用
+                if self.llm: # Check if llm is not None
+                    response = self.llm.chat_oai([{"role": "user", "content": prompt}])
+                    response_text = ""
+                    if response and hasattr(response[0], 'output') and response[0].output:
+                       response_text = response[0].output.strip().lower()
+                    else:
+                       logger.warning(f"LLM 未能为规则 '{os.path.basename(rule.file_path)}' 提供有效响应。")
+                       # 根据需要决定是否跳过或默认不选
+                       continue # 跳过此规则
+                else: # Handle case where self.llm is None after the initial check
+                    logger.warning(f"LLM instance became None unexpectedly for rule '{os.path.basename(rule.file_path)}'.")
+                    continue
+
+                # **** 模拟LLM调用 (用于测试/开发) ****
+                # 注释掉模拟部分，使用上面的实际调用
+                # simulated_response = "yes" if "always" in rule.description.lower() or "index" in rule.description.lower() else "no"
+                # logger.warning(f"模拟LLM判断规则 '{os.path.basename(rule.file_path)}': {simulated_response}")
+                # response_text = simulated_response
+                # **** 结束模拟 ****
+
+                if response_text == "yes":
+                    selected_rules.append(rule)
+                    logger.info(f"规则 '{os.path.basename(rule.file_path)}' (AlwaysApply=False) 已被 LLM 选择。")
+                else:
+                    logger.debug(f"规则 '{os.path.basename(rule.file_path)}' (AlwaysApply=False) 未被 LLM 选择 (响应: {response_text})。")
+
+            except Exception as e:
+                logger.error(f"使用 LLM 判断规则 '{os.path.basename(rule.file_path)}' 时出错: {e}", exc_info=True)
+                # 根据策略决定是否包含出错的规则，这里选择跳过
+                continue
+
+        logger.info(f"规则选择完成，选中规则数: {len(selected_rules)}")
+        return selected_rules
+
+    def get_selected_rules_content(self, context: Optional[Dict] = None) -> Dict[str, str]:
+        """
+        获取选定规则的文件路径和内容字典。
+
+        Args:
+            context: 传递给 select_rules 的上下文。
+
+        Returns:
+            Dict[str, str]: 选定规则的 {file_path: content} 字典。
+        """
+        selected_rules = self.select_rules(context=context)
+        # 使用 os.path.basename 获取文件名作为 key，如果需要的话
+        # return {os.path.basename(rule.file_path): rule.content for rule in selected_rules}
+        # 保持 file_path 作为 key
+        return {rule.file_path: rule.content for rule in selected_rules}
