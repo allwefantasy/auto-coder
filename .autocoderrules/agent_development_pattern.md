@@ -19,47 +19,113 @@ alwaysApply: false
 
     ```python
     import byzerllm
-    from autocoder.common.types import SomeConfigArgs # 假设的配置类型
-    from autocoder.events import get_event_manager # 用于事件记录
+    import traceback # 用于记录错误堆栈
+    from autocoder.common.types import SomeConfigArgs, SomeToolInput, SomeToolOutput # 假设的配置和输入/输出类型
+    from autocoder.events import ( # 导入事件创建函数
+        get_event_manager, 
+        create_stream_thinking, 
+        create_result, 
+        create_error, 
+        create_completion
+    )
+    from autocoder.events.event_types import EventMetadata # 用于事件元数据
 
-    class MyNewAgent:
+    class SimplifiedAgent:
         def __init__(self, llm: byzerllm.ByzerLLM, args: SomeConfigArgs):
             self.llm = llm
             self.args = args
-            # 初始化事件管理器 (如果需要详细日志)
-            self.event_manager = get_event_manager(f".auto-coder/events/{self.__class__.__name__}.jsonl")
-            # 其他初始化...
+            # 为每个Agent实例或运行设置唯一的事件文件路径
+            self.event_file_path = f".auto-coder/events/{self.__class__.__name__}_{args.task_id}.jsonl" # 示例路径，假设args有task_id
+            self.event_manager = get_event_manager(self.event_file_path)
+            # 定义基础元数据，用于此Agent产生的所有事件
+            self.metadata = EventMetadata(action_file=__file__, path=f"/agent/{self.__class__.__name__}") 
 
-        def run(self, user_input: str) -> str:
-            """Agent 的主要执行逻辑"""
-            # 1. 记录开始事件 (可选但推荐)
-            self.event_manager.write_stream(...) 
+        def run(self, tool_input: SomeToolInput) -> SomeToolOutput:
+            """
+            简化Agent的主要执行逻辑。
+            接收结构化输入，执行模拟的处理，记录事件，并返回结构化输出。
+            """
+            seq = 1 # 事件序列号
+            error_occurred = False
+            final_result = None
 
-            # 2. 处理输入，准备 LLM 调用
-            prompt = self._build_prompt(user_input)
+            try:
+                # 1. 记录初始思考过程 (流式事件)
+                thinking_start = create_stream_thinking(f"开始处理任务，输入: {tool_input}", sequence=seq)
+                self.event_manager.write_stream(content=thinking_start.to_dict(), metadata=self.metadata.to_dict())
+                seq += 1
 
-            # 3. 调用 LLM
-            response = self.llm.chat_oai(...) 
+                # 2. 准备LLM调用或核心逻辑 (此处为模拟)
+                # 在真实场景中，这里会构建Prompt，可能用到tool_input, self.args等
+                # prompt = self._build_prompt(tool_input) 
+                # logger.info("生成的Prompt: %s", prompt) # 如果有日志记录器
 
-            # 4. 处理 LLM 响应
-            result = self._parse_response(response)
+                # 3. 执行核心逻辑 (模拟LLM调用)
+                # response = self.llm.chat_oai(...) 
+                # 为简化，直接模拟一个输出结果
+                simulated_llm_output = f"已成功处理参数 '{tool_input.some_param}'。" # 假设tool_input有some_param
 
-            # 5. 记录结果事件 (可选)
-            self.event_manager.write_result(...)
+                # 4. 处理和解析结果 (模拟)
+                # final_result = self._parse_response(response)
+                # 创建一个假设的输出对象
+                final_result = SomeToolOutput(success=True, message="任务模拟完成。", content=simulated_llm_output)
 
-            # 6. 返回最终结果
-            return result
+                # 5. 记录最终结果 (结果事件)
+                result_content = create_result(content=final_result.to_dict(), metadata={"source": "agent_logic"})
+                # 合并基础元数据和特定于此事件的元数据
+                combined_metadata = {**self.metadata.to_dict(), **result_content.metadata}
+                self.event_manager.write_result(content=result_content.to_dict(), metadata=combined_metadata)
 
-        def _build_prompt(self, input_data: str) -> str:
-            # 使用 @byzerllm.prompt() 或手动构建 Prompt
-            # 参考: byzerllm_prompt_decorator.md, byzerllm_dynamic_prompt.md
-            pass
+            except Exception as e:
+                error_occurred = True
+                # 6. 记录错误信息 (错误事件)
+                error_content = create_error(
+                    error_code="AGENT_EXECUTION_ERROR",
+                    error_message=f"Agent执行过程中发生错误: {str(e)}",
+                    details={"input": tool_input.to_dict(), "traceback": traceback.format_exc()} # 注意生产环境中谨慎记录完整traceback
+                )
+                self.event_manager.write_error(content=error_content.to_dict(), metadata=self.metadata.to_dict())
+                # 准备一个表示错误的输出对象
+                final_result = SomeToolOutput(success=False, message=f"执行错误: {str(e)}", content=None)
 
-        def _parse_response(self, response) -> str:
-            # 解析 LLM 返回的内容
-            pass
+            finally:
+                # 7. 记录完成状态 (完成事件，仅在未发生错误时)
+                if not error_occurred and final_result and final_result.success:
+                    completion_content = create_completion(
+                        success_code="TASK_COMPLETE",
+                        success_message="Agent任务成功完成模拟处理。",
+                        result=final_result.to_dict() # 将最终结果包含在完成事件中
+                    )
+                    self.event_manager.write_completion(content=completion_content.to_dict(), metadata=self.metadata.to_dict())
+                
+                # 确保总是有返回值，即使在finally块之前出现意外退出
+                if final_result is None:
+                     final_result = SomeToolOutput(success=False, message="Agent因未知原因未能正常完成。", content=None)
 
-        # 其他辅助方法...
+            return final_result
+
+        # 可以添加构建Prompt和解析响应的辅助方法
+        # def _build_prompt(self, tool_input: SomeToolInput) -> str: ...
+        # def _parse_response(self, response) -> SomeToolOutput: ...
+
+    # --- 概念性使用示例 (通常不包含在规则文档的核心示例中) ---
+    # if __name__ == "__main__":
+    #     # 此处需要设置模拟的LLM实例和配置参数
+    #     mock_llm = None # 替换为实际或模拟的LLM客户端
+    #     mock_args = SomeConfigArgs(task_id="demo_run_123") # 假设的配置对象
+          
+    #     # 创建Agent实例
+    #     agent = SimplifiedAgent(llm=mock_llm, args=mock_args)
+          
+    #     # 准备输入数据
+    #     input_data = SomeToolInput(some_param="测试值") # 假设的输入对象
+          
+    #     # 执行Agent
+    #     output = agent.run(input_data)
+          
+    #     # 打印结果
+    #     print(f"Agent 输出: {output}")
+    #     print(f"事件已记录到: {agent.event_file_path}")
     ```
 
 2.  **LLM 交互 (LLM Interaction):**
