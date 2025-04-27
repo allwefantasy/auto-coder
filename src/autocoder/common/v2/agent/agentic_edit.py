@@ -1253,6 +1253,7 @@ The following are context files that the user is currently focusing on. These fi
                         content=content.to_dict(), metadata=metadata.to_dict())
 
                 elif isinstance(agent_event, TokenUsageEvent):
+                    logger.info(f"Token usage event: {agent_event}")
                     last_meta: SingleOutputMeta = agent_event.usage
                     # Get model info for pricing
                     from autocoder.utils import llms as llm_utils
