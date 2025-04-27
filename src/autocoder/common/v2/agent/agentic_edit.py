@@ -779,7 +779,9 @@ class AgenticEdit:
              
         conversations.append({
                 "role":"user","content":f'''
-The following are context files that the user is currently focusing on. These files are presented with their complete paths, providing essential context to help you better understand the user's needs. If you need more detailed information about specific files or directories not shown here, you can use tools like read_file, search_files, or list_files to explore the codebase further.
+The following are context files that the user is currently focusing on. 
+These files are presented with their complete paths, providing essential context to help you better understand the user's needs. If you need more detailed information about specific files or directories not shown here, 
+try to use tool read_file to get the content of the files when you get the user's requirements.
 <files>
 {file_paths_str}
 </files>'''
