@@ -281,26 +281,36 @@ class RuleSelector:
         logger.info(f"RuleSelector initialized. LLM provided: {self.llm is not None}")
 
     @byzerllm.prompt(render="jinja2")
-    def _build_selection_prompt(self, rule: RuleFile, context: Optional[Dict] = None) -> str:
+    def _build_selection_prompt(self, rule: RuleFile, context: Optional[Dict] = None) -> Dict[str, Any]: # Return type updated for clarity, though functionality is the same via decorator
         """
-        判断规则是否适用于当前任务。
+        ## 规则评估
 
-        规则描述:
-        {{ rule.description }}
+        **任务:** 判断以下规则是否与当前任务上下文相关，并决定是否应用该规则。
 
-        规则内容摘要 (前200字符):
-        {{ rule.content[:200] }}
+        **规则信息:**
+        *   **路径:** `{{ rule.file_path }}`
+        *   **描述:** {{ rule.description | default('无描述') }}
+        *   **内容摘要 (前200字符):**
+            ```
+            {{ rule.content[:200] | default('无内容') }}
+            ```
 
         {% if context %}
-        任务上下文:
+        **任务上下文:**
+        ```json
         {{ context | tojson(indent=2) }}
+        ```
         {% endif %}
 
-        基于以上信息，这条规则 (路径: {{ rule.file_path }}) 是否与当前任务相关并应该被应用？
-        请回答 "yes" 或 "no"。
+        ---
+
+        **决策:**
+
+        基于上述规则信息和任务上下文，该规则是否 **相关** 且 **应该被应用**？
+
+        请仅回答 **yes** 或 **no**。
         """
-        # 注意：确保 rule 对象和 context 字典能够被 Jinja2 正确访问。
-        # Pydantic模型可以直接在Jinja2中使用其属性。
+        # This dictionary provides the context for rendering the Jinja2 template in the docstring.
         return {
             "rule": rule,
             "context": context
