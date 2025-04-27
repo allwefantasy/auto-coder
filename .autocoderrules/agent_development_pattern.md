@@ -55,21 +55,30 @@ alwaysApply: false
                 self.event_manager.write_stream(content=thinking_start.to_dict(), metadata=self.metadata.to_dict())
                 seq += 1
 
-                # 2. 准备LLM调用或核心逻辑 (此处为模拟)
-                # 在真实场景中，这里会构建Prompt，可能用到tool_input, self.args等
-                # prompt = self._build_prompt(tool_input) 
-                # logger.info("生成的Prompt: %s", prompt) # 如果有日志记录器
+                # 2. 准备Prompt (调用辅助方法)
+                prompt = self._build_prompt(tool_input)
+                thinking_prompt = create_stream_thinking(f"构建的Prompt: {prompt[:100]}...", sequence=seq) # 记录部分Prompt
+                self.event_manager.write_stream(content=thinking_prompt.to_dict(), metadata=self.metadata.to_dict())
+                seq += 1
+                
+                # --- 概念性工具使用点 ---
+                # 在某些Agent模式中 (如agentic_edit)，LLM的响应可能包含调用工具的指令
+                # 这里可以插入解析LLM响应、决定是否调用工具、执行工具、并将结果整合回上下文的逻辑
+                # 例如:
+                # tool_call_request = parse_llm_response_for_tool_call(llm_response)
+                # if tool_call_request:
+                #     tool_result = execute_tool(tool_call_request)
+                #     # ... 更新 prompt 或上下文 ...
+                # ------------------------
 
                 # 3. 执行核心逻辑 (模拟LLM调用)
-                # response = self.llm.chat_oai(...) 
-                # 为简化，直接模拟一个输出结果
-                simulated_llm_output = f"已成功处理参数 '{tool_input.some_param}'。" # 假设tool_input有some_param
+                # response = self.llm.chat_oai([{"role": "user", "content": prompt}]) 
+                # 为简化，直接模拟一个LLM响应
+                simulated_llm_response = {"choices": [{"message": {"content": f"模拟LLM响应：已成功处理参数 '{tool_input.some_param}'。"}}]} # 模拟OAI响应结构
 
-                # 4. 处理和解析结果 (模拟)
-                # final_result = self._parse_response(response)
-                # 创建一个假设的输出对象
-                final_result = SomeToolOutput(success=True, message="任务模拟完成。", content=simulated_llm_output)
-
+                # 4. 处理和解析结果 (调用辅助方法)
+                final_result = self._parse_response(simulated_llm_response)
+                
                 # 5. 记录最终结果 (结果事件)
                 result_content = create_result(content=final_result.to_dict(), metadata={"source": "agent_logic"})
                 # 合并基础元数据和特定于此事件的元数据
@@ -104,9 +113,37 @@ alwaysApply: false
 
             return final_result
 
-        # 可以添加构建Prompt和解析响应的辅助方法
-        # def _build_prompt(self, tool_input: SomeToolInput) -> str: ...
-        # def _parse_response(self, response) -> SomeToolOutput: ...
+        # --- 辅助方法 ---
+        
+        def _build_prompt(self, tool_input: SomeToolInput) -> str:
+            """
+            构建发送给LLM的Prompt (简化示例)。
+            真实场景会更复杂，可能使用 @byzerllm.prompt() 装饰器。
+            """
+            # 这里可以访问 self.args 获取配置
+            return f"请处理以下请求: {tool_input.some_param}. 配置: {self.args}" # 假设tool_input和args有这些属性
+
+        def _parse_response(self, response: dict) -> SomeToolOutput:
+            """
+            解析LLM的响应 (简化示例)。
+            真实场景需要处理各种响应格式和错误。
+            """
+            try:
+                # 模拟从类OAI响应中提取内容
+                content = response["choices"][0]["message"]["content"]
+                # 根据内容或其他逻辑判断成功状态
+                success = "成功" in content 
+                message = "解析成功" if success else "解析完成但未明确成功标志"
+                return SomeToolOutput(success=success, message=message, content=content)
+            except (KeyError, IndexError, TypeError) as e:
+                # 记录解析错误事件可能在这里进行
+                error_content = create_error(
+                    error_code="RESPONSE_PARSING_ERROR",
+                    error_message=f"解析LLM响应时出错: {str(e)}",
+                    details={"response_sample": str(response)[:200]} # 记录部分响应样本
+                )
+                self.event_manager.write_error(content=error_content.to_dict(), metadata=self.metadata.to_dict())
+                return SomeToolOutput(success=False, message=f"解析响应失败: {e}", content=None)
 
     # --- 概念性使用示例 (通常不包含在规则文档的核心示例中) ---
     # if __name__ == "__main__":
