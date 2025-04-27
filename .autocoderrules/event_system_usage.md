@@ -126,6 +126,118 @@ print(f"事件已记录到: {os.path.abspath(event_file_path)}")
 - **实现**: 正如原始注释所指，这些方法的具体实现和在复杂应用（如 `agentic_edit.py` 所代表的Agentic流程）中的集成可能涉及更复杂的逻辑，例如通过回调或特定的消息队列来管理交互状态。在简单的事件记录场景中，这两个方法通常不被直接使用。
 ```
 
+## Agentic 流程中的事件记录示例 (简化版)
+
+以下示例模拟了一个 Agent 处理任务的简化流程，展示了如何在不同阶段记录事件，其模式灵感来源于 `agentic_edit.py` 中的 `run_with_events`。
+
+```python
+# Simplified example derived from agentic_edit.py's run_with_events
+import os
+import time
+import traceback
+from autocoder.events import (
+    get_event_manager,
+    create_stream_thinking,
+    create_stream_content,
+    create_result,
+    create_markdown_result,
+    create_error,
+    create_completion,
+)
+from autocoder.events.event_types import EventMetadata
+
+def process_task_with_events(task_id: str, task_description: str):
+    """
+    Simulates processing a task while logging events, inspired by agentic_edit.py.
+    """
+    event_file_path = f".auto-coder/events/task_{task_id}_session.jsonl"
+    event_manager = get_event_manager(event_file_path)
+    
+    # Clear previous events for this demo run (optional)
+    # event_manager.truncate() 
+
+    metadata = EventMetadata(
+        action_file="examples/simplified_agent_simulation.py", # Example source
+        path=f"/tasks/{task_id}",
+        stream_out_type=f"/tasks/{task_id}/output"
+    )
+    
+    seq = 1
+    error_occurred = False
+    
+    try:
+        # 1. Log initial thinking
+        thinking_start = create_stream_thinking(f"开始处理任务 '{task_description}'...", sequence=seq)
+        event_manager.write_stream(content=thinking_start.to_dict(), metadata=metadata.to_dict())
+        seq += 1
+        time.sleep(0.1) # Simulate work
+
+        # 2. Log intermediate progress
+        progress_update = create_stream_content("分析任务需求...", sequence=seq)
+        event_manager.write_stream(content=progress_update.to_dict(), metadata=metadata.to_dict())
+        seq += 1
+        time.sleep(0.2) # Simulate more work
+
+        # Simulate a step that might fail
+        if "fail" in task_description.lower():
+             raise ValueError("模拟任务处理失败")
+
+        # 3. Log a more detailed progress update or intermediate result
+        detailed_progress = create_stream_content("需求分析完成，准备生成结果。", sequence=seq)
+        event_manager.write_stream(content=detailed_progress.to_dict(), metadata=metadata.to_dict())
+        seq += 1
+        time.sleep(0.1)
+
+        # 4. Log the final result (e.g., as Markdown)
+        final_report = f"""
+# 任务 {task_id} 处理报告
+- **描述**: {task_description}
+- **状态**: 成功模拟处理
+- **详情**: 已完成所有模拟步骤。
+"""
+        result_content = create_markdown_result(content=final_report, metadata={"report_type": "simulation"})
+        combined_metadata_res = {**metadata.to_dict(), **result_content.metadata}
+        event_manager.write_result(content=result_content.to_dict(), metadata=combined_metadata_res)
+
+    except Exception as e:
+        error_occurred = True
+        # 5. Log an error if something went wrong
+        error_details = {
+            "task_id": task_id,
+            "description": task_description,
+            "exception_type": type(e).__name__,
+            "traceback": traceback.format_exc() # Consider logging traceback carefully
+        }
+        error_content = create_error(
+            error_code="TASK_PROCESSING_ERROR",
+            error_message=f"处理任务 '{task_id}' 时出错: {str(e)}",
+            details=error_details
+        )
+        event_manager.write_error(content=error_content.to_dict(), metadata=metadata.to_dict())
+
+    finally:
+        # 6. Log completion status (only if no error occurred)
+        if not error_occurred:
+            completion_content = create_completion(
+                success_code="TASK_COMPLETE",
+                success_message=f"任务 '{task_id}' 成功完成模拟处理。",
+                result={"output_status": "Simulated Success"},
+                details={"total_duration_simulated": 0.4}
+            )
+            event_manager.write_completion(content=completion_content.to_dict(), metadata=metadata.to_dict())
+        
+        print(f"任务 '{task_id}' 事件已记录到: {os.path.abspath(event_file_path)}")
+
+# --- 运行模拟 ---
+# if __name__ == "__main__": # 通常这个部分不会放在规则文档中，仅作演示
+#     print("--- 运行成功场景 ---")
+#     process_task_with_events("task123", "分析用户数据并生成报告")
+    
+#     print("\n--- 运行失败场景 ---")
+#     process_task_with_events("task456", "处理一个会失败的任务")
+
+```
+
 ## 依赖说明
 - **核心依赖**:
     - `autocoder.events` 模块 (项目内部依赖)。
