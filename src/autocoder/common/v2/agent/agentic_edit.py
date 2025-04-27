@@ -692,6 +692,15 @@ class AgenticEdit:
         3. Remember, you have extensive capabilities with access to a wide range of tools that can be used in powerful and clever ways as necessary to accomplish each goal. Before calling a tool, do some analysis within <thinking></thinking> tags. First, analyze the file structure provided in environment_details to gain context and insights for proceeding effectively. Then, think about which of the provided tools is the most relevant tool to accomplish the user's task. Next, go through each of the required parameters of the relevant tool and determine if the user has directly provided or given enough information to infer a value. When deciding if the parameter can be inferred, carefully consider all the context to see if it supports a specific value. If all of the required parameters are present or can be reasonably inferred, close the thinking tag and proceed with the tool use. BUT, if one of the values for a required parameter is missing, DO NOT invoke the tool (not even with fillers for the missing params) and instead, ask the user to provide the missing parameters using the ask_followup_question tool. DO NOT ask for more information on optional parameters if it is not provided.
         4. Once you've completed the user's task, you must use the attempt_completion tool to present the result of the task to the user. You may also provide a CLI command to showcase the result of your task; this can be particularly useful for web development tasks, where you can run e.g. \`open index.html\` to show the website you've built.
         5. The user may provide feedback, which you can use to make improvements and try again. But DO NOT continue in pointless back and forth conversations, i.e. don't end your responses with questions or offers for further assistance.                    
+        
+        {% if file_paths_str %}
+        ====
+        The following are files that the user is currently focusing on. 
+        Make sure you always start your analysis by using the read_file tool to get the content of the files.
+        <files>
+        {{file_paths_str}}
+        </files>
+        {% endif %}
         """
         import os
         extra_docs = get_rules()
@@ -702,6 +711,8 @@ class AgenticEdit:
             shell_type = "cmd"
         elif shells.is_running_in_powershell():
             shell_type = "powershell"
+
+        file_paths_str = "\n".join([file_source.module_name for file_source in self.files.sources])
         return {
             "conversation_history": self.conversation_history,
             "env_info": env_info,
@@ -716,6 +727,7 @@ class AgenticEdit:
             "mcp_server_info": self.mcp_server_info,
             "enable_active_context_in_generate": self.args.enable_active_context_in_generate,
             "extra_docs": extra_docs,
+            "file_paths_str": file_paths_str,
         }
 
     # Removed _execute_command_result and execute_auto_command methods
@@ -773,25 +785,7 @@ class AgenticEdit:
         conversations = [
             {"role": "system", "content": system_prompt},
         ] 
-        
-        logger.info("Adding initial files context to conversation")
-        file_paths_str = "\n".join([file_source.module_name for file_source in self.files.sources])
-             
-        conversations.append({
-                "role":"user","content":f'''
-The following are context files that the user is currently focusing on. 
-These files are presented with their complete paths, providing essential context to help you better understand the user's needs. If you need more detailed information about specific files or directories not shown here, 
-try to use tool read_file to get the content of the following files when you begin to analyze the user's request.
-<files>
-{file_paths_str}
-</files>'''
-        })
-
-        conversations.append({
-            "role":"assistant","content":"Ok"
-        }) 
-        
-        logger.info("Adding conversation history")        
+                                
         conversations.append({
             "role": "user", "content": request.user_input
         })        
