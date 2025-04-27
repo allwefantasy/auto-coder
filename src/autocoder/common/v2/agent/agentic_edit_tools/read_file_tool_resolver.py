@@ -22,9 +22,9 @@ class ReadFileToolResolver(BaseToolResolver):
         abs_project_dir = os.path.abspath(source_dir)
         abs_file_path = os.path.abspath(os.path.join(source_dir, file_path))
 
-        # Security check: ensure the path is within the source directory
-        if not abs_file_path.startswith(abs_project_dir):
-            return ToolResult(success=False, message=f"Error: Access denied. Attempted to read file outside the project directory: {file_path}")
+        # # Security check: ensure the path is within the source directory
+        # if not abs_file_path.startswith(abs_project_dir):
+        #     return ToolResult(success=False, message=f"Error: Access denied. Attempted to read file outside the project directory: {file_path}")
 
         try:
             if self.shadow_manager:
