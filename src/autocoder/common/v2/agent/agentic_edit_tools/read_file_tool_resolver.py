@@ -27,15 +27,18 @@ class ReadFileToolResolver(BaseToolResolver):
         #     return ToolResult(success=False, message=f"Error: Access denied. Attempted to read file outside the project directory: {file_path}")
 
         try:
-            if self.shadow_manager:
-                shadow_path = self.shadow_manager.to_shadow_path(abs_file_path)
-                # If shadow file exists, read from it
-                if os.path.exists(shadow_path) and os.path.isfile(shadow_path):
-                    with open(shadow_path, 'r', encoding='utf-8', errors='replace') as f:
-                        content = f.read()
-                    logger.info(f"[Shadow] Successfully read shadow file: {shadow_path}")
-                    return ToolResult(success=True, message=f"Successfully read file (shadow): {file_path}", content=content)
-                # else fallback to original file
+            try:
+                if self.shadow_manager:
+                    shadow_path = self.shadow_manager.to_shadow_path(abs_file_path)
+                    # If shadow file exists, read from it
+                    if os.path.exists(shadow_path) and os.path.isfile(shadow_path):
+                        with open(shadow_path, 'r', encoding='utf-8', errors='replace') as f:
+                            content = f.read()
+                        logger.info(f"[Shadow] Successfully read shadow file: {shadow_path}")
+                        return ToolResult(success=True, message=f"Successfully read file (shadow): {file_path}", content=content)
+            except Exception as e:
+                pass
+            # else fallback to original file
             # Fallback to original file
             if not os.path.exists(abs_file_path):
                 return ToolResult(success=False, message=f"Error: File not found at path: {file_path}")
