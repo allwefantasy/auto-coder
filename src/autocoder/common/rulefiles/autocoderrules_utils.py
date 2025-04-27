@@ -281,7 +281,7 @@ class RuleSelector:
         logger.info(f"RuleSelector initialized. LLM provided: {self.llm is not None}")
 
     @byzerllm.prompt(render="jinja2")
-    def _build_selection_prompt(self, rule: RuleFile, context: Optional[Dict] = None) -> str:
+    def _build_selection_prompt(self, rule: RuleFile, context: Optional[Dict] = None) -> Dict:
         """
         判断规则是否适用于当前任务。
 
