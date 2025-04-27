@@ -103,8 +103,27 @@ if 'error_content' not in locals(): # 检查是否发生了错误
 
 print(f"事件已记录到: {os.path.abspath(event_file_path)}")
 
-# 注意: ask_user 和 respond_to_user 用于交互式场景，涉及阻塞和回调，
-# 使用方式相对复杂，请参考 event_manager.py 和 agentic_edit.py 中的具体实现。
+# 注意: 关于 ask_user 和 respond_to_user
+这两个方法 (`ask_user` 和 `respond_to_user`) 用于实现 **同步** 的用户交互。
+
+- **`ask_user(question: str, options: Optional[List[str]] = None, timeout: Optional[float] = None) -> str`**:
+    - 写入一个 `ASK_USER` 类型的事件，包含问题文本 (`question`) 和可选的选项列表 (`options`)。
+    - **阻塞** 当前执行线程，等待一个具有匹配 `ask_event_id` 的 `RESPOND_TO_USER` 事件被写入（或者直到 `timeout` 超时）。
+    - 这个机制依赖于一个外部组件（例如，用户界面、另一个进程或服务）来监听 `ASK_USER` 事件，向用户呈现问题和选项，收集用户的响应，然后调用 `respond_to_user` 方法将响应写回事件流。
+    - 如果在指定的 `timeout` 秒内没有收到响应，会引发 `TimeoutError`。
+    - 成功时返回用户提供的响应字符串 (`response`)。
+
+- **`respond_to_user(response: str, ask_event_id: str)`**:
+    - 写入一个 `RESPOND_TO_USER` 类型的事件，包含用户的回答 (`response`) 和与之对应的原始 `ASK_USER` 事件的唯一标识符 (`ask_event_id`)。
+    - 此方法本身 **不阻塞**。它的主要作用是记录用户的响应，并 **解除** 对应 `ask_user` 调用的阻塞状态，允许之前的阻塞线程继续执行。
+
+**使用场景:**
+这种同步交互模式适用于需要暂停自动化流程，等待用户明确输入或确认后才能继续执行的场景。例如，在代码生成过程中请求用户澄清模糊的需求，或者在执行破坏性操作前请求用户确认。
+
+**复杂性与注意事项:**
+- **阻塞行为**: `ask_user` 的阻塞特性意味着调用它的线程会暂停，直到收到响应或超时。这在设计并发或响应式系统时需要特别注意。
+- **外部依赖**: 该机制的完整功能依赖于一个能处理用户交互并调用 `respond_to_user` 的外部系统。仅靠 `EventManager` 本身无法完成整个交互循环。
+- **实现**: 正如原始注释所指，这些方法的具体实现和在复杂应用（如 `agentic_edit.py` 所代表的Agentic流程）中的集成可能涉及更复杂的逻辑，例如通过回调或特定的消息队列来管理交互状态。在简单的事件记录场景中，这两个方法通常不被直接使用。
 ```
 
 ## 依赖说明
