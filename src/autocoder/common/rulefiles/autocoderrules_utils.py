@@ -1,11 +1,13 @@
 import os
+import os
 from pathlib import Path
 from threading import Lock
 import threading
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from loguru import logger
 import re
 import yaml
+import byzerllm
 from pydantic import BaseModel, Field
 
 # 尝试导入 FileMonitor
@@ -231,26 +233,120 @@ class AutocoderRulesManager:
         return parsed_rules
 
 
+class RuleSelector:
+    """
+    Selects relevant rules based on a query using an LLM.
+    """
+    def __init__(self, llm: Any, args: Any):
+        """
+        Initializes the RuleSelector.
+
+        Args:
+            llm: An instance of a language model (e.g., from byzerllm).
+            args: Configuration arguments.
+        """
+        self.llm = llm
+        self.args = args
+        # Access the singleton instance of the rules manager
+        global _rules_manager
+        if _rules_manager is None:
+            # Initialize if not already done (though it usually should be)
+            _rules_manager = AutocoderRulesManager(project_root=getattr(args, 'source_dir', None))
+        self._rules_manager = _rules_manager
+
+    def _is_rule_relevant(self, query: str, rule: RuleFile) -> bool:
+        """
+        Uses the LLM to determine if a rule is relevant to the query.
+        """
+        prompt = f"""
+Given the user query, the rule file name, its description, and its content, determine if the rule is relevant to the query.
+Answer with only 'yes' or 'no'.
+
+User Query:
+{query}
+
+Rule File: {rule.file_path}
+Rule Description: {rule.description}
+
+Rule Content:
+```
+{rule.content}
+```
+
+Is this rule relevant to the user query? Answer 'yes' or 'no'.
+"""
+        try:
+            # Assuming llm has a chat_oai compatible method
+            # Adjust the model parameter if needed based on args
+            model = getattr(self.args, 'model', None) # Or get model from llm instance if possible
+            resp = self.llm.chat_oai(model=model, conversations=[{"role": "user", "content": prompt}])
+            response_text = resp[0].output.strip().lower()
+            logger.debug(f"LLM relevance check for rule '{rule.file_path}': Query='{query}', Response='{response_text}'")
+            return response_text == 'yes'
+        except Exception as e:
+            logger.error(f"Error calling LLM for rule relevance check ({rule.file_path}): {e}")
+            # Default to not relevant in case of error
+            return False
+
+    def select_rules(self, query: str) -> Dict[str, str]:
+        """
+        Selects rules that are always applied or deemed relevant by the LLM.
+
+        Args:
+            query: The user's query or request.
+
+        Returns:
+            A dictionary mapping selected rule file paths to their content.
+        """
+        selected_rules: Dict[str, str] = {}
+        parsed_rules = self._rules_manager.get_parsed_rules()
+        logger.info(f"Starting rule selection for query: '{query}'")
+        logger.info(f"Total rules found: {len(parsed_rules)}")
+
+        for rule in parsed_rules:
+            if rule.always_apply:
+                logger.info(f"Including rule (alwaysApply=True): {rule.file_path}")
+                selected_rules[rule.file_path] = rule.content
+            else:
+                logger.debug(f"Checking relevance for rule (alwaysApply=False): {rule.file_path}")
+                if self.llm and self._is_rule_relevant(query, rule):
+                    logger.info(f"Including rule (LLM deemed relevant): {rule.file_path}")
+                    selected_rules[rule.file_path] = rule.content
+                else:
+                    logger.info(f"Skipping rule (not relevant or LLM error): {rule.file_path}")
+
+        logger.info(f"Selected {len(selected_rules)} rules out of {len(parsed_rules)}.")
+        return selected_rules
+
+
 # 对外提供单例
 _rules_manager = None
 
-def get_rules(project_root: Optional[str] = None) -> Dict[str, str]:
-    """获取所有规则文件内容，可指定项目根目录"""
+def get_rules_manager(project_root: Optional[str] = None) -> AutocoderRulesManager:
+    """Gets the singleton instance of the AutocoderRulesManager."""
     global _rules_manager
     if _rules_manager is None:
         _rules_manager = AutocoderRulesManager(project_root=project_root)
-    return _rules_manager.get_rules()
+    elif project_root is not None and _rules_manager._project_root != os.path.abspath(project_root):
+         # If called with a different project root, re-initialize (or handle differently if needed)
+         logger.warning(f"Re-initializing AutocoderRulesManager for new project root: {project_root}")
+         _rules_manager = AutocoderRulesManager(project_root=project_root)
+    return _rules_manager
+
+def get_rules(project_root: Optional[str] = None) -> Dict[str, str]:
+    """获取所有规则文件内容，可指定项目根目录"""
+    """获取所有规则文件内容，可指定项目根目录"""
+    manager = get_rules_manager(project_root=project_root)
+    return manager.get_rules()
 
 def get_parsed_rules(project_root: Optional[str] = None) -> List[RuleFile]:
     """获取所有解析后的规则文件，可指定项目根目录"""
-    global _rules_manager
-    if _rules_manager is None:
-        _rules_manager = AutocoderRulesManager(project_root=project_root)
-    return _rules_manager.get_parsed_rules()
+    """获取所有解析后的规则文件，可指定项目根目录"""
+    manager = get_rules_manager(project_root=project_root)
+    return manager.get_parsed_rules()
 
 def parse_rule_file(file_path: str, project_root: Optional[str] = None) -> RuleFile:
     """解析指定的规则文件，可指定项目根目录"""
-    global _rules_manager
-    if _rules_manager is None:
-        _rules_manager = AutocoderRulesManager(project_root=project_root)
-    return _rules_manager.parse_rule_file(file_path)
+    """解析指定的规则文件，可指定项目根目录"""
+    manager = get_rules_manager(project_root=project_root)
+    return manager.parse_rule_file(file_path)
