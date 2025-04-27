@@ -17,3 +17,6 @@
 
 ## event_system_usage.md
 标准化事件系统用法，用于模块间解耦通信和记录交互。
+
+## agent_development_pattern.md
+定义在 AutoCoder 项目中开发新 Agent 的标准模式和最佳实践。
