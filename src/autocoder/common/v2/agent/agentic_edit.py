@@ -775,11 +775,13 @@ class AgenticEdit:
         ] 
         
         logger.info("Adding initial files context to conversation")
+        file_paths_str = "\n".join([file_source.module_name for file_source in self.files.sources])
+             
         conversations.append({
-            "role":"user","content":f'''
-The following are context files that the user is currently focusing on. These files are presented with their complete paths and up-to-date content, providing essential context to help you better understand the user's needs. If you need more detailed information about specific files or directories not shown here, you can use tools like read_file, search_files, or list_files to explore the codebase further.
+                "role":"user","content":f'''
+The following are context files that the user is currently focusing on. These files are presented with their complete paths, providing essential context to help you better understand the user's needs. If you need more detailed information about specific files or directories not shown here, you can use tools like read_file, search_files, or list_files to explore the codebase further.
 <files>
-{self.files.to_str()}
+{file_paths_str}
 </files>'''
         })
 
