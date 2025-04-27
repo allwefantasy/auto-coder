@@ -280,8 +280,8 @@ class RuleSelector:
         self._rules_manager = _rules_manager
         logger.info(f"RuleSelector initialized. LLM provided: {self.llm is not None}")
 
-    @byzerllm.prompt(render="jinja2")
-    def _build_selection_prompt(self, rule: RuleFile, context: Optional[Dict] = None) -> str:
+    @byzerllm.prompt()
+    def _build_selection_prompt(self, rule: RuleFile, context: Optional[Dict] = None) -> Dict[str, Any]:
         """
         判断规则是否适用于当前任务。
 
@@ -299,8 +299,7 @@ class RuleSelector:
         基于以上信息，这条规则 (路径: {{ rule.file_path }}) 是否与当前任务相关并应该被应用？
         请回答 "yes" 或 "no"。
         """
-        # 注意：确保 rule 对象和 context 字典能够被 Jinja2 正确访问。
-        # Pydantic模型可以直接在Jinja2中使用其属性。
+        # 构建并返回结构化数据作为模板变量
         return {
             "rule": rule,
             "context": context
