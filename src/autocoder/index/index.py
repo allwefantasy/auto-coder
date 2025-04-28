@@ -31,6 +31,7 @@ from autocoder.rag.token_counter import count_tokens
 from autocoder.common.stream_out_type import IndexStreamOutType
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events import event_content as EventContentCreator
+from loguru import logger
 
 class IndexManager:
     def __init__(
@@ -220,7 +221,7 @@ class IndexManager:
         5. 导入语句中需要包含 jsp:include 整个标签，类似 <jsp:include page="/jspf/prelude.jspf" />
         6. 导入语句中需要包含 form 标签，类似 <form name="ActionPlanLinkedForm" action="/ri/ActionPlanController.do" method="post">
         7. 导入语句中需要包含 有 src 属性的 script 标签。比如 <script language="script" src="xxx">        
-        8. 导入语句中需要包含 有 src 属性的 link 标签。 比如 <link rel="stylesheet" type="text/css" href="/ri/ui/styles/xptheme.css">
+        8. 导入语句中需要包含 有 src 属性的 link 标签。 比如 <link rel="stylesheet" type="text/css" href="/ri/ui/styles/xptheme.css">
         9. 导入语句中需要包含 ajax 请求里的url,比如 $.ajax({  
         type : "post",  
         url : "admWorkingDay!updateAdmWorkingDayList.action",  中，那么对应的为 <ajax method="post" url="admWorkingDay!updateAdmWorkingDayList.action">
@@ -656,13 +657,18 @@ class IndexManager:
 
         index_items = []
         for module_name, data in index_data.items():
-            index_item = IndexItem(
-                module_name=module_name,
-                symbols=data["symbols"],
-                last_modified=data["last_modified"],
-                md5=data["md5"],
-            )
-            index_items.append(index_item)
+            try:                                
+                index_item = IndexItem(
+                    module_name=module_name,
+                    symbols=data["symbols"],
+                    last_modified=data["last_modified"],
+                    md5=data["md5"],
+                )
+                index_items.append(index_item)
+            except (KeyError, TypeError) as e:
+                logger.warning(f"处理索引条目 {module_name} 时出错: {str(e)}")
+                logger.exception(e)
+                continue
 
         return index_items
 

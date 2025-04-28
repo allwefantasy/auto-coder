@@ -1,4 +1,3 @@
-
 # Rules索引
 
 本文档记录项目中所有可用的代码规则(rules)及其用途。
@@ -20,3 +19,6 @@
 
 ## agent_development_pattern.md
 定义在 AutoCoder 项目中开发新 Agent 的标准模式和最佳实践。
+
+## logger_best_practices.md
+规定项目中使用日志记录器(logger)的最佳实践和规范，确保日志记录统一、有效且易于维护。

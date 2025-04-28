@@ -278,7 +278,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     index_filter_level: Optional[int] = 0
     index_filter_enable_relevance_verification: Optional[bool] = True
     index_filter_workers: Optional[int] = 1
-    index_filter_file_num: Optional[int] = -1
+    index_filter_file_num: Optional[int] = 10
     index_build_workers: Optional[int] = 1
     
     planner_model: Optional[str] = ""
