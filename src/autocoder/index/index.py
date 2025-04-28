@@ -16,6 +16,8 @@ import re
 
 import byzerllm
 import hashlib
+import pydantic  # Import pydantic
+import logging  # Import logging
 
 from autocoder.common.printer import Printer
 from autocoder.common.auto_coder_lang import get_message
@@ -663,6 +665,46 @@ class IndexManager:
                 md5=data["md5"],
             )
             index_items.append(index_item)
+
+        return index_items
+
+    def read_index(self) -> List[IndexItem]:
+        if not os.path.exists(self.index_file):
+            return []
+
+        try:
+            with open(self.index_file, "r", encoding="utf-8") as file:
+                index_data = json.load(file)
+        except json.JSONDecodeError as e:
+            logging.error(f"Error decoding JSON from {self.index_file}: {e}")
+            return []
+        except Exception as e:
+            logging.error(f"Error reading index file {self.index_file}: {e}")
+            return []
+
+        index_items = []
+        for module_name, data in index_data.items():
+            try:
+                # Ensure data is a dictionary before proceeding
+                if not isinstance(data, dict):
+                    logging.warning(f"Skipping invalid data entry for key '{module_name}' in {self.index_file}: Expected dict, got {type(data)}")
+                    continue
+
+                index_item = IndexItem(
+                    module_name=module_name,
+                    symbols=data.get("symbols", ""), # Use .get for safety
+                    last_modified=data.get("last_modified", 0.0),
+                    md5=data.get("md5", ""),
+                )
+                index_items.append(index_item)
+            except pydantic.ValidationError as e:
+                logging.error(f"Validation error creating IndexItem for '{module_name}': {e}. Raw data: {data}")
+                # Continue to the next item instead of failing the whole process
+                continue
+            except Exception as e:
+                logging.error(f"Unexpected error processing item for '{module_name}': {e}. Raw data: {data}")
+                continue
+
 
         return index_items
 
