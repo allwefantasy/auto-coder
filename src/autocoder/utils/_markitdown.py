@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import traceback
+import uuid
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import parse_qs, quote, unquote, urlparse, urlunparse
 
@@ -570,8 +571,10 @@ class PdfConverter(DocumentConverter):
             ):                
                 image_data = None
                 image_meta = {}
+                # 添加uuid后缀避免文件名冲突
+                unique_id = str(uuid.uuid4())[:8]
                 image_path = os.path.join(
-                    image_output_dir, f"image_{local_image_count}.png")
+                    image_output_dir, f"image_{local_image_count}_{unique_id}.png")
 
                 if hasattr(lt_obj, "stream"):
                     image_data = lt_obj.stream.get_data()
@@ -585,8 +588,10 @@ class PdfConverter(DocumentConverter):
                         name = iw.export_image(lt_obj)
                         suffix = os.path.splitext(name)[1]
                         temp_path = os.path.join(image_output_dir, name)
+                        # 添加uuid后缀避免文件名冲突
+                        unique_id = str(uuid.uuid4())[:8]
                         image_path = os.path.join(
-                            image_output_dir, f"image_{local_image_count}{suffix}")
+                            image_output_dir, f"image_{local_image_count}_{unique_id}{suffix}")
                         os.rename(temp_path, image_path)
                         content.append(f"![Image {local_image_count}]({image_path})")
                         # ===== 修改：通过FilterRuleManager单例实例判断是否需要解析图片
@@ -620,6 +625,10 @@ class PdfConverter(DocumentConverter):
                                     (height, width, 3)
                                 )
                                 img = Image.fromarray(new_image_data, "RGB")
+                                # 添加uuid后缀避免文件名冲突
+                                unique_id = str(uuid.uuid4())[:8]
+                                image_path = os.path.join(
+                                    image_output_dir, f"image_{local_image_count}_{unique_id}.png")
                                 img.save(image_path)
                                 content.append(
                                     f"![Image {local_image_count}]({image_path})\n"
@@ -635,6 +644,10 @@ class PdfConverter(DocumentConverter):
                                 new_image_data = new_image_data.reshape(
                                     (height, width))
                                 img = Image.fromarray(new_image_data, "L")
+                                # 添加uuid后缀避免文件名冲突
+                                unique_id = str(uuid.uuid4())[:8]
+                                image_path = os.path.join(
+                                    image_output_dir, f"image_{local_image_count}_{unique_id}.png")
                                 img.save(image_path)
                                 content.append(
                                     f"![Image {local_image_count}]({image_path})\n"
@@ -651,6 +664,10 @@ class PdfConverter(DocumentConverter):
                             f"Error extracting image: {e} fallback to writing original data"
                         )
 
+                    # 添加uuid后缀避免文件名冲突
+                    unique_id = str(uuid.uuid4())[:8]
+                    image_path = os.path.join(
+                        image_output_dir, f"image_{local_image_count}_{unique_id}.png")
                     with open(image_path, "wb") as img_file:
                         img_file.write(image_data)
 
@@ -698,7 +715,9 @@ class DocxConverter(HtmlConverter):
 
         # 增加计数器并生成文件名
         self._image_counter += 1
-        image_filename = f"image_{self._image_counter}.{image_format}"
+        # 添加uuid后缀避免文件名冲突
+        unique_id = str(uuid.uuid4())[:8]
+        image_filename = f"image_{self._image_counter}_{unique_id}.{image_format}"
 
         # 保存图片
         image_path = os.path.join(output_dir, image_filename)
