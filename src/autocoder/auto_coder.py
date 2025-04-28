@@ -1069,7 +1069,7 @@ def main(input_args: Optional[List[str]] = None):
                         border_style="green",
                     )
                 )
-                if not args.query:
+                if not args.query or (args.query_prefix and args.query == args.query_prefix) or (args.query_suffix and args.query == args.query_suffix):
                     return
 
             if os.path.exists(memory_file):
