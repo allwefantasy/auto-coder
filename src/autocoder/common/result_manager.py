@@ -16,16 +16,24 @@ class ResultItem(BaseModel):
 class ResultManager:
     """结果管理器，用于维护一个追加写入的jsonl文件"""
     
-    def __init__(self, source_dir: Optional[str] = None):
+    def __init__(self, source_dir: Optional[str] = None, event_file: Optional[str] = None):
         """
         初始化结果管理器
         
         Args:
             source_dir: 可选的源目录，如果不提供则使用当前目录
+            event_file: 可选的事件文件路径，用于生成结果文件名
         """
         self.source_dir = source_dir or os.getcwd()
         self.result_dir = os.path.join(self.source_dir, ".auto-coder", "results")
-        self.result_file = os.path.join(self.result_dir, "results.jsonl")
+        
+        if event_file:
+            # 获取文件名并去掉后缀
+            event_file_name = os.path.splitext(os.path.basename(event_file))[0]
+            self.result_file = os.path.join(self.result_dir, f"{event_file_name}.jsonl")
+        else:
+            self.result_file = os.path.join(self.result_dir, "results.jsonl")
+            
         os.makedirs(self.result_dir, exist_ok=True)
 
     def append(self, content: str, meta: Optional[Dict[str, Any]] = None) -> ResultItem:
