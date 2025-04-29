@@ -272,7 +272,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     index_model_anti_quota_limit: Optional[int] = 0
 
     enable_agentic_filter: Optional[bool] = False
-    enable_agentic_edit: Optional[bool] = False
+    enable_agentic_edit: Optional[bool] = True
     
 
     index_filter_level: Optional[int] = 0
