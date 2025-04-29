@@ -437,10 +437,10 @@ class CommandAutoTuner:
         # 提取 JSON 并转换为 AutoCommandResponse
         response = to_model(result, AutoCommandResponse)
         
-        result_manager = ResultManager()
+        result_manager = ResultManager(source_dir=self.args.source_dir, event_id=self.args.event_id)
 
         while True:
-            global_cancel.check_and_raise(token=self.args.event_file)
+            global_cancel.check_and_raise(token=self.args.event_id)
             # 执行命令
             command = response.suggestions[0].command
             parameters = response.suggestions[0].parameters
@@ -457,9 +457,10 @@ class CommandAutoTuner:
                                                                parameters=parameters
                                                            ).to_dict()),metadata=EventMetadata(
                                                                stream_out_type="command_prepare",
-                                                               path="/agentic/agent/command_prepare",
-                                                               action_file=self.args.file
-                                                           ).to_dict())
+                                                                path="/agentic/agent/command_prepare",
+                                                                action_file=self.args.file,
+                                                                event_id=self.args.event_id
+                                                            ).to_dict())
             
             self.execute_auto_command(command, parameters)
             content = ""
@@ -490,7 +491,8 @@ class CommandAutoTuner:
                         metadata=EventMetadata(
                             stream_out_type="command_break",
                             path="/agentic/agent/command_break",
-                            action_file=self.args.file
+                            action_file=self.args.file,
+                            event_id=self.args.event_id
                         ).to_dict()
                     )
                     break
@@ -505,7 +507,8 @@ class CommandAutoTuner:
                     ).to_dict()),metadata=EventMetadata(
                         stream_out_type="command_execute",
                         path="/agentic/agent/command_execute",
-                        action_file=self.args.file
+                        action_file=self.args.file,
+                        event_id=self.args.event_id
                     ).to_dict()
                     )
 
@@ -616,12 +619,13 @@ class CommandAutoTuner:
                 get_event_manager(self.args.event_file).write_result(
                     EventContentCreator.create_result(content=temp_content),
                     metadata=EventMetadata(
-                        stream_out_type="command_break",
-                        path="/agentic/agent/command_break",
-                        action_file=self.args.file
-                    ).to_dict()
-                )
-                break
+                    stream_out_type="command_break",
+                    path="/agentic/agent/command_break",
+                    action_file=self.args.file,
+                    event_id=self.args.event_id
+                ).to_dict()
+            )
+            break
 
         return response
 
@@ -1525,7 +1529,7 @@ class CommandAutoTuner:
             self.printer.print_in_terminal(
                 "auto_command_failed", style="red", command=command, error=error_msg)
             
-            self.result_manager = ResultManager()
+            self.result_manager = ResultManager(source_dir=self.args.source_dir, event_id=self.args.event_id)
             result = f"command {command} with parameters {parameters} execution failed with error {error_msg}"
             self.result_manager.add_result(content=result, meta={
                 "action": command,
