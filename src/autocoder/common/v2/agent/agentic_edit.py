@@ -10,7 +10,6 @@ from rich.panel import Panel
 from pydantic import SkipValidation
 from byzerllm.utils.types import SingleOutputMeta
 
-# Removed ResultManager, stream_out, git_utils, AutoCommandTools, count_tokens, global_cancel, ActionYmlFileManager, get_event_manager, EventContentCreator, get_run_context, AgenticFilterStreamOutType
 from autocoder.common import AutoCoderArgs, git_utils, SourceCodeList, SourceCode
 from autocoder.common.global_cancel import global_cancel
 from autocoder.common import detect_env
