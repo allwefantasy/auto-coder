@@ -416,7 +416,7 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     enable_task_history: Optional[bool] = False
 
-    event_id: Optional[str] = None
+    event_file: Optional[str] = None
 
     enable_active_context: Optional[bool] = False
     enable_active_context_in_generate: Optional[bool] = False
