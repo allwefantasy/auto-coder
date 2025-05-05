@@ -2,6 +2,9 @@ from pydantic import BaseModel
 from typing import List, Dict, Any, Callable, Optional, Type
 from pydantic import SkipValidation
 
+# 导入RagContextTool
+from autocoder.agent.rag.agentic_rag_tools import RagContextTool
+
 
 # Result class used by Tool Resolvers
 class ToolResult(BaseModel):
@@ -116,6 +119,7 @@ TOOL_MODEL_MAP: Dict[str, Type[BaseTool]] = {
     "plan_mode_respond": PlanModeRespondTool,
     "use_mcp_tool": UseMcpTool,
     "list_package_info": ListPackageInfoTool,
+    "rag_context": RagContextTool,  # 添加新工具
 }
 
 class FileChangeEntry(BaseModel):

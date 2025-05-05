@@ -233,6 +233,25 @@ class AutocoderRulesManager:
             parsed_rules.append(parsed_rule)
         return parsed_rules
 
+    @classmethod
+    def reset_instance(cls):
+        """
+        重置单例实例。
+        如果当前实例正在运行，则先取消注册监控的目录，然后重置实例。
+        """
+        with cls._lock:
+            if cls._instance is not None:
+                # 取消注册监控的目录
+                if cls._instance._file_monitor:
+                    for dir_path in cls._instance._monitored_dirs:
+                        try:
+                            cls._instance._file_monitor.unregister(dir_path)
+                            logger.info(f"已取消注册目录监控: {dir_path}")
+                        except Exception as e:
+                            logger.warning(f"取消注册目录 {dir_path} 时出错: {e}")
+                cls._instance = None
+                logger.info("AutocoderRulesManager单例已被重置")
+
 
 # 对外提供单例
 _rules_manager = None
@@ -258,6 +277,11 @@ def parse_rule_file(file_path: str, project_root: Optional[str] = None) -> RuleF
         _rules_manager = AutocoderRulesManager(project_root=project_root)
     return _rules_manager.parse_rule_file(file_path)
 
+def reset_rules_manager():
+    """重置AutocoderRulesManager单例实例"""
+    AutocoderRulesManager.reset_instance()
+    global _rules_manager
+    _rules_manager = None
 
 # 添加用于返回类型的Pydantic模型
 class RuleRelevance(BaseModel):

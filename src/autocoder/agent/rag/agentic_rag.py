@@ -80,20 +80,20 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     WriteToFileTool: WriteToFileToolResolver,
     ReplaceInFileTool: ReplaceInFileToolResolver,
     SearchFilesTool: SearchFilesToolResolver,
-    ListFilesTool: ListFilesToolResolver,
-    ListCodeDefinitionNamesTool: ListCodeDefinitionNamesToolResolver,
+    ListFilesTool: ListFilesToolResolver,    
     ListPackageInfoTool: ListPackageInfoToolResolver,
     AskFollowupQuestionTool: AskFollowupQuestionToolResolver,
     AttemptCompletionTool: AttemptCompletionToolResolver,  # Will stop the loop anyway
     PlanModeRespondTool: PlanModeRespondToolResolver,
     UseMcpTool: UseMcpToolResolver,
+    RagContextTool: RagContextToolResolver,
 }
 
 
 # --- Tool Display Customization is now handled by agentic_tool_display.py ---
 
 
-class AgenticEdit:
+class AgenticRAG:
     def __init__(
         self,
         llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],

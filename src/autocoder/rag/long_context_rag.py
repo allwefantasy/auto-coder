@@ -3,30 +3,17 @@ import os
 import time
 from typing import Any, Dict, Generator, List, Optional, Tuple
 
-import byzerllm
-import pandas as pd
 import pathspec
 from byzerllm import ByzerLLM
 from loguru import logger
 from openai import OpenAI
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
 import statistics
 import traceback
 
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.rag.doc_filter import DocFilter
 from autocoder.rag.document_retriever import LocalDocumentRetriever
-from autocoder.rag.relevant_utils import (
-    DocRelevance,
-    FilterDoc,
-    TaskTiming,
-    parse_relevance,
-    ProgressUpdate,
-    DocFilterResult
-)
-from autocoder.rag.token_checker import check_token_limit
+from autocoder.rag.relevant_utils import DocFilterResult
 from autocoder.rag.token_counter import RemoteTokenCounter, TokenCounter,count_tokens
 from autocoder.rag.token_limiter import TokenLimiter
 from tokenizers import Tokenizer
@@ -235,35 +222,7 @@ class LongContextRAG:
     def count_tokens(self, text: str) -> int:
         if self.tokenizer is None:
             return -1
-        return self.tokenizer.count_tokens(text)
-
-    @byzerllm.prompt()
-    def extract_relevance_info_from_docs_with_conversation(
-        self, conversations: List[Dict[str, str]], documents: List[str]
-    ) -> str:
-        """
-        使用以下文档和对话历史来提取相关信息。
-
-        文档：
-        <documents>
-        {% for doc in documents %}
-        {{ doc }}
-        {% endfor %}
-        </documents>
-
-        对话历史：
-        <conversations>
-        {% for msg in conversations %}
-        [{{ msg.role }}]: 
-        {{ msg.content }}
-
-        {% endfor %}
-        </conversations>
-
-        请根据提供的文档内容、用户对话历史以及最后一个问题，提取并总结文档中与问题相关的重要信息。
-        如果文档中没有相关信息，请回复"该文档中没有与问题相关的信息"。
-        提取的信息尽量保持和原文中的一样，并且只输出这些信息。
-        """
+        return self.tokenizer.count_tokens(text)    
 
     def _get_document_retriever_class(self):
         """Get the document retriever class based on configuration."""
@@ -408,6 +367,12 @@ class LongContextRAG:
         llm_config: Dict[str, Any] = {},
         extra_request_params: Dict[str, Any] = {}
     ):
+        if not llm_config:
+            llm_config = {}
+        
+        if extra_request_params:
+            llm_config.update(extra_request_params)
+        
         conversations = OpenAIContentProcessor.process_conversations(conversations)
         if self.client:
             model = model or self.args.model
@@ -424,31 +389,8 @@ class LongContextRAG:
         if self.llm.get_sub_client("qa_model"):
             target_llm = self.llm.get_sub_client("qa_model")
 
-        query = conversations[-1]["content"]
-        
+        query = conversations[-1]["content"]        
         context = []
-
-        if (
-            "使用四到五个字直接返回这句话的简要主题，不要解释、不要标点、不要语气词、不要多余文本，不要加粗，如果没有主题"
-            in query
-            or "简要总结一下对话内容，用作后续的上下文提示 prompt，控制在 200 字以内"
-            in query
-        ):
-
-            chunks = target_llm.stream_chat_oai(
-                conversations=conversations,
-                model=model,
-                role_mapping=role_mapping,
-                llm_config=llm_config,
-                delta_mode=True,
-                extra_request_params=extra_request_params
-            )
-
-            def generate_chunks():
-                for chunk in chunks:
-                    yield chunk
-            return generate_chunks(), context
-
         try:
             request_params = json.loads(query)
             if "request_id" in request_params:
@@ -554,6 +496,7 @@ class LongContextRAG:
             extra_request_params=extra_request_params
         ), context
 
+    
     def _generate_sream(
         self,
         conversations,
@@ -586,7 +529,7 @@ class LongContextRAG:
                 if only_contexts:
                     try:
                         searcher = SearchableResults()
-                        result = searcher.reorder(docs=item["result"].docs)
+                        result = searcher.reorder(docs=item["result"])
                         yield (json.dumps(result.model_dump(), ensure_ascii=False), SingleOutputMeta(
                             input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
                             generated_tokens_count=rag_stat.recall_stat.total_generated_tokens + rag_stat.chunk_stat.total_generated_tokens,
@@ -600,7 +543,7 @@ class LongContextRAG:
                         return
                 
                 # 如果没有找到相关文档
-                if not item["result"].docs:
+                if not item["result"]:
                     yield ("没有找到可以回答你问题的相关文档", SingleOutputMeta(
                         input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
                         generated_tokens_count=rag_stat.recall_stat.total_generated_tokens + rag_stat.chunk_stat.total_generated_tokens,
@@ -608,7 +551,7 @@ class LongContextRAG:
                     return
                 
                 # 更新上下文
-                context.extend([doc.source_code.module_name for doc in item["result"].docs])
+                context.extend([doc.source_code.module_name for doc in item["result"]])
                 
                 # 输出上下文文档名称
                 yield ("", SingleOutputMeta(
@@ -623,7 +566,7 @@ class LongContextRAG:
                 # 记录信息到日志
                 logger.info(f"=== RAG Search Results ===")
                 logger.info(f"Query: {query}")
-                relevant_docs = [doc.source_code for doc in item["result"].docs]
+                relevant_docs = [doc.source_code for doc in item["result"]]
                 logger.info(f"Found relevant docs: {len(relevant_docs)}")
                 
                 # 记录相关文档信息
@@ -750,7 +693,8 @@ class LongContextRAG:
                         self._print_rag_stats(rag_stat)
                         return
 
-    def _process_document_retrieval(self, conversations, query, rag_stat):
+    def _process_document_retrieval(self, conversations, 
+                                    query, rag_stat):
         """第一阶段：文档召回和过滤"""
         yield ("", SingleOutputMeta(
             input_tokens_count=0,
@@ -887,7 +831,13 @@ class LongContextRAG:
             "sencond_round_time": sencond_round_time
         }
 
-    def _process_qa_generation(self, relevant_docs, conversations, target_llm, rag_stat, model=None, role_mapping=None, llm_config=None, extra_request_params=None):
+    def _process_qa_generation(self, relevant_docs, conversations, 
+                               target_llm, 
+                               rag_stat, 
+                               model=None, 
+                               role_mapping=None, 
+                               llm_config={}, 
+                               extra_request_params={}):
         """第三阶段：大模型问答生成"""
         
         # 使用LLMComputeEngine增强处理（如果可用）

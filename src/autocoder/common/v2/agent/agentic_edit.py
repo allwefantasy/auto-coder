@@ -71,6 +71,8 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
                                                           AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
                                                           )
+# 引入新的工具
+from autocoder.agent.rag.agentic_rag_tools import RagContextTool, RagContextToolResolver
 
 
 # Map Pydantic Tool Models to their Resolver Classes
@@ -87,6 +89,7 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     AttemptCompletionTool: AttemptCompletionToolResolver,  # Will stop the loop anyway
     PlanModeRespondTool: PlanModeRespondToolResolver,
     UseMcpTool: UseMcpToolResolver,
+    RagContextTool: RagContextToolResolver,  # 添加新工具映射
 }
 
 

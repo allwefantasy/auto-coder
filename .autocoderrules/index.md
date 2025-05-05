@@ -40,3 +40,9 @@
 
 ## save_json_as_md_usage.md
 标准化日志保存方法，用于保存各种类型的JSON格式日志为Markdown格式到项目指定目录，特别适用于保存RAG对话、模型响应与调试信息。
+
+## context_pruner_usage.md
+解释如何使用PruneContext类对大型文件内容进行智能裁剪，减少Token消耗并保留最相关内容，支持多种裁剪策略和配置选项。
+
+## index_filter_strategies.md
+说明AutoCoder中索引过滤策略的工作原理与选择机制，包括普通过滤、大索引过滤和超大索引过滤三种策略，帮助理解大规模代码库的智能检索过程。

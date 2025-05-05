@@ -7,6 +7,7 @@ from autocoder.common.v2.agent.agentic_edit_types import (
     ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
     AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
 )
+from autocoder.agent.rag.agentic_rag_tools import RagContextTool
 
 # Define message templates for each tool in English and Chinese
 TOOL_DISPLAY_MESSAGES: Dict[Type[BaseTool], Dict[str, str]] = {
@@ -93,8 +94,11 @@ TOOL_DISPLAY_MESSAGES: Dict[Type[BaseTool], Dict[str, str]] = {
             "[dim]工具：[/dim] [blue]{{ tool_name }}[/]\n"
             "[dim]参数：[/dim] {{ arguments_snippet }}{{ ellipsis }}"
         )
-    }    
-    # AttemptCompletionTool is handled separately in the display loop
+    },
+    RagContextTool: {
+        "en": "RAG Context Retrieval: Searching for documents related to '{query}' in {path}\nMax documents: {max_docs}, Relevance threshold: {relevance_threshold}",
+        "zh": "RAG上下文检索: 在 {path} 中检索与 '{query}' 相关的文档\n最大文档数: {max_docs}, 相关性阈值: {relevance_threshold}"
+    }
 }
 
 def get_tool_display_message(tool: BaseTool) -> str:
@@ -172,6 +176,13 @@ def get_tool_display_message(tool: BaseTool) -> str:
             "tool_name": tool.tool_name,
             "arguments_snippet": snippet,
             "ellipsis": '...' if len(args_str) > 100 else ''
+        }
+    elif isinstance(tool, RagContextTool):
+        context = {
+            "path": tool.path,
+            "query": tool.query[:100] + '...' if len(tool.query) > 100 else tool.query,
+            "max_docs": tool.max_docs,
+            "relevance_threshold": tool.relevance_threshold
         }
     else:
         # Generic context for tools not specifically handled above
