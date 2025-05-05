@@ -231,7 +231,7 @@ def get_all_extensions(directory: str = ".") -> str:
     return ",".join(sorted(all_extensions))
 
 def configure_logger():
-    # 设置日志目录和文件
+    # 设置日志目录和文件    
     log_dir = os.path.join(project_root, ".auto-coder", "logs")
     os.makedirs(log_dir, exist_ok=True)
     log_file = os.path.join(log_dir, "auto-coder.log")
@@ -258,8 +258,6 @@ def configure_logger():
         ]
     )
 
-configure_logger()
-
 def init_singleton_instances():
     # 初始化文件监控系统
     try:
@@ -277,7 +275,9 @@ def init_singleton_instances():
     _ = IgnoreFileManager(project_root=project_root)
 
 
-init_singleton_instances()
+if os.environ.get('autocoder_auto_init',"true") in ["true","True","True",True]:
+    configure_logger()
+    init_singleton_instances()
 
 def initialize_system(args:InitializeSystemRequest):
     from autocoder.utils.model_provider_selector import ModelProviderSelector

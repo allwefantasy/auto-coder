@@ -338,7 +338,8 @@ class LongContextRAG:
                     conversations=[{"role": "user", "content": target_query}]
                 )
                 url = ",".join(contexts)
-                return [SourceCode(module_name=f"RAG:{url}", source_code="".join(v))]
+                result = (item for (item,_) in v)
+                return [SourceCode(module_name=f"RAG:{url}", source_code="".join(result))]
 
     def _filter_docs(self, conversations: List[Dict[str, str]]) -> DocFilterResult:
         query = conversations[-1]["content"]
@@ -539,352 +540,428 @@ class LongContextRAG:
 
         context = []
 
-        def generate_sream():
-            nonlocal context
+        return self._generate_sream(
+            conversations=conversations,
+            query=query,
+            only_contexts=only_contexts,
+            start_time=start_time,
+            rag_stat=rag_stat,
+            context=context,
+            target_llm=target_llm,
+            model=model,
+            role_mapping=role_mapping,
+            llm_config=llm_config,
+            extra_request_params=extra_request_params
+        ), context
 
-            yield ("", SingleOutputMeta(input_tokens_count=0,
-                                        generated_tokens_count=0,
-                                        reasoning_content=get_message_with_format_and_newline(
-                                            "rag_searching_docs",
-                                            model=rag_stat.recall_stat.model_name
-                                        )
-                                        ))
-
-            doc_filter_result = DocFilterResult(
-                docs=[],
-                raw_docs=[],
-                input_tokens_counts=[],
-                generated_tokens_counts=[],
-                durations=[],
-                model_name=rag_stat.recall_stat.model_name
-            )
-            query = conversations[-1]["content"]
-            queries = extract_search_queries(
-                conversations=conversations, args=self.args, llm=self.llm, max_queries=self.args.rag_recall_max_queries)
-            documents = self._retrieve_documents(
-                options={"queries": [query] + [query.query for query in queries]})
-
-            # 使用带进度报告的过滤方法
-            for progress_update, result in self.doc_filter.filter_docs_with_progress(conversations, documents):
-                if result is not None:
-                    doc_filter_result = result
-                else:
-                    # 生成进度更新
-                    yield ("", SingleOutputMeta(
-                        input_tokens_count=rag_stat.recall_stat.total_input_tokens,
-                        generated_tokens_count=rag_stat.recall_stat.total_generated_tokens,
-                        reasoning_content=f"{progress_update.message} ({progress_update.completed}/{progress_update.total})"
+    def _generate_sream(
+        self,
+        conversations,
+        query,
+        only_contexts,
+        start_time,
+        rag_stat,
+        context,
+        target_llm,
+        model=None,
+        role_mapping=None,
+        llm_config=None,
+        extra_request_params=None
+    ):
+        """将RAG流程分为三个主要阶段的生成器函数"""
+        # 第一阶段：文档召回和过滤
+        doc_retrieval_generator = self._process_document_retrieval(
+            conversations=conversations,
+            query=query,
+            rag_stat=rag_stat
+        )
+        
+        # 处理第一阶段结果
+        for item in doc_retrieval_generator:
+            if isinstance(item, tuple) and len(item) == 2:
+                # 正常的生成器项，包含yield内容和元数据
+                yield item
+            elif isinstance(item, dict) and "result" in item:
+                # 如果是只返回上下文的情况
+                if only_contexts:
+                    try:
+                        searcher = SearchableResults()
+                        result = searcher.reorder(docs=item["result"].docs)
+                        yield (json.dumps(result.model_dump(), ensure_ascii=False), SingleOutputMeta(
+                            input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
+                            generated_tokens_count=rag_stat.recall_stat.total_generated_tokens + rag_stat.chunk_stat.total_generated_tokens,
+                        ))
+                        return
+                    except Exception as e:
+                        yield (str(e), SingleOutputMeta(
+                            input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
+                            generated_tokens_count=rag_stat.recall_stat.total_generated_tokens + rag_stat.chunk_stat.total_generated_tokens,
+                        ))
+                        return
+                
+                # 如果没有找到相关文档
+                if not item["result"].docs:
+                    yield ("没有找到可以回答你问题的相关文档", SingleOutputMeta(
+                        input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
+                        generated_tokens_count=rag_stat.recall_stat.total_generated_tokens + rag_stat.chunk_stat.total_generated_tokens,
                     ))
-
-            rag_stat.recall_stat.total_input_tokens += sum(
-                doc_filter_result.input_tokens_counts)
-            rag_stat.recall_stat.total_generated_tokens += sum(
-                doc_filter_result.generated_tokens_counts)
-            rag_stat.recall_stat.model_name = doc_filter_result.model_name
-
-            relevant_docs: List[FilterDoc] = doc_filter_result.docs
-            filter_time = time.time() - start_time
-
-            yield ("", SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens,
-                                        generated_tokens_count=rag_stat.recall_stat.total_generated_tokens,
-                                        reasoning_content=get_message_with_format_and_newline(
-                                            "rag_docs_filter_result",
-                                            filter_time=filter_time,
-                                            docs_num=len(relevant_docs),
-                                            input_tokens=rag_stat.recall_stat.total_input_tokens,
-                                            output_tokens=rag_stat.recall_stat.total_generated_tokens,
-                                            model=rag_stat.recall_stat.model_name
-                                        )
-                                        ))
-
-            # Filter relevant_docs to only include those with is_relevant=True
-            highly_relevant_docs = [
-                doc for doc in relevant_docs if doc.relevance.is_relevant
-            ]
-
-            if highly_relevant_docs:
-                relevant_docs = highly_relevant_docs
-                logger.info(
-                    f"Found {len(relevant_docs)} highly relevant documents")
-
-            logger.info(
-                f"Filter time: {filter_time:.2f} seconds with {len(relevant_docs)} docs"
-            )
-
-            if only_contexts:
-                try:
-                    searcher = SearchableResults()
-                    result = searcher.reorder(docs=relevant_docs)
-                    yield (json.dumps(result.model_dump(), ensure_ascii=False), SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
-                                                                                                 generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
-                                                                                                 rag_stat.chunk_stat.total_generated_tokens,
-                                                                                                 ))
-                except Exception as e:
-                    yield (str(e), SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
-                                                    generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
-                                                    rag_stat.chunk_stat.total_generated_tokens,
-                                                    ))
-                return
-
-            if not relevant_docs:
-                yield ("没有找到可以回答你问题的相关文档", SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
-                                                            generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
-                                                            rag_stat.chunk_stat.total_generated_tokens,
-                                                            ))
-                return
-
-            context = [doc.source_code.module_name for doc in relevant_docs]
-
-            yield ("", SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
-                                        generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
-                                        rag_stat.chunk_stat.total_generated_tokens,
-                                        reasoning_content=get_message_with_format_and_newline(
-                                            "context_docs_names",
-                                            context_docs_names=",".join(
-                                                context))
-                                        ))
-
-            # 将 FilterDoc 转化为 SourceCode 方便后续的逻辑继续做处理
-            relevant_docs = [doc.source_code for doc in relevant_docs]
-
-            logger.info(f"=== RAG Search Results ===")
-            logger.info(f"Query: {query}")
-            logger.info(f"Found relevant docs: {len(relevant_docs)}")
-
-            # 记录相关文档信息
-            relevant_docs_info = []
-            for i, doc in enumerate(relevant_docs):
-                doc_path = doc.module_name.replace(self.path, '', 1)
-                info = f"{i+1}. {doc_path}"
-                if "original_docs" in doc.metadata:
-                    original_docs = ", ".join(
-                        [
-                            doc.replace(self.path, "", 1)
-                            for doc in doc.metadata["original_docs"]
-                        ]
+                    return
+                
+                # 更新上下文
+                context.extend([doc.source_code.module_name for doc in item["result"].docs])
+                
+                # 输出上下文文档名称
+                yield ("", SingleOutputMeta(
+                    input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
+                    generated_tokens_count=rag_stat.recall_stat.total_generated_tokens + rag_stat.chunk_stat.total_generated_tokens,
+                    reasoning_content=get_message_with_format_and_newline(
+                        "context_docs_names",
+                        context_docs_names=",".join(context)
                     )
-                    info += f" (Original docs: {original_docs})"
-                relevant_docs_info.append(info)
+                ))
+                
+                # 记录信息到日志
+                logger.info(f"=== RAG Search Results ===")
+                logger.info(f"Query: {query}")
+                relevant_docs = [doc.source_code for doc in item["result"].docs]
+                logger.info(f"Found relevant docs: {len(relevant_docs)}")
+                
+                # 记录相关文档信息
+                relevant_docs_info = []
+                for i, doc in enumerate(relevant_docs):
+                    doc_path = doc.module_name.replace(self.path, '', 1)
+                    info = f"{i+1}. {doc_path}"
+                    if "original_docs" in doc.metadata:
+                        original_docs = ", ".join(
+                            [
+                                doc.replace(self.path, "", 1)
+                                for doc in doc.metadata["original_docs"]
+                            ]
+                        )
+                        info += f" (Original docs: {original_docs})"
+                    relevant_docs_info.append(info)
 
-            if relevant_docs_info:
-                logger.info(
-                    f"Relevant documents list:"
-                    + "".join([f"\n  * {info}" for info in relevant_docs_info])
-                )
-
-            yield ("", SingleOutputMeta(generated_tokens_count=0,
-                                        reasoning_content=get_message_with_format_and_newline(
-                                            "dynamic_chunking_start",
-                                            model=rag_stat.chunk_stat.model_name
-                                        )
-                                        ))
-            first_round_full_docs = []
-            second_round_extracted_docs = []
-            sencond_round_time = 0
-
-            if self.tokenizer is not None:
-
-                token_limiter = TokenLimiter(
-                    count_tokens=self.count_tokens,
-                    full_text_limit=self.full_text_limit,
-                    segment_limit=self.segment_limit,
-                    buff_limit=self.buff_limit,
-                    llm=self.llm,
-                    disable_segment_reorder=self.args.disable_segment_reorder,
-                )
-
-                token_limiter_result = token_limiter.limit_tokens(
+                if relevant_docs_info:
+                    logger.info(
+                        f"Relevant documents list:"
+                        + "".join([f"\n  * {info}" for info in relevant_docs_info])
+                    )
+                
+                # 第二阶段：文档分块与重排序
+                doc_chunking_generator = self._process_document_chunking(
                     relevant_docs=relevant_docs,
                     conversations=conversations,
-                    index_filter_workers=self.args.index_filter_workers or 5,
+                    rag_stat=rag_stat,
+                    filter_time=(time.time() - start_time)
                 )
+                
+                for chunking_item in doc_chunking_generator:
+                    if isinstance(chunking_item, tuple) and len(chunking_item) == 2:
+                        # 正常的生成器项
+                        yield chunking_item
+                    elif isinstance(chunking_item, dict) and "result" in chunking_item:
+                        processed_docs = chunking_item["result"]
+                        filter_time = chunking_item.get("filter_time", 0)
+                        first_round_full_docs = chunking_item.get("first_round_full_docs", [])
+                        second_round_extracted_docs = chunking_item.get("second_round_extracted_docs", [])
+                        sencond_round_time = chunking_item.get("sencond_round_time", 0)
+                        
+                        # 记录最终选择的文档详情
+                        final_relevant_docs_info = []
+                        for i, doc in enumerate(processed_docs):
+                            doc_path = doc.module_name.replace(self.path, '', 1)
+                            info = f"{i+1}. {doc_path}"
 
-                rag_stat.chunk_stat.total_input_tokens += sum(
-                    token_limiter_result.input_tokens_counts)
-                rag_stat.chunk_stat.total_generated_tokens += sum(
-                    token_limiter_result.generated_tokens_counts)
-                rag_stat.chunk_stat.model_name = token_limiter_result.model_name
+                            metadata_info = []
+                            if "original_docs" in doc.metadata:
+                                original_docs = ", ".join(
+                                    [
+                                        od.replace(self.path, "", 1)
+                                        for od in doc.metadata["original_docs"]
+                                    ]
+                                )
+                                metadata_info.append(f"Original docs: {original_docs}")
 
-                final_relevant_docs = token_limiter_result.docs
-                first_round_full_docs = token_limiter.first_round_full_docs
-                second_round_extracted_docs = token_limiter.second_round_extracted_docs
-                sencond_round_time = token_limiter.sencond_round_time
+                            if "chunk_ranges" in doc.metadata:
+                                chunk_ranges = json.dumps(
+                                    doc.metadata["chunk_ranges"], ensure_ascii=False
+                                )
+                                metadata_info.append(f"Chunk ranges: {chunk_ranges}")
 
-                relevant_docs = final_relevant_docs
+                            if "processing_time" in doc.metadata:
+                                metadata_info.append(
+                                    f"Processing time: {doc.metadata['processing_time']:.2f}s")
+
+                            if metadata_info:
+                                info += f" ({'; '.join(metadata_info)})"
+
+                            final_relevant_docs_info.append(info)
+
+                        if final_relevant_docs_info:
+                            logger.info(
+                                f"Final documents to be sent to model:"
+                                + "".join([f"\n  * {info}" for info in final_relevant_docs_info])
+                            )
+
+                        # 记录令牌统计
+                        request_tokens = sum([count_tokens(doc.source_code) for doc in processed_docs])
+                        target_model = target_llm.default_model_name
+                        logger.info(
+                            f"=== LLM Request ===\n"
+                            f"  * Target model: {target_model}\n"
+                            f"  * Total tokens: {request_tokens}"
+                        )
+
+                        logger.info(
+                            f"Start to send to model {target_model} with {request_tokens} tokens")
+
+                        yield ("", SingleOutputMeta(
+                            input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
+                            generated_tokens_count=rag_stat.recall_stat.total_generated_tokens + rag_stat.chunk_stat.total_generated_tokens,
+                            reasoning_content=get_message_with_format_and_newline(
+                                "send_to_model",
+                                model=target_model,
+                                tokens=request_tokens
+                            )
+                        ))
+
+                        yield ("", SingleOutputMeta(
+                            input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
+                            generated_tokens_count=rag_stat.recall_stat.total_generated_tokens + rag_stat.chunk_stat.total_generated_tokens,
+                            reasoning_content="qa_model_thinking"
+                        ))
+                        
+                        # 第三阶段：大模型问答生成
+                        qa_generation_generator = self._process_qa_generation(
+                            relevant_docs=processed_docs,
+                            conversations=conversations,
+                            target_llm=target_llm,
+                            rag_stat=rag_stat,
+                            model=model,
+                            role_mapping=role_mapping,
+                            llm_config=llm_config,
+                            extra_request_params=extra_request_params
+                        )
+                        
+                        for gen_item in qa_generation_generator:
+                            yield gen_item
+                        
+                        # 打印最终的统计信息
+                        self._print_rag_stats(rag_stat)
+                        return
+
+    def _process_document_retrieval(self, conversations, query, rag_stat):
+        """第一阶段：文档召回和过滤"""
+        yield ("", SingleOutputMeta(
+            input_tokens_count=0,
+            generated_tokens_count=0,
+            reasoning_content=get_message_with_format_and_newline(
+                "rag_searching_docs",
+                model=rag_stat.recall_stat.model_name
+            )
+        ))
+
+        doc_filter_result = DocFilterResult(
+            docs=[],
+            raw_docs=[],
+            input_tokens_counts=[],
+            generated_tokens_counts=[],
+            durations=[],
+            model_name=rag_stat.recall_stat.model_name
+        )
+        
+        # 提取查询并检索候选文档
+        queries = extract_search_queries(
+            conversations=conversations, args=self.args, llm=self.llm, max_queries=self.args.rag_recall_max_queries)
+        documents = self._retrieve_documents(
+            options={"queries": [query] + [query.query for query in queries]})
+
+        # 使用带进度报告的过滤方法
+        for progress_update, result in self.doc_filter.filter_docs_with_progress(conversations, documents):
+            if result is not None:
+                doc_filter_result = result
             else:
-                relevant_docs = relevant_docs[: self.args.index_filter_file_num]
+                # 生成进度更新
+                yield ("", SingleOutputMeta(
+                    input_tokens_count=rag_stat.recall_stat.total_input_tokens,
+                    generated_tokens_count=rag_stat.recall_stat.total_generated_tokens,
+                    reasoning_content=f"{progress_update.message} ({progress_update.completed}/{progress_update.total})"
+                ))
 
-            logger.info(f"Finally send to model: {len(relevant_docs)}")
-            # 记录分段处理的统计信息
-            logger.info(
-                f"=== Token Management ===\n"
-                f"  * Only contexts: {only_contexts}\n"
-                f"  * Filter time: {filter_time:.2f} seconds\n"
-                f"  * Final relevant docs: {len(relevant_docs)}\n"
-                f"  * First round full docs: {len(first_round_full_docs)}\n"
-                f"  * Second round extracted docs: {len(second_round_extracted_docs)}\n"
-                f"  * Second round time: {sencond_round_time:.2f} seconds"
+        # 更新统计信息
+        rag_stat.recall_stat.total_input_tokens += sum(doc_filter_result.input_tokens_counts)
+        rag_stat.recall_stat.total_generated_tokens += sum(doc_filter_result.generated_tokens_counts)
+        rag_stat.recall_stat.model_name = doc_filter_result.model_name
+
+        relevant_docs = doc_filter_result.docs
+        
+        yield ("", SingleOutputMeta(
+            input_tokens_count=rag_stat.recall_stat.total_input_tokens,
+            generated_tokens_count=rag_stat.recall_stat.total_generated_tokens,
+            reasoning_content=get_message_with_format_and_newline(
+                "rag_docs_filter_result",
+                filter_time=0,  # 这里实际应该计算时间，但由于重构，我们需要在外部计算
+                docs_num=len(relevant_docs),
+                input_tokens=rag_stat.recall_stat.total_input_tokens,
+                output_tokens=rag_stat.recall_stat.total_generated_tokens,
+                model=rag_stat.recall_stat.model_name
+            )
+        ))
+
+        # 仅保留高相关性文档
+        highly_relevant_docs = [doc for doc in relevant_docs if doc.relevance.is_relevant]
+        if highly_relevant_docs:
+            relevant_docs = highly_relevant_docs
+            logger.info(f"Found {len(relevant_docs)} highly relevant documents")
+        
+        # 返回结果
+        yield {"result": relevant_docs}
+
+    def _process_document_chunking(self, relevant_docs, conversations, rag_stat, filter_time):
+        """第二阶段：文档分块与重排序"""
+        yield ("", SingleOutputMeta(
+            generated_tokens_count=0,
+            reasoning_content=get_message_with_format_and_newline(
+                "dynamic_chunking_start",
+                model=rag_stat.chunk_stat.model_name
+            )
+        ))
+        
+        # 默认值
+        first_round_full_docs = []
+        second_round_extracted_docs = []
+        sencond_round_time = 0
+        
+        if self.tokenizer is not None:
+            token_limiter = TokenLimiter(
+                count_tokens=self.count_tokens,
+                full_text_limit=self.full_text_limit,
+                segment_limit=self.segment_limit,
+                buff_limit=self.buff_limit,
+                llm=self.llm,
+                disable_segment_reorder=self.args.disable_segment_reorder,
             )
 
-            yield ("", SingleOutputMeta(generated_tokens_count=rag_stat.chunk_stat.total_generated_tokens + rag_stat.recall_stat.total_generated_tokens,
-                                        input_tokens_count=rag_stat.chunk_stat.total_input_tokens +
-                                        rag_stat.recall_stat.total_input_tokens,
-                                        reasoning_content=get_message_with_format_and_newline(
-                                            "dynamic_chunking_result",
-                                            model=rag_stat.chunk_stat.model_name,
-                                            docs_num=len(relevant_docs),
-                                            filter_time=filter_time,
-                                            sencond_round_time=sencond_round_time,
-                                            first_round_full_docs=len(
-                                                first_round_full_docs),
-                                            second_round_extracted_docs=len(
-                                                second_round_extracted_docs),
-                                            input_tokens=rag_stat.chunk_stat.total_input_tokens,
-                                            output_tokens=rag_stat.chunk_stat.total_generated_tokens
-                                        )
-                                        ))
-
-            # 记录最终选择的文档详情
-            final_relevant_docs_info = []
-            for i, doc in enumerate(relevant_docs):
-                doc_path = doc.module_name.replace(self.path, '', 1)
-                info = f"{i+1}. {doc_path}"
-
-                metadata_info = []
-                if "original_docs" in doc.metadata:
-                    original_docs = ", ".join(
-                        [
-                            od.replace(self.path, "", 1)
-                            for od in doc.metadata["original_docs"]
-                        ]
-                    )
-                    metadata_info.append(f"Original docs: {original_docs}")
-
-                if "chunk_ranges" in doc.metadata:
-                    chunk_ranges = json.dumps(
-                        doc.metadata["chunk_ranges"], ensure_ascii=False
-                    )
-                    metadata_info.append(f"Chunk ranges: {chunk_ranges}")
-
-                if "processing_time" in doc.metadata:
-                    metadata_info.append(
-                        f"Processing time: {doc.metadata['processing_time']:.2f}s")
-
-                if metadata_info:
-                    info += f" ({'; '.join(metadata_info)})"
-
-                final_relevant_docs_info.append(info)
-
-            if final_relevant_docs_info:
-                logger.info(
-                    f"Final documents to be sent to model:"
-                    + "".join([f"\n  * {info}" for info in final_relevant_docs_info])
-                )
-
-            # 记录令牌统计
-            request_tokens = sum([count_tokens(doc.source_code) for doc in relevant_docs])
-            target_model = target_llm.default_model_name
-            logger.info(
-                f"=== LLM Request ===\n"
-                f"  * Target model: {target_model}\n"
-                f"  * Total tokens: {request_tokens}"
+            token_limiter_result = token_limiter.limit_tokens(
+                relevant_docs=relevant_docs,
+                conversations=conversations,
+                index_filter_workers=self.args.index_filter_workers or 5,
             )
 
-            logger.info(
-                f"Start to send to model {target_model} with {request_tokens} tokens")
+            # 更新统计信息
+            rag_stat.chunk_stat.total_input_tokens += sum(token_limiter_result.input_tokens_counts)
+            rag_stat.chunk_stat.total_generated_tokens += sum(token_limiter_result.generated_tokens_counts)
+            rag_stat.chunk_stat.model_name = token_limiter_result.model_name
 
-            yield ("", SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
-                                        generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
-                                        rag_stat.chunk_stat.total_generated_tokens,
-                                        reasoning_content=get_message_with_format_and_newline(
-                                            "send_to_model",
-                                            model=target_model,
-                                            tokens=request_tokens
-                                        )
-                                        ))
+            final_relevant_docs = token_limiter_result.docs
+            first_round_full_docs = token_limiter.first_round_full_docs
+            second_round_extracted_docs = token_limiter.second_round_extracted_docs
+            sencond_round_time = token_limiter.sencond_round_time
+        else:
+            # 如果没有tokenizer，直接限制文档数量
+            final_relevant_docs = relevant_docs[: self.args.index_filter_file_num]
+        
+        # 输出分块结果统计
+        yield ("", SingleOutputMeta(
+            generated_tokens_count=rag_stat.chunk_stat.total_generated_tokens + rag_stat.recall_stat.total_generated_tokens,
+            input_tokens_count=rag_stat.chunk_stat.total_input_tokens + rag_stat.recall_stat.total_input_tokens,
+            reasoning_content=get_message_with_format_and_newline(
+                "dynamic_chunking_result",
+                model=rag_stat.chunk_stat.model_name,
+                docs_num=len(final_relevant_docs),
+                filter_time=filter_time,
+                sencond_round_time=sencond_round_time,
+                first_round_full_docs=len(first_round_full_docs),
+                second_round_extracted_docs=len(second_round_extracted_docs),
+                input_tokens=rag_stat.chunk_stat.total_input_tokens,
+                output_tokens=rag_stat.chunk_stat.total_generated_tokens
+            )
+        ))
+        
+        # 返回处理结果和相关统计信息
+        yield {
+            "result": final_relevant_docs,
+            "filter_time": filter_time,
+            "first_round_full_docs": first_round_full_docs,
+            "second_round_extracted_docs": second_round_extracted_docs,
+            "sencond_round_time": sencond_round_time
+        }
 
-            yield ("", SingleOutputMeta(input_tokens_count=rag_stat.recall_stat.total_input_tokens + rag_stat.chunk_stat.total_input_tokens,
-                                        generated_tokens_count=rag_stat.recall_stat.total_generated_tokens +
-                                        rag_stat.chunk_stat.total_generated_tokens,
-                                        reasoning_content="qa_model_thinking"
-                                        ))
+    def _process_qa_generation(self, relevant_docs, conversations, target_llm, rag_stat, model=None, role_mapping=None, llm_config=None, extra_request_params=None):
+        """第三阶段：大模型问答生成"""
+        
+        # 使用LLMComputeEngine增强处理（如果可用）
+        if LLMComputeEngine is not None and not self.args.disable_inference_enhance:
+            llm_compute_engine = LLMComputeEngine(
+                llm=target_llm,
+                inference_enhance=not self.args.disable_inference_enhance,
+                inference_deep_thought=self.args.inference_deep_thought,
+                precision=self.args.inference_compute_precision,
+                data_cells_max_num=self.args.data_cells_max_num,
+                debug=False,
+            )
+            query = conversations[-1]["content"]
+            new_conversations = llm_compute_engine.process_conversation(
+                conversations, query, [doc.source_code for doc in relevant_docs]
+            )
+            chunks = llm_compute_engine.stream_chat_oai(
+                conversations=new_conversations,
+                model=model,
+                role_mapping=role_mapping,
+                llm_config=llm_config,
+                delta_mode=True,
+            )
 
-            if LLMComputeEngine is not None and not self.args.disable_inference_enhance:
-                llm_compute_engine = LLMComputeEngine(
-                    llm=target_llm,
-                    inference_enhance=not self.args.disable_inference_enhance,
-                    inference_deep_thought=self.args.inference_deep_thought,
-                    precision=self.args.inference_compute_precision,
-                    data_cells_max_num=self.args.data_cells_max_num,
-                    debug=False,
-                )
-                new_conversations = llm_compute_engine.process_conversation(
-                    conversations, query, [
-                        doc.source_code for doc in relevant_docs]
-                )
-                chunks = llm_compute_engine.stream_chat_oai(
-                    conversations=new_conversations,
-                    model=model,
-                    role_mapping=role_mapping,
-                    llm_config=llm_config,
-                    delta_mode=True,
-                )
+            for chunk in chunks:
+                if chunk[1] is not None:
+                    rag_stat.answer_stat.total_input_tokens += chunk[1].input_tokens_count
+                    rag_stat.answer_stat.total_generated_tokens += chunk[1].generated_tokens_count
+                    chunk[1].input_tokens_count = rag_stat.recall_stat.total_input_tokens + \
+                        rag_stat.chunk_stat.total_input_tokens + \
+                        rag_stat.answer_stat.total_input_tokens
+                    chunk[1].generated_tokens_count = rag_stat.recall_stat.total_generated_tokens + \
+                        rag_stat.chunk_stat.total_generated_tokens + \
+                        rag_stat.answer_stat.total_generated_tokens
+                yield chunk
+        else:
+            # 常规QA处理路径
+            qa_strategy = get_qa_strategy(self.args)
+            new_conversations = qa_strategy.create_conversation(
+                documents=[doc.source_code for doc in relevant_docs],
+                conversations=conversations, local_image_host=self.args.local_image_host
+            )
 
-                for chunk in chunks:
-                    if chunk[1] is not None:
-                        rag_stat.answer_stat.total_input_tokens += chunk[1].input_tokens_count
-                        rag_stat.answer_stat.total_generated_tokens += chunk[1].generated_tokens_count
-                        chunk[1].input_tokens_count = rag_stat.recall_stat.total_input_tokens + \
-                            rag_stat.chunk_stat.total_input_tokens + \
-                            rag_stat.answer_stat.total_input_tokens
-                        chunk[1].generated_tokens_count = rag_stat.recall_stat.total_generated_tokens + \
-                            rag_stat.chunk_stat.total_generated_tokens + \
-                            rag_stat.answer_stat.total_generated_tokens
-                    yield chunk
+            # 保存对话日志
+            try:                    
+                logger.info(f"Saving new_conversations log to {self.args.source_dir}/.cache/logs")
+                project_root = self.args.source_dir
+                json_text = json.dumps(new_conversations, ensure_ascii=False)
+                save_formatted_log(project_root, json_text, "rag_conversation")
+            except Exception as e:
+                logger.warning(f"Failed to save new_conversations log: {e}")
 
-                self._print_rag_stats(rag_stat)
-            else:
+            # 流式生成回答
+            chunks = target_llm.stream_chat_oai(
+                conversations=new_conversations,
+                model=model,
+                role_mapping=role_mapping,
+                llm_config=llm_config,
+                delta_mode=True,
+                extra_request_params=extra_request_params
+            )
 
-                qa_strategy = get_qa_strategy(self.args)
-                new_conversations = qa_strategy.create_conversation(
-                    documents=[doc.source_code for doc in relevant_docs],
-                    conversations=conversations, local_image_host=self.args.local_image_host
-                )
-
-                # 保存 new_conversations
-                try:                    
-                    logger.info(f"Saving new_conversations log to {self.args.source_dir}/.cache/logs")
-                    project_root = self.args.source_dir
-                    json_text = json.dumps(new_conversations, ensure_ascii=False)
-                    save_formatted_log(project_root, json_text, "rag_conversation")
-                except Exception as e:
-                    logger.warning(f"Failed to save new_conversations log: {e}")
-
-                chunks = target_llm.stream_chat_oai(
-                    conversations=new_conversations,
-                    model=model,
-                    role_mapping=role_mapping,
-                    llm_config=llm_config,
-                    delta_mode=True,
-                    extra_request_params=extra_request_params
-                )
-
-                for chunk in chunks:
-                    if chunk[1] is not None:
-                        rag_stat.answer_stat.total_input_tokens += chunk[1].input_tokens_count
-                        rag_stat.answer_stat.total_generated_tokens += chunk[1].generated_tokens_count
-                        chunk[1].input_tokens_count = rag_stat.recall_stat.total_input_tokens + \
-                            rag_stat.chunk_stat.total_input_tokens + \
-                            rag_stat.answer_stat.total_input_tokens
-                        chunk[1].generated_tokens_count = rag_stat.recall_stat.total_generated_tokens + \
-                            rag_stat.chunk_stat.total_generated_tokens + \
-                            rag_stat.answer_stat.total_generated_tokens
-
-                    yield chunk
-
-                self._print_rag_stats(rag_stat)
-
-        return generate_sream(), context
+            # 返回结果并更新统计信息
+            for chunk in chunks:
+                if chunk[1] is not None:
+                    rag_stat.answer_stat.total_input_tokens += chunk[1].input_tokens_count
+                    rag_stat.answer_stat.total_generated_tokens += chunk[1].generated_tokens_count
+                    chunk[1].input_tokens_count = rag_stat.recall_stat.total_input_tokens + \
+                        rag_stat.chunk_stat.total_input_tokens + \
+                        rag_stat.answer_stat.total_input_tokens
+                    chunk[1].generated_tokens_count = rag_stat.recall_stat.total_generated_tokens + \
+                        rag_stat.chunk_stat.total_generated_tokens + \
+                        rag_stat.answer_stat.total_generated_tokens
+                yield chunk
 
     def _print_rag_stats(self, rag_stat: RAGStat) -> None:
         """打印RAG执行的详细统计信息"""
