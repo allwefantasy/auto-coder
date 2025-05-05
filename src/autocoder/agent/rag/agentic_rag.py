@@ -41,25 +41,27 @@ from autocoder.compilers.shadow_compiler import ShadowCompiler
 from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 from autocoder.common.auto_coder_lang import get_message
 # Import the new display function
-from autocoder.common.v2.agent.agentic_tool_display import get_tool_display_message
-from autocoder.common.v2.agent.agentic_edit_types import FileChangeEntry
-from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific resolvers
+from autocoder.agent.rag.agentic_tool_display import get_tool_display_message
+from autocoder.agent.rag.agentic_types import FileChangeEntry
+from autocoder.agent.rag.agentic_tools import (  # Import specific resolvers
     BaseToolResolver,
     ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
     ReplaceInFileToolResolver, SearchFilesToolResolver, ListFilesToolResolver,
-    ListCodeDefinitionNamesToolResolver, AskFollowupQuestionToolResolver,
+    AskFollowupQuestionToolResolver,
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver,
-    ListPackageInfoToolResolver
+    ListPackageInfoToolResolver,
+    RagContextToolResolver
 )
 from autocoder.common.rulefiles.autocoderrules_utils import get_rules
-from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
+from autocoder.agent.rag.agentic_types import (AgenticEditRequest, ToolResult,
                                                           MemoryConfig, CommandConfig, BaseTool,
                                                           ExecuteCommandTool, ReadFileTool,
                                                           WriteToFileTool,
                                                           ReplaceInFileTool,
                                                           SearchFilesTool,
                                                           ListFilesTool,
-                                                          ListCodeDefinitionNamesTool, AskFollowupQuestionTool,
+                                                          RagContextTool,
+                                                          AskFollowupQuestionTool,
                                                           AttemptCompletionTool, PlanModeRespondTool, UseMcpTool,
                                                           ListPackageInfoTool,
                                                           TOOL_MODEL_MAP,
@@ -68,7 +70,7 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           ToolResultEvent, CompletionEvent, PlanModeRespondEvent, ErrorEvent, TokenUsageEvent,
                                                           # Import specific tool types for display mapping
                                                           ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
-                                                          ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
+                                                          ListFilesTool, SearchFilesTool, 
                                                           AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
                                                           )
 

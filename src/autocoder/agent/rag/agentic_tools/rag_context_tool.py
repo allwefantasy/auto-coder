@@ -4,6 +4,7 @@ import json
 from typing import Dict, Any, Optional, List, Generator, Union, Tuple
 from pydantic import BaseModel
 
+from autocoder.agent.rag.agentic_types import RagContextTool
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import BaseTool, ToolResult
@@ -17,16 +18,6 @@ import typing
 
 if typing.TYPE_CHECKING:
     from autocoder.agent.rag.agentic_rag import AgenticRAG
-
-
-# 定义工具类
-class RagContextTool(BaseTool):
-    """用于从项目中检索与查询相关的上下文的工具"""
-    query: str
-    path: str  # 项目路径
-    max_docs: Optional[int] = 10  # 最大文档数量
-    relevance_threshold: Optional[float] = 0.7  # 相关性阈值
-
 
 class RagContextToolResolver(BaseToolResolver):
     def __init__(self, agent: Optional['AgenticRAG'], tool: RagContextTool, args: AutoCoderArgs):
