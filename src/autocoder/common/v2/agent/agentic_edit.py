@@ -816,6 +816,8 @@ class AgenticEdit:
 
             assistant_buffer = ""
             logger.info("Initializing stream chat with LLM")
+
+            ## 实际请求大模型
             llm_response_gen = stream_chat_with_continue(
                 llm=self.llm,
                 conversations=conversations,
