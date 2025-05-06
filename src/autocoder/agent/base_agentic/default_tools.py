@@ -12,7 +12,8 @@ from .types import BaseTool, ToolDescription, ToolExample
 from .types import (
     ExecuteCommandTool, ReadFileTool, WriteToFileTool, ReplaceInFileTool,
     SearchFilesTool, ListFilesTool, AskFollowupQuestionTool, 
-    AttemptCompletionTool, PlanModeRespondTool, UseMcpTool
+    AttemptCompletionTool, PlanModeRespondTool, UseMcpTool,
+    TalkToTool, TalkToGroupTool
 )
 
 # Import all resolvers
@@ -26,6 +27,8 @@ from .tools.ask_followup_question_tool_resolver import AskFollowupQuestionToolRe
 from .tools.attempt_completion_tool_resolver import AttemptCompletionToolResolver
 from .tools.plan_mode_respond_tool_resolver import PlanModeRespondToolResolver
 from .tools.use_mcp_tool_resolver import UseMcpToolResolver
+from .tools.talk_to_tool_resolver import TalkToToolResolver
+from .tools.talk_to_group_tool_resolver import TalkToGroupToolResolver
 
 
 # Tool description generators with byzerllm.prompt() decorators
@@ -329,6 +332,54 @@ class ToolDescriptionGenerators:
         Use this when you need to execute a tool that is not natively supported by the agentic edit tools.
         """
         return {}
+    
+    @byzerllm.prompt()
+    def talk_to_description(self) -> Dict:
+        """
+        Send a message to another agent
+        """
+        return {}
+    
+    @byzerllm.prompt()
+    def talk_to_parameters(self) -> Dict:
+        """
+        agent_name: The name of the agent to talk to
+        content: The message content
+        mentions: An array of agent names to mention in the message
+        print_conversation: Whether to print the conversation to the console
+        """
+        return {}
+    
+    @byzerllm.prompt()
+    def talk_to_usage(self) -> Dict:
+        """
+        Used to send a direct message to another agent, which may trigger a response based on the other agent's configuration
+        """
+        return {}
+    
+    @byzerllm.prompt()
+    def talk_to_group_description(self) -> Dict:
+        """
+        Send a message to a group of agents
+        """
+        return {}
+    
+    @byzerllm.prompt()
+    def talk_to_group_parameters(self) -> Dict:
+        """
+        group_name: The name of the group to talk to
+        content: The message content
+        mentions: An array of agent names to mention in the message
+        print_conversation: Whether to print the conversation to the console
+        """
+        return {}
+    
+    @byzerllm.prompt()
+    def talk_to_group_usage(self) -> Dict:
+        """
+        Used to broadcast a message to a group of agents, which may trigger responses from multiple agents based on their configuration
+        """
+        return {}
 
 # Initialize tool description generators
 tool_desc_gen = ToolDescriptionGenerators()
@@ -384,6 +435,16 @@ DEFAULT_TOOL_DESCRIPTIONS = {
         description=tool_desc_gen.use_mcp_tool_description.prompt(),
         parameters=tool_desc_gen.use_mcp_tool_parameters.prompt(),
         usage=tool_desc_gen.use_mcp_tool_usage.prompt()
+    ),
+    "talk_to": ToolDescription(
+        description=tool_desc_gen.talk_to_description.prompt(),
+        parameters=tool_desc_gen.talk_to_parameters.prompt(),
+        usage=tool_desc_gen.talk_to_usage.prompt()
+    ),
+    "talk_to_group": ToolDescription(
+        description=tool_desc_gen.talk_to_group_description.prompt(),
+        parameters=tool_desc_gen.talk_to_group_parameters.prompt(),
+        usage=tool_desc_gen.talk_to_group_usage.prompt()
     ),
 }
 
@@ -530,6 +591,30 @@ class ToolExampleGenerators:
         </use_mcp_tool>
         """
         return {}
+    
+    @byzerllm.prompt()
+    def talk_to_example(self) -> Dict:
+        """
+        <talk_to>
+        <agent_name>assistant2</agent_name>
+        <content>Hello assistant2, can you help me with this task?</content>
+        <mentions>["assistant3"]</mentions>
+        <print_conversation>true</print_conversation>
+        </talk_to>
+        """
+        return {}
+    
+    @byzerllm.prompt()
+    def talk_to_group_example(self) -> Dict:
+        """
+        <talk_to_group>
+        <group_name>research_team</group_name>
+        <content>Hello team, I need your input on the research plan.</content>
+        <mentions>["assistant2", "assistant3"]</mentions>
+        <print_conversation>true</print_conversation>
+        </talk_to_group>
+        """
+        return {}
 
 # Initialize tool example generators
 tool_examples_gen = ToolExampleGenerators()
@@ -575,6 +660,14 @@ DEFAULT_TOOL_EXAMPLES = {
     "use_mcp_tool": ToolExample(
         title="Example of using an MCP tool",
         body=tool_examples_gen.use_mcp_tool_example.prompt()
+    ),
+    "talk_to": ToolExample(
+        title="Example of talking to another agent",
+        body=tool_examples_gen.talk_to_example.prompt()
+    ),
+    "talk_to_group": ToolExample(
+        title="Example of talking to a group of agents",
+        body=tool_examples_gen.talk_to_group_example.prompt()
     ),
 }
 
@@ -759,6 +852,40 @@ DEFAULT_TOOLS = {
         ),
         "use_guideline": "",
         "category": "external",
+        "is_default": True,
+        "case_docs": []
+    },
+    "talk_to": {
+        "tool_cls": TalkToTool,
+        "resolver_cls": TalkToToolResolver,
+        "description": ToolDescription(
+            description=tool_desc_gen.talk_to_description.prompt(),
+            parameters=tool_desc_gen.talk_to_parameters.prompt(),
+            usage=tool_desc_gen.talk_to_usage.prompt()
+        ),
+        "example": ToolExample(
+            title="Example of talking to another agent",
+            body=tool_examples_gen.talk_to_example.prompt()
+        ),
+        "use_guideline": "",
+        "category": "interaction",
+        "is_default": True,
+        "case_docs": []
+    },
+    "talk_to_group": {
+        "tool_cls": TalkToGroupTool,
+        "resolver_cls": TalkToGroupToolResolver,
+        "description": ToolDescription(
+            description=tool_desc_gen.talk_to_group_description.prompt(),
+            parameters=tool_desc_gen.talk_to_group_parameters.prompt(),
+            usage=tool_desc_gen.talk_to_group_usage.prompt()
+        ),
+        "example": ToolExample(
+            title="Example of talking to a group of agents",
+            body=tool_examples_gen.talk_to_group_example.prompt()
+        ),
+        "use_guideline": "",
+        "category": "interaction",
         "is_default": True,
         "case_docs": []
     }

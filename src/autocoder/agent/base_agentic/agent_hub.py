@@ -1,4 +1,3 @@
-
 import typing
 import byzerllm
 from typing import List, Dict, Optional, Literal, Any, Union
@@ -40,6 +39,11 @@ class AgentHub:
     def list_agents(cls) -> List[str]:
         """获取所有Agent名称"""
         return list(cls.agents.keys())
+
+    @classmethod
+    def get_all_groups(cls) -> List['Group']:
+        """获取所有群组实例"""
+        return list(GroupHub.groups.values())
 
 class GroupHub:
     """管理所有Group实例的全局中心"""

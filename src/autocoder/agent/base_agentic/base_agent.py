@@ -240,10 +240,18 @@ class BaseAgent(ABC):
             print(f"[Private] {message.sender}: {message.content}")
 
 
-    def generate_reply(self, message: Message) -> ReplyDecision:
-        conversation = self.agentic_conversations
-        return self._generate_reply.with_llm(self.llm).with_conversation(conversation).with_return_type(ReplyDecision).run(message)
-            
+    def generate_reply(self, message: Message) -> ReplyDecision:        
+        user_input = self._generate_reply.prompt(message)
+        events = self.agentic_run(AgentRequest(user_input=user_input))
+        for event in events:
+            if isinstance(event, CompletionEvent):
+                from byzerllm.utils.str2model import to_model
+                return to_model(ReplyDecision, event.result)
+            elif isinstance(event, ErrorEvent):
+                logger.error(f"Error generating reply: {event.error}")
+                return ReplyDecision(strategy="ignore", content="", reason="Error generating reply")
+        return None
+    
     @byzerllm.prompt()
     def _generate_reply(self, message: Message) -> str:
         """
@@ -292,8 +300,8 @@ class BaseAgent(ABC):
         {% endfor %}
         </private_message_history>
         {% endif %}
-        
-        请生成 JSON 格式回复：
+
+        请根据上面内容进行解答，在最后请务必使用 attempt_completion 工具，确保里面的 result 字段包含如下 Json 格式内容：
 
         ```json
         {
@@ -311,8 +319,7 @@ class BaseAgent(ABC):
         <when_to_refuse_reply>
         {{ refuse_reply_reason }}
         </when_to_refuse_reply>
-        {% endif %}
-        请严格按照 JSON 格式输出，不要有任何多余的内容。
+        {% endif %}        
         """
         context = {
             "name": self.name,
@@ -480,6 +487,16 @@ class BaseAgent(ABC):
         {%if mcp_server_info %}
         ### MCP_SERVER_LIST
         {{mcp_server_info}}
+        {%endif%}
+
+        {%if agent_info %}
+        ### AVAILABLE_AGENTS
+        {{agent_info}}
+        {%endif%}
+
+        {%if group_info %}
+        ### AVAILABLE_GROUPS
+        {{group_info}}
         {%endif%}
 
         # Tool Use Examples        
@@ -660,6 +677,7 @@ class BaseAgent(ABC):
         """
         import os
         from .tool_registry import ToolRegistry
+        from .agent_hub import AgentHub
         
         # 获取工具描述和示例
         tool_descriptions = ToolRegistry.get_all_tool_descriptions()
@@ -677,6 +695,29 @@ class BaseAgent(ABC):
             shell_type = "powershell"
 
         file_paths_str = "\n".join([file_source.module_name for file_source in self.files.sources])
+        
+        # 获取代理信息
+        agent_info = ""
+        agent_names = AgentHub.list_agents()
+        if agent_names:
+            agent_info = "Available Agents:\n"
+            for name in agent_names:
+                agent = AgentHub.get_agent(name)
+                if agent:
+                    role = getattr(agent, "custom_system_prompt", "No description")
+                    agent_info += f"- {name}: {role[:100]}{'...' if len(role) > 100 else ''}\n"
+        
+        # 获取群组信息
+        group_info = ""
+        groups = AgentHub.get_all_groups()
+        if groups:
+            group_info = "Available Groups:\n"
+            for group in groups:
+                members = []
+                with group._members_lock:
+                    members = [member.name for member in group.members]
+                group_info += f"- {group.name}: {len(members)} members ({', '.join(members)})\n"
+        
         return {
             "conversation_history": self.conversation_history,
             "env_info": env_info,
@@ -689,6 +730,8 @@ class BaseAgent(ABC):
             "home_dir": os.path.expanduser("~"),
             "files": self.files.to_str(),
             "mcp_server_info": self.mcp_server_info,
+            "agent_info": agent_info,
+            "group_info": group_info,
             "enable_active_context_in_generate": self.args.enable_active_context_in_generate,
             "extra_docs": extra_docs,
             "file_paths_str": file_paths_str,            

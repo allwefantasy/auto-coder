@@ -61,6 +61,18 @@ class UseMcpTool(BaseTool):
     tool_name: str
     query:str  
 
+class TalkToTool(BaseTool):
+    agent_name: str
+    content: str
+    mentions: List[str] = []
+    print_conversation: bool = False
+
+class TalkToGroupTool(BaseTool):
+    group_name: str
+    content: str
+    mentions: List[str] = []
+    print_conversation: bool = False
+
 
 # 工具指南相关类型
 class ToolDescription(BaseModel):
