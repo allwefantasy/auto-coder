@@ -232,7 +232,8 @@ class BaseAgent(ABC):
 
 
     def generate_reply(self, message: Message) -> ReplyDecision:
-        return self._generate_reply.with_llm(self.llm).with_return_type(ReplyDecision).run(message)
+        conversation = self.agentic_conversations
+        return self._generate_reply.with_llm(self.llm).with_conversation(conversation).with_return_type(ReplyDecision).run(message)
             
     @byzerllm.prompt()
     def _generate_reply(self, message: Message) -> str:
@@ -294,7 +295,7 @@ class BaseAgent(ABC):
             "reason": "选择策略的原因"
         }
         ```
-        ignore 表示用户发送的消息可以不会进行回复,private 我们要回复用户，并且只回复给发送信息的用户，broadcast 表示要回复消息，并且回复给群组所有成员。
+        ignore 表示用户发送的消息可以不进行回复,private 我们要回复用户，并且只回复给发送信息的用户，broadcast 表示要回复消息，并且回复给群组所有成员。
         *** 注意，阅读上面的所有内容，尤其关注 {% if message.is_group %}群组上下文{% else %}私聊上下文{% endif %}，判断是否使用 ignore 策略结束对话，避免无意义对话。一般在群组对话中，你没有被 @ 就无需回答，直接使用ignore策略结束对话。 ***
         {% if refuse_reply_reason %}
         当满足以下描述时，你应当拒绝回复：
