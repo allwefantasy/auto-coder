@@ -93,10 +93,6 @@ TOOL_DISPLAY_MESSAGES: Dict[Type[BaseTool], Dict[str, str]] = {
             "[dim]工具：[/dim] [blue]{{ tool_name }}[/]\n"
             "[dim]参数：[/dim] {{ arguments_snippet }}{{ ellipsis }}"
         )
-    },
-    RagContextTool: {
-        "en": "RAG Context Retrieval: Searching for documents related to '{query}' in {path}\nMax documents: {max_docs}, Relevance threshold: {relevance_threshold}",
-        "zh": "RAG上下文检索: 在 {path} 中检索与 '{query}' 相关的文档\n最大文档数: {max_docs}, 相关性阈值: {relevance_threshold}"
     }
 }
 
