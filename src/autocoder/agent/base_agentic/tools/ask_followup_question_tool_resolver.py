@@ -15,10 +15,10 @@ from rich.text import Text
 from autocoder.common.result_manager import ResultManager
 
 if typing.TYPE_CHECKING:
-    from autocoder.agent.rag.agentic_rag import AgenticRAG
+    from ..base_agent import BaseAgent
 
 class AskFollowupQuestionToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional['AgenticRAG'], tool: AskFollowupQuestionTool, args: AutoCoderArgs):
+    def __init__(self, agent: Optional['BaseAgent'], tool: AskFollowupQuestionTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: AskFollowupQuestionTool = tool # For type hinting
         self.result_manager = ResultManager()

@@ -11,11 +11,11 @@ import typing
 from autocoder.common.ignorefiles.ignore_file_utils import should_ignore
 
 if typing.TYPE_CHECKING:
-    from autocoder.agent.rag.agentic_rag import AgenticRAG
+    from ..base_agent import BaseAgent
 
 
 class SearchFilesToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional['AgenticRAG'], tool: SearchFilesTool, args: AutoCoderArgs):
+    def __init__(self, agent: Optional['BaseAgent'], tool: SearchFilesTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: SearchFilesTool = tool
         self.shadow_manager = self.agent.shadow_manager if self.agent else None

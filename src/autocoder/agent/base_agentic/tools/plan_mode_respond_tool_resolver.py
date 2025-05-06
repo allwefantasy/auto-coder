@@ -6,10 +6,10 @@ from autocoder.common.v2.agent.agentic_edit_types import PlanModeRespondTool, To
 from loguru import logger
 
 if typing.TYPE_CHECKING:
-    from autocoder.agent.rag.agentic_rag import AgenticRAG
+    from ..base_agent import BaseAgent
 
 class PlanModeRespondToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional['AgenticRAG'], tool: PlanModeRespondTool, args: AutoCoderArgs):
+    def __init__(self, agent: Optional['BaseAgent'], tool: PlanModeRespondTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: PlanModeRespondTool = tool # For type hinting
 

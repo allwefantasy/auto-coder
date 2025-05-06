@@ -8,10 +8,10 @@ from autocoder.common.v2.agent.agentic_edit_types import ReplaceInFileTool, Tool
 from loguru import logger
 from autocoder.common.auto_coder_lang import get_message_with_format
 if typing.TYPE_CHECKING:
-    from autocoder.common.v2.agent.agentic_edit import AgenticEdit
+    from ..base_agent import BaseAgent
 
 class ReplaceInFileToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional['AgenticEdit'], tool: ReplaceInFileTool, args: AutoCoderArgs):
+    def __init__(self, agent: Optional['BaseAgent'], tool: ReplaceInFileTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: ReplaceInFileTool = tool  # For type hinting
         self.shadow_manager = self.agent.shadow_manager if self.agent else None

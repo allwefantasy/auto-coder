@@ -1,130 +1,103 @@
 import json
 import os
+import threading
 import time
-from pydantic import BaseModel, Field
-import byzerllm
-from typing import List, Dict, Any, Union, Callable, Optional, Tuple
-from autocoder.common.printer import Printer
+import re
+import xml.sax.saxutils
+from abc import ABC, abstractmethod
+from typing import List, Dict, Any, Union, Optional, Tuple, Type, Generator, Iterator
 from rich.console import Console
 from rich.panel import Panel
-from pydantic import SkipValidation
-from byzerllm.utils.types import SingleOutputMeta
+from loguru import logger
+import byzerllm
+from pydantic import BaseModel
 
 from autocoder.common import AutoCoderArgs, git_utils, SourceCodeList, SourceCode
 from autocoder.common.global_cancel import global_cancel
+from autocoder.rag.variable_holder import VariableHolder
+from autocoder.utils import llms as llms_utils
+from autocoder.common.global_cancel import global_cancel
 from autocoder.common import detect_env
 from autocoder.common import shells
-from loguru import logger
-from autocoder.utils import llms as llms_utils
-from autocoder.common.auto_configure import config_readme
+from autocoder.common.printer import Printer
 from autocoder.utils.auto_project_type import ProjectTypeAnalyzer
-from rich.text import Text
 from autocoder.common.mcp_server import get_mcp_server, McpServerInfoRequest
-from autocoder.common import SourceCodeList
-from autocoder.common.utils_code_auto_generate import stream_chat_with_continue  # Added import
-import re
-import xml.sax.saxutils
-import time  # Added for sleep
-from typing import Iterator, Union, Type, Generator
-from xml.etree import ElementTree as ET
-from rich.console import Console  # Added
-from rich.panel import Panel  # Added
-from rich.syntax import Syntax  # Added
-from rich.markdown import Markdown  # Added
-from autocoder.events.event_manager_singleton import get_event_manager
-from autocoder.events.event_types import Event, EventType, EventMetadata
-from autocoder.memory.active_context_manager import ActiveContextManager
-from autocoder.events import event_content as EventContentCreator
-from autocoder.shadows.shadow_manager import ShadowManager
+from autocoder.common.file_monitor.monitor import FileMonitor
+from autocoder.common.rulefiles.autocoderrules_utils import get_rules
+from autocoder.auto_coder_runner import load_tokenizer
 from autocoder.linters.shadow_linter import ShadowLinter
 from autocoder.compilers.shadow_compiler import ShadowCompiler
-from autocoder.common.action_yml_file_manager import ActionYmlFileManager
-from autocoder.common.auto_coder_lang import get_message
-# Import the new display function
-from autocoder.agent.rag.agentic_tool_display import get_tool_display_message
-from autocoder.agent.rag.agentic_types import FileChangeEntry
-from autocoder.agent.rag.agentic_tools import (  # Import specific resolvers
-    BaseToolResolver,
-    ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
-    ReplaceInFileToolResolver, SearchFilesToolResolver, ListFilesToolResolver,
-    AskFollowupQuestionToolResolver,
-    AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver,
-    ListPackageInfoToolResolver,
-    RagContextToolResolver
+from autocoder.shadows.shadow_manager import ShadowManager
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events.event_types import Event, EventType, EventMetadata
+from autocoder.events import event_content as EventContentCreator
+
+from .types import (
+    BaseTool, ToolResult, AgentRequest, FileChangeEntry,
+    LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ToolResultEvent, 
+    CompletionEvent, ErrorEvent, TokenUsageEvent, AttemptCompletionTool,    
+    PlanModeRespondTool,Message,ReplyDecision
 )
-from autocoder.common.rulefiles.autocoderrules_utils import get_rules
-from autocoder.agent.rag.agentic_types import (AgenticEditRequest, ToolResult,
-                                                          MemoryConfig, CommandConfig, BaseTool,
-                                                          ExecuteCommandTool, ReadFileTool,
-                                                          WriteToFileTool,
-                                                          ReplaceInFileTool,
-                                                          SearchFilesTool,
-                                                          ListFilesTool,
-                                                          RagContextTool,
-                                                          AskFollowupQuestionTool,
-                                                          AttemptCompletionTool, PlanModeRespondTool, UseMcpTool,
-                                                          ListPackageInfoTool,
-                                                          TOOL_MODEL_MAP,
-                                                          # Event Types
-                                                          LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
-                                                          ToolResultEvent, CompletionEvent, PlanModeRespondEvent, ErrorEvent, TokenUsageEvent,
-                                                          # Import specific tool types for display mapping
-                                                          ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
-                                                          ListFilesTool, SearchFilesTool, 
-                                                          AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
-                                                          )
+from .tool_registry import ToolRegistry
+from .tools.base_tool_resolver import BaseToolResolver
+from .agent_hub import AgentHub, Group, GroupMembership
+from .utils import GroupUtils,GroupMemberResponse
 
-
-# Map Pydantic Tool Models to their Resolver Classes
-TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
-    ExecuteCommandTool: ExecuteCommandToolResolver,
-    ReadFileTool: ReadFileToolResolver,
-    WriteToFileTool: WriteToFileToolResolver,
-    ReplaceInFileTool: ReplaceInFileToolResolver,
-    SearchFilesTool: SearchFilesToolResolver,
-    ListFilesTool: ListFilesToolResolver,    
-    ListPackageInfoTool: ListPackageInfoToolResolver,
-    AskFollowupQuestionTool: AskFollowupQuestionToolResolver,
-    AttemptCompletionTool: AttemptCompletionToolResolver,  # Will stop the loop anyway
-    PlanModeRespondTool: PlanModeRespondToolResolver,
-    UseMcpTool: UseMcpToolResolver,
-    RagContextTool: RagContextToolResolver,
-}
-
-
-# --- Tool Display Customization is now handled by agentic_tool_display.py ---
-
-
-class AgenticRAG:
+class BaseAgent(ABC):
+    """
+    基础代理类，所有的代理实现都应继承此类
+    遵循初始化顺序规则，避免FileMonitor、token计数器等组件冲突
+    """
+    
     def __init__(
         self,
+        name:str,
         llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],
-        conversation_history: List[Dict[str, Any]],
         files: SourceCodeList,
         args: AutoCoderArgs,
-        memory_config: MemoryConfig,
-        command_config: Optional[CommandConfig] = None,
-        conversation_name: str = "current"
+        conversation_history: Optional[List[Dict[str, Any]]] = None,
     ):
+        """
+        初始化代理
+
+        Args:
+            llm: 语言模型客户端
+            files: 源码文件列表
+            args: 配置参数
+            conversation_history: 对话历史记录
+        """
+        # 1. 初始化FileMonitor（必须最先进行）
+        try:
+            monitor = FileMonitor(args.source_dir)
+            if not monitor.is_running():
+                monitor.start()
+                logger.info(f"文件监控已启动: {args.source_dir}")
+            else:
+                logger.info(f"文件监控已在运行中: {monitor.root_dir}")
+            
+            # 2. 加载规则文件
+            _ = get_rules(args.source_dir)
+        except Exception as e:
+            logger.error(f"初始化文件监控出错: {e}")
+
+        # 3. 加载tokenizer (必须在前两步之后)
+        if VariableHolder.TOKENIZER_PATH is None:
+            load_tokenizer()
+        
+        # 4. 初始化基本组件
         self.llm = llm
         self.args = args
-        self.printer = Printer()
-        # Removed self.tools and self.result_manager
         self.files = files
-        # Removed self.max_iterations
-        # Note: This might need updating based on the new flow
-        self.conversation_history = conversation_history
-        self.memory_config = memory_config
-        self.command_config = command_config  # Note: command_config might be unused now
-        self.project_type_analyzer = ProjectTypeAnalyzer(
-            args=args, llm=self.llm)        
-
-        self.shadow_manager = ShadowManager(
-            args.source_dir, args.event_file, args.ignore_clean_shadows)
+        self.printer = Printer()
+        self.conversation_history = conversation_history or []
+        
+        # 5. 初始化其他组件
+        self.project_type_analyzer = ProjectTypeAnalyzer(args=args, llm=self.llm)        
+        self.shadow_manager = ShadowManager(args.source_dir, args.event_file, args.ignore_clean_shadows)
         self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
-        self.shadow_compiler = ShadowCompiler(
-            self.shadow_manager, verbose=False)
-
+        self.shadow_compiler = ShadowCompiler(self.shadow_manager, verbose=False)
+        
+        # MCP 服务信息
         self.mcp_server_info = ""
         try:
             self.mcp_server = get_mcp_server()
@@ -137,12 +110,215 @@ class AgenticRAG:
             self.mcp_server_info = mcp_server_info_response.result
         except Exception as e:
             logger.error(f"Error getting MCP server info: {str(e)}")
-
+            
         # 变更跟踪信息
         # 格式: { file_path: FileChangeEntry(...) }
         self.file_changes: Dict[str, FileChangeEntry] = {}
 
-    def record_file_change(self, file_path: str, change_type: str, diff: Optional[str] = None, content: Optional[str] = None):
+        self.name = name        
+
+        # 初始化群聊/私聊功能
+        self.joined_groups: Dict[str, Group] = {}
+        self.private_chats: Dict[str, List[Message]] = {}        
+        self.agentic_conversations: List[Dict[str,Any]] = []
+        self.custom_system_prompt = "You are a highly skilled software engineer with extensive knowledge in many programming languages, frameworks, design patterns, and best practices."
+        self.refuse_reply_reason = ""
+        self._group_lock = threading.RLock()  # 保护 joined_groups
+        self._chat_lock = threading.RLock()   # 保护 private_chats
+        # 自动注册到AgentHub
+        AgentHub.register_agent(self)
+
+    def who_am_i(self, role: str) -> 'BaseAgent':
+        self.custom_system_prompt = role
+        return self
+
+    def when_to_refuse_reply(self, reason: str) -> 'BaseAgent':
+        self.refuse_reply_reason = reason
+        return self
+    
+    def introduce_myself(self) -> str:        
+        return self.custom_system_prompt
+
+        
+    def join_group(self, group: Group) -> 'GroupMembership':
+        if group.name not in self.joined_groups:
+            self.joined_groups[group.name] = group            
+            group.add_member(self)            
+        return GroupMembership(self, group)    
+    
+    def talk_to_group(self, group: Group, content: str, mentions: List['BaseAgent'] = [], print_conversation: bool = False):
+        message = Message(
+            sender=self.name,
+            content=content,
+            is_group=True,
+            group_name=group.name,
+            mentions=[m.name for m in mentions]
+        )
+        group.broadcast(message, print_conversation)
+        return self
+
+    def choose_group(self,content:str)->List[GroupMemberResponse]:
+        group_utils = GroupUtils(self.llm)
+        v = group_utils.auto_select_group(content,self.joined_groups.values())
+        return v
+            
+    def talk_to(self, other: Union['BaseAgent', Group], content: str, mentions: List['BaseAgent'] = [], print_conversation: bool = False):
+        if isinstance(other, Group):
+            return self.talk_to_group(other, content, mentions, print_conversation)
+        
+        message = Message(
+            sender=self.name,
+            content=content,
+            is_group=False,
+            mentions=[m.name for m in mentions]
+        )
+        if print_conversation:
+            print(f"[Private Chat] {self.name} -> {other.name}: {content}")
+            
+        # 存储双向对话记录
+        self._add_private_message(other.name, message)
+        other._add_private_message(self.name, message)                
+        
+        response = other.generate_reply(message)                                
+        
+        if print_conversation:
+            print(f">>> {other.name} reply to {self.name} with strategy: {response.strategy}, reason: {response.reason}")
+
+        if response.strategy == "ignore":            
+            return
+        elif response.strategy == "private":            
+            mentions = [AgentHub.get_agent(m) for m in response.mentions]             
+            other.talk_to(other=self, content=response.content, mentions=mentions, print_conversation=print_conversation)
+        elif response.strategy == "broadcast":
+            warning_msg = f"invalid strategy broadcast action in private chat:[{self.name}] 广播消息给群组 {other.name}: {response.content}"
+            logger.warning(warning_msg)
+            if print_conversation:
+                print(f"[Private Chat Warning] {warning_msg}")
+        return self
+            
+    
+    def _add_private_message(self, other_name: str, message: Message):
+        with self._chat_lock:
+            if other_name not in self.private_chats:
+                self.private_chats[other_name] = []
+            self.private_chats[other_name].append(message)
+    
+    def threadsafe_receive(self, message: Message,print_conversation: bool = False):                
+        self.receive_message(message,print_conversation=print_conversation)
+        
+    def receive_message(self, message: Message,print_conversation: bool = False):
+        if message.is_group:
+            prefix = f"[Group {message.group_name}]"
+            if message.mentions and self.name in message.mentions:
+                prefix += " @You"
+            print(f"{prefix} {message.sender}: {message.content}")                        
+            reply_decision = self.generate_reply(message)            
+            print(f">>> {self.name} reply to {message.sender} with strategy: {reply_decision.strategy}, reason: {reply_decision.reason}")
+            if reply_decision.strategy == "ignore":                
+                return
+            elif reply_decision.strategy == "private":                
+                self.talk_to(other=AgentHub.get_agent(message.sender), content=reply_decision.content,print_conversation=print_conversation)
+            elif reply_decision.strategy == "broadcast":
+                self.joined_groups[message.group_name].broadcast(Message(
+                    sender=self.name,
+                    content=reply_decision.content,
+                    is_group=True,
+                    group_name=message.group_name,
+                    mentions=reply_decision.mentions,
+                    priority=reply_decision.priority
+                ))
+        else:
+            print(f"[Private] {message.sender}: {message.content}")
+
+
+    def generate_reply(self, message: Message) -> ReplyDecision:
+        return self._generate_reply.with_llm(self.llm).with_return_type(ReplyDecision).run(message)
+            
+    @byzerllm.prompt()
+    def _generate_reply(self, message: Message) -> str:
+        """
+        你的名字是 {{ name }}
+        {% if message.is_group %}
+        当前群组是 {{ message.group_name }}
+        {% endif %}
+        当前时间: {{ time }}
+        {% if role %}
+        你对自己的描述是: 
+        <who_are_you>
+        {{ role }}
+        </who_are_you>
+        {% endif %}
+
+        
+        {{ message.sender }} 发送了一条{% if message.is_group %}群组消息{% else %}私聊消息{% endif %}：
+        <message>
+        {{ message.content }}
+        </message>
+        
+        {% if message.mentions and message.mentions|length > 0 %}
+        这条消息的发送者特别 @ 了用户：（{{ message.mentions|join(',') }}）。        
+        {% endif %}
+                
+        {% if message.is_group %}
+        群组对话上下文：
+        <group_message_history>
+        {% for msg in group_message_history %}
+        {% if msg.sender == name %}
+        <role>你/You</role>: <msg>{{ msg.content }}</msg>
+        {% else %}
+        <role>{{ msg.sender }}</role>: <msg>{{ msg.content }}</msg>
+        {% endif %}
+        {% endfor %}
+        </group_message_history>
+        {% else %}
+        私聊对话上下文：
+        <private_message_history>
+        {% for msg in private_message_history %}
+        {% if msg.sender == name %}
+        <role>你/You</role>: <msg>{{ msg.content }}</msg>
+        {% else %}
+        <role>{{ msg.sender }}</role>: <msg>{{ msg.content }}</msg>
+        {% endif %}
+        {% endfor %}
+        </private_message_history>
+        {% endif %}
+        
+        请生成 JSON 格式回复：
+
+        ```json
+        {
+            "content": "回复内容",
+            "strategy": "broadcast|private|ignore",
+            "mentions": ["被提及的agent名称"],
+            "priority": 优先级 0-100,
+            "reason": "选择策略的原因"
+        }
+        ```
+        ignore 表示用户发送的消息可以不会进行回复,private 我们要回复用户，并且只回复给发送信息的用户，broadcast 表示要回复消息，并且回复给群组所有成员。
+        *** 注意，阅读上面的所有内容，尤其关注 {% if message.is_group %}群组上下文{% else %}私聊上下文{% endif %}，判断是否使用 ignore 策略结束对话，避免无意义对话。一般在群组对话中，你没有被 @ 就无需回答，直接使用ignore策略结束对话。 ***
+        {% if refuse_reply_reason %}
+        当满足以下描述时，你应当拒绝回复：
+        <when_to_refuse_reply>
+        {{ refuse_reply_reason }}
+        </when_to_refuse_reply>
+        {% endif %}
+        请严格按照 JSON 格式输出，不要有任何多余的内容。
+        """
+        context = {
+            "name": self.name,
+            "role": self.system_prompt,
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "refuse_reply_reason": self.refuse_reply_reason
+        }
+        if message.is_group:
+            group = self.joined_groups[message.group_name]
+            context["group_message_history"] = group.history
+        else:
+            context["private_message_history"] = self.private_chats.get(message.sender, [])
+            
+        return context    
+    
+    def _record_file_change(self, file_path: str, change_type: str, diff: Optional[str] = None, content: Optional[str] = None):
         """
         记录单个文件的变更信息。
 
@@ -169,8 +345,8 @@ class AgenticRAG:
 
         if diff:
             entry.diffs.append(diff)
-
-    def get_all_file_changes(self) -> Dict[str, FileChangeEntry]:
+    
+    def _get_all_file_changes(self) -> Dict[str, FileChangeEntry]:
         """
         获取当前记录的所有文件变更信息。
 
@@ -178,8 +354,8 @@ class AgenticRAG:
             字典，key 为文件路径，value 为变更详情
         """
         return self.file_changes
-
-    def get_changed_files_from_shadow(self) -> List[str]:
+    
+    def _get_changed_files_from_shadow(self) -> List[str]:
         """
         获取影子系统当前有哪些文件被修改或新增。
 
@@ -201,11 +377,57 @@ class AgenticRAG:
                     # 非映射关系，忽略
                     continue
         return changed_files
+    
+    def _reconstruct_tool_xml(self, tool: BaseTool) -> str:
+        """
+        从Pydantic模型重建工具调用的XML表示
 
+        Args:
+            tool: 工具对象
+
+        Returns:
+            工具调用的XML字符串
+        """
+        # 获取工具标签名
+        tool_tag = None
+        tag_model_map = ToolRegistry.get_tag_model_map()
+        for tag, model_cls in tag_model_map.items():
+            if isinstance(tool, model_cls):
+                tool_tag = tag
+                break
+        
+        if not tool_tag:
+            logger.error(f"无法找到工具类型 {type(tool).__name__} 的标签名")
+            return f"<error>无法找到工具标签 {type(tool).__name__}</error>"
+
+        # 构建XML结构
+        xml_parts = [f"<{tool_tag}>"]
+        for field_name, field_value in tool.model_dump(exclude_none=True).items():
+            # 根据类型格式化值
+            if isinstance(field_value, bool):
+                value_str = str(field_value).lower()
+            elif isinstance(field_value, (list, dict)):
+                value_str = json.dumps(field_value, ensure_ascii=False)
+            else:
+                value_str = str(field_value)
+
+            # 转义值内容
+            escaped_value = xml.sax.saxutils.escape(value_str)
+
+            # 处理多行内容
+            if '\n' in value_str:
+                xml_parts.append(f"<{field_name}>\n{escaped_value}\n</{field_name}>")
+            else:
+                xml_parts.append(f"<{field_name}>{escaped_value}</{field_name}>")
+
+        xml_parts.append(f"</{tool_tag}>")
+        # 换行连接，增加可读性
+        return "\n".join(xml_parts)
+    
     @byzerllm.prompt()
-    def _analyze(self, request: AgenticEditRequest) -> str:
+    def _system(self, request: AgentRequest) -> str:
         """        
-        You are a powerful Retrieval Augmented Generation (RAG) system, specialized in collecting information and answering user questions. You possess extensive knowledge and deep research capabilities, allowing you to understand and synthesize complex information to provide thorough and accurate answers.        
+        {{system_prompt}}
 
         ====        
 
@@ -234,233 +456,29 @@ class AgenticRAG:
 
         # Tools
 
-        ## execute_command
-        Description: Request to execute a CLI command on the system. Use this when you need to perform system operations or run specific commands to accomplish any step in the user's task. You must tailor your command to the user's system and provide a clear explanation of what the command does. For command chaining, use the appropriate chaining syntax for the user's shell. Prefer to execute complex CLI commands over creating executable scripts, as they are more flexible and easier to run. Commands will be executed in the current working directory: ${cwd.toPosix()}
+        {% for tool_tag, tool_description in tool_descriptions.items() %}
+        ## {{ tool_tag }}
+        Description: {{ tool_description.description }}
+        
         Parameters:
-        - command: (required) The CLI command to execute. This should be valid for the current operating system. Ensure the command is properly formatted and does not contain any harmful instructions.
-        - requires_approval: (required) A boolean indicating whether this command requires explicit user approval before execution in case the user has auto-approve mode enabled. Set to 'true' for potentially impactful operations like installing/uninstalling packages, deleting/overwriting files, system configuration changes, network operations, or any commands that could have unintended side effects. Set to 'false' for safe operations like reading files/directories, running development servers, building projects, and other non-destructive operations.
+        {{ tool_description.parameters }}
+        
         Usage:
-        <execute_command>
-        <command>Your command here</command>
-        <requires_approval>true or false</requires_approval>
-        </execute_command>
-
-        ## list_package_info
-        Description: Request to retrieve information about a source code package, such as recent changes or documentation summary, to better understand the code context. It accepts a directory path (absolute or relative to the current project).
-        Parameters:
-        - path: (required) The source code package directory path.
-        Usage:
-        <list_package_info>
-        <path>relative/or/absolute/package/path</path>
-        </list_package_info>
-
-        ## read_file
-        Description: Request to read the contents of a file at the specified path. Use this when you need to examine the contents of an existing file you do not know the contents of, for example to analyze code, review text files, or extract information from configuration files. Automatically extracts raw text from PDF and DOCX files. May not be suitable for other types of binary files, as it returns the raw content as a string.
-        Parameters:
-        - path: (required) The path of the file to read (relative to the current working directory ${cwd.toPosix()})
-        Usage:
-        <read_file>
-        <path>File path here</path>
-        </read_file>
-
-        ## write_to_file
-        Description: Request to write content to a file at the specified path. If the file exists, it will be overwritten with the provided content. If the file doesn't exist, it will be created. This tool will automatically create any directories needed to write the file. IMPORTANT: This tool should ONLY be used for writing research plans, search strategies, or summarizing findings - not for modifying system files.
-        Parameters:
-        - path: (required) The path of the file to write to (relative to the current working directory ${cwd.toPosix()})
-        - content: (required) The content to write to the file. ALWAYS provide the COMPLETE intended content of the file, without any truncation or omissions. You MUST include ALL parts of the file, even if they haven't been modified.
-        Usage:
-        <write_to_file>
-        <path>File path here</path>
-        <content>
-        Your file content here
-        </content>
-        </write_to_file>
-
-        ## replace_in_file
-        Description: Request to replace sections of content in an existing file using SEARCH/REPLACE blocks that define exact changes to specific parts of the file. This tool should be used when you need to make targeted changes to specific parts of a file. IMPORTANT: This tool should ONLY be used for updating research plans, search strategies, or summarizing findings - not for modifying system files.
-        Parameters:
-        - path: (required) The path of the file to modify (relative to the current working directory ${cwd.toPosix()})
-        - diff: (required) One or more SEARCH/REPLACE blocks following this exact format:
-        \`\`\`
-        <<<<<<< SEARCH
-        [exact content to find]
-        =======
-        [new content to replace with]
-        >>>>>>> REPLACE
-        \`\`\`
-        Critical rules:
-        1. SEARCH content must match the associated file section to find EXACTLY:
-            * Match character-for-character including whitespace, indentation, line endings
-            * Include all comments, docstrings, etc.
-        2. SEARCH/REPLACE blocks will ONLY replace the first match occurrence.
-            * Including multiple unique SEARCH/REPLACE blocks if you need to make multiple changes.
-            * Include *just* enough lines in each SEARCH section to uniquely match each set of lines that need to change.
-            * When using multiple SEARCH/REPLACE blocks, list them in the order they appear in the file.
-        3. Keep SEARCH/REPLACE blocks concise:
-            * Break large SEARCH/REPLACE blocks into a series of smaller blocks that each change a small portion of the file.
-            * Include just the changing lines, and a few surrounding lines if needed for uniqueness.
-            * Do not include long runs of unchanging lines in SEARCH/REPLACE blocks.
-            * Each line must be complete. Never truncate lines mid-way through as this can cause matching failures.
-        4. Special operations:
-            * To move code: Use two SEARCH/REPLACE blocks (one to delete from original + one to insert at new location)
-            * To delete code: Use empty REPLACE section
-        Usage:
-        <replace_in_file>
-        <path>File path here</path>
-        <diff>
-        Search and replace blocks here
-        </diff>
-        </replace_in_file>
-
-        ## search_files
-        Description: Request to perform a regex search across files in a specified directory, providing context-rich results. This tool searches for patterns or specific content across multiple files, displaying each match with encapsulating context.
-        Parameters:
-        - path: (required) The path of the directory to search in (relative to the current working directory ${cwd.toPosix()}). This directory will be recursively searched.
-        - regex: (required) The regular expression pattern to search for. Uses Rust regex syntax.
-        - file_pattern: (optional) Glob pattern to filter files (e.g., '*.ts' for TypeScript files). If not provided, it will search all files (*).
-        Usage:
-        <search_files>
-        <path>Directory path here</path>
-        <regex>Your regex pattern here</regex>
-        <file_pattern>file pattern here (optional)</file_pattern>
-        </search_files>
-
-        ## list_files
-        Description: Request to list files and directories within the specified directory. If recursive is true, it will list all files and directories recursively. If recursive is false or not provided, it will only list the top-level contents. Do not use this tool to confirm the existence of files you may have created, as the user will let you know if the files were created successfully or not.
-        Parameters:
-        - path: (required) The path of the directory to list contents for (relative to the current working directory ${cwd.toPosix()})
-        - recursive: (optional) Whether to list files recursively. Use true for recursive listing, false or omit for top-level only.
-        Usage:
-        <list_files>
-        <path>Directory path here</path>
-        <recursive>true or false (optional)</recursive>
-        </list_files>
-
-        ## ask_followup_question
-        Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
-        Parameters:
-        - question: (required) The question to ask the user. This should be a clear, specific question that addresses the information you need.
-        - options: (optional) An array of 2-5 options for the user to choose from. Each option should be a string describing a possible answer. You may not always need to provide options, but it may be helpful in many cases where it can save the user from having to type out a response manually. IMPORTANT: NEVER include an option to toggle to Act mode, as this would be something you need to direct the user to do manually themselves if needed.
-        Usage:
-        <ask_followup_question>
-        <question>Your question here</question>
-        <options>
-        Array of options here (optional), e.g. ["Option 1", "Option 2", "Option 3"]
-        </options>
-        </ask_followup_question>
-
-        ## attempt_completion
-        Description: After each tool use, the user will respond with the result of that tool use, i.e. if it succeeded or failed, along with any reasons for failure. Once you've received the results of tool uses and can confirm that the task is complete, use this tool to present the result of your work to the user. Optionally you may provide a CLI command to showcase the result of your work. The user may respond with feedback if they are not satisfied with the result, which you can use to make improvements and try again.
-        IMPORTANT NOTE: This tool CANNOT be used until you've confirmed from the user that any previous tool uses were successful. Failure to do so will result in code corruption and system failure. Before using this tool, you must ask yourself in <thinking></thinking> tags if you've confirmed from the user that any previous tool uses were successful. If not, then DO NOT use this tool.
-        Parameters:
-        - result: (required) The result of the task. Formulate this result in a way that is final and does not require further input from the user. Don't end your result with questions or offers for further assistance.
-        - command: (optional) A CLI command to execute to show a live demo of the result to the user. For example, use \`open index.html\` to display a created html website, or \`open localhost:3000\` to display a locally running development server. But DO NOT use commands like \`echo\` or \`cat\` that merely print text. This command should be valid for the current operating system. Ensure the command is properly formatted and does not contain any harmful instructions.
-        Usage:
-        <attempt_completion>
-        <result>
-        Your final result description here
-        </result>
-        <command>Command to demonstrate result (optional)</command>
-        </attempt_completion>
-
-        ## plan_mode_respond
-        Description: Respond to the user's inquiry in an effort to plan a solution to the user's task. This tool should be used when you need to provide a response to a question or statement from the user about how you plan to accomplish the task. This tool is only available in PLAN MODE. The environment_details will specify the current mode, if it is not PLAN MODE then you should not use this tool. Depending on the user's message, you may ask questions to get clarification about the user's request, architect a solution to the task, and to brainstorm ideas with the user. For example, if the user's task is to create a website, you may start by asking some clarifying questions, then present a detailed plan for how you will accomplish the task given the context, and perhaps engage in a back and forth to finalize the details before the user switches you to ACT MODE to implement the solution.
-        Parameters:
-        - response: (required) The response to provide to the user. Do not try to use tools in this parameter, this is simply a chat response. (You MUST use the response parameter, do not simply place the response text directly within <plan_mode_respond> tags.)
-        - options: (optional) An array of 2-5 options for the user to choose from. Each option should be a string describing a possible choice or path forward in the planning process. This can help guide the discussion and make it easier for the user to provide input on key decisions. You may not always need to provide options, but it may be helpful in many cases where it can save the user from having to type out a response manually. Do NOT present an option to toggle to Act mode, as this will be something you need to direct the user to do manually themselves.
-        Usage:
-        <plan_mode_respond>
-        <response>Your response here</response>
-        <options>
-        Array of options here (optional), e.g. ["Option 1", "Option 2", "Option 3"]
-        </options>
-        </plan_mode_respond>
-
-        ## mcp_tool
-        Description: Request to execute a tool via the Model Context Protocol (MCP) server. Use this when you need to execute a tool that is not natively supported by the agentic edit tools.
-        Parameters:
-        - server_name: (optional) The name of the MCP server to use. If not provided, the tool will automatically choose the best server based on the query.
-        - tool_name: (optional) The name of the tool to execute. If not provided, the tool will automatically choose the best tool in the selected server based on the query.
-        - query: (required) The query to pass to the tool.
-        Usage:
-        <use_mcp_tool>
-        <server_name>xxx</server_name>
-        <tool_name>xxxx</tool_name>
-        <query>
-        Your query here
-        </query>
-        </use_mcp_tool> 
+        {{ tool_description.usage }}
+        {% endfor %}        
 
         {%if mcp_server_info %}
         ### MCP_SERVER_LIST
         {{mcp_server_info}}
         {%endif%}
 
-        # Tool Use Examples
-
-        ## Example 1: Requesting to execute a command
-
-        <execute_command>
-        <command>npm run dev</command>
-        <requires_approval>false</requires_approval>
-        </execute_command>
-
-        ## Example 2: Requesting to create a new file
-
-        <write_to_file>
-        <path>research/search-plan.md</path>
-        <content>
-        # Research Plan
-        
-        ## Objective
-        Investigate the latest developments in quantum computing algorithms
-        
-        ## Search Strategy
-        1. Start with review papers from the last 2 years
-        2. Focus specifically on quantum machine learning algorithms
-        3. Identify key researchers and follow citation trails
-        
-        ## Expected Timeline
-        - Day 1-2: Broad overview of the field
-        - Day 3-5: Deep dive into specific algorithms
-        - Day 6-7: Synthesis and final report preparation
-        </content>
-        </write_to_file>
-
-        ## Example 3: Requesting to make targeted edits to a file
-
-        <replace_in_file>
-        <path>research/findings.md</path>
-        <diff>
-        <<<<<<< SEARCH
-        ## Initial Observations
-        - Quantum computing shows promise in cryptography
-        - Current hardware limitations remain significant
-        =======
-        ## Initial Observations
-        - Quantum computing shows promise in cryptography and machine learning
-        - Current hardware limitations remain significant
-        - Recent advances in error correction are promising
-        >>>>>>> REPLACE
-
-        <<<<<<< SEARCH
-        ## Next Steps
-        - Examine quantum error correction methods
-        =======
-        ## Next Steps
-        - Examine quantum error correction methods in detail
-        - Investigate industry implementations
-        >>>>>>> REPLACE
-        </diff>
-        </replace_in_file>
-
-        ## Example 4: Another example of using an MCP tool (where the server name is a unique identifier listed in MCP_SERVER_LIST)
-
-        <use_mcp_tool>
-        <server_name>github</server_name>
-        <tool_name>create_issue</tool_name>
-        <query>ower is octocat, repo is hello-world, title is Found a bug, body is I'm having a problem with this. labels is "bug" and "help wanted",assignees is "octocat"</query>        
-        </use_mcp_tool>                
+        # Tool Use Examples        
+        {% for tool_tag, example in tool_examples.items() %}
+        {% if example %}
+        ## Example {{ loop.index }}: {{ example.title }}
+        {{ example.body }}
+        {% endif %}
+        {% endfor %}                                      
 
         # Tool Use Guidelines
 
@@ -475,87 +493,32 @@ class AgenticRAG:
         - New terminal output in reaction to the changes, which you may need to consider or act upon.
         - Any other relevant feedback or information related to the tool use.
         7. ALWAYS wait for user confirmation after each tool use before proceeding. Never assume the success of a tool use without explicit confirmation of the result from the user.
+        
+        # Tool-Specific Guidelines
+        
+        {% for tool_name, guideline in tool_guidelines.items() %}
+        ## {{ tool_name }}
+        
+        {{ guideline }}
+        {% endfor %}
 
         It is crucial to proceed step-by-step, waiting for the user's message after each tool use before moving forward with the task. This approach allows you to:
         1. Confirm the success of each step before proceeding.
         2. Address any issues or errors that arise immediately.
         3. Adapt your approach based on new information or unexpected results.
-        4. Ensure that each action builds correctly on the previous ones.
+        4. Ensure that each action builds correctly on the previous ones.        
+        
 
         By waiting for and carefully considering the user's response after each tool use, you can react accordingly and make informed decisions about how to proceed with the task. This iterative process helps ensure the overall success and accuracy of your work.
-
+                
+        {% for case_name, case_info in tool_case_docs.items() %}
+        
         ====
 
-        EDITING FILES
-
-        You have access to two tools for working with files: **write_to_file** and **replace_in_file**. Understanding their roles and selecting the right one for the job will help ensure efficient and accurate modifications.
-
-        # write_to_file
-
-        ## Purpose
-
-        - Create a new file, or overwrite the entire contents of an existing file.
-
-        ## When to Use
-
-        - Initial file creation, such as when scaffolding a new research plan.  
-        - Overwriting large research documents where you want to replace the entire content at once.
-        - When the complexity or number of changes would make replace_in_file unwieldy or error-prone.
-
-        ## Important Considerations
-
-        - Using write_to_file requires providing the file's complete final content.  
-        - If you only need to make small changes to an existing file, consider using replace_in_file instead to avoid unnecessarily rewriting the entire file.
-        - Only use this for research planning and documentation, not system files.
-
-        # replace_in_file
-
-        ## Purpose
-
-        - Make targeted edits to specific parts of an existing file without overwriting the entire file.
-
-        ## When to Use
-
-        - Small, localized changes like updating a few lines in a research document, modifying a search strategy, or adding new findings.
-        - Targeted improvements where only specific portions of the file's content needs to be altered.
-        - Especially useful for long research documents where much of the file will remain unchanged.
-
-        ## Advantages
-
-        - More efficient for minor edits, since you don't need to supply the entire file content.  
-        - Reduces the chance of errors that can occur when overwriting large files.
-
-        # Choosing the Appropriate Tool
-
-        - **Default to replace_in_file** for most changes to existing research documents. It's the safer, more precise option that minimizes potential issues.
-        - **Use write_to_file** when:
-        - Creating new research documents
-        - The changes are so extensive that using replace_in_file would be more complex or risky
-        - You need to completely reorganize or restructure a document
-        - The file is relatively small and the changes affect most of its content
-
-        # Auto-formatting Considerations
-
-        - After using either write_to_file or replace_in_file, the user's editor may automatically format the file
-        - This auto-formatting may modify the file contents, for example:
-        - Breaking single lines into multiple lines
-        - Adjusting indentation to match project style (e.g. 2 spaces vs 4 spaces vs tabs)
-        - Converting single quotes to double quotes (or vice versa based on project preferences)
-        - Organizing imports (e.g. sorting, grouping by type)
-        - Adding/removing trailing commas in objects and arrays
-        - Enforcing consistent brace style (e.g. same-line vs new-line)
-        - Standardizing semicolon usage (adding or removing based on style)
-        - The write_to_file and replace_in_file tool responses will include the final state of the file after any auto-formatting
-        - Use this final state as your reference point for any subsequent edits. This is ESPECIALLY important when crafting SEARCH blocks for replace_in_file which require the content to match what's in the file exactly.
-
-        # Workflow Tips
-
-        1. Before editing, assess the scope of your changes and decide which tool to use.
-        2. For targeted edits, apply replace_in_file with carefully crafted SEARCH/REPLACE blocks. If you need multiple changes, you can stack multiple SEARCH/REPLACE blocks within a single replace_in_file call.
-        3. For major overhauls or initial file creation, rely on write_to_file.
-        4. Once the file has been edited with either write_to_file or replace_in_file, the system will provide you with the final state of the modified file. Use this updated content as the reference point for any subsequent SEARCH/REPLACE operations, since it reflects any auto-formatting or user-applied changes.
-
-        By thoughtfully selecting between write_to_file and replace_in_file, you can make your file editing process smoother, safer, and more efficient.
+        # {{ case_name | upper }}
+        
+        {{ case_info.doc }}
+        {% endfor %}
 
         ====
 
@@ -625,8 +588,10 @@ class AgenticRAG:
         - The write_to_file and replace_in_file tools are ONLY to be used for creating and updating research plans, search strategies, or summarizing findings. They are NOT to be used for modifying system files or any operational code.
         - When making research plans, always consider the context and objectives clearly outlined by the user.
         - Do not ask for more information than necessary. Use the tools provided to accomplish the user's request efficiently and effectively. When you've completed your task, you must use the attempt_completion tool to present the result to the user. The user may provide feedback, which you can use to make improvements and try again.
+        <% if enable_tool_ask_followup_question %>
         - You are only allowed to ask the user questions using the ask_followup_question tool. Use this tool only when you need additional details to complete a task, and be sure to use a clear and concise question that will help you move forward with the task. However if you can use the available tools to avoid having to ask the user questions, you should do so. For example, if the user mentions a file that may be in an outside directory like the Desktop, you should use the list_files tool to list the files in the Desktop and check if the file they are talking about is there, rather than asking the user to provide the file path themselves.
         - When executing commands, if you don't see the expected output, assume the terminal executed the command successfully and proceed with the task. The user's terminal may be unable to stream the output back properly. If you absolutely need to see the actual terminal output, use the ask_followup_question tool to request the user to copy and paste it back to you.
+        <% endif %>
         - The user may provide a file's contents directly in their message, in which case you shouldn't use the read_file tool to get the file contents again since you already have it.
         - Your goal is to try to accomplish the user's task, NOT engage in a back and forth conversation.
         - NEVER end attempt_completion result with a question or request to engage in further conversation! Formulate the end of your result in a way that is final and does not require further input from the user.
@@ -684,6 +649,14 @@ class AgenticRAG:
         {% endif %}
         """
         import os
+        from .tool_registry import ToolRegistry
+        
+        # 获取工具描述和示例
+        tool_descriptions = ToolRegistry.get_all_tool_descriptions()
+        tool_examples = ToolRegistry.get_all_tool_examples()
+        tool_case_docs = ToolRegistry.get_all_tools_case_docs()
+        tool_guidelines = ToolRegistry.get_all_tool_use_guidelines()
+        
         extra_docs = get_rules()
         
         env_info = detect_env()
@@ -708,69 +681,30 @@ class AgenticRAG:
             "mcp_server_info": self.mcp_server_info,
             "enable_active_context_in_generate": self.args.enable_active_context_in_generate,
             "extra_docs": extra_docs,
-            "file_paths_str": file_paths_str,
+            "file_paths_str": file_paths_str,            
+            "tool_descriptions": tool_descriptions,
+            "tool_examples": tool_examples,
+            "tool_case_docs": tool_case_docs,
+            "tool_guidelines": tool_guidelines,
+            "system_prompt": self.system_prompt
         }
-
-    # Removed _execute_command_result and execute_auto_command methods
-    def _reconstruct_tool_xml(self, tool: BaseTool) -> str:
-        """
-        Reconstructs the XML representation of a tool call from its Pydantic model.
-        """
-        tool_tag = next(
-            (tag for tag, model in TOOL_MODEL_MAP.items() if isinstance(tool, model)), None)
-        if not tool_tag:
-            logger.error(
-                f"Cannot find tag name for tool type {type(tool).__name__}")
-            # Return a placeholder or raise? Let's return an error XML string.
-            return f"<error>Could not find tag for tool {type(tool).__name__}</error>"
-
-        xml_parts = [f"<{tool_tag}>"]
-        for field_name, field_value in tool.model_dump(exclude_none=True).items():
-            # Format value based on type, ensuring XML safety
-            if isinstance(field_value, bool):
-                value_str = str(field_value).lower()
-            elif isinstance(field_value, (list, dict)):
-                # Simple string representation for list/dict for now.
-                # Consider JSON within the tag if needed and supported by the prompt/LLM.
-                # Use JSON for structured data
-                value_str = json.dumps(field_value, ensure_ascii=False)
-            else:
-                value_str = str(field_value)
-
-            # Escape the value content
-            escaped_value = xml.sax.saxutils.escape(value_str)
-
-            # Handle multi-line content like 'content' or 'diff' - ensure newlines are preserved
-            if '\n' in value_str:
-                # Add newline before closing tag for readability if content spans multiple lines
-                xml_parts.append(
-                    f"<{field_name}>\n{escaped_value}\n</{field_name}>")
-            else:
-                xml_parts.append(
-                    f"<{field_name}>{escaped_value}</{field_name}>")
-
-        xml_parts.append(f"</{tool_tag}>")
-        # Join with newline for readability, matching prompt examples
-        return "\n".join(xml_parts)
-
-    def analyze(self, request: AgenticEditRequest) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ToolResultEvent, CompletionEvent, ErrorEvent], None, None]:
+    
+    def agentic_run(self, request: AgentRequest) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ToolResultEvent, CompletionEvent, ErrorEvent], None, None]:
         """
         Analyzes the user request, interacts with the LLM, parses responses,
         executes tools, and yields structured events for visualization until completion or error.
         """
         logger.info(f"Starting analyze method with user input: {request.user_input[:50]}...")
-        system_prompt = self._analyze.prompt(request)
+        system_prompt = self._system.prompt(request)
         logger.info(f"Generated system prompt with length: {len(system_prompt)}")
         
         # print(system_prompt)
-        conversations = [
+        self.agentic_conversations = [
             {"role": "system", "content": system_prompt},
+            {"role": "user", "content": request.user_input}
         ] 
-                                
-        conversations.append({
-            "role": "user", "content": request.user_input
-        })        
-        
+        conversations = self.agentic_conversations
+                                                
         logger.info(
             f"Initial conversation history size: {len(conversations)}")
         
@@ -953,84 +887,68 @@ class AgenticRAG:
                 continue
             
         logger.info(f"AgenticEdit analyze loop finished after {iteration_count} iterations.")
-
+    
     def stream_and_parse_llm_response(
         self, generator: Generator[Tuple[str, Any], None, None], meta_holder: byzerllm.MetaHolder
     ) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ErrorEvent], None, None]:
         """
-        Streamingly parses the LLM response generator, distinguishing between
-        plain text, thinking blocks, and tool usage blocks, yielding corresponding Event models.
+        流式解析LLM响应生成器，区分纯文本、思考块和工具使用块
 
         Args:
-            generator: An iterator yielding (content, metadata) tuples from the LLM stream.
+            generator: 生成器，生成(content, metadata)元组
+            meta_holder: 元数据容器
 
         Yields:
-            Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ErrorEvent]: Events representing
-            different parts of the LLM's response.
+            不同类型的事件，表示LLM响应的不同部分
         """
         buffer = ""
         in_tool_block = False
         in_thinking_block = False
         current_tool_tag = None
-        tool_start_pattern = re.compile(
-            r"<([a-zA-Z0-9_]+)>")  # Matches tool tags
+        # 匹配工具标签的正则表达式
+        tool_start_pattern = re.compile(r"<([a-zA-Z0-9_]+)>")
         thinking_start_tag = "<thinking>"
         thinking_end_tag = "</thinking>"
 
         def parse_tool_xml(tool_xml: str, tool_tag: str) -> Optional[BaseTool]:
-            """Minimal parser for tool XML string."""
+            """解析工具XML字符串"""
             params = {}
             try:
-                # Find content between <tool_tag> and </tool_tag>
+                # 查找<tool_tag>和</tool_tag>之间的内容
                 inner_xml_match = re.search(
                     rf"<{tool_tag}>(.*?)</{tool_tag}>", tool_xml, re.DOTALL)
                 if not inner_xml_match:
-                    logger.error(
-                        f"Could not find content within <{tool_tag}>...</{tool_tag}>")
+                    logger.error(f"无法找到<{tool_tag}>...</{tool_tag}>内的内容")
                     return None
                 inner_xml = inner_xml_match.group(1).strip()
 
-                # Find <param>value</param> pairs within the inner content
+                # 查找内部内容中的<param>value</param>对
                 pattern = re.compile(r"<([a-zA-Z0-9_]+)>(.*?)</\1>", re.DOTALL)
                 for m in pattern.finditer(inner_xml):
                     key = m.group(1)
-                    # Basic unescaping (might need more robust unescaping if complex values are used)
+                    # 基本转义
                     val = xml.sax.saxutils.unescape(m.group(2))
                     params[key] = val
 
-                tool_cls = TOOL_MODEL_MAP.get(tool_tag)
+                # 获取工具类
+                tool_cls = ToolRegistry.get_model_for_tag(tool_tag)
                 if tool_cls:
-                    # Attempt to handle boolean conversion specifically for requires_approval
+                    # 尝试处理特定参数类型转换
                     if 'requires_approval' in params:
-                        params['requires_approval'] = params['requires_approval'].lower(
-                        ) == 'true'
-                    # Attempt to handle JSON parsing for ask_followup_question_tool
-                    if tool_tag == 'ask_followup_question' and 'options' in params:
+                        params['requires_approval'] = params['requires_approval'].lower() == 'true'
+                    if (tool_tag == 'ask_followup_question' or tool_tag == 'plan_mode_respond') and 'options' in params:
                         try:
-                            params['options'] = json.loads(
-                                params['options'])
+                            params['options'] = json.loads(params['options'])
                         except json.JSONDecodeError:
-                            logger.warning(
-                                f"Could not decode JSON options for ask_followup_question_tool: {params['options']}")
-                            # Keep as string or handle error? Let's keep as string for now.
-                            pass
-                    if tool_tag == 'plan_mode_respond' and 'options' in params:
-                        try:
-                            params['options'] = json.loads(
-                                params['options'])
-                        except json.JSONDecodeError:
-                            logger.warning(
-                                f"Could not decode JSON options for plan_mode_respond_tool: {params['options']}")
-                    # Handle recursive for list_files
+                            logger.warning(f"无法解码JSON选项: {params['options']}")
                     if tool_tag == 'list_files' and 'recursive' in params:
                         params['recursive'] = params['recursive'].lower() == 'true'
                     return tool_cls(**params)
                 else:
-                    logger.error(f"Tool class not found for tag: {tool_tag}")
+                    logger.error(f"找不到标签的工具类: {tool_tag}")
                     return None
             except Exception as e:
-                logger.exception(
-                    f"Failed to parse tool XML for <{tool_tag}>: {e}\nXML:\n{tool_xml}")
+                logger.exception(f"解析工具XML失败 <{tool_tag}>: {e}\nXML:\n{tool_xml}")
                 return None
 
         for content_chunk, metadata in generator:
@@ -1041,11 +959,10 @@ class AgenticRAG:
             buffer += content_chunk
 
             while True:
-                # Check for transitions: thinking -> text, tool -> text, text -> thinking, text -> tool
                 next_event_pos = len(buffer)
                 found_event = False
 
-                # 1. Check for </thinking> if inside thinking block
+                # 1. 如果在思考块内，检查</thinking>
                 if in_thinking_block:
                     end_think_pos = buffer.find(thinking_end_tag)
                     if end_think_pos != -1:
@@ -1054,12 +971,12 @@ class AgenticRAG:
                         buffer = buffer[end_think_pos + len(thinking_end_tag):]
                         in_thinking_block = False
                         found_event = True
-                        continue  # Restart loop with updated buffer/state
+                        continue
                     else:
-                        # Need more data to close thinking block
+                        # 需要更多数据以关闭思考块
                         break
 
-                # 2. Check for </tool_tag> if inside tool block
+                # 2. 如果在工具块内，检查</tool_tag>
                 elif in_tool_block:
                     end_tag = f"</{current_tool_tag}>"
                     end_tool_pos = buffer.find(end_tag)
@@ -1069,36 +986,32 @@ class AgenticRAG:
                         tool_obj = parse_tool_xml(tool_xml, current_tool_tag)
 
                         if tool_obj:
-                            # Reconstruct the XML accurately here AFTER successful parsing
-                            # This ensures the XML yielded matches what was parsed.
-                            reconstructed_xml = self._reconstruct_tool_xml(
-                                tool_obj)
+                            # 在成功解析后重建XML
+                            reconstructed_xml = self._reconstruct_tool_xml(tool_obj)
                             if reconstructed_xml.startswith("<error>"):
-                                yield ErrorEvent(message=f"Failed to reconstruct XML for tool {current_tool_tag}")
+                                yield ErrorEvent(message=f"重建工具XML失败 {current_tool_tag}")
                             else:
                                 yield ToolCallEvent(tool=tool_obj, tool_xml=reconstructed_xml)
                         else:
-                            yield ErrorEvent(message=f"Failed to parse tool: <{current_tool_tag}>")
-                            # Optionally yield the raw XML as plain text?
-                            # yield LLMOutputEvent(text=tool_xml)
+                            yield ErrorEvent(message=f"解析工具失败: <{current_tool_tag}>")
 
                         buffer = buffer[tool_block_end_index:]
                         in_tool_block = False
                         current_tool_tag = None
                         found_event = True
-                        continue  # Restart loop
+                        continue
                     else:
-                        # Need more data to close tool block
+                        # 需要更多数据以关闭工具块
                         break
 
-                # 3. Check for <thinking> or <tool_tag> if in plain text state
+                # 3. 如果在纯文本状态，检查<thinking>或<tool_tag>
                 else:
                     start_think_pos = buffer.find(thinking_start_tag)
                     tool_match = tool_start_pattern.search(buffer)
                     start_tool_pos = tool_match.start() if tool_match else -1
                     tool_name = tool_match.group(1) if tool_match else None
 
-                    # Determine which tag comes first (if any)
+                    # 确定哪个标签先出现（如果有）
                     first_tag_pos = -1
                     is_thinking = False
                     is_tool = False
@@ -1107,74 +1020,69 @@ class AgenticRAG:
                         first_tag_pos = start_think_pos
                         is_thinking = True
                     elif start_tool_pos != -1 and (start_think_pos == -1 or start_tool_pos < start_think_pos):
-                        # Check if it's a known tool
-                        if tool_name in TOOL_MODEL_MAP:
+                        # 检查是否是已知工具
+                        if ToolRegistry.get_model_for_tag(tool_name):
                             first_tag_pos = start_tool_pos
                             is_tool = True
-                        else:
-                            # Unknown tag, treat as text for now, let buffer grow
-                            pass
 
-                    if first_tag_pos != -1:  # Found either <thinking> or a known <tool>
-                        # Yield preceding text if any
+                    if first_tag_pos != -1:  # 找到<thinking>或已知<tool>
+                        # 提交前面的文本（如果有）
                         preceding_text = buffer[:first_tag_pos]
                         if preceding_text:
                             yield LLMOutputEvent(text=preceding_text)
 
-                        # Transition state
+                        # 转换状态
                         if is_thinking:
-                            buffer = buffer[first_tag_pos +
-                                            len(thinking_start_tag):]
+                            buffer = buffer[first_tag_pos + len(thinking_start_tag):]
                             in_thinking_block = True
                         elif is_tool:
-                            # Keep the starting tag
                             buffer = buffer[first_tag_pos:]
                             in_tool_block = True
                             current_tool_tag = tool_name
 
                         found_event = True
-                        continue  # Restart loop
-
+                        continue
                     else:
-                        # No tags found, or only unknown tags found. Need more data or end of stream.
-                        # Yield text chunk but keep some buffer for potential tag start
-                        # Keep last 100 chars
+                        # 未找到标签
+                        # 保留最后100个字符作为缓冲区以便匹配标签开始
                         split_point = max(0, len(buffer) - 100)
                         text_to_yield = buffer[:split_point]
                         if text_to_yield:
                             yield LLMOutputEvent(text=text_to_yield)
                             buffer = buffer[split_point:]
-                        break  # Need more data
+                        break
 
-                # If no event was processed in this iteration, break inner loop
+                # 如果本次迭代没有处理事件，跳出内部循环
                 if not found_event:
                     break
         
         yield TokenUsageEvent(usage=meta_holder.meta)        
 
-        # After generator exhausted, yield any remaining content
+        # 生成器耗尽后，返回任何剩余内容
         if in_thinking_block:
-            # Unterminated thinking block
-            yield ErrorEvent(message="Stream ended with unterminated <thinking> block.")
+            # 未终止的思考块
+            yield ErrorEvent(message="流结束，<thinking>块未终止")
             if buffer:
-                # Yield remaining as thinking
+                # 作为思考内容提交剩余部分
                 yield LLMThinkingEvent(text=buffer)
         elif in_tool_block:
-            # Unterminated tool block
-            yield ErrorEvent(message=f"Stream ended with unterminated <{current_tool_tag}> block.")
+            # 未终止的工具块
+            yield ErrorEvent(message=f"流结束，<{current_tool_tag}>块未终止")
             if buffer:
-                yield LLMOutputEvent(text=buffer)  # Yield remaining as text
+                yield LLMOutputEvent(text=buffer)  # 作为文本提交剩余部分
         elif buffer:
-            # Yield remaining plain text
+            # 提交剩余的纯文本
             yield LLMOutputEvent(text=buffer)
-
-    def run_with_events(self, request: AgenticEditRequest):
+    
+    def run_with_events(self, request: AgentRequest):
         """
-        Runs the agentic edit process, converting internal events to the
-        standard event system format and writing them using the event manager.
+        运行代理过程，将内部事件转换为标准事件系统格式，并通过事件管理器写入
+
+        Args:
+            request: 代理请求
         """
         event_manager = get_event_manager(self.args.event_file)
-        self.apply_pre_changes()
+        base_url = "/agent/base"
 
         try:
             event_stream = self.analyze(request)
@@ -1183,25 +1091,25 @@ class AgenticRAG:
                 metadata = EventMetadata(
                     action_file=self.args.file,
                     is_streaming=False,
-                    stream_out_type="/agent/edit")
+                    stream_out_type=base_url)
 
                 if isinstance(agent_event, LLMThinkingEvent):
                     content = EventContentCreator.create_stream_thinking(
                         content=agent_event.text)
                     metadata.is_streaming = True
-                    metadata.path = "/agent/edit/thinking"
+                    metadata.path = f"{base_url}/thinking"
                     event_manager.write_stream(
                         content=content.to_dict(), metadata=metadata.to_dict())
                 elif isinstance(agent_event, LLMOutputEvent):
                     content = EventContentCreator.create_stream_content(
                         content=agent_event.text)
                     metadata.is_streaming = True
-                    metadata.path = "/agent/edit/output"
+                    metadata.path = f"{base_url}/output"
                     event_manager.write_stream(content=content.to_dict(),
                                                metadata=metadata.to_dict())
                 elif isinstance(agent_event, ToolCallEvent):
                     tool_name = type(agent_event.tool).__name__
-                    metadata.path = "/agent/edit/tool/call"
+                    metadata.path = f"{base_url}/tool/call"
                     content = EventContentCreator.create_result(
                         content={
                             "tool_name": tool_name,
@@ -1212,7 +1120,7 @@ class AgenticRAG:
                     event_manager.write_result(
                         content=content.to_dict(), metadata=metadata.to_dict())
                 elif isinstance(agent_event, ToolResultEvent):
-                    metadata.path = "/agent/edit/tool/result"
+                    metadata.path = f"{base_url}/tool/result"
                     content = EventContentCreator.create_result(
                         content={
                             "tool_name": agent_event.tool_name,
@@ -1222,37 +1130,23 @@ class AgenticRAG:
                     )
                     event_manager.write_result(
                         content=content.to_dict(), metadata=metadata.to_dict())
-                elif isinstance(agent_event, PlanModeRespondEvent):
-                    metadata.path = "/agent/edit/plan_mode_respond"
-                    content = EventContentCreator.create_markdown_result(
-                        content=agent_event.completion.response,
-                        metadata={}
-                    )
-                    event_manager.write_result(
-                        content=content.to_dict(), metadata=metadata.to_dict())
-
                 elif isinstance(agent_event, TokenUsageEvent):
-                    last_meta: SingleOutputMeta = agent_event.usage
-                    # Get model info for pricing
-                    from autocoder.utils import llms as llm_utils
-                    model_name = ",".join(llm_utils.get_llm_names(self.llm))
-                    model_info = llm_utils.get_model_info(
+                    # 获取模型信息以计算价格
+                    model_name = ",".join(llms_utils.get_llm_names(self.llm))
+                    model_info = llms_utils.get_model_info(
                         model_name, self.args.product_mode) or {}
-                    input_price = model_info.get(
-                        "input_price", 0.0) if model_info else 0.0
-                    output_price = model_info.get(
-                        "output_price", 0.0) if model_info else 0.0
+                    input_price = model_info.get("input_price", 0.0) if model_info else 0.0
+                    output_price = model_info.get("output_price", 0.0) if model_info else 0.0
 
-                    # Calculate costs
-                    input_cost = (last_meta.input_tokens_count *
-                                  input_price) / 1000000  # Convert to millions
-                    # Convert to millions
-                    output_cost = (
-                        last_meta.generated_tokens_count * output_price) / 1000000
+                    # 计算成本
+                    last_meta = agent_event.usage
+                    input_cost = (last_meta.input_tokens_count * input_price) / 1000000  # 转换为百万
+                    output_cost = (last_meta.generated_tokens_count * output_price) / 1000000
 
-                    # 添加日志记录
+                    # 记录Token使用详情
                     logger.info(f"Token Usage Details: Model={model_name}, Input Tokens={last_meta.input_tokens_count}, Output Tokens={last_meta.generated_tokens_count}, Input Cost=${input_cost:.6f}, Output Cost=${output_cost:.6f}")
 
+                    # 写入Token统计事件
                     get_event_manager(self.args.event_file).write_result(
                         EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
                             model_name=model_name,
@@ -1269,10 +1163,9 @@ class AgenticRAG:
                     try:
                         self.apply_changes()
                     except Exception as e:
-                        logger.exception(
-                            f"Error merging shadow changes to project: {e}")
+                        logger.exception(f"Error merging shadow changes to project: {e}")
 
-                    metadata.path = "/agent/edit/completion"
+                    metadata.path = f"{base_url}/completion"
                     content = EventContentCreator.create_completion(
                         success_code="AGENT_COMPLETE",
                         success_message="Agent attempted task completion.",
@@ -1283,7 +1176,7 @@ class AgenticRAG:
                     event_manager.write_completion(
                         content=content.to_dict(), metadata=metadata.to_dict())
                 elif isinstance(agent_event, ErrorEvent):
-                    metadata.path = "/agent/edit/error"
+                    metadata.path = f"{base_url}/error"
                     content = EventContentCreator.create_error(
                         error_code="AGENT_ERROR",
                         error_message=agent_event.message,
@@ -1292,134 +1185,49 @@ class AgenticRAG:
                     event_manager.write_error(
                         content=content.to_dict(), metadata=metadata.to_dict())
                 else:
-                    metadata.path = "/agent/edit/error"
-                    logger.warning(
-                        f"Unhandled agent event type: {type(agent_event)}")
+                    metadata.path = f"{base_url}/error"
+                    logger.warning(f"未处理的代理事件类型: {type(agent_event)}")
                     content = EventContentCreator.create_error(
                         error_code="AGENT_ERROR",
-                        error_message=f"Unhandled agent event type: {type(agent_event)}",
-                        details={"agent_event_type": type(
-                            agent_event).__name__}
+                        error_message=f"未处理的代理事件类型: {type(agent_event)}",
+                        details={"agent_event_type": type(agent_event).__name__}
                     )
                     event_manager.write_error(
                         content=content.to_dict(), metadata=metadata.to_dict())
 
         except Exception as e:
-            logger.exception(
-                "An unexpected error occurred during agent execution:")
+            logger.exception("代理执行过程中发生意外错误:")
             metadata = EventMetadata(
                 action_file=self.args.file,
                 is_streaming=False,
-                stream_out_type="/agent/edit/error")
+                stream_out_type=f"{base_url}/error")
             error_content = EventContentCreator.create_error(
                 error_code="AGENT_FATAL_ERROR",
-                error_message=f"An unexpected error occurred: {str(e)}",
+                error_message=f"发生意外错误: {str(e)}",
                 details={"exception_type": type(e).__name__}
             )
             event_manager.write_error(
                 content=error_content.to_dict(), metadata=metadata.to_dict())
-            # Re-raise the exception if needed, or handle appropriately
             raise e
-
-    def apply_pre_changes(self):
-        # get the file name
-        file_name = os.path.basename(self.args.file)
-        if not self.args.skip_commit:
-            try:
-                get_event_manager(self.args.event_file).write_result(
-                    EventContentCreator.create_result(
-                        content=self.printer.get_message_from_key("/agent/edit/apply_pre_changes")), metadata=EventMetadata(
-                        action_file=self.args.file,
-                        is_streaming=False,
-                        path="/agent/edit/apply_pre_changes",
-                        stream_out_type="/agent/edit").to_dict())
-                git_utils.commit_changes(
-                    self.args.source_dir, f"auto_coder_pre_{file_name}")
-            except Exception as e:
-                self.printer.print_in_terminal("git_init_required",
-                                               source_dir=self.args.source_dir, error=str(e))
-                return
-
-    def apply_changes(self):
+    
+    def run_in_terminal(self, request: AgentRequest):
         """
-        Apply all tracked file changes to the original project directory.
+        在终端中运行代理过程，使用Rich库流式显示交互
+
+        Args:
+            request: 代理请求
         """
-        for (file_path, change) in self.get_all_file_changes().items():
-            # Ensure the directory exists before writing the file
-            dir_path = os.path.dirname(file_path)
-            if dir_path: # Ensure dir_path is not empty (for files in root)
-                 os.makedirs(dir_path, exist_ok=True)
-
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(change.content)
-
-        if len(self.get_all_file_changes()) > 0:
-            if not self.args.skip_commit:
-                try:
-                    file_name = os.path.basename(self.args.file)
-                    commit_result = git_utils.commit_changes(
-                        self.args.source_dir,
-                        f"{self.args.query}\nauto_coder_{file_name}",
-                    )
-
-                    get_event_manager(self.args.event_file).write_result(
-                        EventContentCreator.create_result(
-                            content=self.printer.get_message_from_key("/agent/edit/apply_changes")), metadata=EventMetadata(
-                            action_file=self.args.file,
-                            is_streaming=False,
-                            stream_out_type="/agent/edit").to_dict())
-                    action_yml_file_manager = ActionYmlFileManager(
-                        self.args.source_dir)
-                    action_file_name = os.path.basename(self.args.file)
-                    add_updated_urls = []
-                    commit_result.changed_files
-                    for file in commit_result.changed_files:
-                        add_updated_urls.append(
-                            os.path.join(self.args.source_dir, file))
-
-                    self.args.add_updated_urls = add_updated_urls
-                    update_yaml_success = action_yml_file_manager.update_yaml_field(
-                        action_file_name, "add_updated_urls", add_updated_urls)
-                    if not update_yaml_success:
-                        self.printer.print_in_terminal(
-                            "yaml_save_error", style="red", yaml_file=action_file_name)
-
-                    if self.args.enable_active_context:
-                        active_context_manager = ActiveContextManager(
-                            self.llm, self.args.source_dir)
-                        task_id = active_context_manager.process_changes(
-                            self.args)
-                        self.printer.print_in_terminal("active_context_background_task",
-                                                       style="blue",
-                                                       task_id=task_id)
-                    git_utils.print_commit_info(commit_result=commit_result)
-                except Exception as e:
-                    self.printer.print_str_in_terminal(
-                        self.git_require_msg(
-                            source_dir=self.args.source_dir, error=str(e)),
-                        style="red"
-                    )
-        else:
-            self.printer.print_in_terminal("no_changes_made")
-
-    def run_in_terminal(self, request: AgenticEditRequest):
-        """
-        Runs the agentic edit process based on the request and displays
-        the interaction streamingly in the terminal using Rich.
-        """
-        console = Console()
+        console = Console()        
         project_name = os.path.basename(os.path.abspath(self.args.source_dir))
-        console.rule(f"[bold cyan]Starting Agentic Edit: {project_name}[/]")
+        console.rule(f"[bold cyan]启动代理: {project_name}[/]")
         console.print(Panel(
-            f"[bold]{get_message('/agent/edit/user_query')}:[/bold]\n{request.user_input}", title=get_message("/agent/edit/objective"), border_style="blue"))
+            f"[bold]用户输入:[/bold]\n{request.user_input}", title="目标", border_style="blue"))
 
         try:
-            self.apply_pre_changes()
             event_stream = self.analyze(request)
             for event in event_stream:
                 if isinstance(event, TokenUsageEvent):
-                    last_meta: SingleOutputMeta = event.usage
-                    # Get model info for pricing
+                    # 获取模型信息以计算价格
                     from autocoder.utils import llms as llm_utils
                     model_name = ",".join(llm_utils.get_llm_names(self.llm))
                     model_info = llm_utils.get_model_info(
@@ -1429,15 +1237,15 @@ class AgenticRAG:
                     output_price = model_info.get(
                         "output_price", 0.0) if model_info else 0.0
 
-                    # Calculate costs
+                    # 计算成本
+                    last_meta = event.usage
                     input_cost = (last_meta.input_tokens_count *
-                                  input_price) / 1000000  # Convert to millions
-                    # Convert to millions
+                                 input_price) / 1000000  # 转换为百万
                     output_cost = (
                         last_meta.generated_tokens_count * output_price) / 1000000
 
-                    # 添加日志记录
-                    logger.info(f"Token Usage: Model={model_name}, Input Tokens={last_meta.input_tokens_count}, Output Tokens={last_meta.generated_tokens_count}, Input Cost=${input_cost:.6f}, Output Cost=${output_cost:.6f}")
+                    # 记录日志
+                    logger.info(f"Token使用情况: 模型={model_name}, 输入Token={last_meta.input_tokens_count}, 输出Token={last_meta.generated_tokens_count}, 输入成本=${input_cost:.6f}, 输出成本=${output_cost:.6f}")
 
                     self.printer.print_in_terminal(
                             "code_generation_complete",
@@ -1451,44 +1259,42 @@ class AgenticRAG:
                             sampling_count=1
                         )
                     
-                if isinstance(event, LLMThinkingEvent):
-                    # Render thinking within a less prominent style, maybe grey?
+                elif isinstance(event, LLMThinkingEvent):
+                    # 以较不显眼的样式呈现思考内容
                     console.print(f"[grey50]{event.text}[/grey50]", end="")
                 elif isinstance(event, LLMOutputEvent):
-                    # Print regular LLM output, potentially as markdown if needed later
+                    # 打印常规LLM输出
                     console.print(event.text, end="")
                 elif isinstance(event, ToolCallEvent):
-                    # Skip displaying AttemptCompletionTool's tool call
-                    if isinstance(event.tool, AttemptCompletionTool):
-                        continue  # Do not display AttemptCompletionTool tool call
+                    # 跳过显示完成工具的调用
+                    if hasattr(event.tool, "result") and hasattr(event.tool, "command"):
+                        continue  # 不显示完成工具的调用
 
                     tool_name = type(event.tool).__name__
-                    # Use the new internationalized display function
-                    display_content = get_tool_display_message(event.tool)
+                    # 使用工具展示函数（需要自行实现）
+                    display_content = self.get_tool_display_message(event.tool)
                     console.print(Panel(
-                        display_content, title=f"🛠️ Action: {tool_name}", border_style="blue", title_align="left"))
+                        display_content, title=f"🛠️ 操作: {tool_name}", border_style="blue", title_align="left"))
 
                 elif isinstance(event, ToolResultEvent):
-                    # Skip displaying AttemptCompletionTool's result
+                    # 跳过显示完成工具的结果
                     if event.tool_name == "AttemptCompletionTool":
-                        continue  # Do not display AttemptCompletionTool result
-
-                    if event.tool_name == "PlanModeRespondTool":
                         continue
 
                     result = event.result
-                    title = f"✅ Tool Result: {event.tool_name}" if result.success else f"❌ Tool Result: {event.tool_name}"
+                    title = f"✅ 工具结果: {event.tool_name}" if result.success else f"❌ 工具结果: {event.tool_name}"
                     border_style = "green" if result.success else "red"
-                    base_content = f"[bold]Status:[/bold] {'Success' if result.success else 'Failure'}\n"
-                    base_content += f"[bold]Message:[/bold] {result.message}\n"
+                    base_content = f"[bold]状态:[/bold] {'成功' if result.success else '失败'}\n"
+                    base_content += f"[bold]消息:[/bold] {result.message}\n"
 
+                    # 格式化内容函数
                     def _format_content(content):
                         if len(content) > 200:
                             return f"{content[:100]}\n...\n{content[-100:]}"
                         else:
                             return content
 
-                    # Prepare panel for base info first
+                    # 首先准备基本信息面板
                     panel_content = [base_content]
                     syntax_content = None
 
@@ -1499,13 +1305,15 @@ class AgenticRAG:
                                 import json
                                 content_str = json.dumps(
                                     result.content, indent=2, ensure_ascii=False)
+                                from rich.syntax import Syntax
                                 syntax_content = Syntax(
                                     content_str, "json", theme="default", line_numbers=False)
                             elif isinstance(result.content, str) and ('\n' in result.content or result.content.strip().startswith('<')):
-                                # Heuristic for code or XML/HTML
-                                lexer = "python"  # Default guess
+                                # 代码或XML/HTML的启发式判断
+                                from rich.syntax import Syntax
+                                lexer = "python"  # 默认猜测
                                 if event.tool_name == "ReadFileTool" and isinstance(event.result.message, str):
-                                    # Try to guess lexer from file extension in message
+                                    # 尝试从消息中的文件扩展名猜测lexer
                                     if ".py" in event.result.message:
                                         lexer = "python"
                                     elif ".js" in event.result.message:
@@ -1523,7 +1331,7 @@ class AgenticRAG:
                                     elif ".md" in event.result.message:
                                         lexer = "markdown"
                                     else:
-                                        lexer = "text"  # Fallback lexer
+                                        lexer = "text"  # 备用lexer
                                 elif event.tool_name == "ExecuteCommandTool":
                                     lexer = "shell"
                                 else:
@@ -1533,25 +1341,22 @@ class AgenticRAG:
                                     _format_content(result.content), lexer, theme="default", line_numbers=True)
                             else:
                                 content_str = str(result.content)
-                                # Append simple string content directly
+                                # 直接附加简单字符串内容
                                 panel_content.append(
                                     _format_content(content_str))
                         except Exception as e:
                             logger.warning(
-                                f"Error formatting tool result content: {e}")
+                                f"格式化工具结果内容时出错: {e}")
                             panel_content.append(
-                                # Fallback
+                                # 备用
                                 _format_content(str(result.content)))
 
-                    # Print the base info panel
+                    # 打印基本信息面板
                     console.print(Panel("\n".join(
                         panel_content), title=title, border_style=border_style, title_align="left"))
-                    # Print syntax highlighted content separately if it exists
+                    # 单独打印语法高亮内容（如果存在）
                     if syntax_content:
                         console.print(syntax_content)
-                elif isinstance(event, PlanModeRespondEvent):
-                    console.print(Panel(Markdown(event.completion.response),
-                                  title="🏁 Task Completion", border_style="green", title_align="left"))
 
                 elif isinstance(event, CompletionEvent):
                     # 在这里完成实际合并
@@ -1559,24 +1364,45 @@ class AgenticRAG:
                         self.apply_changes()
                     except Exception as e:
                         logger.exception(
-                            f"Error merging shadow changes to project: {e}")
+                            f"合并影子更改到项目时出错: {e}")
 
+                    from rich.markdown import Markdown
                     console.print(Panel(Markdown(event.completion.result),
-                                  title="🏁 Task Completion", border_style="green", title_align="left"))
+                                  title="🏁 任务完成", border_style="green", title_align="left"))
                     if event.completion.command:
                         console.print(
-                            f"[dim]Suggested command:[/dim] [bold cyan]{event.completion.command}[/]")
+                            f"[dim]建议命令:[/dim] [bold cyan]{event.completion.command}[/]")
                 elif isinstance(event, ErrorEvent):
                     console.print(Panel(
-                        f"[bold red]Error:[/bold red] {event.message}", title="🔥 Error", border_style="red", title_align="left"))
+                        f"[bold red]错误:[/bold red] {event.message}", title="🔥 错误", border_style="red", title_align="left"))
 
-                time.sleep(0.1)  # Small delay for better visual flow
+                time.sleep(0.1)  # 小延迟以获得更好的视觉流
 
         except Exception as e:
             logger.exception(
-                "An unexpected error occurred during agent execution:")
+                "代理执行过程中发生意外错误:")
             console.print(Panel(
-                f"[bold red]FATAL ERROR:[/bold red]\n{str(e)}", title="🔥 System Error", border_style="red"))
+                f"[bold red]致命错误:[/bold red]\n{str(e)}", title="🔥 系统错误", border_style="red"))
             raise e
         finally:
-            console.rule("[bold cyan]Agentic Edit Finished[/]")
+            console.rule("[bold cyan]代理执行完成[/]")
+    
+    def apply_changes(self):
+        """
+        将所有跟踪的文件变更应用到原始项目目录
+        此方法应在子类中实现
+        """
+        pass
+    
+    @abstractmethod
+    def get_tool_display_message(self, tool: BaseTool) -> str:
+        """
+        获取工具在终端中的显示消息
+        
+        Args:
+            tool: 工具对象
+            
+        Returns:
+            显示消息
+        """
+        pass 

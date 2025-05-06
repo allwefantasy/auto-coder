@@ -7,10 +7,10 @@ from autocoder.common import AutoCoderArgs
 import typing
 
 if typing.TYPE_CHECKING:
-    from autocoder.agent.rag.agentic_rag import AgenticRAG
+    from ..base_agent import BaseAgent
 
 class WriteToFileToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional['AgenticRAG'], tool: WriteToFileTool, args: AutoCoderArgs):
+    def __init__(self, agent: Optional['BaseAgent'], tool: WriteToFileTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: WriteToFileTool = tool  # For type hinting
         self.shadow_manager = self.agent.shadow_manager if self.agent else None

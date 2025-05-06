@@ -8,11 +8,11 @@ from autocoder.common.mcp_server import get_mcp_server
 from loguru import logger
 
 if typing.TYPE_CHECKING:
-    from autocoder.agent.rag.agentic_rag import AgenticRAG
+    from ..base_agent import BaseAgent
 
 
 class UseMcpToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional['AgenticRAG'], tool: UseMcpTool, args: AutoCoderArgs):
+    def __init__(self, agent: Optional['BaseAgent'], tool: UseMcpTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: UseMcpTool = tool # For type hinting
 

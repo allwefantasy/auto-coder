@@ -6,10 +6,10 @@ import typing
 from autocoder.common import AutoCoderArgs
 
 if typing.TYPE_CHECKING:
-    from autocoder.agent.rag.agentic_rag import AgenticRAG
+    from ..base_agent import BaseAgent
 
 class AttemptCompletionToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional['AgenticRAG'], tool: AttemptCompletionTool, args: AutoCoderArgs):
+    def __init__(self, agent: Optional['BaseAgent'], tool: AttemptCompletionTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: AttemptCompletionTool = tool # For type hinting
 

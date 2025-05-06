@@ -12,10 +12,10 @@ from autocoder.common import AutoCoderArgs
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.run_context import get_run_context
 if typing.TYPE_CHECKING:
-    from autocoder.agent.rag.agentic_rag import AgenticRAG
+    from ..base_agent import BaseAgent
 
 class ExecuteCommandToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional['AgenticRAG'], tool: ExecuteCommandTool, args: AutoCoderArgs):
+    def __init__(self, agent: Optional['BaseAgent'], tool: ExecuteCommandTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: ExecuteCommandTool = tool # For type hinting
 
