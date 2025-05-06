@@ -67,4 +67,6 @@ notebooks/generated_image.png
 /notebooks/*.txt
 /examples/test_project
 /package-lock.json/
+.windsurfrules
+.cursor
 
