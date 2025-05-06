@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import os
 import threading
@@ -31,12 +32,13 @@ from autocoder.shadows.shadow_manager import ShadowManager
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events.event_types import Event, EventType, EventMetadata
 from autocoder.events import event_content as EventContentCreator
+from autocoder.memory.active_context_manager import ActiveContextManager
 
 from .types import (
     BaseTool, ToolResult, AgentRequest, FileChangeEntry,
     LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ToolResultEvent, 
     CompletionEvent, ErrorEvent, TokenUsageEvent, AttemptCompletionTool,    
-    PlanModeRespondTool,Message,ReplyDecision
+    PlanModeRespondTool,Message,ReplyDecision, PlanModeRespondEvent
 )
 from .tool_registry import ToolRegistry
 from .tools.base_tool_resolver import BaseToolResolver
@@ -326,7 +328,7 @@ class BaseAgent(ABC):
             
         return context    
     
-    def _record_file_change(self, file_path: str, change_type: str, diff: Optional[str] = None, content: Optional[str] = None):
+    def record_file_change(self, file_path: str, change_type: str, diff: Optional[str] = None, content: Optional[str] = None):
         """
         记录单个文件的变更信息。
 
@@ -1396,10 +1398,84 @@ class BaseAgent(ABC):
         finally:
             console.rule("[bold cyan]代理执行完成[/]")
     
+    def apply_pre_changes(self):
+        # get the file name
+        file_name = os.path.basename(self.args.file)
+        if not self.args.skip_commit:
+            try:
+                get_event_manager(self.args.event_file).write_result(
+                    EventContentCreator.create_result(
+                        content=self.printer.get_message_from_key("/agent/edit/apply_pre_changes")), metadata=EventMetadata(
+                        action_file=self.args.file,
+                        is_streaming=False,
+                        path="/agent/edit/apply_pre_changes",
+                        stream_out_type="/agent/edit").to_dict())
+                git_utils.commit_changes(
+                    self.args.source_dir, f"auto_coder_pre_{file_name}")
+            except Exception as e:
+                self.printer.print_in_terminal("git_init_required",
+                                               source_dir=self.args.source_dir, error=str(e))
+                return
+
     def apply_changes(self):
         """
-        将所有跟踪的文件变更应用到原始项目目录
-        此方法应在子类中实现
+        Apply all tracked file changes to the original project directory.
         """
-        pass
+        for (file_path, change) in self.get_all_file_changes().items():
+            # Ensure the directory exists before writing the file
+            dir_path = os.path.dirname(file_path)
+            if dir_path: # Ensure dir_path is not empty (for files in root)
+                 os.makedirs(dir_path, exist_ok=True)
+
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(change.content)
+
+        if len(self.get_all_file_changes()) > 0:
+            if not self.args.skip_commit:
+                try:
+                    file_name = os.path.basename(self.args.file)
+                    commit_result = git_utils.commit_changes(
+                        self.args.source_dir,
+                        f"{self.args.query}\nauto_coder_{file_name}",
+                    )
+
+                    get_event_manager(self.args.event_file).write_result(
+                        EventContentCreator.create_result(
+                            content=self.printer.get_message_from_key("/agent/edit/apply_changes")), metadata=EventMetadata(
+                            action_file=self.args.file,
+                            is_streaming=False,
+                            stream_out_type="/agent/edit").to_dict())
+                    action_yml_file_manager = ActionYmlFileManager(
+                        self.args.source_dir)
+                    action_file_name = os.path.basename(self.args.file)
+                    add_updated_urls = []
+                    commit_result.changed_files
+                    for file in commit_result.changed_files:
+                        add_updated_urls.append(
+                            os.path.join(self.args.source_dir, file))
+
+                    self.args.add_updated_urls = add_updated_urls
+                    update_yaml_success = action_yml_file_manager.update_yaml_field(
+                        action_file_name, "add_updated_urls", add_updated_urls)
+                    if not update_yaml_success:
+                        self.printer.print_in_terminal(
+                            "yaml_save_error", style="red", yaml_file=action_file_name)
+
+                    if self.args.enable_active_context:
+                        active_context_manager = ActiveContextManager(
+                            self.llm, self.args.source_dir)
+                        task_id = active_context_manager.process_changes(
+                            self.args)
+                        self.printer.print_in_terminal("active_context_background_task",
+                                                       style="blue",
+                                                       task_id=task_id)
+                    git_utils.print_commit_info(commit_result=commit_result)
+                except Exception as e:
+                    self.printer.print_str_in_terminal(
+                        self.git_require_msg(
+                            source_dir=self.args.source_dir, error=str(e)),
+                        style="red"
+                    )
+        else:
+            self.printer.print_in_terminal("no_changes_made")
             

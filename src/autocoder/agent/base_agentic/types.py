@@ -20,6 +20,48 @@ class BaseTool(BaseModel):
     pass
 
 
+class ExecuteCommandTool(BaseTool):
+    command: str
+    requires_approval: bool
+
+class ReadFileTool(BaseTool):
+    path: str
+
+class WriteToFileTool(BaseTool):
+    path: str
+    content: str
+
+class ReplaceInFileTool(BaseTool):
+    path: str
+    diff: str
+
+class SearchFilesTool(BaseTool):
+    path: str
+    regex: str
+    file_pattern: Optional[str] = None
+
+class ListFilesTool(BaseTool):
+    path: str
+    recursive: Optional[bool] = False
+
+class AskFollowupQuestionTool(BaseTool):
+    question: str
+    options: Optional[List[str]] = None
+
+class AttemptCompletionTool(BaseTool):
+    result: str
+    command: Optional[str] = None
+
+class PlanModeRespondTool(BaseTool):
+    response: str
+    options: Optional[List[str]] = None
+
+class UseMcpTool(BaseTool):
+    server_name: str
+    tool_name: str
+    query:str  
+
+
 # 工具指南相关类型
 class ToolDescription(BaseModel):
     """
@@ -84,6 +126,11 @@ class ErrorEvent(BaseModel):
     """表示过程中的错误"""
     message: str
 
+class PlanModeRespondEvent(BaseModel):
+    """Represents the LLM attempting to complete the task."""
+    completion: SkipValidation[PlanModeRespondTool] # Skip validation
+    completion_xml: str    
+
 
 # 工具执行中的事件类型联合
 AgentEvent = Union[
@@ -93,7 +140,8 @@ AgentEvent = Union[
     ToolResultEvent,
     TokenUsageEvent,
     CompletionEvent,
-    ErrorEvent
+    ErrorEvent,
+    PlanModeRespondEvent
 ]
 
 
@@ -113,47 +161,6 @@ class AgentRequest(BaseModel):
     代理请求
     """
     user_input: str 
-
-class ExecuteCommandTool(BaseTool):
-    command: str
-    requires_approval: bool
-
-class ReadFileTool(BaseTool):
-    path: str
-
-class WriteToFileTool(BaseTool):
-    path: str
-    content: str
-
-class ReplaceInFileTool(BaseTool):
-    path: str
-    diff: str
-
-class SearchFilesTool(BaseTool):
-    path: str
-    regex: str
-    file_pattern: Optional[str] = None
-
-class ListFilesTool(BaseTool):
-    path: str
-    recursive: Optional[bool] = False
-
-class AskFollowupQuestionTool(BaseTool):
-    question: str
-    options: Optional[List[str]] = None
-
-class AttemptCompletionTool(BaseTool):
-    result: str
-    command: Optional[str] = None
-
-class PlanModeRespondTool(BaseTool):
-    response: str
-    options: Optional[List[str]] = None
-
-class UseMcpTool(BaseTool):
-    server_name: str
-    tool_name: str
-    query:str  
 
 
 class Message(BaseModel):
