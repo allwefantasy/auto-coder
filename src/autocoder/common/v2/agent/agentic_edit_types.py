@@ -114,7 +114,7 @@ TOOL_MODEL_MAP: Dict[str, Type[BaseTool]] = {
     "attempt_completion": AttemptCompletionTool,
     "plan_mode_respond": PlanModeRespondTool,
     "use_mcp_tool": UseMcpTool,
-    "list_package_info": ListPackageInfoTool    
+    "list_package_info": ListPackageInfoTool,    
 }
 
 class FileChangeEntry(BaseModel):
