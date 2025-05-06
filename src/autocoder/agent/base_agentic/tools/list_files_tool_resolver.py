@@ -1,7 +1,10 @@
 import os
-from typing import Dict, Any, Optional
-from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
-from autocoder.common.v2.agent.agentic_edit_types import ListFilesTool, ToolResult  # Import ToolResult from types
+from autocoder.agent.base_agentic.tools.base_tool_resolver import BaseToolResolver
+from autocoder.agent.base_agentic.types import ListFilesTool, ToolResult  # Import ToolResult from types
+from typing import Optional, Dict, Any, List
+import fnmatch
+import re
+import json
 from loguru import logger
 import typing
 from autocoder.common import AutoCoderArgs

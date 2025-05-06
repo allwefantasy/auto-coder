@@ -59,9 +59,7 @@ class ShadowManager:
         
         返回:
             str: 事件文件ID
-        """
-        if not path.endswith('.jsonl'):
-            return event_file_id
+        """        
         temp = os.path.basename(path)
         ##  获取不带后缀的event_file_id
         event_file_id = os.path.splitext(temp)[0]

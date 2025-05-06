@@ -3,14 +3,10 @@ Default tools initialization module
 Used to initialize and register default tools
 """
 from typing import Dict, Type, List
-import importlib
-import inspect
-import os
-import logging
+from loguru import logger
 import byzerllm
 from .tool_registry import ToolRegistry
 from .types import BaseTool, ToolDescription, ToolExample
-from .tools.base_tool_resolver import BaseToolResolver
 
 # Import all tool classes
 from .types import (
@@ -31,21 +27,6 @@ from .tools.attempt_completion_tool_resolver import AttemptCompletionToolResolve
 from .tools.plan_mode_respond_tool_resolver import PlanModeRespondToolResolver
 from .tools.use_mcp_tool_resolver import UseMcpToolResolver
 
-logger = logging.getLogger(__name__)
-
-# Define default tools and corresponding resolver mappings
-DEFAULT_TOOL_MAPPINGS = {
-    "execute_command": (ExecuteCommandTool, ExecuteCommandToolResolver),
-    "read_file": (ReadFileTool, ReadFileToolResolver),
-    "write_to_file": (WriteToFileTool, WriteToFileToolResolver),
-    "replace_in_file": (ReplaceInFileTool, ReplaceInFileToolResolver),
-    "search_files": (SearchFilesTool, SearchFilesToolResolver),
-    "list_files": (ListFilesTool, ListFilesToolResolver),
-    "ask_followup_question": (AskFollowupQuestionTool, AskFollowupQuestionToolResolver),
-    "attempt_completion": (AttemptCompletionTool, AttemptCompletionToolResolver),
-    "plan_mode_respond": (PlanModeRespondTool, PlanModeRespondToolResolver),
-    "use_mcp_tool": (UseMcpTool, UseMcpToolResolver),
-}
 
 # Tool description generators with byzerllm.prompt() decorators
 

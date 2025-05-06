@@ -1,10 +1,8 @@
 from typing import Dict, Any, Optional
 import typing
+from autocoder.agent.base_agentic.tools.base_tool_resolver import BaseToolResolver
+from autocoder.agent.base_agentic.types import UseMcpTool, ToolResult # Import ToolResult from types
 from autocoder.common import AutoCoderArgs
-from autocoder.common.mcp_server_types import McpRequest
-from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
-from autocoder.common.v2.agent.agentic_edit_types import UseMcpTool, ToolResult # Import ToolResult from types
-from autocoder.common.mcp_server import get_mcp_server
 from loguru import logger
 
 if typing.TYPE_CHECKING:

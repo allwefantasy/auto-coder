@@ -42,6 +42,10 @@ from .tool_registry import ToolRegistry
 from .tools.base_tool_resolver import BaseToolResolver
 from .agent_hub import AgentHub, Group, GroupMembership
 from .utils import GroupUtils,GroupMemberResponse
+from .default_tools import register_default_tools
+from .agentic_tool_display import get_tool_display_message
+from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
+from autocoder.common.save_formatted_log import save_formatted_log
 
 class BaseAgent(ABC):
     """
@@ -90,12 +94,14 @@ class BaseAgent(ABC):
         self.files = files
         self.printer = Printer()
         self.conversation_history = conversation_history or []
+               
         
         # 5. 初始化其他组件
         self.project_type_analyzer = ProjectTypeAnalyzer(args=args, llm=self.llm)        
         self.shadow_manager = ShadowManager(args.source_dir, args.event_file, args.ignore_clean_shadows)
         self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
         self.shadow_compiler = ShadowCompiler(self.shadow_manager, verbose=False)
+        register_default_tools()
         
         # MCP 服务信息
         self.mcp_server_info = ""
@@ -127,6 +133,7 @@ class BaseAgent(ABC):
         self._chat_lock = threading.RLock()   # 保护 private_chats
         # 自动注册到AgentHub
         AgentHub.register_agent(self)
+        
 
     def who_am_i(self, role: str) -> 'BaseAgent':
         self.custom_system_prompt = role
@@ -307,7 +314,7 @@ class BaseAgent(ABC):
         """
         context = {
             "name": self.name,
-            "role": self.system_prompt,
+            "role": self.custom_system_prompt,
             "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "refuse_reply_reason": self.refuse_reply_reason
         }
@@ -687,7 +694,7 @@ class BaseAgent(ABC):
             "tool_examples": tool_examples,
             "tool_case_docs": tool_case_docs,
             "tool_guidelines": tool_guidelines,
-            "system_prompt": self.system_prompt
+            "system_prompt": self.custom_system_prompt
         }
     
     def agentic_run(self, request: AgentRequest) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ToolResultEvent, CompletionEvent, ErrorEvent], None, None]:
@@ -790,7 +797,7 @@ class BaseAgent(ABC):
                         return
 
                     # Resolve the tool
-                    resolver_cls = TOOL_RESOLVER_MAP.get(type(tool_obj))
+                    resolver_cls = ToolRegistry.get_resolver_for_tool(tool_obj)
                     if not resolver_cls:
                         logger.error(
                             f"No resolver implemented for tool {type(tool_obj).__name__}")
@@ -888,6 +895,7 @@ class BaseAgent(ABC):
                 continue
             
         logger.info(f"AgenticEdit analyze loop finished after {iteration_count} iterations.")
+        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")
     
     def stream_and_parse_llm_response(
         self, generator: Generator[Tuple[str, Any], None, None], meta_holder: byzerllm.MetaHolder
@@ -1225,7 +1233,7 @@ class BaseAgent(ABC):
             f"[bold]用户输入:[/bold]\n{request.user_input}", title="目标", border_style="blue"))
 
         try:
-            event_stream = self.analyze(request)
+            event_stream = self.agentic_run(request)
             for event in event_stream:
                 if isinstance(event, TokenUsageEvent):
                     # 获取模型信息以计算价格
@@ -1273,7 +1281,7 @@ class BaseAgent(ABC):
 
                     tool_name = type(event.tool).__name__
                     # 使用工具展示函数（需要自行实现）
-                    display_content = self.get_tool_display_message(event.tool)
+                    display_content = get_tool_display_message(event.tool)
                     console.print(Panel(
                         display_content, title=f"🛠️ 操作: {tool_name}", border_style="blue", title_align="left"))
 
@@ -1394,16 +1402,4 @@ class BaseAgent(ABC):
         此方法应在子类中实现
         """
         pass
-    
-    @abstractmethod
-    def get_tool_display_message(self, tool: BaseTool) -> str:
-        """
-        获取工具在终端中的显示消息
-        
-        Args:
-            tool: 工具对象
             
-        Returns:
-            显示消息
-        """
-        pass 

@@ -1,10 +1,13 @@
 import os
 import re
+import difflib
+import traceback
 from typing import Dict, Any, Optional, List, Tuple
 import typing
+from autocoder.agent.base_agentic.tools.base_tool_resolver import BaseToolResolver
+from autocoder.agent.base_agentic.types import ReplaceInFileTool, ToolResult  # Import ToolResult from types
+from autocoder.common.printer import Printer
 from autocoder.common import AutoCoderArgs
-from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
-from autocoder.common.v2.agent.agentic_edit_types import ReplaceInFileTool, ToolResult  # Import ToolResult from types
 from loguru import logger
 from autocoder.common.auto_coder_lang import get_message_with_format
 if typing.TYPE_CHECKING:

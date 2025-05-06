@@ -1,7 +1,7 @@
 import os
 from typing import Dict, Any, Optional
-from autocoder.common.v2.agent.agentic_edit_types import WriteToFileTool, ToolResult  # Import ToolResult from types
-from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
+from autocoder.agent.base_agentic.types import WriteToFileTool, ToolResult  # Import ToolResult from types
+from autocoder.agent.base_agentic.tools.base_tool_resolver import BaseToolResolver
 from loguru import logger
 from autocoder.common import AutoCoderArgs
 import typing

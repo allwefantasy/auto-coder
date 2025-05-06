@@ -1,6 +1,9 @@
 from datetime import datetime
-from .group import Group
-from byzerllm import byzerllm
+import typing
+
+if typing.TYPE_CHECKING:
+    from .agent_hub import Group
+import byzerllm
 from typing import Union,List
 from concurrent.futures import ThreadPoolExecutor
 from pydantic import BaseModel
@@ -18,10 +21,10 @@ class GroupUtils:
     _executor = ThreadPoolExecutor(max_workers=8)
     _executor_lock = threading.Lock()
 
-    def __init__(self,llm:Union[byzerllm.ByzerLLM,byzerllm.SimpleByzerLLM]):
+    def __init__(self, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
         self.llm = llm
 
-    def auto_select_group(self,content: str,groups: List[Group]) -> List[GroupMemberResponse]:
+    def auto_select_group(self, content: str, groups: List['Group']) -> List[GroupMemberResponse]:
         futures = []
         with self._executor_lock:
             for group in groups:
@@ -48,7 +51,7 @@ class GroupUtils:
         
         return results
 
-    def _safe_select_group(self, content: str, group: Group) -> List[GroupMember]:
+    def _safe_select_group(self, content: str, group: 'Group') -> List[GroupMember]:
         try:
             return self.select_group.with_llm(self.llm).with_return_type(List[GroupMember]).run(content=content, group=group)
         except Exception as e:
@@ -56,7 +59,7 @@ class GroupUtils:
             return []
     
     @byzerllm.prompt()
-    def select_group(self,content: str,group: Group) -> List[GroupMember]:
+    def select_group(self, content: str, group: 'Group') -> List[GroupMember]:
         '''
         当前时间: {{ time }}
         用户发来了如下问题:

@@ -7,13 +7,20 @@ import argparse
 import shutil
 from loguru import logger
 import byzerllm
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union, Optional
+from autocoder.agent.base_agentic.base_agent import BaseAgent
+from autocoder.agent.base_agentic.types import BaseTool, AgentRequest, ToolResult
+from autocoder.agent.base_agentic.tool_registry import ToolRegistry
+from autocoder.agent.base_agentic.tools.base_tool_resolver import BaseToolResolver
+from autocoder.agent.base_agentic.types import ToolDescription, ToolExample
+from autocoder.common import AutoCoderArgs
+from autocoder.common import SourceCodeList, SourceCode
+from autocoder.common.file_monitor.monitor import FileMonitor
+from autocoder.common.rulefiles.autocoderrules_utils import get_rules
 
 # 解析命令行参数
 def parse_args():
-    parser = argparse.ArgumentParser(description="演示BaseAgent和byzerllm.prompt装饰器的用法")
-    parser.add_argument("--source_dir", type=str, default="demo_agent_workspace",
-                        help="工作目录路径，将在此目录下创建示例文件")
+    parser = argparse.ArgumentParser(description="演示BaseAgent和byzerllm.prompt装饰器的用法")    
     parser.add_argument("--model", type=str, default="v3_chat",
                         help="使用的LLM模型")
     parser.add_argument("--product_mode", type=str, default="lite",
@@ -23,16 +30,13 @@ def parse_args():
     return parser.parse_args()
 
 # 准备演示环境
-def prepare_demo_environment(base_dir):
-    if os.path.exists(base_dir):
-        shutil.rmtree(base_dir)
-    
+def prepare_demo_environment():    
+    base_dir = os.path.join(os.getcwd(), "demo_agent_workspace")  
     # 创建示例源代码文件
     os.makedirs(os.path.join(base_dir, "src"), exist_ok=True)
     with open(os.path.join(base_dir, "src", "example.py"), "w") as f:
         f.write("""
-def hello_world():
-    """Demo function for testing"""
+def hello_world():    
     print("Hello, World!")
     return "Hello, World!"
 """)
@@ -60,12 +64,13 @@ def main():
     args = parse_args()
     
     # 准备演示环境
-    source_dir = prepare_demo_environment(args.source_dir)
-    logger.info(f"已准备演示环境: {source_dir}")
+    source_dir = prepare_demo_environment()
+    os.chdir(source_dir)    
+    
+    logger.info(f"已准备演示环境: {source_dir}")    
     
     # 1. 初始化FileMonitor（必须最先进行）
-    try:
-        from autocoder.common.file_monitor.monitor import FileMonitor
+    try:        
         monitor = FileMonitor(source_dir)
         if not monitor.is_running():
             monitor.start()
@@ -76,8 +81,7 @@ def main():
         logger.error(f"初始化文件监控出错: {e}")
     
     # 2. 加载规则文件
-    try:
-        from autocoder.common.rulefiles.autocoderrules_utils import get_rules
+    try:        
         rules = get_rules(source_dir)
         logger.info(f"已加载规则: {len(rules)} 条")
     except Exception as e:
@@ -93,77 +97,87 @@ def main():
     llm = get_single_llm(args.model, product_mode=args.product_mode)
     logger.info(f"LLM初始化完成: {llm.default_model_name}")
     
-    # 5. 配置AutoCoderArgs
-    from autocoder.common import AutoCoderArgs
-    from autocoder.common import SourceCodeList, SourceCode
+    # 5. 配置AutoCoderArgs        
     
     agent_args = AutoCoderArgs(
         source_dir=source_dir,
         model=args.model,
         product_mode=args.product_mode,
         event_file=args.event_file or os.path.join(source_dir, "events.json"),
-        file="",
-        conversation_prune_safe_zone_tokens=100,
+        file="",        
         enable_active_context_in_generate=True,
         ignore_clean_shadows=True,
     )
     
     # 准备源代码列表
-    files = SourceCodeList()
-    files.add_source(SourceCode(
+    files = SourceCodeList(sources=[SourceCode(
         module_name="src/example.py",
-        content=open(os.path.join(source_dir, "src", "example.py")).read()
-    ))
-    files.add_source(SourceCode(
+        source_code=open(os.path.join(source_dir, "src", "example.py")).read()
+    ), SourceCode(
         module_name="docs/guide.md",
-        content=open(os.path.join(source_dir, "docs", "guide.md")).read()
-    ))
+        source_code=open(os.path.join(source_dir, "docs", "guide.md")).read()
+    )])
     
-    # 6. 创建一个自定义Agent来展示byzerllm.prompt装饰器的用法
-    from autocoder.agent.base_agentic import BaseAgent
-    from autocoder.agent.base_agentic.types import BaseTool, AgentRequest
+    # 6. 创建一个自定义Agent来展示byzerllm.prompt装饰器的用法    
     
+    # 定义Echo工具类 - 继承自BaseTool
+    class EchoTool(BaseTool):
+        message: str  # 要回显的消息
+
+    # 创建Echo工具解析器 - 继承自BaseToolResolver
+    class EchoToolResolver(BaseToolResolver):
+        def __init__(self, agent, tool, args):
+            super().__init__(agent, tool, args)
+            self.tool: EchoTool = tool  # 提供类型提示
+        
+        def resolve(self) -> ToolResult:
+            """实现Echo工具的解析逻辑"""
+            try:
+                # 简单地返回消息
+                message = self.tool.message
+                return ToolResult(success=True, message="Echo工具执行成功", content=message)
+            except Exception as e:
+                return ToolResult(success=False, message=f"Echo工具执行失败: {str(e)}")
+
+    # 注册Echo工具
+    def register_echo_tool():
+        # 准备工具描述
+        description = ToolDescription(
+            description="回显输入的消息",
+            parameters="message: 要回显的消息内容",
+            usage="用于简单地回显用户输入的消息"
+        )
+        
+        # 准备工具示例
+        example = ToolExample(
+            title="Echo工具使用示例",
+            body="""<echo>
+<message>这是一条测试消息</message>
+</echo>"""
+        )
+        
+        # 注册工具
+        ToolRegistry.register_tool(
+            tool_tag="echo",  # XML标签名
+            tool_cls=EchoTool,  # 工具类
+            resolver_cls=EchoToolResolver,  # 解析器类
+            description=description,  # 工具描述
+            example=example,  # 工具示例
+            use_guideline="此工具用于简单地回显用户输入的消息，适用于测试和调试场景。"  # 使用指南
+        )
+
     class DemoAgent(BaseAgent):
         """
         演示用的Agent，展示byzerllm.prompt装饰器的用法
         """
-        
-        @byzerllm.prompt()
-        def generate_summary(self, task_name: str, files: List[str], user_query: str) -> Dict[str, Any]:
-            """
-            为{{ task_name }}任务生成项目文件摘要
-            
-            项目包含以下文件:
-            {% for file in files %}
-            - {{ file }}
-            {% endfor %}
-            
-            用户查询: {{ user_query }}
-            
-            现在我将为您分析这些文件，请稍等...
-            """
-            # 准备模板上下文
-            context = {
-                "task_name": task_name,
-                "files": files,
-                "user_query": user_query
-            }
-            return context
-        
-        def get_tool_display_message(self, tool: BaseTool) -> str:
-            """
-            实现基类的抽象方法，获取工具在终端中的显示消息
-            """
-            return f"执行工具: {type(tool).__name__}"
-        
-        def apply_changes(self):
-            """
-            实现基类的方法，应用变更
-            """
-            logger.info("应用变更...")
+        def __init__(self, name: str, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], files: SourceCodeList, args: AutoCoderArgs, conversation_history: Optional[List[Dict[str, Any]]] = None):
+            super().__init__(name, llm, files, args, conversation_history)
+            # 注册Echo工具
+            register_echo_tool()
             
     # 7. 创建Agent实例
     demo_agent = DemoAgent(
+        name="DemoAgent",
         llm=llm,
         files=files,
         args=agent_args,
@@ -171,37 +185,7 @@ def main():
     )
     
     # 8. 展示prompt装饰器的使用
-    logger.info("开始演示byzerllm.prompt装饰器的用法...")
-    
-    # 8.1 使用generate_summary方法，直接获取渲染后的prompt
-    task = "代码分析"
-    file_list = ["src/example.py", "docs/guide.md"]
-    query = "这个项目有哪些功能？"
-    
-    # 获取渲染后的prompt
-    rendered_prompt = demo_agent.generate_summary.prompt(
-        task_name=task,
-        files=file_list,
-        user_query=query
-    )
-    
-    logger.info("渲染后的prompt内容:")
-    logger.info("-" * 40)
-    logger.info(rendered_prompt)
-    logger.info("-" * 40)
-    
-    # 8.2 使用LLM和渲染后的prompt生成回答
-    logger.info("使用LLM和渲染后的prompt生成回答...")
-    
-    response = llm.chat_oai([
-        {"role": "system", "content": "你是一个助手，负责分析项目文件并回答问题。"},
-        {"role": "user", "content": rendered_prompt}
-    ])
-    
-    logger.info("LLM回答:")
-    logger.info("-" * 40)
-    logger.info(response[0]["content"])
-    logger.info("-" * 40)
+    logger.info("开始演示byzerllm.prompt装饰器的用法...")    
     
     # 9. 演示使用Agent的analyze方法（简单演示）
     logger.info("开始演示Agent的analyze方法...")
@@ -211,11 +195,20 @@ def main():
     
     logger.info(f"用户输入: {user_input}")
     logger.info("运行Agent...")
+    demo_agent.run_in_terminal(request)
     
     # 由于Agent的实现较为复杂，这里只模拟一下运行过程
     logger.info("模拟Agent运行过程 (实际使用时请使用run_with_events或run_in_terminal方法)")
     
-    # 10. 清理环境
+    # 10. 添加Echo工具演示
+    user_input = "请用echo工具输出：你好"
+    request = AgentRequest(user_input=user_input)
+    
+    logger.info(f"用户输入: {user_input}")
+    logger.info("运行Agent...")
+    demo_agent.run_in_terminal(request)
+    
+    # 11. 清理环境
     logger.info(f"演示完成，保留演示环境以供检查: {source_dir}")
     logger.info("如需清理环境，请手动删除该目录")
 

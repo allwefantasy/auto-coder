@@ -1,8 +1,9 @@
+import json
 from typing import Dict, Any, Optional
 import typing
 from autocoder.common import AutoCoderArgs
-from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
-from autocoder.common.v2.agent.agentic_edit_types import PlanModeRespondTool, ToolResult # Import ToolResult from types
+from autocoder.agent.base_agentic.tools.base_tool_resolver import BaseToolResolver
+from autocoder.agent.base_agentic.types import PlanModeRespondTool, ToolResult # Import ToolResult from types
 from loguru import logger
 
 if typing.TYPE_CHECKING:

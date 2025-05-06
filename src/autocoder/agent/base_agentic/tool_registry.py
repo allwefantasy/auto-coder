@@ -1,9 +1,10 @@
 from typing import Dict, Type, ClassVar, Optional, List
 import logging
+import inspect
 from .types import BaseTool, ToolDescription, ToolExample
 from .tools.base_tool_resolver import BaseToolResolver
 
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
 class ToolRegistry:
@@ -362,16 +363,22 @@ class ToolRegistry:
         return cls._tools_case_doc.copy()
 
     @classmethod
-    def get_resolver_for_tool(cls, tool_cls: Type[BaseTool]) -> Type[BaseToolResolver]:
+    def get_resolver_for_tool(cls, tool_cls_or_instance) -> Type[BaseToolResolver]:
         """
         获取工具对应的解析器类
 
         Args:
-            tool_cls: 工具类
+            tool_cls_or_instance: 工具类或工具实例
 
         Returns:
             解析器类
         """
+        # 如果传入的是实例，获取其类
+        if not inspect.isclass(tool_cls_or_instance):
+            tool_cls = type(tool_cls_or_instance)
+        else:
+            tool_cls = tool_cls_or_instance
+            
         return cls._tool_resolver_map.get(tool_cls)
 
     @classmethod
