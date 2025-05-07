@@ -49,6 +49,7 @@ from .default_tools import register_default_tools
 from .agentic_tool_display import get_tool_display_message
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue
 from autocoder.common.save_formatted_log import save_formatted_log
+from . import agentic_lang
 
 class BaseAgent(ABC):
     """
@@ -1302,9 +1303,11 @@ class BaseAgent(ABC):
         """
         console = Console()        
         project_name = os.path.basename(os.path.abspath(self.args.source_dir))
-        console.rule(f"[bold cyan]启动代理: {project_name}[/]")
+        console.rule(agentic_lang.get_message_with_format("agent_start", project_name=project_name))
         console.print(Panel(
-            f"[bold]用户输入:[/bold]\n{request.user_input}", title="目标", border_style="blue"))
+            agentic_lang.get_message_with_format("user_input", input=request.user_input), 
+            title=agentic_lang.get_message("user_input_title"), 
+            border_style="blue"))
 
         # 添加token累计变量
         total_input_tokens = 0
@@ -1341,7 +1344,13 @@ class BaseAgent(ABC):
                     total_output_cost += output_cost
 
                     # 记录日志
-                    logger.info(f"Token使用情况: 模型={model_name}, 输入Token={last_meta.input_tokens_count}, 输出Token={last_meta.generated_tokens_count}, 输入成本=${input_cost:.6f}, 输出成本=${output_cost:.6f}")
+                    logger.info(agentic_lang.get_message_with_format(
+                        "token_usage_log", 
+                        model=model_name, 
+                        input_tokens=last_meta.input_tokens_count, 
+                        output_tokens=last_meta.generated_tokens_count, 
+                        input_cost=input_cost, 
+                        output_cost=output_cost))
                     
                 elif isinstance(event, LLMThinkingEvent):
                     # 以较不显眼的样式呈现思考内容
@@ -1358,7 +1367,10 @@ class BaseAgent(ABC):
                     # 使用工具展示函数（需要自行实现）
                     display_content = get_tool_display_message(event.tool)
                     console.print(Panel(
-                        display_content, title=f"🛠️ 操作: {tool_name}", border_style="blue", title_align="left"))
+                        display_content, 
+                        title=agentic_lang.get_message_with_format("tool_operation_title", tool_name=tool_name), 
+                        border_style="blue", 
+                        title_align="left"))
 
                 elif isinstance(event, ToolResultEvent):
                     # 跳过显示完成工具的结果
@@ -1366,10 +1378,11 @@ class BaseAgent(ABC):
                         continue
 
                     result = event.result
-                    title = f"✅ 工具结果: {event.tool_name}" if result.success else f"❌ 工具结果: {event.tool_name}"
+                    title = agentic_lang.get_message_with_format("tool_result_success_title", tool_name=event.tool_name) if result.success else agentic_lang.get_message_with_format("tool_result_failure_title", tool_name=event.tool_name)
                     border_style = "green" if result.success else "red"
-                    base_content = f"[bold]状态:[/bold] {'成功' if result.success else '失败'}\n"
-                    base_content += f"[bold]消息:[/bold] {result.message}\n"
+                    success_status = agentic_lang.get_message("success_status") if result.success else agentic_lang.get_message("failure_status")
+                    base_content = agentic_lang.get_message_with_format("status", status=success_status) + "\n"
+                    base_content += agentic_lang.get_message_with_format("message", message=result.message) + "\n"
 
                     # 格式化内容函数
                     def _format_content(content):
@@ -1429,8 +1442,7 @@ class BaseAgent(ABC):
                                 panel_content.append(
                                     _format_content(content_str))
                         except Exception as e:
-                            logger.warning(
-                                f"格式化工具结果内容时出错: {e}")
+                            logger.warning(agentic_lang.get_message_with_format("format_tool_error", error=str(e)))
                             panel_content.append(
                                 # 备用
                                 _format_content(str(result.content)))
@@ -1447,26 +1459,28 @@ class BaseAgent(ABC):
                     try:
                         self.apply_changes()
                     except Exception as e:
-                        logger.exception(
-                            f"合并影子更改到项目时出错: {e}")
+                        logger.exception(agentic_lang.get_message_with_format("shadow_merge_error", error=str(e)))
 
                     from rich.markdown import Markdown
                     console.print(Panel(Markdown(event.completion.result),
-                                  title="🏁 任务完成", border_style="green", title_align="left"))
+                                  title=agentic_lang.get_message("completion_title"), 
+                                  border_style="green", title_align="left"))
                     if event.completion.command:
-                        console.print(
-                            f"[dim]建议命令:[/dim] [bold cyan]{event.completion.command}[/]")
+                        console.print(agentic_lang.get_message_with_format("suggested_command", command=event.completion.command))
                 elif isinstance(event, ErrorEvent):
                     console.print(Panel(
-                        f"[bold red]错误:[/bold red] {event.message}", title="🔥 错误", border_style="red", title_align="left"))
+                        agentic_lang.get_message_with_format("error_content", message=event.message), 
+                        title=agentic_lang.get_message("error_title"), 
+                        border_style="red", title_align="left"))
 
                 time.sleep(0.1)  # 小延迟以获得更好的视觉流
 
         except Exception as e:
-            logger.exception(
-                "代理执行过程中发生意外错误:")
+            logger.exception(agentic_lang.get_message("unexpected_error"))
             console.print(Panel(
-                f"[bold red]致命错误:[/bold red]\n{str(e)}", title="🔥 系统错误", border_style="red"))
+                agentic_lang.get_message_with_format("fatal_error_content", error=str(e)), 
+                title=agentic_lang.get_message("fatal_error_title"), 
+                border_style="red"))
             raise e
         finally:
             # 在结束时打印累计的token使用情况
@@ -1482,7 +1496,7 @@ class BaseAgent(ABC):
                     model_names=model_name,
                     sampling_count=1
                 )
-            console.rule("[bold cyan]代理执行完成[/]")
+            console.rule(agentic_lang.get_message("agent_execution_complete"))
     
     def apply_pre_changes(self):
         # get the file name
