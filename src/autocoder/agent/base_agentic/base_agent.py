@@ -33,6 +33,7 @@ from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.events.event_types import Event, EventType, EventMetadata
 from autocoder.events import event_content as EventContentCreator
 from autocoder.memory.active_context_manager import ActiveContextManager
+from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 
 from .types import (
     BaseTool, ToolResult, AgentRequest, FileChangeEntry,
@@ -397,50 +398,46 @@ class BaseAgent(ABC):
                     continue
         return changed_files
     
+    
     def _reconstruct_tool_xml(self, tool: BaseTool) -> str:
         """
-        从Pydantic模型重建工具调用的XML表示
-
-        Args:
-            tool: 工具对象
-
-        Returns:
-            工具调用的XML字符串
+        Reconstructs the XML representation of a tool call from its Pydantic model.
         """
-        # 获取工具标签名
-        tool_tag = None
-        tag_model_map = ToolRegistry.get_tag_model_map()
-        for tag, model_cls in tag_model_map.items():
-            if isinstance(tool, model_cls):
-                tool_tag = tag
-                break
-        
+        tool_tag = next(
+            (tag for tag, model in ToolRegistry.get_tag_model_map().items() if isinstance(tool, model)), None)
         if not tool_tag:
-            logger.error(f"无法找到工具类型 {type(tool).__name__} 的标签名")
-            return f"<error>无法找到工具标签 {type(tool).__name__}</error>"
+            logger.error(
+                f"Cannot find tag name for tool type {type(tool).__name__}")
+            # Return a placeholder or raise? Let's return an error XML string.
+            return f"<error>Could not find tag for tool {type(tool).__name__}</error>"
 
-        # 构建XML结构
         xml_parts = [f"<{tool_tag}>"]
         for field_name, field_value in tool.model_dump(exclude_none=True).items():
-            # 根据类型格式化值
+            # Format value based on type, ensuring XML safety
             if isinstance(field_value, bool):
                 value_str = str(field_value).lower()
             elif isinstance(field_value, (list, dict)):
+                # Simple string representation for list/dict for now.
+                # Consider JSON within the tag if needed and supported by the prompt/LLM.
+                # Use JSON for structured data
                 value_str = json.dumps(field_value, ensure_ascii=False)
             else:
                 value_str = str(field_value)
 
-            # 转义值内容
+            # Escape the value content
             escaped_value = xml.sax.saxutils.escape(value_str)
 
-            # 处理多行内容
+            # Handle multi-line content like 'content' or 'diff' - ensure newlines are preserved
             if '\n' in value_str:
-                xml_parts.append(f"<{field_name}>\n{escaped_value}\n</{field_name}>")
+                # Add newline before closing tag for readability if content spans multiple lines
+                xml_parts.append(
+                    f"<{field_name}>\n{escaped_value}\n</{field_name}>")
             else:
-                xml_parts.append(f"<{field_name}>{escaped_value}</{field_name}>")
+                xml_parts.append(
+                    f"<{field_name}>{escaped_value}</{field_name}>")
 
         xml_parts.append(f"</{tool_tag}>")
-        # 换行连接，增加可读性
+        # Join with newline for readability, matching prompt examples
         return "\n".join(xml_parts)
     
     @byzerllm.prompt()
@@ -746,12 +743,16 @@ class BaseAgent(ABC):
         logger.info(f"Generated system prompt with length: {len(system_prompt)}")
         
         # print(system_prompt)
-        self.agentic_conversations = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": request.user_input}
-        ] 
+        self.agentic_conversations.clear()
         conversations = self.agentic_conversations
-                                                
+        conversations = [
+            {"role": "system", "content": system_prompt},
+        ] 
+                                
+        conversations.append({
+            "role": "user", "content": request.user_input
+        })        
+        
         logger.info(
             f"Initial conversation history size: {len(conversations)}")
         
@@ -776,6 +777,8 @@ class BaseAgent(ABC):
 
             assistant_buffer = ""
             logger.info("Initializing stream chat with LLM")
+
+            ## 实际请求大模型
             llm_response_gen = stream_chat_with_continue(
                 llm=self.llm,
                 conversations=conversations,
@@ -824,7 +827,6 @@ class BaseAgent(ABC):
                         yield CompletionEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to AttemptCompletion.")
-                        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")       
                         return
 
                     if isinstance(tool_obj, PlanModeRespondTool):
@@ -834,7 +836,6 @@ class BaseAgent(ABC):
                         yield PlanModeRespondEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to PlanModeRespond.")
-                        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")       
                         return
 
                     # Resolve the tool
@@ -942,63 +943,79 @@ class BaseAgent(ABC):
         self, generator: Generator[Tuple[str, Any], None, None], meta_holder: byzerllm.MetaHolder
     ) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ErrorEvent], None, None]:
         """
-        流式解析LLM响应生成器，区分纯文本、思考块和工具使用块
+        Streamingly parses the LLM response generator, distinguishing between
+        plain text, thinking blocks, and tool usage blocks, yielding corresponding Event models.
 
         Args:
-            generator: 生成器，生成(content, metadata)元组
-            meta_holder: 元数据容器
+            generator: An iterator yielding (content, metadata) tuples from the LLM stream.
 
         Yields:
-            不同类型的事件，表示LLM响应的不同部分
+            Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ErrorEvent]: Events representing
+            different parts of the LLM's response.
         """
         buffer = ""
         in_tool_block = False
         in_thinking_block = False
         current_tool_tag = None
-        # 匹配工具标签的正则表达式
-        tool_start_pattern = re.compile(r"<([a-zA-Z0-9_]+)>")
+        tool_start_pattern = re.compile(
+            r"<([a-zA-Z0-9_]+)>")  # Matches tool tags
         thinking_start_tag = "<thinking>"
         thinking_end_tag = "</thinking>"
 
         def parse_tool_xml(tool_xml: str, tool_tag: str) -> Optional[BaseTool]:
-            """解析工具XML字符串"""
+            """Minimal parser for tool XML string."""
             params = {}
             try:
-                # 查找<tool_tag>和</tool_tag>之间的内容
+                # Find content between <tool_tag> and </tool_tag>
                 inner_xml_match = re.search(
                     rf"<{tool_tag}>(.*?)</{tool_tag}>", tool_xml, re.DOTALL)
                 if not inner_xml_match:
-                    logger.error(f"无法找到<{tool_tag}>...</{tool_tag}>内的内容")
+                    logger.error(
+                        f"Could not find content within <{tool_tag}>...</{tool_tag}>")
                     return None
                 inner_xml = inner_xml_match.group(1).strip()
 
-                # 查找内部内容中的<param>value</param>对
+                # Find <param>value</param> pairs within the inner content
                 pattern = re.compile(r"<([a-zA-Z0-9_]+)>(.*?)</\1>", re.DOTALL)
                 for m in pattern.finditer(inner_xml):
                     key = m.group(1)
-                    # 基本转义
+                    # Basic unescaping (might need more robust unescaping if complex values are used)
                     val = xml.sax.saxutils.unescape(m.group(2))
                     params[key] = val
 
-                # 获取工具类
                 tool_cls = ToolRegistry.get_model_for_tag(tool_tag)
                 if tool_cls:
-                    # 尝试处理特定参数类型转换
+                    # Attempt to handle boolean conversion specifically for requires_approval
                     if 'requires_approval' in params:
-                        params['requires_approval'] = params['requires_approval'].lower() == 'true'
-                    if (tool_tag == 'ask_followup_question' or tool_tag == 'plan_mode_respond') and 'options' in params:
+                        params['requires_approval'] = params['requires_approval'].lower(
+                        ) == 'true'
+                    # Attempt to handle JSON parsing for ask_followup_question_tool
+                    if tool_tag == 'ask_followup_question' and 'options' in params:
                         try:
-                            params['options'] = json.loads(params['options'])
+                            params['options'] = json.loads(
+                                params['options'])
                         except json.JSONDecodeError:
-                            logger.warning(f"无法解码JSON选项: {params['options']}")
+                            logger.warning(
+                                f"Could not decode JSON options for ask_followup_question_tool: {params['options']}")
+                            # Keep as string or handle error? Let's keep as string for now.
+                            pass
+                    if tool_tag == 'plan_mode_respond' and 'options' in params:
+                        try:
+                            params['options'] = json.loads(
+                                params['options'])
+                        except json.JSONDecodeError:
+                            logger.warning(
+                                f"Could not decode JSON options for plan_mode_respond_tool: {params['options']}")
+                    # Handle recursive for list_files
                     if tool_tag == 'list_files' and 'recursive' in params:
                         params['recursive'] = params['recursive'].lower() == 'true'
                     return tool_cls(**params)
                 else:
-                    logger.error(f"找不到标签的工具类: {tool_tag}")
+                    logger.error(f"Tool class not found for tag: {tool_tag}")
                     return None
             except Exception as e:
-                logger.exception(f"解析工具XML失败 <{tool_tag}>: {e}\nXML:\n{tool_xml}")
+                logger.exception(
+                    f"Failed to parse tool XML for <{tool_tag}>: {e}\nXML:\n{tool_xml}")
                 return None
 
         for content_chunk, metadata in generator:
@@ -1009,10 +1026,11 @@ class BaseAgent(ABC):
             buffer += content_chunk
 
             while True:
+                # Check for transitions: thinking -> text, tool -> text, text -> thinking, text -> tool
                 next_event_pos = len(buffer)
                 found_event = False
 
-                # 1. 如果在思考块内，检查</thinking>
+                # 1. Check for </thinking> if inside thinking block
                 if in_thinking_block:
                     end_think_pos = buffer.find(thinking_end_tag)
                     if end_think_pos != -1:
@@ -1021,12 +1039,12 @@ class BaseAgent(ABC):
                         buffer = buffer[end_think_pos + len(thinking_end_tag):]
                         in_thinking_block = False
                         found_event = True
-                        continue
+                        continue  # Restart loop with updated buffer/state
                     else:
-                        # 需要更多数据以关闭思考块
+                        # Need more data to close thinking block
                         break
 
-                # 2. 如果在工具块内，检查</tool_tag>
+                # 2. Check for </tool_tag> if inside tool block
                 elif in_tool_block:
                     end_tag = f"</{current_tool_tag}>"
                     end_tool_pos = buffer.find(end_tag)
@@ -1036,32 +1054,36 @@ class BaseAgent(ABC):
                         tool_obj = parse_tool_xml(tool_xml, current_tool_tag)
 
                         if tool_obj:
-                            # 在成功解析后重建XML
-                            reconstructed_xml = self._reconstruct_tool_xml(tool_obj)
+                            # Reconstruct the XML accurately here AFTER successful parsing
+                            # This ensures the XML yielded matches what was parsed.
+                            reconstructed_xml = self._reconstruct_tool_xml(
+                                tool_obj)
                             if reconstructed_xml.startswith("<error>"):
-                                yield ErrorEvent(message=f"重建工具XML失败 {current_tool_tag}")
+                                yield ErrorEvent(message=f"Failed to reconstruct XML for tool {current_tool_tag}")
                             else:
                                 yield ToolCallEvent(tool=tool_obj, tool_xml=reconstructed_xml)
                         else:
-                            yield ErrorEvent(message=f"解析工具失败: <{current_tool_tag}>")
+                            yield ErrorEvent(message=f"Failed to parse tool: <{current_tool_tag}>")
+                            # Optionally yield the raw XML as plain text?
+                            # yield LLMOutputEvent(text=tool_xml)
 
                         buffer = buffer[tool_block_end_index:]
                         in_tool_block = False
                         current_tool_tag = None
                         found_event = True
-                        continue
+                        continue  # Restart loop
                     else:
-                        # 需要更多数据以关闭工具块
+                        # Need more data to close tool block
                         break
 
-                # 3. 如果在纯文本状态，检查<thinking>或<tool_tag>
+                # 3. Check for <thinking> or <tool_tag> if in plain text state
                 else:
                     start_think_pos = buffer.find(thinking_start_tag)
                     tool_match = tool_start_pattern.search(buffer)
                     start_tool_pos = tool_match.start() if tool_match else -1
                     tool_name = tool_match.group(1) if tool_match else None
 
-                    # 确定哪个标签先出现（如果有）
+                    # Determine which tag comes first (if any)
                     first_tag_pos = -1
                     is_thinking = False
                     is_tool = False
@@ -1070,58 +1092,65 @@ class BaseAgent(ABC):
                         first_tag_pos = start_think_pos
                         is_thinking = True
                     elif start_tool_pos != -1 and (start_think_pos == -1 or start_tool_pos < start_think_pos):
-                        # 检查是否是已知工具
-                        if ToolRegistry.get_model_for_tag(tool_name):
+                        # Check if it's a known tool
+                        if tool_name in ToolRegistry.get_tag_model_map():
                             first_tag_pos = start_tool_pos
                             is_tool = True
+                        else:
+                            # Unknown tag, treat as text for now, let buffer grow
+                            pass
 
-                    if first_tag_pos != -1:  # 找到<thinking>或已知<tool>
-                        # 提交前面的文本（如果有）
+                    if first_tag_pos != -1:  # Found either <thinking> or a known <tool>
+                        # Yield preceding text if any
                         preceding_text = buffer[:first_tag_pos]
                         if preceding_text:
                             yield LLMOutputEvent(text=preceding_text)
 
-                        # 转换状态
+                        # Transition state
                         if is_thinking:
-                            buffer = buffer[first_tag_pos + len(thinking_start_tag):]
+                            buffer = buffer[first_tag_pos +
+                                            len(thinking_start_tag):]
                             in_thinking_block = True
                         elif is_tool:
+                            # Keep the starting tag
                             buffer = buffer[first_tag_pos:]
                             in_tool_block = True
                             current_tool_tag = tool_name
 
                         found_event = True
-                        continue
+                        continue  # Restart loop
+
                     else:
-                        # 未找到标签
-                        # 保留最后100个字符作为缓冲区以便匹配标签开始
+                        # No tags found, or only unknown tags found. Need more data or end of stream.
+                        # Yield text chunk but keep some buffer for potential tag start
+                        # Keep last 100 chars
                         split_point = max(0, len(buffer) - 100)
                         text_to_yield = buffer[:split_point]
                         if text_to_yield:
                             yield LLMOutputEvent(text=text_to_yield)
                             buffer = buffer[split_point:]
-                        break
+                        break  # Need more data
 
-                # 如果本次迭代没有处理事件，跳出内部循环
+                # If no event was processed in this iteration, break inner loop
                 if not found_event:
                     break
         
         yield TokenUsageEvent(usage=meta_holder.meta)        
 
-        # 生成器耗尽后，返回任何剩余内容
+        # After generator exhausted, yield any remaining content
         if in_thinking_block:
-            # 未终止的思考块
-            yield ErrorEvent(message="流结束，<thinking>块未终止")
+            # Unterminated thinking block
+            yield ErrorEvent(message="Stream ended with unterminated <thinking> block.")
             if buffer:
-                # 作为思考内容提交剩余部分
+                # Yield remaining as thinking
                 yield LLMThinkingEvent(text=buffer)
         elif in_tool_block:
-            # 未终止的工具块
-            yield ErrorEvent(message=f"流结束，<{current_tool_tag}>块未终止")
+            # Unterminated tool block
+            yield ErrorEvent(message=f"Stream ended with unterminated <{current_tool_tag}> block.")
             if buffer:
-                yield LLMOutputEvent(text=buffer)  # 作为文本提交剩余部分
+                yield LLMOutputEvent(text=buffer)  # Yield remaining as text
         elif buffer:
-            # 提交剩余的纯文本
+            # Yield remaining plain text
             yield LLMOutputEvent(text=buffer)
     
     def run_with_events(self, request: AgentRequest):
@@ -1273,6 +1302,13 @@ class BaseAgent(ABC):
         console.print(Panel(
             f"[bold]用户输入:[/bold]\n{request.user_input}", title="目标", border_style="blue"))
 
+        # 添加token累计变量
+        total_input_tokens = 0
+        total_output_tokens = 0
+        total_input_cost = 0.0
+        total_output_cost = 0.0
+        model_name = ""
+
         try:
             event_stream = self.agentic_run(request)
             for event in event_stream:
@@ -1294,20 +1330,14 @@ class BaseAgent(ABC):
                     output_cost = (
                         last_meta.generated_tokens_count * output_price) / 1000000
 
+                    # 累计token使用情况
+                    total_input_tokens += last_meta.input_tokens_count
+                    total_output_tokens += last_meta.generated_tokens_count
+                    total_input_cost += input_cost
+                    total_output_cost += output_cost
+
                     # 记录日志
                     logger.info(f"Token使用情况: 模型={model_name}, 输入Token={last_meta.input_tokens_count}, 输出Token={last_meta.generated_tokens_count}, 输入成本=${input_cost:.6f}, 输出成本=${output_cost:.6f}")
-
-                    self.printer.print_in_terminal(
-                            "code_generation_complete",
-                            duration=0.0,
-                            input_tokens=last_meta.input_tokens_count,
-                            output_tokens=last_meta.generated_tokens_count,
-                            input_cost=input_cost,
-                            output_cost=output_cost,
-                            speed=0.0,
-                            model_names=model_name,
-                            sampling_count=1
-                        )
                     
                 elif isinstance(event, LLMThinkingEvent):
                     # 以较不显眼的样式呈现思考内容
@@ -1435,6 +1465,19 @@ class BaseAgent(ABC):
                 f"[bold red]致命错误:[/bold red]\n{str(e)}", title="🔥 系统错误", border_style="red"))
             raise e
         finally:
+            # 在结束时打印累计的token使用情况
+            if total_input_tokens > 0 or total_output_tokens > 0:
+                self.printer.print_in_terminal(
+                    "code_generation_complete",
+                    duration=0.0,
+                    input_tokens=total_input_tokens,
+                    output_tokens=total_output_tokens,
+                    input_cost=total_input_cost,
+                    output_cost=total_output_cost,
+                    speed=0.0,
+                    model_names=model_name,
+                    sampling_count=1
+                )
             console.rule("[bold cyan]代理执行完成[/]")
     
     def apply_pre_changes(self):
