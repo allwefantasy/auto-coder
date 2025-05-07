@@ -183,15 +183,15 @@ def _handle_help(memory: Dict[str, Any], args: List[str]) -> str:
 
 # Command dispatch table
 COMMAND_HANDLERS: Dict[str, Callable[[Dict[str, Any], List[str]], str]] = {
-    "list": _handle_list_conf,
-    "show": _handle_list_conf, # Alias
-    "get": _handle_get_conf,
-    "set": _handle_set_conf,
-    "delete": _handle_delete_conf,
-    "del": _handle_delete_conf,    # Alias
-    "rm": _handle_delete_conf,     # Alias
+    "/list": _handle_list_conf,
+    "/show": _handle_list_conf, # Alias
+    "/get": _handle_get_conf,
+    "/set": _handle_set_conf,
+    "/delete": _handle_delete_conf,
+    "/del": _handle_delete_conf,    # Alias
+    "/rm": _handle_delete_conf,     # Alias
     "/drop": _handle_delete_conf,  # Add this line for /drop command
-    "help": _handle_help,
+    "/help": _handle_help,
 }
 
 def handle_conf_command(command_args: str, memory: Dict[str, Any]) -> str:
@@ -206,7 +206,7 @@ def handle_conf_command(command_args: str, memory: Dict[str, Any]) -> str:
     Returns:
         A string response to be displayed to the user.
     """
-    conf_str = command_args.strip()
+    conf_str = command_args.strip()        
 
     # Handle special subcommands first
     if conf_str.startswith("/export"):
@@ -240,7 +240,7 @@ def handle_conf_command(command_args: str, memory: Dict[str, Any]) -> str:
         return _handle_list_conf(memory, [])
     else:
         command = args[0].lower()
-        command_args_list = args[1:]
+        command_args_list = args[1:]        
 
         # Check if the first argument is a known command or potentially a pattern
         handler = COMMAND_HANDLERS.get(command)
