@@ -313,7 +313,7 @@ class ToolDescGenerators:
         return {}
     
     @byzerllm.prompt()
-    def mcp_tool(self) -> Dict:
+    def use_mcp_tool(self) -> Dict:
         """
         Description: Request to execute a tool via the Model Context Protocol (MCP) server. Use this when you need to execute a tool that is not natively supported by the agentic edit tools.
         Parameters:
@@ -461,14 +461,14 @@ class ToolExampleGenerators:
         return self.params
 
 
-def register_default_tools_case_doc():
+def register_default_tools_case_doc(params: Dict[str, Any]):
     """
     注册默认工具用例文档
     """
     # 获取所有已注册的工具
     registered_tools = set(ToolRegistry.get_all_registered_tools())
 
-    tool_case_gen = ToolsCaseGenerator()
+    tool_case_gen = ToolsCaseGenerator(params)
 
     # 定义默认工具用例文档
     DEFAULT_TOOLS_CASE_DOC = {

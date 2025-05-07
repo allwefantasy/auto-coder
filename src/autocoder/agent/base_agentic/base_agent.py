@@ -103,7 +103,8 @@ class BaseAgent(ABC):
         self.shadow_manager = ShadowManager(args.source_dir, args.event_file, args.ignore_clean_shadows)
         self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
         self.shadow_compiler = ShadowCompiler(self.shadow_manager, verbose=False)
-        register_default_tools()
+        
+        
         
         # MCP 服务信息
         self.mcp_server_info = ""
@@ -135,6 +136,7 @@ class BaseAgent(ABC):
         self._chat_lock = threading.RLock()   # 保护 private_chats
         # 自动注册到AgentHub
         AgentHub.register_agent(self)
+        register_default_tools(params=self._render_context())
         
 
     def who_am_i(self, role: str) -> 'BaseAgent':
@@ -514,7 +516,7 @@ class BaseAgent(ABC):
         - Any other relevant feedback or information related to the tool use.
         6. ALWAYS wait for user confirmation after each tool use before proceeding. Never assume the success of a tool use without explicit confirmation of the result from the user.
         {% for tool_name, guideline in tool_guidelines.items() %}                
-        {{ loop.index + 6 }}. {{ guideline }}
+        {{ loop.index + 6 }}. **{{ tool_name }}**: {{ guideline }}
         {% endfor %}
 
         It is crucial to proceed step-by-step, waiting for the user's message after each tool use before moving forward with the task. This approach allows you to:
@@ -598,7 +600,7 @@ class BaseAgent(ABC):
         - Your current working directory is: {{current_project}}
         - You cannot \`cd\` into a different directory to complete a task. You are stuck operating from '{{ current_project }}', so be sure to pass in the correct 'path' parameter when using tools that require a path.
         - Do not use the ~ character or $HOME to refer to the home directory.
-        - Before using the execute_command tool, you must first think about the SYSTEM INFORMATION context provided to understand the user's environment and tailor your commands to ensure they are compatible with their system. You must also consider if the command you need to run should be executed in a specific directory outside of the current working directory '${cwd.toPosix()}', and if so prepend with \`cd\`'ing into that directory && then executing the command (as one command since you are stuck operating from '${cwd.toPosix()}'). For example, if you needed to run \`npm install\` in a project outside of '${cwd.toPosix()}', you would need to prepend with a \`cd\` i.e. pseudocode for this would be \`cd (path to project) && (command, in this case npm install)\`.
+        - Before using the execute_command tool, you must first think about the SYSTEM INFORMATION context provided to understand the user's environment and tailor your commands to ensure they are compatible with their system. You must also consider if the command you need to run should be executed in a specific directory outside of the current working directory '{{ current_project }}', and if so prepend with \`cd\`'ing into that directory && then executing the command (as one command since you are stuck operating from '{{current_project}}'). For example, if you needed to run \`npm install\` in a project outside of '{{current_project}}', you would need to prepend with a \`cd\` i.e. pseudocode for this would be \`cd (path to project) && (command, in this case npm install)\`.
         - When using the search_files tool, craft your regex patterns carefully to balance specificity and flexibility. Based on the user's task you may use it to find code patterns, TODO comments, function definitions, or any text-based information across the project. The results include context, so analyze the surrounding code to better understand the matches. Leverage the search_files tool in combination with other tools for more comprehensive analysis. For example, use it to find specific code patterns, then use read_file to examine the full context of interesting matches.
         - The write_to_file and replace_in_file tools are ONLY to be used for creating and updating research plans, search strategies, or summarizing findings. They are NOT to be used for modifying system files or any operational code.
         - When making research plans, always consider the context and objectives clearly outlined by the user.
@@ -663,10 +665,10 @@ class BaseAgent(ABC):
         </files>
         {% endif %}
         """
-        import os
-        from .tool_registry import ToolRegistry
-        from .agent_hub import AgentHub
+        return self._render_context()
         
+    
+    def _render_context(self):                
         # 获取工具描述和示例
         tool_descriptions = ToolRegistry.get_all_tool_descriptions()
         tool_examples = ToolRegistry.get_all_tool_examples()
