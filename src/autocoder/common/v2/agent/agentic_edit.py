@@ -944,7 +944,7 @@ class AgenticEdit:
 
                 elif isinstance(event, TokenUsageEvent):
                     logger.info("Yielding token usage event")
-                    yield TokenUsageEvent(usage=meta_holder.meta)
+                    yield event
             
             if not tool_executed:
                 # No tool executed in this LLM response cycle
