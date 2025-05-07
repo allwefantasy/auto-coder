@@ -40,6 +40,7 @@ from autocoder.linters.shadow_linter import ShadowLinter
 from autocoder.compilers.shadow_compiler import ShadowCompiler
 from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 from autocoder.common.auto_coder_lang import get_message
+from autocoder.common.save_formatted_log import save_formatted_log
 # Import the new display function
 from autocoder.common.v2.agent.agentic_tool_display import get_tool_display_message
 from autocoder.common.v2.agent.agentic_edit_types import FileChangeEntry
@@ -51,7 +52,7 @@ from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific re
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver,
     ListPackageInfoToolResolver
 )
-from autocoder.common.rulefiles.autocoderrules_utils import get_rules
+from autocoder.common.rulefiles.autocoderrules_utils import get_parsed_rules,auto_select_rules
 from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
                                                           MemoryConfig, CommandConfig, BaseTool,
                                                           ExecuteCommandTool, ReadFileTool,
@@ -701,7 +702,7 @@ class AgenticEdit:
         {% endif %}
         """
         import os
-        extra_docs = get_rules()
+        extra_docs = auto_select_rules(context=request.user_input, rules=get_parsed_rules(), llm=self.llm)
         
         env_info = detect_env()
         shell_type = "bash"
@@ -861,6 +862,7 @@ class AgenticEdit:
                         yield CompletionEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to AttemptCompletion.")
+                        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")        
                         return
 
                     if isinstance(tool_obj, PlanModeRespondTool):
@@ -870,6 +872,7 @@ class AgenticEdit:
                         yield PlanModeRespondEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to PlanModeRespond.")
+                        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")        
                         return
 
                     # Resolve the tool
@@ -972,6 +975,7 @@ class AgenticEdit:
                 continue
             
         logger.info(f"AgenticEdit analyze loop finished after {iteration_count} iterations.")
+        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")    
 
     def stream_and_parse_llm_response(
         self, generator: Generator[Tuple[str, Any], None, None]
