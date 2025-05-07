@@ -794,9 +794,7 @@ class AgenticEdit:
         
         logger.info(
             f"Initial conversation history size: {len(conversations)}")
-        
-        logger.info(f"Conversation history: {json.dumps(conversations, indent=2,ensure_ascii=False)}")
-
+                
         iteration_count = 0
         tool_executed = False
         while True:
