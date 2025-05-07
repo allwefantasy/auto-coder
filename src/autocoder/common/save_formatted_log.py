@@ -38,7 +38,7 @@ def save_formatted_log(project_root, json_text, suffix):
     md_content = "\n".join(md_lines)
 
     # Prepare directory
-    logs_dir = os.path.join(project_root, ".cache", "logs")
+    logs_dir = os.path.join(project_root, ".auto-coder", "logs","agentic")
     os.makedirs(logs_dir, exist_ok=True)
 
     # Prepare filename

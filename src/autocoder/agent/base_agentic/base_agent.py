@@ -492,13 +492,15 @@ class BaseAgent(ABC):
         {{group_info}}
         {%endif%}
 
-        # Tool Use Examples        
-        {% for tool_tag, example in tool_examples.items() %}
-        {% if example %}
-        ## Example {{ loop.index }}: {{ example.title }}
+        # Tool Use Examples
+        {%- set example_count = 0 -%}
+        {%- for tool_tag, example in tool_examples.items() -%}
+        {%- if example -%}
+        {%- set example_count = example_count + 1 -%}
+        ## Example {{ example_count }}: {{ example.title }}
         {{ example.body }}
-        {% endif %}
-        {% endfor %}                                      
+        {%- endif -%}
+        {%- endfor -%}                                      
 
         # Tool Use Guidelines
 
@@ -512,9 +514,9 @@ class BaseAgent(ABC):
         - New terminal output in reaction to the changes, which you may need to consider or act upon.
         - Any other relevant feedback or information related to the tool use.
         6. ALWAYS wait for user confirmation after each tool use before proceeding. Never assume the success of a tool use without explicit confirmation of the result from the user.
-        {% for tool_name, guideline in tool_guidelines.items() %}                
+        {%- for tool_name, guideline in tool_guidelines.items() -%}                
         {{ loop.index + 6 }}. **{{ tool_name }}**: {{ guideline }}
-        {% endfor %}
+        {%- endfor -%}
 
         It is crucial to proceed step-by-step, waiting for the user's message after each tool use before moving forward with the task. This approach allows you to:
         1. Confirm the success of each step before proceeding.
@@ -827,6 +829,7 @@ class BaseAgent(ABC):
                         yield CompletionEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to AttemptCompletion.")
+                        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")    
                         return
 
                     if isinstance(tool_obj, PlanModeRespondTool):
@@ -836,6 +839,7 @@ class BaseAgent(ABC):
                         yield PlanModeRespondEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to PlanModeRespond.")
+                        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")    
                         return
 
                     # Resolve the tool
