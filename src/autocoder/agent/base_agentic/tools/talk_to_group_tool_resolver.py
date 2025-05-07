@@ -4,12 +4,10 @@ from loguru import logger
 from datetime import datetime
 
 from ..types import TalkToGroupTool, ToolResult
-from ..tool_registry import ToolRegistry
 from ..tools.base_tool_resolver import BaseToolResolver
 from ..agent_hub import AgentHub, Group
 
 
-@ToolRegistry.register_resolver(TalkToGroupTool)
 class TalkToGroupToolResolver(BaseToolResolver):
     """
     处理talk_to_group工具的解析器

@@ -945,6 +945,7 @@ class BaseAgent(ABC):
             
         logger.info(f"AgenticEdit analyze loop finished after {iteration_count} iterations.")
         save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")
+        print("=======finish=======")
     
     def stream_and_parse_llm_response(
         self, generator: Generator[Tuple[str, Any], None, None], meta_holder: byzerllm.MetaHolder
