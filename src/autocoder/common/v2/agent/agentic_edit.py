@@ -820,11 +820,10 @@ class AgenticEdit:
                 llm_config={},  # Placeholder for future LLM configs
                 args=self.args
             )
-
-            meta_holder = byzerllm.MetaHolder()
+            
             logger.info("Starting to parse LLM response stream")
             parsed_events = self.stream_and_parse_llm_response(
-                llm_response_gen, meta_holder)
+                llm_response_gen)
 
             event_count = 0
             for event in parsed_events:
@@ -943,8 +942,9 @@ class AgenticEdit:
                     # logger.error("Stopping analyze loop due to parsing error.")
                     # return
 
-            logger.info("Yielding token usage event")
-            yield TokenUsageEvent(usage=meta_holder.meta)
+                elif isinstance(event, TokenUsageEvent):
+                    logger.info("Yielding token usage event")
+                    yield TokenUsageEvent(usage=meta_holder.meta)
             
             if not tool_executed:
                 # No tool executed in this LLM response cycle
@@ -974,7 +974,7 @@ class AgenticEdit:
         logger.info(f"AgenticEdit analyze loop finished after {iteration_count} iterations.")
 
     def stream_and_parse_llm_response(
-        self, generator: Generator[Tuple[str, Any], None, None], meta_holder: byzerllm.MetaHolder
+        self, generator: Generator[Tuple[str, Any], None, None]
     ) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ErrorEvent], None, None]:
         """
         Streamingly parses the LLM response generator, distinguishing between
@@ -1051,7 +1051,8 @@ class AgenticEdit:
                 logger.exception(
                     f"Failed to parse tool XML for <{tool_tag}>: {e}\nXML:\n{tool_xml}")
                 return None
-
+        
+        meta_holder = byzerllm.MetaHolder()
         for content_chunk, metadata in generator:
             global_cancel.check_and_raise(token=self.args.event_file)
             meta_holder.meta = metadata            
