@@ -26,7 +26,7 @@ class RuleFile(BaseModel):
     """规则文件的Pydantic模型"""
     description: str = Field(default="", description="规则的描述")
     globs: List[str] = Field(default_factory=list, description="文件匹配模式列表")
-    always_apply: bool = Field(default=False, alias="alwaysApply", description="是否总是应用规则")
+    always_apply: bool = Field(default=False, description="是否总是应用规则")
     content: str = Field(default="", description="规则文件的正文内容")
     file_path: str = Field(default="", description="规则文件的路径")
 
@@ -207,15 +207,14 @@ class AutocoderRulesManager:
                 except Exception as e:
                     logger.warning(f"解析规则文件YAML头部时出错: {e}")
             
-            # 创建并返回Pydantic模型
+            # 创建并返回Pydantic模型            
             rule = RuleFile(
                 description=metadata.get('description', ''),
                 globs=metadata.get('globs', []),
                 always_apply=metadata.get('alwaysApply', False),
                 content=markdown_content.strip(),
                 file_path=file_path
-            )
-            
+            )                                    
             return rule
             
         except Exception as e:
