@@ -190,6 +190,7 @@ COMMAND_HANDLERS: Dict[str, Callable[[Dict[str, Any], List[str]], str]] = {
     "delete": _handle_delete_conf,
     "del": _handle_delete_conf,    # Alias
     "rm": _handle_delete_conf,     # Alias
+    "/drop": _handle_delete_conf,  # Add this line for /drop command
     "help": _handle_help,
 }
 
