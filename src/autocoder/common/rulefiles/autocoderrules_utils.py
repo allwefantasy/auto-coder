@@ -468,17 +468,18 @@ def get_required_and_index_rules() -> Dict[str, str]:
     # 获取所有解析后的规则文件
     parsed_rules = get_parsed_rules()
     result: Dict[str, str] = {}
+    logger.info(f"获取所有解析后的规则文件完成，总数: {len(parsed_rules)}")
     
     for rule in parsed_rules:
         # 检查是否是always_apply=True的规则
         if rule.always_apply:
             result[rule.file_path] = rule.content
-            logger.debug(f"添加必须应用的规则: {os.path.basename(rule.file_path)}")
+            logger.info(f"添加必须应用的规则: {os.path.basename(rule.file_path)}")
         
         # 检查是否是Index.md文件
         if os.path.basename(rule.file_path).lower() == "index.md":
             result[rule.file_path] = rule.content
-            logger.debug(f"添加Index.md文件: {rule.file_path}")
+            logger.info(f"添加Index.md文件: {rule.file_path}")
     
     logger.info(f"获取必须应用的规则和Index.md文件完成，总数: {len(result)}")
     return result

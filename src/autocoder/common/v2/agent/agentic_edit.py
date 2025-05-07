@@ -669,8 +669,7 @@ class AgenticEdit:
         {{ value }}
         </user_rule_file>
         {% endfor %}                
-        Make sure you always start your task by using the read_file tool to get the relevant RULE files listed in index.md based on the user's specific requirements.
-        Don't read the rule files which are already exists in <user_urle_file></user_rule_file> tags.
+        Make sure you always start your task by using the read_file tool to get the relevant RULE files listed in index.md based on the user's specific requirements.        
         {% endif %}
         
 
