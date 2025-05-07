@@ -27,9 +27,8 @@ class FileBackupManager:
             backup_dir: 备份文件存储目录，如果为None则使用默认目录
         """
         if backup_dir is None:
-            # 默认备份目录为用户主目录下的.autocoder/backups
-            home_dir = os.path.expanduser("~")
-            backup_dir = os.path.join(home_dir, ".autocoder", "backups")
+            # 默认备份目录为项目根目录下的.auto-coder/checkpoint
+            backup_dir = os.path.join(".", ".auto-coder", "checkpoint")
         
         self.backup_dir = backup_dir
         self.metadata_file = os.path.join(backup_dir, "backup_metadata.json")

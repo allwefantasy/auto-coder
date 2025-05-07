@@ -29,9 +29,8 @@ class FileChangeStore:
             max_history: 最大保存的历史版本数量
         """
         if store_dir is None:
-            # 默认存储目录为用户主目录下的.autocoder/changes
-            home_dir = os.path.expanduser("~")
-            store_dir = os.path.join(home_dir, ".autocoder", "changes")
+            # 默认存储目录为项目根目录下的.auto-coder/checkpoint
+            store_dir = os.path.join(".", ".auto-coder", "checkpoint")
         
         self.store_dir = store_dir
         self.max_history = max_history
