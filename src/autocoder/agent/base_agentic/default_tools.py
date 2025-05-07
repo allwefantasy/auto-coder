@@ -2,7 +2,7 @@
 Default tools initialization module
 Used to initialize and register default tools
 """
-from typing import Dict, Type, List
+from typing import Dict, Type, List,Any
 from loguru import logger
 import byzerllm
 from .tool_registry import ToolRegistry
@@ -34,11 +34,12 @@ from .tools.talk_to_group_tool_resolver import TalkToGroupToolResolver
 # Tool description generators with byzerllm.prompt() decorators
 
 class ToolsCaseGenerator:
-    """
-    提供 EDITING FILES 部分的文档说明。
-    """
-    @staticmethod
-    def editing_files_doc() -> str:        
+    
+    def __init__(self,params:Dict[str,Any]):
+        self.params = params
+
+    @byzerllm.prompt()
+    def editing_files_doc(self) -> str:        
         """
         You have access to two tools for working with files: **write_to_file** and **replace_in_file**. Understanding their roles and selecting the right one for the job will help ensure efficient and accurate modifications.
 
@@ -109,445 +110,164 @@ class ToolsCaseGenerator:
 
         By thoughtfully selecting between write_to_file and replace_in_file, you can make your file editing process smoother, safer, and more efficient.
         """
-        return {}
+        return self.params
 
-class ToolDescriptionGenerators:
-    @byzerllm.prompt()
-    def execute_command_description(self) -> Dict:
-        """
-        Execute shell command
-        """
-        return {}
+class ToolDescGenerators:
     
-    @byzerllm.prompt()
-    def execute_command_parameters(self) -> Dict:
-        """
-        command: The command to execute
-        requires_approval: Whether user approval is required
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def execute_command_usage(self) -> Dict:
-        """
-        Used to execute system commands, such as installing dependencies, starting services, etc.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def read_file_description(self) -> Dict:
-        """
-        Read file contents
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def read_file_parameters(self) -> Dict:
-        """
-        path: File path
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def read_file_usage(self) -> Dict:
-        """
-        Used to read the contents of a specified file
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def write_to_file_description(self) -> Dict:
-        """
-        Write content to a file
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def write_to_file_parameters(self) -> Dict:
-        """
-        path: File path
-        content: Content to write
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def write_to_file_usage(self) -> Dict:
-        """
-        Used to create a new file or overwrite existing file content
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def replace_in_file_description(self) -> Dict:
-        """
-        Replace content in a file
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def replace_in_file_parameters(self) -> Dict:
-        """
-        path: File path
-        diff: Replacement difference
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def replace_in_file_usage(self) -> Dict:
-        """
-        Used to make partial modifications to a file, rather than completely overwriting it
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def search_files_description(self) -> Dict:
-        """
-        Search file contents
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def search_files_parameters(self) -> Dict:
-        """
-        path: Search path
-        regex: Regular expression
-        file_pattern: File pattern
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def search_files_usage(self) -> Dict:
-        """
-        Used to find file contents that meet conditions in the project
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def list_files_description(self) -> Dict:
-        """
-        List directory contents
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def list_files_parameters(self) -> Dict:
-        """
-        path: Directory path
-        recursive: Whether to list recursively
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def list_files_usage(self) -> Dict:
-        """
-        Used to list all files and subdirectories under a specified directory
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def ask_followup_question_description(self) -> Dict:
-        """
-        Ask the user a question to gather additional information needed to complete the task.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def ask_followup_question_parameters(self) -> Dict:
-        """
-        question: The question to ask the user. This should be a clear, specific question that addresses the information you need.
-        options: An array of 2-5 options for the user to choose from. Each option should be a string describing a possible answer.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def ask_followup_question_usage(self) -> Dict:
-        """
-        This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def attempt_completion_description(self) -> Dict:
-        """
-        After each tool use, the user will respond with the result of that tool use. Once you've received the results of tool uses and can confirm that the task is complete, use this tool to present the result of your work to the user.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def attempt_completion_parameters(self) -> Dict:
-        """
-        result: The result of the task. Formulate this result in a way that is final and does not require further input from the user.
-        command: A CLI command to execute to show a live demo of the result to the user.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def attempt_completion_usage(self) -> Dict:
-        """
-        The user may respond with feedback if they are not satisfied with the result, which you can use to make improvements and try again.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def plan_mode_respond_description(self) -> Dict:
-        """
-        Respond to the user's inquiry in an effort to plan a solution to the user's task.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def plan_mode_respond_parameters(self) -> Dict:
-        """
-        response: The response to provide to the user. Do not try to use tools in this parameter, this is simply a chat response.
-        options: An array of 2-5 options for the user to choose from. Each option should be a string describing a possible choice or path forward in the planning process.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def plan_mode_respond_usage(self) -> Dict:
-        """
-        This tool should be used when you need to provide a response to a question or statement from the user about how you plan to accomplish the task. This tool is only available in PLAN MODE.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def use_mcp_tool_description(self) -> Dict:
-        """
-        Request to execute a tool via the Model Context Protocol (MCP) server.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def use_mcp_tool_parameters(self) -> Dict:
-        """
-        server_name: The name of the MCP server to use. If not provided, the tool will automatically choose the best server based on the query.
-        tool_name: The name of the tool to execute. If not provided, the tool will automatically choose the best tool in the selected server based on the query.
-        query: The query to pass to the tool.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def use_mcp_tool_usage(self) -> Dict:
-        """
-        Use this when you need to execute a tool that is not natively supported by the agentic edit tools.
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def talk_to_description(self) -> Dict:
-        """
-        Send a message to another agent
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def talk_to_parameters(self) -> Dict:
-        """
-        agent_name: The name of the agent to talk to
-        content: The message content
-        mentions: An array of agent names to mention in the message
-        print_conversation: Whether to print the conversation to the console
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def talk_to_usage(self) -> Dict:
-        """
-        Used to send a direct message to another agent, which may trigger a response based on the other agent's configuration
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def talk_to_group_description(self) -> Dict:
-        """
-        Send a message to a group of agents
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def talk_to_group_parameters(self) -> Dict:
-        """
-        group_name: The name of the group to talk to
-        content: The message content
-        mentions: An array of agent names to mention in the message
-        print_conversation: Whether to print the conversation to the console
-        """
-        return {}
-    
-    @byzerllm.prompt()
-    def talk_to_group_usage(self) -> Dict:
-        """
-        Used to broadcast a message to a group of agents, which may trigger responses from multiple agents based on their configuration
-        """
-        return {}
+    def __init__(self,params:Dict[str,Any]):
+        self.params = params
 
-# Initialize tool description generators
-tool_desc_gen = ToolDescriptionGenerators()
-
-# Default tool descriptions
-DEFAULT_TOOL_DESCRIPTIONS = {
-    "execute_command": ToolDescription(
-        description=tool_desc_gen.execute_command_description.prompt(),
-        parameters=tool_desc_gen.execute_command_parameters.prompt(),
-        usage=tool_desc_gen.execute_command_usage.prompt()
-    ),
-    "read_file": ToolDescription(
-        description=tool_desc_gen.read_file_description.prompt(),
-        parameters=tool_desc_gen.read_file_parameters.prompt(),
-        usage=tool_desc_gen.read_file_usage.prompt()
-    ),
-    "write_to_file": ToolDescription(
-        description=tool_desc_gen.write_to_file_description.prompt(),
-        parameters=tool_desc_gen.write_to_file_parameters.prompt(),
-        usage=tool_desc_gen.write_to_file_usage.prompt()
-    ),
-    "replace_in_file": ToolDescription(
-        description=tool_desc_gen.replace_in_file_description.prompt(),
-        parameters=tool_desc_gen.replace_in_file_parameters.prompt(),
-        usage=tool_desc_gen.replace_in_file_usage.prompt()
-    ),
-    "search_files": ToolDescription(
-        description=tool_desc_gen.search_files_description.prompt(),
-        parameters=tool_desc_gen.search_files_parameters.prompt(),
-        usage=tool_desc_gen.search_files_usage.prompt()
-    ),
-    "list_files": ToolDescription(
-        description=tool_desc_gen.list_files_description.prompt(),
-        parameters=tool_desc_gen.list_files_parameters.prompt(),
-        usage=tool_desc_gen.list_files_usage.prompt()
-    ),
-    "ask_followup_question": ToolDescription(
-        description=tool_desc_gen.ask_followup_question_description.prompt(),
-        parameters=tool_desc_gen.ask_followup_question_parameters.prompt(),
-        usage=tool_desc_gen.ask_followup_question_usage.prompt()
-    ),
-    "attempt_completion": ToolDescription(
-        description=tool_desc_gen.attempt_completion_description.prompt(),
-        parameters=tool_desc_gen.attempt_completion_parameters.prompt(),
-        usage=tool_desc_gen.attempt_completion_usage.prompt()
-    ),
-    "plan_mode_respond": ToolDescription(
-        description=tool_desc_gen.plan_mode_respond_description.prompt(),
-        parameters=tool_desc_gen.plan_mode_respond_parameters.prompt(),
-        usage=tool_desc_gen.plan_mode_respond_usage.prompt()
-    ),
-    "use_mcp_tool": ToolDescription(
-        description=tool_desc_gen.use_mcp_tool_description.prompt(),
-        parameters=tool_desc_gen.use_mcp_tool_parameters.prompt(),
-        usage=tool_desc_gen.use_mcp_tool_usage.prompt()
-    ),
-    "talk_to": ToolDescription(
-        description=tool_desc_gen.talk_to_description.prompt(),
-        parameters=tool_desc_gen.talk_to_parameters.prompt(),
-        usage=tool_desc_gen.talk_to_usage.prompt()
-    ),
-    "talk_to_group": ToolDescription(
-        description=tool_desc_gen.talk_to_group_description.prompt(),
-        parameters=tool_desc_gen.talk_to_group_parameters.prompt(),
-        usage=tool_desc_gen.talk_to_group_usage.prompt()
-    ),
-}
-
-# Tool example generators with byzerllm.prompt() decorators
-class ToolExampleGenerators:
     @byzerllm.prompt()
-    def execute_command_example(self) -> Dict:
+    def execute_command(self) -> Dict:
         """
+        Description: Request to execute a CLI command on the system. Use this when you need to perform system operations or run specific commands to accomplish any step in the user's task. You must tailor your command to the user's system and provide a clear explanation of what the command does. For command chaining, use the appropriate chaining syntax for the user's shell. Prefer to execute complex CLI commands over creating executable scripts, as they are more flexible and easier to run. Commands will be executed in the current working directory: {{current_project}}
+        Parameters:
+        - command: (required) The CLI command to execute. This should be valid for the current operating system. Ensure the command is properly formatted and does not contain any harmful instructions.
+        - requires_approval: (required) A boolean indicating whether this command requires explicit user approval before execution in case the user has auto-approve mode enabled. Set to 'true' for potentially impactful operations like installing/uninstalling packages, deleting/overwriting files, system configuration changes, network operations, or any commands that could have unintended side effects. Set to 'false' for safe operations like reading files/directories, running development servers, building projects, and other non-destructive operations.
+        Usage:
         <execute_command>
-        <command>npm run dev</command>
-        <requires_approval>false</requires_approval>
+        <command>Your command here</command>
+        <requires_approval>true or false</requires_approval>
         </execute_command>
         """
-        return {}
+        return self.params
     
     @byzerllm.prompt()
-    def read_file_example(self) -> Dict:
+    def list_package_info(self) -> Dict:
         """
+        Description: Request to retrieve information about a source code package, such as recent changes or documentation summary, to better understand the code context. It accepts a directory path (absolute or relative to the current project).
+        Parameters:
+        - path: (required) The source code package directory path.
+        Usage:
+        <list_package_info>
+        <path>relative/or/absolute/package/path</path>
+        </list_package_info>
+        """
+        return self.params
+    
+    @byzerllm.prompt()
+    def read_file(self) -> Dict:
+        """
+        Description: Request to read the contents of a file at the specified path. Use this when you need to examine the contents of an existing file you do not know the contents of, for example to analyze code, review text files, or extract information from configuration files. Automatically extracts raw text from PDF and DOCX files. May not be suitable for other types of binary files, as it returns the raw content as a string.
+        Parameters:
+        - path: (required) The path of the file to read (relative to the current working directory ${cwd.toPosix()})
+        Usage:
         <read_file>
-        <path>src/main.js</path>
+        <path>File path here</path>
         </read_file>
         """
-        return {}
+        return self.params
     
     @byzerllm.prompt()
-    def write_to_file_example(self) -> Dict:
+    def write_to_file(self) -> Dict:
         """
+        Description: Request to write content to a file at the specified path. If the file exists, it will be overwritten with the provided content. If the file doesn't exist, it will be created. This tool will automatically create any directories needed to write the file.
+        Parameters:
+        - path: (required) The path of the file to write to (relative to the current working directory ${cwd.toPosix()})
+        - content: (required) The content to write to the file. ALWAYS provide the COMPLETE intended content of the file, without any truncation or omissions. You MUST include ALL parts of the file, even if they haven't been modified.
+        Usage:
         <write_to_file>
-        <path>research/search-plan.md</path>
+        <path>File path here</path>
         <content>
-        # Research Plan        
-
-        ## Objective
-        Investigate the latest developments in quantum computing algorithms
-
-        ## Search Strategy
-        1. Start with review papers from the last 2 years
-        2. Focus specifically on quantum machine learning algorithms
-        3. Identify key researchers and follow citation trails
-
-        ## Expected Timeline
-        - Day 1-2: Broad overview of the field
-        - Day 3-5: Deep dive into specific algorithms
-        - Day 6-7: Synthesis and final report preparation
+        Your file content here
         </content>
         </write_to_file>
         """
-        return {}
+        return self.params
     
     @byzerllm.prompt()
-    def replace_in_file_example(self) -> Dict:
+    def replace_in_file(self) -> Dict:
         """
+        Description: Request to replace sections of content in an existing file using SEARCH/REPLACE blocks that define exact changes to specific parts of the file. This tool should be used when you need to make targeted changes to specific parts of a file.
+        Parameters:
+        - path: (required) The path of the file to modify (relative to the current working directory ${cwd.toPosix()})
+        - diff: (required) One or more SEARCH/REPLACE blocks following this exact format:
+        ```
+        <<<<<<< SEARCH
+        [exact content to find]
+        =======
+        [new content to replace with]
+        >>>>>>> REPLACE
+        ```
+        Critical rules:
+        1. SEARCH content must match the associated file section to find EXACTLY:
+            * Match character-for-character including whitespace, indentation, line endings
+            * Include all comments, docstrings, etc.
+        2. SEARCH/REPLACE blocks will ONLY replace the first match occurrence.
+            * Including multiple unique SEARCH/REPLACE blocks if you need to make multiple changes.
+            * Include *just* enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+            * When using multiple SEARCH/REPLACE blocks, list them in the order they appear in the file.
+        3. Keep SEARCH/REPLACE blocks concise:
+            * Break large SEARCH/REPLACE blocks into a series of smaller blocks that each change a small portion of the file.
+            * Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+            * Do not include long runs of unchanging lines in SEARCH/REPLACE blocks.
+            * Each line must be complete. Never truncate lines mid-way through as this can cause matching failures.
+        4. Special operations:
+            * To move code: Use two SEARCH/REPLACE blocks (one to delete from original + one to insert at new location)
+            * To delete code: Use empty REPLACE section
+        Usage:
         <replace_in_file>
-        <path>research/findings.md</path>
+        <path>File path here</path>
         <diff>
-        <<<<<<< SEARCH
-        ## Initial Observations
-        - Quantum computing shows promise in cryptography
-        - Current hardware limitations remain significant
-        =======
-        ## Initial Observations
-        - Quantum computing shows promise in cryptography and machine learning
-        - Current hardware limitations remain significant
-        - Recent advances in error correction are promising
-        >>>>>>> REPLACE
-
-        <<<<<<< SEARCH
-        ## Next Steps
-        - Examine quantum error correction methods
-        =======
-        ## Next Steps
-        - Examine quantum error correction methods in detail
-        - Investigate industry implementations
-        >>>>>>> REPLACE
+        Search and replace blocks here
         </diff>
         </replace_in_file>
         """
-        return {}
+        return self.params
     
     @byzerllm.prompt()
-    def search_files_example(self) -> Dict:
+    def search_files(self) -> Dict:
         """
+        Description: Request to perform a regex search across files in a specified directory, providing context-rich results. This tool searches for patterns or specific content across multiple files, displaying each match with encapsulating context.
+        Parameters:
+        - path: (required) The path of the directory to search in (relative to the current working directory ${cwd.toPosix()}). This directory will be recursively searched.
+        - regex: (required) The regular expression pattern to search for. Uses Rust regex syntax.
+        - file_pattern: (optional) Glob pattern to filter files (e.g., '*.ts' for TypeScript files). If not provided, it will search all files (*).
+        Usage:
         <search_files>
-        <path>src</path>
-        <regex>function\\s+main</regex>
-        <file_pattern>*.js</file_pattern>
+        <path>Directory path here</path>
+        <regex>Your regex pattern here</regex>
+        <file_pattern>file pattern here (optional)</file_pattern>
         </search_files>
         """
-        return {}
+        return self.params
     
     @byzerllm.prompt()
-    def list_files_example(self) -> Dict:
+    def list_files(self) -> Dict:
         """
+        Description: Request to list files and directories within the specified directory. If recursive is true, it will list all files and directories recursively. If recursive is false or not provided, it will only list the top-level contents. Do not use this tool to confirm the existence of files you may have created, as the user will let you know if the files were created successfully or not.
+        Parameters:
+        - path: (required) The path of the directory to list contents for (relative to the current working directory ${cwd.toPosix()})
+        - recursive: (optional) Whether to list files recursively. Use true for recursive listing, false or omit for top-level only.
+        Usage:
         <list_files>
-        <path>src</path>
-        <recursive>true</recursive>
+        <path>Directory path here</path>
+        <recursive>true or false (optional)</recursive>
         </list_files>
         """
-        return {}
+        return self.params
     
     @byzerllm.prompt()
-    def ask_followup_question_example(self) -> Dict:
+    def list_code_definition_names(self) -> Dict:
         """
+        Description: Request to list definition names (classes, functions, methods, etc.) used in source code files at the top level of the specified directory. This tool provides insights into the codebase structure and important constructs, encapsulating high-level concepts and relationships that are crucial for understanding the overall architecture.
+        Parameters:
+        - path: (required) The path of the directory (relative to the current working directory ${cwd.toPosix()}) to list top level source code definitions for.
+        Usage:
+        <list_code_definition_names>
+        <path>Directory path here</path>
+        </list_code_definition_names>
+        """
+        return self.params
+    
+    @byzerllm.prompt()
+    def ask_followup_question(self) -> Dict:
+        """
+        Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
+        Parameters:
+        - question: (required) The question to ask the user. This should be a clear, specific question that addresses the information you need.
+        - options: (optional) An array of 2-5 options for the user to choose from. Each option should be a string describing a possible answer. You may not always need to provide options, but it may be helpful in many cases where it can save the user from having to type out a response manually. IMPORTANT: NEVER include an option to toggle to Act mode, as this would be something you need to direct the user to do manually themselves if needed.
+        Usage:
         <ask_followup_question>
         <question>Your question here</question>
         <options>
@@ -555,11 +275,17 @@ class ToolExampleGenerators:
         </options>
         </ask_followup_question>
         """
-        return {}
+        return self.params
     
     @byzerllm.prompt()
-    def attempt_completion_example(self) -> Dict:
+    def attempt_completion(self) -> Dict:
         """
+        Description: After each tool use, the user will respond with the result of that tool use, i.e. if it succeeded or failed, along with any reasons for failure. Once you've received the results of tool uses and can confirm that the task is complete, use this tool to present the result of your work to the user. Optionally you may provide a CLI command to showcase the result of your work. The user may respond with feedback if they are not satisfied with the result, which you can use to make improvements and try again.
+        IMPORTANT NOTE: This tool CANNOT be used until you've confirmed from the user that any previous tool uses were successful. Failure to do so will result in code corruption and system failure. Before using this tool, you must ask yourself in <thinking></thinking> tags if you've confirmed from the user that any previous tool uses were successful. If not, then DO NOT use this tool.
+        Parameters:
+        - result: (required) The result of the task. Formulate this result in a way that is final and does not require further input from the user. Don't end your result with questions or offers for further assistance.
+        - command: (optional) A CLI command to execute to show a live demo of the result to the user. For example, use \`open index.html\` to display a created html website, or \`open localhost:3000\` to display a locally running development server. But DO NOT use commands like \`echo\` or \`cat\` that merely print text. This command should be valid for the current operating system. Ensure the command is properly formatted and does not contain any harmful instructions.
+        Usage:
         <attempt_completion>
         <result>
         Your final result description here
@@ -567,11 +293,16 @@ class ToolExampleGenerators:
         <command>Command to demonstrate result (optional)</command>
         </attempt_completion>
         """
-        return {}
+        return self.params
     
     @byzerllm.prompt()
-    def plan_mode_respond_example(self) -> Dict:
+    def plan_mode_respond(self) -> Dict:
         """
+        Description: Respond to the user's inquiry in an effort to plan a solution to the user's task. This tool should be used when you need to provide a response to a question or statement from the user about how you plan to accomplish the task. This tool is only available in PLAN MODE. The environment_details will specify the current mode, if it is not PLAN MODE then you should not use this tool. Depending on the user's message, you may ask questions to get clarification about the user's request, architect a solution to the task, and to brainstorm ideas with the user. For example, if the user's task is to create a website, you may start by asking some clarifying questions, then present a detailed plan for how you will accomplish the task given the context, and perhaps engage in a back and forth to finalize the details before the user switches you to ACT MODE to implement the solution.
+        Parameters:
+        - response: (required) The response to provide to the user. Do not try to use tools in this parameter, this is simply a chat response. (You MUST use the response parameter, do not simply place the response text directly within <plan_mode_respond> tags.)
+        - options: (optional) An array of 2-5 options for the user to choose from. Each option should be a string describing a possible choice or path forward in the planning process. This can help guide the discussion and make it easier for the user to provide input on key decisions. You may not always need to provide options, but it may be helpful in many cases where it can save the user from having to type out a response manually. Do NOT present an option to toggle to Act mode, as this will be something you need to direct the user to do manually themselves.
+        Usage:
         <plan_mode_respond>
         <response>Your response here</response>
         <options>
@@ -582,19 +313,36 @@ class ToolExampleGenerators:
         return {}
     
     @byzerllm.prompt()
-    def use_mcp_tool_example(self) -> Dict:
+    def mcp_tool(self) -> Dict:
         """
+        Description: Request to execute a tool via the Model Context Protocol (MCP) server. Use this when you need to execute a tool that is not natively supported by the agentic edit tools.
+        Parameters:
+        - server_name: (optional) The name of the MCP server to use. If not provided, the tool will automatically choose the best server based on the query.
+        - tool_name: (optional) The name of the tool to execute. If not provided, the tool will automatically choose the best tool in the selected server based on the query.
+        - query: (required) The query to pass to the tool.
+        Usage:
         <use_mcp_tool>
-        <server_name>github</server_name>
-        <tool_name>create_issue</tool_name>
-        <query>ower is octocat, repo is hello-world, title is Found a bug, body is I'm having a problem with this. labels is "bug" and "help wanted",assignees is "octocat"</query>        
-        </use_mcp_tool>
+        <server_name>xxx</server_name>
+        <tool_name>xxxx</tool_name>
+        <query>
+        Your query here
+        </query>
+        </use_mcp_tool> 
         """
-        return {}
+        return self.params
+    
+    
     
     @byzerllm.prompt()
-    def talk_to_example(self) -> Dict:
+    def talk_to(self) -> Dict:
         """
+        Description: Send a message to another agent
+        Parameters:
+        - agent_name: (required) The name of the agent to talk to
+        - content: (required) The message content
+        - mentions: (optional) An array of agent names to mention in the message
+        - print_conversation: (optional) Whether to print the conversation to the console
+        Usage:
         <talk_to>
         <agent_name>assistant2</agent_name>
         <content>Hello assistant2, can you help me with this task?</content>
@@ -602,11 +350,19 @@ class ToolExampleGenerators:
         <print_conversation>true</print_conversation>
         </talk_to>
         """
-        return {}
+        return self.params
+        
     
     @byzerllm.prompt()
-    def talk_to_group_example(self) -> Dict:
+    def talk_to_group_description(self) -> Dict:
         """
+        Description: Send a message to a group of agents
+        Parameters:
+        - group_name: (required) The name of the group to talk to
+        - content: (required) The message content
+        - mentions: (optional) An array of agent names to mention in the message
+        - print_conversation: (optional) Whether to print the conversation to the console
+        Usage:
         <talk_to_group>
         <group_name>research_team</group_name>
         <content>Hello team, I need your input on the research plan.</content>
@@ -614,282 +370,96 @@ class ToolExampleGenerators:
         <print_conversation>true</print_conversation>
         </talk_to_group>
         """
-        return {}
+        return self.params    
 
-# Initialize tool example generators
-tool_examples_gen = ToolExampleGenerators()
+class ToolExampleGenerators:
+    def __init__(self,params: Dict):
+        self.params = params
 
-# Default tool examples
-DEFAULT_TOOL_EXAMPLES = {
-    "execute_command": ToolExample(
-        title="Example of executing a command",
-        body=tool_examples_gen.execute_command_example.prompt()
-    ),
-    "read_file": ToolExample(
-        title="Example of reading a file",
-        body=tool_examples_gen.read_file_example.prompt()
-    ),
-    "write_to_file": ToolExample(
-        title="Example of writing to a file",
-        body=tool_examples_gen.write_to_file_example.prompt()
-    ),
-    "replace_in_file": ToolExample(
-        title="Example of replacing content in a file",
-        body=tool_examples_gen.replace_in_file_example.prompt()
-    ),
-    "search_files": ToolExample(
-        title="Example of searching files",
-        body=tool_examples_gen.search_files_example.prompt()
-    ),
-    "list_files": ToolExample(
-        title="Example of listing files",
-        body=tool_examples_gen.list_files_example.prompt()
-    ),
-    "ask_followup_question": ToolExample(
-        title="Example of asking a followup question",
-        body=tool_examples_gen.ask_followup_question_example.prompt()
-    ),
-    "attempt_completion": ToolExample(
-        title="Example of completing a task",
-        body=tool_examples_gen.attempt_completion_example.prompt()
-    ),
-    "plan_mode_respond": ToolExample(
-        title="Example of responding in plan mode",
-        body=tool_examples_gen.plan_mode_respond_example.prompt()
-    ),
-    "use_mcp_tool": ToolExample(
-        title="Example of using an MCP tool",
-        body=tool_examples_gen.use_mcp_tool_example.prompt()
-    ),
-    "talk_to": ToolExample(
-        title="Example of talking to another agent",
-        body=tool_examples_gen.talk_to_example.prompt()
-    ),
-    "talk_to_group": ToolExample(
-        title="Example of talking to a group of agents",
-        body=tool_examples_gen.talk_to_group_example.prompt()
-    ),
-}
+    @byzerllm.prompt()
+    def example_1(self) -> Dict:
+        """
+        <execute_command>
+        <command>npm run dev</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+        """
+        return self.params
+    
+    @byzerllm.prompt()
+    def example_2(self) -> Dict:
+        """
+        <write_to_file>
+        <path>src/frontend-config.json</path>
+        <content>
+        {
+        "apiEndpoint": "https://api.example.com",
+        "theme": {
+            "primaryColor": "#007bff",
+            "secondaryColor": "#6c757d",
+            "fontFamily": "Arial, sans-serif"
+        },
+        "features": {
+            "darkMode": true,
+            "notifications": true,
+            "analytics": false
+        },
+        "version": "1.0.0"
+        }
+        </content>
+        </write_to_file>
+        """
+        return self.params
+    
+    @byzerllm.prompt()
+    def example_3(self) -> Dict:
+        """
+        <replace_in_file>
+        <path>src/components/App.tsx</path>
+        <diff>
+        <<<<<<< SEARCH
+        import React from 'react';
+        =======
+        import React, { useState } from 'react';
+        >>>>>>> REPLACE
 
+        <<<<<<< SEARCH
+        function handleSubmit() {
+        saveData();
+        setLoading(false);
+        }
 
+        =======
+        >>>>>>> REPLACE
 
+        <<<<<<< SEARCH
+        return (
+        <div>
+        =======
+        function handleSubmit() {
+        saveData();
+        setLoading(false);
+        }
 
-# 定义默认工具用例文档
-DEFAULT_TOOLS_CASE_DOC = {
-    "editing_files": {
-        "tools": ["replace_in_file", "write_to_file"],
-        "doc": ToolsCaseGenerator.editing_files_doc()
-    }
-}
+        return (
+        <div>
+        >>>>>>> REPLACE
+        </diff>
+        </replace_in_file>
+        """
+        return self.params
+    
+    @byzerllm.prompt()
+    def example_4(self) -> Dict:
+        """
+        <use_mcp_tool>
+        <server_name>github</server_name>
+        <tool_name>create_issue</tool_name>
+        <query>ower is octocat, repo is hello-world, title is Found a bug, body is I'm having a problem with this. labels is "bug" and "help wanted",assignees is "octocat"</query>        
+        </use_mcp_tool> 
+        """
+        return self.params
 
-
-# 统一的工具定义数据结构
-DEFAULT_TOOLS = {
-    "execute_command": {
-        "tool_cls": ExecuteCommandTool,
-        "resolver_cls": ExecuteCommandToolResolver,
-        "description": ToolDescription(
-            description=tool_desc_gen.execute_command_description.prompt(),
-            parameters=tool_desc_gen.execute_command_parameters.prompt(),
-            usage=tool_desc_gen.execute_command_usage.prompt()
-        ),
-        "example": ToolExample(
-            title="Example of executing a command",
-            body=tool_examples_gen.execute_command_example.prompt()
-        ),
-        "use_guideline": "",
-        "category": "system",
-        "is_default": True,
-        "case_docs": []
-    },
-    "read_file": {
-        "tool_cls": ReadFileTool,
-        "resolver_cls": ReadFileToolResolver,
-        "description": ToolDescription(
-            description=tool_desc_gen.read_file_description.prompt(),
-            parameters=tool_desc_gen.read_file_parameters.prompt(),
-            usage=tool_desc_gen.read_file_usage.prompt()
-        ),
-        "example": ToolExample(
-            title="Example of reading a file",
-            body=tool_examples_gen.read_file_example.prompt()
-        ),
-        "use_guideline": "",
-        "category": "file_operation",
-        "is_default": True,
-        "case_docs": []
-    },
-    "write_to_file": {
-        "tool_cls": WriteToFileTool,
-        "resolver_cls": WriteToFileToolResolver,
-        "description": ToolDescription(
-            description=tool_desc_gen.write_to_file_description.prompt(),
-            parameters=tool_desc_gen.write_to_file_parameters.prompt(),
-            usage=tool_desc_gen.write_to_file_usage.prompt()
-        ),
-        "example": ToolExample(
-            title="Example of writing to a file",
-            body=tool_examples_gen.write_to_file_example.prompt()
-        ),
-        "use_guideline": "",
-        "category": "file_operation",
-        "is_default": True,
-        "case_docs": ["editing_files"]
-    },
-    "replace_in_file": {
-        "tool_cls": ReplaceInFileTool,
-        "resolver_cls": ReplaceInFileToolResolver,
-        "description": ToolDescription(
-            description=tool_desc_gen.replace_in_file_description.prompt(),
-            parameters=tool_desc_gen.replace_in_file_parameters.prompt(),
-            usage=tool_desc_gen.replace_in_file_usage.prompt()
-        ),
-        "example": ToolExample(
-            title="Example of replacing content in a file",
-            body=tool_examples_gen.replace_in_file_example.prompt()
-        ),
-        "use_guideline": "",
-        "category": "file_operation",
-        "is_default": True,
-        "case_docs": ["editing_files"]
-    },
-    "search_files": {
-        "tool_cls": SearchFilesTool,
-        "resolver_cls": SearchFilesToolResolver,
-        "description": ToolDescription(
-            description=tool_desc_gen.search_files_description.prompt(),
-            parameters=tool_desc_gen.search_files_parameters.prompt(),
-            usage=tool_desc_gen.search_files_usage.prompt()
-        ),
-        "example": ToolExample(
-            title="Example of searching files",
-            body=tool_examples_gen.search_files_example.prompt()
-        ),
-        "use_guideline": "",
-        "category": "file_operation",
-        "is_default": True,
-        "case_docs": []
-    },
-    "list_files": {
-        "tool_cls": ListFilesTool,
-        "resolver_cls": ListFilesToolResolver,
-        "description": ToolDescription(
-            description=tool_desc_gen.list_files_description.prompt(),
-            parameters=tool_desc_gen.list_files_parameters.prompt(),
-            usage=tool_desc_gen.list_files_usage.prompt()
-        ),
-        "example": ToolExample(
-            title="Example of listing files",
-            body=tool_examples_gen.list_files_example.prompt()
-        ),
-        "use_guideline": "",
-        "category": "file_operation",
-        "is_default": True,
-        "case_docs": []
-    },
-    "ask_followup_question": {
-        "tool_cls": AskFollowupQuestionTool,
-        "resolver_cls": AskFollowupQuestionToolResolver,
-        "description": ToolDescription(
-            description=tool_desc_gen.ask_followup_question_description.prompt(),
-            parameters=tool_desc_gen.ask_followup_question_parameters.prompt(),
-            usage=tool_desc_gen.ask_followup_question_usage.prompt()
-        ),
-        "example": ToolExample(
-            title="Example of asking a followup question",
-            body=tool_examples_gen.ask_followup_question_example.prompt()
-        ),
-        "use_guideline": "",
-        "category": "interaction",
-        "is_default": True,
-        "case_docs": []
-    },
-    "attempt_completion": {
-        "tool_cls": AttemptCompletionTool,
-        "resolver_cls": AttemptCompletionToolResolver,
-        "description": ToolDescription(
-            description=tool_desc_gen.attempt_completion_description.prompt(),
-            parameters=tool_desc_gen.attempt_completion_parameters.prompt(),
-            usage=tool_desc_gen.attempt_completion_usage.prompt()
-        ),
-        "example": ToolExample(
-            title="Example of completing a task",
-            body=tool_examples_gen.attempt_completion_example.prompt()
-        ),
-        "use_guideline": "",
-        "category": "interaction",
-        "is_default": True,
-        "case_docs": []
-    },
-    "plan_mode_respond": {
-        "tool_cls": PlanModeRespondTool,
-        "resolver_cls": PlanModeRespondToolResolver,
-        "description": ToolDescription(
-            description=tool_desc_gen.plan_mode_respond_description.prompt(),
-            parameters=tool_desc_gen.plan_mode_respond_parameters.prompt(),
-            usage=tool_desc_gen.plan_mode_respond_usage.prompt()
-        ),
-        "example": ToolExample(
-            title="Example of responding in plan mode",
-            body=tool_examples_gen.plan_mode_respond_example.prompt()
-        ),
-        "use_guideline": "",
-        "category": "interaction",
-        "is_default": True,
-        "case_docs": []
-    },
-    "use_mcp_tool": {
-        "tool_cls": UseMcpTool,
-        "resolver_cls": UseMcpToolResolver,
-        "description": ToolDescription(
-            description=tool_desc_gen.use_mcp_tool_description.prompt(),
-            parameters=tool_desc_gen.use_mcp_tool_parameters.prompt(),
-            usage=tool_desc_gen.use_mcp_tool_usage.prompt()
-        ),
-        "example": ToolExample(
-            title="Example of using an MCP tool",
-            body=tool_examples_gen.use_mcp_tool_example.prompt()
-        ),
-        "use_guideline": "",
-        "category": "external",
-        "is_default": True,
-        "case_docs": []
-    },
-    "talk_to": {
-        "tool_cls": TalkToTool,
-        "resolver_cls": TalkToToolResolver,
-        "description": ToolDescription(
-            description=tool_desc_gen.talk_to_description.prompt(),
-            parameters=tool_desc_gen.talk_to_parameters.prompt(),
-            usage=tool_desc_gen.talk_to_usage.prompt()
-        ),
-        "example": ToolExample(
-            title="Example of talking to another agent",
-            body=tool_examples_gen.talk_to_example.prompt()
-        ),
-        "use_guideline": "",
-        "category": "interaction",
-        "is_default": True,
-        "case_docs": []
-    },
-    "talk_to_group": {
-        "tool_cls": TalkToGroupTool,
-        "resolver_cls": TalkToGroupToolResolver,
-        "description": ToolDescription(
-            description=tool_desc_gen.talk_to_group_description.prompt(),
-            parameters=tool_desc_gen.talk_to_group_parameters.prompt(),
-            usage=tool_desc_gen.talk_to_group_usage.prompt()
-        ),
-        "example": ToolExample(
-            title="Example of talking to a group of agents",
-            body=tool_examples_gen.talk_to_group_example.prompt()
-        ),
-        "use_guideline": "",
-        "category": "interaction",
-        "is_default": True,
-        "case_docs": []
-    }
-}
 
 def register_default_tools_case_doc():
     """
@@ -897,6 +467,17 @@ def register_default_tools_case_doc():
     """
     # 获取所有已注册的工具
     registered_tools = set(ToolRegistry.get_all_registered_tools())
+
+    tool_case_gen = ToolsCaseGenerator()
+
+    # 定义默认工具用例文档
+    DEFAULT_TOOLS_CASE_DOC = {
+        "editing_files": {
+            "tools": ["replace_in_file", "write_to_file"],
+            "doc": tool_case_gen.editing_files_doc.prompt()
+        }
+    }
+
     
     for case_name, case_info in DEFAULT_TOOLS_CASE_DOC.items():
         # 检查所有工具是否存在
@@ -925,7 +506,169 @@ def register_default_tools_case_doc():
 def register_default_tools():
     """
     Register all default tools
-    """
+    """    
+    tool_desc_gen = ToolDescGenerators()
+    tool_examples_gen = ToolExampleGenerators()
+
+    DEFAULT_TOOL_EXAMPLES = {
+        "example_1": ToolExample(
+            title="Example 1: Requesting to execute a command",
+            body=tool_examples_gen.example_1.prompt()
+        ),
+        "example_2": ToolExample(
+            title="Example 2: Requesting to create a new file",
+            body=tool_examples_gen.example_2.prompt()
+        ),
+        "example_3": ToolExample(
+            title="Example 3: Requesting to make targeted edits to a file",
+            body=tool_examples_gen.example_3.prompt()
+        ),
+        "example_4": ToolExample(
+            title="Example 4: Another example of using an MCP tool (where the server name is a unique identifier listed in MCP_SERVER_LIST)",
+            body=tool_examples_gen.example_4.prompt()
+        )    
+    }
+
+    
+    # 统一的工具定义数据结构
+    DEFAULT_TOOLS = {
+        "execute_command": {
+            "tool_cls": ExecuteCommandTool,
+            "resolver_cls": ExecuteCommandToolResolver,
+            "description": ToolDescription(
+                description=tool_desc_gen.execute_command.prompt(),
+            ),        
+            "example": DEFAULT_TOOL_EXAMPLES["example_1"],
+            "use_guideline": "",
+            "category": "system",
+            "is_default": True,
+            "case_docs": []
+        },
+        "read_file": {
+            "tool_cls": ReadFileTool,
+            "resolver_cls": ReadFileToolResolver,
+            "description": ToolDescription(
+                description=tool_desc_gen.read_file.prompt(),
+            ),
+            "use_guideline": "",
+            "category": "file_operation",
+            "is_default": True,
+            "case_docs": []
+        },
+        "write_to_file": {
+            "tool_cls": WriteToFileTool,
+            "resolver_cls": WriteToFileToolResolver,
+            "description": ToolDescription(
+                description=tool_desc_gen.write_to_file.prompt(),
+            ),
+            "example": DEFAULT_TOOL_EXAMPLES["example_2"],
+            "use_guideline": "",
+            "category": "file_operation",
+            "is_default": True,
+            "case_docs": ["editing_files"]
+        },
+        "replace_in_file": {
+            "tool_cls": ReplaceInFileTool,
+            "resolver_cls": ReplaceInFileToolResolver,
+            "description": ToolDescription(
+                description=tool_desc_gen.replace_in_file.prompt(),
+            ),
+            "use_guideline": "",
+            "example": DEFAULT_TOOL_EXAMPLES["example_3"],
+            "category": "file_operation",
+            "is_default": True,
+            "case_docs": ["editing_files"]
+        },
+        "search_files": {
+            "tool_cls": SearchFilesTool,
+            "resolver_cls": SearchFilesToolResolver,
+            "description": ToolDescription(
+                description=tool_desc_gen.search_files.prompt(),
+            ),
+            "use_guideline": "",
+            "category": "file_operation",
+            "is_default": True,
+            "case_docs": []
+        },
+        "list_files": {
+            "tool_cls": ListFilesTool,
+            "resolver_cls": ListFilesToolResolver,
+            "description": ToolDescription(
+                description=tool_desc_gen.list_files.prompt(),
+            ),
+            "use_guideline": "",
+            "category": "file_operation",
+            "is_default": True,
+            "case_docs": []
+        },
+        "ask_followup_question": {
+            "tool_cls": AskFollowupQuestionTool,
+            "resolver_cls": AskFollowupQuestionToolResolver,
+            "description": ToolDescription(
+                description=tool_desc_gen.ask_followup_question.prompt(),
+            ),
+            "use_guideline": "",
+            "category": "interaction",
+            "is_default": True,
+            "case_docs": []
+        },
+        "attempt_completion": {
+            "tool_cls": AttemptCompletionTool,
+            "resolver_cls": AttemptCompletionToolResolver,
+            "description": ToolDescription(
+                description=tool_desc_gen.attempt_completion.prompt(),
+            ),
+            "use_guideline": "",
+            "category": "interaction",
+            "is_default": True,
+            "case_docs": []
+        },
+        "plan_mode_respond": {
+            "tool_cls": PlanModeRespondTool,
+            "resolver_cls": PlanModeRespondToolResolver,
+            "description": ToolDescription(
+                description=tool_desc_gen.plan_mode_respond.prompt(),
+            ),
+            "use_guideline": "",
+            "category": "interaction",
+            "is_default": True,
+            "case_docs": []
+        },
+        "use_mcp_tool": {
+            "tool_cls": UseMcpTool,
+            "resolver_cls": UseMcpToolResolver,
+            "description": ToolDescription(
+                description=tool_desc_gen.use_mcp_tool.prompt(),
+            ),
+            "example": DEFAULT_TOOL_EXAMPLES["example_4"],
+            "use_guideline": "",
+            "category": "external",
+            "is_default": True,
+            "case_docs": []
+        },
+        "talk_to": {
+            "tool_cls": TalkToTool,
+            "resolver_cls": TalkToToolResolver,
+            "description": ToolDescription(
+                description=tool_desc_gen.talk_to.prompt(),
+            ),
+            "use_guideline": "",
+            "category": "interaction",
+            "is_default": True,
+            "case_docs": []
+        },
+        "talk_to_group": {
+            "tool_cls": TalkToGroupTool,
+            "resolver_cls": TalkToGroupToolResolver,
+            "description": ToolDescription(
+                description=tool_desc_gen.talk_to_group_description.prompt(),
+            ),
+            "use_guideline": "",
+            "category": "interaction",
+            "is_default": True,
+            "case_docs": []
+        }
+    }
     # 先使用统一的工具注册方法注册所有工具
     for tool_tag, tool_info in DEFAULT_TOOLS.items():
         ToolRegistry.register_unified_tool(tool_tag, tool_info)

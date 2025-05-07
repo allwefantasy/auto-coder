@@ -79,9 +79,7 @@ class ToolDescription(BaseModel):
     """
     工具描述
     """
-    description: str  # 工具描述内容
-    parameters: str   # 工具参数说明
-    usage: str        # 工具使用示例
+    description: str  # 工具描述内容    
 
 
 class ToolExample(BaseModel):

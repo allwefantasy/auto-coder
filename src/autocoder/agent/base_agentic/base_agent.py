@@ -475,13 +475,7 @@ class BaseAgent(ABC):
 
         {% for tool_tag, tool_description in tool_descriptions.items() %}
         ## {{ tool_tag }}
-        Description: {{ tool_description.description }}
-        
-        Parameters:
-        {{ tool_description.parameters }}
-        
-        Usage:
-        {{ tool_description.usage }}
+        {{ tool_description.description }}                
         {% endfor %}        
 
         {%if mcp_server_info %}
@@ -615,10 +609,10 @@ class BaseAgent(ABC):
         - The write_to_file and replace_in_file tools are ONLY to be used for creating and updating research plans, search strategies, or summarizing findings. They are NOT to be used for modifying system files or any operational code.
         - When making research plans, always consider the context and objectives clearly outlined by the user.
         - Do not ask for more information than necessary. Use the tools provided to accomplish the user's request efficiently and effectively. When you've completed your task, you must use the attempt_completion tool to present the result to the user. The user may provide feedback, which you can use to make improvements and try again.
-        <% if enable_tool_ask_followup_question %>
+        {% if enable_tool_ask_followup_question %}
         - You are only allowed to ask the user questions using the ask_followup_question tool. Use this tool only when you need additional details to complete a task, and be sure to use a clear and concise question that will help you move forward with the task. However if you can use the available tools to avoid having to ask the user questions, you should do so. For example, if the user mentions a file that may be in an outside directory like the Desktop, you should use the list_files tool to list the files in the Desktop and check if the file they are talking about is there, rather than asking the user to provide the file path themselves.
         - When executing commands, if you don't see the expected output, assume the terminal executed the command successfully and proceed with the task. The user's terminal may be unable to stream the output back properly. If you absolutely need to see the actual terminal output, use the ask_followup_question tool to request the user to copy and paste it back to you.
-        <% endif %>
+        {% endif %}
         - The user may provide a file's contents directly in their message, in which case you shouldn't use the read_file tool to get the file contents again since you already have it.
         - Your goal is to try to accomplish the user's task, NOT engage in a back and forth conversation.
         - NEVER end attempt_completion result with a question or request to engage in further conversation! Formulate the end of your result in a way that is final and does not require further input from the user.
@@ -658,7 +652,7 @@ class BaseAgent(ABC):
 
         OBJECTIVE
 
-        As a deep research RAG system, your goal is to answer user questions through the following approach:
+        You accomplish a given task iteratively, breaking it down into clear steps and working through them methodically.
 
         1. Analyze the user's query and identify clear, achievable research objectives. Prioritize these objectives in a logical order.
         2. Sequentially use available tools to gather information, using only one tool at a time. Each objective should correspond to a distinct step in your problem-solving process.
@@ -834,6 +828,7 @@ class BaseAgent(ABC):
                         yield CompletionEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to AttemptCompletion.")
+                        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")       
                         return
 
                     if isinstance(tool_obj, PlanModeRespondTool):
@@ -843,6 +838,7 @@ class BaseAgent(ABC):
                         yield PlanModeRespondEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to PlanModeRespond.")
+                        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")       
                         return
 
                     # Resolve the tool
@@ -944,8 +940,7 @@ class BaseAgent(ABC):
                 continue
             
         logger.info(f"AgenticEdit analyze loop finished after {iteration_count} iterations.")
-        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")
-        print("=======finish=======")
+        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")        
     
     def stream_and_parse_llm_response(
         self, generator: Generator[Tuple[str, Any], None, None], meta_holder: byzerllm.MetaHolder
