@@ -1,392 +1,169 @@
+# Lint 集成设计：ReplaceInFileToolResolver
 
-# Lint 集成方案：WriteToFileToolResolver 和 ReplaceInFileToolResolver
+## 概述
 
-## 1. 引言与目标
+本文档提供了在 `ReplaceInFileToolResolver` 中集成代码质量检查（Lint）功能的设计方案。通过使用 AgenticEdit 中已有的 shadow_manager 和 shadow_linter 实例，我们可以在文件修改后立即提供代码质量反馈，从而提高生成代码的质量。
 
-本文档旨在设计一个方案，将 Lint 校验功能集成到 `WriteToFileToolResolver` 和 `ReplaceInFileToolResolver` 中。目标是确保通过这些工具写入或修改的文件能够经过 Lint 检查，并向用户报告或尝试自动修复发现的问题，从而提高代码质量。
+## 背景
 
-## 2. 现有相关组件分析
+`ReplaceInFileToolResolver` 类负责处理文件内容的替换操作，但目前缺少代码质量检查功能。由于 `AgenticEdit` 类已经初始化了 `shadow_manager` 和 `shadow_linter` 实例，我们可以通过 `self.agent` 访问这些实例，进行代码质量检查。
 
-项目中的 `CodeEditBlockManager` 类已经实现了一套完整的代码生成、Linting（使用 `ShadowLinter`）、编译（使用 `ShadowCompiler`）和自动修复流程。关键组件包括：
+## 设计目标
 
-*   **`ShadowManager`**: 管理一个与主项目平行的 "影子" 文件系统，用于安全地进行修改和测试。
-*   **`ShadowLinter`**: 在影子文件上执行 Lint 操作。它可能封装了一个或多个底层的 Lint 工具（如 Ruff, Flake8, Pylint）。
-*   **`_create_shadow_files_from_edits`**: 从编辑块创建影子文件。
-*   **`_format_lint_issues`**: 将 Lint 结果格式化，以便 LLM 理解并尝试修复。
-*   **`_fix_lint_errors`**: 尝试使用 LLM 自动修复 Lint 错误。
+1. 在文件修改完成后，对修改后的文件进行代码质量检查
+2. 提供清晰、格式化的质量检查结果
+3. 将质量检查结果包含在工具的返回结果中
+4. 确保不干扰原有的文件修改功能
 
-我们将尽可能重用这些现有组件和模式，以保持一致性。
+## 实现方案
 
-## 3. Lint 工具选择
+### 1. 添加 Lint 功能
 
-我们将继续使用项目中已有的 **`ShadowLinter`** 和 **`ShadowManager`** 基础设施。这确保了与项目其他部分 Lint 行为的一致性，并利用了现有的影子文件系统机制，避免直接修改工作区文件进行临时检查。
-
-## 4. 集成方案
-
-核心思想是在文件内容准备好但尚未最终写入磁盘之前，在影子文件上执行 Lint 检查。
-
-### 4.1. 通用 Lint 执行流程
-
-对于两个 Resolver，通用的 Lint 执行流程如下：
-
-1.  **准备内容**:
-    *   `WriteToFileToolResolver`: 获取用户提供的完整文件内容。
-    *   `ReplaceInFileToolResolver`: 应用所有 diff 后，获取最终的文件内容。
-2.  **创建影子文件**:
-    *   使用 `ShadowManager` 为目标文件路径创建一个对应的影子文件。
-    *   将准备好的内容写入该影子文件。
-3.  **执行 Lint**:
-    *   实例化或获取一个 `ShadowLinter` 实例。
-    *   调用 `shadow_linter.lint_specific_shadow_file(shadow_file_path)` (假设有这样的方法，或 `lint_all_shadow_files` 后筛选特定文件结果) 对该影子文件进行 Lint。
-4.  **处理 Lint 结果**:
-    *   获取 Lint 结果 (例如 `ProjectLintResult` 或特定文件的 `FileLintResult`)。
-    *   根据结果判断是否存在需要关注的问题 (例如，错误或警告，具体级别可配置)。
-5.  **清理影子文件**: Lint 操作完成后，应清理相关的影子文件，除非需要用于后续的自动修复步骤。
-
-### 4.2. `WriteToFileToolResolver` 集成
-
-修改 `WriteToFileToolResolver.resolve()` 方法：
+在 `ReplaceInFileToolResolver` 类的 `resolve` 方法中，在文件修改完成后添加代码质量检查流程：
 
 ```python
-# In src/autocoder/agent/base_agentic/tools/write_to_file_tool_resolver.py
-# ... imports ...
-from autocoder.shadows.shadow_manager import ShadowManager # New
-from autocoder.linters.shadow_linter import ShadowLinter   # New
-from autocoder.linters.models import IssueSeverity        # New
-from loguru import logger # Ensure logger is imported
-import os # Ensure os is imported
-
-class WriteToFileToolResolver(BaseToolResolver):
-    # ... existing code ...
-
-    def resolve(self) -> ToolResult:
-        # ... existing code to get self.tool.path and self.tool.content ...
+def resolve(self) -> ToolResult:
+    # ... 现有的文件处理代码 ...
+    
+    # 完成文件写入后，如果写入成功
+    try:
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+        with open(target_path, 'w', encoding='utf-8') as f:
+            f.write(current_content)
+        logger.info(f"Successfully applied {applied_count}/{len(parsed_blocks)} changes to file: {file_path}")
         
-        lint_issues_str = None
-        lint_report = None # Store more structured lint report if needed
+        # 新增：执行代码质量检查
+        lint_results = None
+        lint_message = ""
+        formatted_issues = ""
+        has_lint_issues = False
         
-        full_path = os.path.join(self.agent.args.source_dir, self.tool.path)
-        if not self.agent.is_path_safe(full_path):
-            return ToolResult(success=False, message=f"Error: Path {self.tool.path} is not safe to write to.")
-
-        # --- LINTING STEP ---
-        if hasattr(self.agent.args, 'enable_lint_write_replace') and self.agent.args.enable_lint_write_replace:
-            lintable_extensions = getattr(self.agent.args, 'lintable_extensions', ['.py', '.python']) # Default if not set
-            should_lint_file_type = any(self.tool.path.endswith(ext) for ext in lintable_extensions)
-
-            if should_lint_file_type:
-                try:
-                    # Determine target severity levels from configuration
-                    min_severity_str = getattr(self.agent.args, 'lint_issue_level', 'WARNING').upper() # Default to WARNING
-                    target_severities = []
-                    if min_severity_str == "ERROR":
-                        target_severities = [IssueSeverity.ERROR]
-                    elif min_severity_str == "WARNING":
-                        target_severities = [IssueSeverity.WARNING, IssueSeverity.ERROR]
-                    # Ensure IssueSeverity.ERROR is included if WARNING is specified, as ERROR is more severe.
-                    # Consider a more robust way to define severity hierarchy if more levels are added.
-                    
-                    # Ensure ShadowManager and ShadowLinter can be initialized or retrieved correctly
-                    shadow_manager = ShadowManager(self.agent.args.source_dir, getattr(self.agent.args, 'event_file', None), getattr(self.agent.args, 'ignore_clean_shadows', False))
-                    shadow_linter = ShadowLinter(shadow_manager, verbose=False) 
-
-                    shadow_manager.update_file(self.tool.path, self.tool.content)
-                    project_lint_result = shadow_linter.lint_all_shadow_files() 
-                    file_lint_result = project_lint_result.file_results.get(self.tool.path)
-
-                    if file_lint_result: # Check if file_lint_result is not None
-                        formatted_issues = self._format_lint_issues_for_file(file_lint_result, target_severities)
-                        if formatted_issues: # Issues found at the configured levels
-                            lint_issues_str = formatted_issues
-                            lint_report = file_lint_result.to_dict()
-                    
-                    shadow_manager.delete_file(self.tool.path)
-
-                except Exception as e:
-                    logger.error(f"Linting failed for {self.tool.path}: {e}")
-                    lint_issues_str = f"Linting process encountered an error: {str(e)}"
-        # --- END LINTING STEP ---
-
-        try:
-            # Ensure directories exist
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
-            with open(full_path, "w", encoding="utf-8") as f:
-                f.write(self.tool.content)
+        if self.agent and self.agent.shadow_linter:
+            # 对修改后的文件进行 lint 检查
+            shadow_path = self.shadow_manager.to_shadow_path(abs_file_path)
+            lint_results = self.agent.shadow_linter.lint_shadow_file(shadow_path)
             
-            message = f"File {self.tool.path} written successfully."
-            if lint_issues_str:
-                message += f"\nLinting issues found:\n{lint_issues_str}"
-            
-            # Ensure content in ToolResult is appropriate
-            tool_result_content = {"path": self.tool.path, "content_length": len(self.tool.content)}
-            if lint_report:
-                tool_result_content["lint_report"] = lint_report
-            
-            return ToolResult(
-                success=True,
-                message=message,
-                content=tool_result_content
-            )
-        except Exception as e:
-            return ToolResult(success=False, message=f"Failed to write file {self.tool.path}: {str(e)}")
-
-    def _format_lint_issues_for_file(self, file_lint_result, levels: List[IssueSeverity]) -> str:
-        if not file_lint_result:
-            return ""
+            if lint_results and lint_results.issues:
+                has_lint_issues = True
+                # 格式化 lint 问题
+                formatted_issues = self._format_lint_issues(lint_results)
+                lint_message = f"\n\n代码质量检查发现 {len(lint_results.issues)} 个问题:\n{formatted_issues}"
+            else:
+                lint_message = "\n\n代码质量检查通过，未发现问题。"
         
-        formatted = []
-        has_issues = False
-        for issue in file_lint_result.issues:
-            # Ensure issue.severity is an IssueSeverity enum member before comparing
-            if not isinstance(issue.severity, IssueSeverity) or issue.severity not in levels:
-                continue
-            if not has_issues:
-                formatted.append(f"Issues in {file_lint_result.file_path}:") # file_lint_result.file_path is already the real path
-                has_issues = True
-            
-            severity_str = issue.severity.name.capitalize() if isinstance(issue.severity, IssueSeverity) else str(issue.severity)
-            line_info = f"L{issue.position.line}"
-            if issue.position.column:
-                line_info += f":C{issue.position.column}"
-            
-            formatted.append(f"  - [{severity_str}] {line_info}: {issue.message} (Rule: {issue.code})")
+        # 构建包含 lint 结果的返回消息
+        if errors:
+            message = get_message_with_format("replace_in_file.apply_success_with_warnings", 
+                                              applied=applied_count, 
+                                              total=len(parsed_blocks), 
+                                              file_path=file_path,
+                                              errors="\n".join(errors))
+        else:
+            message = get_message_with_format("replace_in_file.apply_success", 
+                                              applied=applied_count, 
+                                              total=len(parsed_blocks), 
+                                              file_path=file_path)
         
-        return "\n".join(formatted) if has_issues else ""
-
+        # 将 lint 消息添加到结果中
+        message += lint_message
+        
+        # 变更跟踪，回调AgenticEdit
+        if self.agent:
+            rel_path = os.path.relpath(abs_file_path, abs_project_dir)
+            self.agent.record_file_change(rel_path, "modified", diff=diff_content, content=current_content)
+        
+        # 附加 lint 结果到返回内容
+        result_content = {
+            "content": current_content,
+            "lint_results": {
+                "has_issues": has_lint_issues,
+                "issues": formatted_issues if has_lint_issues else None
+            }
+        }
+        
+        return ToolResult(success=True, message=message, content=result_content)
+    except Exception as e:
+        # ... 现有的错误处理代码 ...
 ```
 
-### 4.3. `ReplaceInFileToolResolver` 集成
+### 2. 添加 Lint 结果格式化方法
 
-修改 `ReplaceInFileToolResolver.resolve()` 方法，在成功应用所有 diff 之后，但在将最终内容写回原始文件之前执行 Lint。
+在 `ReplaceInFileToolResolver` 类中添加格式化 lint 结果的辅助方法：
 
 ```python
-# In src/autocoder/agent/base_agentic/tools/replace_in_file_tool_resolver.py
-# ... imports ...
-from autocoder.common.v2.code_auto_merge_editblock import CodeAutoMergeEditBlock 
-from autocoder.shadows.shadow_manager import ShadowManager 
-from autocoder.linters.shadow_linter import ShadowLinter   
-from autocoder.linters.models import IssueSeverity        
-from loguru import logger 
-import os # Ensure os is imported
-
-class ReplaceInFileToolResolver(BaseToolResolver):
-    # ... existing code ...
-
-    def resolve(self) -> ToolResult:
-        full_path = os.path.join(self.agent.args.source_dir, self.tool.path)
-        if not self.agent.is_path_safe(full_path):
-            return ToolResult(success=False, message=f"Error: Path {self.tool.path} is not safe to write to.")
-
-        if not os.path.exists(full_path):
-            return ToolResult(success=False, message=f"Error: File {self.tool.path} does not exist.")
-
-        try:
-            with open(full_path, "r", encoding="utf-8") as f:
-                original_content = f.read()
-        except Exception as e:
-            return ToolResult(success=False, message=f"Error reading file {self.tool.path}: {str(e)}")
+def _format_lint_issues(self, lint_result):
+    """
+    将 lint 结果格式化为可读的文本格式
+    
+    参数:
+        lint_result: 单个文件的 lint 结果对象
         
-        try:
-            final_content_str = self._apply_replacements_for_linting(original_content, self.tool.diff, self.tool.path)
-        except Exception as e:
-            return ToolResult(success=False, message=f"Failed to apply replacements for linting on {self.tool.path}: {str(e)}")
-
-        # --- LINTING STEP ---
-        lint_issues_str = None
-        lint_report = None
-        if hasattr(self.agent.args, 'enable_lint_write_replace') and self.agent.args.enable_lint_write_replace:
-            lintable_extensions = getattr(self.agent.args, 'lintable_extensions', ['.py', '.python']) # Default if not set
-            should_lint_file_type = any(self.tool.path.endswith(ext) for ext in lintable_extensions)
-
-            if should_lint_file_type:
-                try:
-                    # Determine target severity levels from configuration
-                    min_severity_str = getattr(self.agent.args, 'lint_issue_level', 'WARNING').upper() # Default to WARNING
-                    target_severities = []
-                    if min_severity_str == "ERROR":
-                        target_severities = [IssueSeverity.ERROR]
-                    elif min_severity_str == "WARNING":
-                        target_severities = [IssueSeverity.WARNING, IssueSeverity.ERROR]
-                    # Ensure IssueSeverity.ERROR is included if WARNING is specified, as ERROR is more severe.
-
-                    shadow_manager = ShadowManager(self.agent.args.source_dir, getattr(self.agent.args, 'event_file', None), getattr(self.agent.args, 'ignore_clean_shadows', False))
-                    shadow_linter = ShadowLinter(shadow_manager, verbose=False)
-
-                    shadow_manager.update_file(self.tool.path, final_content_str)
-                    project_lint_result = shadow_linter.lint_all_shadow_files()
-                    file_lint_result = project_lint_result.file_results.get(self.tool.path)
-
-                    if file_lint_result: # Check if file_lint_result is not None
-                        formatted_issues = self._format_lint_issues_for_file(file_lint_result, target_severities)
-                        if formatted_issues: # Issues found at the configured levels
-                            lint_issues_str = formatted_issues
-                            lint_report = file_lint_result.to_dict()
-                    
-                    shadow_manager.delete_file(self.tool.path) 
-
-                except Exception as e:
-                    logger.error(f"Linting failed for {self.tool.path} after replacements: {e}")
-                    lint_issues_str = f"Linting process encountered an error: {str(e)}"
-        # --- END LINTING STEP ---
-
-        try:
-            with open(full_path, "w", encoding="utf-8") as f:
-                 f.write(final_content_str) 
-
-            message = f"File {self.tool.path} updated successfully."
-            if lint_issues_str:
-                message += f"\nLinting issues found after applying replacements:\n{lint_issues_str}"
-            
-            tool_result_content = {"path": self.tool.path, "content_length": len(final_content_str)}
-            if lint_report:
-                tool_result_content["lint_report"] = lint_report
-            
-            return ToolResult(
-                success=True,
-                message=message,
-                content=tool_result_content
-            )
-        except Exception as e:
-            return ToolResult(success=False, message=f"Failed to update file {self.tool.path}: {str(e)}")
-
-    def _apply_replacements_for_linting(self, original_content: str, diff_str: str, file_path_for_diff: str) -> str:
-        # This helper applies SEARCH/REPLACE blocks to a string.
-        # It's a simplified version. A robust production version should handle edge cases
-        # like line endings, ensuring exact matches, and the order of blocks.
-        current_content = original_content
-        try:
-            # CodeAutoMergeEditBlock.get_edits is a static method
-            parsed_blocks = CodeAutoMergeEditBlock.get_edits(diff_str)
-            
-            for block_file_path, search_block, replace_block in parsed_blocks:
-                if block_file_path == file_path_for_diff: # Process only blocks for the current file
-                    # Normalize line endings for search_block to improve matching robustness
-                    # This is a common pitfall: diffs might have LF, file might have CRLF.
-                    # For simplicity, we assume consistent line endings or that get_edits handles this.
-                    # A more robust way: try replacing with \n, then with \r\n if original_content has \r\n
-                    
-                    # Handle the "first match only" behavior of string.replace
-                    # If search_block can appear multiple times, this simple replace might not be what's intended
-                    # by the tool's design, which usually implies targeted, unique replacements.
-                    
-                    # Critical: The SEARCH block must match *exactly*.
-                    # Whitespace, indentation, and line endings are significant.
-                    
-                    # A simple string replace is used here. If blocks overlap or order matters
-                    # in a way that simple sequential replace doesn't handle, this needs more care.
-                    # The `replace(search, replace, 1)` ensures only the first occurrence is replaced,
-                    # which aligns with the typical behavior of diff/patch tools for specific blocks.
-                    if search_block in current_content:
-                         current_content = current_content.replace(search_block, replace_block, 1)
-                    else:
-                         # Log or handle cases where a SEARCH block doesn't match.
-                         # This could indicate an issue with the diff or the original content.
-                         logger.warning(f"Search block not found in {file_path_for_diff} for linting simulation. Search block:\n{search_block}")
-
-        except Exception as e:
-            logger.error(f"Error applying diffs to content for {file_path_for_diff} for linting: {e}")
-            raise # Re-raise to be caught by the caller
-        return current_content
-
-    def _format_lint_issues_for_file(self, file_lint_result, levels: List[IssueSeverity]) -> str:
-        # Same helper as in WriteToFileToolResolver.
-        # For maintainability, this could be refactored into a shared utility or a base class method
-        # if more tool resolvers require similar lint issue formatting.
-        if not file_lint_result:
-            return ""
+    返回:
+        str: 格式化的问题描述
+    """
+    formatted_issues = []
+    
+    for issue in lint_result.issues:
+        severity = "错误" if issue.severity.value == 3 else "警告" if issue.severity.value == 2 else "信息"
+        line_info = f"第{issue.position.line}行"
+        if issue.position.column:
+            line_info += f", 第{issue.position.column}列"
         
-        formatted = []
-        has_issues = False
-        for issue in file_lint_result.issues:
-            if not isinstance(issue.severity, IssueSeverity) or issue.severity not in levels:
-                continue
-            if not has_issues:
-                formatted.append(f"Issues in {file_lint_result.file_path}:")
-                has_issues = True
-            
-            severity_str = issue.severity.name.capitalize() if isinstance(issue.severity, IssueSeverity) else str(issue.severity)
-            line_info = f"L{issue.position.line}"
-            if issue.position.column:
-                line_info += f":C{issue.position.column}"
-            
-            formatted.append(f"  - [{severity_str}] {line_info}: {issue.message} (Rule: {issue.code})")
-        
-        return "\n".join(formatted) if has_issues else ""
+        formatted_issues.append(
+            f"  - [{severity}] {line_info}: {issue.message} (规则: {issue.code})"
+        )
+    
+    return "\n".join(formatted_issues)
 ```
 
-**Note on `_apply_replacements_for_linting`**: This helper in `ReplaceInFileToolResolver` is crucial. It needs to accurately simulate the application of diffs to get the content that *would* be written. The `CodeAutoMergeEditBlock.get_edits` method parses the diff string into searchable blocks. The actual replacement logic here is simplified; a production version must be robust, considering exact matching requirements (whitespace, line endings) and the "first match only" rule for each block.
+### 3. 对返回的 ToolResult 进行扩展
 
-### 4.4. Configuration
+为了在 `ToolResult` 中包含 lint 结果，我们需要使用 `content` 字段来传递更丰富的结构化数据：
 
-A new boolean argument, e.g., `args.enable_lint_write_replace` (or separate args for write and replace), should be added to `AutoCoderArgs` to control whether this Linting step is performed. This allows users to enable/disable the feature.
-The severity levels for issues to report (e.g., ERROR, WARNING) could also be made configurable.
-It's also recommended to make the file extensions to be linted configurable (e.g., `args.lintable_extensions = [".py", ".js"]`).
-
-### 4.5. `ToolResult` Adjustments
-
-The `content` field in `ToolResult` should be a dictionary for these tools to consistently include `path` and optionally `lint_report`.
-
-For `WriteToFileToolResolver` and `ReplaceInFileToolResolver`, the `content` could be a dictionary:
-```json
-{
-  "path": "path/to/file.py",
-  "content_length": 12345, // Length of the written content
-  "lint_report": { /* structure of FileLintResult (serialized) */ } // Optional
-}
-```
-The `message` field in `ToolResult` will also include a summary of Lint issues if any were found.
-
-## 5. Auto-Fixing (Optional Advanced Feature)
-
-Similar to `CodeEditBlockManager._fix_lint_errors`, an auto-fixing loop could be introduced:
-1.  If Lint issues are found.
-2.  Format them using a prompt similar to `fix_linter_errors`.
-3.  Pass this to an LLM to get corrected code (as diffs or full content).
-4.  Re-apply/replace the content in the shadow file.
-5.  Re-lint.
-6.  Repeat for a configured number of attempts.
-
-This would make the tools more powerful but also significantly more complex and potentially slower. For an initial implementation, reporting Lint issues might be sufficient. If auto-fixing is desired, it should leverage the existing prompts and logic from `CodeEditBlockManager`.
-
-## 6. Error Handling
-
-*   Errors during the Linting process itself (e.g., Linter tool crashes) should be caught.
-*   The system should decide if a Linting error prevents the file operation or is just a warning. Initially, it's safer to treat Linting process errors as non-blocking for the file operation but report them.
-*   Lint issues found in the code (e.g., syntax errors reported by Linter) should be reported. The user or an auto-fix step would then address them.
-
-## 7. Flowchart (Simplified)
-
-```mermaid
-graph TD
-    A[Tool Resolver: Start Resolve] --> B{Get/Prepare File Content};
-    B --> C{args.enable_lint_write_replace AND file_is_lintable?};
-    C -- Yes --> D[Create Shadow File with Content];
-    D --> E[Run ShadowLinter];
-    E --> F{Lint Issues Found?};
-    F -- Yes --> G[Format Lint Issues];
-    G --> H[Append Issues to ToolResult Message & Add Report to Content];
-    F -- No --> H;
-    C -- No --> H;
-    H --> I[Perform Original File Write/Replace Operation];
-    I --> J[Return ToolResult];
+```python
+# 返回结构示例
+ToolResult(
+    success=True,
+    message="成功应用了 1/1 处修改到文件: src/main.js\n\n代码质量检查发现 2 个问题:\n  - [警告] 第10行: 未使用的变量 'data' (规则: no-unused-vars)\n  - [错误] 第15行: 缺少分号 (规则: semi)",
+    content={
+        "content": "文件的完整内容...",
+        "lint_results": {
+            "has_issues": True,
+            "issues": "  - [警告] 第10行: 未使用的变量 'data' (规则: no-unused-vars)\n  - [错误] 第15行: 缺少分号 (规则: semi)"
+        }
+    }
+)
 ```
 
-## 8. Summary of Changes
+## 其他考虑事项
 
-1.  **`AutoCoderArgs`**:
-    *   Add `enable_lint_write_replace: bool` (default `False`).
-    *   Consider `lint_issue_level: str` (e.g., "WARNING", "ERROR", default "ERROR").
-    *   Consider `lintable_extensions: List[str]` (e.g., `[".py", ".python", ".js"]`).
-2.  **`WriteToFileToolResolver`**:
-    *   Modify `resolve()` to include the Linting step using `ShadowManager` and `ShadowLinter`.
-    *   Add helper `_format_lint_issues_for_file`.
-    *   Update `ToolResult` to include Lint information.
-3.  **`ReplaceInFileToolResolver`**:
-    *   Modify `resolve()` to include the Linting step after simulating diff application and before actual write.
-    *   Implement a robust `_apply_replacements_for_linting` helper.
-    *   Add helper `_format_lint_issues_for_file`.
-    *   Update `ToolResult` to include Lint information.
-4.  **`ShadowLinter` (Potentially)**: Ensure it can efficiently lint a single specified shadow file or that its results can be easily filtered. The current `lint_all_shadow_files()` might be acceptable if `ShadowManager`'s scope is temporarily limited or results are filtered.
-5.  **`BaseToolResolver` (Potentially)**: The `agent` property (which holds `AutoCoderArgs`) needs to be consistently available.
+### 性能
 
-This design provides a clear path to integrate Linting into the specified tool resolvers, enhancing code quality checks within the automated workflow.
+对每个修改的文件进行 lint 检查会增加一些延迟，但由于影子系统的使用，这些检查不会影响原始文件系统，且只对修改的文件进行检查，因此对性能的影响是可控的。
+
+### 错误处理
+
+保持原有的错误处理逻辑不变，但在 lint 检查过程中出现错误时，应记录日志并优雅地继续执行，而不应阻止文件修改操作的完成。
+
+```python
+try:
+    # lint 检查代码
+    lint_results = self.agent.shadow_linter.lint_shadow_file(shadow_path)
+except Exception as e:
+    logger.error(f"Lint 检查失败: {str(e)}")
+    lint_message = "\n\n尝试进行代码质量检查时出错。"
+```
+
+### 扩展性
+
+此设计允许未来添加更多功能，例如：
+
+1. 添加自动修复选项
+2. 添加严重性筛选选项
+3. 将 lint 结果包含在事件系统中，用于前端展示
+
+## 结论
+
+通过整合 shadow_manager 和 shadow_linter，我们可以在 ReplaceInFileToolResolver 中添加代码质量检查功能，为开发者提供更好的编码体验。这种集成利用了 AgenticEdit 中已有的实例，避免了重复初始化，并保持了原有功能的完整性。
+
+集成后，开发者在使用 replace_in_file 工具修改文件后，将立即获得代码质量反馈，从而可以更快地发现并修复潜在问题。

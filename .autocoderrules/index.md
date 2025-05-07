@@ -46,3 +46,6 @@
 
 ## index_filter_strategies.md
 说明AutoCoder中索引过滤策略的工作原理与选择机制，包括普通过滤、大索引过滤和超大索引过滤三种策略，帮助理解大规模代码库的智能检索过程。
+
+## shadow_system_usage.md
+规范化使用ShadowManager和ShadowLinter进行代码质量检查的模式，通过影子文件系统安全地检查生成代码的质量而不影响实际项目文件。
