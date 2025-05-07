@@ -1301,6 +1301,7 @@ class BaseAgent(ABC):
         Args:
             request: 代理请求
         """
+        start_time = time.time()
         console = Console()        
         project_name = os.path.basename(os.path.abspath(self.args.source_dir))
         console.rule(agentic_lang.get_message_with_format("agent_start", project_name=project_name))
@@ -1483,10 +1484,11 @@ class BaseAgent(ABC):
                 border_style="red"))
             raise e
         finally:
-            # 在结束时打印累计的token使用情况            
+            # 在结束时打印累计的token使用情况
+            duration = time.time() - start_time            
             self.printer.print_in_terminal(
                 "code_generation_complete",
-                duration=0.0,
+                duration=duration,
                 input_tokens=total_input_tokens,
                 output_tokens=total_output_tokens,
                 input_cost=total_input_cost,
