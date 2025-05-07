@@ -28,7 +28,7 @@ class FileBackupManager:
         """
         if backup_dir is None:
             # 默认备份目录为项目根目录下的.auto-coder/checkpoint
-            backup_dir = os.path.join(".", ".auto-coder", "checkpoint")
+            backup_dir = os.path.join(os.getcwd(), ".auto-coder", "checkpoint")
         
         self.backup_dir = backup_dir
         self.metadata_file = os.path.join(backup_dir, "backup_metadata.json")

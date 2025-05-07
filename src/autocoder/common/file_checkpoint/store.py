@@ -30,7 +30,7 @@ class FileChangeStore:
         """
         if store_dir is None:
             # 默认存储目录为项目根目录下的.auto-coder/checkpoint
-            store_dir = os.path.join(".", ".auto-coder", "checkpoint")
+            store_dir = os.path.join(os.getcwd(), ".auto-coder", "checkpoint")
         
         self.store_dir = store_dir
         self.max_history = max_history
