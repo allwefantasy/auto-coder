@@ -125,7 +125,7 @@ class ToolRegistry:
         case_docs = tool_info.get("case_docs", [])
         
         # 验证必要字段
-        if not all([tool_cls, resolver_cls, description, example]):
+        if not all([tool_cls, resolver_cls, description]):
             logger.error(f"注册工具 {tool_tag} 失败：缺少必要信息")
             return
         

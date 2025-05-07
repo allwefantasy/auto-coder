@@ -2,7 +2,7 @@
 Default tools initialization module
 Used to initialize and register default tools
 """
-from typing import Dict, Type, List,Any
+from typing import Dict, Type, List, Any
 from loguru import logger
 import byzerllm
 from .tool_registry import ToolRegistry
@@ -11,7 +11,7 @@ from .types import BaseTool, ToolDescription, ToolExample
 # Import all tool classes
 from .types import (
     ExecuteCommandTool, ReadFileTool, WriteToFileTool, ReplaceInFileTool,
-    SearchFilesTool, ListFilesTool, AskFollowupQuestionTool, 
+    SearchFilesTool, ListFilesTool, AskFollowupQuestionTool,
     AttemptCompletionTool, PlanModeRespondTool, UseMcpTool,
     TalkToTool, TalkToGroupTool
 )
@@ -34,12 +34,12 @@ from .tools.talk_to_group_tool_resolver import TalkToGroupToolResolver
 # Tool description generators with byzerllm.prompt() decorators
 
 class ToolsCaseGenerator:
-    
-    def __init__(self,params:Dict[str,Any]):
+
+    def __init__(self, params: Dict[str, Any]):
         self.params = params
 
     @byzerllm.prompt()
-    def editing_files_doc(self) -> str:        
+    def editing_files_doc(self) -> str:
         """
         You have access to two tools for working with files: **write_to_file** and **replace_in_file**. Understanding their roles and selecting the right one for the job will help ensure efficient and accurate modifications.
 
@@ -112,9 +112,10 @@ class ToolsCaseGenerator:
         """
         return self.params
 
+
 class ToolDescGenerators:
-    
-    def __init__(self,params:Dict[str,Any]):
+
+    def __init__(self, params: Dict[str, Any]):
         self.params = params
 
     @byzerllm.prompt()
@@ -131,7 +132,7 @@ class ToolDescGenerators:
         </execute_command>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def list_package_info(self) -> Dict:
         """
@@ -144,7 +145,7 @@ class ToolDescGenerators:
         </list_package_info>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def read_file(self) -> Dict:
         """
@@ -157,7 +158,7 @@ class ToolDescGenerators:
         </read_file>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def write_to_file(self) -> Dict:
         """
@@ -174,7 +175,7 @@ class ToolDescGenerators:
         </write_to_file>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def replace_in_file(self) -> Dict:
         """
@@ -214,7 +215,7 @@ class ToolDescGenerators:
         </replace_in_file>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def search_files(self) -> Dict:
         """
@@ -231,7 +232,7 @@ class ToolDescGenerators:
         </search_files>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def list_files(self) -> Dict:
         """
@@ -246,7 +247,7 @@ class ToolDescGenerators:
         </list_files>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def list_code_definition_names(self) -> Dict:
         """
@@ -259,7 +260,7 @@ class ToolDescGenerators:
         </list_code_definition_names>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def ask_followup_question(self) -> Dict:
         """
@@ -276,7 +277,7 @@ class ToolDescGenerators:
         </ask_followup_question>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def attempt_completion(self) -> Dict:
         """
@@ -294,7 +295,7 @@ class ToolDescGenerators:
         </attempt_completion>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def plan_mode_respond(self) -> Dict:
         """
@@ -311,7 +312,7 @@ class ToolDescGenerators:
         </plan_mode_respond>
         """
         return {}
-    
+
     @byzerllm.prompt()
     def use_mcp_tool(self) -> Dict:
         """
@@ -330,9 +331,7 @@ class ToolDescGenerators:
         </use_mcp_tool> 
         """
         return self.params
-    
-    
-    
+
     @byzerllm.prompt()
     def talk_to(self) -> Dict:
         """
@@ -351,8 +350,7 @@ class ToolDescGenerators:
         </talk_to>
         """
         return self.params
-        
-    
+
     @byzerllm.prompt()
     def talk_to_group_description(self) -> Dict:
         """
@@ -370,10 +368,11 @@ class ToolDescGenerators:
         <print_conversation>true</print_conversation>
         </talk_to_group>
         """
-        return self.params    
+        return self.params
+
 
 class ToolExampleGenerators:
-    def __init__(self,params: Dict):
+    def __init__(self, params: Dict):
         self.params = params
 
     @byzerllm.prompt()
@@ -385,7 +384,7 @@ class ToolExampleGenerators:
         </execute_command>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def example_2(self) -> Dict:
         """
@@ -410,7 +409,7 @@ class ToolExampleGenerators:
         </write_to_file>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def example_3(self) -> Dict:
         """
@@ -448,7 +447,7 @@ class ToolExampleGenerators:
         </replace_in_file>
         """
         return self.params
-    
+
     @byzerllm.prompt()
     def example_4(self) -> Dict:
         """
@@ -478,18 +477,17 @@ def register_default_tools_case_doc(params: Dict[str, Any]):
         }
     }
 
-    
     for case_name, case_info in DEFAULT_TOOLS_CASE_DOC.items():
         # 检查所有工具是否存在
         tools = case_info["tools"]
         valid_tools = []
-        
+
         for tool in tools:
             if tool in registered_tools:
                 valid_tools.append(tool)
             else:
                 logger.warning(f"用例文档 {case_name} 引用了不存在的工具: {tool}")
-        
+
         # 只有当存在有效工具时才注册用例文档
         if valid_tools:
             ToolRegistry.register_tools_case_doc(
@@ -497,39 +495,21 @@ def register_default_tools_case_doc(params: Dict[str, Any]):
                 tools=valid_tools,
                 doc=case_info["doc"]
             )
-            logger.info(f"成功注册用例文档 {case_name}, 有效工具: {', '.join(valid_tools)}")
+            logger.info(
+                f"成功注册用例文档 {case_name}, 有效工具: {', '.join(valid_tools)}")
         else:
             logger.warning(f"跳过注册用例文档 {case_name}, 因为没有有效工具")
-    
+
     logger.info(f"处理了 {len(DEFAULT_TOOLS_CASE_DOC)} 个默认工具用例文档")
+
 
 def register_default_tools(params: Dict[str, Any]):
     """
     Register all default tools
-    """    
+    """
     tool_desc_gen = ToolDescGenerators(params)
     tool_examples_gen = ToolExampleGenerators(params)
 
-    DEFAULT_TOOL_EXAMPLES = {
-        "example_1": ToolExample(
-            title="Requesting to execute a command",
-            body=tool_examples_gen.example_1.prompt()
-        ),
-        "example_2": ToolExample(
-            title="Requesting to create a new file",
-            body=tool_examples_gen.example_2.prompt()
-        ),
-        "example_3": ToolExample(
-            title="Requesting to make targeted edits to a file",
-            body=tool_examples_gen.example_3.prompt()
-        ),
-        "example_4": ToolExample(
-            title="Another example of using an MCP tool (where the server name is a unique identifier listed in MCP_SERVER_LIST)",
-            body=tool_examples_gen.example_4.prompt()
-        )    
-    }
-
-    
     # 统一的工具定义数据结构
     DEFAULT_TOOLS = {
         "execute_command": {
@@ -537,8 +517,11 @@ def register_default_tools(params: Dict[str, Any]):
             "resolver_cls": ExecuteCommandToolResolver,
             "description": ToolDescription(
                 description=tool_desc_gen.execute_command.prompt(),
-            ),        
-            "example": DEFAULT_TOOL_EXAMPLES["example_1"],
+            ),
+            "example": ToolExample(
+                title="Requesting to execute a command",
+                body=tool_examples_gen.example_1.prompt()
+            ),
             "use_guideline": "",
             "category": "system",
             "is_default": True,
@@ -561,7 +544,10 @@ def register_default_tools(params: Dict[str, Any]):
             "description": ToolDescription(
                 description=tool_desc_gen.write_to_file.prompt(),
             ),
-            "example": DEFAULT_TOOL_EXAMPLES["example_2"],
+            "example": ToolExample(
+                title="Requesting to create a new file",
+                body=tool_examples_gen.example_2.prompt()
+            ),
             "use_guideline": "",
             "category": "file_operation",
             "is_default": True,
@@ -574,7 +560,10 @@ def register_default_tools(params: Dict[str, Any]):
                 description=tool_desc_gen.replace_in_file.prompt(),
             ),
             "use_guideline": "",
-            "example": DEFAULT_TOOL_EXAMPLES["example_3"],
+            "example": ToolExample(
+                title="Requesting to make targeted edits to a file",
+                body=tool_examples_gen.example_3.prompt()
+            ),
             "category": "file_operation",
             "is_default": True,
             "case_docs": ["editing_files"]
@@ -640,7 +629,10 @@ def register_default_tools(params: Dict[str, Any]):
             "description": ToolDescription(
                 description=tool_desc_gen.use_mcp_tool.prompt(),
             ),
-            "example": DEFAULT_TOOL_EXAMPLES["example_4"],
+            "example": ToolExample(
+                title="Another example of using an MCP tool (where the server name is a unique identifier listed in MCP_SERVER_LIST)",
+                body=tool_examples_gen.example_4.prompt()
+            ),
             "use_guideline": "",
             "category": "external",
             "is_default": True,
@@ -672,20 +664,20 @@ def register_default_tools(params: Dict[str, Any]):
     # 先使用统一的工具注册方法注册所有工具
     for tool_tag, tool_info in DEFAULT_TOOLS.items():
         ToolRegistry.register_unified_tool(tool_tag, tool_info)
-    
-    logger.info(f"Registered {len(DEFAULT_TOOLS)} default tools using unified registration")
-    
+
+    logger.info(
+        f"Registered {len(DEFAULT_TOOLS)} default tools using unified registration")
+
     # 然后注册默认工具用例文档
     # 这样可以确保在注册用例文档时，所有工具已经注册完成
     register_default_tools_case_doc(params)
 
+
 def get_registered_default_tools() -> List[str]:
     """
     Get the list of registered default tools
-    
+
     Returns:
         List of default tool tags
     """
-    return ToolRegistry.get_default_tools() 
-
-
+    return ToolRegistry.get_default_tools()
