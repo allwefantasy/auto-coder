@@ -72,7 +72,6 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
                                                           AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
                                                           )
-from build.lib.autocoder.common.rulefiles.autocoderrules_utils import get_parsed_rules
 
 # Map Pydantic Tool Models to their Resolver Classes
 TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
@@ -704,8 +703,7 @@ class AgenticEdit:
         {{file_paths_str}}
         </files>
         {% endif %}
-        """
-        import os
+        """        
         ## auto_select_rules(context=request.user_input, llm=self.llm,args=self.args)        rules =       
         # extra_docs = get_rules()  
         extra_docs = get_required_and_index_rules()   

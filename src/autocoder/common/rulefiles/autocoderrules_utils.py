@@ -466,7 +466,7 @@ def get_required_and_index_rules() -> Dict[str, str]:
         Dict[str, str]: 包含必须应用的规则和Index.md文件的{file_path: content}字典。
     """
     # 获取所有解析后的规则文件
-    parsed_rules = get_parsed_rules(project_root=project_root)
+    parsed_rules = get_parsed_rules()
     result: Dict[str, str] = {}
     
     for rule in parsed_rules:
