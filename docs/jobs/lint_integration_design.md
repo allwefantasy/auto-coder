@@ -70,39 +70,41 @@ class WriteToFileToolResolver(BaseToolResolver):
             return ToolResult(success=False, message=f"Error: Path {self.tool.path} is not safe to write to.")
 
         # --- LINTING STEP ---
-        # Assume a new arg self.agent.args.enable_lint_write_replace to control this feature
-        if hasattr(self.agent.args, 'enable_lint_write_replace') and self.agent.args.enable_lint_write_replace and self.tool.path.endswith((".py", ".python")): # Example: only lint Python files
-            try:
-                # Ensure ShadowManager and ShadowLinter can be initialized or retrieved correctly
-                # They might need args.source_dir and args.event_file
-                shadow_manager = ShadowManager(self.agent.args.source_dir, getattr(self.agent.args, 'event_file', None), getattr(self.agent.args, 'ignore_clean_shadows', False))
-                shadow_linter = ShadowLinter(shadow_manager, verbose=False) 
+        if hasattr(self.agent.args, 'enable_lint_write_replace') and self.agent.args.enable_lint_write_replace:
+            lintable_extensions = getattr(self.agent.args, 'lintable_extensions', ['.py', '.python']) # Default if not set
+            should_lint_file_type = any(self.tool.path.endswith(ext) for ext in lintable_extensions)
 
-                # 1. Create and write to shadow file
-                # Use a unique name for the shadow file related to this operation if needed, or rely on ShadowManager's path mapping
-                shadow_file_path_in_shadow_system = shadow_manager.update_file(self.tool.path, self.tool.content)
-                
-                # 2. Perform linting
-                # ShadowLinter.lint_all_shadow_files() lints everything in the shadow_manager's scope.
-                # We need to ensure it's focused or filter results.
-                # A more direct `lint_file(shadow_path)` would be ideal.
-                # For now, let's assume we lint all and then filter.
-                project_lint_result = shadow_linter.lint_all_shadow_files() 
-                
-                # Extract results for the current file
-                # The key in project_lint_result.file_results is the real path
-                file_lint_result = project_lint_result.file_results.get(self.tool.path)
+            if should_lint_file_type:
+                try:
+                    # Determine target severity levels from configuration
+                    min_severity_str = getattr(self.agent.args, 'lint_issue_level', 'WARNING').upper() # Default to WARNING
+                    target_severities = []
+                    if min_severity_str == "ERROR":
+                        target_severities = [IssueSeverity.ERROR]
+                    elif min_severity_str == "WARNING":
+                        target_severities = [IssueSeverity.WARNING, IssueSeverity.ERROR]
+                    # Ensure IssueSeverity.ERROR is included if WARNING is specified, as ERROR is more severe.
+                    # Consider a more robust way to define severity hierarchy if more levels are added.
+                    
+                    # Ensure ShadowManager and ShadowLinter can be initialized or retrieved correctly
+                    shadow_manager = ShadowManager(self.agent.args.source_dir, getattr(self.agent.args, 'event_file', None), getattr(self.agent.args, 'ignore_clean_shadows', False))
+                    shadow_linter = ShadowLinter(shadow_manager, verbose=False) 
 
-                if file_lint_result and (file_lint_result.error_count > 0 or file_lint_result.warning_count > 0): # Configurable levels
-                    lint_issues_str = self._format_lint_issues_for_file(file_lint_result, [IssueSeverity.ERROR, IssueSeverity.WARNING])
-                    lint_report = file_lint_result.to_dict() # Or a serializable version
-                
-                # Clean up the specific shadow file if not proceeding to auto-fix
-                shadow_manager.delete_file(self.tool.path) # Deletes the shadow version
+                    shadow_manager.update_file(self.tool.path, self.tool.content)
+                    project_lint_result = shadow_linter.lint_all_shadow_files() 
+                    file_lint_result = project_lint_result.file_results.get(self.tool.path)
 
-            except Exception as e:
-                logger.error(f"Linting failed for {self.tool.path}: {e}")
-                lint_issues_str = f"Linting process encountered an error: {str(e)}"
+                    if file_lint_result: # Check if file_lint_result is not None
+                        formatted_issues = self._format_lint_issues_for_file(file_lint_result, target_severities)
+                        if formatted_issues: # Issues found at the configured levels
+                            lint_issues_str = formatted_issues
+                            lint_report = file_lint_result.to_dict()
+                    
+                    shadow_manager.delete_file(self.tool.path)
+
+                except Exception as e:
+                    logger.error(f"Linting failed for {self.tool.path}: {e}")
+                    lint_issues_str = f"Linting process encountered an error: {str(e)}"
         # --- END LINTING STEP ---
 
         try:
@@ -192,25 +194,39 @@ class ReplaceInFileToolResolver(BaseToolResolver):
         # --- LINTING STEP ---
         lint_issues_str = None
         lint_report = None
-        if hasattr(self.agent.args, 'enable_lint_write_replace') and self.agent.args.enable_lint_write_replace and self.tool.path.endswith((".py", ".python")):
-            try:
-                shadow_manager = ShadowManager(self.agent.args.source_dir, getattr(self.agent.args, 'event_file', None), getattr(self.agent.args, 'ignore_clean_shadows', False))
-                shadow_linter = ShadowLinter(shadow_manager, verbose=False)
+        if hasattr(self.agent.args, 'enable_lint_write_replace') and self.agent.args.enable_lint_write_replace:
+            lintable_extensions = getattr(self.agent.args, 'lintable_extensions', ['.py', '.python']) # Default if not set
+            should_lint_file_type = any(self.tool.path.endswith(ext) for ext in lintable_extensions)
 
-                shadow_file_path_for_lint = shadow_manager.update_file(self.tool.path, final_content_str)
-                
-                project_lint_result = shadow_linter.lint_all_shadow_files()
-                file_lint_result = project_lint_result.file_results.get(self.tool.path) # Key is real path
+            if should_lint_file_type:
+                try:
+                    # Determine target severity levels from configuration
+                    min_severity_str = getattr(self.agent.args, 'lint_issue_level', 'WARNING').upper() # Default to WARNING
+                    target_severities = []
+                    if min_severity_str == "ERROR":
+                        target_severities = [IssueSeverity.ERROR]
+                    elif min_severity_str == "WARNING":
+                        target_severities = [IssueSeverity.WARNING, IssueSeverity.ERROR]
+                    # Ensure IssueSeverity.ERROR is included if WARNING is specified, as ERROR is more severe.
 
-                if file_lint_result and (file_lint_result.error_count > 0 or file_lint_result.warning_count > 0):
-                    lint_issues_str = self._format_lint_issues_for_file(file_lint_result, [IssueSeverity.ERROR, IssueSeverity.WARNING])
-                    lint_report = file_lint_result.to_dict()
-                
-                shadow_manager.delete_file(self.tool.path) 
+                    shadow_manager = ShadowManager(self.agent.args.source_dir, getattr(self.agent.args, 'event_file', None), getattr(self.agent.args, 'ignore_clean_shadows', False))
+                    shadow_linter = ShadowLinter(shadow_manager, verbose=False)
 
-            except Exception as e:
-                logger.error(f"Linting failed for {self.tool.path} after replacements: {e}")
-                lint_issues_str = f"Linting process encountered an error: {str(e)}"
+                    shadow_manager.update_file(self.tool.path, final_content_str)
+                    project_lint_result = shadow_linter.lint_all_shadow_files()
+                    file_lint_result = project_lint_result.file_results.get(self.tool.path)
+
+                    if file_lint_result: # Check if file_lint_result is not None
+                        formatted_issues = self._format_lint_issues_for_file(file_lint_result, target_severities)
+                        if formatted_issues: # Issues found at the configured levels
+                            lint_issues_str = formatted_issues
+                            lint_report = file_lint_result.to_dict()
+                    
+                    shadow_manager.delete_file(self.tool.path) 
+
+                except Exception as e:
+                    logger.error(f"Linting failed for {self.tool.path} after replacements: {e}")
+                    lint_issues_str = f"Linting process encountered an error: {str(e)}"
         # --- END LINTING STEP ---
 
         try:
@@ -273,7 +289,9 @@ class ReplaceInFileToolResolver(BaseToolResolver):
         return current_content
 
     def _format_lint_issues_for_file(self, file_lint_result, levels: List[IssueSeverity]) -> str:
-        # Same helper as in WriteToFileToolResolver
+        # Same helper as in WriteToFileToolResolver.
+        # For maintainability, this could be refactored into a shared utility or a base class method
+        # if more tool resolvers require similar lint issue formatting.
         if not file_lint_result:
             return ""
         
