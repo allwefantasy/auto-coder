@@ -2850,6 +2850,7 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
         else:
             agent.run_in_terminal(AgenticEditRequest(user_input=query))
             
+        completer.refresh_files()
         return
         
     args = get_final_config()  
@@ -2902,3 +2903,4 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
         border_style="blue",
         padding=(1, 2)
     ))
+    completer.refresh_files()
