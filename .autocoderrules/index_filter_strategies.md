@@ -1,7 +1,7 @@
 ---
 description: 解释AutoCoder中索引过滤策略的工作原理、选择机制和优化方法，帮助理解大规模代码库的智能检索过程。
 globs:
-  - **/*.py
+  - "**/*.py"
 alwaysApply: false
 ---
 

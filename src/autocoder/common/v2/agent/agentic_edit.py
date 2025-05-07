@@ -52,7 +52,7 @@ from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific re
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver,
     ListPackageInfoToolResolver
 )
-from autocoder.common.rulefiles.autocoderrules_utils import get_rules,get_parsed_rules,auto_select_rules
+from autocoder.common.rulefiles.autocoderrules_utils import get_rules,auto_select_rules
 from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
                                                           MemoryConfig, CommandConfig, BaseTool,
                                                           ExecuteCommandTool, ReadFileTool,
@@ -702,7 +702,7 @@ class AgenticEdit:
         {% endif %}
         """
         import os
-        extra_docs = get_rules()##auto_select_rules(context=request.user_input, rules=get_parsed_rules(), llm=self.llm)
+        extra_docs = auto_select_rules(context=request.user_input, llm=self.llm,args=self.args)
         
         env_info = detect_env()
         shell_type = "bash"

@@ -1,9 +1,9 @@
 ---
 description: 在实现demo或者单元测试时，需要遵循的的初始化规则
 globs:  
-  - examples/demo_*.py
-  - examples/demo_*.py
-  - **/test_*.py
+  - "examples/demo_*.py"
+  - "examples/test_*.py"
+  - "src/autocoder/rag/test_*.py"
 alwaysApply: false
 ---
 

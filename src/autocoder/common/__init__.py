@@ -432,6 +432,8 @@ class AutoCoderArgs(pydantic.BaseModel):
     auto_fix_lint_max_attempts: Optional[int] = 5
     auto_fix_compile_max_attempts: Optional[int] = 5
     auto_fix_merge_max_attempts: Optional[int] = 5
+
+    enable_auto_select_rules: Optional[bool] = True
     
     ignore_clean_shadows: Optional[bool] = False
 
