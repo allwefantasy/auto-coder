@@ -503,28 +503,28 @@ def register_default_tools_case_doc():
     
     logger.info(f"处理了 {len(DEFAULT_TOOLS_CASE_DOC)} 个默认工具用例文档")
 
-def register_default_tools():
+def register_default_tools(params: Dict[str, Any]):
     """
     Register all default tools
     """    
-    tool_desc_gen = ToolDescGenerators()
-    tool_examples_gen = ToolExampleGenerators()
+    tool_desc_gen = ToolDescGenerators(params)
+    tool_examples_gen = ToolExampleGenerators(params)
 
     DEFAULT_TOOL_EXAMPLES = {
         "example_1": ToolExample(
-            title="Example 1: Requesting to execute a command",
+            title="Requesting to execute a command",
             body=tool_examples_gen.example_1.prompt()
         ),
         "example_2": ToolExample(
-            title="Example 2: Requesting to create a new file",
+            title="Requesting to create a new file",
             body=tool_examples_gen.example_2.prompt()
         ),
         "example_3": ToolExample(
-            title="Example 3: Requesting to make targeted edits to a file",
+            title="Requesting to make targeted edits to a file",
             body=tool_examples_gen.example_3.prompt()
         ),
         "example_4": ToolExample(
-            title="Example 4: Another example of using an MCP tool (where the server name is a unique identifier listed in MCP_SERVER_LIST)",
+            title="Another example of using an MCP tool (where the server name is a unique identifier listed in MCP_SERVER_LIST)",
             body=tool_examples_gen.example_4.prompt()
         )    
     }
@@ -677,7 +677,7 @@ def register_default_tools():
     
     # 然后注册默认工具用例文档
     # 这样可以确保在注册用例文档时，所有工具已经注册完成
-    register_default_tools_case_doc()
+    register_default_tools_case_doc(params)
 
 def get_registered_default_tools() -> List[str]:
     """
