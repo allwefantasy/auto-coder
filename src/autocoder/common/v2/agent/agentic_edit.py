@@ -52,7 +52,7 @@ from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific re
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver,
     ListPackageInfoToolResolver
 )
-from autocoder.common.rulefiles.autocoderrules_utils import get_rules,auto_select_rules
+from autocoder.common.rulefiles.autocoderrules_utils import get_rules,auto_select_rules,get_required_and_index_rules
 from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
                                                           MemoryConfig, CommandConfig, BaseTool,
                                                           ExecuteCommandTool, ReadFileTool,
@@ -72,6 +72,7 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
                                                           AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
                                                           )
+from build.lib.autocoder.common.rulefiles.autocoderrules_utils import get_parsed_rules
 
 # Map Pydantic Tool Models to their Resolver Classes
 TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
@@ -664,12 +665,15 @@ class AgenticEdit:
         The following rules are provided by the user, and you must follow them strictly.
 
         {% for key, value in extra_docs.items() %}
-        <user_rule>
+        <user_rule_file>
         ##File: {{ key }}
         {{ value }}
-        </user_rule>
-        {% endfor %}        
+        </user_rule_file>
+        {% endfor %}                
+        Make sure you always start your task by using the read_file tool to get the relevant RULE files listed in index.md based on the user's specific requirements.
+        Don't read the rule files which are already exists in <user_urle_file></user_rule_file> tags.
         {% endif %}
+        
 
         ====
 
@@ -695,14 +699,16 @@ class AgenticEdit:
         {% if file_paths_str %}
         ====
         The following are files that the user is currently focusing on. 
-        Make sure you always start your analysis by using the read_file tool to get the content of the files.
+        Make sure you always start your task by using the read_file tool to get the content of the files.
         <files>
         {{file_paths_str}}
         </files>
         {% endif %}
         """
         import os
-        extra_docs = auto_select_rules(context=request.user_input, llm=self.llm,args=self.args)
+        ## auto_select_rules(context=request.user_input, llm=self.llm,args=self.args)        rules =       
+        # extra_docs = get_rules()  
+        extra_docs = get_required_and_index_rules()   
         
         env_info = detect_env()
         shell_type = "bash"
