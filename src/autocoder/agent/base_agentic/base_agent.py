@@ -1483,19 +1483,18 @@ class BaseAgent(ABC):
                 border_style="red"))
             raise e
         finally:
-            # 在结束时打印累计的token使用情况
-            if total_input_tokens > 0 or total_output_tokens > 0:
-                self.printer.print_in_terminal(
-                    "code_generation_complete",
-                    duration=0.0,
-                    input_tokens=total_input_tokens,
-                    output_tokens=total_output_tokens,
-                    input_cost=total_input_cost,
-                    output_cost=total_output_cost,
-                    speed=0.0,
-                    model_names=model_name,
-                    sampling_count=1
-                )
+            # 在结束时打印累计的token使用情况            
+            self.printer.print_in_terminal(
+                "code_generation_complete",
+                duration=0.0,
+                input_tokens=total_input_tokens,
+                output_tokens=total_output_tokens,
+                input_cost=total_input_cost,
+                output_cost=total_output_cost,
+                speed=0.0,
+                model_names=model_name,
+                sampling_count=1
+            )
             console.rule(agentic_lang.get_message("agent_execution_complete"))
     
     def apply_pre_changes(self):
