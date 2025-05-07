@@ -489,7 +489,7 @@ class BaseAgent(ABC):
         {{mcp_server_info}}
         {%endif%}
 
-        {%if agent_info %}
+        {%if agent_info %}                   
         ### AVAILABLE_AGENTS
         {{agent_info}}
         {%endif%}
@@ -701,11 +701,14 @@ class BaseAgent(ABC):
         agent_names = AgentHub.list_agents()
         if agent_names:
             agent_info = "Available Agents:\n"
-            for name in agent_names:
+            for name in agent_names:                
                 agent = AgentHub.get_agent(name)
                 if agent:
                     role = getattr(agent, "custom_system_prompt", "No description")
-                    agent_info += f"- {name}: {role[:100]}{'...' if len(role) > 100 else ''}\n"
+                    if name == self.name:
+                        agent_info += f"- {name} (This is you, do not talk to yourself): {role[:100]}{'...' if len(role) > 100 else ''}\n"
+                    else:
+                        agent_info += f"- {name}: {role[:100]}{'...' if len(role) > 100 else ''}\n"
         
         # 获取群组信息
         group_info = ""
@@ -739,7 +742,8 @@ class BaseAgent(ABC):
             "tool_examples": tool_examples,
             "tool_case_docs": tool_case_docs,
             "tool_guidelines": tool_guidelines,
-            "system_prompt": self.custom_system_prompt
+            "system_prompt": self.custom_system_prompt,
+            "name": self.name
         }
     
     def agentic_run(self, request: AgentRequest) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ToolResultEvent, CompletionEvent, ErrorEvent], None, None]:
