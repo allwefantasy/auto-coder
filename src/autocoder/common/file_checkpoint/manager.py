@@ -233,7 +233,7 @@ class FileChangeManager:
             result.success = False
         
         return result
-    
+            
     def undo_change_group(self, group_id: str) -> UndoResult:
         """
         撤销指定组的所有变更
@@ -334,6 +334,18 @@ class FileChangeManager:
             List[ChangeRecord]: 变更记录列表
         """
         return self.change_store.get_changes_by_file(file_path, limit)
+    
+    def get_changes_by_group(self, group_id: str) -> List[ChangeRecord]:
+        """
+        获取指定变更组的所有变更记录
+        
+        Args:
+            group_id: 变更组ID
+            
+        Returns:
+            List[ChangeRecord]: 变更记录列表
+        """
+        return self.change_store.get_changes_by_group(group_id)
     
     def get_change_groups(self, limit: int = 10) -> List[Tuple[str, float, int]]:
         """

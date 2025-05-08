@@ -3,13 +3,13 @@ import subprocess
 from typing import Dict, Any, Optional
 from autocoder.agent.base_agentic.tools.base_tool_resolver import BaseToolResolver
 from autocoder.agent.base_agentic.types import ExecuteCommandTool, ToolResult # Import ToolResult from types
-from autocoder.common import shells
 from autocoder.common.printer import Printer
 from loguru import logger
 import typing
 from autocoder.common import AutoCoderArgs
 from autocoder.events.event_manager_singleton import get_event_manager
 from autocoder.run_context import get_run_context
+from autocoder.common.run_cmd import run_cmd_subprocess
 if typing.TYPE_CHECKING:
     from ..base_agent import BaseAgent
 

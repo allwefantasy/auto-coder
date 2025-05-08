@@ -44,6 +44,11 @@ from autocoder.common.save_formatted_log import save_formatted_log
 # Import the new display function
 from autocoder.common.v2.agent.agentic_tool_display import get_tool_display_message
 from autocoder.common.v2.agent.agentic_edit_types import FileChangeEntry
+
+from autocoder.common.file_checkpoint.models import FileChange as CheckpointFileChange
+from autocoder.common.file_checkpoint.manager import FileChangeManager as CheckpointFileChangeManager
+from autocoder.linters.normal_linter import NormalLinter
+from autocoder.compilers.normal_compiler import NormalCompiler
 from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific resolvers
     BaseToolResolver,
     ExecuteCommandToolResolver, ReadFileToolResolver, WriteToFileToolResolver,
@@ -102,7 +107,7 @@ class AgenticEdit:
         args: AutoCoderArgs,
         memory_config: MemoryConfig,
         command_config: Optional[CommandConfig] = None,
-        conversation_name: str = "current"
+        conversation_name:Optional[str] = "current"        
     ):
         self.llm = llm
         self.args = args
@@ -117,11 +122,19 @@ class AgenticEdit:
         self.project_type_analyzer = ProjectTypeAnalyzer(
             args=args, llm=self.llm)        
 
-        self.shadow_manager = ShadowManager(
-            args.source_dir, args.event_file, args.ignore_clean_shadows)
-        self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
-        self.shadow_compiler = ShadowCompiler(
-            self.shadow_manager, verbose=False)
+        # self.shadow_manager = ShadowManager(
+        #     args.source_dir, args.event_file, args.ignore_clean_shadows)
+        self.shadow_manager = None
+        # self.shadow_linter = ShadowLinter(self.shadow_manager, verbose=False)
+        self.shadow_compiler = None
+        # self.shadow_compiler = ShadowCompiler(self.shadow_manager, verbose=False)
+        self.shadow_linter = None
+
+        self.checkpoint_manager = CheckpointFileChangeManager(
+            project_dir=args.source_dir,backup_dir=os.path.join(args.source_dir,".auto-coder","checkpoint"),store_dir=os.path.join(args.source_dir,"store"),max_history=50)
+        self.linter = NormalLinter(args.source_dir,verbose=False)
+        self.compiler = NormalCompiler(args.source_dir,verbose=False)        
+            
 
         self.mcp_server_info = ""
         try:
@@ -1369,16 +1382,22 @@ class AgenticEdit:
         """
         Apply all tracked file changes to the original project directory.
         """
-        for (file_path, change) in self.get_all_file_changes().items():
-            # Ensure the directory exists before writing the file
-            dir_path = os.path.dirname(file_path)
-            if dir_path: # Ensure dir_path is not empty (for files in root)
-                 os.makedirs(dir_path, exist_ok=True)
+        diff_file_num = 0
+        if self.shadow_manager:
+            for (file_path, change) in self.get_all_file_changes().items():
+                # Ensure the directory exists before writing the file
+                dir_path = os.path.dirname(file_path)
+                if dir_path: # Ensure dir_path is not empty (for files in root)
+                    os.makedirs(dir_path, exist_ok=True)
 
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(change.content)
-
-        if len(self.get_all_file_changes()) > 0:
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(change.content)
+            diff_file_num = len(self.get_all_file_changes())  
+        else:          
+            changes = self.checkpoint_manager.get_changes_by_group(self.args.event_file)
+            diff_file_num = len(changes)
+            
+        if diff_file_num > 0:
             if not self.args.skip_commit:
                 try:
                     file_name = os.path.basename(self.args.file)

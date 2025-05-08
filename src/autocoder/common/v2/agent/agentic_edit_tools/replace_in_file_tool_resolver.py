@@ -5,6 +5,8 @@ import typing
 from autocoder.common import AutoCoderArgs
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import ReplaceInFileTool, ToolResult  # Import ToolResult from types
+from autocoder.common.file_checkpoint.models import FileChange as CheckpointFileChange
+from autocoder.common.file_checkpoint.manager import FileChangeManager as CheckpointFileChangeManager
 from loguru import logger
 from autocoder.common.auto_coder_lang import get_message_with_format
 if typing.TYPE_CHECKING:
@@ -151,10 +153,24 @@ class ReplaceInFileToolResolver(BaseToolResolver):
             return ToolResult(success=False, message=get_message_with_format("replace_in_file.apply_failed", errors="\n".join(errors)))
 
         try:
-            os.makedirs(os.path.dirname(target_path), exist_ok=True)
-            with open(target_path, 'w', encoding='utf-8') as f:
-                f.write(current_content)
-            logger.info(f"Successfully applied {applied_count}/{len(parsed_blocks)} changes to file: {file_path}")
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)            
+
+            if self.agent and self.agent.checkpoint_manager:
+                changes = {
+                    file_path: CheckpointFileChange(
+                        file_path=file_path,
+                        content=current_content,
+                        is_deletion=False,
+                        is_new=True
+                    )
+                }
+                change_group_id = self.args.event_file
+                self.agent.checkpoint_manager.apply_changes(changes,change_group_id)
+            else:
+                with open(target_path, 'w', encoding='utf-8') as f:
+                    f.write(current_content)
+            
+            logger.info(f"Successfully applied {applied_count}/{len(parsed_blocks)} changes to file: {file_path}")    
 
             # 新增：执行代码质量检查
             lint_results = None

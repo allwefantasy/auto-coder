@@ -5,6 +5,8 @@ from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import Base
 from loguru import logger
 from autocoder.common import AutoCoderArgs
 from autocoder.common.auto_coder_lang import get_message_with_format
+from autocoder.common.file_checkpoint.models import FileChange as CheckpointFileChange
+from autocoder.common.file_checkpoint.manager import FileChangeManager as CheckpointFileChangeManager
 import typing
 
 if typing.TYPE_CHECKING:
@@ -116,71 +118,84 @@ class WriteToFileToolResolver(BaseToolResolver):
                     }
                 
                 return ToolResult(success=True, message=message, content=result_content)
+                        
+            # No shadow manager fallback to original file
+            os.makedirs(os.path.dirname(abs_file_path), exist_ok=True)            
+
+            if self.agent:
+                rel_path = os.path.relpath(abs_file_path, abs_project_dir)
+                self.agent.record_file_change(rel_path, "added", diff=None, content=content)
+
+            if self.agent and self.agent.checkpoint_manager:
+                changes = {
+                    file_path: CheckpointFileChange(
+                        file_path=file_path,
+                        content=content,
+                        is_deletion=False,
+                        is_new=True
+                    )
+                }
+                change_group_id = self.args.event_file
+                self.agent.checkpoint_manager.apply_changes(changes,change_group_id)                    
             else:
-                # No shadow manager fallback to original file
-                os.makedirs(os.path.dirname(abs_file_path), exist_ok=True)
                 with open(abs_file_path, 'w', encoding='utf-8') as f:
                     f.write(content)
-                logger.info(f"Successfully wrote to file: {file_path}")
-
-                if self.agent:
-                    rel_path = os.path.relpath(abs_file_path, abs_project_dir)
-                    self.agent.record_file_change(rel_path, "added", diff=None, content=content)
-                
-                # 新增：执行代码质量检查
-                lint_results = None
-                lint_message = ""
-                formatted_issues = ""
-                has_lint_issues = False
-                
-                # 检查是否启用了Lint功能
-                enable_lint = self.args.enable_auto_fix_lint
-                
-                if enable_lint:
-                    try:
-                        if self.shadow_linter and self.shadow_manager:
-                            # 对新创建的文件进行 lint 检查
-                            # 由于没有shadow系统，需要先创建shadow文件
-                            shadow_path = self.shadow_manager.to_shadow_path(abs_file_path)
-                            os.makedirs(os.path.dirname(shadow_path), exist_ok=True)
-                            with open(shadow_path, 'w', encoding='utf-8') as f:
-                                f.write(content)
-                            
-                            lint_results = self.shadow_linter.lint_shadow_file(shadow_path)
-                            
-                            if lint_results and lint_results.issues:
-                                has_lint_issues = True
-                                # 格式化 lint 问题
-                                formatted_issues = self._format_lint_issues(lint_results)
-                                lint_message = f"\n\n代码质量检查发现 {len(lint_results.issues)} 个问题:\n{formatted_issues}"
-                            else:
-                                lint_message = "\n\n代码质量检查通过，未发现问题。"
-                    except Exception as e:
-                        logger.error(f"Lint 检查失败: {str(e)}")
-                        lint_message = "\n\n尝试进行代码质量检查时出错。"
-                else:
-                    logger.info("代码质量检查已禁用")
-                
-                # 构建包含 lint 结果的返回消息
-                message = f"Successfully wrote to file: {file_path}"
-                
-                # 将 lint 消息添加到结果中，如果启用了Lint
-                if enable_lint:
-                    message += lint_message
-                
-                # 附加 lint 结果到返回内容
-                result_content = {
-                    "content": content,
+            logger.info(f"Successfully wrote to file: {file_path}")    
+            
+            # 新增：执行代码质量检查
+            lint_results = None
+            lint_message = ""
+            formatted_issues = ""
+            has_lint_issues = False
+            
+            # 检查是否启用了Lint功能
+            enable_lint = self.args.enable_auto_fix_lint
+            
+            if enable_lint:
+                try:
+                    if self.shadow_linter and self.shadow_manager:
+                        # 对新创建的文件进行 lint 检查
+                        # 由于没有shadow系统，需要先创建shadow文件
+                        shadow_path = self.shadow_manager.to_shadow_path(abs_file_path)
+                        os.makedirs(os.path.dirname(shadow_path), exist_ok=True)
+                        with open(shadow_path, 'w', encoding='utf-8') as f:
+                            f.write(content)
+                        
+                        lint_results = self.shadow_linter.lint_shadow_file(shadow_path)
+                        
+                        if lint_results and lint_results.issues:
+                            has_lint_issues = True
+                            # 格式化 lint 问题
+                            formatted_issues = self._format_lint_issues(lint_results)
+                            lint_message = f"\n\n代码质量检查发现 {len(lint_results.issues)} 个问题:\n{formatted_issues}"
+                        else:
+                            lint_message = "\n\n代码质量检查通过，未发现问题。"
+                except Exception as e:
+                    logger.error(f"Lint 检查失败: {str(e)}")
+                    lint_message = "\n\n尝试进行代码质量检查时出错。"
+            else:
+                logger.info("代码质量检查已禁用")
+            
+            # 构建包含 lint 结果的返回消息
+            message = f"Successfully wrote to file: {file_path}"
+            
+            # 将 lint 消息添加到结果中，如果启用了Lint
+            if enable_lint:
+                message += lint_message
+            
+            # 附加 lint 结果到返回内容
+            result_content = {
+                "content": content,
+            }
+            
+            # 只有在启用Lint时才添加Lint结果
+            if enable_lint:
+                result_content["lint_results"] = {
+                    "has_issues": has_lint_issues,
+                    "issues": formatted_issues if has_lint_issues else None
                 }
-                
-                # 只有在启用Lint时才添加Lint结果
-                if enable_lint:
-                    result_content["lint_results"] = {
-                        "has_issues": has_lint_issues,
-                        "issues": formatted_issues if has_lint_issues else None
-                    }
-                
-                return ToolResult(success=True, message=message, content=result_content)
+            
+            return ToolResult(success=True, message=message, content=result_content)
         except Exception as e:
             logger.error(f"Error writing to file '{file_path}': {str(e)}")
             return ToolResult(success=False, message=f"An error occurred while writing to the file: {str(e)}")

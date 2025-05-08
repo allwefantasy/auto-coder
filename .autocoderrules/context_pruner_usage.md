@@ -1,9 +1,7 @@
 ---
 description: 解释如何使用PruneContext类和ConversationPruner类进行智能上下文管理 — PruneContext基于用户对话智能抽取大文件内容，ConversationPruner优化长对话历史，两者协同减少Token消耗并保留最相关内容。
 globs:
-  - src/autocoder/common/context_pruner.py
-  - src/autocoder/common/conversation_pruner.py
-  - src/autocoder/index/entry.py
+  - "**/*.py"  
 alwaysApply: false
 ---
 
