@@ -188,9 +188,9 @@ def test_model_speed_wrapper(args: Tuple[str, str, int, bool]) -> Tuple[str, Dic
     return (model_name, results)
 
 
-def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optional[int] = None, enable_long_context: bool = False, target_models: Optional[List[str]] = None) -> SpeedTestResults:
+def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optional[int] = None, enable_long_context: bool = False) -> SpeedTestResults:
     """
-    运行指定或所有已激活模型的速度测试
+    运行所有已激活模型的速度测试
     
     Args:
         product_mode: 产品模式 (lite/pro)
@@ -203,19 +203,9 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
     """
     # 获取所有模型
     models_data = models_module.load_models()
-    all_available_models = [m for m in models_data if "api_key" in m] if product_mode == "lite" else models_data
+    active_models = [m for m in models_data if "api_key" in m] if product_mode == "lite" else models_data
     
-    active_models = []
-    if target_models:
-        name_to_model_map = {m["name"]: m for m in all_available_models}
-        for target_name in target_models:
-            if target_name in name_to_model_map:
-                active_models.append(name_to_model_map[target_name])
-    else:
-        active_models = all_available_models
-            
     if not active_models:
-        # 如果指定了target_models但没有匹配到，或者原本就没有active_models
         return SpeedTestResults(results=[])
     
     # 准备测试参数
@@ -293,38 +283,23 @@ def run_speed_test(product_mode: str, test_rounds: int = 3, max_workers: Optiona
     
     return SpeedTestResults(results=[result[1] for result in results_list])
 
-def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_workers: Optional[int] = None,enable_long_context: bool = False, target_models: Optional[List[str]] = None) -> None:
+def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_workers: Optional[int] = None,enable_long_context: bool = False) -> None:
     """
-    运行指定或所有已激活模型的速度测试，并在终端渲染结果。
+    运行所有已激活模型的速度测试
     
     Args:
         product_mode: 产品模式 (lite/pro)
         test_rounds: 每个模型测试的轮数
         max_workers: 最大线程数,默认为None(ThreadPoolExecutor会自动设置)
-        enable_long_context: 是否启用长文本上下文测试
-        target_models: 可选的模型名称列表，仅测试这些模型
     """
     printer = Printer()
     console = Console()
     
-    # 获取所有模型数据
+    # 获取所有模型
     models_data = models_module.load_models()
-    all_available_models = [m for m in models_data if "api_key" in m] if product_mode == "lite" else models_data
-
-    current_active_models = []
-    if target_models:
-        name_to_model_map = {m["name"]: m for m in all_available_models}
-        for target_name in target_models:
-            if target_name in name_to_model_map:
-                current_active_models.append(name_to_model_map[target_name])
-        
-        if not current_active_models:
-            printer.print_str_in_terminal(f"No specified target models found or active: {', '.join(target_models)}", style="yellow")
-            return
-    else:
-        current_active_models = all_available_models
-            
-    if not current_active_models:
+    active_models = [m for m in models_data if "api_key" in m] if product_mode == "lite" else models_data
+    
+    if not active_models:
         printer.print_in_terminal("models_no_active", style="yellow")
         return
         
@@ -346,7 +321,7 @@ def render_speed_test_in_terminal(product_mode: str, test_rounds: int = 3, max_w
     table.add_column("Status", style="red", width=20)
     
     # 准备测试参数
-    test_args = [(model["name"], product_mode, test_rounds, enable_long_context) for model in current_active_models]
+    test_args = [(model["name"], product_mode, test_rounds, enable_long_context) for model in active_models]
     
     # 存储结果用于排序
     results_list = []

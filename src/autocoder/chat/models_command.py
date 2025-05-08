@@ -1,8 +1,7 @@
 import json
 import shlex
 import fnmatch # Add fnmatch for wildcard matching
-from typing import Dict, Any, List, Optional
-from autocoder.common.command_parser import CommandParser
+from typing import Dict, Any
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -277,55 +276,30 @@ def handle_models_command(query: str, memory: Dict[str, Any]):
             printer.print_in_terminal("models_speed_usage", style="red")
 
     elif subcmd == "/speed-test":
-        parser = CommandParser(prog="/speed-test", add_help=False)
-        parser.add_argument("/long_context", action="store_true", default=False, help="Enable long context testing.")
-        parser.add_argument("/long-context", dest="long_context_alias", action="store_true", default=False, help="Alias for /long_context.")
-        parser.add_argument("/target", dest="target_models_str", required=False, help="Comma-separated list of models to test (e.g., model1,model2).")
-        parser.add_argument("/rounds", dest="test_rounds", type=int, default=1, help="Number of test rounds.")
-        
-        # Remaining part of the query is in the 'query' variable
-        # We also need to handle cases where no additional args are passed, 
-        # shlex.split("") is [''] which is not what CommandParser expects for no args.
-        # However, CommandParser handles empty list of args correctly if query is empty.
-        try:
-            # The `query` variable here already has "/speed-test" removed.
-            # e.g., if original was "/models /speed-test /target m1 /rounds 3", 
-            # then query is "/target m1 /rounds 3"
-            parsed_args = parser.parse_args(shlex.split(query))
-            
-            enable_long_context = parsed_args.long_context or parsed_args.long_context_alias
-            test_rounds = parsed_args.test_rounds
-            target_models: Optional[List[str]] = None
-            if parsed_args.target_models_str:
-                target_models = [model.strip() for model in parsed_args.target_models_str.split(',')]
+        test_rounds = 1  # 默认测试轮数
 
-            # TODO: The render_speed_test_in_terminal function might need to be updated 
-            # to accept a target_models list.
-            # For now, we pass it, assuming it can handle it or will be updated.
-            render_speed_test_in_terminal(
-                product_mode, 
-                test_rounds,
-                enable_long_context=enable_long_context,
-                target_models=target_models 
-            )
-            result_manager.add_result(content="models speed-test initiated", meta={
-                "action": "models",
-                "input": {
-                    "original_query_for_subcommand": query 
-                }
-            })
+        enable_long_context = False
+        if "/long_context" in query:
+            enable_long_context = True
+            query = query.replace("/long_context", "", 1).strip()
 
-        except Exception as e:
-            # Catch parsing errors or other issues
-            error_message = f"Error parsing /speed-test arguments: {str(e)}\n"
-            error_message += "Usage: /speed-test [/long_context] [/target model1,model2] [/rounds N]"
-            printer.print_str_in_terminal(error_message, style="red")
-            result_manager.add_result(content=error_message, meta={
-                "action": "models",
-                "input": {
-                    "original_query_for_subcommand": query
-                }
-            })
+        if "/long-context" in query:
+            enable_long_context = True
+            query = query.replace("/long-context", "", 1).strip()
+
+        # 解析可选的测试轮数参数
+        args = query.strip().split()
+        if args and args[0].isdigit():
+            test_rounds = int(args[0])
+
+        render_speed_test_in_terminal(product_mode, test_rounds,enable_long_context=enable_long_context)
+        ## 等待优化，获取明细数据
+        result_manager.add_result(content="models test success",meta={
+            "action": "models",
+            "input": {
+                "query": query
+            }
+        })
 
     elif subcmd == "/add":
         # Support both simplified and legacy formats
