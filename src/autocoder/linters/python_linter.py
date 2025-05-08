@@ -11,6 +11,7 @@ import tempfile
 from typing import Dict, List, Any, Optional, Tuple
 
 from autocoder.linters.base_linter import BaseLinter
+from loguru import logger
 
 class PythonLinter(BaseLinter):
     """
@@ -142,6 +143,8 @@ class PythonLinter(BaseLinter):
             'warning_count': 0,
             'issues': []
         }
+
+        logger.info(f"Running pylint on {target}")
         
         try:
             # Create a temp file to store JSON output
@@ -152,8 +155,7 @@ class PythonLinter(BaseLinter):
             cmd = [
                 sys.executable, 
                 "-m", 
-                "pylint", 
-                "--disable=import-error",
+                "pylint",                 
                 "--output-format=json", 
                 target
             ]
