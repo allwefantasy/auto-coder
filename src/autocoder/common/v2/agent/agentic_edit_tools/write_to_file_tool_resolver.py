@@ -184,7 +184,7 @@ class WriteToFileToolResolver(BaseToolResolver):
                 logger.info("代码质量检查已禁用")
             
             # 构建包含 lint 结果的返回消息
-            message = f"Successfully wrote to file: {file_path}"
+            message = f"{file_path}"
             
             # 将 lint 消息添加到结果中，如果启用了Lint
             if enable_lint:
