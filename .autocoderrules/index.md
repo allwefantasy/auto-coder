@@ -38,6 +38,9 @@
 ## file_monitor_usage.md
 解释如何使用FileMonitor单例进行文件系统监控，包括获取实例、注册回调、开始/停止监控等关键步骤。
 
+## file_checkpoint_usage.md
+解释如何使用 FileChangeManager 模块进行文件变更的追踪、应用、预览和撤销。
+
 ## save_json_as_md_usage.md
 标准化日志保存方法，用于保存各种类型的JSON格式日志为Markdown格式到项目指定目录，特别适用于保存RAG对话、模型响应与调试信息。
 
