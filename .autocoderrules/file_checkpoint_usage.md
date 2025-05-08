@@ -1,271 +1,118 @@
 
-# File Checkpoint 使用方法
+---
+description: 解释如何使用 FileChangeManager 模块进行文件变更的追踪、应用、预览和撤销。
+globs:
+  - "**/*.py"
+alwaysApply: false
+---
 
-## 简要说明
-本文档介绍了如何在项目中使用 `FileChangeManager`（文件变更管理模块），以实现对文件变更的追踪、应用、预览和撤销功能。这对于需要精细控制文件修改过程的场景非常有用，例如在自动化代码生成或重构任务中。
+# FileChangeManager 使用指南
 
-## 基本用法
+`FileChangeManager` 模块是 AutoCoder 项目中用于管理和追踪文件变更的核心组件。它提供了一套完整的机制来记录、应用、预览和撤销对文件的修改，确保在代码生成和重构过程中的可控性和可追溯性。
 
-`FileChangeManager` 是核心类，用于管理项目目录中的文件变更。
+## 核心功能
 
-```python
-from autocoder.common.file_checkpoint.manager import FileChangeManager
-from autocoder.common.file_checkpoint.models import FileChange
+1.  **变更追踪 (Tracking Changes)**:
+    *   `FileChangeManager` 会记录所有通过其进行的写文件操作 (`write_file`) 或替换操作 (`replace_in_file`)。
+    *   每次变更都会生成一个唯一的 `checkpoint_id`，并保存变更前后的文件状态快照。
 
-# 初始化 FileChangeManager，需要提供项目根目录
-project_directory = "/path/to/your/project"
-manager = FileChangeManager(project_dir=project_directory)
-```
+2.  **应用变更 (Applying Changes)**:
+    *   记录的变更可以被实际应用到文件系统，将修改持久化。
 
-## 主要功能
+3.  **预览变更 (Previewing Changes)**:
+    *   在实际应用变更前，可以预览将要发生的具体修改内容 (diff)。
 
-### 1. 应用文件变更 (`apply_changes`)
+4.  **撤销变更 (Reverting Changes)**:
+    *   可以根据 `checkpoint_id` 将文件恢复到指定的变更点之前的状态。
+    *   支持撤销到上一个检查点或任意指定的检查点。
 
-此功能用于将一组定义好的文件变更实际应用到项目文件中。变更可以是创建新文件、修改现有文件或删除文件（通过特定的标记）。
+## 主要使用场景
 
-```python
-# 准备文件变更
-# FileChange 对象包含文件路径、新内容以及是否为新文件的标记
-changes_to_apply = {
-    "src/new_module.py": FileChange(
-        file_path="src/new_module.py",
-        content="print('Hello, new module!')\n",
-        is_new=True  # 标记为新文件
-    ),
-    "README.md": FileChange(
-        file_path="README.md",
-        content="# Project Title\nUpdated README content.\n",
-        is_new=False # 标记为修改现有文件
-    )
-}
+*   **安全的代码生成**: 在 LLM 生成代码后，先通过 `FileChangeManager` 记录变更，预览确认无误后再实际写入文件。
+*   **迭代式重构**: 在进行多步重构时，每一步都可以创建一个检查点，方便回溯。
+*   **风险控制**: 如果生成或修改的代码引入问题，可以快速恢复到稳定版本。
+*   **调试与审计**: 追踪代码变更历史，帮助理解修改过程。
 
-# 应用变更
-apply_result = manager.apply_changes(changes_to_apply)
+## 使用示例
 
-if apply_result.success:
-    print(f"成功应用了 {len(apply_result.change_ids)} 个文件变更:")
-    for change_id in apply_result.change_ids:
-        print(f"  - 变更ID: {change_id}")
-else:
-    print("应用变更失败:")
-    for file_path, error_message in apply_result.errors.items():
-        print(f"  - {file_path}: {error_message}")
-```
-**注意**: `apply_changes` 会将变更记录到历史中，以便后续可以撤销。
-
-### 2. 预览文件变更 (`preview_changes`)
-
-在实际应用变更之前，可以预览这些变更与当前文件内容的差异。
+以下是如何在代码中使用 `FileChangeManager` 的基本流程：
 
 ```python
-# 准备要预览的变更
-changes_to_preview = {
-    "src/existing_file.py": FileChange(
-        file_path="src/existing_file.py",
-        content="def updated_function():\n    return 'new logic'\n",
-        is_new=False
-    )
-}
+from autocoder.common.file_checkpoint import FileChangeManager, FileOperation
 
-# 预览变更
-diff_results = manager.preview_changes(changes_to_preview)
+# 1. 获取 FileChangeManager 实例 (通常是单例)
+manager = FileChangeManager.get_instance(project_root="/path/to/your/project")
 
-for file_path, diff_info in diff_results.items():
-    print(f"\n文件预览: {file_path}")
-    print(diff_info.get_diff_summary()) # 获取差异摘要，例如 "+2 lines, -1 line"
-    
-    # 如果文件存在且不是新创建或删除，可以获取详细的文本差异
-    if diff_info.old_content is not None and not diff_info.is_new and not diff_info.is_deletion:
-        # get_diff_text 方法需要自行实现或使用类似 difflib 的库
-        # 以下为示例，实际 manager 中可能包含此方法
-        # diff_text = manager.get_diff_text(diff_info.old_content, diff_info.new_content)
-        # print("\n详细差异:")
-        # print(diff_text)
-        # 假设 FileChangeManager 提供了 get_diff_text 方法
-        if hasattr(manager, 'get_diff_text'):
-            diff_text = manager.get_diff_text(diff_info.old_content, diff_info.new_content)
-            print("\n详细差异:")
-            print(diff_text)
-        else:
-            print("(详细文本差异的生成需要 get_diff_text 方法)")
+# 2. 准备文件操作
+file_path = "src/example.py"
+original_content = "print('Hello')"
+new_content = "print('Hello, AutoCoder!')"
 
+# 模拟读取文件原始内容 (在实际应用中，这通常是 manager 内部处理的)
+# manager.add_original_file(file_path, original_content)
+
+# 3. 执行写操作 (这会创建一个检查点)
+# checkpoint_id_write = manager.write_file(file_path, new_content)
+# print(f"Write operation checkpoint: {checkpoint_id_write}")
+
+# 或者执行替换操作
+search_pattern = "Hello"
+replace_pattern = "Hello, AutoCoder!"
+# diff_blocks = [f"<<<<<<< SEARCH\n{search_pattern}\n=======\n{replace_pattern}\n>>>>>>> REPLACE"]
+# checkpoint_id_replace = manager.replace_in_file(file_path, "\n".join(diff_blocks))
+# print(f"Replace operation checkpoint: {checkpoint_id_replace}")
+
+
+# 4. 预览最近的变更
+# preview = manager.preview_changes(checkpoint_id_replace)
+# print(f"\nPreview of changes for {checkpoint_id_replace}:\n{preview}")
+
+# 5. 应用所有待应用的变更到文件系统
+# manager.apply_changes()
+# print(f"\nChanges applied to {file_path}")
+
+# with open(file_path, "r") as f:
+#    print(f"Current content of {file_path}: {f.read()}")
+
+# 6. 撤销到上一个检查点
+# manager.revert_to_last_checkpoint()
+# print(f"\nReverted to last checkpoint. Content of {file_path} should be original if only one change was made and applied.")
+# manager.apply_changes() # Re-apply to see the revert effect if changes were already flushed
+# with open(file_path, "r") as f:
+#    print(f"Content after revert: {f.read()}")
+
+
+# 7. 撤销到指定的检查点 (假设 checkpoint_id_write 是第一个检查点)
+# 如果有多个操作，可以撤销到任意一个
+# manager.revert_to_checkpoint(checkpoint_id_write) # This would revert the replace operation
+# print(f"\nReverted to checkpoint {checkpoint_id_write}.")
+# manager.apply_changes()
+# with open(file_path, "r") as f:
+#    print(f"Content after reverting to {checkpoint_id_write}: {f.read()}")
+
+# 注意：示例中的 apply_changes() 和文件读取用于演示效果。
+# FileChangeManager 通常在内部管理文件的虚拟状态，直到 apply_changes 被调用。
+# 实际使用时，请参考 src/autocoder/common/file_checkpoint/examples.py 中的详细示例。
 ```
 
-### 3. 撤销文件变更 (`undo_last_change`)
+## 关键方法
 
-此功能允许撤销最近一次通过 `apply_changes` 应用的变更。
+*   `get_instance(project_root: str) -> FileChangeManager`: 获取 `FileChangeManager` 的单例。
+*   `write_file(file_path: str, content: str) -> str`: 记录一个写文件操作，返回检查点 ID。
+*   `replace_in_file(file_path: str, diff_content: str) -> str`: 记录一个替换文件内容的操作，返回检查点 ID。
+*   `add_original_file(file_path: str, content: str)`: (主要供内部或测试使用) 添加文件的初始状态。
+*   `preview_changes(checkpoint_id: str) -> str`: 预览指定检查点的变更。
+*   `preview_all_changes() -> Dict[str, str]`: 预览所有待应用的变更。
+*   `apply_changes()`: 将所有记录的变更应用到实际文件。
+*   `revert_to_checkpoint(checkpoint_id: str)`: 撤销到指定的检查点。
+*   `revert_to_last_checkpoint()`: 撤销最近一次的变更。
+*   `get_file_content(file_path: str) -> Optional[str]`: 获取文件在当前检查点状态下的内容。
 
-```python
-# 撤销最近一次的变更
-undo_result = manager.undo_last_change()
+## 注意事项
 
-if undo_result.success:
-    print(f"成功撤销变更，恢复了 {len(undo_result.restored_files)} 个文件:")
-    for restored_file_path in undo_result.restored_files:
-        print(f"  - {restored_file_path}")
-else:
-    print("撤销变更失败:")
-    if undo_result.errors:
-        for file_path, error_message in undo_result.errors.items():
-            print(f"  - {file_path}: {error_message}")
-    else:
-        print("  没有可撤销的变更，或撤销过程中发生未知错误。")
+*   `FileChangeManager` 依赖于项目根目录 (`project_root`) 来正确解析相对路径。
+*   变更在调用 `apply_changes()`之前仅存在于内存中。
+*   撤销操作也是基于内存中的检查点，如果变更已应用，撤销后需要再次调用 `apply_changes()` 来更新实际文件。
+*   该模块是确保 AutoCoder 操作安全性和可控性的重要保障。
 
-```
-**注意**: `undo_last_change` 会从历史记录中移除被撤销的变更，并将文件恢复到变更前的状态。
-
-### 4. 获取变更历史 (`get_change_history`)
-
-可以获取项目的文件变更历史记录。
-
-```python
-# 获取最近的5条变更历史
-change_history = manager.get_change_history(limit=5)
-
-print(f"最近 {len(change_history)} 条变更记录:")
-for record in change_history:
-    timestamp = record.timestamp
-    file_path = record.file_path
-    # 根据 is_new, is_deletion (假设存在) 判断变更类型
-    change_type_str = "新建" if record.is_new else "删除" if getattr(record, 'is_deletion', False) else "修改"
-    print(f"  - [{timestamp}] {change_type_str} {file_path} (ID: {record.change_id})")
-```
-
-## 与 AgenticEdit 集成
-
-`FileChangeManager` 可以集成到像 `AgenticEdit` 这样的工具中，以提供更稳健的文件操作和版本控制能力。当 `AgenticEdit` 在影子系统中计算出文件变更后，可以使用 `FileChangeManager` 来应用这些变更到实际项目目录，并自动记录变更历史。
-
-以下是一个概念性的集成示例，展示如何在 `AgenticEdit` 的 `apply_changes` 方法中使用 `FileChangeManager`：
-
-```python
-# 伪代码示例：修改 AgenticEdit.apply_changes 方法
-# class AgenticEdit:
-#     def __init__(self, source_dir, args):
-#         self.args = args
-#         self.args.source_dir = source_dir # 确保 source_dir 可用
-#         # ... 其他初始化 ...
-
-#     def get_all_file_changes(self) -> Dict[str, Any]: # 假设返回字典 {file_path: change_object_with_content}
-#         # ... 实现获取影子系统变更的逻辑 ...
-#         # 返回示例: {"file1.py": {"content": "new content for file1"}}
-#         pass
-
-#     def apply_changes_with_checkpoint(self): # 新的方法名以区分
-#         from autocoder.common.file_checkpoint.models import FileChange
-#         from autocoder.common.file_checkpoint.manager import FileChangeManager
-#         import os # 需要 os 模块
-
-#         # 创建文件变更管理器
-#         manager = FileChangeManager(self.args.source_dir)
-
-#         # 将影子系统的变更转换为 FileChange 对象
-#         changes_for_checkpoint = {}
-#         # 假设 self.get_all_file_changes() 返回 { "path/to/file": ShadowFileChange }
-#         # ShadowFileChange 有 content 属性
-#         all_shadow_changes = self.get_all_file_changes() # 获取所有变更
-
-#         for file_path_in_project, shadow_change in all_shadow_changes.items():
-#             # 确定文件的完整路径
-#             full_file_path_original = os.path.join(self.args.source_dir, file_path_in_project)
-            
-#             changes_for_checkpoint[file_path_in_project] = FileChange(
-#                 file_path=file_path_in_project, # 相对于项目目录的路径
-#                 content=shadow_change.content, # 假设 shadow_change 对象有 content 属性
-#                 is_new=not os.path.exists(full_file_path_original) # 判断是否为新文件
-#             )
-
-#         # 应用变更
-#         result = manager.apply_changes(changes_for_checkpoint)
-
-#         # 处理结果
-#         if result.success:
-#             print("文件变更已通过 FileChangeManager成功应用。")
-#             # 可以继续执行原有的 Git 提交等逻辑
-#             # if not self.args.skip_commit:
-#             #     try:
-#             #         # ... 原有的 Git 提交代码 ...
-#             #     except Exception as e:
-#             #         # ... 原有的错误处理 ...
-#         else:
-#             # 处理应用变更失败的情况
-#             error_messages = "\n".join([f"{path}: {error}" for path, error in result.errors.items()])
-#             # self.printer.print_str_in_terminal(
-#             #     f"Failed to apply changes via FileChangeManager:\n{error_messages}",
-#             #     style="red"
-#             # )
-#             print(f"通过 FileChangeManager 应用变更失败:\n{error_messages}")
-
-```
-
-## 实际示例代码
-
-以下代码片段来自 `src/autocoder/common/file_checkpoint/examples.py`，展示了上述功能的实际应用：
-
-### 应用变更示例
-```python
-from autocoder.common.file_checkpoint.models import FileChange
-from autocoder.common.file_checkpoint.manager import FileChangeManager
-
-def example_apply_changes(project_dir: str):
-    manager = FileChangeManager(project_dir)
-    changes = {
-        "example.txt": FileChange(
-            file_path="example.txt",
-            content="这是一个示例文件\n用于演示文件变更管理模块的功能\n",
-            is_new=True
-        )
-    }
-    result = manager.apply_changes(changes)
-    if result.success:
-        print(f"成功应用了 {len(result.change_ids)} 个文件变更")
-    else:
-        print("应用变更失败")
-```
-
-### 预览变更示例
-```python
-def example_preview_changes(project_dir: str):
-    manager = FileChangeManager(project_dir)
-    changes = {
-        "example.txt": FileChange(
-            file_path="example.txt",
-            content="这是一个修改后的示例文件\n用于演示文件变更管理模块的功能\n新增的一行\n",
-            is_new=False # 假设 example.txt 已存在
-        )
-    }
-    diff_results = manager.preview_changes(changes)
-    for file_path, diff_result in diff_results.items():
-        print(f"\n文件: {file_path}")
-        print(diff_result.get_diff_summary())
-        if hasattr(manager, 'get_diff_text') and diff_result.old_content is not None and \
-           not diff_result.is_new and not diff_result.is_deletion:
-            diff_text = manager.get_diff_text(diff_result.old_content, diff_result.new_content)
-            print("\n差异:")
-            print(diff_text)
-```
-
-### 撤销变更示例
-```python
-def example_undo_changes(project_dir: str):
-    manager = FileChangeManager(project_dir)
-    result = manager.undo_last_change()
-    if result.success:
-        print(f"成功撤销了变更，恢复了 {len(result.restored_files)} 个文件")
-    else:
-        print("撤销变更失败")
-```
-
-### 获取历史示例
-```python
-def example_get_history(project_dir: str):
-    manager = FileChangeManager(project_dir)
-    changes = manager.get_change_history(limit=5)
-    print(f"最近 {len(changes)} 条变更记录:")
-    for change in changes:
-        timestamp = change.timestamp
-        file_path = change.file_path
-        change_type = "新建" if change.is_new else "删除" if getattr(change, 'is_deletion', False) else "修改"
-        print(f"  - [{timestamp}] {change_type} {file_path} (ID: {change.change_id})")
-```
-
-通过这些功能，`FileChangeManager` 提供了一个强大的机制来管理和控制项目中的文件修改。
+详细的实现和更复杂的使用场景可以参考 `src/autocoder/common/file_checkpoint/examples.py`。
