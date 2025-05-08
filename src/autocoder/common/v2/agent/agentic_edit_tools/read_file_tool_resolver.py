@@ -35,7 +35,7 @@ class ReadFileToolResolver(BaseToolResolver):
                         with open(shadow_path, 'r', encoding='utf-8', errors='replace') as f:
                             content = f.read()
                         logger.info(f"[Shadow] Successfully read shadow file: {shadow_path}")
-                        return ToolResult(success=True, message=f"{file_path}", content=content)
+                        return ToolResult(success=True, message=f"Successfully read file (shadow): {file_path}", content=content)
             except Exception as e:
                 pass
             # else fallback to original file
@@ -48,7 +48,7 @@ class ReadFileToolResolver(BaseToolResolver):
             with open(abs_file_path, 'r', encoding='utf-8', errors='replace') as f:
                 content = f.read()
             logger.info(f"Successfully read file: {file_path}")
-            return ToolResult(success=True, message=f"{file_path}", content=content)
+            return ToolResult(success=True, message=f"Successfully read file: {file_path}", content=content)
         except Exception as e:
             logger.error(f"Error reading file '{file_path}': {str(e)}")
             return ToolResult(success=False, message=f"An error occurred while reading the file: {str(e)}")
