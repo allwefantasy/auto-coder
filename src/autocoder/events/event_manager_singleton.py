@@ -37,12 +37,20 @@ class EventManagerSingleton:
         if event_file is None:
             # Use default instance logic
             if cls._default_instance is None:
-                cls._default_instance = EventManager(JsonlEventStore(os.path.join(".auto-coder", "events", "events.jsonl")))
+                logger.info("Creating new default EventManager instance.")
+                event_store_path = os.path.join(".auto-coder", "events", "events.jsonl")
+                logger.debug(f"Default EventManager using event store: {event_store_path}")
+                cls._default_instance = EventManager(JsonlEventStore(event_store_path))
+            else:
+                logger.debug("Returning existing default EventManager instance.")
             return cls._default_instance
         
         # If event_file is provided, use it as a key to store/retrieve EventManager instances
         if event_file not in cls._instances:
+            logger.info(f"Creating new EventManager instance for event file: {event_file}")
             cls._instances[event_file] = EventManager(JsonlEventStore(event_file))  
+        else:
+            logger.debug(f"Returning existing EventManager instance for event file: {event_file}")
         
         return cls._instances[event_file]
     
@@ -52,7 +60,11 @@ class EventManagerSingleton:
         重置单例实例。主要用于测试或需要更改事件文件时。
         """
         with cls._lock:
-            cls._default_instance = None
+            if cls._default_instance is not None:
+                logger.info("Resetting default EventManager instance.")
+                cls._default_instance = None
+            else:
+                logger.debug("Default EventManager instance was already None. No reset needed.")
     
     @classmethod
     def set_default_event_file(cls, event_file: str) -> None:
@@ -95,9 +107,12 @@ def gengerate_event_file_path(project_path: Optional[str] = None) -> Tuple[str,s
     
     # 要使用绝对路径，否则会被认为产生两个event_manager
     if project_path is None:
-        return os.path.join(os.getcwd(),".auto-coder", "events", file_name),file_id
+        full_path = os.path.join(os.getcwd(),".auto-coder", "events", file_name)
     else:   
-        return os.path.join(project_path, ".auto-coder", "events", file_name),file_id
+        full_path = os.path.join(project_path, ".auto-coder", "events", file_name)
+    
+    logger.info(f"Generated event file path: {full_path}, file_id: {file_id}")
+    return full_path, file_id
 
 @byzerllm.prompt()
 def _format_events_prompt(event_files: List[Dict]) -> str:
@@ -148,6 +163,7 @@ def to_events_prompt(limit: int = 5, project_path: Optional[str] = None) -> str:
     Returns:
         格式化后的事件提示文本
     """
+    logger.info(f"Generating events prompt with limit={limit}, project_path={project_path}")
     # 确定事件文件所在目录
     if project_path is None:
         events_dir = os.path.join(".auto-coder", "events")
@@ -164,6 +180,7 @@ def to_events_prompt(limit: int = 5, project_path: Optional[str] = None) -> str:
     event_files = glob.glob(event_file_pattern)
     
     if not event_files:
+        logger.info(f"No event files found in pattern: {event_file_pattern}")
         logger.warning(f"未找到任何事件文件: {event_file_pattern}")
         return "未找到任何事件记录。"
     
