@@ -6,6 +6,7 @@ from datetime import datetime
 import glob
 import json
 import re
+import time
 from pathlib import Path
 import byzerllm
 
@@ -22,6 +23,10 @@ class EventManagerSingleton:
     _default_instance: Optional[EventManager] = None
     _instances: Dict[str, EventManager] = {}
     _lock = threading.RLock()  # 用于线程安全操作的锁
+    _cleanup_thread: Optional[threading.Thread] = None
+    _stop_cleanup = threading.Event()
+    _max_event_files = 100  # 最大保留的事件文件数量
+    _cleanup_interval = 60  # 清理线程执行间隔，单位秒
     
     @classmethod
     def get_instance(cls, event_file: Optional[str] = None) -> EventManager:
@@ -34,6 +39,9 @@ class EventManagerSingleton:
         Returns:
             EventManager: The appropriate EventManager instance
         """
+        # 确保清理线程已启动
+        cls._ensure_cleanup_thread_started()
+        
         if event_file is None:
             # Use default instance logic
             if cls._default_instance is None:
@@ -80,6 +88,110 @@ class EventManagerSingleton:
                 cls._default_event_file = event_file
         else:
             logger.warning("尝试更改默认事件文件，但实例已存在。请先调用reset_instance()。")
+    
+    @classmethod
+    def _ensure_cleanup_thread_started(cls) -> None:
+        """
+        确保清理线程已启动。如果尚未启动，则启动线程。
+        """
+        with cls._lock:
+            if cls._cleanup_thread is None or not cls._cleanup_thread.is_alive():
+                logger.info("启动事件文件清理线程")
+                cls._stop_cleanup.clear()
+                cls._cleanup_thread = threading.Thread(
+                    target=cls._cleanup_event_files_thread,
+                    daemon=True,
+                    name="EventFilesCleanupThread"
+                )
+                cls._cleanup_thread.start()
+    
+    @classmethod
+    def _cleanup_event_files_thread(cls) -> None:
+        """
+        定时清理线程的主函数。定期执行清理操作，确保事件目录只保留最新的指定数量文件。
+        """
+        logger.info(f"事件文件清理线程已启动，将保留最新的{cls._max_event_files}个文件")
+        while not cls._stop_cleanup.is_set():
+            try:
+                cls._cleanup_event_files()
+                # 等待指定时间或直到停止信号
+                cls._stop_cleanup.wait(cls._cleanup_interval)
+            except Exception as e:
+                logger.error(f"事件文件清理过程中发生错误: {e}")
+                # 出错后等待一段时间再重试
+                time.sleep(60)
+    
+    @classmethod
+    def _cleanup_event_files(cls) -> None:
+        """
+        清理事件文件，只保留最新的指定数量文件。
+        """
+        logger.info("开始清理事件文件...")
+        
+        # 确定事件文件所在目录
+        events_dir = os.path.join(os.getcwd(),".auto-coder", "events")
+        
+        # 确保目录存在
+        if not os.path.exists(events_dir):
+            logger.warning(f"事件目录不存在: {events_dir}")
+            return
+        
+        # 获取所有事件文件
+        event_file_pattern = os.path.join(events_dir, "*.jsonl")
+        event_files = glob.glob(event_file_pattern)
+        
+        if not event_files:
+            logger.info(f"未找到任何事件文件: {event_file_pattern}")
+            return
+        
+        # 排除默认的events.jsonl文件
+        event_files = [f for f in event_files if os.path.basename(f) != "events.jsonl"]
+        
+        if len(event_files) <= cls._max_event_files:
+            logger.info(f"事件文件数量({len(event_files)})未超过最大保留数量({cls._max_event_files})，无需清理")
+            return
+        
+        # 解析文件名中的时间戳，格式为 uuid_YYYYMMDD-HHMMSS.jsonl
+        def extract_timestamp(file_path):
+            file_name = os.path.basename(file_path)
+            match = re.search(r'_(\d{8}-\d{6})\.jsonl$', file_name)
+            if match:
+                timestamp_str = match.group(1)
+                try:
+                    return datetime.strptime(timestamp_str, "%Y%m%d-%H%M%S")
+                except ValueError:
+                    return datetime.fromtimestamp(0)  # 默认最早时间
+            return datetime.fromtimestamp(0)  # 默认最早时间
+        
+        # 按时间戳从新到旧排序
+        sorted_files = sorted(event_files, key=extract_timestamp, reverse=True)
+        
+        # 保留最新的文件，删除其余文件
+        files_to_keep = sorted_files[:cls._max_event_files]
+        files_to_delete = sorted_files[cls._max_event_files:]
+        
+        for file_path in files_to_delete:
+            try:
+                os.remove(file_path)
+                logger.info(f"已删除旧事件文件: {file_path}")
+            except Exception as e:
+                logger.error(f"删除事件文件失败 {file_path}: {e}")
+        
+        logger.info(f"事件文件清理完成，删除了{len(files_to_delete)}个旧文件，保留了{len(files_to_keep)}个最新文件")
+    
+    @classmethod
+    def stop_cleanup_thread(cls) -> None:
+        """
+        停止清理线程，通常在应用程序退出时调用。
+        """
+        logger.info("正在停止事件文件清理线程...")
+        cls._stop_cleanup.set()
+        if cls._cleanup_thread and cls._cleanup_thread.is_alive():
+            cls._cleanup_thread.join(timeout=5)
+            if cls._cleanup_thread.is_alive():
+                logger.warning("清理线程未在指定时间内停止")
+            else:
+                logger.info("清理线程已成功停止")
 
 def get_event_file_path(file_id:str,project_path: Optional[str] = None) -> str:
     if project_path is None:
