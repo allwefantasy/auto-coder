@@ -1,4 +1,11 @@
 
+---
+title: "在测试代码中获取和初始化LLM模型的标准方法"
+tags: ["llm", "test", "initialization"]
+date: "2024-07-26"
+author: "AutoCoder"
+---
+
 # get_llm.md 使用指南
 ## 简介
 本文档说明了在测试代码中获取和初始化LLM模型的标准方法，包括加载token统计、获取模型和配置参数的步骤。
