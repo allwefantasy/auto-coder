@@ -846,7 +846,7 @@ class AgenticEdit:
             event_count = 0
             for event in parsed_events:
                 event_count += 1
-                logger.info(f"Processing event #{event_count}: {type(event).__name__}")
+                # logger.info(f"Processing event #{event_count}: {type(event).__name__}")
                 global_cancel.check_and_raise(token=self.args.event_file)
                 if isinstance(event, (LLMOutputEvent, LLMThinkingEvent)):
                     assistant_buffer += event.text
@@ -1321,6 +1321,15 @@ class AgenticEdit:
         console.print(Panel(
             f"[bold]{get_message('/agent/edit/user_query')}:[/bold]\n{request.user_input}", title=get_message("/agent/edit/objective"), border_style="blue"))
 
+        # 用于累计TokenUsageEvent数据
+        accumulated_token_usage = {
+            "model_name": "",
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "input_cost": 0.0,
+            "output_cost": 0.0
+        }
+
         try:
             self.apply_pre_changes()
             event_stream = self.analyze(request)
@@ -1347,17 +1356,12 @@ class AgenticEdit:
                     # 添加日志记录
                     logger.info(f"Token Usage: Model={model_name}, Input Tokens={last_meta.input_tokens_count}, Output Tokens={last_meta.generated_tokens_count}, Input Cost=${input_cost:.6f}, Output Cost=${output_cost:.6f}")
 
-                    self.printer.print_in_terminal(
-                            "code_generation_complete",
-                            duration=0.0,
-                            input_tokens=last_meta.input_tokens_count,
-                            output_tokens=last_meta.generated_tokens_count,
-                            input_cost=input_cost,
-                            output_cost=output_cost,
-                            speed=0.0,
-                            model_names=model_name,
-                            sampling_count=1
-                        )
+                    # 累计token使用情况
+                    accumulated_token_usage["model_name"] = model_name
+                    accumulated_token_usage["input_tokens"] += last_meta.input_tokens_count
+                    accumulated_token_usage["output_tokens"] += last_meta.generated_tokens_count
+                    accumulated_token_usage["input_cost"] += input_cost
+                    accumulated_token_usage["output_cost"] += output_cost
                     
                 if isinstance(event, LLMThinkingEvent):
                     # Render thinking within a less prominent style, maybe grey?
@@ -1480,7 +1484,35 @@ class AgenticEdit:
 
                 time.sleep(0.1)  # Small delay for better visual flow
 
+            # 在处理完所有事件后打印累计的token使用情况
+            if accumulated_token_usage["input_tokens"] > 0:
+                self.printer.print_in_terminal(
+                    "code_generation_complete",
+                    duration=0.0,
+                    input_tokens=accumulated_token_usage["input_tokens"],
+                    output_tokens=accumulated_token_usage["output_tokens"],
+                    input_cost=accumulated_token_usage["input_cost"],
+                    output_cost=accumulated_token_usage["output_cost"],
+                    speed=0.0,
+                    model_names=accumulated_token_usage["model_name"],
+                    sampling_count=1
+                )
+                
         except Exception as e:
+            # 在处理异常时也打印累计的token使用情况
+            if accumulated_token_usage["input_tokens"] > 0:
+                self.printer.print_in_terminal(
+                    "code_generation_complete",
+                    duration=0.0,
+                    input_tokens=accumulated_token_usage["input_tokens"],
+                    output_tokens=accumulated_token_usage["output_tokens"],
+                    input_cost=accumulated_token_usage["input_cost"],
+                    output_cost=accumulated_token_usage["output_cost"],
+                    speed=0.0,
+                    model_names=accumulated_token_usage["model_name"],
+                    sampling_count=1
+                )
+                
             logger.exception(
                 "An unexpected error occurred during agent execution:")
             console.print(Panel(
@@ -1490,154 +1522,202 @@ class AgenticEdit:
             console.rule("[bold cyan]Agentic Edit Finished[/]")
 
     def run_with_events(self, request: AgenticEditRequest):
-            """
-            Runs the agentic edit process, converting internal events to the
-            standard event system format and writing them using the event manager.
-            """
-            event_manager = get_event_manager(self.args.event_file)
-            self.apply_pre_changes()
+        """
+        Runs the agentic edit process, converting internal events to the
+        standard event system format and writing them using the event manager.
+        """
+        event_manager = get_event_manager(self.args.event_file)
+        self.apply_pre_changes()
 
-            try:
-                event_stream = self.analyze(request)
-                for agent_event in event_stream:
-                    content = None
-                    metadata = EventMetadata(
-                        action_file=self.args.file,
-                        is_streaming=False,
-                        stream_out_type="/agent/edit")
+        # 用于累计TokenUsageEvent数据
+        accumulated_token_usage = {
+            "model_name": "",
+            "elapsed_time": 0.0,
+            "first_token_time": 0.0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "input_cost": 0.0,
+            "output_cost": 0.0
+        }
 
-                    if isinstance(agent_event, LLMThinkingEvent):
-                        content = EventContentCreator.create_stream_thinking(
-                            content=agent_event.text)
-                        metadata.is_streaming = True
-                        metadata.path = "/agent/edit/thinking"
-                        event_manager.write_stream(
-                            content=content.to_dict(), metadata=metadata.to_dict())
-                    elif isinstance(agent_event, LLMOutputEvent):
-                        content = EventContentCreator.create_stream_content(
-                            content=agent_event.text)
-                        metadata.is_streaming = True
-                        metadata.path = "/agent/edit/output"
-                        event_manager.write_stream(content=content.to_dict(),
-                                                metadata=metadata.to_dict())
-                    elif isinstance(agent_event, ToolCallEvent):
-                        tool_name = type(agent_event.tool).__name__
-                        metadata.path = "/agent/edit/tool/call"
-                        content = EventContentCreator.create_result(
-                            content={
-                                "tool_name": tool_name,
-                                **agent_event.tool.model_dump()
-                            },
-                            metadata={}
-                        )
-                        event_manager.write_result(
-                            content=content.to_dict(), metadata=metadata.to_dict())
-                    elif isinstance(agent_event, ToolResultEvent):
-                        metadata.path = "/agent/edit/tool/result"
-                        content = EventContentCreator.create_result(
-                            content={
-                                "tool_name": agent_event.tool_name,
-                                **agent_event.result.model_dump()
-                            },
-                            metadata={}
-                        )
-                        event_manager.write_result(
-                            content=content.to_dict(), metadata=metadata.to_dict())
-                    elif isinstance(agent_event, PlanModeRespondEvent):
-                        metadata.path = "/agent/edit/plan_mode_respond"
-                        content = EventContentCreator.create_markdown_result(
-                            content=agent_event.completion.response,
-                            metadata={}
-                        )
-                        event_manager.write_result(
-                            content=content.to_dict(), metadata=metadata.to_dict())
-
-                    elif isinstance(agent_event, TokenUsageEvent):
-                        last_meta: SingleOutputMeta = agent_event.usage
-                        # Get model info for pricing
-                        from autocoder.utils import llms as llm_utils
-                        model_name = ",".join(llm_utils.get_llm_names(self.llm))
-                        model_info = llm_utils.get_model_info(
-                            model_name, self.args.product_mode) or {}
-                        input_price = model_info.get(
-                            "input_price", 0.0) if model_info else 0.0
-                        output_price = model_info.get(
-                            "output_price", 0.0) if model_info else 0.0
-
-                        # Calculate costs
-                        input_cost = (last_meta.input_tokens_count *
-                                    input_price) / 1000000  # Convert to millions
-                        # Convert to millions
-                        output_cost = (
-                            last_meta.generated_tokens_count * output_price) / 1000000
-
-                        # 添加日志记录
-                        logger.info(f"Token Usage Details: Model={model_name}, Input Tokens={last_meta.input_tokens_count}, Output Tokens={last_meta.generated_tokens_count}, Input Cost=${input_cost:.6f}, Output Cost=${output_cost:.6f}")
-
-                        get_event_manager(self.args.event_file).write_result(
-                            EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
-                                model_name=model_name,
-                                elapsed_time=0.0,
-                                first_token_time=last_meta.first_token_time,
-                                input_tokens=last_meta.input_tokens_count,
-                                output_tokens=last_meta.generated_tokens_count,
-                                input_cost=input_cost,
-                                output_cost=output_cost
-                            ).to_dict()), metadata=metadata.to_dict())
-
-                    elif isinstance(agent_event, CompletionEvent):
-                        # 在这里完成实际合并
-                        try:
-                            self.apply_changes()
-                        except Exception as e:
-                            logger.exception(
-                                f"Error merging shadow changes to project: {e}")
-
-                        metadata.path = "/agent/edit/completion"
-                        content = EventContentCreator.create_completion(
-                            success_code="AGENT_COMPLETE",
-                            success_message="Agent attempted task completion.",
-                            result={
-                                "response": agent_event.completion.result
-                            }
-                        )
-                        event_manager.write_completion(
-                            content=content.to_dict(), metadata=metadata.to_dict())
-                    elif isinstance(agent_event, ErrorEvent):
-                        metadata.path = "/agent/edit/error"
-                        content = EventContentCreator.create_error(
-                            error_code="AGENT_ERROR",
-                            error_message=agent_event.message,
-                            details={"agent_event_type": "ErrorEvent"}
-                        )
-                        event_manager.write_error(
-                            content=content.to_dict(), metadata=metadata.to_dict())
-                    else:
-                        metadata.path = "/agent/edit/error"
-                        logger.warning(
-                            f"Unhandled agent event type: {type(agent_event)}")
-                        content = EventContentCreator.create_error(
-                            error_code="AGENT_ERROR",
-                            error_message=f"Unhandled agent event type: {type(agent_event)}",
-                            details={"agent_event_type": type(
-                                agent_event).__name__}
-                        )
-                        event_manager.write_error(
-                            content=content.to_dict(), metadata=metadata.to_dict())
-
-            except Exception as e:
-                logger.exception(
-                    "An unexpected error occurred during agent execution:")
+        try:
+            event_stream = self.analyze(request)
+            for agent_event in event_stream:
+                content = None
                 metadata = EventMetadata(
                     action_file=self.args.file,
                     is_streaming=False,
-                    stream_out_type="/agent/edit/error")
-                error_content = EventContentCreator.create_error(
-                    error_code="AGENT_FATAL_ERROR",
-                    error_message=f"An unexpected error occurred: {str(e)}",
-                    details={"exception_type": type(e).__name__}
-                )
-                event_manager.write_error(
-                    content=error_content.to_dict(), metadata=metadata.to_dict())
-                # Re-raise the exception if needed, or handle appropriately
-                raise e
+                    stream_out_type="/agent/edit")
+
+                if isinstance(agent_event, LLMThinkingEvent):
+                    content = EventContentCreator.create_stream_thinking(
+                        content=agent_event.text)
+                    metadata.is_streaming = True
+                    metadata.path = "/agent/edit/thinking"
+                    event_manager.write_stream(
+                        content=content.to_dict(), metadata=metadata.to_dict())
+                elif isinstance(agent_event, LLMOutputEvent):
+                    content = EventContentCreator.create_stream_content(
+                        content=agent_event.text)
+                    metadata.is_streaming = True
+                    metadata.path = "/agent/edit/output"
+                    event_manager.write_stream(content=content.to_dict(),
+                                            metadata=metadata.to_dict())
+                elif isinstance(agent_event, ToolCallEvent):
+                    tool_name = type(agent_event.tool).__name__
+                    metadata.path = "/agent/edit/tool/call"
+                    content = EventContentCreator.create_result(
+                        content={
+                            "tool_name": tool_name,
+                            **agent_event.tool.model_dump()
+                        },
+                        metadata={}
+                    )
+                    event_manager.write_result(
+                        content=content.to_dict(), metadata=metadata.to_dict())
+                elif isinstance(agent_event, ToolResultEvent):
+                    metadata.path = "/agent/edit/tool/result"
+                    content = EventContentCreator.create_result(
+                        content={
+                            "tool_name": agent_event.tool_name,
+                            **agent_event.result.model_dump()
+                        },
+                        metadata={}
+                    )
+                    event_manager.write_result(
+                        content=content.to_dict(), metadata=metadata.to_dict())
+                elif isinstance(agent_event, PlanModeRespondEvent):
+                    metadata.path = "/agent/edit/plan_mode_respond"
+                    content = EventContentCreator.create_markdown_result(
+                        content=agent_event.completion.response,
+                        metadata={}
+                    )
+                    event_manager.write_result(
+                        content=content.to_dict(), metadata=metadata.to_dict())
+
+                elif isinstance(agent_event, TokenUsageEvent):
+                    last_meta: SingleOutputMeta = agent_event.usage
+                    # Get model info for pricing
+                    from autocoder.utils import llms as llm_utils
+                    model_name = ",".join(llm_utils.get_llm_names(self.llm))
+                    model_info = llm_utils.get_model_info(
+                        model_name, self.args.product_mode) or {}
+                    input_price = model_info.get(
+                        "input_price", 0.0) if model_info else 0.0
+                    output_price = model_info.get(
+                        "output_price", 0.0) if model_info else 0.0
+
+                    # Calculate costs
+                    input_cost = (last_meta.input_tokens_count *
+                                input_price) / 1000000  # Convert to millions
+                    # Convert to millions
+                    output_cost = (
+                        last_meta.generated_tokens_count * output_price) / 1000000
+
+                    # 添加日志记录
+                    logger.info(f"Token Usage Details: Model={model_name}, Input Tokens={last_meta.input_tokens_count}, Output Tokens={last_meta.generated_tokens_count}, Input Cost=${input_cost:.6f}, Output Cost=${output_cost:.6f}")
+
+                    # 累计TokenUsageEvent数据而不是立即发送
+                    accumulated_token_usage["model_name"] = model_name
+                    if accumulated_token_usage["first_token_time"] == 0.0:
+                        accumulated_token_usage["first_token_time"] = last_meta.first_token_time
+                    accumulated_token_usage["input_tokens"] += last_meta.input_tokens_count
+                    accumulated_token_usage["output_tokens"] += last_meta.generated_tokens_count
+                    accumulated_token_usage["input_cost"] += input_cost
+                    accumulated_token_usage["output_cost"] += output_cost
+
+                elif isinstance(agent_event, CompletionEvent):
+                    # 在这里完成实际合并
+                    try:
+                        self.apply_changes()
+                    except Exception as e:
+                        logger.exception(
+                            f"Error merging shadow changes to project: {e}")
+                    
+                    # 发送累计的TokenUsageEvent数据
+                    get_event_manager(self.args.event_file).write_result(
+                        EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                            model_name=accumulated_token_usage["model_name"],
+                            elapsed_time=0.0,
+                            first_token_time=accumulated_token_usage["first_token_time"],
+                            input_tokens=accumulated_token_usage["input_tokens"],
+                            output_tokens=accumulated_token_usage["output_tokens"],
+                            input_cost=accumulated_token_usage["input_cost"],
+                            output_cost=accumulated_token_usage["output_cost"]
+                        ).to_dict()), metadata=metadata.to_dict())
+
+                    metadata.path = "/agent/edit/completion"
+                    content = EventContentCreator.create_completion(
+                        success_code="AGENT_COMPLETE",
+                        success_message="Agent attempted task completion.",
+                        result={
+                            "response": agent_event.completion.result
+                        }
+                    )
+                    event_manager.write_completion(
+                        content=content.to_dict(), metadata=metadata.to_dict())
+                elif isinstance(agent_event, ErrorEvent):
+                    # 发送累计的TokenUsageEvent数据（在错误情况下也需要发送）
+                    if accumulated_token_usage["input_tokens"] > 0:
+                        get_event_manager(self.args.event_file).write_result(
+                            EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                                model_name=accumulated_token_usage["model_name"],
+                                elapsed_time=0.0,
+                                first_token_time=accumulated_token_usage["first_token_time"],
+                                input_tokens=accumulated_token_usage["input_tokens"],
+                                output_tokens=accumulated_token_usage["output_tokens"],
+                                input_cost=accumulated_token_usage["input_cost"],
+                                output_cost=accumulated_token_usage["output_cost"]
+                            ).to_dict()), metadata=metadata.to_dict())
+                    
+                    metadata.path = "/agent/edit/error"
+                    content = EventContentCreator.create_error(
+                        error_code="AGENT_ERROR",
+                        error_message=agent_event.message,
+                        details={"agent_event_type": "ErrorEvent"}
+                    )
+                    event_manager.write_error(
+                        content=content.to_dict(), metadata=metadata.to_dict())
+                else:
+                    metadata.path = "/agent/edit/error"
+                    logger.warning(
+                        f"Unhandled agent event type: {type(agent_event)}")
+                    content = EventContentCreator.create_error(
+                        error_code="AGENT_ERROR",
+                        error_message=f"Unhandled agent event type: {type(agent_event)}",
+                        details={"agent_event_type": type(
+                            agent_event).__name__}
+                    )
+                    event_manager.write_error(
+                        content=content.to_dict(), metadata=metadata.to_dict())
+
+        except Exception as e:
+            logger.exception(
+                "An unexpected error occurred during agent execution:")
+            metadata = EventMetadata(
+                action_file=self.args.file,
+                is_streaming=False,
+                stream_out_type="/agent/edit/error")
+                
+            # 发送累计的TokenUsageEvent数据（在错误情况下也需要发送）
+            if accumulated_token_usage["input_tokens"] > 0:
+                get_event_manager(self.args.event_file).write_result(
+                    EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                        model_name=accumulated_token_usage["model_name"],
+                        elapsed_time=0.0,
+                        first_token_time=accumulated_token_usage["first_token_time"],
+                        input_tokens=accumulated_token_usage["input_tokens"],
+                        output_tokens=accumulated_token_usage["output_tokens"],
+                        input_cost=accumulated_token_usage["input_cost"],
+                        output_cost=accumulated_token_usage["output_cost"]
+                    ).to_dict()), metadata=metadata.to_dict())
+                
+            error_content = EventContentCreator.create_error(
+                error_code="AGENT_FATAL_ERROR",
+                error_message=f"An unexpected error occurred: {str(e)}",
+                details={"exception_type": type(e).__name__}
+            )
+            event_manager.write_error(
+                content=error_content.to_dict(), metadata=metadata.to_dict())
+            # Re-raise the exception if needed, or handle appropriately
+            raise e

@@ -195,6 +195,13 @@ class ReplaceInFileToolResolver(BaseToolResolver):
                             lint_message = f"\n\n代码质量检查发现 {len(lint_results.issues)} 个问题:\n{formatted_issues}"
                         else:
                             lint_message = "\n\n代码质量检查通过，未发现问题。"
+                    if self.agent.linter:
+                        lint_results = self.agent.linter.lint_file(file_path)
+                        if lint_results and lint_results.issues:
+                            has_lint_issues = True
+                            # 格式化 lint 问题
+                            formatted_issues = self._format_lint_issues(lint_results)
+                            lint_message = f"\n\n代码质量检查发现 {len(lint_results.issues)} 个问题:\n{formatted_issues}"
                 except Exception as e:
                     logger.error(f"Lint 检查失败: {str(e)}")
                     lint_message = "\n\n尝试进行代码质量检查时出错。"
