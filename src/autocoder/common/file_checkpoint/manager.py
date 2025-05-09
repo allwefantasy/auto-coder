@@ -387,39 +387,6 @@ class FileChangeManager:
         )
         
         return '\n'.join(diff)
-
-    def clear_all_checkpoints(self) -> Dict[str, Any]:
-        """
-        清除所有的检查点数据，包括变更记录和备份文件。
-        
-        Returns:
-            Dict[str, Any]: 清理操作的结果，例如 {"cleared_changes": True, "cleared_backups": True}
-        """
-        logger.info("开始清除所有检查点数据...")
-        result = {"cleared_changes": False, "cleared_backups": False}
-        
-        try:
-            self.change_store.clear_all_changes()
-            result["cleared_changes"] = True
-            logger.info("已成功清除所有变更记录。")
-        except Exception as e:
-            logger.error(f"清除变更记录时出错: {str(e)}")
-            logger.exception(e)
-            
-        try:
-            self.backup_manager.clear_all_backups()
-            result["cleared_backups"] = True
-            logger.info("已成功清除所有备份文件。")
-        except Exception as e:
-            logger.error(f"清除备份文件时出错: {str(e)}")
-            logger.exception(e)
-            
-        if result["cleared_changes"] and result["cleared_backups"]:
-            logger.info("所有检查点数据已成功清除。")
-        else:
-            logger.warning("部分检查点数据未能成功清除。")
-            
-        return result
     
     def _get_absolute_path(self, file_path: str) -> str:
         """
