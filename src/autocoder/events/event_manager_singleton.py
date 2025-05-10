@@ -147,8 +147,7 @@ class EventManagerSingleton:
         # 排除默认的events.jsonl文件
         event_files = [f for f in event_files if os.path.basename(f) != "events.jsonl"]
         
-        if len(event_files) <= cls._max_event_files:
-            logger.info(f"事件文件数量({len(event_files)})未超过最大保留数量({cls._max_event_files})，无需清理")
+        if len(event_files) <= cls._max_event_files:            
             return
         
         # 解析文件名中的时间戳，格式为 uuid_YYYYMMDD-HHMMSS.jsonl
