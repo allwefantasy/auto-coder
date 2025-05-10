@@ -1279,6 +1279,9 @@ class AgenticEdit:
             yield LLMOutputEvent(text=buffer)
 
         # 这个要放在最后，防止其他关联的多个事件的信息中断
+        logger.info("================================================")
+        logger.info(f"last_metadata: {last_metadata.generated_tokens_count}")
+        logger.info("================================================")
         yield TokenUsageEvent(usage=last_metadata)            
     
 
