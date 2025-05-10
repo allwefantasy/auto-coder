@@ -1136,11 +1136,9 @@ class AgenticEdit:
                 logger.exception(
                     f"Failed to parse tool XML for <{tool_tag}>: {e}\nXML:\n{tool_xml}")
                 return None
-        
-        meta_holder = byzerllm.MetaHolder()
+                
         for content_chunk, metadata in generator:
-            global_cancel.check_and_raise(token=self.args.event_file)
-            meta_holder.meta = metadata            
+            global_cancel.check_and_raise(token=self.args.event_file)                      
             if not content_chunk:
                 continue
             buffer += content_chunk

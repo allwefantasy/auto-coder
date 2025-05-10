@@ -72,7 +72,7 @@ def stream_chat_with_continue(
     """
     
     count = 0
-    temp_conversations = conversations
+    temp_conversations = [] + conversations
     current_metadata = None
     metadatas = {}
     while True:
