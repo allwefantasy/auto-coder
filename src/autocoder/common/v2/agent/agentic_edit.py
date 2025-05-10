@@ -1141,11 +1141,15 @@ class AgenticEdit:
                 logger.exception(
                     f"Failed to parse tool XML for <{tool_tag}>: {e}\nXML:\n{tool_xml}")
                 return None
-                
-        for content_chunk, metadata in generator:
+
+        last_metadata = None        
+        for content_chunk, metadata in generator:            
             global_cancel.check_and_raise(token=self.args.event_file)                      
             if not content_chunk:
+                last_metadata = metadata                
                 continue
+            
+            last_metadata = metadata
             buffer += content_chunk
 
             while True:
@@ -1275,7 +1279,7 @@ class AgenticEdit:
             yield LLMOutputEvent(text=buffer)
 
         # 这个要放在最后，防止其他关联的多个事件的信息中断
-        yield TokenUsageEvent(usage=meta_holder.meta)            
+        yield TokenUsageEvent(usage=last_metadata)            
     
 
     def apply_pre_changes(self):
