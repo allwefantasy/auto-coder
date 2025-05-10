@@ -1152,6 +1152,10 @@ class AgenticEdit:
             last_metadata = metadata
             buffer += content_chunk
 
+            logger.info("================================================")
+            logger.info(f"===> last_metadata: {last_metadata.input_tokens_count} {last_metadata.generated_tokens_count}")
+            logger.info("================================================")
+
             while True:
                 # Check for transitions: thinking -> text, tool -> text, text -> thinking, text -> tool
                 next_event_pos = len(buffer)
