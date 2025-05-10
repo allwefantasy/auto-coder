@@ -401,6 +401,7 @@ class AutoCoderArgs(pydantic.BaseModel):
 
     context_prune_strategy: Optional[str] = "extract"
     context_prune: Optional[bool] = True
+    context_prune_safe_zone_tokens: Optional[int] = 32*1024
     context_prune_sliding_window_size: Optional[int] = 1000
     context_prune_sliding_window_overlap: Optional[int] = 100
 

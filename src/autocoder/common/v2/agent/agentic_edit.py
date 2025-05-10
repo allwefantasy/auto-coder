@@ -717,8 +717,8 @@ class AgenticEdit:
         
         FILES MENTIONED BY USER
 
-        The following are files that the user mentioned. 
-        Make sure you always start your task by using the read_file tool to get the content of the files.
+        The following are files or directories that the user mentioned. 
+        Make sure you always start your task by using the read_file tool to get the content of the files or list_files tool to list the files contained in the mentioned directories. If it is a directory, please use list_files to see what files it contains, and read the files as needed using read_file. If it is a file, please use read_file to read the file.
         <files>
         {{file_paths_str}}
         </files>
@@ -1253,9 +1253,7 @@ class AgenticEdit:
 
                 # If no event was processed in this iteration, break inner loop
                 if not found_event:
-                    break
-        
-        yield TokenUsageEvent(usage=meta_holder.meta)        
+                    break                
 
         # After generator exhausted, yield any remaining content
         if in_thinking_block:
@@ -1272,6 +1270,9 @@ class AgenticEdit:
         elif buffer:
             # Yield remaining plain text
             yield LLMOutputEvent(text=buffer)
+
+        # 这个要放在最后，防止其他关联的多个事件的信息中断
+        yield TokenUsageEvent(usage=meta_holder.meta)            
     
 
     def apply_pre_changes(self):

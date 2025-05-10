@@ -1,11 +1,11 @@
 import os
 from typing import Dict, Any, Optional
-from autocoder.common import AutoCoderArgs
+from autocoder.common import AutoCoderArgs,SourceCode
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import ReadFileTool, ToolResult
-from autocoder.common.v2.rag.context_pruner import PruneContext
-from autocoder.common.v2.rag.source_code import SourceCode
-from autocoder.common.v2.utils.token_counter import count_tokens
+from autocoder.common.context_pruner import PruneContext
+from autocoder.common import SourceCode
+from autocoder.rag.token_counter import count_tokens
 from loguru import logger
 import typing
 from autocoder.rag.loaders import (
@@ -27,16 +27,16 @@ class ReadFileToolResolver(BaseToolResolver):
             max_tokens=self.args.context_prune_safe_zone_tokens,
             args=self.args,
             llm=self.agent.context_prune_llm
-        ) if self.agent and hasattr(self.agent, 'context_prune_llm') else None
+        )
 
     def _prune_file_content(self, content: str, file_path: str) -> str:
         """对文件内容进行剪枝处理"""
-        if not self.args.enable_file_pruning or not self.context_pruner:
+        if not self.context_pruner:
             return content
 
         # 计算 token 数量
         tokens = count_tokens(content)
-        if tokens <= self.args.file_pruning_threshold:
+        if tokens <= self.args.context_prune_safe_zone_tokens:
             return content
 
         # 创建 SourceCode 对象

@@ -89,7 +89,8 @@ def stream_chat_with_continue(
             content = res[0]
             current_content += content 
             if current_metadata is None:
-                current_metadata = res[1]            
+                current_metadata = res[1]      
+                metadatas[count] = res[1]      
             else:
                 metadatas[count] = res[1]                
                 current_metadata.finish_reason = res[1].finish_reason     
