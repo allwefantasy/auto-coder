@@ -15,17 +15,11 @@ def chat_with_continue(
         llm: Union[ByzerLLM,SimpleByzerLLM], 
         conversations: List[dict], 
         llm_config: dict,
-        args: AutoCoderArgs,
-        max_tokens: Optional[int] = None
+        args: AutoCoderArgs
     ) -> ChatWithContinueResult:
     final_result = ChatWithContinueResult(content="", input_tokens_count=0, generated_tokens_count=0)
-    
-    current_llm_config = {**llm_config}
-    if max_tokens is not None:
-        current_llm_config["max_tokens"] = max_tokens
-        
     v = llm.chat_oai(
-        conversations=conversations, llm_config=current_llm_config)
+        conversations=conversations, llm_config=llm_config)
                 
     single_result = v[0].output
     metadata = v[0].metadata
@@ -37,13 +31,9 @@ def chat_with_continue(
         [{"role": "assistant", "content": single_result}]
     
     count = 1
-    while (metadata.get("finish_reason", "stop") == "length" and count < 6):
-        current_llm_config_loop = {**llm_config, "gen.response_prefix": True}
-        if max_tokens is not None:
-            current_llm_config_loop["max_tokens"] = max_tokens
-
+    while (metadata.get("finish_reason", "stop") == "length" and count < 6):        
         v = llm.chat_oai(
-            conversations=temp_conversations, llm_config=current_llm_config_loop)
+            conversations=temp_conversations, llm_config={**llm_config, "gen.response_prefix": True})
         metadata = v[0].metadata
         single_result += v[0].output
         final_result.input_tokens_count += metadata.get("input_tokens_count", 0)
@@ -68,8 +58,7 @@ def stream_chat_with_continue(
     llm: Union[ByzerLLM, SimpleByzerLLM], 
     conversations: List[dict], 
     llm_config: dict,
-    args: AutoCoderArgs,
-    max_tokens: Optional[int] = None
+    args: AutoCoderArgs
 ) -> Generator[Any, None, None]:
     """
     流式处理并继续生成内容，直到完成。
@@ -88,14 +77,10 @@ def stream_chat_with_continue(
     metadatas = {}
     while True:
         # 使用流式接口获取生成内容
-        current_llm_config = {**llm_config, "gen.response_prefix": True if count > 0 else False}
-        if max_tokens is not None:
-            current_llm_config["max_tokens"] = max_tokens
-            
         stream_generator = llm.stream_chat_oai(
             conversations=temp_conversations,
             delta_mode=True,
-            llm_config=current_llm_config
+            llm_config={**llm_config, "gen.response_prefix": True if count > 0 else False}
         )
         
         current_content = ""        
