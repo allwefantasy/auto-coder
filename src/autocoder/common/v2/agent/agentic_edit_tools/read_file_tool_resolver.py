@@ -21,6 +21,28 @@ class ReadFileToolResolver(BaseToolResolver):
         self.tool: ReadFileTool = tool  # For type hinting
         self.shadow_manager = self.agent.shadow_manager if self.agent else None
 
+    def _read_file_content(self, file_path_to_read: str) -> str:
+        content = ""
+        ext = os.path.splitext(file_path_to_read)[1].lower()
+
+        if ext == '.pdf':
+            logger.info(f"Extracting text from PDF: {file_path_to_read}")
+            content = extract_text_from_pdf(file_path_to_read)
+        elif ext == '.docx':
+            logger.info(f"Extracting text from DOCX: {file_path_to_read}")
+            content = extract_text_from_docx(file_path_to_read)
+        elif ext in ('.pptx', '.ppt'):
+            logger.info(f"Extracting text from PPT/PPTX: {file_path_to_read}")
+            slide_texts = []
+            for slide_identifier, slide_text_content in extract_text_from_ppt(file_path_to_read):
+                slide_texts.append(f"--- Slide {slide_identifier} ---\n{slide_text_content}")
+            content = "\n\n".join(slide_texts) if slide_texts else ""
+        else:
+            logger.info(f"Reading plain text file: {file_path_to_read}")
+            with open(file_path_to_read, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+        return content
+
     def resolve(self) -> ToolResult:
         file_path = self.tool.path
         source_dir = self.args.source_dir or "."
@@ -32,47 +54,33 @@ class ReadFileToolResolver(BaseToolResolver):
         #     return ToolResult(success=False, message=f"Error: Access denied. Attempted to read file outside the project directory: {file_path}")
 
         try:
-            try:
-                if self.shadow_manager:
-                    shadow_path = self.shadow_manager.to_shadow_path(abs_file_path)
-                    # If shadow file exists, read from it
-                    if os.path.exists(shadow_path) and os.path.isfile(shadow_path):
-                        with open(shadow_path, 'r', encoding='utf-8', errors='replace') as f:
-                            content = f.read()
-                        logger.info(f"[Shadow] Successfully read shadow file: {shadow_path}")
+            # Attempt to read from shadow file first
+            if self.shadow_manager:
+                shadow_path = self.shadow_manager.to_shadow_path(abs_file_path)
+                if os.path.exists(shadow_path) and os.path.isfile(shadow_path):
+                    try:
+                        # Use the new centralized method for shadow files
+                        content = self._read_file_content(shadow_path)
+                        logger.info(f"[Shadow] Successfully processed shadow file: {shadow_path}")
                         return ToolResult(success=True, message=f"{file_path}", content=content)
-            except Exception as e:
-                pass
-            # else fallback to original file
-            # Fallback to original file
+                    except Exception as e_shadow:
+                        logger.warning(f"Failed to read shadow file {shadow_path} with _read_file_content: {str(e_shadow)}. Falling back to original file.")
+                        # Fall through to read the original file if shadow read fails
+
+            # If not read from shadow, or shadow reading failed, proceed with original file
             if not os.path.exists(abs_file_path):
                 return ToolResult(success=False, message=f"Error: File not found at path: {file_path}")
             if not os.path.isfile(abs_file_path):
                 return ToolResult(success=False, message=f"Error: Path is not a file: {file_path}")
 
-            content = ""
-            ext = os.path.splitext(abs_file_path)[1].lower()
-
-            if ext == '.pdf':
-                logger.info(f"Extracting text from PDF: {abs_file_path}")
-                content = extract_text_from_pdf(abs_file_path)
-            elif ext == '.docx':
-                logger.info(f"Extracting text from DOCX: {abs_file_path}")
-                content = extract_text_from_docx(abs_file_path)
-            elif ext in ('.pptx', '.ppt'):
-                logger.info(f"Extracting text from PPT/PPTX: {abs_file_path}")
-                slide_texts = []
-                for slide_identifier, slide_content in extract_text_from_ppt(abs_file_path):
-                    slide_texts.append(f"--- Slide {slide_identifier} ---\n{slide_content}")
-                content = "\n\n".join(slide_texts) if slide_texts else ""
-            else:
-                logger.info(f"Reading plain text file: {abs_file_path}")
-                with open(abs_file_path, 'r', encoding='utf-8', errors='replace') as f:
-                    content = f.read()
-            
+            # Use the new centralized method for original files
+            content = self._read_file_content(abs_file_path)
             logger.info(f"Successfully processed file: {file_path}")
             return ToolResult(success=True, message=f"{file_path}", content=content)
+        
         except Exception as e:
+            # This will catch exceptions from _read_file_content if they are not caught internally,
+            # or other unexpected errors.
             logger.warning(f"Error processing file '{file_path}': {str(e)}")
             logger.exception(e) # Includes stack trace
             return ToolResult(success=False, message=f"An error occurred while processing the file '{file_path}': {str(e)}")
