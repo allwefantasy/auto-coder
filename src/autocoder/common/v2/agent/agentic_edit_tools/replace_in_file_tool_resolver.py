@@ -165,7 +165,14 @@ class ReplaceInFileToolResolver(BaseToolResolver):
                     )
                 }
                 change_group_id = self.args.event_file
-                self.agent.checkpoint_manager.apply_changes(changes,change_group_id)
+                
+                # 首先应用文件变更                
+                self.agent.checkpoint_manager.apply_changes_with_conversation(
+                            changes=changes,
+                            conversations=self.agent.current_conversations,
+                            change_group_id=change_group_id,
+                            metadata={"event_file": self.args.event_file}
+                        )                                
             else:
                 with open(target_path, 'w', encoding='utf-8') as f:
                     f.write(current_content)

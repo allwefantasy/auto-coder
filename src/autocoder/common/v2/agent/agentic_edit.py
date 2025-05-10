@@ -1284,6 +1284,162 @@ class AgenticEdit:
                                                source_dir=self.args.source_dir, error=str(e))
                 return
 
+    def get_available_checkpoints(self) -> List[Dict[str, Any]]:
+        """
+        获取可用的检查点列表
+        
+        Returns:
+            List[Dict[str, Any]]: 检查点信息列表
+        """
+        if not self.checkpoint_manager:
+            return []
+        
+        return self.checkpoint_manager.get_available_checkpoints()
+    
+    def rollback_to_checkpoint(self, checkpoint_id: str) -> bool:
+        """
+        回滚到指定的检查点，恢复文件状态和对话状态
+        
+        Args:
+            checkpoint_id: 检查点ID
+            
+        Returns:
+            bool: 是否成功回滚
+        """
+        if not self.checkpoint_manager:
+            logger.error("无法回滚：检查点管理器未初始化")
+            return False
+        
+        try:
+            # 回滚文件变更
+            undo_result, checkpoint = self.checkpoint_manager.undo_change_group_with_conversation(checkpoint_id)
+            if not undo_result.success:
+                logger.error(f"回滚文件变更失败: {undo_result.errors}")
+                return False
+            
+            # 恢复对话状态
+            if checkpoint:
+                self.current_conversations = checkpoint.conversations
+                logger.info(f"已恢复对话状态，包含 {len(checkpoint.conversations)} 条消息")
+                return True
+            else:
+                logger.warning(f"未找到关联的对话检查点: {checkpoint_id}，只回滚了文件变更")
+                return undo_result.success
+        except Exception as e:
+            logger.exception(f"回滚到检查点 {checkpoint_id} 失败: {str(e)}")
+            return False
+    
+    def handle_rollback_command(self, command: str) -> str:
+        """
+        处理回滚相关的命令
+        
+        Args:
+            command: 命令字符串，如 "rollback list", "rollback to <id>", "rollback info <id>"
+            
+        Returns:
+            str: 命令执行结果
+        """
+        if command == "rollback list":
+            # 列出可用的检查点
+            checkpoints = self.get_available_checkpoints()
+            if not checkpoints:
+                return "没有可用的检查点。"
+            
+            result = "可用的检查点列表：\n"
+            for i, cp in enumerate(checkpoints):
+                time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(cp["timestamp"]))
+                result += f"{i+1}. ID: {cp['id'][:8]}... | 时间: {time_str} | 变更文件数: {cp['changes_count']}"
+                result += f" | {'包含对话状态' if cp['has_conversation'] else '不包含对话状态'}\n"
+            
+            return result
+        
+        elif command.startswith("rollback info "):
+            # 显示检查点详情
+            cp_id = command[len("rollback info "):].strip()
+            
+            # 查找检查点
+            checkpoints = self.get_available_checkpoints()
+            target_cp = None
+            
+            # 支持通过序号或ID查询
+            if cp_id.isdigit() and 1 <= int(cp_id) <= len(checkpoints):
+                target_cp = checkpoints[int(cp_id) - 1]
+            else:
+                for cp in checkpoints:
+                    if cp["id"].startswith(cp_id):
+                        target_cp = cp
+                        break
+            
+            if not target_cp:
+                return f"未找到ID为 {cp_id} 的检查点。"
+            
+            # 获取检查点详细信息
+            time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(target_cp["timestamp"]))
+            
+            # 获取变更文件列表
+            changes = self.checkpoint_manager.get_changes_by_group(target_cp["id"])
+            changed_files = [change.file_path for change in changes]
+            
+            # 获取对话状态信息
+            conversation_info = "无对话状态信息"
+            if target_cp["has_conversation"] and hasattr(self.checkpoint_manager, 'conversation_store'):
+                checkpoint = self.checkpoint_manager.conversation_store.get_checkpoint(target_cp["id"])
+                if checkpoint and checkpoint.conversations:
+                    conversation_info = f"包含 {len(checkpoint.conversations)} 条对话消息"
+            
+            result = f"检查点详情：\n"
+            result += f"ID: {target_cp['id']}\n"
+            result += f"创建时间: {time_str}\n"
+            result += f"变更文件数: {target_cp['changes_count']}\n"
+            result += f"对话状态: {conversation_info}\n\n"
+            
+            if changed_files:
+                result += "变更文件列表：\n"
+                for i, file_path in enumerate(changed_files):
+                    result += f"{i+1}. {file_path}\n"
+            
+            return result
+        
+        elif command.startswith("rollback to "):
+            # 回滚到指定检查点
+            cp_id = command[len("rollback to "):].strip()
+            
+            # 查找检查点
+            checkpoints = self.get_available_checkpoints()
+            target_cp = None
+            
+            # 支持通过序号或ID回滚
+            if cp_id.isdigit() and 1 <= int(cp_id) <= len(checkpoints):
+                target_cp = checkpoints[int(cp_id) - 1]
+            else:
+                for cp in checkpoints:
+                    if cp["id"].startswith(cp_id):
+                        target_cp = cp
+                        break
+            
+            if not target_cp:
+                return f"未找到ID为 {cp_id} 的检查点。"
+            
+            # 执行回滚
+            success = self.rollback_to_checkpoint(target_cp["id"])
+            
+            if success:
+                # 获取变更文件列表
+                changes = self.checkpoint_manager.get_changes_by_group(target_cp["id"])
+                changed_files = [change.file_path for change in changes]
+                
+                result = f"成功回滚到检查点 {target_cp['id'][:8]}...\n"
+                result += f"恢复了 {len(changed_files)} 个文件的状态"
+                
+                if target_cp["has_conversation"]:
+                    result += f"\n同时恢复了对话状态"
+                
+                return result
+            else:
+                return f"回滚到检查点 {target_cp['id'][:8]}... 失败。"
+        
+        return "未知命令。可用命令：rollback list, rollback info <id>, rollback to <id>"
+    
     def apply_changes(self):
         """
         Apply all tracked file changes to the original project directory.

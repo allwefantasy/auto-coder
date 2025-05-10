@@ -16,6 +16,7 @@ from autocoder.common.file_checkpoint.models import (
 )
 from autocoder.common.file_checkpoint.backup import FileBackupManager
 from autocoder.common.file_checkpoint.store import FileChangeStore
+from autocoder.common.file_checkpoint.conversation_checkpoint import ConversationCheckpointStore,ConversationCheckpoint
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,8 @@ class FileChangeManager:
     """文件变更管理器，提供高层次的API接口"""
     
     def __init__(self, project_dir: str, backup_dir: Optional[str] = None, 
-                 store_dir: Optional[str] = None, max_history: int = 50):
+                 store_dir: Optional[str] = None, max_history: int = 50,
+                 conversation_store_dir: Optional[str] = None):
         """
         初始化文件变更管理器
         
@@ -33,10 +35,61 @@ class FileChangeManager:
             backup_dir: 备份文件存储目录，默认为用户主目录下的.autocoder/backups
             store_dir: 变更记录存储目录，默认为用户主目录下的.autocoder/changes
             max_history: 最大保存的历史版本数量
+            conversation_store_dir: 对话检查点存储目录
         """
         self.project_dir = os.path.abspath(project_dir)
         self.backup_manager = FileBackupManager(backup_dir)
         self.change_store = FileChangeStore(store_dir, max_history)
+        
+        # 初始化对话检查点存储
+        if conversation_store_dir is None and store_dir is not None:
+            # 默认在变更记录存储目录的同级目录创建 conversation_checkpoints 目录
+            parent_dir = os.path.dirname(store_dir)
+            conversation_store_dir = os.path.join(parent_dir, "conversation_checkpoints")
+        
+        try:            
+            self.conversation_store = ConversationCheckpointStore(conversation_store_dir, max_history)
+            logger.info(f"对话检查点存储初始化成功: {conversation_store_dir}")
+        except ImportError as e:
+            logger.warning(f"对话检查点存储初始化失败: {str(e)}")
+            self.conversation_store = None
+    
+    def apply_changes_with_conversation(self, changes: Dict[str, FileChange], 
+                                   conversations: List[Dict[str, Any]],
+                                   change_group_id: Optional[str] = None,
+                                   metadata: Optional[Dict[str, Any]] = None) -> ApplyResult:
+        """
+        应用文件变更并保存对话状态
+        
+        Args:
+            changes: 文件变更字典，格式为 {file_path: FileChange}
+            conversations: 当前对话历史
+            change_group_id: 变更组ID，用于将相关变更归为一组
+            metadata: 元数据，可包含额外信息
+            
+        Returns:
+            ApplyResult: 应用结果对象
+        """
+        # 应用文件变更
+        result = self.apply_changes(changes, change_group_id)
+        
+        if result.success and self.conversation_store is not None:
+            try:                
+                
+                # 创建并保存对话检查点
+                checkpoint_id = change_group_id or result.change_ids[0] if result.change_ids else str(uuid.uuid4())
+                checkpoint = ConversationCheckpoint(
+                    checkpoint_id=checkpoint_id,
+                    timestamp=time.time(),
+                    conversations=conversations,
+                    metadata=metadata
+                )
+                self.conversation_store.save_checkpoint(checkpoint)
+                logger.info(f"已保存对话检查点: {checkpoint_id}")
+            except Exception as e:
+                logger.error(f"保存对话检查点失败: {str(e)}")
+        
+        return result
     
     def apply_changes(self, changes: Dict[str, FileChange], change_group_id: Optional[str] = None) -> ApplyResult:
         """
@@ -152,6 +205,27 @@ class FileChangeManager:
         
         return diff_results
     
+    def undo_last_change_with_conversation(self) -> Tuple[UndoResult, Optional[ConversationCheckpoint]]:
+        """
+        撤销最近的一次变更并恢复对话状态
+        
+        Returns:
+            Tuple[UndoResult, Optional[ConversationCheckpoint]]: 撤销结果和恢复的对话检查点
+        """
+        # 获取最近的变更记录
+        latest_changes = self.change_store.get_latest_changes(limit=1)
+        if not latest_changes:
+            return UndoResult(success=False, errors={"general": "没有找到最近的变更记录"}), None
+        
+        latest_change = latest_changes[0]
+        
+        # 如果最近的变更属于一个组，撤销整个组
+        if latest_change.group_id:
+            return self.undo_change_group_with_conversation(latest_change.group_id)
+        else:
+            # 否则只撤销这一个变更
+            return self.undo_change_with_conversation(latest_change.change_id)
+    
     def undo_last_change(self) -> UndoResult:
         """
         撤销最近的一次变更
@@ -172,6 +246,39 @@ class FileChangeManager:
         else:
             # 否则只撤销这一个变更
             return self.undo_change(latest_change.change_id)
+    
+    def undo_change_with_conversation(self, change_id: str) -> Tuple[UndoResult, Optional[ConversationCheckpoint]]:
+        """
+        撤销指定的变更并恢复对话状态
+        
+        Args:
+            change_id: 变更记录ID
+            
+        Returns:
+            Tuple[UndoResult, Optional[ConversationCheckpoint]]: 撤销结果和恢复的对话检查点
+        """
+        # 获取变更记录
+        change_record = self.change_store.get_change(change_id)
+        if change_record is None:
+            return UndoResult(success=False, errors={"general": f"变更记录 {change_id} 不存在"}), None
+        
+        # 获取关联的对话检查点
+        checkpoint = None
+        checkpoint_id = change_record.group_id or change_id
+        if self.conversation_store is not None:
+            try:
+                checkpoint = self.conversation_store.get_checkpoint(checkpoint_id)
+                if checkpoint:
+                    logger.info(f"找到关联的对话检查点: {checkpoint_id}")
+                else:
+                    logger.info(f"未找到关联的对话检查点: {checkpoint_id}")
+            except Exception as e:
+                logger.error(f"获取对话检查点失败: {str(e)}")
+        
+        # 撤销文件变更
+        undo_result = self.undo_change(change_id)
+        
+        return undo_result, checkpoint
     
     def undo_change(self, change_id: str) -> UndoResult:
         """
@@ -234,6 +341,38 @@ class FileChangeManager:
         
         return result
             
+    def undo_change_group_with_conversation(self, group_id: str) -> Tuple[UndoResult, Optional[ConversationCheckpoint]]:
+        """
+        撤销指定组的所有变更并恢复对话状态
+        
+        Args:
+            group_id: 变更组ID
+            
+        Returns:
+            Tuple[UndoResult, Optional[ConversationCheckpoint]]: 撤销结果和恢复的对话检查点
+        """
+        # 获取组内的所有变更记录
+        changes = self.change_store.get_changes_by_group(group_id)
+        if not changes:
+            return UndoResult(success=False, errors={"general": f"变更组 {group_id} 不存在或为空"}), None
+        
+        # 获取关联的对话检查点
+        checkpoint = None
+        if self.conversation_store is not None:
+            try:
+                checkpoint = self.conversation_store.get_checkpoint(group_id)
+                if checkpoint:
+                    logger.info(f"找到关联的对话检查点: {group_id}")
+                else:
+                    logger.info(f"未找到关联的对话检查点: {group_id}")
+            except Exception as e:
+                logger.error(f"获取对话检查点失败: {str(e)}")
+        
+        # 撤销文件变更
+        undo_result = self.undo_change_group(group_id)
+        
+        return undo_result, checkpoint
+    
     def undo_change_group(self, group_id: str) -> UndoResult:
         """
         撤销指定组的所有变更
@@ -264,6 +403,39 @@ class FileChangeManager:
             result.errors.update(change_result.errors)
         
         return result
+    
+    def undo_to_version_with_conversation(self, version_id: str) -> Tuple[UndoResult, Optional[ConversationCheckpoint]]:
+        """
+        撤销到指定的历史版本并恢复对话状态
+        
+        Args:
+            version_id: 目标版本ID（变更记录ID）
+            
+        Returns:
+            Tuple[UndoResult, Optional[ConversationCheckpoint]]: 撤销结果和恢复的对话检查点
+        """
+        # 获取目标版本的变更记录
+        target_change = self.change_store.get_change(version_id)
+        if target_change is None:
+            return UndoResult(success=False, errors={"general": f"变更记录 {version_id} 不存在"}), None
+        
+        # 获取关联的对话检查点
+        checkpoint = None
+        checkpoint_id = target_change.group_id or version_id
+        if self.conversation_store is not None:
+            try:
+                checkpoint = self.conversation_store.get_checkpoint(checkpoint_id)
+                if checkpoint:
+                    logger.info(f"找到关联的对话检查点: {checkpoint_id}")
+                else:
+                    logger.info(f"未找到关联的对话检查点: {checkpoint_id}")
+            except Exception as e:
+                logger.error(f"获取对话检查点失败: {str(e)}")
+        
+        # 撤销文件变更
+        undo_result = self.undo_to_version(version_id)
+        
+        return undo_result, checkpoint
     
     def undo_to_version(self, version_id: str) -> UndoResult:
         """
@@ -358,6 +530,41 @@ class FileChangeManager:
             List[Tuple[str, float, int]]: 变更组ID、最新时间戳和变更数量的列表
         """
         return self.change_store.get_change_groups(limit)
+    
+    def get_available_checkpoints(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        获取可用的检查点列表，包含对话状态信息
+        
+        Args:
+            limit: 返回的检查点数量限制
+            
+        Returns:
+            List[Dict[str, Any]]: 检查点信息列表
+        """
+        # 获取变更组列表
+        change_groups = self.get_change_groups(limit)
+        
+        # 构建检查点信息
+        checkpoints = []
+        for group_id, timestamp, count in change_groups:
+            has_conversation = False
+            
+            # 检查是否有对话检查点
+            if self.conversation_store is not None:
+                try:
+                    checkpoint = self.conversation_store.get_checkpoint(group_id)
+                    has_conversation = checkpoint is not None
+                except Exception as e:
+                    logger.error(f"获取对话检查点失败: {str(e)}")
+            
+            checkpoints.append({
+                "id": group_id,
+                "timestamp": timestamp,
+                "changes_count": count,
+                "has_conversation": has_conversation
+            })
+        
+        return checkpoints
     
     def get_diff_text(self, old_content: str, new_content: str) -> str:
         """
