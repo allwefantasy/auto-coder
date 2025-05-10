@@ -888,14 +888,15 @@ class AgenticEdit:
             event_count = 0
             mark_event_should_finish = False
             for event in parsed_events:
+                global_cancel.check_and_raise(token=self.args.event_file)
                 event_count += 1
+                
                 if mark_event_should_finish:
                     if isinstance(event, TokenUsageEvent):
                         logger.info("Yielding token usage event")
                         yield event
                     continue
-                # logger.info(f"Processing event #{event_count}: {type(event).__name__}")
-                global_cancel.check_and_raise(token=self.args.event_file)
+                                
                 if isinstance(event, (LLMOutputEvent, LLMThinkingEvent)):
                     assistant_buffer += event.text
                     logger.debug(f"Accumulated {len(assistant_buffer)} chars in assistant buffer")
