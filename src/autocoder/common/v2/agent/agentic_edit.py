@@ -1018,7 +1018,8 @@ class AgenticEdit:
                         f"Added tool result to conversations for tool {type(tool_obj).__name__}")
                     logger.info(f"Breaking LLM cycle after executing tool: {tool_name}")
                     
-                    # 一次交互只能有一次工具，剩下的其实就没有用了，我们只是为了获得最后的token数和费用
+                    # 一次交互只能有一次工具，剩下的其实就没有用了，但是如果不让流式处理完，我们就无法获取服务端
+                    # 返回的token消耗和计费，所以通过此标记来完成进入空转，直到流式走完，获取到最后的token消耗和计费
                     mark_event_should_finish=True
                     # break  # After tool execution and result, break to start a new LLM cycle
 
