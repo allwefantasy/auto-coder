@@ -868,12 +868,17 @@ class AgenticEdit:
             assistant_buffer = ""
             logger.info("Initializing stream chat with LLM")
 
-            ## 实际请求大模型
-            llm_response_gen = stream_chat_with_continue(
-                llm=self.llm,
+            # ## 实际请求大模型
+            # llm_response_gen = stream_chat_with_continue(
+            #     llm=self.llm,
+            #     conversations=conversations,
+            #     llm_config={},  # Placeholder for future LLM configs
+            #     args=self.args
+            # )
+
+            llm_response_gen = self.llm.stream_chat_oai(
                 conversations=conversations,
-                llm_config={},  # Placeholder for future LLM configs
-                args=self.args
+                delta_mode=True            
             )
             
             logger.info("Starting to parse LLM response stream")
