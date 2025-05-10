@@ -1020,7 +1020,7 @@ class AgenticEdit:
                     
                     # 一次交互只能有一次工具，剩下的其实就没有用了，我们只是为了获得最后的token数和费用
                     mark_event_should_finish=True
-                    break  # After tool execution and result, break to start a new LLM cycle
+                    # break  # After tool execution and result, break to start a new LLM cycle
 
                 elif isinstance(event, ErrorEvent):
                     logger.error(f"Error event occurred: {event.message}")
