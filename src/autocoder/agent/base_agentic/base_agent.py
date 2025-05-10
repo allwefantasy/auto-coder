@@ -794,10 +794,18 @@ class BaseAgent(ABC):
                 llm_response_gen)
 
             event_count = 0
+            mark_event_should_finish = False
             for event in parsed_events:
                 event_count += 1
                 logger.info(f"Processing event #{event_count}: {type(event).__name__}")
                 global_cancel.check_and_raise(token=self.args.event_file)
+
+                if mark_event_should_finish:
+                    if isinstance(event, TokenUsageEvent):
+                        logger.info("Yielding token usage event")
+                        yield event
+                    continue
+
                 if isinstance(event, (LLMOutputEvent, LLMThinkingEvent)):
                     assistant_buffer += event.text
                     logger.debug(f"Accumulated {len(assistant_buffer)} chars in assistant buffer")
@@ -903,7 +911,11 @@ class BaseAgent(ABC):
                     logger.info(
                         f"Added tool result to conversations for tool {type(tool_obj).__name__}")
                     logger.info(f"Breaking LLM cycle after executing tool: {tool_name}")
-                    break  # After tool execution and result, break to start a new LLM cycle
+                    
+                    # 一次交互只能有一次工具，剩下的其实就没有用了，但是如果不让流式处理完，我们就无法获取服务端
+                    # 返回的token消耗和计费，所以通过此标记来完成进入空转，直到流式走完，获取到最后的token消耗和计费
+                    mark_event_should_finish = True
+                    # break  # After tool execution and result, break to start a new LLM cycle
 
                 elif isinstance(event, ErrorEvent):
                     logger.error(f"Error event occurred: {event.message}")
@@ -1022,13 +1034,15 @@ class BaseAgent(ABC):
                     f"Failed to parse tool XML for <{tool_tag}>: {e}\nXML:\n{tool_xml}")
                 return None
         
-        meta_holder = byzerllm.MetaHolder() 
+        last_metadata = None      
         for content_chunk, metadata in generator:
-            global_cancel.check_and_raise(token=self.args.event_file)                                    
-            meta_holder.meta = metadata            
+            global_cancel.check_and_raise(token=self.args.event_file)                      
             if not content_chunk:
+                last_metadata = metadata                
                 continue
-            buffer += content_chunk
+            
+            last_metadata = metadata
+            buffer += content_chunk  
 
             while True:
                 # Check for transitions: thinking -> text, tool -> text, text -> thinking, text -> tool
@@ -1138,9 +1152,7 @@ class BaseAgent(ABC):
 
                 # If no event was processed in this iteration, break inner loop
                 if not found_event:
-                    break
-        
-        yield TokenUsageEvent(usage=meta_holder.meta)        
+                    break               
 
         # After generator exhausted, yield any remaining content
         if in_thinking_block:
@@ -1157,6 +1169,9 @@ class BaseAgent(ABC):
         elif buffer:
             # Yield remaining plain text
             yield LLMOutputEvent(text=buffer)
+
+        # 这个要放在最后，防止其他关联的多个事件的信息中断
+        yield TokenUsageEvent(usage=last_metadata)     
     
     def run_with_events(self, request: AgentRequest):
         """
