@@ -96,6 +96,10 @@ class ErrorEvent(BaseModel):
     """Represents an error during the process."""
     message: str
 
+class WindowLengthChangeEvent(BaseModel):
+    """Represents the token usage in the conversation window."""
+    tokens_used: int
+
 # Deprecated: Will be replaced by specific Event types
 # class PlainTextOutput(BaseModel):
 #     text: str

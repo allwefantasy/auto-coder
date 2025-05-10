@@ -72,11 +72,14 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           # Event Types
                                                           LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
                                                           ToolResultEvent, CompletionEvent, PlanModeRespondEvent, ErrorEvent, TokenUsageEvent,
+                                                          WindowLengthChangeEvent,
                                                           # Import specific tool types for display mapping
                                                           ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
                                                           ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
                                                           AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
                                                           )
+
+from autocoder.rag.token_counter import count_tokens
 
 # Map Pydantic Tool Models to their Resolver Classes
 TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
@@ -117,6 +120,8 @@ class AgenticEdit:
         # Removed self.max_iterations
         # Note: This might need updating based on the new flow
         self.conversation_history = conversation_history
+
+        self.current_conversations = []
         self.memory_config = memory_config
         self.command_config = command_config  # Note: command_config might be unused now
         self.project_type_analyzer = ProjectTypeAnalyzer(
@@ -798,7 +803,7 @@ class AgenticEdit:
         # Join with newline for readability, matching prompt examples
         return "\n".join(xml_parts)
 
-    def analyze(self, request: AgenticEditRequest) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ToolResultEvent, CompletionEvent, ErrorEvent], None, None]:
+    def analyze(self, request: AgenticEditRequest) -> Generator[Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ToolResultEvent, CompletionEvent, ErrorEvent, WindowLengthChangeEvent], None, None]:
         """
         Analyzes the user request, interacts with the LLM, parses responses,
         executes tools, and yields structured events for visualization until completion or error.
@@ -808,6 +813,7 @@ class AgenticEdit:
         logger.info(f"Generated system prompt with length: {len(system_prompt)}")
         
         # print(system_prompt)
+
         conversations = [
             {"role": "system", "content": system_prompt},
         ] 
@@ -816,8 +822,16 @@ class AgenticEdit:
             "role": "user", "content": request.user_input
         })        
         
+        
+        self.current_conversations = conversations
+        
+        # 计算初始对话窗口长度并触发事件
+        conversation_str = json.dumps(conversations, ensure_ascii=False)
+        current_tokens = count_tokens(conversation_str)
+        yield WindowLengthChangeEvent(tokens_used=current_tokens)
+        
         logger.info(
-            f"Initial conversation history size: {len(conversations)}")
+            f"Initial conversation history size: {len(conversations)}, tokens: {current_tokens}")
                 
         iteration_count = 0
         tool_executed = False
@@ -870,11 +884,18 @@ class AgenticEdit:
 
                     # Append assistant's thoughts and the tool call to history
                     logger.info(f"Adding assistant message with tool call to conversation history")
+                    
+                    # 记录当前对话的token数量
                     conversations.append({
                         "role": "assistant",
                         "content": assistant_buffer + tool_xml
                     })                    
                     assistant_buffer = ""  # Reset buffer after tool call
+                    
+                    # 计算当前对话的总 token 数量并触发事件
+                    current_conversation_str = json.dumps(conversations, ensure_ascii=False)
+                    total_tokens = count_tokens(current_conversation_str)
+                    yield WindowLengthChangeEvent(tokens_used=total_tokens)
 
                     yield event  # Yield the ToolCallEvent for display
                     logger.info("Yielded ToolCallEvent")
@@ -954,10 +975,18 @@ class AgenticEdit:
 
                     # Append the tool result (as user message) to history
                     logger.info("Adding tool result to conversation history")
+                    
+                    # 添加工具结果到对话历史
                     conversations.append({
                         "role": "user",  # Simulating the user providing the tool result
                         "content": error_xml
                     })
+                    
+                    # 计算当前对话的总 token 数量并触发事件
+                    current_conversation_str = json.dumps(conversations, ensure_ascii=False)
+                    total_tokens = count_tokens(current_conversation_str)
+                    yield WindowLengthChangeEvent(tokens_used=total_tokens)
+                    
                     logger.info(
                         f"Added tool result to conversations for tool {type(tool_obj).__name__}")
                     logger.info(f"Breaking LLM cycle after executing tool: {tool_name}")
@@ -980,6 +1009,7 @@ class AgenticEdit:
                 # Append any remaining assistant buffer to history if it wasn't followed by a tool
                 if assistant_buffer:
                     logger.info(f"Appending assistant buffer to history: {len(assistant_buffer)} chars")
+                    
                     last_message = conversations[-1]
                     if last_message["role"] != "assistant":
                         logger.info("Adding new assistant message")
@@ -988,13 +1018,24 @@ class AgenticEdit:
                     elif last_message["role"] == "assistant":
                         logger.info("Appending to existing assistant message")
                         last_message["content"] += assistant_buffer
+                        
+                    # 计算当前对话的总 token 数量并触发事件
+                    current_conversation_str = json.dumps(conversations, ensure_ascii=False)
+                    total_tokens = count_tokens(current_conversation_str)
+                    yield WindowLengthChangeEvent(tokens_used=total_tokens)
                 
                 # 添加系统提示，要求LLM必须使用工具或明确结束，而不是直接退出
                 logger.info("Adding system reminder to use tools or attempt completion")
+                
                 conversations.append({
                     "role": "user",
                     "content": "NOTE: You must use an appropriate tool (such as read_file, write_to_file, execute_command, etc.) or explicitly complete the task (using attempt_completion). Do not provide text responses without taking concrete actions. Please select a suitable tool to continue based on the user's task."
                 })
+                
+                # 计算当前对话的总 token 数量并触发事件
+                current_conversation_str = json.dumps(conversations, ensure_ascii=False)
+                total_tokens = count_tokens(current_conversation_str)
+                yield WindowLengthChangeEvent(tokens_used=total_tokens)
                 # 继续循环，让 LLM 再思考，而不是 break
                 logger.info("Continuing the LLM interaction loop without breaking")
                 continue
@@ -1371,7 +1412,12 @@ class AgenticEdit:
                     accumulated_token_usage["input_cost"] += input_cost
                     accumulated_token_usage["output_cost"] += output_cost
                     
-                if isinstance(event, LLMThinkingEvent):
+                elif isinstance(event, WindowLengthChangeEvent):
+                    # 显示当前会话的token数量
+                    logger.info(f"当前会话总 tokens: {event.tokens_used}")
+                    console.print(f"[dim]当前会话总 tokens: {event.tokens_used}[/dim]")
+                    
+                elif isinstance(event, LLMThinkingEvent):
                     # Render thinking within a less prominent style, maybe grey?
                     console.print(f"[grey50]{event.text}[/grey50]", end="")
                 elif isinstance(event, LLMOutputEvent):
@@ -1535,18 +1581,7 @@ class AgenticEdit:
         standard event system format and writing them using the event manager.
         """
         event_manager = get_event_manager(self.args.event_file)
-        self.apply_pre_changes()
-
-        # 用于累计TokenUsageEvent数据
-        accumulated_token_usage = {
-            "model_name": "",
-            "elapsed_time": 0.0,
-            "first_token_time": 0.0,
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "input_cost": 0.0,
-            "output_cost": 0.0
-        }
+        self.apply_pre_changes()              
 
         try:
             event_stream = self.analyze(request)
@@ -1624,15 +1659,20 @@ class AgenticEdit:
 
                     # 添加日志记录
                     logger.info(f"Token Usage Details: Model={model_name}, Input Tokens={last_meta.input_tokens_count}, Output Tokens={last_meta.generated_tokens_count}, Input Cost=${input_cost:.6f}, Output Cost=${output_cost:.6f}")
-
-                    # 累计TokenUsageEvent数据而不是立即发送
-                    accumulated_token_usage["model_name"] = model_name
-                    if accumulated_token_usage["first_token_time"] == 0.0:
-                        accumulated_token_usage["first_token_time"] = last_meta.first_token_time
-                    accumulated_token_usage["input_tokens"] += last_meta.input_tokens_count
-                    accumulated_token_usage["output_tokens"] += last_meta.generated_tokens_count
-                    accumulated_token_usage["input_cost"] += input_cost
-                    accumulated_token_usage["output_cost"] += output_cost
+                    
+                    # 直接将每次的 TokenUsageEvent 写入到事件中
+                    metadata.path = "/agent/edit/token_usage"
+                    content = EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
+                        model_name=model_name,
+                        elapsed_time=0.0,
+                        first_token_time=last_meta.first_token_time,
+                        input_tokens=last_meta.input_tokens_count,
+                        output_tokens=last_meta.generated_tokens_count,
+                        input_cost=input_cost,
+                        output_cost=output_cost
+                    ).to_dict())
+                    event_manager.write_result(content=content.to_dict(), metadata=metadata.to_dict())
+                                       
 
                 elif isinstance(agent_event, CompletionEvent):
                     # 在这里完成实际合并
@@ -1640,19 +1680,7 @@ class AgenticEdit:
                         self.apply_changes()
                     except Exception as e:
                         logger.exception(
-                            f"Error merging shadow changes to project: {e}")
-                    
-                    # 发送累计的TokenUsageEvent数据
-                    get_event_manager(self.args.event_file).write_result(
-                        EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
-                            model_name=accumulated_token_usage["model_name"],
-                            elapsed_time=0.0,
-                            first_token_time=accumulated_token_usage["first_token_time"],
-                            input_tokens=accumulated_token_usage["input_tokens"],
-                            output_tokens=accumulated_token_usage["output_tokens"],
-                            input_cost=accumulated_token_usage["input_cost"],
-                            output_cost=accumulated_token_usage["output_cost"]
-                        ).to_dict()), metadata=metadata.to_dict())
+                            f"Error merging shadow changes to project: {e}")                                        
 
                     metadata.path = "/agent/edit/completion"
                     content = EventContentCreator.create_completion(
@@ -1664,20 +1692,22 @@ class AgenticEdit:
                     )
                     event_manager.write_completion(
                         content=content.to_dict(), metadata=metadata.to_dict())
-                elif isinstance(agent_event, ErrorEvent):
-                    # 发送累计的TokenUsageEvent数据（在错误情况下也需要发送）
-                    if accumulated_token_usage["input_tokens"] > 0:
-                        get_event_manager(self.args.event_file).write_result(
-                            EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
-                                model_name=accumulated_token_usage["model_name"],
-                                elapsed_time=0.0,
-                                first_token_time=accumulated_token_usage["first_token_time"],
-                                input_tokens=accumulated_token_usage["input_tokens"],
-                                output_tokens=accumulated_token_usage["output_tokens"],
-                                input_cost=accumulated_token_usage["input_cost"],
-                                output_cost=accumulated_token_usage["output_cost"]
-                            ).to_dict()), metadata=metadata.to_dict())
+                elif isinstance(agent_event, WindowLengthChangeEvent):
+                    # 处理窗口长度变化事件
+                    metadata.path = "/agent/edit/window_length_change"
+                    content = EventContentCreator.create_result(
+                        content={
+                            "tokens_used": agent_event.tokens_used
+                        },
+                        metadata={}
+                    )
+                    event_manager.write_result(
+                        content=content.to_dict(), metadata=metadata.to_dict())
                     
+                    # 记录日志
+                    logger.info(f"当前会话总 tokens: {agent_event.tokens_used}")
+                    
+                elif isinstance(agent_event, ErrorEvent):                                        
                     metadata.path = "/agent/edit/error"
                     content = EventContentCreator.create_error(
                         error_code="AGENT_ERROR",
@@ -1707,18 +1737,7 @@ class AgenticEdit:
                 is_streaming=False,
                 stream_out_type="/agent/edit/error")
                 
-            # 发送累计的TokenUsageEvent数据（在错误情况下也需要发送）
-            if accumulated_token_usage["input_tokens"] > 0:
-                get_event_manager(self.args.event_file).write_result(
-                    EventContentCreator.create_result(content=EventContentCreator.ResultTokenStatContent(
-                        model_name=accumulated_token_usage["model_name"],
-                        elapsed_time=0.0,
-                        first_token_time=accumulated_token_usage["first_token_time"],
-                        input_tokens=accumulated_token_usage["input_tokens"],
-                        output_tokens=accumulated_token_usage["output_tokens"],
-                        input_cost=accumulated_token_usage["input_cost"],
-                        output_cost=accumulated_token_usage["output_cost"]
-                    ).to_dict()), metadata=metadata.to_dict())
+            # 发送累计的TokenUsageEvent数据（在错误情况下也需要发送）            
                 
             error_content = EventContentCreator.create_error(
                 error_code="AGENT_FATAL_ERROR",
