@@ -2,7 +2,10 @@ import os
 from typing import Dict, Any, Optional
 from autocoder.common import AutoCoderArgs
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
-from autocoder.common.v2.agent.agentic_edit_types import ReadFileTool, ToolResult  # Import ToolResult from types
+from autocoder.common.v2.agent.agentic_edit_types import ReadFileTool, ToolResult
+from autocoder.common.v2.rag.context_pruner import PruneContext
+from autocoder.common.v2.rag.source_code import SourceCode
+from autocoder.common.v2.utils.token_counter import count_tokens
 from loguru import logger
 import typing
 from autocoder.rag.loaders import (
@@ -20,6 +23,40 @@ class ReadFileToolResolver(BaseToolResolver):
         super().__init__(agent, tool, args)
         self.tool: ReadFileTool = tool  # For type hinting
         self.shadow_manager = self.agent.shadow_manager if self.agent else None
+        self.context_pruner = PruneContext(
+            max_tokens=self.args.context_prune_safe_zone_tokens,
+            args=self.args,
+            llm=self.agent.context_prune_llm
+        ) if self.agent and hasattr(self.agent, 'context_prune_llm') else None
+
+    def _prune_file_content(self, content: str, file_path: str) -> str:
+        """对文件内容进行剪枝处理"""
+        if not self.args.enable_file_pruning or not self.context_pruner:
+            return content
+
+        # 计算 token 数量
+        tokens = count_tokens(content)
+        if tokens <= self.args.file_pruning_threshold:
+            return content
+
+        # 创建 SourceCode 对象
+        source_code = SourceCode(
+            module_name=file_path,
+            source_code=content,
+            tokens=tokens
+        )
+
+        # 使用 context_pruner 进行剪枝
+        pruned_sources = self.context_pruner.handle_overflow(
+            file_sources=[source_code],
+            conversations=self.agent.current_conversations if self.agent else [],
+            strategy=self.args.context_prune_strategy
+        )
+
+        if not pruned_sources:
+            return content
+
+        return pruned_sources[0].source_code
 
     def _read_file_content(self, file_path_to_read: str) -> str:
         content = ""
@@ -41,7 +78,9 @@ class ReadFileToolResolver(BaseToolResolver):
             logger.info(f"Reading plain text file: {file_path_to_read}")
             with open(file_path_to_read, 'r', encoding='utf-8', errors='replace') as f:
                 content = f.read()
-        return content
+
+        # 对内容进行剪枝处理
+        return self._prune_file_content(content, file_path_to_read)
 
     def read_file_with_shadow(self, file_path: str, source_dir: str, abs_project_dir: str, abs_file_path: str) -> ToolResult:
         """Read file using shadow manager for path translation"""
