@@ -5,6 +5,11 @@ from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import Base
 from autocoder.common.v2.agent.agentic_edit_types import ReadFileTool, ToolResult  # Import ToolResult from types
 from loguru import logger
 import typing
+from autocoder.rag.loaders import (
+    extract_text_from_pdf,
+    extract_text_from_docx,
+    extract_text_from_ppt
+)
 
 if typing.TYPE_CHECKING:
     from autocoder.common.v2.agent.agentic_edit import AgenticEdit
@@ -45,10 +50,29 @@ class ReadFileToolResolver(BaseToolResolver):
             if not os.path.isfile(abs_file_path):
                 return ToolResult(success=False, message=f"Error: Path is not a file: {file_path}")
 
-            with open(abs_file_path, 'r', encoding='utf-8', errors='replace') as f:
-                content = f.read()
-            logger.info(f"Successfully read file: {file_path}")
+            content = ""
+            ext = os.path.splitext(abs_file_path)[1].lower()
+
+            if ext == '.pdf':
+                logger.info(f"Extracting text from PDF: {abs_file_path}")
+                content = extract_text_from_pdf(abs_file_path)
+            elif ext == '.docx':
+                logger.info(f"Extracting text from DOCX: {abs_file_path}")
+                content = extract_text_from_docx(abs_file_path)
+            elif ext in ('.pptx', '.ppt'):
+                logger.info(f"Extracting text from PPT/PPTX: {abs_file_path}")
+                slide_texts = []
+                for slide_identifier, slide_content in extract_text_from_ppt(abs_file_path):
+                    slide_texts.append(f"--- Slide {slide_identifier} ---\n{slide_content}")
+                content = "\n\n".join(slide_texts) if slide_texts else ""
+            else:
+                logger.info(f"Reading plain text file: {abs_file_path}")
+                with open(abs_file_path, 'r', encoding='utf-8', errors='replace') as f:
+                    content = f.read()
+            
+            logger.info(f"Successfully processed file: {file_path}")
             return ToolResult(success=True, message=f"{file_path}", content=content)
         except Exception as e:
-            logger.error(f"Error reading file '{file_path}': {str(e)}")
-            return ToolResult(success=False, message=f"An error occurred while reading the file: {str(e)}")
+            logger.warning(f"Error processing file '{file_path}': {str(e)}")
+            logger.exception(e) # Includes stack trace
+            return ToolResult(success=False, message=f"An error occurred while processing the file '{file_path}': {str(e)}")
