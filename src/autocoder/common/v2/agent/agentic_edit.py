@@ -1077,216 +1077,220 @@ class AgenticEdit:
             Union[LLMOutputEvent, LLMThinkingEvent, ToolCallEvent, ErrorEvent]: Events representing
             different parts of the LLM's response.
         """
-        buffer = ""
-        in_tool_block = False
-        in_thinking_block = False
-        current_tool_tag = None
-        tool_start_pattern = re.compile(
-            r"<([a-zA-Z0-9_]+)>")  # Matches tool tags
-        thinking_start_tag = "<thinking>"
-        thinking_end_tag = "</thinking>"
+        try:
+            buffer = ""
+            in_tool_block = False
+            in_thinking_block = False
+            current_tool_tag = None
+            tool_start_pattern = re.compile(
+                r"<([a-zA-Z0-9_]+)>")  # Matches tool tags
+            thinking_start_tag = "<thinking>"
+            thinking_end_tag = "</thinking>"
 
-        def parse_tool_xml(tool_xml: str, tool_tag: str) -> Optional[BaseTool]:
-            """Minimal parser for tool XML string."""
-            params = {}
-            try:
-                # Find content between <tool_tag> and </tool_tag>
-                inner_xml_match = re.search(
-                    rf"<{tool_tag}>(.*?)</{tool_tag}>", tool_xml, re.DOTALL)
-                if not inner_xml_match:
-                    logger.error(
-                        f"Could not find content within <{tool_tag}>...</{tool_tag}>")
-                    return None
-                inner_xml = inner_xml_match.group(1).strip()
+            def parse_tool_xml(tool_xml: str, tool_tag: str) -> Optional[BaseTool]:
+                """Minimal parser for tool XML string."""
+                params = {}
+                try:
+                    # Find content between <tool_tag> and </tool_tag>
+                    inner_xml_match = re.search(
+                        rf"<{tool_tag}>(.*?)</{tool_tag}>", tool_xml, re.DOTALL)
+                    if not inner_xml_match:
+                        logger.error(
+                            f"Could not find content within <{tool_tag}>...</{tool_tag}>")
+                        return None
+                    inner_xml = inner_xml_match.group(1).strip()
 
-                # Find <param>value</param> pairs within the inner content
-                pattern = re.compile(r"<([a-zA-Z0-9_]+)>(.*?)</\1>", re.DOTALL)
-                for m in pattern.finditer(inner_xml):
-                    key = m.group(1)
-                    # Basic unescaping (might need more robust unescaping if complex values are used)
-                    val = xml.sax.saxutils.unescape(m.group(2))
-                    params[key] = val
+                    # Find <param>value</param> pairs within the inner content
+                    pattern = re.compile(r"<([a-zA-Z0-9_]+)>(.*?)</\1>", re.DOTALL)
+                    for m in pattern.finditer(inner_xml):
+                        key = m.group(1)
+                        # Basic unescaping (might need more robust unescaping if complex values are used)
+                        val = xml.sax.saxutils.unescape(m.group(2))
+                        params[key] = val
 
-                tool_cls = TOOL_MODEL_MAP.get(tool_tag)
-                if tool_cls:
-                    # Attempt to handle boolean conversion specifically for requires_approval
-                    if 'requires_approval' in params:
-                        params['requires_approval'] = params['requires_approval'].lower(
-                        ) == 'true'
-                    # Attempt to handle JSON parsing for ask_followup_question_tool
-                    if tool_tag == 'ask_followup_question' and 'options' in params:
-                        try:
-                            params['options'] = json.loads(
-                                params['options'])
-                        except json.JSONDecodeError:
-                            logger.warning(
-                                f"Could not decode JSON options for ask_followup_question_tool: {params['options']}")
-                            # Keep as string or handle error? Let's keep as string for now.
-                            pass
-                    if tool_tag == 'plan_mode_respond' and 'options' in params:
-                        try:
-                            params['options'] = json.loads(
-                                params['options'])
-                        except json.JSONDecodeError:
-                            logger.warning(
-                                f"Could not decode JSON options for plan_mode_respond_tool: {params['options']}")
-                    # Handle recursive for list_files
-                    if tool_tag == 'list_files' and 'recursive' in params:
-                        params['recursive'] = params['recursive'].lower() == 'true'
-                    return tool_cls(**params)
-                else:
-                    logger.error(f"Tool class not found for tag: {tool_tag}")
-                    return None
-            except Exception as e:
-                logger.exception(
-                    f"Failed to parse tool XML for <{tool_tag}>: {e}\nXML:\n{tool_xml}")
-                return None
-
-        last_metadata = None        
-        for content_chunk, metadata in generator:            
-            global_cancel.check_and_raise(token=self.args.event_file)                      
-            if not content_chunk:
-                last_metadata = metadata                
-                continue
-            
-            last_metadata = metadata
-            buffer += content_chunk
-
-            logger.info("================================================")
-            logger.info(f"===> last_metadata: {last_metadata.input_tokens_count} {last_metadata.generated_tokens_count}")
-            logger.info("================================================")
-
-            while True:
-                # Check for transitions: thinking -> text, tool -> text, text -> thinking, text -> tool
-                next_event_pos = len(buffer)
-                found_event = False
-
-                # 1. Check for </thinking> if inside thinking block
-                if in_thinking_block:
-                    end_think_pos = buffer.find(thinking_end_tag)
-                    if end_think_pos != -1:
-                        thinking_content = buffer[:end_think_pos]
-                        yield LLMThinkingEvent(text=thinking_content)
-                        buffer = buffer[end_think_pos + len(thinking_end_tag):]
-                        in_thinking_block = False
-                        found_event = True
-                        continue  # Restart loop with updated buffer/state
+                    tool_cls = TOOL_MODEL_MAP.get(tool_tag)
+                    if tool_cls:
+                        # Attempt to handle boolean conversion specifically for requires_approval
+                        if 'requires_approval' in params:
+                            params['requires_approval'] = params['requires_approval'].lower(
+                            ) == 'true'
+                        # Attempt to handle JSON parsing for ask_followup_question_tool
+                        if tool_tag == 'ask_followup_question' and 'options' in params:
+                            try:
+                                params['options'] = json.loads(
+                                    params['options'])
+                            except json.JSONDecodeError:
+                                logger.warning(
+                                    f"Could not decode JSON options for ask_followup_question_tool: {params['options']}")
+                                # Keep as string or handle error? Let's keep as string for now.
+                                pass
+                        if tool_tag == 'plan_mode_respond' and 'options' in params:
+                            try:
+                                params['options'] = json.loads(
+                                    params['options'])
+                            except json.JSONDecodeError:
+                                logger.warning(
+                                    f"Could not decode JSON options for plan_mode_respond_tool: {params['options']}")
+                        # Handle recursive for list_files
+                        if tool_tag == 'list_files' and 'recursive' in params:
+                            params['recursive'] = params['recursive'].lower() == 'true'
+                        return tool_cls(**params)
                     else:
-                        # Need more data to close thinking block
-                        break
+                        logger.error(f"Tool class not found for tag: {tool_tag}")
+                        return None
+                except Exception as e:
+                    logger.exception(
+                        f"Failed to parse tool XML for <{tool_tag}>: {e}\nXML:\n{tool_xml}")
+                    return None
 
-                # 2. Check for </tool_tag> if inside tool block
-                elif in_tool_block:
-                    end_tag = f"</{current_tool_tag}>"
-                    end_tool_pos = buffer.find(end_tag)
-                    if end_tool_pos != -1:
-                        tool_block_end_index = end_tool_pos + len(end_tag)
-                        tool_xml = buffer[:tool_block_end_index]
-                        tool_obj = parse_tool_xml(tool_xml, current_tool_tag)
+            last_metadata = None        
+            for content_chunk, metadata in generator:            
+                global_cancel.check_and_raise(token=self.args.event_file)                      
+                if not content_chunk:
+                    last_metadata = metadata                
+                    continue
+                
+                last_metadata = metadata
+                buffer += content_chunk
 
-                        if tool_obj:
-                            # Reconstruct the XML accurately here AFTER successful parsing
-                            # This ensures the XML yielded matches what was parsed.
-                            reconstructed_xml = self._reconstruct_tool_xml(
-                                tool_obj)
-                            if reconstructed_xml.startswith("<error>"):
-                                yield ErrorEvent(message=f"Failed to reconstruct XML for tool {current_tool_tag}")
+                logger.info("================================================")
+                logger.info(f"===> last_metadata: {last_metadata.input_tokens_count} {last_metadata.generated_tokens_count}")
+                logger.info("================================================")
+
+                while True:
+                    # Check for transitions: thinking -> text, tool -> text, text -> thinking, text -> tool
+                    next_event_pos = len(buffer)
+                    found_event = False
+
+                    # 1. Check for </thinking> if inside thinking block
+                    if in_thinking_block:
+                        end_think_pos = buffer.find(thinking_end_tag)
+                        if end_think_pos != -1:
+                            thinking_content = buffer[:end_think_pos]
+                            yield LLMThinkingEvent(text=thinking_content)
+                            buffer = buffer[end_think_pos + len(thinking_end_tag):]
+                            in_thinking_block = False
+                            found_event = True
+                            continue  # Restart loop with updated buffer/state
+                        else:
+                            # Need more data to close thinking block
+                            break
+
+                    # 2. Check for </tool_tag> if inside tool block
+                    elif in_tool_block:
+                        end_tag = f"</{current_tool_tag}>"
+                        end_tool_pos = buffer.find(end_tag)
+                        if end_tool_pos != -1:
+                            tool_block_end_index = end_tool_pos + len(end_tag)
+                            tool_xml = buffer[:tool_block_end_index]
+                            tool_obj = parse_tool_xml(tool_xml, current_tool_tag)
+
+                            if tool_obj:
+                                # Reconstruct the XML accurately here AFTER successful parsing
+                                # This ensures the XML yielded matches what was parsed.
+                                reconstructed_xml = self._reconstruct_tool_xml(
+                                    tool_obj)
+                                if reconstructed_xml.startswith("<error>"):
+                                    yield ErrorEvent(message=f"Failed to reconstruct XML for tool {current_tool_tag}")
+                                else:
+                                    yield ToolCallEvent(tool=tool_obj, tool_xml=reconstructed_xml)
                             else:
-                                yield ToolCallEvent(tool=tool_obj, tool_xml=reconstructed_xml)
+                                yield ErrorEvent(message=f"Failed to parse tool: <{current_tool_tag}>")
+                                # Optionally yield the raw XML as plain text?
+                                # yield LLMOutputEvent(text=tool_xml)
+
+                            buffer = buffer[tool_block_end_index:]
+                            in_tool_block = False
+                            current_tool_tag = None
+                            found_event = True
+                            continue  # Restart loop
                         else:
-                            yield ErrorEvent(message=f"Failed to parse tool: <{current_tool_tag}>")
-                            # Optionally yield the raw XML as plain text?
-                            # yield LLMOutputEvent(text=tool_xml)
+                            # Need more data to close tool block
+                            break
 
-                        buffer = buffer[tool_block_end_index:]
-                        in_tool_block = False
-                        current_tool_tag = None
-                        found_event = True
-                        continue  # Restart loop
+                    # 3. Check for <thinking> or <tool_tag> if in plain text state
                     else:
-                        # Need more data to close tool block
-                        break
+                        start_think_pos = buffer.find(thinking_start_tag)
+                        tool_match = tool_start_pattern.search(buffer)
+                        start_tool_pos = tool_match.start() if tool_match else -1
+                        tool_name = tool_match.group(1) if tool_match else None
 
-                # 3. Check for <thinking> or <tool_tag> if in plain text state
-                else:
-                    start_think_pos = buffer.find(thinking_start_tag)
-                    tool_match = tool_start_pattern.search(buffer)
-                    start_tool_pos = tool_match.start() if tool_match else -1
-                    tool_name = tool_match.group(1) if tool_match else None
+                        # Determine which tag comes first (if any)
+                        first_tag_pos = -1
+                        is_thinking = False
+                        is_tool = False
 
-                    # Determine which tag comes first (if any)
-                    first_tag_pos = -1
-                    is_thinking = False
-                    is_tool = False
+                        if start_think_pos != -1 and (start_tool_pos == -1 or start_think_pos < start_tool_pos):
+                            first_tag_pos = start_think_pos
+                            is_thinking = True
+                        elif start_tool_pos != -1 and (start_think_pos == -1 or start_tool_pos < start_think_pos):
+                            # Check if it's a known tool
+                            if tool_name in TOOL_MODEL_MAP:
+                                first_tag_pos = start_tool_pos
+                                is_tool = True
+                            else:
+                                # Unknown tag, treat as text for now, let buffer grow
+                                pass
 
-                    if start_think_pos != -1 and (start_tool_pos == -1 or start_think_pos < start_tool_pos):
-                        first_tag_pos = start_think_pos
-                        is_thinking = True
-                    elif start_tool_pos != -1 and (start_think_pos == -1 or start_tool_pos < start_think_pos):
-                        # Check if it's a known tool
-                        if tool_name in TOOL_MODEL_MAP:
-                            first_tag_pos = start_tool_pos
-                            is_tool = True
+                        if first_tag_pos != -1:  # Found either <thinking> or a known <tool>
+                            # Yield preceding text if any
+                            preceding_text = buffer[:first_tag_pos]
+                            if preceding_text:
+                                yield LLMOutputEvent(text=preceding_text)
+
+                            # Transition state
+                            if is_thinking:
+                                buffer = buffer[first_tag_pos +
+                                                len(thinking_start_tag):]
+                                in_thinking_block = True
+                            elif is_tool:
+                                # Keep the starting tag
+                                buffer = buffer[first_tag_pos:]
+                                in_tool_block = True
+                                current_tool_tag = tool_name
+
+                            found_event = True
+                            continue  # Restart loop
+
                         else:
-                            # Unknown tag, treat as text for now, let buffer grow
-                            pass
+                            # No tags found, or only unknown tags found. Need more data or end of stream.
+                            # Yield text chunk but keep some buffer for potential tag start
+                            # Keep last 100 chars
+                            split_point = max(0, len(buffer) - 100)
+                            text_to_yield = buffer[:split_point]
+                            if text_to_yield:
+                                yield LLMOutputEvent(text=text_to_yield)
+                                buffer = buffer[split_point:]
+                            break  # Need more data
 
-                    if first_tag_pos != -1:  # Found either <thinking> or a known <tool>
-                        # Yield preceding text if any
-                        preceding_text = buffer[:first_tag_pos]
-                        if preceding_text:
-                            yield LLMOutputEvent(text=preceding_text)
+                    # If no event was processed in this iteration, break inner loop
+                    if not found_event:
+                        break                
 
-                        # Transition state
-                        if is_thinking:
-                            buffer = buffer[first_tag_pos +
-                                            len(thinking_start_tag):]
-                            in_thinking_block = True
-                        elif is_tool:
-                            # Keep the starting tag
-                            buffer = buffer[first_tag_pos:]
-                            in_tool_block = True
-                            current_tool_tag = tool_name
+            # After generator exhausted, yield any remaining content
+            if in_thinking_block:
+                # Unterminated thinking block
+                yield ErrorEvent(message="Stream ended with unterminated <thinking> block.")
+                if buffer:
+                    # Yield remaining as thinking
+                    yield LLMThinkingEvent(text=buffer)
+            elif in_tool_block:
+                # Unterminated tool block
+                yield ErrorEvent(message=f"Stream ended with unterminated <{current_tool_tag}> block.")
+                if buffer:
+                    yield LLMOutputEvent(text=buffer)  # Yield remaining as text
+            elif buffer:
+                # Yield remaining plain text
+                yield LLMOutputEvent(text=buffer)
 
-                        found_event = True
-                        continue  # Restart loop
-
-                    else:
-                        # No tags found, or only unknown tags found. Need more data or end of stream.
-                        # Yield text chunk but keep some buffer for potential tag start
-                        # Keep last 100 chars
-                        split_point = max(0, len(buffer) - 100)
-                        text_to_yield = buffer[:split_point]
-                        if text_to_yield:
-                            yield LLMOutputEvent(text=text_to_yield)
-                            buffer = buffer[split_point:]
-                        break  # Need more data
-
-                # If no event was processed in this iteration, break inner loop
-                if not found_event:
-                    break                
-
-        # After generator exhausted, yield any remaining content
-        if in_thinking_block:
-            # Unterminated thinking block
-            yield ErrorEvent(message="Stream ended with unterminated <thinking> block.")
-            if buffer:
-                # Yield remaining as thinking
-                yield LLMThinkingEvent(text=buffer)
-        elif in_tool_block:
-            # Unterminated tool block
-            yield ErrorEvent(message=f"Stream ended with unterminated <{current_tool_tag}> block.")
-            if buffer:
-                yield LLMOutputEvent(text=buffer)  # Yield remaining as text
-        elif buffer:
-            # Yield remaining plain text
-            yield LLMOutputEvent(text=buffer)
-
-        # 这个要放在最后，防止其他关联的多个事件的信息中断
-        logger.info("================================================")
-        logger.info(f"last_metadata: {last_metadata.generated_tokens_count}")
-        logger.info("================================================")
-        yield TokenUsageEvent(usage=last_metadata)            
+            # 这个要放在最后，防止其他关联的多个事件的信息中断
+            logger.info("================================================")
+            logger.info(f"last_metadata: {last_metadata.generated_tokens_count}")
+            logger.info("================================================")
+            yield TokenUsageEvent(usage=last_metadata)      
+        except Exception as e:
+            logger.exception(f"Error in stream_and_parse_llm_response: {e}")
+            raise e
     
 
     def apply_pre_changes(self):
