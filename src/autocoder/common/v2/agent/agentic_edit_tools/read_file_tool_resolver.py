@@ -43,44 +43,60 @@ class ReadFileToolResolver(BaseToolResolver):
                 content = f.read()
         return content
 
-    def resolve(self) -> ToolResult:
-        file_path = self.tool.path
-        source_dir = self.args.source_dir or "."
-        abs_project_dir = os.path.abspath(source_dir)
-        abs_file_path = os.path.abspath(os.path.join(source_dir, file_path))
-
-        # # Security check: ensure the path is within the source directory
-        # if not abs_file_path.startswith(abs_project_dir):
-        #     return ToolResult(success=False, message=f"Error: Access denied. Attempted to read file outside the project directory: {file_path}")
-
+    def read_file_with_shadow(self, file_path: str, source_dir: str, abs_project_dir: str, abs_file_path: str) -> ToolResult:
+        """Read file using shadow manager for path translation"""
         try:
-            # Attempt to read from shadow file first
-            if self.shadow_manager:
-                shadow_path = self.shadow_manager.to_shadow_path(abs_file_path)
-                if os.path.exists(shadow_path) and os.path.isfile(shadow_path):
-                    try:
-                        # Use the new centralized method for shadow files
-                        content = self._read_file_content(shadow_path)
-                        logger.info(f"[Shadow] Successfully processed shadow file: {shadow_path}")
-                        return ToolResult(success=True, message=f"{file_path}", content=content)
-                    except Exception as e_shadow:
-                        logger.warning(f"Failed to read shadow file {shadow_path} with _read_file_content: {str(e_shadow)}. Falling back to original file.")
-                        # Fall through to read the original file if shadow read fails
+            # Check if shadow file exists
+            shadow_path = self.shadow_manager.to_shadow_path(abs_file_path)
+            if os.path.exists(shadow_path) and os.path.isfile(shadow_path):
+                try:
+                    content = self._read_file_content(shadow_path)
+                    logger.info(f"[Shadow] Successfully processed shadow file: {shadow_path}")
+                    return ToolResult(success=True, message=f"{file_path}", content=content)
+                except Exception as e_shadow:
+                    logger.warning(f"Failed to read shadow file {shadow_path} with _read_file_content: {str(e_shadow)}. Falling back to original file.")
 
-            # If not read from shadow, or shadow reading failed, proceed with original file
+            # If shadow file doesn't exist or reading failed, try original file
             if not os.path.exists(abs_file_path):
                 return ToolResult(success=False, message=f"Error: File not found at path: {file_path}")
             if not os.path.isfile(abs_file_path):
                 return ToolResult(success=False, message=f"Error: Path is not a file: {file_path}")
 
-            # Use the new centralized method for original files
             content = self._read_file_content(abs_file_path)
             logger.info(f"Successfully processed file: {file_path}")
             return ToolResult(success=True, message=f"{file_path}", content=content)
-        
+
         except Exception as e:
-            # This will catch exceptions from _read_file_content if they are not caught internally,
-            # or other unexpected errors.
             logger.warning(f"Error processing file '{file_path}': {str(e)}")
-            logger.exception(e) # Includes stack trace
+            logger.exception(e)
             return ToolResult(success=False, message=f"An error occurred while processing the file '{file_path}': {str(e)}")
+
+    def read_file_normal(self, file_path: str, source_dir: str, abs_project_dir: str, abs_file_path: str) -> ToolResult:
+        """Read file directly without using shadow manager"""
+        try:
+            if not os.path.exists(abs_file_path):
+                return ToolResult(success=False, message=f"Error: File not found at path: {file_path}")
+            if not os.path.isfile(abs_file_path):
+                return ToolResult(success=False, message=f"Error: Path is not a file: {file_path}")
+
+            content = self._read_file_content(abs_file_path)
+            logger.info(f"Successfully processed file: {file_path}")
+            return ToolResult(success=True, message=f"{file_path}", content=content)
+
+        except Exception as e:
+            logger.warning(f"Error processing file '{file_path}': {str(e)}")
+            logger.exception(e)
+            return ToolResult(success=False, message=f"An error occurred while processing the file '{file_path}': {str(e)}")
+
+    def resolve(self) -> ToolResult:
+        """Resolve the read file tool by calling the appropriate implementation"""
+        file_path = self.tool.path
+        source_dir = self.args.source_dir or "."
+        abs_project_dir = os.path.abspath(source_dir)
+        abs_file_path = os.path.abspath(os.path.join(source_dir, file_path))
+
+        # Choose the appropriate implementation based on whether shadow_manager is available
+        if self.shadow_manager:
+            return self.read_file_with_shadow(file_path, source_dir, abs_project_dir, abs_file_path)
+        else:
+            return self.read_file_normal(file_path, source_dir, abs_project_dir, abs_file_path)

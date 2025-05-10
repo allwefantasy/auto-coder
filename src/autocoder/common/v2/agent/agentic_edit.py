@@ -44,6 +44,7 @@ from autocoder.common.save_formatted_log import save_formatted_log
 # Import the new display function
 from autocoder.common.v2.agent.agentic_tool_display import get_tool_display_message
 from autocoder.common.v2.agent.agentic_edit_types import FileChangeEntry
+from autocoder.utils.llms import get_single_llm
 
 from autocoder.common.file_checkpoint.models import FileChange as CheckpointFileChange
 from autocoder.common.file_checkpoint.manager import FileChangeManager as CheckpointFileChangeManager
@@ -113,6 +114,7 @@ class AgenticEdit:
         conversation_name:Optional[str] = "current"        
     ):
         self.llm = llm
+        self.context_prune_llm = get_single_llm(args.context_prune_model or args.model,product_mode=args.product_mode) 
         self.args = args
         self.printer = Printer()
         # Removed self.tools and self.result_manager
@@ -615,30 +617,43 @@ class AgenticEdit:
         - If at any point a mermaid diagram would make your plan clearer to help the user quickly see the structure, you are encouraged to include a Mermaid code block in the response. (Note: if you use colors in your mermaid diagrams, be sure to use high contrast colors so the text is readable.)
         - Finally once it seems like you've reached a good plan, ask the user to switch you back to ACT MODE to implement the solution.
 
-        {% if enable_active_context_in_generate %}
         ====
 
-        PROJECT PACKAGE CONTEXT
+        PACKAGE CONTEXT INFORMATION
 
-        Each directory can contain a short **`active.md`** summary file located under the mirrored path inside
-        `{{ current_project }}/.auto-coder/active-context/`.
+        # Understanding Directory Context
 
-        * **Purpose** – captures only the files that have **recently changed** in that directory. It is *not* a full listing.
-        * **Example** – for `{{ current_project }}/src/abc/bbc`, the summary is
-          `{{ current_project }}/.auto-coder/active-context/src/abc/bbc/active.md`.
+        ## Purpose
 
-        **Reading a summary**
+        - Each directory in the project (especially source code directories) has implicit context information
+        - This includes recent changes, important files, and their purposes
+        - This contextual information helps you understand the role of the directory and the files in the directory
+
+        ## Accessing Directory Context
+
+        - Use the **list_package_info** tool to view this information for a specific directory
+        - Do NOT use other tools like list_files to view this specialized context information        
+
+        ## When to Use
+
+        - When you need to understand what has recently changed in a directory
+        - When you need insight into the purpose and organization of a directory
+        - Before diving into detailed file exploration with other tools
+
+        ## Example
 
         ```xml
-        <read_file>
-        <path>.auto-coder/active-context/src/abc/bbc/active.md</path>
-        </read_file>
+        <list_package_info>
+        <path>src/some/directory</path>
+        </list_package_info>
         ```
 
-        Use these summaries to quickly decide which files deserve a deeper look with tools like
-        `read_file`, `search_files`, or `list_code_definition_names`.
+        # Benefits
 
-        {% endif %}
+        - Quickly identifies recently modified files that may be relevant to your task
+        - Provides high-level understanding of directory contents and purpose
+        - Helps prioritize which files to examine in detail with tools like read_file, search_files, or list_code_definition_names
+
         ====
 
         CAPABILITIES

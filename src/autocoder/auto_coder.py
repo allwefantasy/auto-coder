@@ -376,8 +376,8 @@ def main(input_args: Optional[List[str]] = None):
                 llm.setup_sub_client("inference_model", inference_model)                 
 
             if args.index_filter_model:
-                model_info = models_module.get_model_by_name(args.index_filter_model)
-                model_name = args.index_filter_model
+                model_name = args.index_filter_model.strip()
+                model_info = models_module.get_model_by_name(model_name)                
                 index_filter_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
                 index_filter_model.deploy(
                     model_path="",
@@ -393,6 +393,41 @@ def main(input_args: Optional[List[str]] = None):
                 )
                 llm.setup_sub_client("index_filter_model", index_filter_model)            
 
+            if args.context_prune_model:
+                model_name = args.context_prune_model.strip()
+                model_info = models_module.get_model_by_name(model_name)                
+                context_prune_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
+                context_prune_model.deploy(
+                    model_path="",
+                    pretrained_model_type=model_info["model_type"],
+                    udf_name=model_name,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"],
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                    }
+                )
+                llm.setup_sub_client("context_prune_model", context_prune_model)
+
+            if args.conversation_prune_model:
+                model_name = args.conversation_prune_model.strip()
+                model_info = models_module.get_model_by_name(model_name)                
+                conversation_prune_model = byzerllm.SimpleByzerLLM(default_model_name=model_name)
+                conversation_prune_model.deploy(
+                    model_path="",
+                    pretrained_model_type=model_info["model_type"],
+                    udf_name=model_name,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"],
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                    }
+                )
+                llm.setup_sub_client("conversation_prune_model", conversation_prune_model)
 
         if args.product_mode == "pro":
             if args.code_model:
@@ -437,6 +472,15 @@ def main(input_args: Optional[List[str]] = None):
                 index_filter_model.setup_default_model_name(args.index_filter_model)
                 llm.setup_sub_client("index_filter_model", index_filter_model)
             
+            if args.context_prune_model:
+                context_prune_model = byzerllm.ByzerLLM()
+                context_prune_model.setup_default_model_name(args.context_prune_model)
+                llm.setup_sub_client("context_prune_model", context_prune_model)
+
+            if args.conversation_prune_model:
+                conversation_prune_model = byzerllm.ByzerLLM()
+                conversation_prune_model.setup_default_model_name(args.conversation_prune_model)
+                llm.setup_sub_client("conversation_prune_model", conversation_prune_model)
 
         if get_run_context().mode != RunMode.WEB and args.human_as_model:
 
