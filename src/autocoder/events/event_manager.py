@@ -147,7 +147,7 @@ class EventManager:
         logger.debug(f"Waiting for response to event: {event.event_id}")
         
         # 无限等待响应，不设超时
-        wait_result = blocker.wait(timeout=60.0)  # 设置一个较长的超时时间（60秒）
+        wait_result = blocker.wait(timeout=60.0*60)  # 设置一个较长的超时时间（60秒）
         
         if not wait_result:
             logger.warning(f"Timeout waiting for response to event: {event.event_id}")
