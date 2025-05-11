@@ -936,7 +936,8 @@ class AgenticEdit:
                         logger.info(
                             "AgenticEdit analyze loop finished due to AttemptCompletion.")
                         save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")        
-                        return
+                        mark_event_should_finish = True
+                        continue
 
                     if isinstance(tool_obj, PlanModeRespondTool):
                         logger.info(
@@ -946,7 +947,8 @@ class AgenticEdit:
                         logger.info(
                             "AgenticEdit analyze loop finished due to PlanModeRespond.")
                         save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")        
-                        return
+                        mark_event_should_finish = True
+                        continue
 
                     # Resolve the tool
                     resolver_cls = TOOL_RESOLVER_MAP.get(type(tool_obj))
