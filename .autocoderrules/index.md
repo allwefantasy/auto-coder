@@ -52,3 +52,6 @@
 
 ## shadow_system_usage.md
 规范化使用ShadowManager和ShadowLinter进行代码质量检查的模式，通过影子文件系统安全地检查生成代码的质量而不影响实际项目文件。
+
+## command_file_manager_usage.md
+使用 CommandManager 管理和分析 .autocodercommands 目录中的命令文件，支持列出文件、读取内容和提取 Jinja2 变量及其元数据。
