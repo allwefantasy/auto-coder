@@ -849,7 +849,9 @@ class AgenticEdit:
             f"Initial conversation history size: {len(conversations)}, tokens: {current_tokens}")
                 
         iteration_count = 0
-        tool_executed = False
+        tool_executed = False 
+        completion_event_already_yielded = False       
+
         while True:
             iteration_count += 1            
             logger.info(f"Starting LLM interaction cycle #{iteration_count}")
@@ -857,10 +859,12 @@ class AgenticEdit:
             last_message = conversations[-1]
             if last_message["role"] == "assistant":
                 logger.info(f"Last message is assistant, skipping LLM interaction cycle")
-                yield CompletionEvent(completion=AttemptCompletionTool(
-                    result=last_message["content"],
-                    command=""
-                ), completion_xml="")
+                if not completion_event_already_yielded:
+                    yield CompletionEvent(completion=AttemptCompletionTool(
+                        result=last_message["content"],
+                        command=""
+                    ), completion_xml="")
+                    completion_event_already_yielded = True
                 break
             logger.info(
                 f"Starting LLM interaction cycle. History size: {len(conversations)}")
