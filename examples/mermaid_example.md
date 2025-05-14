@@ -1,5 +1,5 @@
 
-# 你好
+# Mermaid 流程图示例
 
 ```mermaid
 graph TD
