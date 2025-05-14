@@ -941,6 +941,7 @@ class AgenticEdit:
                             "AgenticEdit analyze loop finished due to AttemptCompletion.")
                         save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")        
                         mark_event_should_finish = True
+                        completion_event_already_yielded = True
                         continue
 
                     if isinstance(tool_obj, PlanModeRespondTool):
