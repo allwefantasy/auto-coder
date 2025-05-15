@@ -80,7 +80,7 @@ class ReplaceInFileToolResolver(BaseToolResolver):
         # 创建一个新的 issues 列表，只包含指定级别的问题
         filtered_issues = []
         for issue in lint_result.issues:
-            if issue.severity in levels:
+            if issue.severity.value in levels:
                 filtered_issues.append(issue)
                 
         # 更新 lint_result 的副本
