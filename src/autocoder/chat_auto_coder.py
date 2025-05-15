@@ -19,12 +19,11 @@ from autocoder.events.event_manager_singleton import gengerate_event_file_path
 from autocoder.common.global_cancel import global_cancel
 from autocoder.chat.models_command import handle_models_command
 from autocoder.auto_coder_runner import (
-    auto_command,
-    load_memory,
-    save_memory,
+    auto_command,    
     configure, # Keep configure if it's used elsewhere or by handle_conf_command internally (though we adapted handle_conf_command not to)
     # manage_models, # Removed
     # print_conf, # Removed
+    save_memory,
     exclude_dirs,
     exclude_files,
     ask,
@@ -299,7 +298,6 @@ def main():
     # 加载保存的运行时配置
     plugin_manager.load_runtime_cfg()
 
-    load_memory()
     memory = get_memory()
 
     configure(f"product_mode:{ARGS.product_mode}")
@@ -342,7 +340,8 @@ def main():
             memory["mode"] = "voice_input"
         else:  # voice_input
             memory["mode"] = "normal"
-
+        
+        save_memory()
         event.app.invalidate()
 
     @kb.add("c-n")
@@ -464,8 +463,8 @@ def main():
             else:
                 user_input = session.prompt(FormattedText(prompt_message), style=style)
             new_prompt = ""
-
-            if "mode" not in memory:
+            
+            if "mode" not in memory:                
                 memory["mode"] = "auto_detect"
 
             # 处理 user_input 的空格
@@ -542,9 +541,11 @@ def main():
                     print(memory["mode"])
                 else:
                     memory["mode"] = conf
+                    save_memory()
 
             elif user_input.startswith("/conf/export"):
                 from autocoder.common.conf_import_export import export_conf
+                export_conf(os.getcwd(), user_input[len("/conf/export") :].strip() or ".")
 
             elif user_input.startswith("/plugins"):
                 # 提取命令参数并交由 plugin_manager 处理
