@@ -117,9 +117,9 @@ class LinterFactory:
             Dict[str, Any]: Lint results.
         """
         linter = cls.create_linter(file_path=file_path, verbose=verbose)
-        if linter is None:
-            return None
         logger.info(f"Linting file: {file_path} with linter: {linter.__class__.__name__}")
+        if linter is None:
+            return None        
         return linter.lint_file(file_path, fix=fix)
     
     @classmethod
