@@ -79,8 +79,9 @@ class ReplaceInFileToolResolver(BaseToolResolver):
             
         # 创建一个新的 issues 列表，只包含指定级别的问题
         filtered_issues = []
-        for issue in lint_result.issues:            
-            if issue.severity in levels:
+        for issue in lint_result.issues:
+            print(issue.severity,"==",levels,"====",issue.severity in levels)            
+            if issue.severity in levels:                
                 filtered_issues.append(issue)
                 
         # 更新 lint_result 的副本
@@ -88,9 +89,9 @@ class ReplaceInFileToolResolver(BaseToolResolver):
         filtered_result.issues = filtered_issues
         
         # 更新计数
-        filtered_result.error_count = sum(1 for issue in filtered_issues if issue.severity == IssueSeverity.ERROR)
-        filtered_result.warning_count = sum(1 for issue in filtered_issues if issue.severity == IssueSeverity.WARNING)
-        filtered_result.info_count = sum(1 for issue in filtered_issues if issue.severity == IssueSeverity.INFO)
+        filtered_result.error_count = sum(1 for issue in filtered_result.issues if issue.severity == IssueSeverity.ERROR)
+        filtered_result.warning_count = sum(1 for issue in filtered_result.issues if issue.severity == IssueSeverity.WARNING)
+        filtered_result.info_count = sum(1 for issue in filtered_result.issues if issue.severity == IssueSeverity.INFO)
         
         return filtered_result
         
