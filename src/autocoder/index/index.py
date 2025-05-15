@@ -665,7 +665,7 @@ class IndexManager:
                     md5=data["md5"],
                 )
                 index_items.append(index_item)
-            except (KeyError, TypeError) as e:
+            except Exception as e:
                 logger.warning(f"处理索引条目 {module_name} 时出错: {str(e)}")
                 logger.exception(e)
                 continue
