@@ -72,10 +72,8 @@ class NormalLinter:
             
             # 将原始结果转换为Pydantic模型
             return self._convert_raw_lint_result(raw_lint_result, file_path)
-        except Exception as e:
-            if self.verbose:
-                print(f"检查 {file_path} 时出错: {str(e)}")
-            
+        except Exception as e:            
+            logger.exception(f"检查 {file_path} 时出错: {e}")            
             language = self._detect_language(file_path)
             return FileLintResult(
                 file_path=file_path,
