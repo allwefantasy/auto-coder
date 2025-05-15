@@ -282,11 +282,14 @@ class ReplaceInFileToolResolver(BaseToolResolver):
             
             # 检查是否启用了Lint功能
             enable_lint = self.args.enable_auto_fix_lint
+            logger.info(f"检查Lint功能状态: enable_lint={enable_lint}")
             
             if enable_lint:
                 try:
                     if self.agent.linter:
+                        logger.info(f"开始对文件 {file_path} 执行Lint检查")
                         lint_results = self.agent.linter.lint_file(file_path)
+                        logger.info(f"Lint检查完成，发现 {len(lint_results.issues) if lint_results and lint_results.issues else 0} 个问题")
                         if lint_results and lint_results.issues:
                             has_lint_issues = True
                             # 格式化 lint 问题
