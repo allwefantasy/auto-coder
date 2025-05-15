@@ -116,6 +116,7 @@ class LinterFactory:
         Returns:
             Dict[str, Any]: Lint results.
         """
+        logger.info(f"根据文件路径{file_path}自动查找 linter")
         linter = cls.create_linter(file_path=file_path, verbose=verbose)
         logger.info(f"Linting file: {file_path} with linter: {linter.__class__.__name__}")
         if linter is None:
