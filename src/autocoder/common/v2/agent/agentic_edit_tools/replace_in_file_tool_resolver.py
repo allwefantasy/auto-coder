@@ -186,7 +186,6 @@ class ReplaceInFileToolResolver(BaseToolResolver):
             # 新增：执行代码质量检查
             lint_results = None
             lint_message = ""
-            formatted_issues = ""
             has_lint_issues = False
             
             # 检查是否启用了Lint功能
@@ -202,9 +201,8 @@ class ReplaceInFileToolResolver(BaseToolResolver):
                             filtered_results = self._filter_lint_issues(lint_results)
                             if filtered_results.issues:
                                 has_lint_issues = True
-                                # 格式化 lint 问题
-                                formatted_issues = self._format_lint_issues(filtered_results)
-                                lint_message = f"\n\n代码质量检查发现 {len(filtered_results.issues)} 个问题:\n{formatted_issues}"
+                                # 格式化 lint 问题并直接加入 message
+                                lint_message = f"\n\n代码质量检查发现 {len(filtered_results.issues)} 个问题:\n{self._format_lint_issues(filtered_results)}"
                 except Exception as e:
                     logger.error(f"Lint 检查失败: {str(e)}")
                     lint_message = "\n\n尝试进行代码质量检查时出错。"
@@ -237,8 +235,7 @@ class ReplaceInFileToolResolver(BaseToolResolver):
             # 只有在启用Lint时才添加Lint结果
             if enable_lint:
                 result_content["lint_results"] = {
-                    "has_issues": has_lint_issues,
-                    "issues": formatted_issues if has_lint_issues else None
+                    "has_issues": has_lint_issues
                 }
 
             return ToolResult(success=True, message=message, content=result_content)
