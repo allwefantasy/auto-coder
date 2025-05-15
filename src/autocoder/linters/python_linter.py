@@ -1,8 +1,3 @@
-"""
-Module for linting Python code.
-This module provides functionality to analyze Python code for quality and best practices.
-"""
-
 import os
 import sys
 import json
