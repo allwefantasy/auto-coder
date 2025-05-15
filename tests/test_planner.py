@@ -44,6 +44,3 @@ class TestPlanner(unittest.TestCase):
                 self.assertIsNotNone(result)
                 self.assertTrue(isinstance(result, str))
                 break
-
-if __name__ == "__main__":
-    unittest.main()
