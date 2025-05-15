@@ -1,5 +1,3 @@
-from llama_index.core.agent import ReActAgent
-from llama_index.core.tools import FunctionTool
 from autocoder.pyproject import PyProject
 from autocoder.tsproject import TSProject
 from autocoder.suffixproject import SuffixProject
@@ -7,7 +5,6 @@ from autocoder.common import AutoCoderArgs
 from autocoder.common.interpreter import Interpreter
 from autocoder.common import ExecuteSteps, ExecuteStep, detect_env
 from autocoder.common import code_auto_execute
-from byzerllm.apps.llama_index.byzerai import ByzerAI
 from loguru import logger
 import os
 import io
@@ -252,6 +249,8 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         
         console.print("[bold red]达到最大尝试次数，任务未能完成。[/bold red]")
         return result
+        
+    from llama_index.core.tools import FunctionTool
 
     tools = [
         FunctionTool.from_defaults(run_python_code),
@@ -284,6 +283,8 @@ class AutoTool:
         return self.pp.get_tree_like_directory_structure.prompt()
 
     def run(self, query: str, max_iterations: int = 20):
+        from byzerllm.apps.llama_index.byzerai import ByzerAI
+        from llama_index.core.agent import ReActAgent
         agent = ReActAgent.from_tools(
             tools=self.tools,
             llm=ByzerAI(llm=self.code_model),

@@ -1,13 +1,12 @@
 from typing import List, Dict, Any, Optional,Union
 from autocoder.common import AutoCoderArgs, SourceCode
 from byzerllm import ByzerLLM
-from .simple_rag import SimpleRAG
 from .long_context_rag import LongContextRAG
 class RAGFactory:
     
     
     @staticmethod
-    def get_rag(llm: ByzerLLM, args: AutoCoderArgs, path: str,**kargs) -> Union[SimpleRAG, LongContextRAG]:
+    def get_rag(llm: ByzerLLM, args: AutoCoderArgs, path: str,**kargs) -> Union[LongContextRAG]:
         """
         Factory method to get the appropriate RAG implementation based on arguments.
         
@@ -19,10 +18,7 @@ class RAGFactory:
         Returns:
             SimpleRAG or LongContextRAG: The appropriate RAG implementation.
         """
-        if args.rag_type == "simple":
-            return LongContextRAG(llm, args, path,**kargs)
-        else:
-            return SimpleRAG(llm, args, path)
+        return LongContextRAG(llm, args, path,**kargs)
 
 class RAGManager:
     def __init__(self, llm: ByzerLLM, args: AutoCoderArgs, path: str):

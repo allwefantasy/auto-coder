@@ -850,7 +850,8 @@ class AgenticEdit:
                 
         iteration_count = 0
         tool_executed = False 
-        should_yield_completion_event = False       
+        should_yield_completion_event = False   
+        completion_event = None    
 
         while True:
             iteration_count += 1            
@@ -860,10 +861,13 @@ class AgenticEdit:
             if last_message["role"] == "assistant":
                 logger.info(f"Last message is assistant, skipping LLM interaction cycle")
                 if should_yield_completion_event:
-                    yield CompletionEvent(completion=AttemptCompletionTool(
-                        result=last_message["content"],
-                        command=""
-                    ), completion_xml="")                    
+                    if completion_event is None:
+                        yield CompletionEvent(completion=AttemptCompletionTool(
+                            result=last_message["content"],
+                            command=""
+                        ), completion_xml="")  
+                    else:
+                        yield completion_event                     
                 break
             logger.info(
                 f"Starting LLM interaction cycle. History size: {len(conversations)}")
@@ -935,7 +939,7 @@ class AgenticEdit:
                         logger.info(
                             "AttemptCompletionTool received. Finalizing session.")
                         logger.info(f"Completion result: {tool_obj.result[:50]}...")
-                        # yield CompletionEvent(completion=tool_obj, completion_xml=tool_xml)
+                        completion_event = CompletionEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to AttemptCompletion.")
                         save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")        

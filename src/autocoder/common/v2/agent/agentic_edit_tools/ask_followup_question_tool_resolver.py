@@ -13,7 +13,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from autocoder.common.result_manager import ResultManager
-
+from autocoder.common.printer import Printer
 if typing.TYPE_CHECKING:
     from autocoder.common.v2.agent.agentic_edit import AgenticEdit
 
@@ -22,6 +22,7 @@ class AskFollowupQuestionToolResolver(BaseToolResolver):
         super().__init__(agent, tool, args)
         self.tool: AskFollowupQuestionTool = tool # For type hinting
         self.result_manager = ResultManager()
+        self.printer = Printer()
 
     def resolve(self) -> ToolResult:
         """

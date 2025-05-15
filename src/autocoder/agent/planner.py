@@ -1,5 +1,3 @@
-from llama_index.core.agent import ReActAgent
-from llama_index.core.tools import FunctionTool
 from autocoder.index.index import IndexManager
 from autocoder.pyproject import PyProject
 from autocoder.tsproject import TSProject
@@ -182,7 +180,8 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
         args.collections = old_collections
 
         return "\n".join([sc.source_code for sc in source_codes])
-
+        
+    from llama_index.core.tools import FunctionTool
     tools = [
         FunctionTool.from_defaults(get_project_related_files),
         FunctionTool.from_defaults(generate_auto_coder_yaml),
@@ -202,6 +201,7 @@ class Planner:
 
     def run(self, query: str, max_iterations: int = 10):
         from byzerllm.apps.llama_index.byzerai import ByzerAI
+        from llama_index.core.agent import ReActAgent
         agent = ReActAgent.from_tools(
             tools=self.tools,
             llm=ByzerAI(llm=self.llm),

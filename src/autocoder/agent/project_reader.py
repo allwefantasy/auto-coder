@@ -1,5 +1,3 @@
-from llama_index.core.agent import ReActAgent
-from llama_index.core.tools import FunctionTool
 from autocoder.index.index import IndexManager
 from autocoder.pyproject import PyProject
 from autocoder.tsproject import TSProject
@@ -176,7 +174,7 @@ def detect_rm_command(command: str) -> Bool:
 
 
 def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
-
+    
     def ask_user(question:str) -> str:
         '''
         如果你对用户的问题有什么疑问，或者你想从用户收集一些额外信息，可以调用
@@ -404,7 +402,8 @@ def get_tools(args: AutoCoderArgs, llm: byzerllm.ByzerLLM):
                     pass
 
         return ",".join(matched_files)
-
+    
+    from llama_index.core.tools import FunctionTool
     tools = [
         # FunctionTool.from_defaults(get_project_related_files),
         FunctionTool.from_defaults(get_related_files_by_symbols),
@@ -440,6 +439,7 @@ class ProjectReader:
 
     def run(self, query: str, max_iterations: int = 20):
         from byzerllm.apps.llama_index.byzerai import ByzerAI
+        from llama_index.core.agent import ReActAgent
         agent = ReActAgent.from_tools(
             tools=self.tools,
             llm=ByzerAI(llm=self.llm),
