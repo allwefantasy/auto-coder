@@ -7,7 +7,7 @@ from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import Base
 from autocoder.common.v2.agent.agentic_edit_types import ReplaceInFileTool, ToolResult
 from autocoder.common.file_checkpoint.models import FileChange as CheckpointFileChange
 from autocoder.common.file_checkpoint.manager import FileChangeManager as CheckpointFileChangeManager
-from autocoder.linters.models import IssueSeverity
+from autocoder.linters.models import IssueSeverity, FileLintResult
 from loguru import logger
 from autocoder.common.auto_coder_lang import get_message_with_format
 if typing.TYPE_CHECKING:
@@ -63,7 +63,7 @@ class ReplaceInFileToolResolver(BaseToolResolver):
             logger.warning(f"Could not parse any SEARCH/REPLACE blocks from diff: {diff_content}")
         return blocks
 
-    def _filter_lint_issues(self, lint_result, levels: List[IssueSeverity] = [IssueSeverity.ERROR, IssueSeverity.WARNING]):
+    def _filter_lint_issues(self, lint_result:FileLintResult, levels: List[IssueSeverity] = [IssueSeverity.ERROR, IssueSeverity.WARNING]):
         """
         过滤 lint 结果，只保留指定级别的问题
         
@@ -79,12 +79,12 @@ class ReplaceInFileToolResolver(BaseToolResolver):
             
         # 创建一个新的 issues 列表，只包含指定级别的问题
         filtered_issues = []
-        for issue in lint_result.issues:
-            if issue.severity.value in levels:
+        for issue in lint_result.issues:            
+            if issue.severity in levels:
                 filtered_issues.append(issue)
                 
         # 更新 lint_result 的副本
-        filtered_result = lint_result.copy(deep=True)
+        filtered_result = lint_result
         filtered_result.issues = filtered_issues
         
         # 更新计数
@@ -94,7 +94,7 @@ class ReplaceInFileToolResolver(BaseToolResolver):
         
         return filtered_result
         
-    def _format_lint_issues(self, lint_result):
+    def _format_lint_issues(self, lint_result:FileLintResult):
         """
         将 lint 结果格式化为可读的文本格式
         
@@ -204,7 +204,7 @@ class ReplaceInFileToolResolver(BaseToolResolver):
                                 has_lint_issues = True
                                 # 格式化 lint 问题
                                 formatted_issues = self._format_lint_issues(filtered_results)
-                                lint_message = f"\n\n代码质量检查发现 {len(filtered_results.issues)} 个问题:\n{formatted_issues}"
+                                lint_message = f"\n\n代码质量检查发现 {len(filtered_results.issues)} 个问题"
                 except Exception as e:
                     logger.error(f"Lint 检查失败: {str(e)}")
                     lint_message = "\n\n尝试进行代码质量检查时出错。"
@@ -228,7 +228,7 @@ class ReplaceInFileToolResolver(BaseToolResolver):
             if self.agent:
                 rel_path = os.path.relpath(abs_file_path, abs_project_dir)
                 self.agent.record_file_change(rel_path, "modified", diff=diff_content, content=current_content)
-
+                        
             # 附加 lint 结果到返回内容
             result_content = {
                 "content": current_content,
@@ -236,6 +236,7 @@ class ReplaceInFileToolResolver(BaseToolResolver):
             
             # 只有在启用Lint时才添加Lint结果
             if enable_lint:
+                message = message + "\n" + lint_message
                 result_content["lint_results"] = {
                     "has_issues": has_lint_issues,
                     "issues": formatted_issues if has_lint_issues else None
