@@ -119,6 +119,7 @@ class LinterFactory:
         linter = cls.create_linter(file_path=file_path, verbose=verbose)
         if linter is None:
             return None
+        logger.info(f"Linting file: {file_path} with linter: {linter.__class__.__name__}")
         return linter.lint_file(file_path, fix=fix)
     
     @classmethod
