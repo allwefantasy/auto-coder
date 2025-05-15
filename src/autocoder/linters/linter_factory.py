@@ -9,6 +9,7 @@ from autocoder.linters.base_linter import BaseLinter
 from autocoder.linters.reactjs_linter import ReactJSLinter
 from autocoder.linters.vue_linter import VueLinter
 from autocoder.linters.python_linter import PythonLinter
+from loguru import logger
 
 class LinterFactory:
     """
