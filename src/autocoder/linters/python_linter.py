@@ -25,8 +25,7 @@ class PythonLinter(BaseLinter):
         Args:
             verbose (bool): Whether to display verbose output.
         """
-        super().__init__(verbose)
-        BaseLinter.tt()
+        super().__init__(verbose)        
     
     def get_supported_extensions(self) -> List[str]:
         """
