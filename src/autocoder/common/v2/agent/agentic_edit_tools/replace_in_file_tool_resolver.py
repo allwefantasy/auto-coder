@@ -2,6 +2,7 @@ import os
 import re
 from typing import Dict, Any, Optional, List, Tuple
 import typing
+import byzerllm
 from autocoder.common import AutoCoderArgs
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import ReplaceInFileTool, ToolResult
