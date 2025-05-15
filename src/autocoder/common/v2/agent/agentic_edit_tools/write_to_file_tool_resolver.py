@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from autocoder.common.v2.agent.agentic_edit_types import WriteToFileTool, ToolResult
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from loguru import logger
@@ -7,6 +7,7 @@ from autocoder.common import AutoCoderArgs
 from autocoder.common.auto_coder_lang import get_message_with_format
 from autocoder.common.file_checkpoint.models import FileChange as CheckpointFileChange
 from autocoder.common.file_checkpoint.manager import FileChangeManager as CheckpointFileChangeManager
+from autocoder.linters.models import IssueSeverity
 import typing
 
 if typing.TYPE_CHECKING:
@@ -19,6 +20,37 @@ class WriteToFileToolResolver(BaseToolResolver):
         self.args = args
         self.shadow_manager = self.agent.shadow_manager if self.agent else None
         self.shadow_linter = self.agent.shadow_linter if self.agent else None
+        
+    def _filter_lint_issues(self, lint_result, levels: List[IssueSeverity] = [IssueSeverity.ERROR, IssueSeverity.WARNING]):
+        """
+        过滤 lint 结果，只保留指定级别的问题
+        
+        参数:
+            lint_result: 单个文件的 lint 结果对象
+            levels: 要保留的问题级别列表，默认保留 ERROR 和 WARNING 级别
+            
+        返回:
+            过滤后的 lint 结果对象（原对象的副本）
+        """
+        if not lint_result or not lint_result.issues:
+            return lint_result
+            
+        # 创建一个新的 issues 列表，只包含指定级别的问题
+        filtered_issues = []
+        for issue in lint_result.issues:
+            if issue.severity in levels:
+                filtered_issues.append(issue)
+                
+        # 更新 lint_result 的副本
+        filtered_result = lint_result.copy(deep=True)
+        filtered_result.issues = filtered_issues
+        
+        # 更新计数
+        filtered_result.error_count = sum(1 for issue in filtered_issues if issue.severity == IssueSeverity.ERROR)
+        filtered_result.warning_count = sum(1 for issue in filtered_issues if issue.severity == IssueSeverity.WARNING)
+        filtered_result.info_count = sum(1 for issue in filtered_issues if issue.severity == IssueSeverity.INFO)
+        
+        return filtered_result
         
     def _format_lint_issues(self, lint_result):
         """
@@ -43,74 +75,7 @@ class WriteToFileToolResolver(BaseToolResolver):
             )
         
         return "\n".join(formatted_issues)
-
-    def write_file_with_shadow(self, file_path: str, content: str, source_dir: str, abs_project_dir: str, abs_file_path: str) -> ToolResult:
-        """Write file using shadow manager for path translation"""
-        try:
-            shadow_path = self.shadow_manager.to_shadow_path(abs_file_path)
-            # Ensure shadow directory exists
-            os.makedirs(os.path.dirname(shadow_path), exist_ok=True)
-            with open(shadow_path, 'w', encoding='utf-8') as f:
-                f.write(content)
-            logger.info(f"[Shadow] Successfully wrote shadow file: {shadow_path}")
-
-            # 回调AgenticEdit，记录变更
-            if self.agent:
-                rel_path = os.path.relpath(abs_file_path, abs_project_dir)
-                self.agent.record_file_change(rel_path, "added", diff=None, content=content)
-            
-            # 新增：执行代码质量检查
-            lint_results = None
-            lint_message = ""
-            formatted_issues = ""
-            has_lint_issues = False
-            
-            # 检查是否启用了Lint功能
-            enable_lint = self.args.enable_auto_fix_lint
-            
-            if enable_lint:
-                try:
-                    if self.shadow_linter and self.shadow_manager:
-                        # 对新创建的文件进行 lint 检查
-                        shadow_path = self.shadow_manager.to_shadow_path(abs_file_path)
-                        lint_results = self.shadow_linter.lint_shadow_file(shadow_path)
-                        
-                        if lint_results and lint_results.issues:
-                            has_lint_issues = True
-                            # 格式化 lint 问题
-                            formatted_issues = self._format_lint_issues(lint_results)
-                            lint_message = f"\n\n代码质量检查发现 {len(lint_results.issues)} 个问题:\n{formatted_issues}"
-                        else:
-                            lint_message = "\n\n代码质量检查通过，未发现问题。"
-                except Exception as e:
-                    logger.error(f"Lint 检查失败: {str(e)}")
-                    lint_message = "\n\n尝试进行代码质量检查时出错。"
-            else:
-                logger.info("代码质量检查已禁用")
-            
-            # 构建包含 lint 结果的返回消息
-            message = f"Successfully wrote to file (shadow): {file_path}"
-            
-            # 将 lint 消息添加到结果中，如果启用了Lint
-            if enable_lint:
-                message += lint_message
-            
-            # 附加 lint 结果到返回内容
-            result_content = {
-                "content": content,
-            }
-            
-            # 只有在启用Lint时才添加Lint结果
-            if enable_lint:
-                result_content["lint_results"] = {
-                    "has_issues": has_lint_issues,
-                    "issues": formatted_issues if has_lint_issues else None
-                }
-            
-            return ToolResult(success=True, message=message, content=result_content)
-        except Exception as e:
-            logger.error(f"Error writing to shadow file '{file_path}': {str(e)}")
-            return ToolResult(success=False, message=f"An error occurred while writing to the shadow file: {str(e)}")
+    
 
     def write_file_normal(self, file_path: str, content: str, source_dir: str, abs_project_dir: str, abs_file_path: str) -> ToolResult:
         """Write file directly without using shadow manager"""
@@ -153,31 +118,17 @@ class WriteToFileToolResolver(BaseToolResolver):
             enable_lint = self.args.enable_auto_fix_lint
             
             if enable_lint:
-                try:
-                    if self.shadow_linter and self.shadow_manager:
-                        # 对新创建的文件进行 lint 检查
-                        # 由于没有shadow系统，需要先创建shadow文件
-                        shadow_path = self.shadow_manager.to_shadow_path(abs_file_path)
-                        os.makedirs(os.path.dirname(shadow_path), exist_ok=True)
-                        with open(shadow_path, 'w', encoding='utf-8') as f:
-                            f.write(content)
-                        
-                        lint_results = self.shadow_linter.lint_shadow_file(shadow_path)
-                        
-                        if lint_results and lint_results.issues:
-                            has_lint_issues = True
-                            # 格式化 lint 问题
-                            formatted_issues = self._format_lint_issues(lint_results)
-                            lint_message = f"\n\n代码质量检查发现 {len(lint_results.issues)} 个问题:\n{formatted_issues}"
-                        else:
-                            lint_message = "\n\n代码质量检查通过，未发现问题。"
+                try:                    
                     if self.agent.linter:
                         lint_results = self.agent.linter.lint_file(file_path)
                         if lint_results and lint_results.issues:
-                            has_lint_issues = True
-                            # 格式化 lint 问题
-                            formatted_issues = self._format_lint_issues(lint_results)
-                            lint_message = f"\n\n代码质量检查发现 {len(lint_results.issues)} 个问题:\n{formatted_issues}"
+                            # 过滤 lint 结果，只保留 ERROR 和 WARNING 级别的问题
+                            filtered_results = self._filter_lint_issues(lint_results)
+                            if filtered_results.issues:
+                                has_lint_issues = True
+                                # 格式化 lint 问题
+                                formatted_issues = self._format_lint_issues(filtered_results)
+                                lint_message = f"\n\n代码质量检查发现 {len(filtered_results.issues)} 个问题:\n{formatted_issues}"
                 except Exception as e:
                     logger.error(f"Lint 检查失败: {str(e)}")
                     lint_message = "\n\n尝试进行代码质量检查时出错。"
@@ -219,9 +170,5 @@ class WriteToFileToolResolver(BaseToolResolver):
         # Security check: ensure the path is within the source directory
         if not abs_file_path.startswith(abs_project_dir):
             return ToolResult(success=False, message=f"Error: Access denied. Attempted to write file outside the project directory: {file_path}")
-
-        # Choose the appropriate implementation based on whether shadow_manager is available
-        if self.shadow_manager:
-            return self.write_file_with_shadow(file_path, content, source_dir, abs_project_dir, abs_file_path)
-        else:
-            return self.write_file_normal(file_path, content, source_dir, abs_project_dir, abs_file_path)
+                
+        return self.write_file_normal(file_path, content, source_dir, abs_project_dir, abs_file_path)
