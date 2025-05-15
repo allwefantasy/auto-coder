@@ -44,8 +44,7 @@ class PythonLinter(BaseLinter):
             
             # Check for pylint or flake8
             has_pylint = False
-            has_flake8 = False
-            has_black = False
+            has_flake8 = False            
             
             try:
                 subprocess.run([sys.executable, "-m", "pylint", "--version"], 
@@ -61,18 +60,10 @@ class PythonLinter(BaseLinter):
                 has_flake8 = True
             except (subprocess.SubprocessError, FileNotFoundError):
                 if self.verbose:
-                    print("Flake8 not found.")
-            
-            try:
-                subprocess.run([sys.executable, "-m", "black", "--version"], 
-                              check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                has_black = True
-            except (subprocess.SubprocessError, FileNotFoundError):
-                if self.verbose:
-                    print("Black not found.")
+                    print("Flake8 not found.")                   
                 
             # Need at least one linter
-            return has_pylint or has_flake8 or has_black
+            return has_pylint or has_flake8
             
         except (subprocess.SubprocessError, FileNotFoundError):
             return False
@@ -167,12 +158,15 @@ class PythonLinter(BaseLinter):
                     
                     # Process pylint issues
                     for message in pylint_output:
-                        severity = "warning"
+                        severity = "info"
                         if message.get('type') in ['error', 'fatal']:
                             severity = "error"
                             result['error_count'] += 1
-                        else:
+                        elif message.get('type') in ['warning']:
+                            severity = "warning"
                             result['warning_count'] += 1
+                        else:                            
+                            result['info_count'] += 1
                         
                         issue = {
                             'file': message.get('path', ''),
@@ -259,13 +253,16 @@ class PythonLinter(BaseLinter):
                                 message = code_message
                             
                             # Determine severity based on error code
-                            severity = "warning"
+                            severity = "info"
                             # E errors are generally more serious than F warnings
-                            if code.startswith('E'):
+                            if code.startswith('F'):
                                 severity = "error"
                                 result['error_count'] += 1
-                            else:
+                            elif code.startswith('E'):
+                                severity = "warning"
                                 result['warning_count'] += 1
+                            else:
+                                result['info_count'] += 1
                             
                             issue = {
                                 'file': file_path,
@@ -288,76 +285,7 @@ class PythonLinter(BaseLinter):
         
         return result
     
-    def _run_black(self, target: str, fix: bool) -> Dict[str, Any]:
-        """
-        Run black on the target file or directory to check formatting or fix it.
-        
-        Args:
-            target (str): Path to the file or directory to format.
-            fix (bool): Whether to automatically fix formatting issues.
-            
-        Returns:
-            Dict[str, Any]: The black results.
-        """
-        result = {
-            'error_count': 0,
-            'warning_count': 0,
-            'issues': []
-        }
-        
-        try:
-            # Build command
-            cmd = [
-                sys.executable, 
-                "-m", 
-                "black",
-            ]
-            
-            # Check-only mode if not fixing
-            if not fix:
-                cmd.append("--check")
-            
-            # Add target
-            cmd.append(target)
-            
-            process = subprocess.run(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            
-            # Black exit code is 0 if no changes, 1 if changes were needed
-            if process.returncode == 1 and not fix:
-                # Parse output to find which files would be reformatted
-                for line in process.stdout.splitlines():
-                    if line.startswith("would reformat"):
-                        file_path = line.replace("would reformat ", "").strip()
-                        
-                        result['warning_count'] += 1
-                        
-                        issue = {
-                            'file': file_path,
-                            'line': 0,  # Black doesn't provide line numbers
-                            'column': 0,
-                            'severity': "warning",
-                            'message': "Code formatting doesn't match Black style",
-                            'rule': "formatting",
-                            'tool': 'black'
-                        }
-                        
-                        result['issues'].append(issue)
-            
-            # If auto-fixing and Black reports changes
-            if fix and process.returncode == 0 and "reformatted" in process.stderr:
-                # This is good - it means Black fixed some issues
-                pass
-            
-        except Exception as e:
-            if self.verbose:
-                print(f"Error running black: {str(e)}")
-        
-        return result
+    
 
     def lint_file(self, file_path: str, fix: bool = False) -> Dict[str, Any]:
         """
@@ -394,17 +322,7 @@ class PythonLinter(BaseLinter):
             # Try to install dependencies
             if not self._install_dependencies_if_needed():
                 result['error'] = "Required dependencies are not installed and could not be installed automatically"
-                return result
-        
-        # Run black first (to format if fix=True)
-        try:
-            black_result = self._run_black(file_path, fix)
-            result['issues'].extend(black_result['issues'])
-            result['error_count'] += black_result['error_count']
-            result['warning_count'] += black_result['warning_count']
-        except Exception as e:
-            if self.verbose:
-                print(f"Error running black: {str(e)}")
+                return result               
         
         # Run pylint
         try:
@@ -471,16 +389,7 @@ class PythonLinter(BaseLinter):
                     python_files.append(os.path.join(root, file))
         
         result['files_analyzed'] = len(python_files)
-        
-        # Run black first (to format if fix=True)
-        try:
-            black_result = self._run_black(project_path, fix)
-            result['issues'].extend(black_result['issues'])
-            result['error_count'] += black_result['error_count']
-            result['warning_count'] += black_result['warning_count']
-        except Exception as e:
-            if self.verbose:
-                print(f"Error running black: {str(e)}")
+             
         
         # Run pylint
         try:
