@@ -13,72 +13,57 @@
 
 ## 类设计
 
-```java
-public class JavaLinter extends BaseLinter {
-    // 构造函数
-    public JavaLinter(boolean verbose) {
-        super(verbose);
-    }
+```python
+class JavaLinter(BaseLinter):
+    def __init__(self, verbose=False):
+        super().__init__(verbose)
     
-    // 获取支持的文件扩展名
-    @Override
-    public List<String> getSupportedExtensions() {
-        return Arrays.asList(".java");
-    }
+    def get_supported_extensions(self):
+        return [".java"]
     
-    // 检查依赖工具是否安装
-    @Override
-    protected boolean _checkDependencies() {
-        // 检查JDK、checkstyle、pmd等是否安装
-    }
+    def _check_dependencies(self):
+        """检查JDK、checkstyle、pmd等是否安装"""
+        # 检查javac是否可用
+        # 检查其他Java工具是否安装
     
-    // 安装缺失的依赖
-    @Override
-    protected boolean _installDependenciesIfNeeded() {
-        // 自动安装checkstyle/pmd等工具
-    }
+    def _install_dependencies_if_needed(self):
+        """自动安装缺失的Java工具"""
     
-    // 使用checkstyle检查代码
-    private Map<String, Object> _runCheckstyle(String target) {
-        // 实现checkstyle检查逻辑
-    }
+    def _run_javac(self, file_path):
+        """使用javac编译Java文件"""
+        # 返回编译错误信息
     
-    // 使用pmd检查代码
-    private Map<String, Object> _runPmd(String target) {
-        // 实现pmd检查逻辑
-    }
+    def _run_checkstyle(self, target):
+        """使用checkstyle检查代码"""
     
-    // 使用spotbugs检查代码
-    private Map<String, Object> _runSpotbugs(String target) {
-        // 实现spotbugs检查逻辑
-    }
+    def _run_pmd(self, target):
+        """使用pmd检查代码"""
     
-    // 使用google-java-format格式化代码
-    private Map<String, Object> _runJavaFormatter(String target, boolean fix) {
-        // 实现自动格式化逻辑
-    }
+    def _run_spotbugs(self, target):
+        """使用spotbugs检查代码"""
     
-    // 检查单个文件
-    @Override
-    public Map<String, Object> lintFile(String filePath, boolean fix) {
-        // 实现单文件检查逻辑
-    }
+    def _run_java_formatter(self, target, fix=False):
+        """使用google-java-format格式化代码"""
     
-    // 检查整个项目
-    @Override
-    public Map<String, Object> lintProject(String projectPath, boolean fix) {
-        // 实现项目级检查逻辑
-    }
+    def lint_file(self, file_path, fix=False):
+        """检查单个Java文件"""
+        # 1. 使用javac编译检查
+        # 2. 应用其他检查工具
+        # 3. 返回合并结果
     
-    // 格式化检查结果
-    @Override
-    public String formatLintResult(Map<String, Object> lintResult) {
-        // 实现结果格式化逻辑
-    }
-}
+    def lint_project(self, project_path, fix=False):
+        """检查整个Java项目"""
+    
+    def format_lint_result(self, lint_result):
+        """格式化检查结果输出"""
 ```
 
 ## 工具集成
+
+### Javac
+- 用于编译检查Java文件
+- 检查语法错误和类型错误
+- 命令: `javac -d /tmp/out Example.java`
 
 ### Checkstyle
 - 用于检查编码规范和格式问题
@@ -123,20 +108,22 @@ public class JavaLinter extends BaseLinter {
 
 ## 示例用法
 
-```java
-// 检查单个文件
-JavaLinter linter = new JavaLinter(true);
-Map<String, Object> result = linter.lintFile("src/main/java/Example.java", false);
-System.out.println(linter.formatLintResult(result));
+```python
+# 检查单个文件
+linter = JavaLinter(verbose=True)
+result = linter.lint_file("src/main/java/Example.java", fix=False)
+print(linter.format_lint_result(result))
 
-// 检查整个项目
-result = linter.lintProject("src/main/java", true);
-System.out.println(linter.formatLintResult(result));
+# 检查整个项目
+result = linter.lint_project("src/main/java", fix=True)
+print(linter.format_lint_result(result))
 ```
 
 ## 依赖管理
 
 | 工具 | 安装命令 | 检查命令 |
+|------|---------|---------|
+| Javac | 安装JDK | `javac -d /tmp/out Example.java` |
 |------|---------|---------|
 | Checkstyle | `mvn checkstyle:checkstyle` | `checkstyle -c /path/to/checks.xml` |
 | PMD | `mvn pmd:pmd` | `pmd check -d src -R rulesets/java/quickstart.xml` |
