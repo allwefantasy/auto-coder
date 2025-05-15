@@ -122,10 +122,7 @@ def show_help():
     )
     print(
         f"  \033[94m/coding\033[0m \033[93m<query>\033[0m - \033[92m{get_message('coding_desc')}\033[0m"
-    )
-    print(
-        f"  \033[94m/ask\033[0m \033[93m<query>\033[0m - \033[92m{get_message('ask_desc')}\033[0m"
-    )
+    )    
     print(
         f"  \033[94m/summon\033[0m \033[93m<query>\033[0m - \033[92m{get_message('summon_desc')}\033[0m"
     )
@@ -580,14 +577,7 @@ def main():
 
             elif user_input.startswith("/exclude_files"):
                 query = user_input[len("/exclude_files") :].strip()
-                exclude_files(query)
-
-            elif user_input.startswith("/ask"):
-                query = user_input[len("/ask") :].strip()
-                if not query:
-                    print("Please enter your question.")
-                else:
-                    ask(query)
+                exclude_files(query)           
 
             elif user_input.startswith("/exit"):
                 raise EOFError()
