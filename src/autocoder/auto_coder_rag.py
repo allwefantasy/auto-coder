@@ -435,6 +435,18 @@ def main(input_args: Optional[List[str]] = None):
         help="The model used for embedding documents",
     )
 
+    serve_parser.add_argument(
+        "--agentic_model",
+        default="",
+        help="The model used for agentic operations",
+    )
+
+    serve_parser.add_argument(
+        "--context_prune_model",
+        default="",
+        help="The model used for context pruning",
+    )
+
     # Benchmark command
     benchmark_parser = subparsers.add_parser(
         "benchmark", help="Benchmark LLM client performance"
@@ -625,6 +637,18 @@ def main(input_args: Optional[List[str]] = None):
                 emb_model.skip_nontext_check = True
                 llm.setup_sub_client("emb_model", emb_model)
 
+            if args.agentic_model:
+                agentic_model = byzerllm.ByzerLLM()
+                agentic_model.setup_default_model_name(args.agentic_model)
+                agentic_model.skip_nontext_check = True
+                llm.setup_sub_client("agentic_model", agentic_model)
+
+            if args.context_prune_model:
+                context_prune_model = byzerllm.ByzerLLM()
+                context_prune_model.setup_default_model_name(args.context_prune_model)
+                context_prune_model.skip_nontext_check = True
+                llm.setup_sub_client("context_prune_model", context_prune_model)
+
             # 当启用hybrid_index时,检查必要的组件
             if auto_coder_args.enable_hybrid_index:
                 if not args.emb_model and not llm.is_model_exist("emb"):
@@ -701,7 +725,7 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
                     }
                 )
-                llm.setup_sub_client("qa_model", qa_model)
+                llm.setup_sub_client("qa_model", qa_model)                
 
             if args.emb_model:
                 model_info = models_module.get_model_by_name(args.emb_model)
@@ -719,6 +743,40 @@ def main(input_args: Optional[List[str]] = None):
                     }
                 )
                 llm.setup_sub_client("emb_model", emb_model)
+
+            if args.agentic_model:
+                model_info = models_module.get_model_by_name(args.agentic_model)
+                agentic_model = byzerllm.SimpleByzerLLM(default_model_name=args.agentic_model)
+                agentic_model.deploy(
+                    model_path="",
+                    pretrained_model_type=model_info["model_type"],
+                    udf_name=args.agentic_model,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"],
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                    }
+                )
+                llm.setup_sub_client("agentic_model", agentic_model)
+
+            if args.context_prune_model:
+                model_info = models_module.get_model_by_name(args.context_prune_model)
+                context_prune_model = byzerllm.SimpleByzerLLM(default_model_name=args.context_prune_model)
+                context_prune_model.deploy(
+                    model_path="",
+                    pretrained_model_type=model_info["model_type"],
+                    udf_name=args.context_prune_model,
+                    infer_params={
+                        "saas.base_url": model_info["base_url"],
+                        "saas.api_key": model_info["api_key"],
+                        "saas.model": model_info["model_name"],
+                        "saas.is_reasoning": model_info["is_reasoning"],
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                    }
+                )
+                llm.setup_sub_client("context_prune_model", context_prune_model)
 
             if args.enable_hybrid_index:
                 if not args.emb_model:

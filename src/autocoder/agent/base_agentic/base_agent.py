@@ -1412,7 +1412,7 @@ class BaseAgent(ABC):
                                 import json
                                 content_str = json.dumps(
                                     result.content, indent=2, ensure_ascii=False)
-                                syntax_content = content_str                                    
+                                syntax_content = _format_content(content_str)                                    
                             elif isinstance(result.content, str) and ('\n' in result.content or result.content.strip().startswith('<')):                                                                
                                 syntax_content = _format_content(result.content)
                             else:
@@ -1427,7 +1427,7 @@ class BaseAgent(ABC):
                                 _format_content(str(result.content)))
 
                     # 打印基本信息面板
-                    yield ("thinking","\n".join(panel_content))
+                    yield ("thinking",_format_content("\n".join(panel_content)))
                     # 单独打印语法高亮内容（如果存在）
                     if syntax_content:
                         yield ("thinking",syntax_content)

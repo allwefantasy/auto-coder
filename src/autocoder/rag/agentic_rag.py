@@ -40,9 +40,18 @@ class RAGAgent(BaseAgent):
         args: AutoCoderArgs, 
         rag: LongContextRAG,
         conversation_history: Optional[List[Dict[str, Any]]] = None):
-        self.context_prune_llm = llm # get_single_llm(args.context_prune_model or args.model,product_mode=args.product_mode) 
+
+        self.default_llm = self.llm
+        self.context_prune_llm = self.default_llm
+        if self.default_llm.get_sub_client("context_prune_model"):
+            self.context_prune_llm = self.default_llm.get_sub_client("context_prune_model")
+
+        self.llm = self.default_llm
+        if self.default_llm.get_sub_client("agentic_model"):
+            self.llm = self.default_llm.get_sub_client("agentic_model")
+        
         self.rag = rag        
-        super().__init__(name, llm, files, args, conversation_history, default_tools_list=["read_file"])        
+        super().__init__(name, self.llm, files, args, conversation_history, default_tools_list=["read_file"])        
         # 注册RAG工具
         # register_search_tool()
         register_recall_tool()
@@ -116,6 +125,43 @@ class AgenticRAG:
             "query":message["content"]
         }
 
+
+    def system_prompt(self):
+        '''
+        你是一个基于知识库的智能助手，我的核心能力是通过检索增强生成（RAG）技术来回答用户问题。
+
+        你的工作流程如下：
+        1. 当用户提出问题时，我会首先理解问题的核心意图和关键信息需求
+        2. 你会从多个角度分析问题，确定最佳的检索策略和关键词，然后召回工具 recall 获取与问题最相关的详细内容，只有在特别有必要的情况下，你才回使用 read_file 来获得相关文件更详细的信息。
+        5. 如果获得的信息足够回答用户问题，你会直接生成回答。
+        6. 如果获得的信息不足以回答用户问题，你会继续使用 recall 工具，直到你确信已经获取了足够的信息来回答用户问题。
+        7. 有的问题可能需要拆解成多个问题，分别进行recall,然后最终得到的结果才是完整信息，最后才能进行回答。                
+
+        此外，你回答会遵循以下要求：
+
+        1. 严格基于召回的文档内容回答        
+        - 如果召回的文档提供的信息无法回答问题,请明确回复:"抱歉,文档中没有足够的信息来回答这个问题。" 
+        - 不要添加、推测或扩展文档未提及的信息
+
+        2. 格式如 ![image](/path/to/images/path.png) 的 Markdown 图片处理
+        - 根据Markdown 图片前后文本内容推测改图片与问题的相关性，有相关性则在回答中输出该Markdown图片路径
+        - 根据相关图片在文档中的位置，自然融入答复内容,保持上下文连贯
+        - 完整保留原始图片路径,不省略任何部分
+
+        3. 回答格式要求
+        - 使用markdown格式提升可读性        
+        {% if local_image_host %}
+        4. 图片路径处理
+        - 图片地址需返回绝对路径, 
+        - 对于Windows风格的路径，需要转换为Linux风格， 例如：C:\\Users\\user\\Desktop\\image.png 转换为 C:/Users/user/Desktop/image.png
+        - 为请求图片资源 需增加 http://{{ local_image_host }}/static/ 作为前缀
+        例如：/path/to/images/image.png， 返回 http://{{ local_image_host }}/static/path/to/images/image.png
+        {% endif %} 
+        '''    
+        return {
+            "local_image_host": self.args.local_image_host
+        }
+
     
     def _stream_chat_oai(
         self,
@@ -147,29 +193,7 @@ class AgenticRAG:
                 conversation_history=[]
             ) 
 
-            rag_agent.who_am_i('''
-                我是一个基于知识库的智能助手，我的核心能力是通过检索增强生成（RAG）技术来回答用户问题。
-
-                我的工作流程如下：
-                1. 当用户提出问题时，我会首先理解问题的核心意图和关键信息需求
-                2. 我会从多个角度分析问题，确定最佳的检索策略和关键词    
-                4. 我会多次使用召回工具 recall 获取与问题最相关的详细内容，如果有必要我可能还会使用 read_file 来获得更完整的细信息，直到我觉得信息已经足够回答用户了。
-                5. 我会综合分析检索到的信息，确保信息的完整性和相关性
-                6. 我会持续从不同角度进行搜索和召回，直到我确信已经获取了足够的信息来回答用户问题
-                7. 我会基于检索到的信息生成准确、全面且有条理的回答
-
-                我的优势：
-                - 我不依赖于预训练知识，而是直接从最新的知识库中获取信息
-                - 我能够提供基于事实的、有出处的回答，并且可以引用源代码和文档
-                - 我能够处理复杂的技术问题，特别是与代码实现相关的问题
-                - 我会清晰地区分哪些信息来自知识库，哪些是我的推理或建议
-
-                在回答问题时，我会：
-                - 明确指出信息的来源（如文件路径等）
-                - 优先使用知识库中的信息，避免生成可能不准确的内容
-                - 当知识库中没有足够信息时，我会坦诚告知用户，并提供基于已有信息的最佳建议
-                - 提供有条理、易于理解的回答，必要时使用代码示例、列表或表格增强可读性    
-                ''')
+            rag_agent.who_am_i(self.system_prompt.prompt())
                                      
             events =rag_agent.run_with_generator(recall_request)
             for (t,content) in events:    
