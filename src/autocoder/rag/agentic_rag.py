@@ -5,9 +5,8 @@ from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 import pathspec
 from byzerllm import ByzerLLM
+import byzerllm
 from loguru import logger
-from openai import OpenAI
-import statistics
 import traceback
 
 from autocoder.common import AutoCoderArgs, SourceCode
@@ -38,9 +37,9 @@ class RAGAgent(BaseAgent):
         llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], 
         files: SourceCodeList, 
         args: AutoCoderArgs, 
+        rag: LongContextRAG,
         conversation_history: Optional[List[Dict[str, Any]]] = None):
-        super().__init__(name, llm, files, args, conversation_history, default_tools_list=["read_file"])
-        self.rag = LongContextRAG(llm=llm, args=args, path=args.source_dir)
+        super().__init__(name, llm, files, args, conversation_history, default_tools_list=["read_file"])        
         # 注册RAG工具
         # register_search_tool()
         register_recall_tool()
@@ -53,7 +52,11 @@ class AgenticRAG:
         path: str,
         tokenizer_path: Optional[str] = None,
     ) -> None:
-       pass
+       self.llm = llm
+       self.args = args
+       self.path = path
+       self.tokenizer_path = tokenizer_path
+       self.rag = LongContextRAG(llm=self.llm, args=self.args, path=self.path, tokenizer_path=self.tokenizer_path) 
 
 
     def build(self):
@@ -83,6 +86,33 @@ class AgenticRAG:
             logger.error(f"Error in stream_chat_oai: {str(e)}")
             traceback.print_exc()
             return ["出现错误，请稍后再试。"], []
+
+    @byzerllm.prompt()
+    def conversation_to_query(self,messages: List[Dict[str, Any]]):
+        '''        
+        【历史对话】按时间顺序排列，从旧到新：
+        {% for message in messages %}
+        <message>
+        {% if message.role == "user" %}【用户】{% else %}【助手】{% endif %}    
+        <content>
+        {{ message.content }}
+        </content>
+        </message>
+        {% endfor %}
+        
+        【当前问题】用户的最新需求如下:
+        <current_query>
+        {{ query }}
+        </current_query>            
+        ''' 
+        temp_messages = messages[0:-1]
+        message = messages[-1]
+
+        return {
+            "messages": temp_messages,
+            "query":message["content"]
+        }
+
     
     def _stream_chat_oai(
         self,
@@ -103,13 +133,17 @@ class AgenticRAG:
         context = []
 
         def _generate_sream():
+                           
+            recall_request = AgentRequest(self.conversation_to_query(conversations))              
             rag_agent = RAGAgent(
                 name="RAGAgent",
-                llm=llm,
+                llm=self.llm,
                 files=SourceCodeList(sources=[]),
-                args=agent_args,
+                args=self.args,
+                rag=self.rag,
                 conversation_history=[]
-            )    
+            ) 
+
             rag_agent.who_am_i('''
                 我是一个基于知识库的智能助手，我的核心能力是通过检索增强生成（RAG）技术来回答用户问题。
 
@@ -133,7 +167,7 @@ class AgenticRAG:
                 - 当知识库中没有足够信息时，我会坦诚告知用户，并提供基于已有信息的最佳建议
                 - 提供有条理、易于理解的回答，必要时使用代码示例、列表或表格增强可读性    
                 ''')
-            recall_request = AgentRequest(conversations)                            
+                                     
             events =rag_agent.run_with_events(recall_request)
             for event in events:
                 content = event.content

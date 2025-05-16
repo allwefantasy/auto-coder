@@ -6,6 +6,8 @@ from typing import Optional, List
 import byzerllm
 from autocoder.rag.api_server import serve, ServerArgs
 from autocoder.rag.rag_entry import RAGFactory
+from autocoder.rag.agentic_rag import AgenticRAG
+from autocoder.rag.long_context_rag import LongContextRAG
 from autocoder.rag.llm_wrapper import LLWrapper
 from autocoder.common import AutoCoderArgs
 from autocoder.lang import lang_desc
@@ -301,6 +303,7 @@ def main(input_args: Optional[List[str]] = None):
         help="Document directory path, also used as the root directory for serving static files"
     )
     serve_parser.add_argument("--enable_local_image_host", action="store_true", help=" enable local image host for local Chat app")
+    serve_parser.add_argument("--agentic", action="store_true", help="使用 AgenticRAG 而不是 LongContextRAG")
     serve_parser.add_argument("--tokenizer_path", default=tokenizer_path, help="")
     serve_parser.add_argument(
         "--collections", default="", help="Collection name for indexing"
@@ -721,18 +724,14 @@ def main(input_args: Optional[List[str]] = None):
                 if not args.emb_model:
                     raise Exception("When enable_hybrid_index is true, an 'emb' model must be specified")                
 
-        if server_args.doc_dir:
-            auto_coder_args.rag_type = "simple"
+        if server_args.doc_dir:            
             auto_coder_args.rag_build_name = generate_unique_name_from_path(server_args.doc_dir)
-            rag = RAGFactory.get_rag(
-                llm=llm,
-                args=auto_coder_args,
-                path=server_args.doc_dir,
-                tokenizer_path=server_args.tokenizer_path,
-            )
+            if args.agentic:
+                rag = AgenticRAG(llm=llm, args=auto_coder_args, path=server_args.doc_dir, tokenizer_path=server_args.tokenizer_path)
+            else:
+                rag = LongContextRAG(llm=llm, args=auto_coder_args, path=server_args.doc_dir, tokenizer_path=server_args.tokenizer_path)
         else:
-            auto_coder_args.rag_build_name = generate_unique_name_from_path("")
-            rag = RAGFactory.get_rag(llm=llm, args=auto_coder_args, path="")
+            raise Exception("doc_dir is required")
 
         llm_wrapper = LLWrapper(llm=llm, rag=rag)
         # Save service info    
