@@ -1194,7 +1194,7 @@ class BaseAgent(ABC):
         base_url = "/agent/base"
 
         try:
-            event_stream = self.analyze(request)
+            event_stream = self.agentic_run(request)
             for agent_event in event_stream:
                 content = None
                 metadata = EventMetadata(
@@ -1322,7 +1322,7 @@ class BaseAgent(ABC):
     def run_with_generator(self, request: AgentRequest):        
         start_time = time.time()             
         project_name = os.path.basename(os.path.abspath(self.args.source_dir))
-        yield agentic_lang.get_message_with_format("agent_start", project_name=project_name)        
+        yield ("thinking",agentic_lang.get_message_with_format("agent_start", project_name=project_name))
 
         # 添加token累计变量
         total_input_tokens = 0
@@ -1369,10 +1369,10 @@ class BaseAgent(ABC):
                     
                 elif isinstance(event, LLMThinkingEvent):
                     # 以较不显眼的样式呈现思考内容
-                    yield f"[grey50]{event.text}[/grey50]"
+                    yield ("thinking",f"{event.text}")
                 elif isinstance(event, LLMOutputEvent):
                     # 打印常规LLM输出
-                    yield event.text
+                    yield ("thinking",event.text)
                 elif isinstance(event, ToolCallEvent):
                     # 跳过显示完成工具的调用
                     if hasattr(event.tool, "result") and hasattr(event.tool, "command"):
@@ -1381,25 +1381,23 @@ class BaseAgent(ABC):
                     tool_name = type(event.tool).__name__
                     # 使用工具展示函数（需要自行实现）
                     display_content = get_tool_display_message(event.tool)                    
-                    yield agentic_lang.get_message_with_format("tool_operation_title", tool_name=tool_name)
-                    yield display_content
+                    yield ("thinking", agentic_lang.get_message_with_format("tool_operation_title", tool_name=tool_name))
+                    yield ("thinking",display_content)
 
                 elif isinstance(event, ToolResultEvent):
                     # 跳过显示完成工具的结果
                     if event.tool_name == "AttemptCompletionTool":
                         continue
 
-                    result = event.result
-                    title = agentic_lang.get_message_with_format("tool_result_success_title", tool_name=event.tool_name) if result.success else agentic_lang.get_message_with_format("tool_result_failure_title", tool_name=event.tool_name)
-                    border_style = "green" if result.success else "red"
-                    success_status = agentic_lang.get_message("success_status") if result.success else agentic_lang.get_message("failure_status")
+                    result = event.result 
+                    success_status = agentic_lang.get_message("success_status") if result.success else agentic_lang.get_message("failure_status")                   
                     base_content = agentic_lang.get_message_with_format("status", status=success_status) + "\n"
                     base_content += agentic_lang.get_message_with_format("message", message=result.message) + "\n"
 
                     # 格式化内容函数
                     def _format_content(content):
                         if len(content) > 200:
-                            return f"{content[:100]}\n...\n{content[-100:]}"
+                            return f"{content[:1000]}\n...\n{content[-1000:]}"
                         else:
                             return content
 
@@ -1414,38 +1412,8 @@ class BaseAgent(ABC):
                                 import json
                                 content_str = json.dumps(
                                     result.content, indent=2, ensure_ascii=False)
-                                from rich.syntax import Syntax
-                                syntax_content = Syntax(
-                                    content_str, "json", theme="default", line_numbers=False)
-                            elif isinstance(result.content, str) and ('\n' in result.content or result.content.strip().startswith('<')):
-                                # 代码或XML/HTML的启发式判断
-                                from rich.syntax import Syntax
-                                lexer = "python"  # 默认猜测
-                                if event.tool_name == "ReadFileTool" and isinstance(event.result.message, str):
-                                    # 尝试从消息中的文件扩展名猜测lexer
-                                    if ".py" in event.result.message:
-                                        lexer = "python"
-                                    elif ".js" in event.result.message:
-                                        lexer = "javascript"
-                                    elif ".ts" in event.result.message:
-                                        lexer = "typescript"
-                                    elif ".html" in event.result.message:
-                                        lexer = "html"
-                                    elif ".css" in event.result.message:
-                                        lexer = "css"
-                                    elif ".json" in event.result.message:
-                                        lexer = "json"
-                                    elif ".xml" in event.result.message:
-                                        lexer = "xml"
-                                    elif ".md" in event.result.message:
-                                        lexer = "markdown"
-                                    else:
-                                        lexer = "text"  # 备用lexer
-                                elif event.tool_name == "ExecuteCommandTool":
-                                    lexer = "shell"
-                                else:
-                                    lexer = "text"
-
+                                syntax_content = content_str                                    
+                            elif isinstance(result.content, str) and ('\n' in result.content or result.content.strip().startswith('<')):                                                                
                                 syntax_content = _format_content(result.content)
                             else:
                                 content_str = str(result.content)
@@ -1459,36 +1427,30 @@ class BaseAgent(ABC):
                                 _format_content(str(result.content)))
 
                     # 打印基本信息面板
-                    yield panel_content
+                    yield ("thinking","\n".join(panel_content))
                     # 单独打印语法高亮内容（如果存在）
                     if syntax_content:
-                        yield syntax_content
+                        yield ("thinking",syntax_content)
 
-                elif isinstance(event, CompletionEvent):
-                    # 在这里完成实际合并
-                    try:
-                        self.apply_changes()
-                    except Exception as e:
-                        logger.exception(agentic_lang.get_message_with_format("shadow_merge_error", error=str(e)))
-                    
-                    yield event.completion.result
+                elif isinstance(event, CompletionEvent):                    
+                    yield ("result",event.completion.result)
                     if event.completion.command:
-                        yield agentic_lang.get_message_with_format("suggested_command", command=event.completion.command)
+                        yield ("result", agentic_lang.get_message_with_format("suggested_command", command=event.completion.command))
                 elif isinstance(event, ErrorEvent):
-                    yield agentic_lang.get_message("error_title")
-                    yield agentic_lang.get_message_with_format("error_content", message=event.message)                    
+                    yield ("result", agentic_lang.get_message("error_title"))
+                    yield ("result", agentic_lang.get_message_with_format("error_content", message=event.message))                    
 
                 time.sleep(0.1)  # 小延迟以获得更好的视觉流
 
         except Exception as e:
             logger.exception(agentic_lang.get_message("unexpected_error"))
-            yield agentic_lang.get_message("fatal_error_title")
-            yield agentic_lang.get_message_with_format("fatal_error_content", error=str(e))
+            yield ("result",agentic_lang.get_message("fatal_error_title"))
+            yield ("result",agentic_lang.get_message_with_format("fatal_error_content", error=str(e)))
             raise e
         finally:
             # 在结束时打印累计的token使用情况
             duration = time.time() - start_time            
-            yield self.printer.get_message_from_key_with_format("code_generation_complete",
+            yield ("result",self.printer.get_message_from_key_with_format("code_generation_complete",
                 duration=duration,
                 input_tokens=total_input_tokens,
                 output_tokens=total_output_tokens,
@@ -1496,8 +1458,8 @@ class BaseAgent(ABC):
                 output_cost=total_output_cost,
                 speed=0.0,
                 model_names=model_name,
-                sampling_count=1)
-            yield agentic_lang.get_message("agent_execution_complete")
+                sampling_count=1))
+            yield ("result", agentic_lang.get_message("agent_execution_complete"))
     
     def run_in_terminal(self, request: AgentRequest):
         """

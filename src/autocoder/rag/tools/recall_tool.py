@@ -25,7 +25,6 @@ from autocoder.rag.relevant_utils import TaskTiming
 class RecallTool(BaseTool):
     """召回工具，用于获取与查询相关的文档内容"""
     query: str  # 用户查询
-    max_tokens: Optional[int] = 4000  # 最大返回令牌数
     file_paths: Optional[List[str]] = None  # 指定要处理的文件路径列表，如果为空则自动搜索
 
 
@@ -39,8 +38,7 @@ class RecallToolResolver(BaseToolResolver):
         """实现召回工具的解析逻辑"""
         try:
             # 获取参数
-            query = self.tool.query            
-            max_tokens = self.tool.max_tokens
+            query = self.tool.query                        
             file_paths = self.tool.file_paths
             rag:LongContextRAG = self.agent.rag                                    
             # 构建对话历史
@@ -97,11 +95,12 @@ class RecallToolResolver(BaseToolResolver):
                     )
             
             # 调用文档分块处理
-            generator = rag._process_document_chunking(relevant_docs, conversations, rag_stat, 0)
+            relevant_docs = [doc.source_code for doc in relevant_docs]
+            doc_chunking_generator = rag._process_document_chunking(relevant_docs, conversations, rag_stat, 0)
             
             # 获取分块结果
             final_relevant_docs = None
-            for item in generator:
+            for item in doc_chunking_generator:
                 if isinstance(item, dict) and "result" in item:
                     final_relevant_docs = item["result"]
             
@@ -116,9 +115,8 @@ class RecallToolResolver(BaseToolResolver):
             doc_contents = []
             for doc in final_relevant_docs:
                 doc_contents.append({
-                    "path": doc.source_code.module_name,
-                    "content": doc.source_code.source_code,
-                    "relevance": doc.relevance.relevant_score if doc.relevance else 0
+                    "path": doc.module_name,
+                    "content": doc.source_code                    
                 })
             
             return ToolResult(
@@ -141,7 +139,7 @@ def register_recall_tool():
     # 准备工具描述
     description = ToolDescription(
         description="召回与查询相关的文档内容",
-        parameters="query: 搜索查询\nmax_tokens: 最大返回令牌数（可选，默认为4000）\nfile_paths: 指定要处理的文件路径列表（可选）",
+        parameters="query: 搜索查询\nfile_paths: 指定要处理的文件路径列表（可选）",
         usage="用于根据查询获取相关文档的内容片段"
     )
     
@@ -150,7 +148,6 @@ def register_recall_tool():
         title="召回工具使用示例",
         body="""<recall>
 <query>如何实现文件监控功能</query>
-<max_tokens>4000</max_tokens>
 </recall>"""
     )
     

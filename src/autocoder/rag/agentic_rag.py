@@ -20,6 +20,7 @@ from autocoder.agent.base_agentic.types import AgentRequest
 from autocoder.common import SourceCodeList
 from autocoder.rag.tools import register_search_tool, register_recall_tool
 from byzerllm.utils.types import SingleOutputMeta
+from autocoder.utils.llms import get_single_llm
 try:
     from autocoder_pro.rag.llm_compute import LLMComputeEngine
     pro_version = version("auto-coder-pro")
@@ -39,6 +40,8 @@ class RAGAgent(BaseAgent):
         args: AutoCoderArgs, 
         rag: LongContextRAG,
         conversation_history: Optional[List[Dict[str, Any]]] = None):
+        self.context_prune_llm = llm # get_single_llm(args.context_prune_model or args.model,product_mode=args.product_mode) 
+        self.rag = rag        
         super().__init__(name, llm, files, args, conversation_history, default_tools_list=["read_file"])        
         # 注册RAG工具
         # register_search_tool()
@@ -168,16 +171,20 @@ class AgenticRAG:
                 - 提供有条理、易于理解的回答，必要时使用代码示例、列表或表格增强可读性    
                 ''')
                                      
-            events =rag_agent.run_with_events(recall_request)
-            for event in events:
-                content = event.content
-                if not isinstance(event.content, str):
-                    content = json.dumps(event.content,ensure_ascii=False)
-                yield (content, SingleOutputMeta(
+            events =rag_agent.run_with_generator(recall_request)
+            for (t,content) in events:    
+                if t == "thinking":                          
+                    yield ("", SingleOutputMeta(
                     generated_tokens_count=0,
-                    reasoning_content=0,
-                    model=""
+                    input_tokens_count=0,
+                    reasoning_content=content,                    
                 ))
+                else:
+                    yield (content, SingleOutputMeta(
+                        generated_tokens_count=0,
+                        input_tokens_count=0,
+                        reasoning_content="",                    
+                    ))
 
         return _generate_sream(), context
 
