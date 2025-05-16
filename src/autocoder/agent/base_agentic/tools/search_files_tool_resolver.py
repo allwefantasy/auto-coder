@@ -1,7 +1,7 @@
 import os
 import re
 import glob
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from autocoder.agent.base_agentic.tools.base_tool_resolver import BaseToolResolver
 from autocoder.agent.base_agentic.types import SearchFilesTool, ToolResult  # Import ToolResult from types
 from loguru import logger
@@ -20,14 +20,54 @@ class SearchFilesToolResolver(BaseToolResolver):
         self.tool: SearchFilesTool = tool
         self.shadow_manager = self.agent.shadow_manager if self.agent else None
 
-    def resolve(self) -> ToolResult:
-        search_path_str = self.tool.path
-        regex_pattern = self.tool.regex
-        file_pattern = self.tool.file_pattern or "*"
-        source_dir = self.args.source_dir or "."
-        absolute_source_dir = os.path.abspath(source_dir)
-        absolute_search_path = os.path.abspath(os.path.join(source_dir, search_path_str))
+    def search_in_dir(self, base_dir: str, regex_pattern: str, file_pattern: str, source_dir: str, is_shadow: bool = False, compiled_regex: Optional[re.Pattern] = None) -> List[Dict[str, Any]]:
+        """Helper function to search in a directory"""
+        search_results = []
+        search_glob_pattern = os.path.join(base_dir, "**", file_pattern)
+        
+        logger.info(f"Searching for regex '{regex_pattern}' in files matching '{file_pattern}' under '{base_dir}' (shadow: {is_shadow}) with ignore rules applied.")
+        
+        if compiled_regex is None:
+            compiled_regex = re.compile(regex_pattern)
+            
+        for filepath in glob.glob(search_glob_pattern, recursive=True):
+            abs_path = os.path.abspath(filepath)
+            if should_ignore(abs_path):
+                continue
 
+            if os.path.isfile(filepath):
+                try:
+                    with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+                        lines = f.readlines()
+                    for i, line in enumerate(lines):
+                        if compiled_regex.search(line):
+                            context_start = max(0, i - 2)
+                            context_end = min(len(lines), i + 3)
+                            context = "".join([f"{j+1}: {lines[j]}" for j in range(context_start, context_end)])
+                            
+                            if is_shadow and self.shadow_manager:
+                                try:
+                                    abs_project_path = self.shadow_manager.from_shadow_path(filepath)
+                                    relative_path = os.path.relpath(abs_project_path, source_dir)
+                                except Exception:
+                                    relative_path = os.path.relpath(filepath, source_dir)
+                            else:
+                                relative_path = os.path.relpath(filepath, source_dir)
+                            
+                            search_results.append({
+                                "path": relative_path,
+                                "line_number": i + 1,
+                                "match_line": line.strip(),
+                                "context": context.strip()
+                            })
+                except Exception as e:
+                    logger.warning(f"Could not read or process file {filepath}: {e}")
+                    continue
+        
+        return search_results
+
+    def search_files_with_shadow(self, search_path_str: str, regex_pattern: str, file_pattern: str, source_dir: str, absolute_source_dir: str, absolute_search_path: str) -> Union[ToolResult, List[Dict[str, Any]]]:
+        """Search files using shadow manager for path translation"""
         # Security check
         if not absolute_search_path.startswith(absolute_source_dir):
             return ToolResult(success=False, message=f"Error: Access denied. Attempted to search outside the project directory: {search_path_str}")
@@ -54,58 +94,15 @@ class SearchFilesToolResolver(BaseToolResolver):
         try:
             compiled_regex = re.compile(regex_pattern)
             
-            # Helper function to search in a directory
-            def search_in_dir(base_dir, is_shadow=False):
-                search_results = []
-                search_glob_pattern = os.path.join(base_dir, "**", file_pattern)
-                
-                logger.info(f"Searching for regex '{regex_pattern}' in files matching '{file_pattern}' under '{base_dir}' (shadow: {is_shadow}) with ignore rules applied.")
-                
-                for filepath in glob.glob(search_glob_pattern, recursive=True):
-                    abs_path = os.path.abspath(filepath)
-                    if should_ignore(abs_path):
-                        continue
-
-                    if os.path.isfile(filepath):
-                        try:
-                            with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
-                                lines = f.readlines()
-                            for i, line in enumerate(lines):
-                                if compiled_regex.search(line):
-                                    context_start = max(0, i - 2)
-                                    context_end = min(len(lines), i + 3)
-                                    context = "".join([f"{j+1}: {lines[j]}" for j in range(context_start, context_end)])
-                                    
-                                    if is_shadow and self.shadow_manager:
-                                        try:
-                                            abs_project_path = self.shadow_manager.from_shadow_path(filepath)
-                                            relative_path = os.path.relpath(abs_project_path, source_dir)
-                                        except Exception:
-                                            relative_path = os.path.relpath(filepath, source_dir)
-                                    else:
-                                        relative_path = os.path.relpath(filepath, source_dir)
-                                    
-                                    search_results.append({
-                                        "path": relative_path,
-                                        "line_number": i + 1,
-                                        "match_line": line.strip(),
-                                        "context": context.strip()
-                                    })
-                        except Exception as e:
-                            logger.warning(f"Could not read or process file {filepath}: {e}")
-                            continue
-                
-                return search_results
-            
             # Search in both directories and merge results
             shadow_results = []
             source_results = []
             
             if shadow_exists:
-                shadow_results = search_in_dir(shadow_dir_path, is_shadow=True)
+                shadow_results = self.search_in_dir(shadow_dir_path, regex_pattern, file_pattern, source_dir, is_shadow=True, compiled_regex=compiled_regex)
             
             if os.path.exists(absolute_search_path) and os.path.isdir(absolute_search_path):
-                source_results = search_in_dir(absolute_search_path, is_shadow=False)
+                source_results = self.search_in_dir(absolute_search_path, regex_pattern, file_pattern, source_dir, is_shadow=False, compiled_regex=compiled_regex)
             
             # Merge results, prioritizing shadow results
             # Create a dictionary for quick lookup
@@ -122,9 +119,7 @@ class SearchFilesToolResolver(BaseToolResolver):
             # Convert back to list
             merged_results = list(results_dict.values())
 
-            message = f"Search completed. Found {len(merged_results)} matches."
-            logger.info(message)
-            return ToolResult(success=True, message=message, content=merged_results)
+            return merged_results
 
         except re.error as e:
             logger.error(f"Invalid regex pattern '{regex_pattern}': {e}")
@@ -132,3 +127,53 @@ class SearchFilesToolResolver(BaseToolResolver):
         except Exception as e:
             logger.error(f"Error during file search: {str(e)}")
             return ToolResult(success=False, message=f"An unexpected error occurred during search: {str(e)}")
+    
+    def search_files_normal(self, search_path_str: str, regex_pattern: str, file_pattern: str, source_dir: str, absolute_source_dir: str, absolute_search_path: str) -> Union[ToolResult, List[Dict[str, Any]]]:
+        """Search files directly without using shadow manager"""
+        # Security check
+        if not absolute_search_path.startswith(absolute_source_dir):
+            return ToolResult(success=False, message=f"Error: Access denied. Attempted to search outside the project directory: {search_path_str}")
+
+        # Validate that the directory exists
+        if not os.path.exists(absolute_search_path):
+            return ToolResult(success=False, message=f"Error: Search path not found: {search_path_str}")
+        if not os.path.isdir(absolute_search_path):
+            return ToolResult(success=False, message=f"Error: Search path is not a directory: {search_path_str}")
+
+        try:
+            compiled_regex = re.compile(regex_pattern)
+            
+            # Search in the directory
+            search_results = self.search_in_dir(absolute_search_path, regex_pattern, file_pattern, source_dir, is_shadow=False, compiled_regex=compiled_regex)
+            
+            return search_results
+
+        except re.error as e:
+            logger.error(f"Invalid regex pattern '{regex_pattern}': {e}")
+            return ToolResult(success=False, message=f"Invalid regex pattern: {e}")
+        except Exception as e:
+            logger.error(f"Error during file search: {str(e)}")
+            return ToolResult(success=False, message=f"An unexpected error occurred during search: {str(e)}")
+
+    def resolve(self) -> ToolResult:
+        """Resolve the search files tool by calling the appropriate implementation"""
+        search_path_str = self.tool.path
+        regex_pattern = self.tool.regex
+        file_pattern = self.tool.file_pattern or "*"
+        source_dir = self.args.source_dir or "."
+        absolute_source_dir = os.path.abspath(source_dir)
+        absolute_search_path = os.path.abspath(os.path.join(source_dir, search_path_str))
+
+        # Choose the appropriate implementation based on whether shadow_manager is available
+        if self.shadow_manager:
+            result = self.search_files_with_shadow(search_path_str, regex_pattern, file_pattern, source_dir, absolute_source_dir, absolute_search_path)
+        else:
+            result = self.search_files_normal(search_path_str, regex_pattern, file_pattern, source_dir, absolute_source_dir, absolute_search_path)
+
+        # Handle the case where the implementation returns a list instead of a ToolResult
+        if isinstance(result, list):
+            message = f"Search completed. Found {len(result)} matches."
+            logger.info(message)
+            return ToolResult(success=True, message=message, content=result)
+        else:
+            return result

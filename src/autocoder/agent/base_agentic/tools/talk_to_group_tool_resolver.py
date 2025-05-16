@@ -2,10 +2,15 @@ from typing import Optional, Dict, Any
 import os
 from loguru import logger
 from datetime import datetime
+import typing
 
 from ..types import TalkToGroupTool, ToolResult
 from ..tools.base_tool_resolver import BaseToolResolver
 from ..agent_hub import AgentHub, Group
+from autocoder.common import AutoCoderArgs
+
+if typing.TYPE_CHECKING:
+    from ..base_agent import BaseAgent
 
 
 class TalkToGroupToolResolver(BaseToolResolver):

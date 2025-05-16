@@ -2,7 +2,7 @@
 Default tools initialization module
 Used to initialize and register default tools
 """
-from typing import Dict, Type, List, Any
+from typing import Dict, Optional, List, Any
 from loguru import logger
 import byzerllm
 from .tool_registry import ToolRegistry
@@ -502,10 +502,30 @@ def register_default_tools_case_doc(params: Dict[str, Any]):
 
     logger.info(f"处理了 {len(DEFAULT_TOOLS_CASE_DOC)} 个默认工具用例文档")
 
+def get_default_tool_names():
+    return [
+        "execute_command",
+        "read_file",
+        "write_to_file",
+        "replace_in_file",
+        "search_files",
+        "list_files",
+        "ask_followup_question",
+        "attempt_completion",
+        "plan_mode_respond",
+        "use_mcp_tool",
+        "talk_to",
+        "talk_to_group"
+    ]
 
-def register_default_tools(params: Dict[str, Any]):
+def register_default_tools(params: Dict[str, Any], default_tools_list: Optional[List[str]] = None):
     """
-    Register all default tools
+    Register default tools
+    
+    Args:
+        params: Parameters for tool generators
+        default_tools_list: Optional list of tool names to register. If provided, only tools in this list will be registered.
+                          If None, all default tools will be registered.
     """
     tool_desc_gen = ToolDescGenerators(params)
     tool_examples_gen = ToolExampleGenerators(params)
@@ -661,12 +681,24 @@ def register_default_tools(params: Dict[str, Any]):
             "case_docs": []
         }
     }
-    # 先使用统一的工具注册方法注册所有工具
+    # 先使用统一的工具注册方法注册工具
+    registered_count = 0
     for tool_tag, tool_info in DEFAULT_TOOLS.items():
+        # attempt_completion 工具是必须注册的
+        if tool_tag == "attempt_completion":
+            ToolRegistry.register_unified_tool(tool_tag, tool_info)
+            registered_count += 1
+            continue
+            
+        # 如果提供了工具列表，则只注册列表中的工具
+        if default_tools_list is not None and tool_tag not in default_tools_list:
+            continue
+            
         ToolRegistry.register_unified_tool(tool_tag, tool_info)
+        registered_count += 1        
 
     logger.info(
-        f"Registered {len(DEFAULT_TOOLS)} default tools using unified registration")
+        f"Registered {registered_count} default tools using unified registration")
 
     # 然后注册默认工具用例文档
     # 这样可以确保在注册用例文档时，所有工具已经注册完成
