@@ -1318,6 +1318,186 @@ class BaseAgent(ABC):
             event_manager.write_error(
                 content=error_content.to_dict(), metadata=metadata.to_dict())
             raise e
+
+    def run_with_generator(self, request: AgentRequest):        
+        start_time = time.time()             
+        project_name = os.path.basename(os.path.abspath(self.args.source_dir))
+        yield agentic_lang.get_message_with_format("agent_start", project_name=project_name)        
+
+        # 添加token累计变量
+        total_input_tokens = 0
+        total_output_tokens = 0
+        total_input_cost = 0.0
+        total_output_cost = 0.0
+        model_name = ""
+
+        try:
+            event_stream = self.agentic_run(request)
+            for event in event_stream:
+                if isinstance(event, TokenUsageEvent):
+                    # 获取模型信息以计算价格
+                    from autocoder.utils import llms as llm_utils
+                    model_name = ",".join(llm_utils.get_llm_names(self.llm))
+                    model_info = llm_utils.get_model_info(
+                        model_name, self.args.product_mode) or {}
+                    input_price = model_info.get(
+                        "input_price", 0.0) if model_info else 0.0
+                    output_price = model_info.get(
+                        "output_price", 0.0) if model_info else 0.0
+
+                    # 计算成本
+                    last_meta = event.usage
+                    input_cost = (last_meta.input_tokens_count *
+                                 input_price) / 1000000  # 转换为百万
+                    output_cost = (
+                        last_meta.generated_tokens_count * output_price) / 1000000
+
+                    # 累计token使用情况
+                    total_input_tokens += last_meta.input_tokens_count
+                    total_output_tokens += last_meta.generated_tokens_count
+                    total_input_cost += input_cost
+                    total_output_cost += output_cost
+
+                    # 记录日志
+                    logger.info(agentic_lang.get_message_with_format(
+                        "token_usage_log", 
+                        model=model_name, 
+                        input_tokens=last_meta.input_tokens_count, 
+                        output_tokens=last_meta.generated_tokens_count, 
+                        input_cost=input_cost, 
+                        output_cost=output_cost))
+                    
+                elif isinstance(event, LLMThinkingEvent):
+                    # 以较不显眼的样式呈现思考内容
+                    yield f"[grey50]{event.text}[/grey50]"
+                elif isinstance(event, LLMOutputEvent):
+                    # 打印常规LLM输出
+                    yield event.text
+                elif isinstance(event, ToolCallEvent):
+                    # 跳过显示完成工具的调用
+                    if hasattr(event.tool, "result") and hasattr(event.tool, "command"):
+                        continue  # 不显示完成工具的调用
+
+                    tool_name = type(event.tool).__name__
+                    # 使用工具展示函数（需要自行实现）
+                    display_content = get_tool_display_message(event.tool)                    
+                    yield agentic_lang.get_message_with_format("tool_operation_title", tool_name=tool_name)
+                    yield display_content
+
+                elif isinstance(event, ToolResultEvent):
+                    # 跳过显示完成工具的结果
+                    if event.tool_name == "AttemptCompletionTool":
+                        continue
+
+                    result = event.result
+                    title = agentic_lang.get_message_with_format("tool_result_success_title", tool_name=event.tool_name) if result.success else agentic_lang.get_message_with_format("tool_result_failure_title", tool_name=event.tool_name)
+                    border_style = "green" if result.success else "red"
+                    success_status = agentic_lang.get_message("success_status") if result.success else agentic_lang.get_message("failure_status")
+                    base_content = agentic_lang.get_message_with_format("status", status=success_status) + "\n"
+                    base_content += agentic_lang.get_message_with_format("message", message=result.message) + "\n"
+
+                    # 格式化内容函数
+                    def _format_content(content):
+                        if len(content) > 200:
+                            return f"{content[:100]}\n...\n{content[-100:]}"
+                        else:
+                            return content
+
+                    # 首先准备基本信息面板
+                    panel_content = [base_content]
+                    syntax_content = None
+
+                    if result.content is not None:
+                        content_str = ""
+                        try:
+                            if isinstance(result.content, (dict, list)):
+                                import json
+                                content_str = json.dumps(
+                                    result.content, indent=2, ensure_ascii=False)
+                                from rich.syntax import Syntax
+                                syntax_content = Syntax(
+                                    content_str, "json", theme="default", line_numbers=False)
+                            elif isinstance(result.content, str) and ('\n' in result.content or result.content.strip().startswith('<')):
+                                # 代码或XML/HTML的启发式判断
+                                from rich.syntax import Syntax
+                                lexer = "python"  # 默认猜测
+                                if event.tool_name == "ReadFileTool" and isinstance(event.result.message, str):
+                                    # 尝试从消息中的文件扩展名猜测lexer
+                                    if ".py" in event.result.message:
+                                        lexer = "python"
+                                    elif ".js" in event.result.message:
+                                        lexer = "javascript"
+                                    elif ".ts" in event.result.message:
+                                        lexer = "typescript"
+                                    elif ".html" in event.result.message:
+                                        lexer = "html"
+                                    elif ".css" in event.result.message:
+                                        lexer = "css"
+                                    elif ".json" in event.result.message:
+                                        lexer = "json"
+                                    elif ".xml" in event.result.message:
+                                        lexer = "xml"
+                                    elif ".md" in event.result.message:
+                                        lexer = "markdown"
+                                    else:
+                                        lexer = "text"  # 备用lexer
+                                elif event.tool_name == "ExecuteCommandTool":
+                                    lexer = "shell"
+                                else:
+                                    lexer = "text"
+
+                                syntax_content = _format_content(result.content)
+                            else:
+                                content_str = str(result.content)
+                                # 直接附加简单字符串内容
+                                panel_content.append(
+                                    _format_content(content_str))
+                        except Exception as e:
+                            logger.warning(agentic_lang.get_message_with_format("format_tool_error", error=str(e)))
+                            panel_content.append(
+                                # 备用
+                                _format_content(str(result.content)))
+
+                    # 打印基本信息面板
+                    yield panel_content
+                    # 单独打印语法高亮内容（如果存在）
+                    if syntax_content:
+                        yield syntax_content
+
+                elif isinstance(event, CompletionEvent):
+                    # 在这里完成实际合并
+                    try:
+                        self.apply_changes()
+                    except Exception as e:
+                        logger.exception(agentic_lang.get_message_with_format("shadow_merge_error", error=str(e)))
+                    
+                    yield event.completion.result
+                    if event.completion.command:
+                        yield agentic_lang.get_message_with_format("suggested_command", command=event.completion.command)
+                elif isinstance(event, ErrorEvent):
+                    yield agentic_lang.get_message("error_title")
+                    yield agentic_lang.get_message_with_format("error_content", message=event.message)                    
+
+                time.sleep(0.1)  # 小延迟以获得更好的视觉流
+
+        except Exception as e:
+            logger.exception(agentic_lang.get_message("unexpected_error"))
+            yield agentic_lang.get_message("fatal_error_title")
+            yield agentic_lang.get_message_with_format("fatal_error_content", error=str(e))
+            raise e
+        finally:
+            # 在结束时打印累计的token使用情况
+            duration = time.time() - start_time            
+            yield self.printer.get_message_from_key_with_format("code_generation_complete",
+                duration=duration,
+                input_tokens=total_input_tokens,
+                output_tokens=total_output_tokens,
+                input_cost=total_input_cost,
+                output_cost=total_output_cost,
+                speed=0.0,
+                model_names=model_name,
+                sampling_count=1)
+            yield agentic_lang.get_message("agent_execution_complete")
     
     def run_in_terminal(self, request: AgentRequest):
         """

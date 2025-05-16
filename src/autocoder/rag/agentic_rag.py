@@ -134,7 +134,7 @@ class AgenticRAG:
 
         def _generate_sream():
                            
-            recall_request = AgentRequest(self.conversation_to_query(conversations))              
+            recall_request = AgentRequest(user_input=self.conversation_to_query.prompt(conversations))              
             rag_agent = RAGAgent(
                 name="RAGAgent",
                 llm=self.llm,
