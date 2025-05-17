@@ -1554,10 +1554,7 @@ class BaseAgent(ABC):
 
                     # 格式化内容函数
                     def _format_content(content):
-                        if len(content) > 200:
-                            return f"{content[:100]}\n...\n{content[-100:]}"
-                        else:
-                            return content
+                        return content[:200]
 
                     # 首先准备基本信息面板
                     panel_content = [base_content]
