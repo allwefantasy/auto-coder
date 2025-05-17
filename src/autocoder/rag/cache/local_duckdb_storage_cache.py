@@ -406,7 +406,8 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                             continue
                     return cache
             except Exception as e:
-                logger.error(f"Error loading cache file: {str(e)}")
+                logger.warning(f"Error loading cache file: {str(e)}")
+                logger.exception(e)
                 return {}
         return {}
 
@@ -421,7 +422,8 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                         json.dump(cache_item.model_dump(), f, ensure_ascii=False)
                         f.write("\n")
             except IOError as e:
-                logger.error(f"Error writing cache file: {str(e)}")
+                logger.warning(f"Error writing cache file: {str(e)}")
+                logger.exception(e)
         else:
             lock_file = cache_file + ".lock"
             with open(lock_file, "w", encoding="utf-8") as lockf:
@@ -581,6 +583,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                             f"[BUILD CACHE] Error details: batch size: "
                             f"{len(batch) if 'batch' in locals() else 'unknown'}"
                         )
+                        logger.exception(e)
 
             total_time = time.time() - start_time
             logger.info(
@@ -622,6 +625,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                     time.sleep(self.extra_params.anti_quota_limit)
                 except Exception as err:
                     logger.error(f"Error in saving chunk: {str(err)}")
+                    logger.exception(err)
 
     def process_queue(self):
         while self.queue:
@@ -671,7 +675,8 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                             self.failed_files.add(file_info.file_path)
                             save_failed_files(self.failed_files_path, self.failed_files)
                     except Exception as e:
-                        logger.error(f"Error in process_queue: {e}")
+                        logger.error(f"Error in process_queue: {str(e)}")
+                        logger.exception(e)
                         self.failed_files.add(file_info.file_path)
                         save_failed_files(self.failed_files_path, self.failed_files)
 
@@ -904,6 +909,7 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                     query_results.append((query, query_result))
                 except Exception as e:
                     logger.error(f"处理查询 '{query}' 时出错: {str(e)}")
+                    logger.exception(e)
 
         logger.info(f"所有查询共返回 {sum(len(r) for _, r in query_results)} 条记录")
 
