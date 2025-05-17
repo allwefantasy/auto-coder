@@ -1450,7 +1450,7 @@ class BaseAgent(ABC):
         finally:
             # 在结束时打印累计的token使用情况
             duration = time.time() - start_time            
-            yield ("result",self.printer.get_message_from_key_with_format("code_generation_complete",
+            yield ("result","\n" + self.printer.get_message_from_key_with_format("code_generation_complete",
                 duration=duration,
                 input_tokens=total_input_tokens,
                 output_tokens=total_output_tokens,
@@ -1459,7 +1459,7 @@ class BaseAgent(ABC):
                 speed=0.0,
                 model_names=model_name,
                 sampling_count=1))
-            yield ("result", agentic_lang.get_message("agent_execution_complete"))
+            yield ("result", "\n" + agentic_lang.get_message("agent_execution_complete"))
     
     def run_in_terminal(self, request: AgentRequest):
         """
