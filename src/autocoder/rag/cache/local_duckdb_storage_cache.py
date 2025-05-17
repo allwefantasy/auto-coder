@@ -10,7 +10,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Dict, Any, Optional, Tuple, Union
 import numpy as np
 from loguru import logger
-from typing import Union
 from byzerllm import SimpleByzerLLM, ByzerLLM
 from autocoder.utils.llms import get_llm_names
 
@@ -31,10 +30,12 @@ from autocoder.rag.cache.base_cache import (
     FileInfo,
     CacheItem,
 )
-from autocoder.rag.utils import process_file_in_multi_process, process_file_local
+from autocoder.rag.utils import (
+    process_file_in_multi_process,
+    process_file_local,
+)
 from autocoder.rag.variable_holder import VariableHolder
-from byzerllm import SimpleByzerLLM, ByzerLLM
-from .failed_files_utils import save_failed_files, load_failed_files
+from .failed_files_utils import save_failed_files
 
 if platform.system() != "Windows":
     import fcntl
@@ -66,7 +67,8 @@ class DuckDBLocalContext:
     def __enter__(self) -> "duckdb.DuckDBPyConnection":
         if not os.path.exists(os.path.dirname(self.database_path)):
             raise ValueError(
-                f"Directory {os.path.dirname(self.database_path)} does not exist."
+                f"Directory {os.path.dirname(self.database_path)} "
+                f"does not exist."
             )
 
         self._conn = duckdb.connect(self.database_path)
@@ -97,10 +99,12 @@ class LocalDuckdbStorage:
         self.persist_dir = persist_dir
         self.cache_dir = os.path.join(self.persist_dir, ".cache")
         self.args = args
-        logger.info(f"正在启动 DuckDBVectorStore.")
+        logger.info("正在启动 DuckDBVectorStore.")
 
         if self.database_name != ":memory:":
-            self.database_path = os.path.join(self.cache_dir, self.database_name)
+            self.database_path = os.path.join(
+                self.cache_dir, self.database_name
+            )
 
         if self.database_name == ":memory:":
             self._conn = duckdb.connect(self.database_name)
@@ -114,7 +118,8 @@ class LocalDuckdbStorage:
             self._conn = None
         logger.info(
             f"DuckDBVectorStore 初始化完成, 存储目录: {self.cache_dir}, "
-            f"数据库名称: {self.database_name}, 数据表名称: {self.table_name}"
+            f"数据库名称: {self.database_name}, "
+            f"数据表名称: {self.table_name}"
         )
 
     @classmethod
@@ -167,15 +172,17 @@ class LocalDuckdbStorage:
                 retry_count += 1
                 if retry_count >= max_retries:
                     logger.error(
-                        f"Failed to get embedding after {max_retries} attempts: {str(e)}"
+                        f"Failed to get embedding after {max_retries} "
+                        f"attempts: {str(e)}"
                     )
                     raise
 
                 # Sleep between 1-5 seconds before retrying
                 sleep_time = 1 + (retry_count * 1.5)
                 logger.warning(
-                    f"Embedding API call failed (attempt {retry_count}/{max_retries}). "
-                    f"Error: {str(e)}. Retrying in {sleep_time:.1f} seconds..."
+                    f"Embedding API call failed (attempt {retry_count}/"
+                    f"{max_retries}). Error: {str(e)}. Retrying in "
+                    f"{sleep_time:.1f} seconds..."
                 )
                 time.sleep(sleep_time)
 
@@ -244,7 +251,9 @@ class LocalDuckdbStorage:
         
         if not context_chunk["raw_content"]:
             context_chunk["raw_content"] = "empty"        
-        context_chunk["raw_content"] = context_chunk["raw_content"][: self.args.rag_emb_text_size]
+        context_chunk["raw_content"] = context_chunk["raw_content"][
+            : self.args.rag_emb_text_size
+        ]
             
         return (
             context_chunk["_id"],
@@ -343,11 +352,14 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         )
         self.queue = []
         self.chunk_size = 1000
-        self.max_output_tokens = extra_params.hybrid_index_max_output_tokens
+        self.max_output_tokens = (
+            extra_params.hybrid_index_max_output_tokens
+        )
 
         # 设置缓存文件路径
         self.cache_dir = os.path.join(self.path, ".cache")
-        self.cache_file = os.path.join(self.cache_dir, "duckdb_storage_speedup.jsonl")
+        self.cache_file = os.path.join(self.cache_dir,
+                                       "duckdb_storage_speedup.jsonl")
         self.cache: Dict[str, CacheItem] = {}
         # 创建缓存目录
         if not os.path.exists(self.cache_dir):
@@ -356,7 +368,9 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         # failed files support
         from .failed_files_utils import load_failed_files
 
-        self.failed_files_path = os.path.join(self.cache_dir, "failed_files.json")
+        self.failed_files_path = os.path.join(
+            self.cache_dir, "failed_files.json"
+        )
         self.failed_files = load_failed_files(self.failed_files_path)
 
         self.lock = threading.Lock()
@@ -512,11 +526,12 @@ class LocalDuckDBStorageCache(BaseCacheManager):
         self.write_cache()
 
         if items:
-            logger.info("[BUILD CACHE] Clearing existing cache from DuckDB  Storage")
+            logger.info("[BUILD CACHE] Clearing DuckDB Storage cache")
             self.storage.truncate_table()
+            logger.info(f"[BUILD CACHE] Preparing to write to DuckDB Storage.")
             logger.info(
-                f"[BUILD CACHE] Preparing to write to DuckDB  Storage, "
-                f"total chunks: {len(items)}, total files: {len(files_to_process)}"
+                f"[BUILD CACHE] Total chunks: {len(items)}, "
+                f"Total files: {len(files_to_process)}"
             )
 
             # Use a fixed optimal batch size instead of dividing by worker count
@@ -528,9 +543,10 @@ class LocalDuckDBStorageCache(BaseCacheManager):
             total_batches = len(item_batches)
             completed_batches = 0
 
+            logger.info(f"[BUILD CACHE] Writing to DuckDB Storage.")
             logger.info(
-                f"[BUILD CACHE] Starting to write to DuckDB Storage using {batch_size} items per batch, "
-                f"total batches: {total_batches}"
+                f"[BUILD CACHE] Batch size: {batch_size}, "
+                f"Total batches: {total_batches}"
             )
             start_time = time.time()
 
@@ -571,17 +587,24 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                             or (completed_batches == total_batches)
                             or (completed_batches % max(1, total_batches // 10) == 0)
                         ):
+                            progress_percent = (
+                                completed_batches / total_batches * 100
+                                if total_batches > 0
+                                else 0
+                            )
                             logger.info(
-                                f"[BUILD CACHE] Progress: {completed_batches}/{total_batches} batches completed "
-                                f"({(completed_batches / total_batches * 100):.1f}%) "
-                                f"Estimated time remaining: {remaining:.1f}s"
+                                f"[BUILD CACHE] Progress: {completed_batches}/"
+                                f"{total_batches} ({progress_percent:.1f}%). "
+                                f"ETA: {remaining:.1f}s"
                             )
                     except Exception as e:
                         logger.error(f"[BUILD CACHE] Error saving batch: {str(e)}")
                         # Add more detailed error information
+                        batch_len_info = (
+                            len(batch) if "batch" in locals() else "unknown"
+                        )
                         logger.error(
-                            f"[BUILD CACHE] Error details: batch size: "
-                            f"{len(batch) if 'batch' in locals() else 'unknown'}"
+                            f"[BUILD CACHE] Error details: batch size: {batch_len_info}"
                         )
                         logger.exception(e)
 
@@ -821,17 +844,18 @@ class LocalDuckDBStorageCache(BaseCacheManager):
                 for doc in cached_data.content:
                     if total_tokens + doc["tokens"] > self.max_output_tokens:
                         logger.info(
-                            f"当前检索已超出用户设置 Hybrid Index Max Tokens:{self.max_output_tokens}，"
-                            f"累计tokens: {total_tokens}, "
-                            f"经过向量搜索共检索出 {len(result.keys())} 个文档, 共 {len(self.cache.keys())} 个文档"
+                            f"当前检索已超出用户设置 Hybrid Index Max Tokens:"
+                            f"{self.max_output_tokens}，累计tokens: {total_tokens}, "
+                            f"经过向量搜索共检索出 {len(result.keys())} 个文档, "
+                            f"共 {len(self.cache.keys())} 个文档"
                         )
                         return result
                     total_tokens += doc["tokens"]
                 result[file_path] = cached_data.model_dump()
         logger.info(
             f"用户Hybrid Index Max Tokens设置为:{self.max_output_tokens}，"
-            f"累计tokens: {total_tokens}, "
-            f"经过向量搜索共检索出 {len(result.keys())} 个文档, 共 {len(self.cache.keys())} 个文档"
+            f"累计tokens: {total_tokens}, 经过向量搜索共检索出 "
+            f"{len(result.keys())} 个文档, 共 {len(self.cache.keys())} 个文档"
         )
         return result
 
