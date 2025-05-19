@@ -3,6 +3,7 @@ import os
 import json
 import time
 import pydantic
+from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 import psutil
 import glob
