@@ -2,6 +2,7 @@ from typing import List, Dict, Any, Optional, Union
 import logging
 import byzerllm
 from pydantic import BaseModel
+from autocoder.rag.types import RAGStat
 from autocoder.common import AutoCoderArgs
 
 logger = logging.getLogger(__name__)
@@ -86,7 +87,7 @@ class ConversationToQueries:
         ```
         """
     
-    def extract_queries(self, conversations: List[Dict[str, Any]], max_queries: int = 3) -> List[SearchQuery]:
+    def extract_queries(self, conversations: List[Dict[str, Any]], max_queries: int = 3,rag_stat:Optional[RAGStat] = None) -> List[SearchQuery]:
         """
         从对话历史中提取搜索查询。
         
@@ -99,10 +100,39 @@ class ConversationToQueries:
         """
         try:
             # 使用 prompt 函数生成搜索查询
-            queries = self.generate_search_queries.with_llm(self.llm).with_return_type(SearchQuery).run(
+            model_name = self.llm.default_model_name
+            meta_holder = MetaHolder()
+            queries = self.generate_search_queries.with_llm(self.llm).with_return_type(SearchQuery).with_meta(
+                        meta_holder).run(
                 conversations=conversations,
                 max_queries=max_queries
-            )            
+            ) 
+
+            # 如果有元数据且有 rag_stat，则记录模型使用情况
+            if meta_holder.get_meta() and rag_stat:
+                meta_dict = meta_holder.get_meta()                    
+                input_tokens_count = meta_dict.get("input_tokens_count", 0) 
+                generated_tokens_count = meta_dict.get("generated_tokens_count", 0)
+                
+                # 检查模型是否已存在于 other_stats 中
+                found = False
+                for other_stat in rag_stat.other_stats:
+                    if other_stat.model_name == model_name:
+                        # 模型已存在，累加统计数据
+                        other_stat.total_input_tokens += input_tokens_count
+                        other_stat.total_generated_tokens += generated_tokens_count
+                        found = True
+                        break
+                
+                # 如果模型不存在，添加新的 OtherStat
+                if not found and (input_tokens_count > 0 or generated_tokens_count > 0):
+                    from autocoder.rag.types import OtherStat
+                    new_stat = OtherStat(
+                        total_input_tokens=input_tokens_count,
+                        total_generated_tokens=generated_tokens_count,
+                        model_name=model_name
+                    )
+                    rag_stat.other_stats.append(new_stat)
             
             # 按重要性排序
             queries.sort(key=lambda x: x.importance, reverse=True)
@@ -116,7 +146,8 @@ def extract_search_queries(
     conversations: List[Dict[str, Any]], 
     args:AutoCoderArgs,
     llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM],
-    max_queries: int = 3,    
+    max_queries: int = 3,  
+    rag_stat:Optional[RAGStat] = None  
 ) -> List[SearchQuery]:
     """
     从对话历史中提取搜索查询的便捷函数。
@@ -133,7 +164,7 @@ def extract_search_queries(
         return []
     try:    
         extractor = ConversationToQueries(llm)
-        return extractor.extract_queries(conversations, max_queries) 
+        return extractor.extract_queries(conversations, max_queries,rag_stat) 
     except Exception as e:
         logger.error(f"Error extracting search queries from conversation: {str(e)}")
         return []

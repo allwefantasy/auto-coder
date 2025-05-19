@@ -7,6 +7,41 @@ from typing import Dict, Any, Optional, List
 import psutil
 import glob
 
+class RecallStat(BaseModel):
+    total_input_tokens: int
+    total_generated_tokens: int
+    model_name: str = "unknown"
+    cost:float = 0.0
+
+
+class ChunkStat(BaseModel):
+    total_input_tokens: int
+    total_generated_tokens: int
+    model_name: str = "unknown"
+    cost:float = 0.0
+
+
+class AnswerStat(BaseModel):
+    total_input_tokens: int
+    total_generated_tokens: int
+    model_name: str = "unknown"
+    cost:float = 0.0
+
+
+class OtherStat(BaseModel):
+    total_input_tokens: int = 0
+    total_generated_tokens: int = 0
+    model_name: str = "unknown"
+    cost:float = 0.0
+
+
+class RAGStat(BaseModel):
+    recall_stat: RecallStat
+    chunk_stat: ChunkStat
+    answer_stat: AnswerStat
+    other_stats: List[OtherStat] = []
+    cost:float = 0.0
+
 class RAGServiceInfo(pydantic.BaseModel):
     host: str
     port: int

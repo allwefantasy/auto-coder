@@ -29,6 +29,9 @@ from autocoder.rag.searchable import SearchableResults
 from autocoder.rag.conversation_to_queries import extract_search_queries
 from autocoder.common import openai_content as OpenAIContentProcessor
 from autocoder.common.save_formatted_log import save_formatted_log
+from autocoder.rag.types import (
+    RecallStat,ChunkStat,AnswerStat,OtherStat,RAGStat
+)
 import json, os
 try:
     from autocoder_pro.rag.llm_compute import LLMComputeEngine
@@ -41,29 +44,6 @@ except ImportError:
         "Please install auto-coder-pro to enhance llm compute ability")
     LLMComputeEngine = None
 
-
-class RecallStat(BaseModel):
-    total_input_tokens: int
-    total_generated_tokens: int
-    model_name: str = "unknown"
-
-
-class ChunkStat(BaseModel):
-    total_input_tokens: int
-    total_generated_tokens: int
-    model_name: str = "unknown"
-
-
-class AnswerStat(BaseModel):
-    total_input_tokens: int
-    total_generated_tokens: int
-    model_name: str = "unknown"
-
-
-class RAGStat(BaseModel):
-    recall_stat: RecallStat
-    chunk_stat: ChunkStat
-    answer_stat: AnswerStat
 
 
 class LongContextRAG:
@@ -716,7 +696,7 @@ class LongContextRAG:
         
         # 提取查询并检索候选文档
         queries = extract_search_queries(
-            conversations=conversations, args=self.args, llm=self.llm, max_queries=self.args.rag_recall_max_queries)
+            conversations=conversations, args=self.args, llm=self.llm, max_queries=self.args.rag_recall_max_queries,rag_stat=rag_stat)
         documents = self._retrieve_documents(
             options={"queries": [query] + [query.query for query in queries]})
 
@@ -908,18 +888,8 @@ class LongContextRAG:
                     chunk[1].input_tokens_count = rag_stat.recall_stat.total_input_tokens + \
                         rag_stat.chunk_stat.total_input_tokens + \
                         rag_stat.answer_stat.total_input_tokens
-                    chunk[1].generated_tokens_count = rag_stat.recall_stat.total_generated_tokens + \
-                        rag_stat.chunk_stat.total_generated_tokens + \
-                        rag_stat.answer_stat.total_generated_tokens
-                yield chunk
-
-    def _print_rag_stats(self, rag_stat: RAGStat) -> None:
-        """打印RAG执行的详细统计信息"""
-        total_input_tokens = (
-            rag_stat.recall_stat.total_input_tokens +
-            rag_stat.chunk_stat.total_input_tokens +
-            rag_stat.answer_stat.total_input_tokens
         )
+    ))
         total_generated_tokens = (
             rag_stat.recall_stat.total_generated_tokens +
             rag_stat.chunk_stat.total_generated_tokens +
@@ -937,12 +907,38 @@ class LongContextRAG:
                              rag_stat.chunk_stat.total_generated_tokens) / total_tokens * 100
             answer_percent = (rag_stat.answer_stat.total_input_tokens +
                               rag_stat.answer_stat.total_generated_tokens) / total_tokens * 100
+        
+        # 计算其他阶段的令牌占比
+        other_percents = []
+        if total_tokens > 0 and rag_stat.other_stats:
+            for other_stat in rag_stat.other_stats:
+                other_percent = (other_stat.total_input_tokens +
+                                other_stat.total_generated_tokens) / total_tokens * 100
+                other_percents.append(other_percent)
+        
+        # 计算成本分布百分比
+        if rag_stat.cost == 0:
+            recall_cost_percent = chunk_cost_percent = answer_cost_percent = 0
+        else:
+            recall_cost_percent = rag_stat.recall_stat.cost / rag_stat.cost * 100
+            chunk_cost_percent = rag_stat.chunk_stat.cost / rag_stat.cost * 100
+            answer_cost_percent = rag_stat.answer_stat.cost / rag_stat.cost * 100
+            
+        # 计算其他阶段的成本占比
+        other_costs_percent = []
+        if rag_stat.cost > 0 and rag_stat.other_stats:
+            for other_stat in rag_stat.other_stats:
+                other_costs_percent.append(other_stat.cost / rag_stat.cost * 100)
 
-        logger.info(
+        ## 这里会计算每个阶段的成本
+        estimated_cost = self._estimate_token_cost(rag_stat)
+        # 构建统计信息字符串
+        stats_str = (
             f"=== RAG 执行统计信息 ===\n"
             f"总令牌使用: {total_tokens} 令牌\n"
             f"  * 输入令牌总数: {total_input_tokens}\n"
             f"  * 生成令牌总数: {total_generated_tokens}\n"
+            f"  * 总成本: {rag_stat.cost:.6f}\n"
             f"\n"
             f"阶段统计:\n"
             f"  1. 文档检索阶段:\n"
@@ -950,40 +946,146 @@ class LongContextRAG:
             f"     - 输入令牌: {rag_stat.recall_stat.total_input_tokens}\n"
             f"     - 生成令牌: {rag_stat.recall_stat.total_generated_tokens}\n"
             f"     - 阶段总计: {rag_stat.recall_stat.total_input_tokens + rag_stat.recall_stat.total_generated_tokens}\n"
+            f"     - 阶段成本: {rag_stat.recall_stat.cost:.6f}\n"
             f"\n"
             f"  2. 文档分块阶段:\n"
             f"     - 模型: {rag_stat.chunk_stat.model_name}\n"
             f"     - 输入令牌: {rag_stat.chunk_stat.total_input_tokens}\n"
             f"     - 生成令牌: {rag_stat.chunk_stat.total_generated_tokens}\n"
             f"     - 阶段总计: {rag_stat.chunk_stat.total_input_tokens + rag_stat.chunk_stat.total_generated_tokens}\n"
+            f"     - 阶段成本: {rag_stat.chunk_stat.cost:.6f}\n"
             f"\n"
             f"  3. 答案生成阶段:\n"
             f"     - 模型: {rag_stat.answer_stat.model_name}\n"
             f"     - 输入令牌: {rag_stat.answer_stat.total_input_tokens}\n"
             f"     - 生成令牌: {rag_stat.answer_stat.total_generated_tokens}\n"
             f"     - 阶段总计: {rag_stat.answer_stat.total_input_tokens + rag_stat.answer_stat.total_generated_tokens}\n"
+            f"     - 阶段成本: {rag_stat.answer_stat.cost:.6f}\n"
             f"\n"
+        )
+        
+        # 如果存在 other_stats，添加其统计信息
+        if rag_stat.other_stats:
+            for i, other_stat in enumerate(rag_stat.other_stats):
+                stats_str += (
+                    f"  {i+4}. 其他阶段 {i+1}:\n"
+                    f"     - 模型: {other_stat.model_name}\n"
+                    f"     - 输入令牌: {other_stat.total_input_tokens}\n"
+                    f"     - 生成令牌: {other_stat.total_generated_tokens}\n"
+                    f"     - 阶段总计: {other_stat.total_input_tokens + other_stat.total_generated_tokens}\n"
+                    f"     - 阶段成本: {other_stat.cost:.6f}\n"
+                    f"\n"
+                )
+        
+        # 添加令牌分布百分比
+        stats_str += (
             f"令牌分布百分比:\n"
             f"  - 文档检索: {recall_percent:.1f}%\n"
             f"  - 文档分块: {chunk_percent:.1f}%\n"
             f"  - 答案生成: {answer_percent:.1f}%\n"
         )
+        
+        # 如果存在 other_stats，添加其令牌占比
+        if rag_stat.other_stats:
+            for i, other_percent in enumerate(other_percents):
+                if other_percent > 0:
+                    stats_str += f"  - 其他阶段 {i+1}: {other_percent:.1f}%\n"
+        
+        # 添加成本分布百分比
+        stats_str += (
+            f"\n"
+            f"成本分布百分比:\n"
+            f"  - 文档检索: {recall_cost_percent:.1f}%\n"
+            f"  - 文档分块: {chunk_cost_percent:.1f}%\n"
+            f"  - 答案生成: {answer_cost_percent:.1f}%\n"
+        )
+        
+        # 如果存在 other_stats，添加其成本占比
+        if rag_stat.other_stats:
+            for i, other_cost_percent in enumerate(other_costs_percent):
+                if other_cost_percent > 0:
+                    stats_str += f"  - 其他阶段 {i+1}: {other_cost_percent:.1f}%\n"
+        
+        # 输出统计信息
+        logger.info(stats_str)
 
         # 记录原始统计数据，以便调试
         logger.debug(f"RAG Stat 原始数据: {rag_stat}")
 
-        # 返回成本估算
-        estimated_cost = self._estimate_token_cost(
-            total_input_tokens, total_generated_tokens)
+        
         if estimated_cost > 0:
-            logger.info(f"估计成本: 约 ${estimated_cost:.4f} 人民币")
+            logger.info(f"估计成本: 约 {estimated_cost:.4f} ")
 
-    def _estimate_token_cost(self, input_tokens: int, output_tokens: int) -> float:
+    def _estimate_token_cost(self, rag_stat: RAGStat) -> float:
         """估算当前请求的令牌成本（人民币）"""
-        # 实际应用中，可以根据不同模型设置不同价格
-        input_cost_per_1m = 2.0/1000000   # 每百万输入令牌的成本
-        output_cost_per_1m = 8.0/100000   # 每百万输出令牌的成本
-
-        cost = (input_tokens * input_cost_per_1m / 1000000) + \
-            (output_tokens * output_cost_per_1m/1000000)
-        return cost
+        from autocoder.models import get_model_by_name
+        
+        total_cost = 0.0
+        
+        # 计算召回阶段成本
+        if rag_stat.recall_stat.model_name != "unknown":
+            try:
+                recall_model = get_model_by_name(rag_stat.recall_stat.model_name)
+                input_cost = recall_model.get("input_price", 0.0) / 1000000
+                output_cost = recall_model.get("output_price", 0.0) / 1000000
+                recall_cost = (rag_stat.recall_stat.total_input_tokens * input_cost) + \
+                             (rag_stat.recall_stat.total_generated_tokens * output_cost)
+                total_cost += recall_cost
+            except Exception as e:
+                logger.warning(f"计算召回阶段成本时出错: {str(e)}")                
+                recall_cost = 0.0
+                total_cost += recall_cost
+            rag_stat.recall_stat.cost = recall_cost    
+        
+        # 计算分块阶段成本
+        if rag_stat.chunk_stat.model_name != "unknown":
+            try:
+                chunk_model = get_model_by_name(rag_stat.chunk_stat.model_name)
+                input_cost = chunk_model.get("input_price", 0.0) / 1000000
+                output_cost = chunk_model.get("output_price", 0.0) / 1000000
+                chunk_cost = (rag_stat.chunk_stat.total_input_tokens * input_cost) + \
+                            (rag_stat.chunk_stat.total_generated_tokens * output_cost)
+                total_cost += chunk_cost
+            except Exception as e:
+                logger.warning(f"计算分块阶段成本时出错: {str(e)}")
+                # 使用默认值
+                chunk_cost = 0.0
+                total_cost += chunk_cost
+            rag_stat.chunk_stat.cost = chunk_cost    
+        
+        # 计算答案生成阶段成本
+        if rag_stat.answer_stat.model_name != "unknown":
+            try:
+                answer_model = get_model_by_name(rag_stat.answer_stat.model_name)
+                input_cost = answer_model.get("input_price", 0.0) / 1000000
+                output_cost = answer_model.get("output_price", 0.0) / 1000000
+                answer_cost = (rag_stat.answer_stat.total_input_tokens * input_cost) + \
+                             (rag_stat.answer_stat.total_generated_tokens * output_cost)
+                total_cost += answer_cost
+            except Exception as e:
+                logger.warning(f"计算答案生成阶段成本时出错: {str(e)}")
+                # 使用默认值
+                answer_cost = 0.0
+                total_cost += answer_cost
+            rag_stat.answer_stat.cost = answer_cost
+            
+        # 计算其他阶段成本（如果存在）
+        for i, other_stat in enumerate(rag_stat.other_stats):
+            if other_stat.model_name != "unknown":
+                try:
+                    other_model = get_model_by_name(other_stat.model_name)
+                    input_cost = other_model.get("input_price", 0.0) / 1000000
+                    output_cost = other_model.get("output_price", 0.0) / 1000000
+                    other_cost = (other_stat.total_input_tokens * input_cost) + \
+                                (other_stat.total_generated_tokens * output_cost)
+                    total_cost += other_cost
+                except Exception as e:
+                    logger.warning(f"计算其他阶段 {i+1} 成本时出错: {str(e)}")
+                    # 使用默认值
+                    other_cost = 0.0
+                    total_cost += other_cost
+                rag_stat.other_stats[i].cost = other_cost
+        
+        # 将总成本保存到 rag_stat
+        rag_stat.cost = total_cost
+        return total_cost

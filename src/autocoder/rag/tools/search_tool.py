@@ -15,7 +15,8 @@ from autocoder.agent.base_agentic.tool_registry import ToolRegistry
 from autocoder.agent.base_agentic.tools.base_tool_resolver import BaseToolResolver
 from autocoder.agent.base_agentic.types import ToolDescription, ToolExample
 from autocoder.common import AutoCoderArgs
-from autocoder.rag.long_context_rag import LongContextRAG, RecallStat, ChunkStat, AnswerStat, RAGStat
+from autocoder.rag.long_context_rag import LongContextRAG
+from autocoder.rag.types import RecallStat, ChunkStat, AnswerStat, RAGStat
 from autocoder.rag.relevant_utils import FilterDoc, DocRelevance, DocFilterResult
 
 
