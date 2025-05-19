@@ -151,7 +151,31 @@ class _CustomMarkdownify(markdownify.MarkdownConverter):
         return "![%s](%s%s)" % (alt, src, title_part)
 
     def convert_soup(self, soup: Any) -> str:
-        return super().convert_soup(soup)  # type: ignore
+        try:
+            # 设置递归深度限制，避免复杂文档导致的递归错误
+            import sys
+            original_limit = sys.getrecursionlimit()
+            try:
+                # 增加递归深度限制
+                sys.setrecursionlimit(10000)  # 设置更高的递归限制
+                return super().convert_soup(soup)  # type: ignore
+            finally:
+                # 恢复原始递归深度限制
+                sys.setrecursionlimit(original_limit)
+        except RecursionError:
+            # 处理递归错误，尝试简化处理
+            logger.warning("RecursionError in convert_soup, falling back to simplified conversion")
+            # 返回简化的文本内容
+            return self._simplified_convert(soup)
+
+    def _simplified_convert(self, soup: Any) -> str:
+        """简化的转换方法，用于处理复杂文档时的回退方案"""
+        # 提取纯文本内容
+        text = soup.get_text(separator="\n", strip=True)
+        # 基本清理
+        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        return text
 
 
 class DocumentConverterResult:
@@ -224,20 +248,42 @@ class HtmlConverter(DocumentConverter):
         for script in soup(["script", "style"]):
             script.extract()
 
-        # Print only the main content
-        body_elm = soup.find("body")
-        webpage_text = ""
-        if body_elm:
-            webpage_text = _CustomMarkdownify().convert_soup(body_elm)
-        else:
-            webpage_text = _CustomMarkdownify().convert_soup(soup)
+        try:
+            # Print only the main content
+            body_elm = soup.find("body")
+            webpage_text = ""
+            if body_elm:
+                webpage_text = _CustomMarkdownify().convert_soup(body_elm)
+            else:
+                webpage_text = _CustomMarkdownify().convert_soup(soup)
 
-        assert isinstance(webpage_text, str)
+            assert isinstance(webpage_text, str)
 
-        return DocumentConverterResult(
-            title=None if soup.title is None else soup.title.string,
-            text_content=webpage_text,
-        )
+            return DocumentConverterResult(
+                title=None if soup.title is None else soup.title.string,
+                text_content=webpage_text,
+            )
+        except Exception as e:
+            # 如果转换过程中出现任何错误，尝试使用简化的方法提取文本
+            logger.warning(f"Error in HTML conversion: {str(e)}. Falling back to simplified text extraction.")
+            try:
+                # 简化的文本提取
+                text = soup.get_text(separator="\n", strip=True)
+                # 基本清理
+                text = re.sub(r'\s+', ' ', text)
+                text = re.sub(r'\n{3,}', '\n\n', text)
+                
+                return DocumentConverterResult(
+                    title=None if soup.title is None else soup.title.string,
+                    text_content=text,
+                )
+            except Exception as inner_e:
+                # 如果简化提取也失败，记录错误并返回空结果
+                logger.error(f"Failed to extract text with simplified method: {str(inner_e)}")
+                return DocumentConverterResult(
+                    title=None,
+                    text_content=f"[文档转换失败] 无法提取内容: {str(e)}",
+                )
 
 
 class WikipediaConverter(DocumentConverter):
