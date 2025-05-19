@@ -893,7 +893,7 @@ class LongContextRAG:
                         rag_stat.answer_stat.total_generated_tokens
                 yield chunk
 
-    def _print_rag_stats(self, rag_stat: RAGStat) -> None:
+    def _print_rag_stats(self, rag_stat: RAGStat, conversations: Optional[List[Dict[str, str]]] = None) -> None:
         """打印RAG执行的详细统计信息"""
         total_input_tokens = (
             rag_stat.recall_stat.total_input_tokens +
@@ -943,8 +943,16 @@ class LongContextRAG:
         ## 这里会计算每个阶段的成本
         estimated_cost = self._estimate_token_cost(rag_stat)
         # 构建统计信息字符串
+        query_content = ""
+        if conversations and len(conversations) > 0:
+            query_content = conversations[-1].get("content", "")
+            if len(query_content) > 100:
+                query_content = query_content[:100] + "..."
+            query_content = f"查询内容: {query_content}\n"
+        
         stats_str = (
             f"=== RAG 执行统计信息 ===\n"
+            f"{query_content}"
             f"总令牌使用: {total_tokens} 令牌\n"
             f"  * 输入令牌总数: {total_input_tokens}\n"
             f"  * 生成令牌总数: {total_generated_tokens}\n"
