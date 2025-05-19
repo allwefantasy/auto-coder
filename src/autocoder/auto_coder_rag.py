@@ -34,6 +34,7 @@ from autocoder.rag.utils import process_file_local
 import pkg_resources
 from autocoder.rag.token_counter import TokenCounter
 from autocoder.rag.types import RAGServiceInfo
+from autocoder.version import __version__
 
 if platform.system() == "Windows":
     from colorama import init
@@ -169,6 +170,17 @@ def initialize_system(args):
 
 
 def main(input_args: Optional[List[str]] = None):
+    print(
+        f"""
+    \033[1;32m
+      _     _     __  __       _   _    _  _____ _____     _______   ____      _    ____ 
+     | |   | |   |  \/  |     | \ | |  / \|_   _|_ _\ \   / / ____| |  _ \    / \  / ___|
+     | |   | |   | |\/| |_____|  \| | / _ \ | |  | | \ \ / /|  _|   | |_) |  / _ \| |  _ 
+     | |___| |___| |  | |_____| |\  |/ ___ \| |  | |  \ V / | |___  |  _ <  / ___ \ |_| |
+     |_____|_____|_|  |_|     |_| \_/_/   \_\_| |___|  \_/  |_____| |_| \_\/_/   \_\____|
+                                                                            v{__version__}
+    \033[0m"""
+    )
 
     try:
         tokenizer_path = pkg_resources.resource_filename(

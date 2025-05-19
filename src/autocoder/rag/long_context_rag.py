@@ -670,7 +670,7 @@ class LongContextRAG:
                             yield gen_item
                         
                         # 打印最终的统计信息
-                        self._print_rag_stats(rag_stat)
+                        self._print_rag_stats(rag_stat, conversations)
                         return
 
     def _process_document_retrieval(self, conversations, 
@@ -951,7 +951,7 @@ class LongContextRAG:
             query_content = f"查询内容: {query_content}\n"
         
         stats_str = (
-            f"=== RAG 执行统计信息 ===\n"
+            f"=== (RAG 执行统计信息) ===\n"
             f"{query_content}"
             f"总令牌使用: {total_tokens} 令牌\n"
             f"  * 输入令牌总数: {total_input_tokens}\n"
