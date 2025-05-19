@@ -4,6 +4,7 @@ import byzerllm
 from pydantic import BaseModel
 from autocoder.rag.types import RAGStat
 from autocoder.common import AutoCoderArgs
+from byzerllm import MetaHolder
 
 logger = logging.getLogger(__name__)
 
