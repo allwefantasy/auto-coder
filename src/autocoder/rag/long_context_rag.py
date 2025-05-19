@@ -888,8 +888,18 @@ class LongContextRAG:
                     chunk[1].input_tokens_count = rag_stat.recall_stat.total_input_tokens + \
                         rag_stat.chunk_stat.total_input_tokens + \
                         rag_stat.answer_stat.total_input_tokens
+                    chunk[1].generated_tokens_count = rag_stat.recall_stat.total_generated_tokens + \
+                        rag_stat.chunk_stat.total_generated_tokens + \
+                        rag_stat.answer_stat.total_generated_tokens
+                yield chunk
+
+    def _print_rag_stats(self, rag_stat: RAGStat) -> None:
+        """打印RAG执行的详细统计信息"""
+        total_input_tokens = (
+            rag_stat.recall_stat.total_input_tokens +
+            rag_stat.chunk_stat.total_input_tokens +
+            rag_stat.answer_stat.total_input_tokens
         )
-    ))
         total_generated_tokens = (
             rag_stat.recall_stat.total_generated_tokens +
             rag_stat.chunk_stat.total_generated_tokens +
