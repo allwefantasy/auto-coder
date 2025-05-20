@@ -1442,6 +1442,10 @@ def try_parse_image(image_path: str, llm=None):
         try:
             v = ImageLoader.image_to_markdown(image_path, llm=llm, engine="paddle")
             logger.info(f"[try_parse_image][{req_id}] image_to_markdown result: {str(v)[:200]}")
+            
+            if not v:
+                return ""
+            
             if llm:
                 v = ImageLoader.format_table_in_content(v, llm)
                 logger.info(f"[try_parse_image][{req_id}] format_table_in_content result: {str(v)[:200]}")
