@@ -65,6 +65,7 @@ docx2txt
 pdf2image
 # Spire.Doc
 docx2pdf
+pypdf
 pyperclip
 colorama
 pylint
