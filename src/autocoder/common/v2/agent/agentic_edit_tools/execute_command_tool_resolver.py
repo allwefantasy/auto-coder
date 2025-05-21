@@ -21,14 +21,42 @@ class ExecuteCommandToolResolver(BaseToolResolver):
     def __init__(self, agent: Optional['AgenticEdit'], tool: ExecuteCommandTool, args: AutoCoderArgs):
         super().__init__(agent, tool, args)
         self.tool: ExecuteCommandTool = tool # For type hinting
-        if self.agent and hasattr(self.agent, 'llm') and self.agent.llm and self.args:
-            self.context_pruner = PruneContext(max_tokens=self.args.max_input_tokens, args=self.args, llm=self.agent.llm)
-        else:
-            self.context_pruner = None
-            logger.warning("Agent, LLM, or args not fully available for PruneContext initialization in ExecuteCommandToolResolver. Command output pruning will be disabled.")
+        self.context_pruner = PruneContext(
+            max_tokens=self.args.context_prune_safe_zone_tokens,
+            args=self.args,
+            llm=self.agent.context_prune_llm
+        )
 
-    def resolve(self) -> ToolResult:
-        printer = Printer()
+    def _prune_file_content(self, content: str, file_path: str) -> str:
+        """对文件内容进行剪枝处理"""
+        if not self.context_pruner:
+            return content
+
+        # 计算 token 数量
+        tokens = count_tokens(content)
+        if tokens <= self.args.context_prune_safe_zone_tokens:
+            return content
+
+        # 创建 SourceCode 对象
+        source_code = SourceCode(
+            module_name=file_path,
+            source_code=content,
+            tokens=tokens
+        )
+
+        # 使用 context_pruner 进行剪枝
+        pruned_sources = self.context_pruner.handle_overflow(
+            file_sources=[source_code],
+            conversations=self.agent.current_conversations if self.agent else [],
+            strategy=self.args.context_prune_strategy
+        )
+
+        if not pruned_sources:
+            return content
+
+        return pruned_sources[0].source_code    
+
+    def resolve(self) -> ToolResult:        
         command = self.tool.command
         requires_approval = self.tool.requires_approval
         source_dir = self.args.source_dir or "."
@@ -66,45 +94,7 @@ class ExecuteCommandToolResolver(BaseToolResolver):
             if output:
                 logger.info(f"Original Output (length: {len(output)} chars)") # Avoid logging potentially huge output directly
 
-            final_output = output  # Initialize with original output
-
-            if self.context_pruner and output and isinstance(output, str) and output.strip():
-                output_source = SourceCode(module_name="command_output", source_code=output)
-                current_tokens = count_tokens(output)
-                max_tokens_for_output = self.context_pruner.max_tokens
-
-                if current_tokens > max_tokens_for_output:
-                    logger.info(f"Command output pruning needed. Tokens: {current_tokens}, Max tokens: {max_tokens_for_output}")
-                    try:
-                        conversations_for_pruning = []
-                        if self.agent and hasattr(self.agent, 'conversations'):
-                            conversations_for_pruning = self.agent.conversations
-                        
-                        pruned_sources = self.context_pruner.handle_overflow(
-                            file_sources=[output_source],
-                            conversations=conversations_for_pruning,
-                            strategy=self.args.context_prune_strategy if self.args.context_prune_strategy else "score"
-                        )
-                        if pruned_sources and pruned_sources[0].source_code is not None:
-                            final_output = pruned_sources[0].source_code
-                            pruned_token_count = count_tokens(final_output)
-                            logger.info(f"Command output pruned. Original tokens: {current_tokens}, Pruned tokens: {pruned_token_count}")                            
-                        else:
-                            final_output = "Command output was too large and pruned, resulting in no content or an issue during pruning."
-                            logger.info(f"Command output pruned empty. Original tokens: {current_tokens}")
-                            logger.warning(f"Command output pruned from {current_tokens} tokens, resulting in empty or problematic content.")
-                    except Exception as e:
-                        # final_output remains original output on error                        
-                        logger.error(f"Error during command output pruning: {str(e)}. Using original output.")
-                        logger.exception(e)
-                else:
-                    if output and isinstance(output, str) and output.strip(): # Log only if there was actual content
-                        logger.info(f"Command output ({current_tokens} tokens) is within limits ({max_tokens_for_output} tokens).")
-            elif not self.context_pruner:
-                logger.info("Context pruner not available for command output. Pruning skipped.")
-            elif not (output and isinstance(output, str) and output.strip()):
-                logger.info("No command output or output is not a non-empty string. Pruning skipped.")
-
+            final_output = self._prune_file_content(output, "command_output")
 
             if exit_code == 0:
                 return ToolResult(success=True, message="Command executed successfully.", content=final_output)
