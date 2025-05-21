@@ -37,7 +37,7 @@ class CommandManager:
             os.makedirs(self.commands_dir, exist_ok=True)
             logger.info(f"已创建命令目录: {self.commands_dir}")
     
-    def list_command_files(self, recursive: bool = False) -> ListCommandsResult:
+    def list_command_files(self, recursive: bool = True) -> ListCommandsResult:
         """
         列出命令目录中的所有命令文件
         
