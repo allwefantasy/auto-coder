@@ -19,7 +19,6 @@ class ExecuteCommandToolResolver(BaseToolResolver):
         self.tool: ExecuteCommandTool = tool # For type hinting
 
     def resolve(self) -> ToolResult:
-        printer = Printer()
         command = self.tool.command
         requires_approval = self.tool.requires_approval
         source_dir = self.args.source_dir or "."
@@ -35,11 +34,11 @@ class ExecuteCommandToolResolver(BaseToolResolver):
         # Approval mechanism (simplified)
         if requires_approval:
              # In a real scenario, this would involve user interaction
-             printer.print_str_in_terminal(f"Command requires approval: {command}")
+             logger.info(f"Command requires approval: {command}")
              # For now, let's assume approval is granted in non-interactive mode or handled elsewhere
              pass
 
-        printer.print_str_in_terminal(f"Executing command: {command} in {os.path.abspath(source_dir)}")
+        logger.info(f"Executing command: {command} in {os.path.abspath(source_dir)}")
         try:            
             # 使用封装的run_cmd方法执行命令
             if get_run_context().is_web():

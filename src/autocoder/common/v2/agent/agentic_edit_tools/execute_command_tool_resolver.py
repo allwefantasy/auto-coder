@@ -44,11 +44,11 @@ class ExecuteCommandToolResolver(BaseToolResolver):
         # Approval mechanism (simplified)
         if requires_approval:
              # In a real scenario, this would involve user interaction
-             printer.print_str_in_terminal(f"Command requires approval: {command}")
+             logger.info(f"Command requires approval: {command}")
              # For now, let's assume approval is granted in non-interactive mode or handled elsewhere
              pass
 
-        printer.print_str_in_terminal(f"Executing command: {command} in {os.path.abspath(source_dir)}")
+        logger.info(f"Executing command: {command} in {os.path.abspath(source_dir)}")
         try:            
             # 使用封装的run_cmd方法执行命令
             if get_run_context().is_web():
@@ -74,11 +74,7 @@ class ExecuteCommandToolResolver(BaseToolResolver):
                 max_tokens_for_output = self.context_pruner.max_tokens
 
                 if current_tokens > max_tokens_for_output:
-                    printer.print_in_terminal(
-                        "command_output_pruning_needed",
-                        tokens=current_tokens,
-                        max_tokens=max_tokens_for_output,
-                    )
+                    logger.info(f"Command output pruning needed. Tokens: {current_tokens}, Max tokens: {max_tokens_for_output}")
                     try:
                         conversations_for_pruning = []
                         if self.agent and hasattr(self.agent, 'conversations'):
@@ -92,25 +88,13 @@ class ExecuteCommandToolResolver(BaseToolResolver):
                         if pruned_sources and pruned_sources[0].source_code is not None:
                             final_output = pruned_sources[0].source_code
                             pruned_token_count = count_tokens(final_output)
-                            printer.print_in_terminal(
-                                "command_output_pruned",
-                                original_tokens=current_tokens,
-                                pruned_tokens=pruned_token_count,
-                            )
-                            logger.info(f"Command output pruned. Original tokens: {current_tokens}, Pruned tokens: {pruned_token_count}")
+                            logger.info(f"Command output pruned. Original tokens: {current_tokens}, Pruned tokens: {pruned_token_count}")                            
                         else:
                             final_output = "Command output was too large and pruned, resulting in no content or an issue during pruning."
-                            printer.print_in_terminal(
-                                "command_output_pruned_empty",
-                                original_tokens=current_tokens,
-                            )
+                            logger.info(f"Command output pruned empty. Original tokens: {current_tokens}")
                             logger.warning(f"Command output pruned from {current_tokens} tokens, resulting in empty or problematic content.")
                     except Exception as e:
-                        # final_output remains original output on error
-                        printer.print_in_terminal(
-                            "command_output_pruning_error",
-                            error_message=str(e)
-                        )
+                        # final_output remains original output on error                        
                         logger.error(f"Error during command output pruning: {str(e)}. Using original output.")
                         logger.exception(e)
                 else:
