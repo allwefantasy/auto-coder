@@ -320,13 +320,21 @@ class VueLinter(BaseLinter):
                         total_errors += file_result.get('errorCount', 0)
                         total_warnings += file_result.get('warningCount', 0)
 
+                        severity = "info"
+                        if message.get('severity', 1) == 2:
+                            severity = "error"
+                        elif message.get('severity', 1) == 1:
+                            severity = "warning"
+                        elif message.get('severity', 1) == 0:
+                            severity = "info"
+
                         # Process individual messages
                         for message in file_result.get('messages', []):
                             issue = {
                                 'file': file_rel_path,
                                 'line': message.get('line', 0),
                                 'column': message.get('column', 0),
-                                'severity': 'error' if message.get('severity', 1) == 2 else 'warning',
+                                'severity': severity,
                                 'message': message.get('message', ''),
                                 'rule': message.get('ruleId', 'unknown')
                             }

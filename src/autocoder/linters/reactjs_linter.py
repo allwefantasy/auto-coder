@@ -243,11 +243,18 @@ class ReactJSLinter(BaseLinter):
 
                 # Process individual messages
                 for message in file_result.get('messages', []):
+                    severity = "info"
+                    if message.get('severity', 1) == 2:
+                        severity = "error"
+                    elif message.get('severity', 1) == 1:
+                        severity = "warning"
+                    elif message.get('severity', 1) == 0:
+                        severity = "info"
                     issue = {
                         'file': file_rel_path,
                         'line': message.get('line', 0),
                         'column': message.get('column', 0),
-                        'severity': 'error' if message.get('severity', 1) == 2 else 'warning',
+                        'severity': severity,
                         'message': message.get('message', ''),
                         'rule': message.get('ruleId', 'unknown')
                     }

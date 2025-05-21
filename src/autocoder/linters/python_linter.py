@@ -332,17 +332,7 @@ class PythonLinter(BaseLinter):
             result['warning_count'] += pylint_result['warning_count']
         except Exception as e:
             if self.verbose:
-                print(f"Error running pylint: {str(e)}")
-        
-        # Run flake8
-        try:
-            flake8_result = self._run_flake8(file_path)
-            result['issues'].extend(flake8_result['issues'])
-            result['error_count'] += flake8_result['error_count']
-            result['warning_count'] += flake8_result['warning_count']
-        except Exception as e:
-            if self.verbose:
-                print(f"Error running flake8: {str(e)}")
+                print(f"Error running pylint: {str(e)}")               
         
         # Mark as successful
         result['success'] = True
@@ -400,17 +390,7 @@ class PythonLinter(BaseLinter):
         except Exception as e:
             if self.verbose:
                 print(f"Error running pylint: {str(e)}")
-        
-        # Run flake8
-        try:
-            flake8_result = self._run_flake8(project_path)
-            result['issues'].extend(flake8_result['issues'])
-            result['error_count'] += flake8_result['error_count']
-            result['warning_count'] += flake8_result['warning_count']
-        except Exception as e:
-            if self.verbose:
-                print(f"Error running flake8: {str(e)}")
-        
+                        
         # Mark as successful
         result['success'] = True
         
