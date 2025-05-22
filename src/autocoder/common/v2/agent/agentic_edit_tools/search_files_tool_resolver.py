@@ -172,8 +172,16 @@ class SearchFilesToolResolver(BaseToolResolver):
 
         # Handle the case where the implementation returns a list instead of a ToolResult
         if isinstance(result, list):
-            message = f"Search completed. Found {len(result)} matches."
-            logger.info(message)
-            return ToolResult(success=True, message=message, content=result)
+            total_results = len(result)            
+            # Limit results to 200 if needed
+            if total_results > 200:
+                truncated_results = result[:200]
+                message = f"Search completed. Found {total_results} matches, showing only the first 200."                
+                logger.info(message)
+                return ToolResult(success=True, message=message, content=truncated_results)
+            else:
+                message = f"Search completed. Found {total_results} matches."
+                logger.info(message)
+                return ToolResult(success=True, message=message, content=result)
         else:
             return result

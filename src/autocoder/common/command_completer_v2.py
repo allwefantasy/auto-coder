@@ -14,24 +14,24 @@ from autocoder import models as models_module
 # Define command structure in a more structured way if needed,
 # but primarily rely on handlers for logic.
 COMMAND_HIERARCHY = {
-    "/add_files": {"/group": {"/add", "/drop", "/reset", "/set"}, "/refresh": {}},
-    "/remove_files": {"/all"},
-    "/conf": {"/drop", "/export", "/import","/get"}, # Added list/get for clarity
-    "/coding": {"/apply", "/next"},
-    "/chat": {"/new", "/save", "/copy", "/mcp", "/rag", "/review", "/learn", "/no_context"},
-    "/mcp": {"/add", "/remove", "/list", "/list_running", "/refresh", "/info"},
-    "/lib": {"/add", "/remove", "/list", "/set-proxy", "/refresh", "/get"},
-    "/models": {"/chat", "/add", "/add_model", "/remove", "/list", "/speed", "/speed-test", "/input_price", "/output_price", "/activate"},
+    "/add_files": {"/group": {"/add": {}, "/drop": {}, "/reset": {}, "/set": {}}, "/refresh": {}},
+    "/remove_files": {"/all": {}},
+    "/conf": {"/drop": {}, "/export": {}, "/import": {}, "/get": {}}, # Added list/get for clarity
+    "/coding": {"/apply": {}, "/next": {}},
+    "/chat": {"/new": {}, "/save": {}, "/copy": {}, "/mcp": {}, "/rag": {}, "/review": {}, "/learn": {}, "/no_context": {}},
+    "/mcp": {"/add": {}, "/remove": {}, "/list": {}, "/list_running": {}, "/refresh": {}, "/info": {}},
+    "/lib": {"/add": {}, "/remove": {}, "/list": {}, "/set-proxy": {}, "/refresh": {}, "/get": {}},
+    "/models": {"/chat": {}, "/add": {}, "/add_model": {}, "/remove": {}, "/list": {}, "/speed": {}, "/speed-test": {}, "/input_price": {}, "/output_price": {}, "/activate": {}},
     "/auto": {},
-    "/shell": {"/chat"},
-    "/active_context": {"/list", "/run"},
-    "/index": {"/query", "/build", "/export", "/import"},
-    "/exclude_files": {"/list", "/drop"},
+    "/shell": {"/chat": {}},
+    "/active_context": {"/list": {}, "/run": {}},
+    "/index": {"/query": {}, "/build": {}, "/export": {}, "/import": {}},
+    "/exclude_files": {"/list": {}, "/drop": {}},
     "/exclude_dirs": {}, # No specific subcommands shown in V1, treat as simple list
     "/commit": {}, # No specific subcommands shown in V1
     "/revert": {},
     "/ask": {},
-    "/design": {"/svg", "/sd", "/logo"},
+    "/design": {"/svg": {}, "/sd": {}, "/logo": {}},
     "/summon": {},
     "/mode": {}, # Simple value completion
     "/voice_input": {},
@@ -41,7 +41,7 @@ COMMAND_HIERARCHY = {
     "/clear": {},
     "/cls": {},
     "/debug": {},
-    "/rules": {"/list", "/get", "/remove", "/analyze", "/commit", "/help"},
+    "/rules": {"/list": {}, "/get": {}, "/remove": {}, "/analyze": {}, "/commit": {}, "/help": {}},
 }
 
 class CommandCompleterV2(Completer):
