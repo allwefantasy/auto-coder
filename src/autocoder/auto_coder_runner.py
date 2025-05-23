@@ -2653,7 +2653,7 @@ def lib_command(args: List[str]):
 
     if not args:
         console.print(
-            "Please specify a subcommand: /add, /remove, /list, /set-proxy, /refresh, or /get"
+            "Please specify a subcommand: /add, /remove, /list, /list_all, /set-proxy, /refresh, or /get"
         )
         return
 
@@ -2710,6 +2710,66 @@ def lib_command(args: List[str]):
             console.print(table)
         else:
             console.print("No libraries added yet")
+            
+    elif subcommand == "/list_all":
+        if not os.path.exists(llm_friendly_packages_dir):
+            console.print("llm_friendly_packages repository does not exist. Please run /lib /add <library_name> command first to clone it.")
+            return
+            
+        available_libs = []
+        
+        # 遍历所有domain目录
+        for domain in os.listdir(llm_friendly_packages_dir):
+            domain_path = os.path.join(llm_friendly_packages_dir, domain)
+            if os.path.isdir(domain_path):
+                # 遍历所有username目录
+                for username in os.listdir(domain_path):
+                    username_path = os.path.join(domain_path, username)
+                    if os.path.isdir(username_path):
+                        # 遍历所有lib_name目录
+                        for lib_name in os.listdir(username_path):
+                            lib_path = os.path.join(username_path, lib_name)
+                            if os.path.isdir(lib_path):
+                                # 检查是否有Markdown文件
+                                has_md_files = False
+                                for root, _, files in os.walk(lib_path):
+                                    if any(file.endswith('.md') for file in files):
+                                        has_md_files = True
+                                        break
+                                
+                                if has_md_files:
+                                    available_libs.append({
+                                        "domain": domain,
+                                        "username": username,
+                                        "lib_name": lib_name,
+                                        "full_path": f"{username}/{lib_name}",
+                                        "is_added": lib_name in memory["libs"]
+                                    })
+        
+        if available_libs:
+            table = Table(title="Available Libraries")
+            table.add_column("Domain", style="blue")
+            table.add_column("Username", style="green")
+            table.add_column("Library Name", style="cyan")
+            table.add_column("Full Path", style="magenta")
+            table.add_column("Status", style="yellow")
+            
+            # 按domain和username分组排序
+            available_libs.sort(key=lambda x: (x["domain"], x["username"], x["lib_name"]))
+            
+            for lib in available_libs:
+                status = "[green]Added[/green]" if lib["is_added"] else "[white]Not Added[/white]"
+                table.add_row(
+                    lib["domain"],
+                    lib["username"],
+                    lib["lib_name"],
+                    lib["full_path"],
+                    status
+                )
+            
+            console.print(table)
+        else:
+            console.print("No available libraries found in the repository.")
 
     elif subcommand == "/set-proxy":
         if len(args) == 1:

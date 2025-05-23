@@ -58,6 +58,7 @@ from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific re
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver,
     ListPackageInfoToolResolver
 )
+from autocoder.common.llm_friendly_package import LLMFriendlyPackageManager
 from autocoder.common.rulefiles.autocoderrules_utils import get_rules,auto_select_rules,get_required_and_index_rules
 from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, ToolResult,
                                                           MemoryConfig, CommandConfig, BaseTool,
@@ -127,7 +128,8 @@ class AgenticEdit:
         self.memory_config = memory_config
         self.command_config = command_config  # Note: command_config might be unused now
         self.project_type_analyzer = ProjectTypeAnalyzer(
-            args=args, llm=self.llm)        
+            args=args, llm=self.llm)
+        self.base_persist_dir = os.path.join(args.source_dir, ".auto-coder", "plugins", "chat-auto-coder")        
 
         # self.shadow_manager = ShadowManager(
         #     args.source_dir, args.event_file, args.ignore_clean_shadows)
@@ -162,6 +164,33 @@ class AgenticEdit:
         # 变更跟踪信息
         # 格式: { file_path: FileChangeEntry(...) }
         self.file_changes: Dict[str, FileChangeEntry] = {}
+
+    @byzerllm.prompt()
+    def generate_library_docs_prompt(self, libraries: List[str], docs_content: str) -> Dict[str, Any]:
+        """
+        ====
+
+        THIRD-PARTY LIBRARY DOCUMENTATION
+
+        The following documentation is for third-party libraries that are available in this project. Use this information to understand the capabilities and APIs of these libraries when they are relevant to the user's task.
+
+        Libraries included: {{ libraries_list }}
+
+        <library_documentation>
+        {{ combined_docs }}
+        </library_documentation>
+
+        You should reference this documentation when:
+        1. The user asks about functionality that might be provided by these libraries
+        2. You need to implement features that could leverage these library capabilities  
+        3. You want to suggest using library functions instead of implementing from scratch
+        4. You need to understand the API or usage patterns of these libraries
+        ====
+        """
+        return {
+            "libraries_list": ", ".join(libraries),
+            "combined_docs": docs_content
+        }
 
     def record_file_change(self, file_path: str, change_type: str, diff: Optional[str] = None, content: Optional[str] = None):
         """
@@ -801,6 +830,43 @@ class AgenticEdit:
         conversations = [
             {"role": "system", "content": system_prompt},
         ] 
+        
+        # Add third-party library documentation information
+        try:
+            package_manager = LLMFriendlyPackageManager(
+                project_root=self.args.source_dir,
+                base_persist_dir=self.base_persist_dir
+            )
+            
+            # Get list of added libraries
+            added_libraries = package_manager.list_added_libraries()
+            
+            if added_libraries:
+                # Get documentation content for all added libraries
+                docs_content = package_manager.get_docs(return_paths=False)
+                
+                if docs_content:
+                    # Combine all documentation content
+                    combined_docs = "\n\n".join(docs_content)
+                    
+                    # Generate library documentation prompt using decorator
+                    library_docs_prompt = self.generate_library_docs_prompt.prompt(
+                        libraries=added_libraries,
+                        docs_content=combined_docs
+                    )
+                    
+                    conversations.append({
+                        "role": "user", 
+                        "content": library_docs_prompt
+                    })
+                    
+                    conversations.append({
+                        "role": "assistant",
+                        "content": "我已经阅读并理解了项目中可用的第三方库文档信息。在处理您的请求时，我会适当地参考这些库的功能和API，帮助您更好地利用这些库的能力。"
+                    })
+                    
+        except Exception as e:
+            logger.warning(f"Failed to load library documentation: {str(e)}")
                                 
         conversations.append({
             "role": "user", "content": request.user_input

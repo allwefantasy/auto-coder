@@ -41,44 +41,20 @@ def convert_yaml_config_to_str(yaml_config):
 def get_llm_friendly_package_docs(memory,
                                   package_name: Optional[str] = None, return_paths: bool = False
                                   ) -> List[str]:
-    lib_dir = os.path.join(".auto-coder", "libs")
-    llm_friendly_packages_dir = os.path.join(lib_dir, "llm_friendly_packages")
-    docs = []
-
-    if not os.path.exists(llm_friendly_packages_dir):
-        print("llm_friendly_packages directory not found.")
-        return docs
-
-    libs = list(memory.get("libs", {}).keys())
-
-    for domain in os.listdir(llm_friendly_packages_dir):
-        domain_path = os.path.join(llm_friendly_packages_dir, domain)
-        if os.path.isdir(domain_path):
-            for username in os.listdir(domain_path):
-                username_path = os.path.join(domain_path, username)
-                if os.path.isdir(username_path):
-                    for lib_name in os.listdir(username_path):
-                        lib_path = os.path.join(username_path, lib_name)
-                        if (
-                            os.path.isdir(lib_path)
-                            and (
-                                package_name is None
-                                or lib_name == package_name
-                                or package_name == os.path.join(username, lib_name)
-                            )
-                            and lib_name in libs
-                        ):
-                            for root, _, files in os.walk(lib_path):
-                                for file in files:
-                                    if file.endswith(".md"):
-                                        file_path = os.path.join(root, file)
-                                        if return_paths:
-                                            docs.append(file_path)
-                                        else:
-                                            with open(file_path, "r",encoding="utf-8") as f:
-                                                docs.append(f.read())
-
-    return docs
+    """
+    Legacy function for backward compatibility.
+    Use LLMFriendlyPackageManager class for new code.
+    """
+    from autocoder.common.llm_friendly_package import LLMFriendlyPackageManager
+    
+    project_root = os.getcwd()
+    base_persist_dir = os.path.join(project_root, ".auto-coder", "plugins", "chat-auto-coder")
+    
+    manager = LLMFriendlyPackageManager(
+        project_root=project_root,
+        base_persist_dir=base_persist_dir
+    )
+    return manager.get_docs(package_name, return_paths)
 
 
 def convert_config_value(key, value):
