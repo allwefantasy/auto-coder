@@ -1,7 +1,7 @@
 ---
 description: 在项目中使用logger的最佳实践和规范
 globs: ["**/*.py"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Logger 最佳实践
