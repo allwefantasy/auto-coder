@@ -1,4 +1,3 @@
-
 import os
 import json
 import time
@@ -13,6 +12,7 @@ class RecallStat(BaseModel):
     total_generated_tokens: int
     model_name: str = "unknown"
     cost:float = 0.0
+    duration: float = 0.0
 
 
 class ChunkStat(BaseModel):
@@ -20,6 +20,7 @@ class ChunkStat(BaseModel):
     total_generated_tokens: int
     model_name: str = "unknown"
     cost:float = 0.0
+    duration: float = 0.0
 
 
 class AnswerStat(BaseModel):
@@ -27,6 +28,7 @@ class AnswerStat(BaseModel):
     total_generated_tokens: int
     model_name: str = "unknown"
     cost:float = 0.0
+    duration: float = 0.0
 
 
 class OtherStat(BaseModel):
@@ -34,6 +36,7 @@ class OtherStat(BaseModel):
     total_generated_tokens: int = 0
     model_name: str = "unknown"
     cost:float = 0.0
+    duration: float = 0.0
 
 
 class RAGStat(BaseModel):

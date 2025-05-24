@@ -539,7 +539,7 @@ class LongContextRAG:
                     generated_tokens_count=rag_stat.recall_stat.total_generated_tokens + rag_stat.chunk_stat.total_generated_tokens,
                     reasoning_content=get_message_with_format_and_newline(
                         "context_docs_names",
-                        context_docs_names=",".join(context)
+                        context_docs_names="*****"
                     )
                 ))
                 
@@ -676,6 +676,8 @@ class LongContextRAG:
     def _process_document_retrieval(self, conversations, 
                                     query, rag_stat):
         """第一阶段：文档召回和过滤"""
+        recall_start_time = time.time()  # 记录召回阶段开始时间
+        
         yield ("", SingleOutputMeta(
             input_tokens_count=0,
             generated_tokens_count=0,
@@ -716,6 +718,7 @@ class LongContextRAG:
         rag_stat.recall_stat.total_input_tokens += sum(doc_filter_result.input_tokens_counts)
         rag_stat.recall_stat.total_generated_tokens += sum(doc_filter_result.generated_tokens_counts)
         rag_stat.recall_stat.model_name = doc_filter_result.model_name
+        rag_stat.recall_stat.duration = time.time() - recall_start_time  # 记录召回阶段耗时
 
         relevant_docs = doc_filter_result.docs
         
@@ -724,7 +727,7 @@ class LongContextRAG:
             generated_tokens_count=rag_stat.recall_stat.total_generated_tokens,
             reasoning_content=get_message_with_format_and_newline(
                 "rag_docs_filter_result",
-                filter_time=0,  # 这里实际应该计算时间，但由于重构，我们需要在外部计算
+                filter_time=rag_stat.recall_stat.duration,  # 使用实际耗时
                 docs_num=len(relevant_docs),
                 input_tokens=rag_stat.recall_stat.total_input_tokens,
                 output_tokens=rag_stat.recall_stat.total_generated_tokens,
@@ -743,6 +746,8 @@ class LongContextRAG:
 
     def _process_document_chunking(self, relevant_docs, conversations, rag_stat, filter_time):
         """第二阶段：文档分块与重排序"""
+        chunk_start_time = time.time()  # 记录分块阶段开始时间
+        
         yield ("", SingleOutputMeta(
             generated_tokens_count=0,
             reasoning_content=get_message_with_format_and_newline(
@@ -785,6 +790,8 @@ class LongContextRAG:
             # 如果没有tokenizer，直接限制文档数量
             final_relevant_docs = relevant_docs[: self.args.index_filter_file_num]
         
+        rag_stat.chunk_stat.duration = time.time() - chunk_start_time  # 记录分块阶段耗时
+        
         # 输出分块结果统计
         yield ("", SingleOutputMeta(
             generated_tokens_count=rag_stat.chunk_stat.total_generated_tokens + rag_stat.recall_stat.total_generated_tokens,
@@ -819,6 +826,7 @@ class LongContextRAG:
                                llm_config={}, 
                                extra_request_params={}):
         """第三阶段：大模型问答生成"""
+        answer_start_time = time.time()  # 记录答案生成阶段开始时间
         
         # 使用LLMComputeEngine增强处理（如果可用）
         if LLMComputeEngine is not None and not self.args.disable_inference_enhance:
@@ -853,22 +861,14 @@ class LongContextRAG:
                         rag_stat.chunk_stat.total_generated_tokens + \
                         rag_stat.answer_stat.total_generated_tokens
                 yield chunk
+            rag_stat.answer_stat.duration = time.time() - answer_start_time  # 记录答案生成阶段耗时
         else:
             # 常规QA处理路径
             qa_strategy = get_qa_strategy(self.args)
             new_conversations = qa_strategy.create_conversation(
                 documents=[doc.source_code for doc in relevant_docs],
                 conversations=conversations, local_image_host=self.args.local_image_host
-            )
-
-            # 保存对话日志
-            try:                    
-                logger.info(f"Saving new_conversations log to {self.args.source_dir}/.cache/logs")
-                project_root = self.args.source_dir
-                json_text = json.dumps(new_conversations, ensure_ascii=False)
-                save_formatted_log(project_root, json_text, "rag_conversation")
-            except Exception as e:
-                logger.warning(f"Failed to save new_conversations log: {e}")
+            )            
 
             # 流式生成回答
             chunks = target_llm.stream_chat_oai(
@@ -879,8 +879,9 @@ class LongContextRAG:
                 delta_mode=True,
                 extra_request_params=extra_request_params
             )
-
+             
             # 返回结果并更新统计信息
+            last_content = ""
             for chunk in chunks:
                 if chunk[1] is not None:
                     rag_stat.answer_stat.total_input_tokens += chunk[1].input_tokens_count
@@ -891,7 +892,19 @@ class LongContextRAG:
                     chunk[1].generated_tokens_count = rag_stat.recall_stat.total_generated_tokens + \
                         rag_stat.chunk_stat.total_generated_tokens + \
                         rag_stat.answer_stat.total_generated_tokens
+                last_content += chunk[0]
                 yield chunk
+
+            # 保存对话日志
+            try:                    
+                logger.info(f"Saving new_conversations log to {self.args.source_dir}/.cache/logs")
+                project_root = self.args.source_dir
+                json_text = json.dumps(new_conversations + [{"role": "assistant", "content": last_content}], ensure_ascii=False)
+                save_formatted_log(project_root, json_text, "rag_conversation")
+            except Exception as e:
+                logger.warning(f"Failed to save new_conversations log: {e}")
+
+            rag_stat.answer_stat.duration = time.time() - answer_start_time  # 记录答案生成阶段耗时
 
     def _print_rag_stats(self, rag_stat: RAGStat, conversations: Optional[List[Dict[str, str]]] = None) -> None:
         """打印RAG执行的详细统计信息"""
@@ -906,6 +919,17 @@ class LongContextRAG:
             rag_stat.answer_stat.total_generated_tokens
         )
         total_tokens = total_input_tokens + total_generated_tokens
+        
+        # 计算总耗时
+        total_duration = (
+            rag_stat.recall_stat.duration +
+            rag_stat.chunk_stat.duration +
+            rag_stat.answer_stat.duration
+        )
+        
+        # 添加其他阶段的耗时（如果存在）
+        if rag_stat.other_stats:
+            total_duration += sum(other_stat.duration for other_stat in rag_stat.other_stats)
 
         # 避免除以零错误
         if total_tokens == 0:
@@ -925,6 +949,20 @@ class LongContextRAG:
                 other_percent = (other_stat.total_input_tokens +
                                 other_stat.total_generated_tokens) / total_tokens * 100
                 other_percents.append(other_percent)
+        
+        # 计算耗时分布百分比
+        if total_duration == 0:
+            recall_duration_percent = chunk_duration_percent = answer_duration_percent = 0
+        else:
+            recall_duration_percent = rag_stat.recall_stat.duration / total_duration * 100
+            chunk_duration_percent = rag_stat.chunk_stat.duration / total_duration * 100
+            answer_duration_percent = rag_stat.answer_stat.duration / total_duration * 100
+            
+        # 计算其他阶段的耗时占比
+        other_duration_percents = []
+        if total_duration > 0 and rag_stat.other_stats:
+            for other_stat in rag_stat.other_stats:
+                other_duration_percents.append(other_stat.duration / total_duration * 100)
         
         # 计算成本分布百分比
         if rag_stat.cost == 0:
@@ -957,6 +995,7 @@ class LongContextRAG:
             f"  * 输入令牌总数: {total_input_tokens}\n"
             f"  * 生成令牌总数: {total_generated_tokens}\n"
             f"  * 总成本: {rag_stat.cost:.6f}\n"
+            f"  * 总耗时: {total_duration:.2f} 秒\n"
             f"\n"
             f"阶段统计:\n"
             f"  1. 文档检索阶段:\n"
@@ -965,6 +1004,7 @@ class LongContextRAG:
             f"     - 生成令牌: {rag_stat.recall_stat.total_generated_tokens}\n"
             f"     - 阶段总计: {rag_stat.recall_stat.total_input_tokens + rag_stat.recall_stat.total_generated_tokens}\n"
             f"     - 阶段成本: {rag_stat.recall_stat.cost:.6f}\n"
+            f"     - 阶段耗时: {rag_stat.recall_stat.duration:.2f} 秒\n"
             f"\n"
             f"  2. 文档分块阶段:\n"
             f"     - 模型: {rag_stat.chunk_stat.model_name}\n"
@@ -972,6 +1012,7 @@ class LongContextRAG:
             f"     - 生成令牌: {rag_stat.chunk_stat.total_generated_tokens}\n"
             f"     - 阶段总计: {rag_stat.chunk_stat.total_input_tokens + rag_stat.chunk_stat.total_generated_tokens}\n"
             f"     - 阶段成本: {rag_stat.chunk_stat.cost:.6f}\n"
+            f"     - 阶段耗时: {rag_stat.chunk_stat.duration:.2f} 秒\n"
             f"\n"
             f"  3. 答案生成阶段:\n"
             f"     - 模型: {rag_stat.answer_stat.model_name}\n"
@@ -979,6 +1020,7 @@ class LongContextRAG:
             f"     - 生成令牌: {rag_stat.answer_stat.total_generated_tokens}\n"
             f"     - 阶段总计: {rag_stat.answer_stat.total_input_tokens + rag_stat.answer_stat.total_generated_tokens}\n"
             f"     - 阶段成本: {rag_stat.answer_stat.cost:.6f}\n"
+            f"     - 阶段耗时: {rag_stat.answer_stat.duration:.2f} 秒\n"
             f"\n"
         )
         
@@ -992,6 +1034,7 @@ class LongContextRAG:
                     f"     - 生成令牌: {other_stat.total_generated_tokens}\n"
                     f"     - 阶段总计: {other_stat.total_input_tokens + other_stat.total_generated_tokens}\n"
                     f"     - 阶段成本: {other_stat.cost:.6f}\n"
+                    f"     - 阶段耗时: {other_stat.duration:.2f} 秒\n"
                     f"\n"
                 )
         
@@ -1008,6 +1051,21 @@ class LongContextRAG:
             for i, other_percent in enumerate(other_percents):
                 if other_percent > 0:
                     stats_str += f"  - 其他阶段 {i+1}: {other_percent:.1f}%\n"
+        
+        # 添加耗时分布百分比
+        stats_str += (
+            f"\n"
+            f"耗时分布百分比:\n"
+            f"  - 文档检索: {recall_duration_percent:.1f}%\n"
+            f"  - 文档分块: {chunk_duration_percent:.1f}%\n"
+            f"  - 答案生成: {answer_duration_percent:.1f}%\n"
+        )
+        
+        # 如果存在 other_stats，添加其耗时占比
+        if rag_stat.other_stats:
+            for i, other_duration_percent in enumerate(other_duration_percents):
+                if other_duration_percent > 0:
+                    stats_str += f"  - 其他阶段 {i+1}: {other_duration_percent:.1f}%\n"
         
         # 添加成本分布百分比
         stats_str += (
