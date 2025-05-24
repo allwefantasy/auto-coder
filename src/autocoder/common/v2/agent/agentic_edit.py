@@ -890,7 +890,8 @@ class AgenticEdit:
 
         while True:
             iteration_count += 1            
-            logger.info(f"Starting LLM interaction cycle #{iteration_count}")
+            logger.info(f"Starting LLM interaction cycle #{iteration_count}, reset tool_executed to False")
+            tool_executed = False
             global_cancel.check_and_raise(token=self.args.event_file)
             last_message = conversations[-1]
             if last_message["role"] == "assistant":
