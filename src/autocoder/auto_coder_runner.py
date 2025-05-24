@@ -657,6 +657,16 @@ def save_memory():
     load_memory()
 
 
+def save_memory_with_new_memory(new_memory):
+    memory_path = os.path.join(base_persist_dir, "memory.json")
+    lock_path = memory_path + ".lock"
+    
+    with FileLock(lock_path, timeout=30):
+        with open(memory_path, "w", encoding="utf-8") as f:
+            json.dump(new_memory, f, indent=2, ensure_ascii=False)
+    load_memory()        
+
+
 def load_memory():    
     global memory
     memory_path = os.path.join(base_persist_dir, "memory.json")
