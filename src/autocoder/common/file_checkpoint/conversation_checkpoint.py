@@ -62,7 +62,7 @@ class ConversationCheckpointStore:
         # 保存为JSON文件
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(checkpoint.json(ensure_ascii=False, indent=2))
+                f.write(checkpoint.model_dump_json(ensure_ascii=False, indent=2))
             
             logger.info(f"已保存对话检查点: {checkpoint.checkpoint_id}")
             

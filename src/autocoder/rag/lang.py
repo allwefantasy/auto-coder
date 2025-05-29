@@ -49,6 +49,10 @@ MESSAGES = {
     "context_docs_names": {
         "en": "The following are the documents related to the user's question: {{context_docs_names}}",
         "zh": "以下是和用户问题相关的文档：{{context_docs_names}}"
+    },
+    "rag_processing": {
+        "en": "Processing...\n",
+        "zh": "处理中...\n"
     }
 }
 

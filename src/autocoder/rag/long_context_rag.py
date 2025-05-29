@@ -460,7 +460,7 @@ class LongContextRAG:
             ),
         )
 
-        context = []
+        context = []        
 
         return self._generate_sream(
             conversations=conversations,
@@ -492,6 +492,15 @@ class LongContextRAG:
         extra_request_params=None
     ):
         """将RAG流程分为三个主要阶段的生成器函数"""
+
+        yield ("", SingleOutputMeta(
+            input_tokens_count=0,
+            generated_tokens_count=0,
+            reasoning_content=get_message_with_format_and_newline(
+                "rag_processing"
+            )
+        ))              
+
         # 第一阶段：文档召回和过滤
         doc_retrieval_generator = self._process_document_retrieval(
             conversations=conversations,
@@ -676,7 +685,7 @@ class LongContextRAG:
     def _process_document_retrieval(self, conversations, 
                                     query, rag_stat):
         """第一阶段：文档召回和过滤"""
-        recall_start_time = time.time()  # 记录召回阶段开始时间
+        recall_start_time = time.time()  # 记录召回阶段开始时间        
         
         yield ("", SingleOutputMeta(
             input_tokens_count=0,

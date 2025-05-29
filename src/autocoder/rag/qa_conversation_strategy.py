@@ -216,13 +216,15 @@ class SingleRoundStrategy(QAConversationStrategy):
         - If the documents do not contain enough information to answer, reply: "抱歉,文档中没有足够的信息来回答这个问题。"
         - Do NOT invent, guess, or add information beyond what is provided.
 
+        
+        {% if local_image_host %}
         - For Markdown images like ![image](/path/to/image.png):
           - Analyze surrounding text to determine relevance.
           - Include relevant images naturally in your answer, preserving image paths.
-          - Convert Windows paths to Linux style (e.g., C:\\path\\to\\img.png -> C:/path/to/img.png)
-          {% if local_image_host %}
+          - Convert Windows paths to Linux style (e.g., C:\\path\\to\\img.png -> C:/path/to/img.png)  
           - Prefix image URLs with http://{{ local_image_host }}/static/
-          {% endif %}
+          for example: ![image](/path/to/image.png), return ![image](http://{{ local_image_host }}/static/path/to/image.png)
+        {% endif %}
 
         - Format your answer with Markdown for readability.        
         - Always use the language used by the user in their question.

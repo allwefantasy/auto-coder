@@ -127,7 +127,14 @@ async def create_chat_completion(
     if body.stream:
         return StreamingResponse(
             content=generator,
-            media_type="text/event-stream"
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache, no-transform",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream",
+                "X-Accel-Buffering": "no",
+                "Transfer-Encoding": "chunked",
+            }
         )
     else:
         return JSONResponse(content=generator.model_dump())
@@ -381,5 +388,5 @@ def serve(llm:ByzerLLM, args: ServerArgs):
         log_level=args.uvicorn_log_level,
         timeout_keep_alive=TIMEOUT_KEEP_ALIVE,
         ssl_keyfile=args.ssl_keyfile,
-        ssl_certfile=args.ssl_certfile
+        ssl_certfile=args.ssl_certfile                
     )

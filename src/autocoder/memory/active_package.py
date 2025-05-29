@@ -13,6 +13,12 @@ from loguru import logger as global_logger
 from autocoder.common.token_cost_caculate import TokenCostCalculator, TokenUsageStats
 from autocoder.common import AutoCoderArgs
 
+# 导入新的独立模块
+from .active_header import ActiveHeader
+from .active_changes import ActiveChanges
+from .active_documents import ActiveDocuments
+from .active_diagrams import ActiveDiagrams
+
 class ActivePackage:
     """
     ActivePackage负责生成每个目录的活动上下文文档，
@@ -33,7 +39,13 @@ class ActivePackage:
         self.llm = llm
         self.product_mode = product_mode
         # 创建专用的 logger 实例
-        self.logger = global_logger.bind(name="ActivePackage")        
+        self.logger = global_logger.bind(name="ActivePackage")
+        
+        # 初始化四个独立的处理模块
+        self.header_processor = ActiveHeader()
+        self.changes_processor = ActiveChanges(llm, product_mode)
+        self.documents_processor = ActiveDocuments(llm, product_mode)
+        self.diagrams_processor = ActiveDiagrams(llm, product_mode)
     
     def generate_active_file(self, context: Dict[str, Any], query: str, 
                             existing_file_path: Optional[str] = None, 
@@ -77,7 +89,7 @@ class ActivePackage:
             # 根据是否有现有内容选择不同的生成方式
             if existing_content:
                 # 有现有内容，使用更新模式
-                file_content, usage_stats = self.generate_updated_active_file(enhanced_context, query, existing_content,args)
+                file_content, usage_stats = self.generate_updated_active_file(enhanced_context, query, existing_content, args)
                 # 合并token和费用统计
                 total_stats["total_tokens"] += usage_stats["total_tokens"]
                 total_stats["input_tokens"] += usage_stats["input_tokens"]
@@ -85,7 +97,7 @@ class ActivePackage:
                 total_stats["cost"] += usage_stats["cost"]
             else:
                 # 无现有内容，使用创建模式
-                file_content, usage_stats = self.generate_new_active_file(enhanced_context, query,args)
+                file_content, usage_stats = self.generate_new_active_file(enhanced_context, query, args)
                 # 合并token和费用统计
                 total_stats["total_tokens"] += usage_stats["total_tokens"]
                 total_stats["input_tokens"] += usage_stats["input_tokens"]
@@ -172,78 +184,63 @@ class ActivePackage:
         
         return enhanced_context
     
-    def generate_new_active_file(self, context: Dict[str, Any], query: str,args:AutoCoderArgs) -> Tuple[str, Dict[str, Any]]:
+    def generate_new_active_file(self, context: Dict[str, Any], query: str, args: AutoCoderArgs) -> Tuple[str, Dict[str, Any]]:
         """
         生成全新的活动文件内容
         
         Args:
             context: 目录上下文字典
             query: 用户查询/需求
+            args: AutoCoderArgs实例，包含配置信息
             
         Returns:
             Tuple[str, Dict[str, Any]]: 新生成的活动文件内容和token使用及费用信息
         """
         try:
-            # 1. 生成current change部分
-            meta_holder_current_change = MetaHolder()
-            start_time_current_change = time.monotonic()
-            current_change = self.generate_current_change.with_llm(self.llm).with_meta(
-                meta_holder_current_change).run(context, query)
-            end_time_current_change = time.monotonic()
-            
-            # 使用TokenCostCalculator跟踪token使用情况
-            token_calculator = TokenCostCalculator(logger_name="ActivePackage",args=args)
-            current_change_stats: TokenUsageStats = token_calculator.track_token_usage(
-                llm=self.llm,
-                meta_holder=meta_holder_current_change,
-                operation_name="Current Change Generation",
-                start_time=start_time_current_change,
-                end_time=end_time_current_change,
-                product_mode=self.product_mode
-            )
-            
-            self.logger.info(f"Current Change Generation - Total tokens: {current_change_stats.total_tokens}, Total cost: ${current_change_stats.total_cost:.6f}")
-            
-            # 2. 生成document部分
-            meta_holder_document = MetaHolder()
-            start_time_document = time.monotonic()
-            document = self.generate_document.with_llm(self.llm).with_meta(
-                meta_holder_document).run(context, query)
-            end_time_document = time.monotonic()
-            
-            # 使用TokenCostCalculator跟踪token使用情况
-            document_stats: TokenUsageStats = token_calculator.track_token_usage(
-                llm=self.llm,
-                meta_holder=meta_holder_document,
-                operation_name="Document Generation",
-                start_time=start_time_document,
-                end_time=end_time_document,
-                product_mode=self.product_mode
-            )
-            
-            self.logger.info(f"Document Generation - Total tokens: {document_stats.total_tokens}, Total cost: ${document_stats.total_cost:.6f}")
-            
-            # 计算总token使用统计
-            total_tokens = current_change_stats.total_tokens + document_stats.total_tokens
-            input_tokens = current_change_stats.input_tokens + document_stats.input_tokens
-            output_tokens = current_change_stats.output_tokens + document_stats.output_tokens
-            total_cost = current_change_stats.total_cost + document_stats.total_cost
-            self.logger.info(f"Total Usage - Tokens: {total_tokens}, Input: {input_tokens}, Output: {output_tokens}, Cost: ${total_cost:.6f}")
-            
-            # 安全获取目录名称
-            dir_name = os.path.basename(context.get('directory_path', '未知目录'))
-            
-            # 3. 组合成完整的活动文件内容
-            file_content = f"# 活动上下文 - {dir_name}\n\n"
-            file_content += f"## 当前变更\n\n{current_change}\n\n"
-            file_content += f"## 文档\n\n{document}\n"
-            
-            return file_content, {
-                "total_tokens": total_tokens,
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "cost": total_cost
+            # 初始化总统计
+            total_stats = {
+                "total_tokens": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost": 0.0
             }
+            
+            # 1. 生成标题部分
+            header = self.header_processor.generate_header(context)
+            
+            # 2. 生成当前变更部分
+            current_change, changes_stats = self.changes_processor.generate_changes(context, query, args)
+            # 合并统计
+            total_stats["total_tokens"] += changes_stats["total_tokens"]
+            total_stats["input_tokens"] += changes_stats["input_tokens"]
+            total_stats["output_tokens"] += changes_stats["output_tokens"]
+            total_stats["cost"] += changes_stats["cost"]
+            
+            # 3. 生成文档部分
+            document, document_stats = self.documents_processor.generate_documents(context, query, args)
+            # 合并统计
+            total_stats["total_tokens"] += document_stats["total_tokens"]
+            total_stats["input_tokens"] += document_stats["input_tokens"]
+            total_stats["output_tokens"] += document_stats["output_tokens"]
+            total_stats["cost"] += document_stats["cost"]
+            
+            # 4. 生成关系图表部分
+            diagrams, diagrams_stats = self.diagrams_processor.generate_diagrams(context, query, args)
+            # 合并统计
+            total_stats["total_tokens"] += diagrams_stats["total_tokens"]
+            total_stats["input_tokens"] += diagrams_stats["input_tokens"]
+            total_stats["output_tokens"] += diagrams_stats["output_tokens"]
+            total_stats["cost"] += diagrams_stats["cost"]
+            
+            self.logger.info(f"Total Usage - Tokens: {total_stats['total_tokens']}, Input: {total_stats['input_tokens']}, Output: {total_stats['output_tokens']}, Cost: ${total_stats['cost']:.6f}")
+            
+            # 5. 组合成完整的活动文件内容
+            file_content = header
+            file_content += f"## 当前变更\n\n{current_change}\n\n"
+            file_content += f"## 文档\n\n{document}\n\n"
+            file_content += f"## 关系图表\n\n{diagrams}\n"
+            
+            return file_content, total_stats
         except Exception as e:
             self.logger.error(f"Error generating new active file: {e}")
             # 返回错误信息和空统计
@@ -256,43 +253,31 @@ class ActivePackage:
             err_content = f"# 生成文档时出错 - {os.path.basename(context.get('directory_path', '未知目录'))}\n\n错误: {str(e)}"
             return err_content, empty_stats
     
-    def extract_sections(self, content: str) -> Tuple[str, str, str]:
+    def extract_sections(self, content: str) -> Tuple[str, str, str, str]:
         """
-        从现有内容中提取标题、当前变更和文档部分
+        从现有内容中提取标题、当前变更、文档和图表部分
         
         Args:
             content: 现有文件内容
             
         Returns:
-            Tuple[str, str, str]: 标题部分、当前变更部分、文档部分
+            Tuple[str, str, str, str]: 标题部分、当前变更部分、文档部分、图表部分
         """
-        # 默认值
-        header = "# 活动上下文\n\n"
-        current_change_section = ""
-        document_section = ""
-        
         try:
-            # 提取标题部分（到第一个二级标题之前）
-            header_match = re.search(r'^(.*?)(?=\n## )', content, re.DOTALL)
-            if header_match:
-                header = header_match.group(1).strip() + "\n\n"
+            # 使用各个处理器提取对应部分
+            header = self.header_processor.extract_header(content)
+            current_change_section = self.changes_processor.extract_changes(content)
+            document_section = self.documents_processor.extract_documents(content)
+            diagrams_section = self.diagrams_processor.extract_diagrams(content)
             
-            # 提取当前变更部分
-            current_change_match = re.search(r'## 当前变更\s*\n(.*?)(?=\n## |$)', content, re.DOTALL)
-            if current_change_match:
-                current_change_section = current_change_match.group(1).strip()
-            
-            # 提取文档部分
-            document_match = re.search(r'## 文档\s*\n(.*?)(?=\n## |$)', content, re.DOTALL)
-            if document_match:
-                document_section = document_match.group(1).strip()
-                
-            return header, current_change_section, document_section
+            return header, current_change_section, document_section, diagrams_section
         except Exception as e:
             self.logger.error(f"Error extracting sections: {e}")
-            return header, current_change_section, document_section
+            # 返回默认值
+            default_header = "# 活动上下文\n\n"
+            return default_header, "", "", ""
     
-    def generate_updated_active_file(self, context: Dict[str, Any], query: str, existing_content: str,args:AutoCoderArgs) -> Tuple[str, Dict[str, Any]]:
+    def generate_updated_active_file(self, context: Dict[str, Any], query: str, existing_content: str, args: AutoCoderArgs) -> Tuple[str, Dict[str, Any]]:
         """
         基于现有内容生成更新后的活动文件内容
         
@@ -300,71 +285,62 @@ class ActivePackage:
             context: 目录上下文字典
             query: 用户查询/需求
             existing_content: 现有的活动文件内容
+            args: AutoCoderArgs实例，包含配置信息
             
         Returns:
             Tuple[str, Dict[str, Any]]: 更新后的活动文件内容和token使用及费用信息
         """
         try:
-            # 1. 从现有内容中提取各部分
-            header, existing_current_change, existing_document = self.extract_sections(existing_content)
-            
-            # 2. 更新current change部分
-            meta_holder_current_change = MetaHolder()
-            start_time_current_change = time.monotonic()
-            updated_current_change = self.update_current_change.with_llm(self.llm).with_meta(
-                meta_holder_current_change).run(context, query, existing_current_change)
-            end_time_current_change = time.monotonic()
-            
-            # 使用TokenCostCalculator跟踪token使用情况
-            token_calculator = TokenCostCalculator(logger_name="ActivePackage",args=args)
-            update_current_change_stats: TokenUsageStats = token_calculator.track_token_usage(
-                llm=self.llm,
-                meta_holder=meta_holder_current_change,
-                operation_name="Update Current Change",
-                start_time=start_time_current_change,
-                end_time=end_time_current_change,
-                product_mode=self.product_mode
-            )
-            
-            self.logger.info(f"Current Change Update - Total tokens: {update_current_change_stats.total_tokens}, Total cost: ${update_current_change_stats.total_cost:.6f}")
-            
-            # 3. 更新document部分
-            meta_holder_document = MetaHolder()
-            start_time_document = time.monotonic()
-            updated_document = self.update_document.with_llm(self.llm).with_meta(
-                meta_holder_document).run(context, query, existing_document)
-            end_time_document = time.monotonic()
-            
-            # 使用TokenCostCalculator跟踪token使用情况            
-            update_document_stats: TokenUsageStats = token_calculator.track_token_usage(
-                llm=self.llm,
-                meta_holder=meta_holder_document,
-                operation_name="Update Document",
-                start_time=start_time_document,
-                end_time=end_time_document,
-                product_mode=self.product_mode
-            )
-            
-            self.logger.info(f"Document Update - Total tokens: {update_document_stats.total_tokens}, Total cost: ${update_document_stats.total_cost:.6f}")
-            
-            # 计算总token使用统计
-            total_tokens = update_current_change_stats.total_tokens + update_document_stats.total_tokens
-            input_tokens = update_current_change_stats.input_tokens + update_document_stats.input_tokens
-            output_tokens = update_current_change_stats.output_tokens + update_document_stats.output_tokens
-            total_cost = update_current_change_stats.total_cost + update_document_stats.total_cost
-            self.logger.info(f"Total Usage - Tokens: {total_tokens}, Input: {input_tokens}, Output: {output_tokens}, Cost: ${total_cost:.6f}")
-            
-            # 4. 组合成完整的活动文件内容
-            file_content = header
-            file_content += f"## 当前变更\n\n{updated_current_change}\n\n"
-            file_content += f"## 文档\n\n{updated_document}\n"
-            
-            return file_content, {
-                "total_tokens": total_tokens,
-                "input_tokens": input_tokens,
-                "output_tokens": output_tokens,
-                "cost": total_cost
+            # 初始化总统计
+            total_stats = {
+                "total_tokens": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost": 0.0
             }
+            
+            # 1. 从现有内容中提取各部分
+            header, existing_current_change, existing_document, existing_diagrams = self.extract_sections(existing_content)
+            
+            # 2. 更新标题部分
+            updated_header = self.header_processor.update_header(context, header)
+            
+            # 3. 更新当前变更部分
+            updated_current_change, changes_stats = self.changes_processor.update_changes(
+                context, query, existing_current_change, args)
+            # 合并统计
+            total_stats["total_tokens"] += changes_stats["total_tokens"]
+            total_stats["input_tokens"] += changes_stats["input_tokens"]
+            total_stats["output_tokens"] += changes_stats["output_tokens"]
+            total_stats["cost"] += changes_stats["cost"]
+            
+            # 4. 更新文档部分
+            updated_document, document_stats = self.documents_processor.update_documents(
+                context, query, existing_document, args)
+            # 合并统计
+            total_stats["total_tokens"] += document_stats["total_tokens"]
+            total_stats["input_tokens"] += document_stats["input_tokens"]
+            total_stats["output_tokens"] += document_stats["output_tokens"]
+            total_stats["cost"] += document_stats["cost"]
+            
+            # 5. 更新关系图表部分
+            updated_diagrams, diagrams_stats = self.diagrams_processor.update_diagrams(
+                context, query, existing_diagrams, args)
+            # 合并统计
+            total_stats["total_tokens"] += diagrams_stats["total_tokens"]
+            total_stats["input_tokens"] += diagrams_stats["input_tokens"]
+            total_stats["output_tokens"] += diagrams_stats["output_tokens"]
+            total_stats["cost"] += diagrams_stats["cost"]
+            
+            self.logger.info(f"Total Usage - Tokens: {total_stats['total_tokens']}, Input: {total_stats['input_tokens']}, Output: {total_stats['output_tokens']}, Cost: ${total_stats['cost']:.6f}")
+            
+            # 6. 组合成完整的活动文件内容
+            file_content = updated_header
+            file_content += f"## 当前变更\n\n{updated_current_change}\n\n"
+            file_content += f"## 文档\n\n{updated_document}\n\n"
+            file_content += f"## 关系图表\n\n{updated_diagrams}\n"
+            
+            return file_content, total_stats
         except Exception as e:
             self.logger.error(f"Error updating active file: {e}")
             # 返回错误信息和空统计
@@ -376,236 +352,4 @@ class ActivePackage:
             }
             dir_name = os.path.basename(context.get('directory_path', '未知目录'))
             err_content = f"# 更新文档时出错 - {dir_name}\n\n错误: {str(e)}\n\n## 原始内容\n\n{existing_content}"
-            return err_content, empty_stats
-    
-    @byzerllm.prompt()
-    def update_current_change(self, context: Dict[str, Any], query: str, existing_current_change: str) -> str:
-        """
-        请基于现有的"当前变更"文档和新的变更信息，生成一个更新后的"当前变更"部分。
-        
-        现有的"当前变更"内容：
-        ```
-        {{ existing_current_change }}
-        ```
-        
-        当前需求：
-        {{ query }}
-        
-        目录：{{ context.directory_path }}
-        
-        最新变更的文件：
-        {% for file in context.changed_files %}
-        - {{ file.path }}
-        {% endfor %}
-        
-        {% if context.file_diffs %}
-        文件变更摘要：
-        {% for diff in context.file_diffs %}
-        - {{ diff.path }}: {% if diff.type == 'modified' %}修改 (从{{ diff.before_lines }}行到{{ diff.after_lines }}行){% elif diff.type == 'added' %}新增{% elif diff.type == 'deleted' %}删除{% endif %}
-        {% endfor %}
-        {% endif %}
-        
-        {% if context.changed_files and context.changed_files[0].has_diff %}
-        变更前后的代码对比：
-        {% for file in context.changed_files %}
-        {% if file.has_diff %}
-        文件: {{ file.path }}
-        变更前:
-        ```
-        {{ file.before_content }}
-        ```
-        
-        变更后:
-        ```
-        {{ file.after_content }}
-        ```
-        {% endif %}
-        {% endfor %}
-        {% endif %}
-        
-        请执行以下任务：
-        1. 保留现有文档中的有用历史信息
-        2. 添加最新的变更信息，重点描述当前需求相关的变更
-        3. 明确指出新的变更与之前变更的关系（如继续完善、修复问题、新增功能等）
-        4. 确保变更描述清晰、具体，并表明每个文件的变更内容和目的
-        5. 如果有冲突的信息，优先保留最新的信息
-        6. 变更部分最多保留20条。
-        
-        你的回答应该是一个完整的"当前变更"部分内容，不需要包含标题。
-        """
-    
-    @byzerllm.prompt()
-    def update_document(self, context: Dict[str, Any], query: str, existing_document: str) -> str:
-        """
-        请基于现有的"文档"部分和新的变更信息，生成一个更新后的"文档"部分。
-        
-        现有的"文档"内容：
-        ```
-        {{ existing_document }}
-        ```
-        
-        当前需求：
-        {{ query }}
-        
-        目录：{{ context.directory_path }}
-        
-        相关文件：
-        {% for file in context.changed_files %}
-        - {{ file.path }}
-        {% endfor %}
-        
-        {% if context.current_files %}
-        当前目录中的其他相关文件：
-        {% for file in context.current_files %}
-        - {{ file.path }}
-        {% endfor %}
-        {% endif %}
-        
-        {% if context.file_diffs %}
-        文件变更摘要：
-        {% for diff in context.file_diffs %}
-        - {{ diff.path }}: {% if diff.type == 'modified' %}修改 (从{{ diff.before_lines }}行到{{ diff.after_lines }}行){% elif diff.type == 'added' %}新增{% elif diff.type == 'deleted' %}删除{% endif %}
-        {% endfor %}
-        {% endif %}
-        
-        {% if context.changed_files and context.changed_files[0].has_diff %}
-        变更前后的代码对比：
-        {% for file in context.changed_files %}
-        {% if file.has_diff %}
-        文件: {{ file.path }}
-        变更前:
-        ```
-        {{ file.before_content }}
-        ```
-        
-        变更后:
-        ```
-        {{ file.after_content }}
-        ```
-        {% endif %}
-        {% endfor %}
-        {% endif %}
-        
-        请执行以下任务：
-        1. 保留现有文档中的准确信息
-        2. 更新每个文件的文档，反映最新的变更
-        3. 如果有新文件，为其创建完整的文档
-        4. 确保文档格式一致性，每个文件的文档包含：功能、关键组件、变更影响、与其他文件的关系
-        5. 如有冲突信息，优先保留最新信息，但保留历史上下文
-        
-        格式应为：
-        
-        ### [文件名]
-        - **功能**：
-        - **关键组件**：
-        - **变更影响**：
-        - **关系**：
-        
-        你的回答应该是一个完整的"文档"部分内容，不需要包含标题。
-        """
-    
-    @byzerllm.prompt()
-    def generate_current_change(self, context: Dict[str, Any], query: str) -> str:
-        """
-        请分析下面的代码变更，并描述它们与当前需求的关系。
-        
-        需求：
-        {{ query }}
-        
-        目录：{{ context.directory_path }}
-        
-        变更的文件：
-        {% for file in context.changed_files %}
-        - {{ file.path }}
-        {% endfor %}
-        
-        {% if context.file_diffs %}
-        文件变更摘要：
-        {% for diff in context.file_diffs %}
-        - {{ diff.path }}: {% if diff.type == 'modified' %}修改 (从{{ diff.before_lines }}行到{{ diff.after_lines }}行){% elif diff.type == 'added' %}新增{% elif diff.type == 'deleted' %}删除{% endif %}
-        {% endfor %}
-        {% endif %}
-        
-        {% if context.changed_files and context.changed_files[0].has_diff %}
-        变更前后的代码对比：
-        {% for file in context.changed_files %}
-        {% if file.has_diff %}
-        文件: {{ file.path }}
-        变更前:
-        ```
-        {{ file.before_content }}
-        ```
-        
-        变更后:
-        ```
-        {{ file.after_content }}
-        ```
-        {% endif %}
-        {% endfor %}
-        {% endif %}
-        
-        分析并描述这些变更如何满足需求，以及这个目录中的文件在整体变更中起到什么作用。
-        描述应该清晰、具体，并表明每个文件的变更内容和目的。
-        """
-    
-    @byzerllm.prompt()
-    def generate_document(self, context: Dict[str, Any], query: str) -> str:
-        """
-        请为下面列出的每个文件生成详细的文档说明。
-        
-        需求：
-        {{ query }}
-        
-        目录：{{ context.directory_path }}
-        
-        文件列表：
-        {% for file in context.changed_files %}
-        - {{ file.path }}
-        {% endfor %}
-        
-        {% if context.current_files %}
-        当前目录中的其他相关文件：
-        {% for file in context.current_files %}
-        - {{ file.path }}
-        {% endfor %}
-        {% endif %}
-        
-        {% if context.file_diffs %}
-        文件变更摘要：
-        {% for diff in context.file_diffs %}
-        - {{ diff.path }}: {% if diff.type == 'modified' %}修改 (从{{ diff.before_lines }}行到{{ diff.after_lines }}行){% elif diff.type == 'added' %}新增{% elif diff.type == 'deleted' %}删除{% endif %}
-        {% endfor %}
-        {% endif %}
-        
-        {% if context.changed_files and context.changed_files[0].has_diff %}
-        变更前后的代码对比：
-        {% for file in context.changed_files %}
-        {% if file.has_diff %}
-        文件: {{ file.path }}
-        变更前:
-        ```
-        {{ file.before_content }}
-        ```
-        
-        变更后:
-        ```
-        {{ file.after_content }}
-        ```
-        {% endif %}
-        {% endfor %}
-        {% endif %}
-        
-        对于每个文件，请提供：
-        1. 文件的主要功能
-        2. 文件中的关键组件（类、函数等）
-        3. 此次变更对文件的影响（如果适用）
-        4. 文件与其他文件的关系
-        
-        格式应为：
-        
-        ### [文件名]
-        - **功能**：
-        - **关键组件**：
-        - **变更影响**：
-        - **关系**：
-        """ 
+            return err_content, empty_stats 
