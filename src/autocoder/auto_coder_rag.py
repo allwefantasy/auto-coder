@@ -936,6 +936,11 @@ def main(input_args: Optional[List[str]] = None):
             logger.error(
                 "The document retriever does not support hybrid index building"
             )
+        try:    
+            monitor = FileMonitor(args.doc_dir)    
+            monitor.stop()
+        except Exception as e:
+            logger.warning(f"Failed to stop file monitor: {e}")            
 
     elif args.command == "tools":
         if args.tool == "count":

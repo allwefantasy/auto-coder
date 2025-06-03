@@ -70,23 +70,22 @@ class ExecuteCommandToolResolver(BaseToolResolver):
                 return ToolResult(success=False, message=f"Command '{command}' contains potentially unsafe characters.")
 
         # Approval mechanism (simplified)
-        if requires_approval:
-             # In a real scenario, this would involve user interaction
-             logger.info(f"Command requires approval: {command}")
-             # For now, let's assume approval is granted in non-interactive mode or handled elsewhere
-             pass
-
-        logger.info(f"Executing command: {command} in {os.path.abspath(source_dir)}")
-        try:            
-            # 使用封装的run_cmd方法执行命令
-            if get_run_context().is_web():
-                answer = get_event_manager(
-                    self.args.event_file).ask_user(prompt=f"Allow to execute the `{command}`?",options=["yes","no"])
-                if answer == "yes":
-                    pass
-                else:
-                    return ToolResult(success=False, message=f"Command '{command}' execution denied by user.")
-            
+        if not self.args.enable_agentic_auto_approve and requires_approval:
+            logger.info(f"Executing command: {command} in {os.path.abspath(source_dir)}")
+            try:            
+                # 使用封装的run_cmd方法执行命令
+                if get_run_context().is_web():
+                    answer = get_event_manager(
+                        self.args.event_file).ask_user(prompt=f"Allow to execute the `{command}`?",options=["yes","no"])
+                    if answer == "yes":
+                        pass
+                    else:
+                        return ToolResult(success=False, message=f"Command '{command}' execution denied by user.")
+            except Exception as e:
+                logger.error(f"Error when ask the user to approve the command '{command}': {str(e)}")
+                return ToolResult(success=False, message=f"An unexpected error occurred while asking the user to approve the command: {str(e)}")
+                
+        try:    
             exit_code, output = run_cmd_subprocess(command, verbose=True, cwd=source_dir)
 
             logger.info(f"Command executed: {command}")

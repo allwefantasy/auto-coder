@@ -52,7 +52,9 @@ from autocoder.auto_coder_runner import (
     summon,
     get_memory,
     active_context,
-    rules
+    rules,
+    start as start_engine,
+    stop as stop_engine
 )
 # Ensure the correct import is present
 from autocoder.chat.conf_command import handle_conf_command
@@ -269,6 +271,7 @@ ARGS = None
 
 def main():
     load_tokenizer()
+    start_engine()
 
     ARGS = parse_arguments()
 
@@ -668,13 +671,14 @@ def main():
         except EOFError:
             try:
                 # Shutdown all plugins before exiting
-                plugin_manager.shutdown_all()
+                plugin_manager.shutdown_all()                
                 # save_memory()
                 try:
                     if get_mcp_server():
                         get_mcp_server().stop()
                 except Exception as e:
                     pass
+                stop_engine()
             except Exception as e:
                 print(
                     f"\033[91mAn error occurred while saving memory:\033[0m \033[93m{type(e).__name__}\033[0m - {str(e)}"

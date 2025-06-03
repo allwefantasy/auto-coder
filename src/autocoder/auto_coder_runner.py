@@ -258,6 +258,7 @@ def configure_logger():
         ]
     )
 
+
 def init_singleton_instances():
     # 初始化文件监控系统
     try:
@@ -275,9 +276,17 @@ def init_singleton_instances():
     _ = IgnoreFileManager(project_root=project_root)
 
 
-if os.environ.get('autocoder_auto_init',"true") in ["true","True","True",True]:
-    configure_logger()
-    init_singleton_instances()
+def start():    
+    if os.environ.get('autocoder_auto_init',"true") in ["true","True","True",True]:
+        configure_logger()
+        init_singleton_instances()
+
+def stop():
+    try:
+        FileMonitor(project_root).stop()
+    except Exception as e:
+        global_logger.error(f"Failed to stop file monitor: {e}")
+        global_logger.exception(e)
 
 def initialize_system(args:InitializeSystemRequest):
     from autocoder.utils.model_provider_selector import ModelProviderSelector
