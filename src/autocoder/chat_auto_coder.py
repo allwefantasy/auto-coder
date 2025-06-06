@@ -270,10 +270,8 @@ ARGS = None
 
 
 def main():
-    load_tokenizer()
-    start_engine()
-
-    ARGS = parse_arguments()
+    load_tokenizer()    
+    ARGS = parse_arguments()    
 
     if ARGS.lite:
         ARGS.product_mode = "lite"
@@ -292,6 +290,8 @@ def main():
                 pro=ARGS.pro,
             )
         )
+    
+    start_engine()    
 
     # Initialize plugin system
     # Add default plugin directory into global plugin dirs

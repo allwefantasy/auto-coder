@@ -4,6 +4,7 @@ from typing import Dict, Any, Optional
 from autocoder.common.run_cmd import run_cmd_subprocess
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import ExecuteCommandTool, ToolResult # Import ToolResult from types
+from autocoder.common.v2.agent.agentic_edit_tools.dangerous_command_checker import DangerousCommandChecker
 from autocoder.common import shells
 from autocoder.common.printer import Printer
 from loguru import logger
@@ -26,6 +27,8 @@ class ExecuteCommandToolResolver(BaseToolResolver):
             args=self.args,
             llm=self.agent.context_prune_llm
         )
+        # 初始化危险命令检查器
+        self.danger_checker = DangerousCommandChecker()
 
     def _prune_file_content(self, content: str, file_path: str) -> str:
         """对文件内容进行剪枝处理"""
@@ -60,14 +63,21 @@ class ExecuteCommandToolResolver(BaseToolResolver):
         command = self.tool.command
         requires_approval = self.tool.requires_approval
         source_dir = self.args.source_dir or "."
-
-        # Basic security check (can be expanded)
-        if ";" in command or "&&" in command or "|" in command or "`" in command:
-             # Allow && for cd chaining, but be cautious
-             if not command.strip().startswith("cd ") and " && " in command:
-                 pass # Allow cd chaining like 'cd subdir && command'
-             else:
-                return ToolResult(success=False, message=f"Command '{command}' contains potentially unsafe characters.")
+        
+        if self.args.enable_agentic_dangerous_command_check:
+            # 使用新的危险命令检查器进行安全检查
+            is_safe, danger_reason = self.danger_checker.check_command_safety(command, allow_whitelist_bypass=True)
+            
+            if not is_safe:
+                # 获取安全建议
+                recommendations = self.danger_checker.get_safety_recommendations(command)
+                
+                error_message = f"检测到危险命令: {danger_reason}"
+                if recommendations:
+                    error_message += f"\n安全建议:\n" + "\n".join(f"- {rec}" for rec in recommendations)
+                
+                logger.warning(f"阻止执行危险命令: {command}, 原因: {danger_reason}")
+                return ToolResult(success=False, message=error_message)
 
         # Approval mechanism (simplified)
         if not self.args.enable_agentic_auto_approve and requires_approval:

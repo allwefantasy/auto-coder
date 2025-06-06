@@ -276,6 +276,7 @@ class AutoCoderArgs(pydantic.BaseModel):
     enable_agentic_filter: Optional[bool] = False
     enable_agentic_edit: Optional[bool] = True
     enable_agentic_auto_approve: Optional[bool] = False
+    enable_agentic_dangerous_command_check: Optional[bool] = False
     
 
     index_filter_level: Optional[int] = 0

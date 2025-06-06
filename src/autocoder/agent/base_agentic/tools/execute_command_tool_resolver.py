@@ -21,15 +21,7 @@ class ExecuteCommandToolResolver(BaseToolResolver):
     def resolve(self) -> ToolResult:
         command = self.tool.command
         requires_approval = self.tool.requires_approval
-        source_dir = self.args.source_dir or "."
-
-        # Basic security check (can be expanded)
-        if ";" in command or "&&" in command or "|" in command or "`" in command:
-             # Allow && for cd chaining, but be cautious
-             if not command.strip().startswith("cd ") and " && " in command:
-                 pass # Allow cd chaining like 'cd subdir && command'
-             else:
-                return ToolResult(success=False, message=f"Command '{command}' contains potentially unsafe characters.")
+        source_dir = self.args.source_dir or "."        
 
         # Approval mechanism (simplified)
         if requires_approval:
