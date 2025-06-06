@@ -35,6 +35,7 @@ import pkg_resources
 from autocoder.rag.token_counter import TokenCounter
 from autocoder.rag.types import RAGServiceInfo
 from autocoder.version import __version__
+from autocoder.rags import get_rag_config
 
 if platform.system() == "Windows":
     from colorama import init
@@ -297,6 +298,7 @@ def main(input_args: Optional[List[str]] = None):
     serve_parser.add_argument("--source_dir", default=".", help="")
     serve_parser.add_argument("--host", default="", help="")
     serve_parser.add_argument("--port", type=int, default=8000, help="")
+    serve_parser.add_argument("--name", default="", help="RAG服务的名称（可选）")
     serve_parser.add_argument("--workers", type=int, default=4, help="")
     serve_parser.add_argument("--uvicorn_log_level", default="info", help="")
     serve_parser.add_argument("--allow_credentials", action="store_true", help="")
@@ -565,28 +567,63 @@ def main(input_args: Optional[List[str]] = None):
             benchmark_byzerllm(args.model, args.parallel, args.rounds, args.query)
 
     elif args.command == "serve":
+        # 如果用户传递了 --name 参数，则加载已保存的配置并与命令行参数合并
+        server_args_config = {}
+        auto_coder_args_config = {}
+        if args.name:
+            saved_config = get_rag_config(args.name)
+            if saved_config:
+                logger.info(f"加载已保存的RAG配置: {args.name}")
+                
+                # 将保存的配置合并到 args 中（命令行参数优先）
+                for key, value in saved_config.items():
+                    # 跳过一些不应该被合并的字段
+                    skip_fields = {'name', 'status', 'created_at', 'updated_at', 'process_id', 'stdout_fd', 'stderr_fd', 'cache_build_task_id'}
+                    if key in skip_fields:
+                        continue 
+                    server_args_config[key] = value
+                
+                # 特殊处理 infer_params 字段
+                if 'infer_params' in saved_config and saved_config['infer_params']:
+                    for infer_key, infer_value in saved_config['infer_params'].items():
+                        auto_coder_args_config[infer_key] = infer_value
+                
+                logger.info(f"配置合并完成，使用文档目录: {getattr(args, 'doc_dir', 'N/A')}")
+            else:
+                logger.warning(f"未找到名为 '{args.name}' 的RAG配置")
+        
          # Handle lite/pro flags
-        if args.lite:
-            args.product_mode = "lite"
-        elif args.pro:
+        if args.pro:
             args.product_mode = "pro"
+        else:
+            args.product_mode = "lite"
 
         if not args.quick:
-            initialize_system(args)
+            initialize_system(args)            
        
-        server_args = ServerArgs(
-            **{
-                arg: getattr(args, arg)
-                for arg in vars(ServerArgs())
-                if hasattr(args, arg)
+        server_args = ServerArgs(**{
+                **{
+                    arg: server_args_config[arg]
+                    for arg in server_args_config if arg in vars(ServerArgs())
+                },
+                **{
+                    arg: getattr(args, arg)
+                    for arg in vars(ServerArgs())
+                    if hasattr(args, arg)
+                }
             }
         )
-        auto_coder_args = AutoCoderArgs(
+        auto_coder_args = AutoCoderArgs(**{
+            **{
+                arg: server_args_config[arg]
+                for arg in server_args_config if arg in vars(AutoCoderArgs())
+            },
             **{
                 arg: getattr(args, arg)
                 for arg in vars(AutoCoderArgs())
                 if hasattr(args, arg)
             }
+        }
         )
         # 设置本地图床的地址
         if args.enable_local_image_host:
