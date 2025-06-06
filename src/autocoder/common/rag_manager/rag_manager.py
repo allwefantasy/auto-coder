@@ -122,13 +122,21 @@ class RAGManager:
         if not self.configs:
             return "未找到可用的 RAG 服务器配置"
         
-        info_lines = ["可用的 RAG 服务器:"]
-        for i, config in enumerate(self.configs, 1):
-            info_line = f"{i}. {config.name} ({config.server_name})"
-            if config.description:
-                info_line += f" - {config.description}"
-            info_lines.append(info_line)
+        info_lines = []
+        info_lines.append("可用的 RAG 服务器配置")
         
+        for i, config in enumerate(self.configs, 1):
+            info_lines.append(f"\n{i}. 配置名称: {config.name}")
+            info_lines.append(f"   服务器地址: {config.server_name}")
+            
+            if config.description:
+                info_lines.append(f"   描述信息: {config.description}")
+            else:
+                info_lines.append(f"   描述信息: 无")                           
+                
+            if i < len(self.configs):
+                info_lines.append("-" * 30)
+                
         return "\n".join(info_lines)
     
     def has_configs(self) -> bool:

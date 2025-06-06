@@ -470,6 +470,7 @@ class AgenticEdit:
         ## rag_tool
         Description: Request to query the RAG server for information. Use this when you need to query the RAG server for information.
         Parameters:
+        - server_name: (required) The url of the RAG server to use.
         - query: (required) The query to pass to the tool.
         Usage:
         <use_rag_tool>
@@ -728,6 +729,7 @@ class AgenticEdit:
         - It is critical you wait for the user's response after each tool use, in order to confirm the success of the tool use. For example, if asked to make a todo app, you would create a file, wait for the user's response it was created successfully, then create another file if needed, wait for the user's response it was created successfully, etc.        
         - To display LaTeX formulas, use a single dollar sign to wrap inline formulas, like `$E=mc^2$`, and double dollar signs to wrap block-level formulas, like `$$\frac{d}{dx}e^x = e^x$$`.
         - To include flowcharts or diagrams, you can use Mermaid syntax.
+        - If you come across some unknown or unfamiliar concepts or terms, or if the user is asking a question, you can try using appropriate MCP or RAG services to obtain the information.
 
         
         {% if extra_docs %}  
