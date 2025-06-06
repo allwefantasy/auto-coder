@@ -56,6 +56,10 @@ class UseMcpTool(BaseTool):
     tool_name: str
     query:str
 
+class UseRAGTool(BaseTool):
+    server_name: str
+    query: str
+
 class ListPackageInfoTool(BaseTool):
     path: str  # 源码包目录，相对路径或绝对路径
 
@@ -118,6 +122,7 @@ TOOL_MODEL_MAP: Dict[str, Type[BaseTool]] = {
     "attempt_completion": AttemptCompletionTool,
     "plan_mode_respond": PlanModeRespondTool,
     "use_mcp_tool": UseMcpTool,
+    "use_rag_tool": UseRAGTool,
     "list_package_info": ListPackageInfoTool,    
 }
 

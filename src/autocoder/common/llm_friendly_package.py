@@ -178,6 +178,41 @@ class LLMFriendlyPackageManager:
         
         return docs
     
+    def get_package_path(self, package_name: str) -> Optional[str]:
+        """
+        Get the full path of a package by its name
+        
+        Args:
+            package_name: Package name (can be just lib_name or username/lib_name)
+            
+        Returns:
+            Full path to the package directory, or None if not found
+        """
+        if not os.path.exists(self.llm_friendly_packages_dir):
+            return None
+        
+        for domain in os.listdir(self.llm_friendly_packages_dir):
+            domain_path = os.path.join(self.llm_friendly_packages_dir, domain)
+            if not os.path.isdir(domain_path):
+                continue
+                
+            for username in os.listdir(domain_path):
+                username_path = os.path.join(domain_path, username)
+                if not os.path.isdir(username_path):
+                    continue
+                    
+                for lib_name in os.listdir(username_path):
+                    lib_path = os.path.join(username_path, lib_name)
+                    if not os.path.isdir(lib_path):
+                        continue
+                    
+                    # Check if this matches the requested package
+                    if (lib_name == package_name or 
+                        package_name == os.path.join(username, lib_name)):
+                        return lib_path
+        
+        return None
+    
     def list_added_libraries(self) -> List[str]:
         """List all added libraries"""
         memory = self._load_memory()
@@ -405,6 +440,4 @@ class LLMFriendlyPackageManager:
         table.add_column("File Path", style="cyan")
         
         for doc in docs:
-            table.add_row(doc)
-        
-        self.console.print(table) 
+            table.add_row(doc) 

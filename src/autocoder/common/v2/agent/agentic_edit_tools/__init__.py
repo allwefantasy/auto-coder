@@ -11,6 +11,7 @@ from .ask_followup_question_tool_resolver import AskFollowupQuestionToolResolver
 from .attempt_completion_tool_resolver import AttemptCompletionToolResolver
 from .plan_mode_respond_tool_resolver import PlanModeRespondToolResolver
 from .use_mcp_tool_resolver import UseMcpToolResolver
+from .use_rag_tool_resolver import UseRAGToolResolver
 from .list_package_info_tool_resolver import ListPackageInfoToolResolver
 
 __all__ = [
@@ -26,5 +27,6 @@ __all__ = [
     "AttemptCompletionToolResolver",
     "PlanModeRespondToolResolver",
     "UseMcpToolResolver",
+    "UseRAGToolResolver",
     "ListPackageInfoToolResolver",
 ]

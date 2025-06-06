@@ -10,6 +10,10 @@ from rich.panel import Panel
 from pydantic import SkipValidation
 from byzerllm.utils.types import SingleOutputMeta
 
+from byzerllm.utils import (        
+    format_str_jinja2
+)
+
 from autocoder.common import AutoCoderArgs, git_utils, SourceCodeList, SourceCode
 from autocoder.common.global_cancel import global_cancel
 from autocoder.common import detect_env
@@ -56,7 +60,7 @@ from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific re
     ReplaceInFileToolResolver, SearchFilesToolResolver, ListFilesToolResolver,
     ListCodeDefinitionNamesToolResolver, AskFollowupQuestionToolResolver,
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver,
-    ListPackageInfoToolResolver
+    UseRAGToolResolver, ListPackageInfoToolResolver
 )
 from autocoder.common.llm_friendly_package import LLMFriendlyPackageManager
 from autocoder.common.rulefiles.autocoderrules_utils import get_rules,auto_select_rules,get_required_and_index_rules
@@ -69,7 +73,7 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           ListFilesTool,
                                                           ListCodeDefinitionNamesTool, AskFollowupQuestionTool,
                                                           AttemptCompletionTool, PlanModeRespondTool, UseMcpTool,
-                                                          ListPackageInfoTool,
+                                                          UseRAGTool, ListPackageInfoTool,
                                                           TOOL_MODEL_MAP,
                                                           # Event Types
                                                           LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
@@ -80,7 +84,7 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
                                                           AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
                                                           )
-
+from autocoder.common.rag_manager import RAGManager
 from autocoder.rag.token_counter import count_tokens
 
 # Map Pydantic Tool Models to their Resolver Classes
@@ -96,7 +100,8 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     AskFollowupQuestionTool: AskFollowupQuestionToolResolver,
     AttemptCompletionTool: AttemptCompletionToolResolver,  # Will stop the loop anyway
     PlanModeRespondTool: PlanModeRespondToolResolver,
-    UseMcpTool: UseMcpToolResolver
+    UseMcpTool: UseMcpToolResolver,
+    UseRAGTool: UseRAGToolResolver
 }
 
 
@@ -161,12 +166,25 @@ class AgenticEdit:
         except Exception as e:
             logger.error(f"Error getting MCP server info: {str(e)}")
 
+        # 初始化 RAG 管理器并获取服务器信息
+        self.rag_server_info = ""
+        try:
+            self.rag_manager = RAGManager(args)
+            if self.rag_manager.has_configs():
+                self.rag_server_info = self.rag_manager.get_config_info()
+                logger.info(f"RAG manager initialized with {len(self.rag_manager.get_all_configs())} configurations")
+            else:
+                logger.info("No RAG configurations found")
+        except Exception as e:
+            logger.error(f"Error initializing RAG manager: {str(e)}")
+            self.rag_manager = None
+
         # 变更跟踪信息
         # 格式: { file_path: FileChangeEntry(...) }
         self.file_changes: Dict[str, FileChangeEntry] = {}
 
     @byzerllm.prompt()
-    def generate_library_docs_prompt(self, libraries: List[str], docs_content: str) -> Dict[str, Any]:
+    def generate_library_docs_prompt(self, libraries_with_paths: List[Dict[str, str]], docs_content: str) -> Dict[str, Any]:
         """
         ====
 
@@ -187,8 +205,15 @@ class AgenticEdit:
         4. You need to understand the API or usage patterns of these libraries
         ====
         """
+        # 格式化库列表，包含名称和路径
+        libraries_list = []
+        for lib_info in libraries_with_paths:
+            name = lib_info.get('name', '')
+            path = lib_info.get('path', 'Path not found')
+            libraries_list.append(f"{name} (路径: {path})")
+        
         return {
-            "libraries_list": ", ".join(libraries),
+            "libraries_list": ", ".join(libraries_list),
             "combined_docs": docs_content
         }
 
@@ -440,6 +465,21 @@ class AgenticEdit:
         {%if mcp_server_info %}
         ### MCP_SERVER_LIST
         {{mcp_server_info}}
+        {%endif%}
+
+        ## rag_tool
+        Description: Request to query the RAG server for information. Use this when you need to query the RAG server for information.
+        Parameters:
+        - query: (required) The query to pass to the tool.
+        Usage:
+        <use_rag_tool>
+        <server_name>xxx</server_name>
+        <query>Your query here</query>
+        </use_rag_tool>
+
+        {%if rag_server_info %}
+        ### RAG_SERVER_LIST
+        {{rag_server_info}}
         {%endif%}
 
         # Tool Use Examples
@@ -769,6 +809,7 @@ class AgenticEdit:
             "home_dir": os.path.expanduser("~"),
             "files": self.files.to_str(),
             "mcp_server_info": self.mcp_server_info,
+            "rag_server_info": self.rag_server_info,
             "enable_active_context_in_generate": self.args.enable_active_context_in_generate,
             "extra_docs": extra_docs,
             "file_paths_str": file_paths_str,
@@ -842,6 +883,15 @@ class AgenticEdit:
             added_libraries = package_manager.list_added_libraries()
             
             if added_libraries:
+                # Build libraries with paths information
+                libraries_with_paths = []
+                for lib_name in added_libraries:
+                    lib_path = package_manager.get_package_path(lib_name)
+                    libraries_with_paths.append({
+                        'name': lib_name,
+                        'path': lib_path if lib_path else 'Path not found'
+                    })
+                
                 # Get documentation content for all added libraries
                 docs_content = package_manager.get_docs(return_paths=False)
                 
@@ -851,9 +901,9 @@ class AgenticEdit:
                     
                     # Generate library documentation prompt using decorator
                     library_docs_prompt = self.generate_library_docs_prompt.prompt(
-                        libraries=added_libraries,
+                        libraries_with_paths=libraries_with_paths,
                         docs_content=combined_docs
-                    )
+                    )                    
                     
                     conversations.append({
                         "role": "user", 
