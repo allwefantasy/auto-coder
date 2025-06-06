@@ -170,6 +170,40 @@ def initialize_system(args):
     print_status(get_message("init_complete_final"), "success")
 
 
+def merge_args_with_config(args, config, arg_class, parser):
+    """
+    合并命令行参数和配置文件参数，优先级如下：
+    1. 命令行参数非默认值，以命令行为准
+    2. 命令行参数为默认值，且配置文件有值，以配置文件为准
+    3. 否则用命令行参数
+    """
+    merged = {}
+    for arg in vars(arg_class()):
+        # 获取默认值
+        try:
+            default = parser.get_default(arg)
+        except Exception:
+            default = None
+
+                
+        if not hasattr(args,arg) and arg not in config:            
+            continue
+            
+        cli_value = getattr(args, arg, None)
+        config_value = config.get(arg, None)
+
+        
+        # 判断优先级
+        if cli_value != default:
+            merged[arg] = cli_value
+        elif config_value is not None:
+            merged[arg] = config_value
+        else:
+            merged[arg] = cli_value
+    
+    return arg_class(**merged)
+
+
 def main(input_args: Optional[List[str]] = None):
     print(
         f"""
@@ -574,7 +608,6 @@ def main(input_args: Optional[List[str]] = None):
             saved_config = get_rag_config(args.name)
             if saved_config:
                 logger.info(f"加载已保存的RAG配置: {args.name}")
-                
                 # 将保存的配置合并到 args 中（命令行参数优先）
                 for key, value in saved_config.items():
                     # 跳过一些不应该被合并的字段
@@ -582,49 +615,26 @@ def main(input_args: Optional[List[str]] = None):
                     if key in skip_fields:
                         continue 
                     server_args_config[key] = value
-                
                 # 特殊处理 infer_params 字段
                 if 'infer_params' in saved_config and saved_config['infer_params']:
                     for infer_key, infer_value in saved_config['infer_params'].items():
                         auto_coder_args_config[infer_key] = infer_value
-                
                 logger.info(f"配置合并完成，使用文档目录: {getattr(args, 'doc_dir', 'N/A')}")
             else:
                 logger.warning(f"未找到名为 '{args.name}' 的RAG配置")
         
-         # Handle lite/pro flags
+        # Handle lite/pro flags
         if args.pro:
             args.product_mode = "pro"
         else:
             args.product_mode = "lite"
-
+        
         if not args.quick:
-            initialize_system(args)            
-       
-        server_args = ServerArgs(**{
-                **{
-                    arg: server_args_config[arg]
-                    for arg in server_args_config if arg in vars(ServerArgs())
-                },
-                **{
-                    arg: getattr(args, arg)
-                    for arg in vars(ServerArgs())
-                    if hasattr(args, arg)
-                }
-            }
-        )
-        auto_coder_args = AutoCoderArgs(**{
-            **{
-                arg: server_args_config[arg]
-                for arg in server_args_config if arg in vars(AutoCoderArgs())
-            },
-            **{
-                arg: getattr(args, arg)
-                for arg in vars(AutoCoderArgs())
-                if hasattr(args, arg)
-            }
-        }
-        )
+            initialize_system(args)
+        
+        # 使用新的合并逻辑
+        server_args = merge_args_with_config(args, server_args_config, ServerArgs, serve_parser)
+        auto_coder_args = merge_args_with_config(args, server_args_config, AutoCoderArgs, serve_parser)
         # 设置本地图床的地址
         if args.enable_local_image_host:
             host = server_args.host or "127.0.0.1"
