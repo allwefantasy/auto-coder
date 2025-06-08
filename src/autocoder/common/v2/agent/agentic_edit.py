@@ -558,7 +558,7 @@ class AgenticEdit:
         </use_mcp_tool>                
 
         # Tool Use Guidelines
-
+        0. **ALWAYS START WITH THOROUGH SEARCH AND EXPLORATION.** Before making any code changes, use search tools (list_files, grep commands) to fully understand the codebase structure, existing patterns, and dependencies. This prevents errors and ensures your changes align with project conventions.
         1. In <thinking> tags, assess what information you already have and what information you need to proceed with the task.
         2. Choose the most appropriate tool based on the task and the tool descriptions provided. Assess if you need additional information to proceed, and which of the available tools would be most effective for gathering this information. For example using the list_files tool is more effective than running a command like \`ls\` in the terminal. It's critical that you think about each available tool and use the one that best fits the current step in the task.
         3. If multiple actions are needed, use one tool at a time per message to accomplish the task iteratively, with each tool use being informed by the result of the previous tool use. Do not assume the outcome of any tool use. Each step must be informed by the previous step's result.
@@ -579,9 +579,286 @@ class AgenticEdit:
         By waiting for and carefully considering the user's response after each tool use, you can react accordingly and make informed decisions about how to proceed with the task. This iterative process helps ensure the overall success and accuracy of your work.
 
         ====
+        SEARCHING FILES
+        
+        **THIS IS YOUR CORE METHODOLOGY** - The following search-first approach is not optional but mandatory for reliable code work. Every code task should follow this systematic exploration pattern.
+        This guide provides a systematic approach for AI agents and developers to effectively search, understand, and modify codebases. It emphasizes thorough pre-code investigation and post-code verification to ensure reliable and maintainable changes.
+
+        The methodology combines multiple search tools (grep, list_files, read_file) with structured workflows to minimize code errors, ensure comprehensive understanding, validate changes systematically, and follow established project patterns.
+
+        # list_files
+
+        ## Purpose
+
+        - Discover project structure and understand directory organization
+        - Get an overview of available files and folders before diving deeper
+
+        ## When to Use
+
+        - Initial project exploration to understand the codebase layout
+        - Identifying key directories like `src/`, `lib/`, `components/`, `utils/`
+        - Locating configuration files like `package.json`, `tsconfig.json`, `Makefile`
+        - Before using more targeted search tools
+
+        ## Advantages
+
+        - Provides quick project overview without overwhelming detail
+        - Helps plan targeted searches in specific directories
+        - Essential first step in understanding unfamiliar codebases
+
+        # grep (Shell Commands)
+
+        ## Purpose
+
+        - Find exact text matches and patterns across multiple files
+        - Perform precise searches with minimal output overhead
+        - Verify code changes and validate implementations
+
+        ## When to Use
+
+        - **Pre-code Context Gathering**: Locate symbols, functions, imports, and usage patterns
+        - **Post-code Verification**: Confirm changes were applied correctly and no stale references remain
+        - **Pattern Analysis**: Understand coding conventions and existing implementations
+
+        ## Key Command Patterns
+
+        **Pre-code Context Examples:**
+
+        <execute_command>
+        <command>grep -l "className" src/ | head -5</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        <execute_command>
+        <command>grep -rc "import.*React" src/ | grep -v ":0"</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        <execute_command>
+        <command>grep -Rn "function.*MyFunction\|const.*MyFunction" . | head -10</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        <execute_command>
+        <command>grep -R --exclude-dir={node_modules,dist,build,.git} "TODO" .</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        **Post-code Verification Examples:**
+
+        <execute_command>
+        <command>ls -la newfile.js 2>/dev/null && echo "File created" || echo "File not found"</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        <execute_command>
+        <command>grep -Rn "oldName" . || echo "✓ No stale references found"</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        <execute_command>
+        <command>grep -c "newName" src/*.js | grep -v ":0" || echo "⚠ New references not found"</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        <execute_command>
+        <command>grep -Rn "import.*newModule\|export.*newFunction" . | wc -l</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        ## Output Optimization Tips
+
+        - Use `-l` for filenames only
+        - Use `-c` for count only  
+        - Use `| head -N` to limit lines
+        - Use `| wc -l` for total count
+        - Use `2>/dev/null` to suppress errors
+        - Combine with `|| echo` for clear status messages
+
+        # search_files (Fallback)
+
+        ## Purpose
+
+        - Alternative search method when grep commands aren't available
+        - Semantic search capabilities for finding related code
+
+        ## When to Use
+
+        - When shell access is limited or grep is unavailable
+        - For broader, less precise searches across the codebase
+        - As a complement to grep for comprehensive code discovery
+
+        # read_file
+
+        ## Purpose
+
+        - Examine complete file contents in detail
+        - Understand context, patterns, and implementation details
+
+        ## When to Use
+
+        - After identifying target files through list_files or grep
+        - To understand function signatures, interfaces, and contracts
+        - For analyzing usage patterns and project conventions
+        - When detailed code examination is needed before making changes
+
+        ## Important Considerations
+
+        - Use strategically after narrowing down target files
+        - Essential for understanding context before code modification
+        - Helps identify dependencies and potential side effects
+
+        # Choosing the Right Search Strategy
+
+        - **Start with list_files** to understand project structure
+        - **Use grep for targeted searches** when you know what to look for
+        - **Apply read_file for detailed examination** of specific files
+        - **Combine multiple approaches** for comprehensive understanding
+
+        **Default workflow:**
+        1. `list_files` → understand structure
+        2. `grep` → find specific patterns/symbols  
+        3. `read_file` → examine details
+        4. Implement changes
+        5. `grep` → verify changes
+
+        # Comprehensive Workflow
+
+        ## Phase 1: Project Discovery & Analysis
+
+        **Project Structure Overview**
+        <execute_command>
+        <command>ls -la</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        - Use `list_files` tool to understand directory structure
+        - Identify key directories: `src/`, `lib/`, `components/`, `utils/`
+        - Look for config files: `package.json`, `tsconfig.json`, `Makefile`
+
+        **Technology Stack Identification**
+        <execute_command>
+        <command>grep -E "(import|require|from).*['\"]" src/ | head -20</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        - Check package dependencies and imports
+        - Identify frameworks, libraries, and coding patterns
+        - Understand project conventions (naming, file organization)
+
+        ## Phase 2: Contextual Code Investigation
+
+        **Symbol and Pattern Search**
+        <execute_command>
+        <command>grep -Rn "targetFunction\|targetClass" . --exclude-dir={node_modules,dist}</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        **Usage Pattern Analysis**
+        - Use `read_file` to examine key files in detail
+        - Understand function signatures, interfaces, and contracts
+        - Check error handling patterns and edge cases
+
+        **Dependency Mapping**
+        <execute_command>
+        <command>grep -Rn "import.*targetModule" . | grep -v test</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        ## Phase 3: Implementation Planning
+
+        **Impact Assessment**
+        - Identify all files that need modification
+        - Plan backwards compatibility considerations
+        - Consider potential side effects
+
+        **Test Strategy**
+        <execute_command>
+        <command>find . -name "*test*" -o -name "*spec*" | head -10</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        - Locate existing tests for reference
+        - Plan new test cases if needed
+
+        ## Phase 4: Code Implementation
+
+        More detail is on the EDITING FILES PART.
+
+        ## Phase 5: Comprehensive Verification
+
+        **File System Verification**
+        <execute_command>
+        <command>ls -la newfile.* 2>/dev/null || echo "Expected new files not found"</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        **Code Integration Verification**
+        <execute_command>
+        <command>grep -Rn "oldSymbol" . --exclude-dir={node_modules,dist} || echo "✓ No stale references"</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        <execute_command>
+        <command>grep -c "newSymbol" src/ --include="*.js" --include="*.ts" | grep -v ":0"</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        **Functional Verification**
+        <execute_command>
+        <command>npm run lint 2>/dev/null || echo "Linting not configured"</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        <execute_command>
+        <command>npm test 2>/dev/null || echo "Testing not configured"</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        <execute_command>
+        <command>npm run build 2>/dev/null || echo "Build not configured"</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        **Documentation & Comments**
+        - Verify that new functions/classes have appropriate documentation
+        - Check that complex logic has explanatory comments
+        - Ensure README or other docs are updated if needed
+
+        ## Phase 6: Quality Assurance
+
+        **Performance Considerations**
+        - Check for potential performance impacts
+        - Verify memory usage patterns
+        - Consider scalability implications
+
+        **Security Review**
+        - Look for potential security vulnerabilities
+        - Verify input validation and sanitization
+        - Check for proper error handling
+
+        **Final Integration Check**
+        <execute_command>
+        <command>grep -Rn "TODO\|FIXME\|XXX" . --exclude-dir={node_modules,dist} | wc -l</command>
+        <requires_approval>false</requires_approval>
+        </execute_command>
+
+        # Best Practices
+
+        - **Iterative Approach**: Don't try to understand everything at once; build knowledge progressively
+        - **Documentation First**: Read existing docs, comments, and README files before diving into code
+        - **Small Steps**: Make incremental changes and verify each step
+        - **Rollback Ready**: Always know how to undo changes if something goes wrong
+        - **Test Early**: Run tests frequently during development, not just at the end
+        - **Pattern Consistency**: Follow established project patterns rather than introducing new ones
+
+        By following this comprehensive approach, you ensure thorough understanding, reliable implementation, and robust verification of all code changes.          
+
+        ====
 
         EDITING FILES
-
+        
+        Before applying the editing techniques below, ensure you have followed the SEARCHING FILES methodology to fully understand the codebase context.
         You have access to two tools for working with files: **write_to_file** and **replace_in_file**. Understanding their roles and selecting the right one for the job will help ensure efficient and accurate modifications.
 
         # write_to_file
@@ -688,28 +965,31 @@ class AgenticEdit:
 
         - Quickly identifies recently modified files that may be relevant to your task
         - Provides high-level understanding of directory contents and purpose
-        - Helps prioritize which files to examine in detail with tools like read_file, search_files, or list_code_definition_names
+        - Helps prioritize which files to examine in detail with tools like read_file, shell commands, or list_code_definition_names
 
         ====
 
         CAPABILITIES
-
+        
+        - **SEARCH AND UNDERSTAND FIRST**: Your primary strength lies in systematically exploring and understanding codebases before making changes. Use list_files, execute_command (grep) to map project structure, identify patterns, and understand dependencies. This exploration-first approach is crucial for reliable code modifications.
         - You have access to tools that let you execute CLI commands on the user's computer, list files, view source code definitions, regex search, read and edit files, and ask follow-up questions. These tools help you effectively accomplish a wide range of tasks, such as writing code, making edits or improvements to existing files, understanding the current state of a project, performing system operations, and much more.
         - When the user initially gives you a task, a recursive list of all filepaths in the current working directory ('{{ current_project }}') will be included in environment_details. This provides an overview of the project's file structure, offering key insights into the project from directory/file names (how developers conceptualize and organize their code) and file extensions (the language used). This can also guide decision-making on which files to explore further. If you need to further explore directories such as outside the current working directory, you can use the list_files tool. If you pass 'true' for the recursive parameter, it will list files recursively. Otherwise, it will list files at the top level, which is better suited for generic directories where you don't necessarily need the nested structure, like the Desktop.
-        - You can use search_files to perform regex searches across files in a specified directory, outputting context-rich results that include surrounding lines. This is particularly useful for understanding code patterns, finding specific implementations, or identifying areas that need refactoring.
+        - You can use shell_command(grep) to perform regex searches across files in a specified directory, outputting context-rich results that include surrounding lines. This is particularly useful for understanding code patterns, finding specific implementations, or identifying areas that need refactoring.
         - You can use the list_code_definition_names tool to get an overview of source code definitions for all files at the top level of a specified directory. This can be particularly useful when you need to understand the broader context and relationships between certain parts of the code. You may need to call this tool multiple times to understand various parts of the codebase related to the task.
-            - For example, when asked to make edits or improvements you might analyze the file structure in the initial environment_details to get an overview of the project, then use list_code_definition_names to get further insight using source code definitions for files located in relevant directories, then read_file to examine the contents of relevant files, analyze the code and suggest improvements or make necessary edits, then use the replace_in_file tool to implement changes. If you refactored code that could affect other parts of the codebase, you could use search_files to ensure you update other files as needed.
+            - For example, when asked to make edits or improvements you might analyze the file structure in the initial environment_details to get an overview of the project, then use list_code_definition_names to get further insight using source code definitions for files located in relevant directories, then read_file to examine the contents of relevant files, analyze the code and suggest improvements or make necessary edits, then use the replace_in_file tool to implement changes. If you refactored code that could affect other parts of the codebase, you could use shell commands(grep) to ensure you update other files as needed.
         - You can use the execute_command tool to run commands on the user's computer whenever you feel it can help accomplish the user's task. When you need to execute a CLI command, you must provide a clear explanation of what the command does. Prefer to execute complex CLI commands over creating executable scripts, since they are more flexible and easier to run. Interactive and long-running commands are allowed, since the commands are run in the user's VSCode terminal. The user may keep commands running in the background and you will be kept updated on their status along the way. Each command you execute is run in a new terminal instance.
 
         ====
 
         RULES
-
+  
         - Your current working directory is: {{current_project}}
+        - **MANDATORY SEARCH BEFORE EDIT**: Before editing any file, you MUST first search to understand its context, dependencies, and usage patterns. Use list_files or grep commands to find related code, imports, and references.
+        - **VERIFY THROUGH SEARCH**: After making changes, use list_files or grep commands to verify no stale references remain and that new code integrates properly with existing patterns.
         - You cannot \`cd\` into a different directory to complete a task. You are stuck operating from '{{ current_project }}', so be sure to pass in the correct 'path' parameter when using tools that require a path.
         - Do not use the ~ character or $HOME to refer to the home directory.
         - Before using the execute_command tool, you must first think about the SYSTEM INFORMATION context provided to understand the user's environment and tailor your commands to ensure they are compatible with their system. You must also consider if the command you need to run should be executed in a specific directory outside of the current working directory '{{ current_project }}', and if so prepend with \`cd\`'ing into that directory && then executing the command (as one command since you are stuck operating from '{{ current_project }}'). For example, if you needed to run \`npm install\` in a project outside of '{{ current_project }}', you would need to prepend with a \`cd\` i.e. pseudocode for this would be \`cd (path to project) && (command, in this case npm install)\`.
-        - When using the search_files tool, craft your regex patterns carefully to balance specificity and flexibility. Based on the user's task you may use it to find code patterns, TODO comments, function definitions, or any text-based information across the project. The results include context, so analyze the surrounding code to better understand the matches. Leverage the search_files tool in combination with other tools for more comprehensive analysis. For example, use it to find specific code patterns, then use read_file to examine the full context of interesting matches before using replace_in_file to make informed changes.
+        - When using the shell command tool (grep), craft your regex patterns carefully to balance specificity and flexibility. Based on the user's task you may use it to find code patterns, TODO comments, function definitions, or any text-based information across the project. The results include context, so analyze the surrounding code to better understand the matches. Leverage the shell command tool(grep) in combination with other tools for more comprehensive analysis. For example, use it to find specific code patterns, then use read_file to examine the full context of interesting matches before using replace_in_file to make informed changes.
         - When creating a new project (such as an app, website, or any software project), organize all new files within a dedicated project directory unless the user specifies otherwise. Use appropriate file paths when creating files, as the write_to_file tool will automatically create any necessary directories. Structure the project logically, adhering to best practices for the specific type of project being created. Unless otherwise specified, new projects should be easily run without additional setup, for example most projects can be built in HTML, CSS, and JavaScript - which you can open in a browser.
         - Be sure to consider the type of project (e.g. Python, JavaScript, web application) when determining the appropriate structure and files to include. Also consider what files may be most relevant to accomplishing the task, for example looking at a project's manifest file would help you understand the project's dependencies, which you could incorporate into any code you write.
         - When making changes to code, always consider the context in which the code is being used. Ensure that your changes are compatible with the existing codebase and that they follow the project's coding standards and best practices.
@@ -785,6 +1065,7 @@ class AgenticEdit:
         3. Remember, you have extensive capabilities with access to a wide range of tools that can be used in powerful and clever ways as necessary to accomplish each goal. Before calling a tool, do some analysis within <thinking></thinking> tags. First, analyze the file structure provided in environment_details to gain context and insights for proceeding effectively. Then, think about which of the provided tools is the most relevant tool to accomplish the user's task. Next, go through each of the required parameters of the relevant tool and determine if the user has directly provided or given enough information to infer a value. When deciding if the parameter can be inferred, carefully consider all the context to see if it supports a specific value. If all of the required parameters are present or can be reasonably inferred, close the thinking tag and proceed with the tool use. BUT, if one of the values for a required parameter is missing, DO NOT invoke the tool (not even with fillers for the missing params) and instead, ask the user to provide the missing parameters using the ask_followup_question tool. DO NOT ask for more information on optional parameters if it is not provided.
         4. Once you've completed the user's task, you must use the attempt_completion tool to present the result of the task to the user. You may also provide a CLI command to showcase the result of your task; this can be particularly useful for web development tasks, where you can run e.g. \`open index.html\` to show the website you've built.
         5. The user may provide feedback, which you can use to make improvements and try again. But DO NOT continue in pointless back and forth conversations, i.e. don't end your responses with questions or offers for further assistance.                    
+        6. Work through these goals sequentially, **ALWAYS STARTING WITH COMPREHENSIVE SEARCH AND EXPLORATION** using available tools. For any code-related task, begin with list_files to understand structure, then use commands(grep) to find relevant patterns, and read_file to examine context before making changes.
                 
         """        
         ## auto_select_rules(context=request.user_input, llm=self.llm,args=self.args)        rules =       
