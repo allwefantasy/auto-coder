@@ -907,13 +907,7 @@ def main(input_args: Optional[List[str]] = None):
             from autocoder.agent.project_reader import ProjectReader
 
             project_reader = ProjectReader(args, llm)
-            v = project_reader.run(args.query)
-            request_queue.add_request(
-                args.request_id,
-                RequestValue(
-                    value=DefaultValue(value=v), status=RequestOption.COMPLETED
-                ),
-            )
+            v = project_reader.run(args.query)            
             console = Console()
             markdown_content = v
 
