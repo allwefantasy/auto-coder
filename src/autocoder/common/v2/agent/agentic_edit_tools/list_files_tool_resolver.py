@@ -141,7 +141,15 @@ class ListFilesToolResolver(BaseToolResolver):
 
         # Handle the case where the implementation returns a sorted list instead of a ToolResult
         if isinstance(result, list):
-            message = f"Successfully listed contents of '{list_path_str}' (Recursive: {recursive}). Found {len(result)} items."
-            return ToolResult(success=True, message=message, content=result)
+            total_items = len(result)
+            # Limit results to 200 if needed
+            if total_items > 200:
+                truncated_result = result[:200]
+                message = f"Successfully listed contents of '{list_path_str}' (Recursive: {recursive}). Found {total_items} items, showing only the first 200."
+                logger.info(message)
+                return ToolResult(success=True, message=message, content=truncated_result)
+            else:
+                message = f"Successfully listed contents of '{list_path_str}' (Recursive: {recursive}). Found {total_items} items."
+                return ToolResult(success=True, message=message, content=result)
         else:
             return result
