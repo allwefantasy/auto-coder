@@ -79,24 +79,22 @@ class RAGManager:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config_data = json.load(f)
             
-            for key, item in config_data.items():
-                try:
-                    # 构造 server_name: http://host:port/v1
-                    host = item.get("host", "127.0.0.1")
-                    port = item.get("port", 8080)
-                    server_name = f"http://{host}:{port}/v1"
-                    
-                    rag_config = RAGConfig(
-                        name=item.get("name", key),
-                        server_name=server_name,
-                        api_key=None,  # 全局配置中没有 api_key
-                        description=item.get("description", f"{key} RAG 服务")
-                    )
-                    self.configs.append(rag_config)
-                    logger.info(f"已加载 RAG 配置: {rag_config.name} -> {rag_config.server_name}")
-                except Exception as e:
-                    logger.error(f"解析全局 RAG 配置项时出错: {e}, 配置项: {item}")
-                    
+            if "data" in config_data and isinstance(config_data["data"], list):
+                for item in config_data["data"]:
+                    try:
+                        rag_config = RAGConfig(
+                            name=item.get("name", ""),
+                            server_name=item.get("base_url", ""),
+                            api_key=item.get("api_key"),
+                            description=item.get("description")
+                        )
+                        self.configs.append(rag_config)
+                        logger.info(f"已加载 RAG 配置: {rag_config.name} -> {rag_config.server_name}")
+                    except Exception as e:
+                        logger.error(f"解析全局 RAG 配置项时出错: {e}, 配置项: {item}")
+            else:
+                logger.error(f"全局 RAG 配置格式错误，缺少 'data' 字段或 'data' 不是列表")
+                
         except json.JSONDecodeError as e:
             logger.error(f"全局 RAG 配置文件 JSON 格式错误: {e}")
         except Exception as e:

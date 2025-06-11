@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from datetime import datetime
 
 
-RAGS_JSON = os.path.expanduser("~/.auto-coder/keys/rags.json")
+RAGS_JSON = os.path.expanduser("~/.auto-coder/keys/rags_config.json")
 
 
 class RAGConfigManager:
