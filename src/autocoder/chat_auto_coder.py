@@ -665,6 +665,8 @@ def main():
                             gen_and_exec_shell_command(command)
                         else:
                             execute_shell_command(command)
+                else:
+                    auto_command(user_input)            
 
         except KeyboardInterrupt:
             continue
