@@ -325,376 +325,103 @@ class TestOpenAIClient:
 ### 3. 业务代码实现设计
 
 **要求：**
-- 基于OpenAI API的单元测试需求，设计具体的SDK架构和实现
-- 明确HTTP客户端、认证机制、错误处理、重试逻辑等核心组件
-- 考虑性能、并发安全、流式处理、扩展性等非功能性需求
+- 基于OpenAI API的功能需求，设计清晰的模块划分和目录结构
+- 明确各功能模块的职责分工和依赖关系
+- 考虑代码的可维护性、可扩展性和测试友好性
 
-**示例格式：**
-```python
-import os
-import httpx
-import asyncio
-from typing import Dict, List, Optional, Union, Iterator, AsyncIterator
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from enum import Enum
-import threading
-import time
-import json
+**项目目录结构：**
+```
+openai_sdk/
+├── __init__.py                 # SDK入口，导出主要接口
+├── client.py                   # OpenAI主客户端类
+├── config.py                   # 配置管理
+├── exceptions.py               # 异常类定义
+├── models/                     # 数据模型
+│   ├── __init__.py
+│   ├── base.py                # 基础模型类
+│   ├── chat.py                # 聊天相关模型
+│   ├── response.py            # 响应模型
+│   └── stream.py              # 流式响应模型
+├── api/                        # API接口模块
+│   ├── __init__.py
+│   ├── base.py                # API基类
+│   ├── responses.py           # responses API
+│   └── chat.py                # chat API
+├── http/                       # HTTP客户端
+│   ├── __init__.py
+│   ├── base.py                # HTTP抽象基类
+│   ├── httpx_client.py        # HTTPX实现
+│   └── retry.py               # 重试逻辑
+├── utils/                      # 工具模块
+│   ├── __init__.py
+│   ├── validation.py          # 参数验证
+│   ├── logging.py             # 日志管理
+│   └── auth.py                # 认证工具
+└── tests/                      # 测试目录
+    ├── __init__.py
+    ├── conftest.py            # pytest配置
+    ├── test_client.py         # 客户端测试
+    ├── test_models.py         # 模型测试
+    ├── test_api.py            # API测试
+    └── test_http.py           # HTTP测试
+```
 
-# 核心异常类设计
-class OpenAIError(Exception):
-    """OpenAI SDK基础异常类"""
-    pass
+**核心模块划分：**
 
-class AuthenticationError(OpenAIError):
-    """认证错误"""
-    pass
+#### 1. 客户端模块 (client.py)
+**职责：**
+- OpenAI主客户端类，统一入口
+- 管理API Key和认证信息
+- 初始化各功能模块实例
+- 提供通用的请求处理方法
 
-class APIConnectionError(OpenAIError):
-    """API连接错误"""
-    pass
+#### 2. 异常处理模块 (exceptions.py)
+**职责：**
+- 定义SDK所有异常类
+- 异常类型：OpenAIError、AuthenticationError、APIConnectionError、RateLimitError、BadRequestError
+- 提供错误码到异常的映射关系
 
-class RateLimitError(OpenAIError):
-    """速率限制错误"""
-    pass
+#### 3. 数据模型模块 (models/)
+**职责：**
+- 定义API请求和响应的数据结构
+- 包含：Response、Message、Choice、ChatCompletion、StreamEvent等
+- 提供数据验证和序列化方法
 
-class BadRequestError(OpenAIError):
-    """请求参数错误"""
-    pass
+#### 4. API接口模块 (api/)
+**职责：**
+- 封装具体的API调用逻辑
+- ResponsesAPI：处理responses.create()
+- ChatAPI：处理chat.completions.create()
+- 负责请求参数构建和响应解析
 
-# 数据模型设计
-@dataclass
-class Response:
-    """API响应基础模型"""
-    output_text: str
-    model: str
-    usage: Optional[Dict] = None
-    
-@dataclass
-class Message:
-    """聊天消息模型"""
-    role: str
-    content: str
+#### 5. HTTP客户端模块 (http/)
+**职责：**
+- 抽象HTTP通信层
+- BaseHTTPClient：定义HTTP接口规范
+- HTTPXClient：具体HTTP实现
+- 处理重试、超时、错误状态码映射
 
-@dataclass
-class Choice:
-    """聊天完成选择项"""
-    message: Message
-    index: int
-    finish_reason: Optional[str] = None
+#### 6. 工具模块 (utils/)
+**职责：**
+- validation.py：参数验证工具
+- logging.py：日志记录管理
+- auth.py：认证相关工具函数
 
-@dataclass
-class ChatCompletion:
-    """聊天完成响应模型"""
-    choices: List[Choice]
-    model: str
-    usage: Optional[Dict] = None
+#### 7. 配置模块 (config.py)
+**职责：**
+- ClientConfig类：管理SDK配置
+- 支持环境变量和代码配置
+- 包含API Key、base_url、timeout等配置项
 
-@dataclass
-class StreamEvent:
-    """流式响应事件模型"""
-    data: str
-    event_type: str = "data"
-
-# HTTP客户端抽象层
-class BaseHTTPClient(ABC):
-    """HTTP客户端抽象基类"""
-    
-    @abstractmethod
-    def post(self, url: str, headers: Dict, data: Dict) -> Dict:
-        """发送POST请求"""
-        pass
-    
-    @abstractmethod
-    def post_stream(self, url: str, headers: Dict, data: Dict) -> Iterator[Dict]:
-        """发送流式POST请求"""
-        pass
-
-class HTTPXClient(BaseHTTPClient):
-    """基于HTTPX的HTTP客户端实现"""
-    
-    def __init__(self, timeout: int = 30, max_retries: int = 3):
-        self.timeout = timeout
-        self.max_retries = max_retries
-        self.client = httpx.Client(timeout=timeout)
-        
-    def post(self, url: str, headers: Dict, data: Dict) -> Dict:
-        """发送POST请求并处理重试逻辑"""
-        for attempt in range(self.max_retries):
-            try:
-                response = self.client.post(url, headers=headers, json=data)
-                self._handle_http_errors(response)
-                return response.json()
-            except (httpx.ConnectError, httpx.TimeoutException) as e:
-                if attempt == self.max_retries - 1:
-                    raise APIConnectionError(f"Connection failed after {self.max_retries} attempts: {e}")
-                time.sleep(2 ** attempt)  # 指数退避
-                
-    def post_stream(self, url: str, headers: Dict, data: Dict) -> Iterator[Dict]:
-        """发送流式POST请求"""
-        try:
-            with self.client.stream('POST', url, headers=headers, json=data) as response:
-                self._handle_http_errors(response)
-                for line in response.iter_lines():
-                    if line.strip():
-                        yield self._parse_sse_line(line)
-        except (httpx.ConnectError, httpx.TimeoutException) as e:
-            raise APIConnectionError(f"Stream connection failed: {e}")
-    
-    def _handle_http_errors(self, response: httpx.Response):
-        """处理HTTP错误状态码"""
-        if response.status_code == 401:
-            raise AuthenticationError("Invalid API key")
-        elif response.status_code == 429:
-            raise RateLimitError("Rate limit exceeded")
-        elif response.status_code == 400:
-            raise BadRequestError("Invalid request parameters")
-        elif response.status_code >= 500:
-            raise APIConnectionError(f"Server error: {response.status_code}")
-        elif response.status_code >= 400:
-            raise OpenAIError(f"HTTP error: {response.status_code}")
-    
-    def _parse_sse_line(self, line: str) -> Dict:
-        """解析Server-Sent Events格式的数据"""
-        if line.startswith("data: "):
-            data = line[6:]  # 去掉"data: "前缀
-            if data.strip() == "[DONE]":
-                return {"done": True}
-            try:
-                return json.loads(data)
-            except json.JSONDecodeError:
-                return {"data": data}
-        return {"raw": line}
-
-# 核心OpenAI客户端设计
-class OpenAI:
-    """OpenAI SDK主客户端类"""
-    
-    def __init__(self, api_key: Optional[str] = None, base_url: str = "https://api.openai.com/v1",
-                 http_client: Optional[BaseHTTPClient] = None):
-        # 认证设置
-        self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
-        if not self.api_key:
-            raise ValueError("API key is required")
-        
-        self.base_url = base_url
-        self.http_client = http_client or HTTPXClient()
-        
-        # 创建各功能模块
-        self.responses = ResponsesAPI(self)
-        self.chat = ChatAPI(self)
-        
-        # 并发控制
-        self._lock = threading.RLock()
-        
-    def _get_headers(self) -> Dict[str, str]:
-        """获取通用请求头"""
-        return {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            "User-Agent": "openai-python-sdk/1.0.0"
-        }
-    
-    def _make_request(self, endpoint: str, data: Dict, stream: bool = False):
-        """发送API请求的统一入口"""
-        url = f"{self.base_url}/{endpoint}"
-        headers = self._get_headers()
-        
-        # 参数验证
-        self._validate_request_data(data)
-        
-        try:
-            if stream:
-                return self.http_client.post_stream(url, headers, data)
-            else:
-                return self.http_client.post(url, headers, data)
-        except Exception as e:
-            # 统一错误处理和日志记录
-            self._log_error(endpoint, data, e)
-            raise
-    
-    def _validate_request_data(self, data: Dict):
-        """验证请求参数"""
-        if not data.get("model"):
-            raise ValueError("Model is required")
-        
-        if "input" in data and not data["input"]:
-            raise ValueError("Input cannot be empty")
-        
-        if "messages" in data and not data["messages"]:
-            raise ValueError("Messages cannot be empty")
-    
-    def _log_error(self, endpoint: str, data: Dict, error: Exception):
-        """记录错误日志（简化版）"""
-        # 实际实现中应该使用专业的日志库
-        print(f"API Error - Endpoint: {endpoint}, Error: {error}")
-
-# 响应API模块
-class ResponsesAPI:
-    """处理responses相关的API调用"""
-    
-    def __init__(self, client: OpenAI):
-        self.client = client
-    
-    def create(self, model: str, input: Union[str, List[Dict]], 
-               instructions: Optional[str] = None, stream: bool = False, **kwargs) -> Union[Response, Iterator[StreamEvent]]:
-        """创建响应
-        
-        实现思路：
-        1. 构建请求数据
-        2. 处理多模态输入（文本+图像）
-        3. 发送请求
-        4. 解析响应并构建模型对象
-        5. 处理流式响应
-        """
-        # 构建请求数据
-        request_data = {
-            "model": model,
-            "input": input,
-            "stream": stream,
-            **kwargs
-        }
-        
-        if instructions:
-            request_data["instructions"] = instructions
-        
-        # 发送请求
-        if stream:
-            return self._create_stream_response(request_data)
-        else:
-            response_data = self.client._make_request("responses", request_data)
-            return self._parse_response(response_data)
-    
-    def _create_stream_response(self, request_data: Dict) -> Iterator[StreamEvent]:
-        """处理流式响应"""
-        stream = self.client._make_request("responses", request_data, stream=True)
-        for chunk in stream:
-            if chunk.get("done"):
-                break
-            yield StreamEvent(
-                data=chunk.get("data", ""),
-                event_type=chunk.get("event", "data")
-            )
-    
-    def _parse_response(self, response_data: Dict) -> Response:
-        """解析普通响应"""
-        return Response(
-            output_text=response_data.get("output_text", ""),
-            model=response_data.get("model", ""),
-            usage=response_data.get("usage")
-        )
-
-# 聊天API模块
-class ChatAPI:
-    """处理chat相关的API调用"""
-    
-    def __init__(self, client: OpenAI):
-        self.client = client
-        self.completions = ChatCompletionsAPI(client)
-
-class ChatCompletionsAPI:
-    """处理chat.completions相关的API调用"""
-    
-    def __init__(self, client: OpenAI):
-        self.client = client
-    
-    def create(self, model: str, messages: List[Dict], stream: bool = False, **kwargs) -> ChatCompletion:
-        """创建聊天完成
-        
-        实现思路：
-        1. 验证messages格式
-        2. 构建请求数据
-        3. 发送请求
-        4. 解析响应并构建ChatCompletion对象
-        """
-        # 验证messages格式
-        self._validate_messages(messages)
-        
-        # 构建请求数据
-        request_data = {
-            "model": model,
-            "messages": messages,
-            "stream": stream,
-            **kwargs
-        }
-        
-        # 发送请求
-        response_data = self.client._make_request("chat/completions", request_data)
-        return self._parse_chat_completion(response_data)
-    
-    def _validate_messages(self, messages: List[Dict]):
-        """验证消息格式"""
-        for msg in messages:
-            if "role" not in msg or "content" not in msg:
-                raise ValueError("Each message must have 'role' and 'content' fields")
-            if msg["role"] not in ["user", "assistant", "system", "developer"]:
-                raise ValueError(f"Invalid role: {msg['role']}")
-    
-    def _parse_chat_completion(self, response_data: Dict) -> ChatCompletion:
-        """解析聊天完成响应"""
-        choices = []
-        for choice_data in response_data.get("choices", []):
-            message = Message(
-                role=choice_data["message"]["role"],
-                content=choice_data["message"]["content"]
-            )
-            choice = Choice(
-                message=message,
-                index=choice_data.get("index", 0),
-                finish_reason=choice_data.get("finish_reason")
-            )
-            choices.append(choice)
-        
-        return ChatCompletion(
-            choices=choices,
-            model=response_data.get("model", ""),
-            usage=response_data.get("usage")
-        )
-
-# 工厂模式 - 方便测试和扩展
-class OpenAIClientFactory:
-    """OpenAI客户端工厂类"""
-    
-    @staticmethod
-    def create_client(api_key: Optional[str] = None, 
-                     base_url: str = "https://api.openai.com/v1",
-                     http_client: Optional[BaseHTTPClient] = None) -> OpenAI:
-        """创建OpenAI客户端实例"""
-        return OpenAI(
-            api_key=api_key,
-            base_url=base_url,
-            http_client=http_client
-        )
-    
-    @staticmethod
-    def create_test_client(mock_http_client: BaseHTTPClient) -> OpenAI:
-        """创建用于测试的客户端实例"""
-        return OpenAI(
-            api_key="test-key",
-            http_client=mock_http_client
-        )
-
-# 配置管理
-@dataclass
-class ClientConfig:
-    """客户端配置类"""
-    api_key: Optional[str] = None
-    base_url: str = "https://api.openai.com/v1"
-    timeout: int = 30
-    max_retries: int = 3
-    enable_logging: bool = True
-    
-    @classmethod
-    def from_env(cls) -> 'ClientConfig':
-        """从环境变量加载配置"""
-        return cls(
-            api_key=os.environ.get("OPENAI_API_KEY"),
-            base_url=os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-            timeout=int(os.environ.get("OPENAI_TIMEOUT", "30")),
-            max_retries=int(os.environ.get("OPENAI_MAX_RETRIES", "3")),
-            enable_logging=os.environ.get("OPENAI_ENABLE_LOGGING", "true").lower() == "true"
-        )
+**模块依赖关系：**
+```
+client.py
+├── api/ (API模块)
+│   ├── models/ (数据模型)
+│   └── http/ (HTTP客户端)
+├── config.py (配置)
+├── exceptions.py (异常)
+└── utils/ (工具函数)
 ```
 
 ### 4. 分阶段实现计划
@@ -706,7 +433,7 @@ class ClientConfig:
 
 **示例格式：**
 
-#### 阶段1：基础框架和异常处理（预计3小时）
+#### 阶段1：基础框架和异常处理
 **目标：** 建立SDK的基础架构和异常处理体系
 **步骤：**
 1. 创建基础异常类（OpenAIError, AuthenticationError, APIConnectionError等）
@@ -722,7 +449,7 @@ class ClientConfig:
 - 基础测试框架可以运行
 - API Key验证逻辑正常工作
 
-#### 阶段2：HTTP客户端和网络层（预计4小时）
+#### 阶段2：HTTP客户端和网络层
 **目标：** 实现HTTP通信和请求处理核心功能
 **步骤：**
 1. 实现HTTPXClient类（POST请求、流式请求）
@@ -739,7 +466,7 @@ class ClientConfig:
 - 流式请求可以正确解析SSE数据
 - 所有HTTP层面的测试通过
 
-#### 阶段3：核心API功能实现（预计5小时）
+#### 阶段3：核心API功能实现
 **目标：** 实现responses.create和chat.completions.create核心API功能
 **步骤：**
 1. 实现ResponsesAPI类和create方法
@@ -757,7 +484,7 @@ class ClientConfig:
 - 参数验证和错误提示清晰
 - 所有核心功能测试通过
 
-#### 阶段4：流式处理和高级功能（预计3小时）
+#### 阶段4：流式处理和高级功能
 **目标：** 实现流式响应和高级功能特性
 **步骤：**
 1. 完善流式响应处理逻辑
@@ -774,7 +501,7 @@ class ClientConfig:
 - 所有边界条件测试通过
 - 流式处理性能满足要求
 
-#### 阶段5：完善和优化（预计2小时）
+#### 阶段5：完善和优化
 **目标：** 完善SDK的健壮性和用户体验
 **步骤：**
 1. 完善日志记录和调试信息

@@ -615,6 +615,7 @@ def main(input_args: Optional[List[str]] = None):
                     if key in skip_fields:
                         continue 
                     server_args_config[key] = value
+                    setattr(args, key, value)
                 # 特殊处理 infer_params 字段
                 if 'infer_params' in saved_config and saved_config['infer_params']:
                     for infer_key, infer_value in saved_config['infer_params'].items():
