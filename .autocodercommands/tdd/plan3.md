@@ -33,6 +33,43 @@ $ echo '{"type":"user","message":{"role":"user","content":[{"type":"text","text"
 
 ```
 
+还有用户可以通过如下方式在脚本中使用:
+
+```shell
+#!/bin/bash
+
+# Simple function to run Claude and check exit code
+run_auto_coder() {
+    local prompt="$1"
+    local output_format="${2:-text}"
+
+    if auto-coder.run -p "$prompt" --output-format "$output_format"; then
+        echo "Success!"
+    else
+        echo "Error: Claude failed with exit code $?" >&2
+        return 1
+    fi
+}
+
+# Usage examples
+run_auto_coder "Write a Python function to read CSV files"
+run_auto_coder "Optimize this database query" "json"
+
+# Process a file through Claude
+$ cat mycode.py | auto-coder.run -p "Review this code for bugs"
+
+# Process multiple files
+$ for file in *.js; do
+    echo "Processing $file..."
+    auto-coder.run -p "Add JSDoc comments to this file:" < "$file" > "${file}.documented"
+done
+
+# Use Claude in a pipeline
+$ grep -l "TODO" *.py | while read file; do
+    auto-coder.run -p "Fix all TODO items in this file" < "$file"
+done
+```
+
 下面是在python代码中使用
 
 ```python
@@ -67,6 +104,8 @@ options = AutoCodeOptions(
 async for message in query(prompt="Hello", options=options):
     print(message)
 ```
+
+上面是用户接口层，我们会调用内部的一个桥接层来对已有功能调用，实现层参考 /Users/allwefantasy/projects/auto-coder/src/autocoder/chat_auto_coder.py ， 然后默认调用 auto_command 来完成。
 
 先做一个完整的需求设计，放在 docs/jobs/design.md 文件中。
 design.md 文件必须包含以下四个部分，每个部分都要有详细的内容。
