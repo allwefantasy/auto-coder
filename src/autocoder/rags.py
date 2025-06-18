@@ -369,30 +369,3 @@ def update_rag_status(name: str, status: str, **kwargs) -> bool:
     return rag_manager.update_status(name, status, **kwargs)
 
 
-# 使用示例
-if __name__ == "__main__":
-    # 创建配置
-    config = {
-        "model": "deepseek_chat",
-        "tokenizer_path": "/Users/allwefantasy/Downloads/tokenizer.json",
-        "doc_dir": "/path/to/docs",
-        "rag_doc_filter_relevance": 2.0,
-        "host": "0.0.0.0",
-        "port": 8000,
-        "enable_hybrid_index": False,
-        "required_exts": ".md,.rst",
-        "disable_inference_enhance": True
-    }
-    
-    # 创建
-    create_rag_config("test_rag", config)
-    
-    # 读取
-    all_configs = get_rag_config()
-    specific_config = get_rag_config("test_rag")
-    
-    # 更新
-    update_rag_config("test_rag", {"status": "running", "port": 8001})
-    
-    # 删除
-    delete_rag_config("test_rag")
