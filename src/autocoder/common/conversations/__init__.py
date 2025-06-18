@@ -1,52 +1,97 @@
 """
-Conversation management package for AutoCoder.
+Conversation management module for AutoCoder.
 
-This package provides a unified conversation management system that serves
-different components of AutoCoder, replacing separate implementations in:
-- agentic_edit.py
-- auto_command.py
-- agentic_edit_conversation.py
+This module provides comprehensive conversation and message management
+functionality including persistence, caching, search, and concurrent access.
 """
 
-from autocoder.common.conversations.conversation_manager import (
-    ConversationManager,
-    ConversationType,
-    get_conversation_manager,
-    Message,
+from .exceptions import (
+    ConversationManagerError,
+    ConversationNotFoundError,
+    MessageNotFoundError,
+    ConcurrencyError,
+    DataIntegrityError,
+    LockTimeoutError,
+    BackupError,
+    RestoreError
+)
+
+from .models import (
+    ConversationMessage,
     Conversation
 )
 
-from autocoder.common.conversations.compatibility import (
-    # Command conversation compatibility
-    CommandMessage,
-    ExtendedCommandMessage,
-    CommandConversation,
-    load_command_conversation,
-    save_command_conversation,
-    save_to_command_memory_file,
-    
-    # Agentic edit conversation compatibility
-    get_agentic_conversation,
-    AgenticConversationWrapper
+from .config import ConversationManagerConfig
+from .file_locker import FileLocker
+
+# Storage layer
+from .storage import (
+    BaseStorage,
+    FileStorage,
+    IndexManager
 )
 
+# Cache layer
+from .cache import (
+    BaseCache,
+    MemoryCache,
+    CacheManager
+)
+
+# Search and filtering layer
+from .search import (
+    TextSearcher,
+    FilterManager
+)
+
+# Backup and restore layer
+from .backup import (
+    BackupManager,
+    RestoreManager
+)
+
+# Main manager
+from .manager import PersistConversationManager
+
 __all__ = [
-    # Main conversation manager
-    'ConversationManager',
-    'ConversationType',
-    'get_conversation_manager',
-    'Message',
+    # Main manager
+    'PersistConversationManager',
+    
+    # Exceptions
+    'ConversationManagerError',
+    'ConversationNotFoundError', 
+    'MessageNotFoundError',
+    'ConcurrencyError',
+    'DataIntegrityError',
+    'LockTimeoutError',
+    'BackupError',
+    'RestoreError',
+    
+    # Models
+    'ConversationMessage',
     'Conversation',
     
-    # Command conversation compatibility
-    'CommandMessage',
-    'ExtendedCommandMessage',
-    'CommandConversation',
-    'load_command_conversation',
-    'save_command_conversation',
-    'save_to_command_memory_file',
+    # Configuration
+    'ConversationManagerConfig',
     
-    # Agentic edit conversation compatibility
-    'get_agentic_conversation',
-    'AgenticConversationWrapper'
+    # File locking
+    'FileLocker',
+    
+    # Storage layer
+    'BaseStorage',
+    'FileStorage', 
+    'IndexManager',
+    
+    # Cache layer
+    'BaseCache',
+    'MemoryCache',
+    'CacheManager',
+    
+    # Search and filtering layer
+    'TextSearcher',
+    'FilterManager',
+    
+    # Backup and restore layer
+    'BackupManager',
+    'RestoreManager'
 ] 
