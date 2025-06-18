@@ -1,4 +1,72 @@
-{{ query }}
+我想开发一个 Auto-Coder Code SDK, 放在 src/autocoder/sdk 目录下，支持如下使用命令行例子：
+
+```python
+# Run a single prompt and exit (print mode)
+$ auto-coder.run -p "Write a function to calculate Fibonacci numbers"
+
+# Using a pipe to provide stdin
+$ echo "Explain this code" | auto-coder.run -p
+
+# Output in JSON format with metadata
+$ auto-coder.run -p "Generate a hello world function" --output-format json
+
+# Stream JSON output as it arrives
+$ auto-coder.run -p "Build a React component" --output-format stream-json
+
+
+# Continue the most recent conversation
+$ auto-coder.run --continue
+
+# Continue and provide a new prompt
+$ auto-coder.run --continue "Now refactor this for better performance"
+
+# Resume a specific conversation by session ID
+$ auto-coder.run --resume 550e8400-e29b-41d4-a716-446655440000
+
+# Resume in print mode (non-interactive)
+$ auto-coder.run -p --resume 550e8400-e29b-41d4-a716-446655440000 "Update the tests"
+
+# Continue in print mode (non-interactive)
+$ auto-coder.run -p --continue "Add error handling"
+
+$ echo '{"type":"user","message":{"role":"user","content":[{"type":"text","text":"Explain this code"}]}}' | auto-coder.run -p --output-format=stream-json --input-format=stream-json --verbose
+
+```
+
+下面是在python代码中使用
+
+```python
+import anyio
+from autocoder.sdk import query, AutoCodeOptions, Message
+
+async def main():
+    messages: list[Message] = []
+    
+    async for message in query(
+        prompt="Write a haiku about foo.py",
+        options=ClaudeCodeOptions(max_turns=3)
+    ):
+        messages.append(message)
+    
+    print(messages)
+
+anyio.run(main)
+
+
+from autocoder.sdk import query, AutoCodeOptions
+from pathlib import Path
+
+options = AutoCodeOptions(
+    max_turns=3,
+    system_prompt="You are a helpful assistant",
+    cwd=Path("/path/to/project"),  # Can be string or Path
+    allowed_tools=["Read", "Write", "Bash"],
+    permission_mode="acceptEdits"
+)
+
+async for message in query(prompt="Hello", options=options):
+    print(message)
+```
 
 先做一个完整的需求设计，放在 docs/jobs/design.md 文件中。
 design.md 文件必须包含以下四个部分，每个部分都要有详细的内容。

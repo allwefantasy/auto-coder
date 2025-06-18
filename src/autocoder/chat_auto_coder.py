@@ -666,7 +666,7 @@ def main():
                         else:
                             execute_shell_command(command)
                 else:
-                    if user_input:
+                    if user_input and user_input.strip():
                         auto_command(user_input)
 
         except KeyboardInterrupt:
