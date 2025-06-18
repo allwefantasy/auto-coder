@@ -1,12 +1,22 @@
 import os
 import json
-import fcntl
 import platform
 import time
 from typing import Dict, Optional, Any, List
 from pathlib import Path
 from contextlib import contextmanager
 from datetime import datetime
+
+# 跨平台文件锁导入
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
+try:
+    import msvcrt
+except ImportError:
+    msvcrt = None
 
 
 RAGS_JSON = os.path.expanduser("~/.auto-coder/keys/rags_config.json")
@@ -29,6 +39,7 @@ class RAGConfigManager:
     def _file_lock(self, mode='r'):
         """
         文件锁上下文管理器，确保并发安全
+        支持Unix (fcntl) 和 Windows (msvcrt) 系统
         """
         # 确保文件存在
         if not os.path.exists(self.config_path):
@@ -36,36 +47,75 @@ class RAGConfigManager:
                 json.dump({}, f)
         
         file_handle = open(self.config_path, mode)
+        lock_acquired = False
+        
         try:
+            # 尝试获取文件锁
             if platform.system() != "Windows":
                 # Unix系统使用fcntl
-                if 'w' in mode or 'a' in mode or '+' in mode:
-                    fcntl.flock(file_handle.fileno(), fcntl.LOCK_EX)  # 独占锁
-                else:
-                    fcntl.flock(file_handle.fileno(), fcntl.LOCK_SH)  # 共享锁
+                if fcntl is not None:
+                    if 'w' in mode or 'a' in mode or '+' in mode:
+                        fcntl.flock(file_handle.fileno(), fcntl.LOCK_EX)  # 独占锁
+                    else:
+                        fcntl.flock(file_handle.fileno(), fcntl.LOCK_SH)  # 共享锁
+                    lock_acquired = True
             else:
                 # Windows系统的文件锁实现
-                try:
-                    import msvcrt
-                    if 'w' in mode or 'a' in mode or '+' in mode:
-                        msvcrt.locking(file_handle.fileno(), msvcrt.LK_LOCK, 1)
-                    else:
-                        msvcrt.locking(file_handle.fileno(), msvcrt.LK_LOCK, 1)
-                except ImportError:
-                    # 如果msvcrt不可用，退化到无锁模式（不推荐）
-                    pass
+                if msvcrt is not None:
+                    try:
+                        # 在Windows上，我们使用独占锁来简化实现
+                        # msvcrt.locking 参数: fd, mode, nbytes
+                        # LK_NBLCK: 非阻塞独占锁
+                        # LK_LOCK: 阻塞独占锁
+                        max_attempts = 10
+                        for attempt in range(max_attempts):
+                            try:
+                                # 尝试锁定文件的第一个字节
+                                file_handle.seek(0)
+                                msvcrt.locking(file_handle.fileno(), msvcrt.LK_NBLCK, 1)
+                                lock_acquired = True
+                                break
+                            except IOError:
+                                # 如果锁被占用，等待一小段时间后重试
+                                if attempt < max_attempts - 1:
+                                    time.sleep(0.1)
+                                else:
+                                    # 最后一次尝试使用阻塞锁
+                                    try:
+                                        file_handle.seek(0)
+                                        msvcrt.locking(file_handle.fileno(), msvcrt.LK_LOCK, 1)
+                                        lock_acquired = True
+                                    except IOError:
+                                        # 如果仍然失败，继续执行但不使用锁
+                                        pass
+                    except Exception:
+                        # 如果出现任何异常，继续执行但不使用锁
+                        pass
             
+            # 重置文件位置到开始
+            file_handle.seek(0)
             yield file_handle
+            
         finally:
-            if platform.system() != "Windows":
-                fcntl.flock(file_handle.fileno(), fcntl.LOCK_UN)  # 释放锁
-            else:
-                try:
-                    import msvcrt
-                    msvcrt.locking(file_handle.fileno(), msvcrt.LK_UNLCK, 1)
-                except ImportError:
-                    pass
-            file_handle.close()
+            try:
+                # 释放文件锁
+                if lock_acquired:
+                    if platform.system() != "Windows":
+                        if fcntl is not None:
+                            fcntl.flock(file_handle.fileno(), fcntl.LOCK_UN)
+                    else:
+                        if msvcrt is not None:
+                            try:
+                                file_handle.seek(0)
+                                msvcrt.locking(file_handle.fileno(), msvcrt.LK_UNLCK, 1)
+                            except IOError:
+                                # 忽略解锁错误
+                                pass
+            except Exception:
+                # 忽略释放锁时的错误
+                pass
+            finally:
+                file_handle.close()
     
     def _load_config(self) -> Dict[str, Any]:
         """
