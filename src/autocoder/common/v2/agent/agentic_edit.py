@@ -1245,6 +1245,7 @@ class AgenticEdit:
             conv_id = self.conversation_manager.create_conversation(name=self.conversation_config.query,description=self.conversation_config.query)
             self.conversation_manager.set_current_conversation(conv_id)            
         
+        self.conversation_manager.set_current_conversation(self.conversation_manager.get_current_conversation_id())
         yield ConversationIdEvent(conversation_id=self.conversation_manager.get_current_conversation_id())
         
         conversations.append({
