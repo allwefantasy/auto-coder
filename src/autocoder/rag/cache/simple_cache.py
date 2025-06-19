@@ -416,6 +416,9 @@ class AutoCoderRAGAsyncUpdateQueue(BaseCacheManager):
                 ):
                     continue
 
+                if file.startswith("~$"):
+                    continue
+
                 file_path = os.path.join(root, file)
                 relative_path = os.path.relpath(file_path, self.path)
                 modify_time = os.path.getmtime(file_path)
