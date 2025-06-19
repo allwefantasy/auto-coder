@@ -2921,7 +2921,11 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
         conversation_history = extra_args.get("conversations",[])   
 
         command_infos = parse_query(query) 
-        conversation_config = AgenticEditConversationConfig()
+
+        # terminal 的总是接着上次对话, 所以这里总是设置为 resume
+        conversation_config = AgenticEditConversationConfig(
+            action="resume"
+        )
         
         ## web 模式会自己管理对话,所以这里总是设置为新对话
         if get_run_context().mode == RunMode.WEB:
