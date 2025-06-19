@@ -1240,7 +1240,7 @@ class AgenticEdit:
                         })
                 logger.info(f"Resumed conversation with {len(current_conversation['messages'])} existing messages")     
         
-        if self.conversation_config.action == "new":
+        if self.conversation_manager.get_current_conversation_id() is None:
             conv_id = self.conversation_manager.create_conversation(name=self.conversation_config.query,description=self.conversation_config.query)
             self.conversation_manager.set_current_conversation(conv_id)
         
