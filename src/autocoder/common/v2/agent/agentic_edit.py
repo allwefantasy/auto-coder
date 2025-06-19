@@ -1240,10 +1240,14 @@ class AgenticEdit:
                         })
                 logger.info(f"Resumed conversation with {len(current_conversation['messages'])} existing messages")     
         
+        if self.conversation_config.action == "new":
+            conv_id = self.conversation_manager.create_conversation(name=self.conversation_config.query,description=self.conversation_config.query)
+            self.conversation_manager.set_current_conversation(conv_id)
         
         conversations.append({
             "role": "user", "content": request.user_input
         })  
+        
         self.conversation_manager.append_message_to_current(
                     role="user", 
                     content=request.user_input,
