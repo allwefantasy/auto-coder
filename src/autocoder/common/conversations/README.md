@@ -13,6 +13,29 @@ from autocoder.common.conversations import PersistConversationManager, Conversat
 
 ## 快速开始
 
+### 全局获取管理器实例
+
+```python
+# 推荐方式：使用全局获取方法
+from autocoder.common.conversations.get_conversation_manager import get_conversation_manager
+
+# 使用默认配置（存储路径：当前工作目录/.auto-coder/conversations）
+manager = get_conversation_manager()
+
+# 使用自定义配置（仅在首次调用时生效）
+from autocoder.common.conversations import ConversationManagerConfig
+
+config = ConversationManagerConfig(
+    storage_path="./my_conversations", 
+    max_cache_size=200
+)
+manager = get_conversation_manager(config)
+
+# 便捷别名
+from autocoder.common.conversations.get_conversation_manager import get_manager
+manager = get_manager()
+```
+
 ### 基本配置
 
 ```python
@@ -405,9 +428,15 @@ from autocoder.common.conversations import (
     BackupManager
 )
 
-# 1. 初始化管理器
-config = ConversationManagerConfig(storage_path="./conversations")
-manager = PersistConversationManager(config)
+# 1. 初始化管理器 - 推荐使用全局获取方法
+from autocoder.common.conversations.get_conversation_manager import get_conversation_manager
+
+# 使用默认配置
+manager = get_conversation_manager()
+
+# 或使用自定义配置
+config = ConversationManagerConfig(storage_path="./.auto-coder/conversations")
+manager = get_conversation_manager(config)
 
 # 2. 创建对话
 conv_id = manager.create_conversation(
@@ -484,7 +513,7 @@ code_messages = manager.search_messages(
 ```python
 config = ConversationManagerConfig(
     # 存储配置
-    storage_path="./conversations",        # 数据存储路径
+    storage_path="./.auto-coder/conversations",  # 数据存储路径（默认）
     
     # 缓存配置
     max_cache_size=100,                   # 最大缓存条目数
@@ -619,6 +648,46 @@ manager.rebuild_index()
 results = manager.search_conversations(
     "specific term",
     search_in_messages=False  # 只搜索标题和描述
+)
+```
+
+## 全局管理器API
+
+### 使用 get_conversation_manager
+
+为了简化使用，系统提供了全局获取管理器实例的方法：
+
+```python
+from autocoder.common.conversations.get_conversation_manager import (
+    get_conversation_manager,
+    reset_conversation_manager,
+    get_conversation_manager_config
+)
+
+# 获取全局实例（使用默认配置）
+manager = get_conversation_manager()
+
+# 重置实例（用于测试或配置更改）
+reset_conversation_manager()
+
+# 获取当前配置
+config = get_conversation_manager_config()
+```
+
+### 全局管理器特性
+
+- **单例模式**：确保全局只有一个实例
+- **线程安全**：支持多线程环境
+- **默认配置**：存储路径为当前工作目录的 `.auto-coder/conversations`
+- **配置灵活**：首次调用时可指定配置
+
+### 便捷别名
+
+```python
+from autocoder.common.conversations.get_conversation_manager import (
+    get_manager,      # = get_conversation_manager
+    reset_manager,    # = reset_conversation_manager  
+    get_manager_config # = get_conversation_manager_config
 )
 ```
 

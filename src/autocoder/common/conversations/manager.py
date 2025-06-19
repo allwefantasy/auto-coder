@@ -331,21 +331,22 @@ class PersistConversationManager:
             List of conversation data
         """
         try:
-            # Get conversations from index
-            conversations = self.index_manager.list_conversations()
+            # Convert sort_desc boolean to sort_order string
+            sort_order = 'desc' if sort_desc else 'asc'
+            
+            # Get conversations from index with sorting and pagination
+            conversations = self.index_manager.list_conversations(
+                limit=limit,
+                offset=offset,
+                sort_by=sort_by,
+                sort_order=sort_order
+            )
             
             # Apply filters if provided
             if filters:
                 conversations = self.filter_manager.apply_filters(conversations, filters)
             
-            # Sort conversations
-            conversations = self.index_manager.sort_conversations(
-                conversations, sort_by, sort_desc
-            )
-            
-            # Apply pagination
-            end_idx = offset + limit if limit else None
-            return conversations[offset:end_idx]
+            return conversations
             
         except Exception as e:
             raise ConversationManagerError(f"Failed to list conversations: {e}")

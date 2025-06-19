@@ -1,0 +1,181 @@
+"""
+CLI 主入口点模块
+
+提供命令行接口的主要实现，处理参数解析和命令执行。
+"""
+
+import sys
+import argparse
+from pathlib import Path
+from typing import Optional, List, Dict, Any, Union
+
+from .options import CLIOptions, CLIResult
+from .handlers import PrintModeHandler, SessionModeHandler
+from ..exceptions import AutoCoderSDKError
+
+
+class AutoCoderCLI:
+    """命令行接口主类，处理命令行参数和执行相应的操作。"""
+    
+    def __init__(self):
+        """初始化CLI实例。"""
+        pass
+        
+    def run(self, options: CLIOptions, cwd: Optional[str] = None) -> CLIResult:
+        """
+        运行CLI命令。
+        
+        Args:
+            options: CLI选项
+            cwd: 当前工作目录，如果为None则使用系统当前目录
+            
+        Returns:
+            命令执行结果
+        """
+        try:
+            # 验证选项
+            options.validate()
+            
+            # 根据模式选择处理器
+            if options.print_mode:
+                return self.handle_print_mode(options, cwd)
+            else:
+                return self.handle_session_mode(options, cwd)
+                
+        except Exception as e:
+            return CLIResult(success=False, error=str(e))
+            
+    def handle_print_mode(self, options: CLIOptions, cwd: Optional[str] = None) -> CLIResult:
+        """
+        处理打印模式。
+        
+        Args:
+            options: CLI选项
+            cwd: 当前工作目录
+            
+        Returns:
+            命令执行结果
+        """
+        handler = PrintModeHandler(options, cwd)
+        return handler.handle()
+        
+    def handle_session_mode(self, options: CLIOptions, cwd: Optional[str] = None) -> CLIResult:
+        """
+        处理会话模式。
+        
+        Args:
+            options: CLI选项
+            cwd: 当前工作目录
+            
+        Returns:
+            命令执行结果
+        """
+        handler = SessionModeHandler(options, cwd)
+        return handler.handle()
+        
+    @classmethod
+    def parse_args(cls, args: Optional[List[str]] = None) -> CLIOptions:
+        """
+        解析命令行参数。
+        
+        Args:
+            args: 命令行参数列表，如果为None则使用sys.argv
+            
+        Returns:
+            解析后的CLI选项
+        """
+        parser = argparse.ArgumentParser(
+            description="Auto-Coder 命令行工具",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
+示例:
+  # 单次运行模式
+  auto-coder.run -p "Write a function to calculate Fibonacci numbers"
+  
+  # 通过管道提供输入
+  echo "Explain this code" | auto-coder.run -p
+  
+  # 指定输出格式
+  auto-coder.run -p "Generate a hello world function" --output-format json
+  
+  # 继续最近的对话
+  auto-coder.run --continue
+  
+  # 恢复特定会话
+  auto-coder.run --resume 550e8400-e29b-41d4-a716-446655440000
+"""
+        )
+        
+        # 运行模式选项
+        mode_group = parser.add_mutually_exclusive_group()
+        mode_group.add_argument("-p", "--print", dest="print_mode", action="store_true",
+                             help="单次运行模式，执行一次查询后退出")
+        mode_group.add_argument("-c", "--continue", dest="continue_session", action="store_true",
+                             help="继续最近的对话")
+        mode_group.add_argument("-r", "--resume", dest="resume_session", metavar="SESSION_ID",
+                             help="恢复特定会话")
+        
+        # 输入输出选项
+        parser.add_argument("prompt", nargs="?", help="提示内容，如果未提供则从stdin读取")
+        parser.add_argument("--output-format", choices=["text", "json", "stream-json"],
+                          default="text", help="输出格式 (默认: text)")
+        parser.add_argument("--input-format", choices=["text", "json", "stream-json"],
+                          default="text", help="输入格式 (默认: text)")
+        parser.add_argument("-v", "--verbose", action="store_true", help="输出详细信息")
+        
+        # 高级选项
+        advanced = parser.add_argument_group("高级选项")
+        advanced.add_argument("--max-turns", type=int, default=3, help="最大对话轮数 (默认: 3)")
+        advanced.add_argument("--system-prompt", help="系统提示")
+        advanced.add_argument("--allowed-tools", nargs="+", help="允许使用的工具列表")
+        advanced.add_argument("--permission-mode", choices=["manual", "acceptEdits"],
+                           default="manual", help="权限模式 (默认: manual)")
+        
+        # 解析参数
+        parsed_args = parser.parse_args(args)
+        
+        # 转换为CLIOptions
+        options = CLIOptions(
+            print_mode=parsed_args.print_mode,
+            continue_session=parsed_args.continue_session,
+            resume_session=parsed_args.resume_session,
+            prompt=parsed_args.prompt,
+            output_format=parsed_args.output_format,
+            input_format=parsed_args.input_format,
+            verbose=parsed_args.verbose,
+            max_turns=parsed_args.max_turns,
+            system_prompt=parsed_args.system_prompt,
+            allowed_tools=parsed_args.allowed_tools or [],
+            permission_mode=parsed_args.permission_mode
+        )
+        
+        return options
+        
+    @classmethod
+    def main(cls) -> int:
+        """
+        CLI主入口点。
+        
+        Returns:
+            退出码，0表示成功，非0表示失败
+        """
+        try:
+            options = cls.parse_args()
+            cli = cls()
+            result = cli.run(options)
+            
+            if result.success:
+                if result.output:
+                    print(result.output)
+                return 0
+            else:
+                print(f"错误: {result.error}", file=sys.stderr)
+                return 1
+                
+        except Exception as e:
+            print(f"未处理的错误: {str(e)}", file=sys.stderr)
+            return 1
+
+
+if __name__ == "__main__":
+    sys.exit(AutoCoderCLI.main())
