@@ -17,12 +17,8 @@ command_parser 可以处理以下格式的命令：
 import sys
 import os
 
-# 添加项目根目录到 Python 路径
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, project_root)
-
 # 导入 command_parser 模块
-from src.autocoder.command_parser import (
+from autocoder.common.ac_style_command_parser import (
     parse_query,
     has_command,
     get_command_args,

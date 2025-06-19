@@ -197,6 +197,81 @@ conversations = manager.list_conversations(
 
 **返回:** `bool` - 是否成功
 
+#### 当前对话管理方法
+
+##### `set_current_conversation(conversation_id)`
+设置当前对话。
+
+**参数:**
+- `conversation_id` (str): 要设置为当前对话的ID
+
+**返回:** `bool` - 是否成功
+
+**异常:**
+- `ConversationNotFoundError`: 如果对话不存在
+
+**示例:**
+```python
+# 设置当前对话
+success = manager.set_current_conversation(conv_id)
+```
+
+##### `get_current_conversation_id()`
+获取当前对话ID。
+
+**返回:** `Optional[str]` - 当前对话ID，未设置返回None
+
+**示例:**
+```python
+current_id = manager.get_current_conversation_id()
+if current_id:
+    print(f"当前对话ID: {current_id}")
+```
+
+##### `get_current_conversation()`
+获取当前对话的完整数据。
+
+**返回:** `Optional[dict]` - 当前对话的数据字典，未设置或对话不存在返回None
+
+**示例:**
+```python
+current_conv = manager.get_current_conversation()
+if current_conv:
+    print(f"当前对话: {current_conv['name']}")
+```
+
+##### `clear_current_conversation()`
+清除当前对话设置。
+
+**返回:** `bool` - 是否成功
+
+**示例:**
+```python
+success = manager.clear_current_conversation()
+```
+
+##### `append_message_to_current(role, content, metadata=None)`
+向当前对话添加消息。
+
+**参数:**
+- `role` (str): 消息角色
+- `content` (str|dict|list): 消息内容
+- `metadata` (dict, 可选): 消息元数据
+
+**返回:** `str` - 消息ID
+
+**异常:**
+- `ConversationManagerError`: 如果没有设置当前对话
+
+**示例:**
+```python
+# 向当前对话添加消息
+message_id = manager.append_message_to_current(
+    role="user",
+    content="这是一条消息"
+)
+```
+
 #### 消息管理方法
 
 ##### `append_message(conversation_id, role, content, metadata=None)`
@@ -475,7 +550,22 @@ def quicksort(arr):
 results = manager.search_conversations("快速排序")
 print(f"找到 {len(results)} 个相关对话")
 
-# 5. 创建备份
+# 5. 设置当前对话
+manager.set_current_conversation(conv_id)
+print(f"当前对话已设置: {conv_id}")
+
+# 6. 向当前对话添加消息
+current_msg_id = manager.append_message_to_current(
+    role="user",
+    content="继续讨论这个算法的时间复杂度"
+)
+
+# 7. 获取当前对话信息
+current_conv = manager.get_current_conversation()
+print(f"当前对话名称: {current_conv['name']}")
+print(f"当前对话消息数: {len(current_conv['messages'])}")
+
+# 8. 创建备份
 backup_manager = BackupManager(config)
 backup_id = backup_manager.create_full_backup("工作流示例备份")
 print(f"备份创建成功: {backup_id}")
@@ -567,7 +657,28 @@ except ConversationManagerError as e:
 
 ## 最佳实践
 
-### 1. 性能优化
+### 1. 当前对话管理
+
+```python
+# 设置当前对话，便于后续操作
+manager.set_current_conversation(conv_id)
+
+# 使用便捷方法向当前对话添加消息
+message_id = manager.append_message_to_current(
+    role="user",
+    content="用户输入"
+)
+
+# 获取当前对话信息
+current_conv = manager.get_current_conversation()
+if current_conv:
+    print(f"当前对话: {current_conv['name']}")
+
+# 在应用退出时清除当前对话（可选）
+manager.clear_current_conversation()
+```
+
+### 2. 性能优化
 
 ```python
 # 使用批量操作减少I/O
@@ -649,6 +760,37 @@ results = manager.search_conversations(
     "specific term",
     search_in_messages=False  # 只搜索标题和描述
 )
+```
+
+### Q: 如何有效使用当前对话功能？
+
+A: 当前对话功能可以简化频繁的对话操作：
+```python
+# 1. 设置当前对话
+manager.set_current_conversation(conversation_id)
+
+# 2. 直接向当前对话添加消息，无需每次指定对话ID
+manager.append_message_to_current("user", "消息内容")
+
+# 3. 检查当前对话状态
+current_conv = manager.get_current_conversation()
+if current_conv:
+    print(f"当前对话有 {len(current_conv['messages'])} 条消息")
+
+# 4. 应用关闭时可以保留当前对话设置，下次启动时自动恢复
+current_id = manager.get_current_conversation_id()
+```
+
+### Q: 当前对话的持久化是如何工作的？
+
+A: 当前对话ID会持久化保存在 `config.json` 文件中：
+```python
+# 系统会自动保存当前对话设置
+manager.set_current_conversation("conv_123")
+
+# 应用重启后，当前对话设置会自动恢复
+manager = get_conversation_manager()
+current_id = manager.get_current_conversation_id()  # 返回 "conv_123"
 ```
 
 ## 全局管理器API

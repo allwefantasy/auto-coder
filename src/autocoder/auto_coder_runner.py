@@ -24,6 +24,7 @@ from autocoder.auto_coder import main as auto_coder_main
 from autocoder.utils import get_last_yaml_file
 from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
 from autocoder.common.v2.agent.agentic_edit import AgenticEdit,AgenticEditRequest
+from autocoder.common.v2.agent.agentic_edit_types import AgenticEditConversationConfig
 from autocoder.index.symbols_utils import (
     extract_symbols,
     SymbolType,
@@ -60,7 +61,7 @@ from autocoder.utils.thread_utils import run_in_raw_thread
 from autocoder.memory.active_context_manager import ActiveContextManager
 from autocoder.common.command_completer import CommandCompleter,FileSystemModel as CCFileSystemModel,MemoryConfig as CCMemoryModel
 from autocoder.common.conf_validator import ConfigValidator
-from autocoder import command_parser as CommandParser
+from autocoder.common.ac_style_command_parser import parse_query
 from loguru import logger as global_logger
 from autocoder.utils.project_structure import EnhancedFileAnalyzer
 from autocoder.common import SourceCodeList,SourceCode
@@ -1704,7 +1705,7 @@ def chat(query: str):
         yaml_config["emb_model"] = conf["emb_model"]
 
     # 解析命令        
-    commands_infos = CommandParser.parse_query(query)    
+    commands_infos = parse_query(query)    
     if len(commands_infos) > 0:
         if "query" in commands_infos:
             query = " ".join(commands_infos["query"]["args"])
@@ -1866,7 +1867,7 @@ def active_context(query: str):
         query: 命令参数，例如 "list" 列出所有任务
     """    
     # 解析命令
-    commands_infos = CommandParser.parse_query(query)
+    commands_infos = parse_query(query)
     command = "list"  # 默认命令是列出所有任务
     
     if len(commands_infos) > 0:
@@ -2918,16 +2919,47 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
                     
         llm = get_single_llm(args.code_model or args.model,product_mode=args.product_mode) 
         conversation_history = extra_args.get("conversations",[])   
+
+        command_infos = parse_query(query) 
+        conversation_config = AgenticEditConversationConfig()
+        
+        ## web 模式会自己管理对话,所以这里总是设置为新对话
+        if get_run_context().mode == RunMode.WEB:
+            command_infos = {
+                "new":{
+                    "args":[query]
+                }
+            }
+        
+        task_query = query
+        
+        if "new" in command_infos:  
+            conversation_config.action = "new"
+            task_query = command_infos["new"]["args"][0]
+            
+        if "id" in command_infos:
+            conversation_config.action = "resume"
+            conversation_config.conversation_id = command_infos["id"]["args"][0]            
+            task_query = command_infos["id"]["args"][1]  
+
+        if "list" in command_infos:
+            conversation_config.action = "list"
+             
+
+        conversation_config.query = task_query
+
         agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
                             conversation_history=conversation_history,
                             memory_config=MemoryConfig(memory=memory, 
                             save_memory_func=save_memory), command_config=CommandConfig,
-                            conversation_name="current"
+                            conversation_name="current",
+                            conversation_config=conversation_config
                             )           
         if get_run_context().mode == RunMode.WEB:
-            agent.run_with_events(AgenticEditRequest(user_input=query))
-        else:
-            agent.run_in_terminal(AgenticEditRequest(user_input=query))
+            agent.run_with_events(AgenticEditRequest(user_input=task_query))
+        
+        if get_run_context().mode == RunMode.TERMINAL:
+            agent.run_in_terminal(AgenticEditRequest(user_input=task_query))
             
         completer.refresh_files()
         return

@@ -1,5 +1,5 @@
-from typing import Dict, List, Tuple, Any, Optional
 import re
+from typing import Dict, List, Tuple, Any, Optional
 
 
 class CommandParser:
@@ -245,36 +245,4 @@ def get_command_kwargs(query: str, command: str) -> Dict[str, str]:
     command_info = parser.parse_command(query, command)
     if command_info:
         return command_info['kwargs']
-    return {}
-
-
-# 示例用法
-if __name__ == "__main__":
-    # 测试各种格式的查询
-    test_queries = [
-        "/learn hello world /commit 123456",
-        "/learn /commit 123456",
-        "/learn /commit commit_id=123456",
-        "/learn msg=hello /commit commit_id=123456",
-        "/learn hello key=value /commit",
-        # 带引号的值
-        '/learn msg="hello world" /commit message="Fix bug #123"',
-        "/learn 'quoted arg' key='value with spaces' /commit",
-        # 路径参数测试
-        "/learn /path/to/file.txt",
-        "/commit message='Added /path/to/file.txt'",
-        "Check /path/to/file.txt and also /another/path/file.md",
-        "/clone /path/to/repo /checkout branch",
-        "Use the file at /usr/local/bin/python with /learn"
-    ]
-    
-    for query in test_queries:
-        print(f"\nQuery: {query}")
-        result = parse_query(query)
-        print(f"Parsed: {result}")
-        
-        if has_command(query, "commit"):
-            args = get_command_args(query, "commit")
-            kwargs = get_command_kwargs(query, "commit")
-            print(f"Commit args: {args}")
-            print(f"Commit kwargs: {kwargs}") 
+    return {} 

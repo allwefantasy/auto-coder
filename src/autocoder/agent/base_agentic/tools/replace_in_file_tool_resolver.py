@@ -227,7 +227,7 @@ class ReplaceInFileToolResolver(BaseToolResolver):
                                                   total=len(parsed_blocks), 
                                                   file_path=file_path)                        
 
-            # 变更跟踪，回调AgenticEdit
+            # 变更跟踪，回调Agent
             if self.agent:
                 rel_path = os.path.relpath(abs_file_path, abs_project_dir)
                 self.agent.record_file_change(rel_path, "modified", diff=diff_content, content=current_content)

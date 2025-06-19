@@ -177,3 +177,8 @@ class CommandConfig(BaseModel):
     index_import: SkipValidation[Callable]
     exclude_files: SkipValidation[Callable]
 
+class AgenticEditConversationConfig(BaseModel):     
+    conversation_name: Optional[str] = "current"
+    conversation_id: Optional[str] = None 
+    action: Optional[str] = None
+    query: Optional[str] = None

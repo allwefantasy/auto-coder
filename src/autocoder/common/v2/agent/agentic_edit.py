@@ -82,7 +82,8 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           # Import specific tool types for display mapping
                                                           ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
                                                           ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
-                                                          AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool
+                                                          AskFollowupQuestionTool, UseMcpTool, AttemptCompletionTool,
+                                                          AgenticEditConversationConfig
                                                           )
 from autocoder.common.rag_manager import RAGManager
 from autocoder.rag.token_counter import count_tokens
@@ -103,6 +104,12 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     UseMcpTool: UseMcpToolResolver,
     UseRAGTool: UseRAGToolResolver
 }
+from autocoder.common.conversations.get_conversation_manager import (
+    get_conversation_manager,
+    get_conversation_manager_config,
+    reset_conversation_manager
+)
+from autocoder.common.conversations import ConversationManagerConfig
 
 
 # --- Tool Display Customization is now handled by agentic_tool_display.py ---
@@ -117,7 +124,8 @@ class AgenticEdit:
         args: AutoCoderArgs,
         memory_config: MemoryConfig,
         command_config: Optional[CommandConfig] = None,
-        conversation_name:Optional[str] = "current"        
+        conversation_name:Optional[str] = "current",
+        conversation_config:Optional[AgenticEditConversationConfig] = None
     ):
         self.llm = llm
         self.context_prune_llm = get_single_llm(args.context_prune_model or args.model,product_mode=args.product_mode) 
@@ -127,7 +135,7 @@ class AgenticEdit:
         self.files = files
         # Removed self.max_iterations
         # Note: This might need updating based on the new flow
-        self.conversation_history = conversation_history
+        self.conversation_history = conversation_history                    
 
         self.current_conversations = []
         self.memory_config = memory_config
@@ -182,6 +190,19 @@ class AgenticEdit:
         # 变更跟踪信息
         # 格式: { file_path: FileChangeEntry(...) }
         self.file_changes: Dict[str, FileChangeEntry] = {}
+
+        # 对话管理器
+        self.conversation_config =conversation_config
+        self.conversation_manager = get_conversation_manager()
+
+        if self.conversation_config.action == "new":
+            conversation_id = self.conversation_manager.create_conversation(name=self.conversation_config.query,
+                                                                            description=self.conversation_config.query)
+            self.conversation_manager.set_current_conversation(conversation_id)
+
+        if self.conversation_config.action == "resume" and self.conversation_config.conversation_id:
+            self.conversation_manager.set_current_conversation(self.conversation_config.conversation_id)
+            
 
     @byzerllm.prompt()
     def generate_library_docs_prompt(self, libraries_with_paths: List[Dict[str, str]], docs_content: str) -> Dict[str, Any]:
@@ -1145,6 +1166,11 @@ class AgenticEdit:
         Analyzes the user request, interacts with the LLM, parses responses,
         executes tools, and yields structured events for visualization until completion or error.
         """
+        if self.conversation_config.action == "list":
+            conversations = self.conversation_manager.list_conversations()
+            yield LLMOutputEvent(text=json.dumps(conversations, ensure_ascii=False))
+            return
+
         logger.info(f"Starting analyze method with user input: {request.user_input[:50]}...")
         system_prompt = self._analyze.prompt(request)
         logger.info(f"Generated system prompt with length: {len(system_prompt)}")
@@ -1154,7 +1180,7 @@ class AgenticEdit:
         conversations = [
             {"role": "system", "content": system_prompt},
         ] 
-        
+                                
         # Add third-party library documentation information
         try:
             package_manager = LLMFriendlyPackageManager(
@@ -1199,12 +1225,29 @@ class AgenticEdit:
                     })
                     
         except Exception as e:
-            logger.warning(f"Failed to load library documentation: {str(e)}")
-                                
+            logger.warning(f"Failed to load library documentation: {str(e)}")                                        
+
+        if self.conversation_config.action == "resume":
+            current_conversation = self.conversation_manager.get_current_conversation()
+            # 如果继续的是当前的对话，将其消息加入到 conversations 中
+            if current_conversation and current_conversation.get('messages'):
+                for message in current_conversation['messages']:
+                    # 确保消息格式正确（包含 role 和 content 字段）
+                    if isinstance(message, dict) and 'role' in message and 'content' in message:
+                        conversations.append({
+                            "role": message['role'],
+                            "content": message['content']
+                        })
+                logger.info(f"Resumed conversation with {len(current_conversation['messages'])} existing messages")     
+        
+        
         conversations.append({
             "role": "user", "content": request.user_input
-        })        
-        
+        })  
+        self.conversation_manager.append_message_to_current(
+                    role="user", 
+                    content=request.user_input,
+                    metadata={})
         
         self.current_conversations = conversations
         
@@ -1292,7 +1335,12 @@ class AgenticEdit:
                     conversations.append({
                         "role": "assistant",
                         "content": assistant_buffer + tool_xml
-                    })                    
+                    }) 
+                    self.conversation_manager.append_message_to_current(
+                        role="assistant", 
+                        content=assistant_buffer + tool_xml,
+                        metadata={})
+                    
                     assistant_buffer = ""  # Reset buffer after tool call
                     
                     # 计算当前对话的总 token 数量并触发事件
@@ -1311,7 +1359,7 @@ class AgenticEdit:
                         completion_event = CompletionEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
                             "AgenticEdit analyze loop finished due to AttemptCompletion.")
-                        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")        
+                        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")                                
                         mark_event_should_finish = True
                         should_yield_completion_event = True
                         continue
@@ -1387,6 +1435,10 @@ class AgenticEdit:
                         "role": "user",  # Simulating the user providing the tool result
                         "content": error_xml
                     })
+                    self.conversation_manager.append_message_to_current(
+                        role="user", 
+                        content=error_xml,
+                        metadata={})
                     
                     # 计算当前对话的总 token 数量并触发事件
                     current_conversation_str = json.dumps(conversations, ensure_ascii=False)
@@ -1425,6 +1477,9 @@ class AgenticEdit:
                         logger.info("Adding new assistant message")
                         conversations.append(
                             {"role": "assistant", "content": assistant_buffer})
+                        self.conversation_manager.append_message_to_current(
+                            role="assistant", content=assistant_buffer,metadata={})
+                        
                     elif last_message["role"] == "assistant":
                         logger.info("Appending to existing assistant message")
                         last_message["content"] += assistant_buffer
@@ -1441,6 +1496,11 @@ class AgenticEdit:
                     "role": "user",
                     "content": "NOTE: You must use an appropriate tool (such as read_file, write_to_file, execute_command, etc.) or explicitly complete the task (using attempt_completion). Do not provide text responses without taking concrete actions. Please select a suitable tool to continue based on the user's task."
                 })
+
+                self.conversation_manager.append_message_to_current(
+                    role="user", 
+                    content="NOTE: You must use an appropriate tool (such as read_file, write_to_file, execute_command, etc.) or explicitly complete the task (using attempt_completion). Do not provide text responses without taking concrete actions. Please select a suitable tool to continue based on the user's task.",
+                    metadata={})
                 
                 # 计算当前对话的总 token 数量并触发事件
                 current_conversation_str = json.dumps(conversations, ensure_ascii=False)
