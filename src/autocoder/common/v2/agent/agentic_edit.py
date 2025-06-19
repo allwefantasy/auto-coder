@@ -79,6 +79,7 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
                                                           ToolResultEvent, CompletionEvent, PlanModeRespondEvent, ErrorEvent, TokenUsageEvent,
                                                           WindowLengthChangeEvent,
+                                                          ConversationIdEvent,
                                                           # Import specific tool types for display mapping
                                                           ReadFileTool, WriteToFileTool, ReplaceInFileTool, ExecuteCommandTool,
                                                           ListFilesTool, SearchFilesTool, ListCodeDefinitionNamesTool,
@@ -1242,7 +1243,9 @@ class AgenticEdit:
         
         if self.conversation_manager.get_current_conversation_id() is None:
             conv_id = self.conversation_manager.create_conversation(name=self.conversation_config.query,description=self.conversation_config.query)
-            self.conversation_manager.set_current_conversation(conv_id)
+            self.conversation_manager.set_current_conversation(conv_id)            
+        
+        yield ConversationIdEvent(conversation_id=self.conversation_manager.get_current_conversation_id())
         
         conversations.append({
             "role": "user", "content": request.user_input
@@ -2016,6 +2019,9 @@ class AgenticEdit:
             self.apply_pre_changes()
             event_stream = self.analyze(request)
             for event in event_stream:
+                if isinstance(event, ConversationIdEvent):
+                    console.print(f"[dim]Conversation ID: {event.conversation_id}[/dim]")
+                    continue
                 if isinstance(event, TokenUsageEvent):
                     last_meta: SingleOutputMeta = event.usage
                     # Get model info for pricing
