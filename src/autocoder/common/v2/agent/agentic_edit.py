@@ -1992,9 +1992,8 @@ class AgenticEdit:
                         self.git_require_msg(
                             source_dir=self.args.source_dir, error=str(e)),
                         style="red"
-                    )
-        else:
-            self.printer.print_in_terminal("no_changes_made")
+                    )        
+            
 
     def run_in_terminal(self, request: AgenticEditRequest):
         """
