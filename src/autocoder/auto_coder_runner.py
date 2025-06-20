@@ -3019,3 +3019,130 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
         padding=(1, 2)
     ))
     completer.refresh_files()
+
+
+
+def run_auto_command(query: str,
+                     pre_commit:bool=False,                     
+                     extra_args: Dict[str,Any]={}
+                     ):    
+    """处理/auto指令"""        
+    args = get_final_config() 
+    memory = get_memory()         
+    if args.enable_agentic_edit:        
+        from autocoder.run_context import get_run_context,RunMode
+        execute_file,args = generate_new_yaml(query)
+        args.file = execute_file                      
+        current_files = memory.get("current_files",{}).get("files",[])
+        sources = []
+        for file in current_files:
+            try:
+                with open(file,"r",encoding="utf-8") as f:
+                    sources.append(SourceCode(module_name=file,source_code=f.read()))  
+            except Exception as e:
+                global_logger.error(f"Failed to read file {file}: {e}")
+                    
+        llm = get_single_llm(args.code_model or args.model,product_mode=args.product_mode) 
+        conversation_history = extra_args.get("conversations",[])   
+
+        command_infos = parse_query(query) 
+
+        # terminal 的总是接着上次对话, 所以这里总是设置为 resume
+        conversation_config = AgenticEditConversationConfig(
+            action="resume"
+        )
+        
+        ## web 模式会自己管理对话,所以这里总是设置为新对话
+        if get_run_context().mode == RunMode.WEB:
+            command_infos = {
+                "new":{
+                    "args":[query]
+                }
+            }
+        
+        task_query = query
+        
+        if "new" in command_infos:  
+            conversation_config.action = "new"
+            task_query = " ".join(command_infos["new"]["args"])
+            
+        if "id" in command_infos:
+            conversation_config.action = "resume"
+            conversation_config.conversation_id = command_infos["id"]["args"][0]            
+            task_query = " ".join(command_infos["id"]["args"][1:])  
+
+        if "list" in command_infos:
+            conversation_config.action = "list"
+             
+
+        conversation_config.query = task_query
+
+        agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
+                            conversation_history=conversation_history,
+                            memory_config=MemoryConfig(memory=memory, 
+                            save_memory_func=save_memory), command_config=CommandConfig,
+                            conversation_name="current",
+                            conversation_config=conversation_config
+                            )           
+        if pre_commit:
+            agent.apply_pre_changes()
+        
+        events = agent.run(AgenticEditRequest(user_input=task_query))        
+        
+        for event in events:
+            yield event
+            
+        completer.refresh_files()
+        return
+        
+    args = get_final_config()  
+    # 准备请求参数
+    request = AutoCommandRequest(
+        user_input=query        
+    )
+
+    # 初始化调优器
+    llm = get_single_llm(args.chat_model or args.model,product_mode=args.product_mode)    
+    tuner = CommandAutoTuner(llm, 
+                             args=args,
+                             memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory), 
+                             command_config=CommandConfig(
+                                 add_files=add_files,
+                                 remove_files=remove_files,
+                                 list_files=list_files,
+                                 conf=configure,
+                                 revert=revert,
+                                 commit=commit,
+                                 help=help,
+                                 exclude_dirs=exclude_dirs,
+                                 exclude_files=exclude_files,
+                                 ask=ask,
+                                 chat=chat,
+                                 coding=coding,
+                                 design=design,
+                                 summon=summon,
+                                 lib=lib_command,
+                                 mcp=mcp,
+                                 models=manage_models,
+                                 index_build=index_build,
+                                 index_query=index_query,  
+                                 execute_shell_command=execute_shell_command,  
+                                 generate_shell_command=generate_shell_command,
+                                 conf_export=conf_export,
+                                 conf_import=conf_import,
+                                 index_export=index_export,
+                                 index_import=index_import                                                                                       
+                             ))
+
+    # 生成建议
+    response = tuner.analyze(request)
+    printer = Printer()
+    # 显示建议
+    console = Console()        
+    console.print(Panel(
+        Markdown(response.reasoning or ""),
+        title=printer.get_message_from_key_with_format("auto_command_reasoning_title"),
+        border_style="blue",
+        padding=(1, 2)
+    ))
+    completer.refresh_files()

@@ -2234,6 +2234,18 @@ class AgenticEdit:
         finally:
             console.rule("[bold cyan]Agentic Edit Finished[/]")
 
+    def run(self, request: AgenticEditRequest):        
+        try:
+            event_stream = self.analyze(request)
+            for agent_event in event_stream:
+                yield agent_event
+                
+        except Exception as e:
+            logger.exception(
+                "An unexpected error occurred during agent execution: {e}")           
+            raise e
+
+
     def run_with_events(self, request: AgenticEditRequest):
         """
         Runs the agentic edit process, converting internal events to the
