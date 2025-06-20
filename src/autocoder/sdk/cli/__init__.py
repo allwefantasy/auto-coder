@@ -7,4 +7,9 @@ Auto-Coder CLI 模块
 from .main import AutoCoderCLI
 from .options import CLIOptions, CLIResult
 
-__all__ = ["AutoCoderCLI", "CLIOptions", "CLIResult"]
+# 导出main函数作为入口点
+def main():
+    """CLI主入口点函数"""
+    return AutoCoderCLI.main()
+
+__all__ = ["AutoCoderCLI", "CLIOptions", "CLIResult", "main"]
