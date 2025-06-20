@@ -197,8 +197,8 @@ class AgenticEdit:
         self.conversation_manager = get_conversation_manager()
 
         if self.conversation_config.action == "new":
-            conversation_id = self.conversation_manager.create_conversation(name=self.conversation_config.query,
-                                                                            description=self.conversation_config.query)
+            conversation_id = self.conversation_manager.create_conversation(name=self.conversation_config.query or "New Conversation",
+                                                                            description=self.conversation_config.query or "New Conversation")
             self.conversation_manager.set_current_conversation(conversation_id)
 
         if self.conversation_config.action == "resume" and self.conversation_config.conversation_id:
@@ -1169,7 +1169,11 @@ class AgenticEdit:
         """
         if self.conversation_config.action == "list":
             conversations = self.conversation_manager.list_conversations()
-            yield LLMOutputEvent(text=json.dumps(conversations, ensure_ascii=False))
+            yield LLMOutputEvent(text=json.dumps(conversations, ensure_ascii=False,indent=4))
+            return
+
+        if self.conversation_config.action == "new" and not request.user_input.strip():
+            yield LLMOutputEvent(text=f"New conversation created: {self.conversation_manager.get_current_conversation_id()}")
             return
 
         logger.info(f"Starting analyze method with user input: {request.user_input[:50]}...")
