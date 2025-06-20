@@ -194,7 +194,7 @@ def configure_project_type():
 
     if project_type:
         configure(f"project_type:{project_type}", skip_print=True)
-        configure("skip_build_index:false", skip_print=True)
+        configure("skip_build_index:true", skip_print=True)
         print_info(f"\n{get_message('project_type_set')} {project_type}")
     else:
         print_info(f"\n{get_message('using_default_type')}")

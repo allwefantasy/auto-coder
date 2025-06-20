@@ -163,36 +163,6 @@ def read_from_stdin() -> str:
         return sys.stdin.read().strip()
     return ""
 
-def is_code_modification_query(prompt: str) -> bool:
-    """
-    智能检测是否为代码修改类型的查询
-    
-    Args:
-        prompt: 用户输入的提示
-        
-    Returns:
-        bool: 如果是代码修改查询返回 True
-    """
-    code_keywords = [
-        # 中文关键词
-        "修改", "添加", "删除", "重构", "优化", "实现", "创建", "更新", "修复", 
-        "改进", "调整", "完善", "增加", "移除", "替换", "合并", "分离",
-        "编写", "生成", "构建", "开发", "设计", "定义", "声明",
-        
-        # 英文关键词
-        "modify", "add", "delete", "refactor", "optimize", "implement", "create", 
-        "update", "fix", "improve", "adjust", "enhance", "remove", "replace",
-        "merge", "split", "write", "generate", "build", "develop", "design",
-        "define", "declare", "code", "function", "class", "method", "variable",
-        
-        # 代码相关术语
-        "函数", "方法", "类", "变量", "接口", "模块", "组件", "服务",
-        "API", "数据库", "配置", "测试", "文档", "日志", "错误处理",
-        "认证", "授权", "缓存", "性能", "安全", "部署"
-    ]
-    
-    prompt_lower = prompt.lower()
-    return any(keyword in prompt_lower for keyword in code_keywords)
 
 def main():
     """主函数"""
@@ -219,84 +189,47 @@ def main():
         
         # 控制终端渲染
         show_terminal = not args.no_terminal_render and args.output_format == "text"
-        
-        # 智能选择功能
-        if is_code_modification_query(args.prompt):
-            # 使用代码修改功能
-            if args.output_format == "stream-json":
-                # 流式 JSON 输出
-                async def stream_modify():
-                    async for event in modify_code_stream(
-                        args.prompt,
-                        pre_commit=args.pre_commit,
-                        extra_args=extra_args,
-                        options=options,
-                        show_terminal=show_terminal
-                    ):
-                        print(event.to_json(), flush=True)
                 
-                asyncio.run(stream_modify())
-            else:
-                # 同步代码修改
-                result = modify_code(
+        # 使用代码修改功能
+        if args.output_format == "stream-json":
+            # 流式 JSON 输出
+            async def stream_modify():
+                async for event in modify_code_stream(
                     args.prompt,
                     pre_commit=args.pre_commit,
                     extra_args=extra_args,
                     options=options,
                     show_terminal=show_terminal
-                )
-                
-                if args.output_format == "json":
-                    print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
-                else:
-                    if not show_terminal:  # 只有在没有终端渲染时才输出结果
-                        if result.success:
-                            print("Code modification completed successfully!")
-                            if result.modified_files:
-                                print(f"Modified files: {', '.join(result.modified_files)}")
-                            if result.created_files:
-                                print(f"Created files: {', '.join(result.created_files)}")
-                            if result.deleted_files:
-                                print(f"Deleted files: {', '.join(result.deleted_files)}")
-                            if result.message:
-                                print(f"Message: {result.message}")
-                        else:
-                            print(f"Code modification failed: {result.error_details}")
+                ):
+                    print(event.to_json(), flush=True)
+            
+            asyncio.run(stream_modify())
         else:
-            # 使用常规查询功能
-            if args.output_format == "stream-json":
-                # 流式 JSON 输出
-                async def stream_query():
-                    async for message in query(
-                        args.prompt, 
-                        options=options,
-                        show_terminal=show_terminal
-                    ):
-                        # 将 Message 转换为 StreamEvent 格式
-                        event = StreamEvent(
-                            event_type="message",
-                            data={
-                                "role": message.role,
-                                "content": message.content,
-                                "metadata": message.metadata
-                            }
-                        )
-                        print(event.to_json(), flush=True)
-                
-                asyncio.run(stream_query())
+            # 同步代码修改
+            result = modify_code(
+                args.prompt,
+                pre_commit=args.pre_commit,
+                extra_args=extra_args,
+                options=options,
+                show_terminal=show_terminal
+            )
+            
+            if args.output_format == "json":
+                print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
             else:
-                # 同步查询
-                result = query_sync(
-                    args.prompt, 
-                    options=options,
-                    show_terminal=show_terminal
-                )
-                
-                if args.output_format == "json":
-                    print(json.dumps({"result": result}, ensure_ascii=False, indent=2))
-                else:
-                    if not show_terminal:  # 只有在没有终端渲染时才输出结果
-                        print(result)
+                if not show_terminal:  # 只有在没有终端渲染时才输出结果
+                    if result.success:
+                        print("Code modification completed successfully!")
+                        if result.modified_files:
+                            print(f"Modified files: {', '.join(result.modified_files)}")
+                        if result.created_files:
+                            print(f"Created files: {', '.join(result.created_files)}")
+                        if result.deleted_files:
+                            print(f"Deleted files: {', '.join(result.deleted_files)}")
+                        if result.message:
+                            print(f"Message: {result.message}")
+                    else:
+                        print(f"Code modification failed: {result.error_details}")        
         
     except KeyboardInterrupt:
         print("\nOperation cancelled by user.", file=sys.stderr)
