@@ -1166,16 +1166,7 @@ class AgenticEdit:
         """
         Analyzes the user request, interacts with the LLM, parses responses,
         executes tools, and yields structured events for visualization until completion or error.
-        """
-        if self.conversation_config.action == "list":
-            conversations = self.conversation_manager.list_conversations()
-            yield LLMOutputEvent(text=json.dumps(conversations, ensure_ascii=False,indent=4))
-            return
-
-        if self.conversation_config.action == "new" and not request.user_input.strip():
-            yield LLMOutputEvent(text=f"New conversation created: {self.conversation_manager.get_current_conversation_id()}")
-            return
-
+        """       
         logger.info(f"Starting analyze method with user input: {request.user_input[:50]}...")
         system_prompt = self._analyze.prompt(request)
         logger.info(f"Generated system prompt with length: {len(system_prompt)}")
@@ -2004,8 +1995,23 @@ class AgenticEdit:
         Runs the agentic edit process based on the request and displays
         the interaction streamingly in the terminal using Rich.
         """
+        import json
         console = Console()
         project_name = os.path.basename(os.path.abspath(self.args.source_dir))
+
+        if self.conversation_config.action == "list":
+            conversations = self.conversation_manager.list_conversations()
+            json_str = json.dumps(conversations, ensure_ascii=False,indent=4)
+            console.print(Panel(Markdown(json_str),
+                                  title="🏁 Task Completion", border_style="green", title_align="left"))
+            return
+        
+
+        if self.conversation_config.action == "new" and not request.user_input.strip():
+            console.print(Panel(Markdown(f"New conversation created: {self.conversation_manager.get_current_conversation_id()}"),
+                                  title="🏁 Task Completion", border_style="green", title_align="left"))
+            return
+
         console.rule(f"[bold cyan]Starting Agentic Edit: {project_name}[/]")
         console.print(Panel(
             f"[bold]{get_message('/agent/edit/user_query')}:[/bold]\n{request.user_input}", title=get_message("/agent/edit/objective"), border_style="blue"))
