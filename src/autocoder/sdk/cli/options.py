@@ -30,6 +30,7 @@ class CLIOptions:
     system_prompt: Optional[str] = None  # 系统提示
     allowed_tools: list = field(default_factory=list)  # 允许使用的工具列表
     permission_mode: str = "manual"  # 权限模式，可选值: manual, acceptEdits
+    model: Optional[str] = None  # 模型名称，如 gpt-4, gpt-3.5-turbo 等
     
     def validate(self) -> None:
         """验证选项的有效性。"""

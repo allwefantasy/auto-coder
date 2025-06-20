@@ -104,11 +104,17 @@ class AutoCoderCLI:
   # 指定输出格式
   auto-coder.run -p "Generate a hello world function" --output-format json
   
+  # 指定模型
+  auto-coder.run -p "Create a web API" --model gpt-4
+  
   # 继续最近的对话
   auto-coder.run --continue
   
   # 恢复特定会话
   auto-coder.run --resume 550e8400-e29b-41d4-a716-446655440000
+  
+  # 组合使用多个选项
+  auto-coder.run -p "Optimize this code" --model claude-3-sonnet --max-turns 5 --verbose
 """
         )
         
@@ -136,6 +142,7 @@ class AutoCoderCLI:
         advanced.add_argument("--allowed-tools", nargs="+", help="允许使用的工具列表")
         advanced.add_argument("--permission-mode", choices=["manual", "acceptEdits"],
                            default="manual", help="权限模式 (默认: manual)")
+        advanced.add_argument("--model", help="指定使用的模型名称 (如: gpt-4, gpt-3.5-turbo, claude-3-sonnet 等)")
         
         # 启用自动补全
         if ARGCOMPLETE_AVAILABLE:
@@ -158,7 +165,8 @@ class AutoCoderCLI:
             max_turns=parsed_args.max_turns,
             system_prompt=parsed_args.system_prompt,
             allowed_tools=parsed_args.allowed_tools or [],
-            permission_mode=parsed_args.permission_mode
+            permission_mode=parsed_args.permission_mode,
+            model=parsed_args.model
         )
         
         return options
@@ -219,6 +227,44 @@ class AutoCoderCLI:
             ]
             return [prompt for prompt in common_prompts if prompt.lower().startswith(prefix.lower())]
         
+        # 为 --model 参数设置模型名称补全器
+        def model_completer(prefix, parsed_args, **kwargs):
+            """模型名称补全器"""
+            common_models = [
+                # OpenAI models
+                "gpt-4",
+                "gpt-4-turbo",
+                "gpt-4-turbo-preview",
+                "gpt-4-0125-preview",
+                "gpt-4-1106-preview",
+                "gpt-3.5-turbo",
+                "gpt-3.5-turbo-16k",
+                "gpt-3.5-turbo-1106",
+                # Anthropic models
+                "claude-3-opus",
+                "claude-3-sonnet",
+                "claude-3-haiku",
+                "claude-2.1",
+                "claude-2.0",
+                "claude-instant-1.2",
+                # Google models
+                "gemini-pro",
+                "gemini-pro-vision",
+                # Local/Open source models
+                "llama2-7b",
+                "llama2-13b",
+                "llama2-70b",
+                "codellama-7b",
+                "codellama-13b",
+                "codellama-34b",
+                "mistral-7b",
+                "mixtral-8x7b",
+                # Azure OpenAI
+                "azure-gpt-4",
+                "azure-gpt-35-turbo",
+            ]
+            return [model for model in common_models if model.lower().startswith(prefix.lower())]
+        
         # 应用补全器到对应的参数
         for action in parser._actions:
             if hasattr(action, 'dest'):
@@ -228,6 +274,8 @@ class AutoCoderCLI:
                     action.completer = session_id_completer
                 elif action.dest == 'prompt':
                     action.completer = prompt_completer
+                elif action.dest == 'model':
+                    action.completer = model_completer
         
     @classmethod
     def main(cls) -> int:

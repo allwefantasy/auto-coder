@@ -80,10 +80,10 @@ demo_basic_code_generation() {
     
     local prompt="创建一个简单的 Python 计算器模块，包含加减乘除四个基本运算函数，每个函数都要有文档字符串和类型提示。文件名为 calculator.py"
     
-    print_info "执行命令: auto-coder.run -p \"$prompt\""
+    print_info "执行命令: auto-coder.run -p \"$prompt\" --model gpt-4"
     
-    # 使用 auto-coder.run 生成代码
-    auto-coder.run -p "$prompt" --output-format text --permission-mode acceptEdits --verbose
+    # 使用 auto-coder.run 生成代码，指定模型
+    auto-coder.run -p "$prompt" --output-format text --permission-mode acceptEdits --verbose --model gpt-4
     
     # 检查生成的文件
     if [ -f "calculator.py" ]; then

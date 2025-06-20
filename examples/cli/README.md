@@ -120,8 +120,14 @@ auto-coder.run -p "Analyze this file" --allowed-tools read_file search_files
 # 设置权限模式
 auto-coder.run -p "Fix this bug" --permission-mode acceptEdits
 
+# 指定模型
+auto-coder.run -p "Create a web API" --model gpt-4
+
 # 详细输出
 auto-coder.run -p "Optimize this algorithm" --verbose
+
+# 组合使用多个选项
+auto-coder.run -p "Optimize this code" --model claude-3-sonnet --max-turns 5 --verbose
 ```
 
 ### 输出格式
