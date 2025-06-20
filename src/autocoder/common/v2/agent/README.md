@@ -40,31 +40,117 @@ src/autocoder/common/v2/agent/
 
 ```python
 from autocoder.common.v2.agent.agentic_edit import AgenticEdit, AgenticEditRequest
-from autocoder.common.v2.agent.agentic_edit_types import AgenticEditConversationConfig
-from autocoder.common import SourceCodeList, SourceCode
+from autocoder.common.v2.agent.agentic_edit_types import AgenticEditConversationConfig, MemoryConfig
+from autocoder.common import SourceCodeList, SourceCode, AutoCoderArgs
+from autocoder.utils.llms import get_single_llm
 
-# 1. 初始化代理
+# 1. 获取 LLM 实例
+# 方式一：从配置中获取模型
+memory = get_memory()  # 获取内存配置
+conf = memory.get("conf", {})
+product_mode = conf.get("product_mode", "lite")
+model_name = conf.get("model", "v3_chat")  # 默认模型
+llm = get_single_llm(model_name, product_mode=product_mode)
+
+# 方式二：直接指定模型（需要先配置好模型）
+# llm = get_single_llm("v3_chat", product_mode="lite")
+
+# 2. 获取 AutoCoderArgs 配置
+# 方式一：使用 get_final_config() 函数（推荐）
+args = get_final_config()
+
+# 方式二：手动创建配置
+# args = AutoCoderArgs(
+#     source_dir=".",                          # 项目根目录
+#     target_file="",                          # 目标文件（可选）
+#     git_url="",                             # Git URL（可选）
+#     project_type="py",                       # 项目类型
+#     conversation_prune_safe_zone_tokens=0   # 对话剪枝安全区域token数
+# )
+
+# 3. 准备源代码文件列表
+current_files = memory.get("current_files", {}).get("files", [])
+sources = []
+for file in current_files:
+    try:
+        with open(file, "r", encoding="utf-8") as f:
+            sources.append(SourceCode(module_name=file, source_code=f.read()))
+    except Exception as e:
+        print(f"Failed to read file {file}: {e}")
+
+# 4. 准备内存配置
+memory_config = MemoryConfig(
+    memory=memory,
+    save_memory_func=save_memory
+)
+
+# 5. 初始化代理
 agent = AgenticEdit(
     llm=llm,                                    # 大语言模型实例
     args=args,                                  # AutoCoderArgs配置
     files=SourceCodeList(sources=sources),     # 源代码文件列表
-    conversation_history=conversation_history,  # 对话历史
-    memory_config=MemoryConfig(                # 内存配置
-        memory=memory, 
-        save_memory_func=save_memory
-    ),
-    command_config=CommandConfig,               # 命令配置
+    conversation_history=[],                    # 对话历史（通常为空列表）
+    memory_config=memory_config,                # 内存配置
+    command_config=None,                        # 命令配置（可选）
     conversation_name="current",                # 对话名称
     conversation_config=AgenticEditConversationConfig(
         action="resume"                         # 对话动作：new/resume/list
     )
 )
 
-# 2. 终端模式运行
+# 6. 终端模式运行
 agent.run_in_terminal(AgenticEditRequest(user_input="你的任务描述"))
 
-# 3. 事件模式运行（适用于Web界面）
+# 7. 事件模式运行（适用于Web界面）
 agent.run_with_events(AgenticEditRequest(user_input="你的任务描述"))
+```
+
+### 辅助函数说明
+
+```python
+# 获取内存配置（包含项目配置信息）
+def get_memory():
+    """获取项目的内存配置，包含当前文件、配置等信息"""
+    return load_memory()
+
+# 获取最终配置
+def get_final_config() -> AutoCoderArgs:
+    """
+    根据内存中的配置生成完整的 AutoCoderArgs 对象
+    这是获取 args 的推荐方式
+    """
+    conf = memory.get("conf", {})
+    yaml_config = {
+        "include_file": ["./base/base.yml"],
+        "auto_merge": conf.get("auto_merge", "editblock"),
+        "human_as_model": conf.get("human_as_model", "false") == "true",
+        "skip_build_index": conf.get("skip_build_index", "true") == "true",
+        "skip_confirm": conf.get("skip_confirm", "true") == "true",
+        "silence": conf.get("silence", "true") == "true",
+        "include_project_structure": conf.get("include_project_structure", "true") == "true",
+        "exclude_files": memory.get("exclude_files", []),
+    }
+    for key, value in conf.items():
+        converted_value = convert_config_value(key, value)
+        if converted_value is not None:
+            yaml_config[key] = converted_value
+
+    # 通过临时 YAML 文件转换为 AutoCoderArgs
+    temp_yaml = os.path.join("actions", f"{uuid.uuid4()}.yml")
+    try:
+        with open(temp_yaml, "w", encoding="utf-8") as f:
+            f.write(convert_yaml_config_to_str(yaml_config=yaml_config))
+        args = convert_yaml_to_config(temp_yaml)
+    finally:
+        if os.path.exists(temp_yaml):
+            os.remove(temp_yaml)
+    return args
+
+# 保存内存配置
+def save_memory():
+    """保存内存配置到文件"""
+    # 实现保存逻辑
+    pass
 ```
 
 ### 对话管理
