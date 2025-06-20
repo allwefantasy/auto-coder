@@ -2939,12 +2939,12 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
         
         if "new" in command_infos:  
             conversation_config.action = "new"
-            task_query = command_infos["new"]["args"][0]
+            task_query = " ".join(command_infos["new"]["args"])
             
         if "id" in command_infos:
             conversation_config.action = "resume"
             conversation_config.conversation_id = command_infos["id"]["args"][0]            
-            task_query = command_infos["id"]["args"][1]  
+            task_query = " ".join(command_infos["id"]["args"][1:])  
 
         if "list" in command_infos:
             conversation_config.action = "list"
