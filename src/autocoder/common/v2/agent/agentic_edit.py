@@ -2001,7 +2001,17 @@ class AgenticEdit:
 
         if self.conversation_config.action == "list":
             conversations = self.conversation_manager.list_conversations()
-            json_str = json.dumps(conversations, ensure_ascii=False,indent=4)
+            # 只保留 id 和 name 字段
+            filtered_conversations = []
+            for conv in conversations:
+                filtered_conv = {
+                    "id": conv.get("id"),
+                    "name": conv.get("name")
+                }
+                filtered_conversations.append(filtered_conv)
+            
+            # 格式化 JSON 输出
+            json_str = json.dumps(filtered_conversations, ensure_ascii=False, indent=4)
             console.print(Panel(Markdown(json_str),
                                   title="🏁 Task Completion", border_style="green", title_align="left"))
             return
