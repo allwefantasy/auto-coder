@@ -12,10 +12,14 @@ src/autocoder/sdk/
 ├── exceptions.py              # 自定义异常类
 ├── cli/                       # 命令行接口模块
 │   ├── __init__.py
-│   ├── main.py               # CLI主入口点
-│   ├── options.py            # CLI选项定义
+│   ├── __main__.py           # CLI模块入口点
+│   ├── auto_coder_cli.py     # CLI核心实现
+│   ├── completion_wrapper.py # 自动补全包装器
+│   ├── formatters.py         # 输出格式化器
 │   ├── handlers.py           # 命令处理器（打印模式、会话模式）
-│   └── formatters.py         # 输出格式化器
+│   ├── install_completion.py # 自动补全安装脚本
+│   ├── main.py               # CLI主入口点
+│   └── options.py            # CLI选项定义
 ├── core/                      # 核心功能模块
 │   ├── __init__.py
 │   ├── auto_coder_core.py    # AutoCoder核心封装类
@@ -62,6 +66,36 @@ async def async_example():
         print(f"[{message.role}] {message.content}")
 
 asyncio.run(async_example())
+```
+
+#### 代码修改
+
+```python
+from autocoder.sdk import modify_code, modify_code_stream, AutoCodeOptions
+
+# 同步代码修改
+options = AutoCodeOptions(cwd="/path/to/project")
+result = modify_code(
+    "Add error handling to the main function",
+    pre_commit=False,
+    options=options
+)
+
+if result.success:
+    print(f"Modified files: {result.modified_files}")
+    print(f"Created files: {result.created_files}")
+else:
+    print(f"Error: {result.error_details}")
+
+# 异步流式代码修改
+async def async_modify():
+    async for event in modify_code_stream(
+        "Refactor the user authentication module",
+        options=options
+    ):
+        print(f"[{event.event_type}] {event.data}")
+
+asyncio.run(async_modify())
 ```
 
 #### 会话管理
@@ -182,6 +216,10 @@ class AutoCodeOptions:
     output_format: str = "text"           # 输出格式
     stream: bool = False                  # 是否流式输出
     
+    # 会话配置
+    session_id: Optional[str] = None      # 会话ID
+    continue_session: bool = False        # 继续最近的对话
+    
     # 模型配置
     model: Optional[str] = None           # 模型名称
     temperature: float = 0.7              # 温度参数
@@ -256,11 +294,43 @@ class AutoCoderCore:
     def __init__(self, options: AutoCodeOptions):
         self.options = options
         
-    async def query_stream(self, prompt: str) -> AsyncIterator[Message]:
+    async def query_stream(self, prompt: str, show_terminal: bool = True) -> AsyncIterator[Message]:
         """异步流式查询"""
         
-    def query_sync(self, prompt: str) -> str:
+    def query_sync(self, prompt: str, show_terminal: bool = True) -> str:
         """同步查询"""
+        
+    def modify_code(self, prompt: str, pre_commit: bool = False, 
+                   extra_args: Optional[Dict[str, Any]] = None,
+                   show_terminal: bool = True) -> CodeModificationResult:
+        """代码修改接口"""
+        
+    async def modify_code_stream(self, prompt: str, pre_commit: bool = False,
+                                extra_args: Optional[Dict[str, Any]] = None,
+                                show_terminal: bool = True) -> AsyncIterator[StreamEvent]:
+        """异步流式代码修改接口"""
+```
+
+### 5. AutoCoderBridge 桥接层
+
+连接 SDK 和底层 auto_coder_runner 功能：
+
+```python
+class AutoCoderBridge:
+    def __init__(self, project_root: str, options: AutoCodeOptions):
+        self.project_root = project_root or os.getcwd()
+        self.options = options
+        
+    def call_run_auto_command(self, query: str, pre_commit: bool = False,
+                             extra_args: Optional[Dict[str, Any]] = None,
+                             stream: bool = True) -> Iterator[StreamEvent]:
+        """调用 run_auto_command 功能并返回事件流"""
+        
+    def get_memory(self) -> Dict[str, Any]:
+        """获取当前内存状态"""
+        
+    def save_memory(self, memory_data: Dict[str, Any]) -> None:
+        """保存内存状态"""
 ```
 
 ## 异常处理
@@ -321,33 +391,57 @@ def fibonacci(n):
 {"event_type": "end", "data": {"status": "completed"}, "timestamp": "2024-01-01T12:00:03"}
 ```
 
-## 会话管理
+## 响应模型
 
-### 创建和管理会话
+### 1. CodeModificationResult
 
 ```python
-from autocoder.sdk import SessionManager, AutoCodeOptions
+@dataclass
+class CodeModificationResult:
+    success: bool
+    message: str
+    modified_files: List[str] = []
+    created_files: List[str] = []
+    deleted_files: List[str] = []
+    error_details: Optional[str] = None
+    metadata: Dict[str, Any] = {}
+```
 
-# 创建会话管理器
-manager = SessionManager("/path/to/storage")
+### 2. StreamEvent
 
-# 创建新会话
-options = AutoCodeOptions(max_turns=10)
-session = manager.create_session(options)
+```python
+@dataclass
+class StreamEvent:
+    event_type: str  # start, content, end, error, tool_call, tool_result, etc.
+    data: Any
+    timestamp: Optional[datetime] = None
+    session_id: Optional[str] = None
+    
+    @classmethod
+    def start_event(cls, session_id: Optional[str] = None) -> "StreamEvent":
+        """创建开始事件"""
+        
+    @classmethod
+    def content_event(cls, content: str, session_id: Optional[str] = None) -> "StreamEvent":
+        """创建内容事件"""
+        
+    @classmethod
+    def end_event(cls, session_id: Optional[str] = None) -> "StreamEvent":
+        """创建结束事件"""
+```
 
-# 进行对话
-response = session.query_sync("Create a web server")
+### 3. SessionInfo
 
-# 保存会话
-manager.save_session(session)
-
-# 列出所有会话
-sessions = manager.list_sessions()
-for session_info in sessions:
-    print(f"会话: {session_info.name} ({session_info.session_id})")
-
-# 加载特定会话
-loaded_session = manager.get_session("session_id")
+```python
+@dataclass
+class SessionInfo:
+    session_id: str
+    name: Optional[str] = None
+    created_at: Optional[datetime] = None
+    last_updated: Optional[datetime] = None
+    message_count: int = 0
+    status: str = "active"  # active, archived, deleted
+    metadata: Dict[str, Any] = {}
 ```
 
 ## 工具和权限
@@ -454,13 +548,50 @@ def load_session_from_file(filename: str) -> Session:
     return session
 ```
 
-===
+## 终端渲染功能
 
-# Auto-Coder CLI 自动补全功能
+SDK 提供了丰富的终端渲染功能，使用 Rich 库提供美观的输出：
+
+### 1. 事件渲染
+
+- **工具调用事件**: 显示工具名称和参数
+- **工具结果事件**: 显示执行结果，支持语法高亮
+- **LLM思考事件**: 显示模型思考过程
+- **LLM输出事件**: 显示模型生成的内容
+- **完成事件**: 显示任务完成信息
+- **错误事件**: 显示错误信息
+
+### 2. Token使用统计
+
+SDK 会自动跟踪和显示 Token 使用情况：
+
+```python
+# 自动显示Token使用统计
+# Token usage: Input=150, Output=300, Total=450
+# 总计 Token 使用: 450 (输入: 150, 输出: 300)
+# 总计成本: $0.001350
+```
+
+### 3. 文件变更显示
+
+显示文件的修改、创建和删除操作：
+
+```python
+# 📝 File Changes
+# Modified Files:
+#   - src/main.py
+#   - src/utils.py
+
+# 📄 New Files  
+# Created Files:
+#   - tests/test_main.py
+```
+
+## CLI 自动补全功能
 
 Auto-Coder CLI 提供了强大的命令行自动补全功能，支持 Bash、Zsh 和 Fish shell。
 
-## 功能特性
+### 功能特性
 
 - **参数补全**: 自动补全命令行选项和参数
 - **工具名称补全**: 为 `--allowed-tools` 参数提供可用工具列表
@@ -468,11 +599,7 @@ Auto-Coder CLI 提供了强大的命令行自动补全功能，支持 Bash、Zsh
 - **提示内容补全**: 为 prompt 参数提供常用提示模板
 - **多Shell支持**: 支持 Bash、Zsh 和 Fish shell
 
-## 安装自动补全
-
-### 自动安装（推荐）
-
-使用内置的安装脚本：
+### 安装自动补全
 
 ```bash
 # 安装自动补全
@@ -480,52 +607,15 @@ python -m autocoder.sdk.cli install
 
 # 强制重新安装
 python -m autocoder.sdk.cli install --force
+
+# 测试自动补全功能
+python -m autocoder.sdk.cli test
+
+# 卸载自动补全功能
+python -m autocoder.sdk.cli uninstall
 ```
 
-### 手动安装
-
-#### Bash
-
-将以下内容添加到 `~/.bashrc` 或 `~/.bash_profile`:
-
-```bash
-# Auto-Coder CLI 自动补全
-eval "$(register-python-argcomplete auto-coder.run)"
-```
-
-#### Zsh
-
-将以下内容添加到 `~/.zshrc`:
-
-```bash
-# 启用 bash 兼容模式用于补全
-autoload -U +X bashcompinit && bashcompinit
-# Auto-Coder CLI 自动补全
-eval "$(register-python-argcomplete auto-coder.run)"
-```
-
-#### Fish
-
-将以下内容添加到 `~/.config/fish/config.fish`:
-
-```fish
-# Auto-Coder CLI 自动补全
-register-python-argcomplete --shell fish auto-coder.run | source
-```
-
-## 使用自动补全
-
-安装完成后，重新加载 shell 配置：
-
-```bash
-# Bash/Zsh
-source ~/.bashrc  # 或 ~/.zshrc
-
-# Fish
-source ~/.config/fish/config.fish
-```
-
-然后就可以使用 Tab 键进行自动补全了：
+### 使用自动补全
 
 ```bash
 # 补全命令选项
@@ -541,117 +631,121 @@ auto-coder.run -p <TAB>
 auto-coder.run --resume <TAB>
 ```
 
-## 补全功能详解
+## 常量定义
 
-### 1. 命令选项补全
+SDK 在 `constants.py` 中定义了所有常量：
 
-支持所有命令行选项的补全：
-- `-p, --print`: 单次运行模式
-- `-c, --continue`: 继续最近的对话
-- `-r, --resume`: 恢复特定会话
-- `--output-format`: 输出格式选择
-- `--input-format`: 输入格式选择
-- `--max-turns`: 最大对话轮数
-- `--allowed-tools`: 允许使用的工具列表
-- `--permission-mode`: 权限模式
+```python
+# 版本信息
+SDK_VERSION = "0.1.0"
 
-### 2. 工具名称补全
+# 默认配置
+DEFAULT_MAX_TURNS = 3
+DEFAULT_OUTPUT_FORMAT = "text"
+DEFAULT_PERMISSION_MODE = "manual"
 
-为 `--allowed-tools` 参数提供可用工具列表：
-- `execute_command`
-- `read_file`
-- `write_to_file`
-- `replace_in_file`
-- `search_files`
-- `list_files`
-- `list_code_definition_names`
-- `ask_followup_question`
-- `attempt_completion`
-- `list_package_info`
-- `mcp_tool`
-- `rag_tool`
+# 支持的输出格式
+OUTPUT_FORMATS = {
+    "text": "纯文本格式",
+    "json": "JSON格式", 
+    "stream-json": "流式JSON格式"
+}
 
-### 3. 提示内容补全
+# 权限模式
+PERMISSION_MODES = {
+    "manual": "手动确认每个操作",
+    "acceptedits": "自动接受文件编辑",
+    "acceptall": "自动接受所有操作"
+}
 
-为 prompt 参数提供常用提示模板：
-- "Write a function to calculate Fibonacci numbers"
-- "Explain this code"
-- "Generate a hello world function"
-- "Create a simple web page"
-- "Write unit tests for this code"
-- "Refactor this function"
-- "Add error handling"
-- "Optimize this algorithm"
-- "Document this code"
-- "Fix the bug in this code"
-
-### 4. 会话ID补全
-
-为 `--resume` 参数提供会话ID格式示例（实际使用中会从会话存储中获取真实的会话ID）。
-
-## 管理自动补全
-
-### 测试自动补全
-
-```bash
-# 测试自动补全功能是否正常工作
-python -m autocoder.sdk.cli test
+# 支持的工具
+ALLOWED_TOOLS = [
+    "Read", "Write", "Bash", "Search", "Index", "Chat", "Design"
+]
 ```
 
-### 卸载自动补全
+## 示例项目
 
-```bash
-# 卸载自动补全功能
-python -m autocoder.sdk.cli uninstall
+### 完整的代码修改示例
+
+```python
+import asyncio
+from autocoder.sdk import modify_code_stream, AutoCodeOptions
+
+async def refactor_project():
+    """重构项目示例"""
+    options = AutoCodeOptions(
+        cwd="/path/to/project",
+        max_turns=10,
+        permission_mode="acceptedits",
+        verbose=True,
+        model="gpt-4"
+    )
+    
+    tasks = [
+        "Add type hints to all functions",
+        "Add comprehensive error handling",
+        "Write unit tests for the main module",
+        "Add logging throughout the application",
+        "Optimize database queries"
+    ]
+    
+    for task in tasks:
+        print(f"\n🎯 Starting task: {task}")
+        
+        async for event in modify_code_stream(task, options=options):
+            if event.event_type == "completion":
+                print(f"✅ Completed: {task}")
+                break
+            elif event.event_type == "error":
+                print(f"❌ Failed: {task} - {event.data.get('error')}")
+                break
+
+# 运行示例
+asyncio.run(refactor_project())
 ```
 
-## 故障排除
+### 交互式会话示例
 
-### 1. 自动补全不工作
+```python
+from autocoder.sdk import Session, AutoCodeOptions
 
-检查以下几点：
-- 确保 `argcomplete` 包已安装：`pip install argcomplete`
-- 确保 `register-python-argcomplete` 命令可用
-- 重新加载 shell 配置文件
-- 检查 shell 配置文件中的补全脚本是否正确
+def interactive_session():
+    """交互式会话示例"""
+    options = AutoCodeOptions(
+        cwd="/path/to/project",
+        max_turns=20,
+        permission_mode="manual",
+        verbose=True
+    )
+    
+    session = Session(options=options)
+    
+    print("🤖 Auto-Coder 交互式会话")
+    print("输入 'quit' 退出会话")
+    
+    while True:
+        user_input = input("\n👤 You: ").strip()
+        
+        if user_input.lower() in ['quit', 'exit', 'bye']:
+            break
+            
+        if not user_input:
+            continue
+            
+        try:
+            response = session.query_sync(user_input)
+            print(f"\n🤖 Assistant: {response}")
+        except Exception as e:
+            print(f"\n❌ Error: {e}")
+    
+    # 显示会话摘要
+    print(f"\n📊 会话摘要:")
+    print(f"消息数量: {len(session.get_history())}")
+    print(f"会话ID: {session.session_id}")
 
-### 2. 权限问题
-
-如果遇到权限问题，确保有写入 shell 配置文件的权限。
-
-### 3. 多个 Python 环境
-
-如果使用多个 Python 环境（如 conda、virtualenv），确保在正确的环境中安装了 `argcomplete` 和 `auto-coder`。
-
-## 高级配置
-
-### 自定义补全器
-
-可以通过修改 `src/autocoder/sdk/cli/main.py` 中的 `_setup_completers` 方法来自定义补全行为。
-
-### 环境变量
-
-可以通过以下环境变量控制补全行为：
-- `_ARGCOMPLETE_COMPLETE`: argcomplete 内部使用
-- `_ARGCOMPLETE_IFS`: 补全项分隔符
-
-## 示例
-
-```bash
-# 基本使用
-auto-coder.run -p "Write a hello world function"
-
-# 使用自动补全选择工具
-auto-coder.run --allowed-tools read_file write_to_file -p "Refactor this code"
-
-# 使用自动补全选择输出格式
-auto-coder.run -p "Generate documentation" --output-format json
-
-# 恢复会话（使用补全选择会话ID）
-auto-coder.run --resume <TAB选择会话ID>
+# 运行示例
+interactive_session()
 ```
 
-通过这些自动补全功能，您可以更高效地使用 Auto-Coder CLI 工具！
-
-
-
+通过这个 SDK，开发者可以轻松地将 Auto-Coder 的强大功能集成到自己的应用程序中，无论是通过 Python API 还是命令行工具。
