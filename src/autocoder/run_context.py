@@ -9,6 +9,7 @@ class RunMode(Enum):
     """Enum representing different run modes for Auto-Coder."""
     TERMINAL = auto()
     WEB = auto()
+    API = auto()
 
 
 class RunContext:
