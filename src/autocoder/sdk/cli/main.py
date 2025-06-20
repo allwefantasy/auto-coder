@@ -9,6 +9,12 @@ import argparse
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Union
 
+try:
+    import argcomplete
+    ARGCOMPLETE_AVAILABLE = True
+except ImportError:
+    ARGCOMPLETE_AVAILABLE = False
+
 from .options import CLIOptions, CLIResult
 from .handlers import PrintModeHandler, SessionModeHandler
 from ..exceptions import AutoCoderSDKError
@@ -131,6 +137,12 @@ class AutoCoderCLI:
         advanced.add_argument("--permission-mode", choices=["manual", "acceptEdits"],
                            default="manual", help="权限模式 (默认: manual)")
         
+        # 启用自动补全
+        if ARGCOMPLETE_AVAILABLE:
+            # 添加自定义补全器
+            cls._setup_completers(parser)
+            argcomplete.autocomplete(parser)
+        
         # 解析参数
         parsed_args = parser.parse_args(args)
         
@@ -150,6 +162,72 @@ class AutoCoderCLI:
         )
         
         return options
+    
+    @classmethod
+    def _setup_completers(cls, parser: argparse.ArgumentParser) -> None:
+        """设置自定义补全器"""
+        if not ARGCOMPLETE_AVAILABLE:
+            return
+            
+        # 为 --allowed-tools 参数设置补全器
+        def tools_completer(prefix, parsed_args, **kwargs):
+            """工具名称补全器"""
+            available_tools = [
+                "execute_command",
+                "read_file", 
+                "write_to_file",
+                "replace_in_file",
+                "search_files",
+                "list_files",
+                "list_code_definition_names",
+                "ask_followup_question",
+                "attempt_completion",
+                "list_package_info",
+                "mcp_tool",
+                "rag_tool"
+            ]
+            return [tool for tool in available_tools if tool.startswith(prefix)]
+        
+        # 为 --resume 参数设置会话ID补全器
+        def session_id_completer(prefix, parsed_args, **kwargs):
+            """会话ID补全器"""
+            try:
+                # 这里可以从会话存储中获取可用的会话ID
+                # 目前返回示例会话ID格式
+                return [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+                    "6ba7b811-9dad-11d1-80b4-00c04fd430c8"
+                ]
+            except Exception:
+                return []
+        
+        # 为 prompt 参数设置示例补全器
+        def prompt_completer(prefix, parsed_args, **kwargs):
+            """提示内容补全器"""
+            common_prompts = [
+                "Write a function to calculate Fibonacci numbers",
+                "Explain this code",
+                "Generate a hello world function",
+                "Create a simple web page",
+                "Write unit tests for this code",
+                "Refactor this function",
+                "Add error handling",
+                "Optimize this algorithm",
+                "Document this code",
+                "Fix the bug in this code"
+            ]
+            return [prompt for prompt in common_prompts if prompt.lower().startswith(prefix.lower())]
+        
+        # 应用补全器到对应的参数
+        for action in parser._actions:
+            if hasattr(action, 'dest'):
+                if action.dest == 'allowed_tools':
+                    action.completer = tools_completer
+                elif action.dest == 'resume_session':
+                    action.completer = session_id_completer
+                elif action.dest == 'prompt':
+                    action.completer = prompt_completer
         
     @classmethod
     def main(cls) -> int:
