@@ -42,6 +42,7 @@ class AutoCodeOptions:
     
     # 会话配置
     session_id: Optional[str] = None
+    continue_session: bool = False  # 继续最近的对话
     
     # 模型配置
     model: Optional[str] = None

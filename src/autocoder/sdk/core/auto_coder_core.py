@@ -36,9 +36,18 @@ class AutoCoderCore:
         """
         self.options = options
         cwd_str = str(options.cwd) if options.cwd is not None else os.getcwd()
-        self.bridge = AutoCoderBridge(cwd_str)
+        self.bridge = AutoCoderBridge(cwd_str,options)
         self._executor = ThreadPoolExecutor(max_workers=1)
         self._console = Console()
+        
+        # 用于累计TokenUsageEvent数据
+        self._accumulated_token_usage = {
+            "model_name": "",
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "input_cost": 0.0,
+            "output_cost": 0.0
+        }
     
     def _render_stream_event(self, event: StreamEvent, show_terminal: bool = True) -> None:
         """
@@ -52,6 +61,137 @@ class AutoCoderCore:
             return
             
         try:
+            # 处理新的事件类型（动态检查以避免导入依赖）
+            event_class_name = type(event).__name__
+            
+            # 处理 TokenUsageEvent 和 WindowLengthChangeEvent
+            if 'TokenUsageEvent' in event_class_name:
+                usage = getattr(event, 'usage', None)
+                if usage:
+                    self._process_token_usage_event(usage)
+                return
+                
+            elif 'WindowLengthChangeEvent' in event_class_name:
+                tokens_used = getattr(event, 'tokens_used', 0)
+                if tokens_used > 0:
+                    self._console.print(f"[dim]当前会话总 tokens: {tokens_used}[/dim]")
+                return
+                
+            elif 'LLMThinkingEvent' in event_class_name:
+                text = getattr(event, 'text', '')
+                if text.strip():
+                    self._console.print(f"[grey50]{text}[/grey50]", end="")
+                return
+                
+            elif 'LLMOutputEvent' in event_class_name:
+                text = getattr(event, 'text', '')
+                if text.strip():
+                    self._console.print(text, end="")
+                return
+                
+            elif 'ToolCallEvent' in event_class_name:
+                # 跳过 AttemptCompletionTool 的工具调用显示
+                tool = getattr(event, 'tool', None)
+                if tool and 'AttemptCompletionTool' in type(tool).__name__:
+                    return
+                    
+                tool_name = type(tool).__name__ if tool else "Unknown Tool"
+                try:
+                    # 尝试使用 get_tool_display_message 函数
+                    from autocoder.common.v2.agent.agentic_edit_types import get_tool_display_message
+                    display_content = get_tool_display_message(tool)
+                except:
+                    # 如果导入失败，使用简单的显示
+                    display_content = f"Tool: {tool_name}"
+                    if hasattr(tool, '__dict__'):
+                        for key, value in tool.__dict__.items():
+                            if not key.startswith('_'):
+                                display_content += f"\n{key}: {value}"
+                                
+                self._console.print(Panel(
+                    display_content, 
+                    title=f"🛠️ Action: {tool_name}", 
+                    border_style="blue", 
+                    title_align="left"
+                ))
+                return
+                
+            elif 'ToolResultEvent' in event_class_name:
+                # 跳过 AttemptCompletionTool 和 PlanModeRespondTool 的结果显示
+                tool_name = getattr(event, 'tool_name', 'Unknown')
+                if tool_name in ["AttemptCompletionTool", "PlanModeRespondTool"]:
+                    return
+                    
+                result = getattr(event, 'result', None)
+                if result:
+                    success = getattr(result, 'success', True)
+                    message = getattr(result, 'message', '')
+                    content = getattr(result, 'content', None)
+                    
+                    title = f"✅ Tool Result: {tool_name}" if success else f"❌ Tool Result: {tool_name}"
+                    border_style = "green" if success else "red"
+                    
+                    base_content = f"[bold]Status:[/bold] {'Success' if success else 'Failure'}\n"
+                    base_content += f"[bold]Message:[/bold] {message}\n"
+                    
+                    # 处理内容显示
+                    if content is not None:
+                        formatted_content = self._format_tool_result_content(content, tool_name)
+                        if isinstance(formatted_content, Syntax):
+                            self._console.print(Panel(base_content, title=title, border_style=border_style, title_align="left"))
+                            self._console.print(formatted_content)
+                        else:
+                            base_content += f"\n{formatted_content}"
+                            self._console.print(Panel(base_content, title=title, border_style=border_style, title_align="left"))
+                    else:
+                        self._console.print(Panel(base_content, title=title, border_style=border_style, title_align="left"))
+                return
+                
+            elif 'CompletionEvent' in event_class_name:
+                completion = getattr(event, 'completion', None)
+                if completion:
+                    result = getattr(completion, 'result', 'Task completed successfully')
+                    command = getattr(completion, 'command', None)
+                    
+                    self._console.print(Panel(
+                        Markdown(result), 
+                        title="🏁 Task Completion", 
+                        border_style="green", 
+                        title_align="left"
+                    ))
+                    if command:
+                        self._console.print(f"[dim]Suggested command:[/dim] [bold cyan]{command}[/]")
+                return
+                
+            elif 'PlanModeRespondEvent' in event_class_name:
+                completion = getattr(event, 'completion', None)
+                if completion:
+                    response = getattr(completion, 'response', 'Plan completed')
+                    self._console.print(Panel(
+                        Markdown(response), 
+                        title="🏁 Plan Completion", 
+                        border_style="green", 
+                        title_align="left"
+                    ))
+                return
+                
+            elif 'ErrorEvent' in event_class_name:
+                message = getattr(event, 'message', 'Unknown error')
+                self._console.print(Panel(
+                    f"[bold red]Error:[/bold red] {message}", 
+                    title="🔥 Error", 
+                    border_style="red", 
+                    title_align="left"
+                ))
+                return
+                
+            elif 'ConversationIdEvent' in event_class_name:
+                conversation_id = getattr(event, 'conversation_id', '')
+                if conversation_id:
+                    self._console.print(f"[dim]Conversation ID: {conversation_id}[/dim]")
+                return
+            
+            # 处理旧格式的事件类型
             if event.event_type == "start":
                 project_name = os.path.basename(os.path.abspath(self.options.cwd or os.getcwd()))
                 self._console.rule(f"[bold cyan]Starting Auto-Coder: {project_name}[/]")
@@ -127,14 +267,14 @@ class AutoCoderCore:
                 ))
                 
             elif event.event_type == "token_usage":
-                usage = event.data.get("usage", {})
+                usage = event.data.get("usage")
                 if usage:
-                    self._console.print(f"[dim]Token usage: {usage}[/dim]")
+                    self._process_token_usage_event(usage)
                     
             elif event.event_type == "window_change":
                 tokens_used = event.data.get("tokens_used", 0)
                 if tokens_used > 0:
-                    self._console.print(f"[dim]Window tokens: {tokens_used}[/dim]")
+                    self._console.print(f"[dim]当前会话总 tokens: {tokens_used}[/dim]")
                     
             elif event.event_type == "conversation_id":
                 conversation_id = event.data.get("conversation_id", "")
@@ -227,6 +367,93 @@ class AutoCoderCore:
         
         return "\n".join(content_parts)
     
+    def _process_token_usage_event(self, usage):
+        """
+        处理 TokenUsageEvent，累计 token 使用情况
+        
+        Args:
+            usage: SingleOutputMeta 对象
+        """
+        try:
+            # 正确提取 SingleOutputMeta 对象的属性
+            input_tokens = getattr(usage, 'input_tokens_count', 0)
+            output_tokens = getattr(usage, 'generated_tokens_count', 0)
+            
+            # 获取模型信息用于定价
+            try:
+                from autocoder.utils import llms as llm_utils
+                # 这里需要获取 LLM 实例，但在 SDK 中可能不直接可用
+                # 暂时使用默认模型名称
+                model_name = self.options.model or "unknown"
+                model_info = llm_utils.get_model_info(model_name, "lite") or {}
+                input_price = model_info.get("input_price", 0.0)
+                output_price = model_info.get("output_price", 0.0)
+            except:
+                # 如果获取模型信息失败，使用默认值
+                model_name = self.options.model or "unknown"
+                input_price = 0.0
+                output_price = 0.0
+
+            # 计算成本
+            input_cost = (input_tokens * input_price) / 1000000  # 转换为百万token单位
+            output_cost = (output_tokens * output_price) / 1000000
+
+            # 累计token使用情况
+            self._accumulated_token_usage["model_name"] = model_name
+            self._accumulated_token_usage["input_tokens"] += input_tokens
+            self._accumulated_token_usage["output_tokens"] += output_tokens
+            self._accumulated_token_usage["input_cost"] += input_cost
+            self._accumulated_token_usage["output_cost"] += output_cost
+            
+            # 显示当前的 token 使用情况
+            total_tokens = input_tokens + output_tokens
+            self._console.print(f"[dim]Token usage: Input={input_tokens}, Output={output_tokens}, Total={total_tokens}[/dim]")
+            
+        except Exception as e:
+            self._console.print(f"[dim red]Error processing token usage: {str(e)}[/dim red]")
+            
+    def _print_final_token_usage(self):
+        """
+        打印最终的累计 token 使用情况
+        """
+        try:
+            if self._accumulated_token_usage["input_tokens"] > 0:
+                from autocoder.common.printer import Printer
+                printer = Printer()
+                printer.print_in_terminal(
+                    "code_generation_complete",
+                    duration=0.0,
+                    input_tokens=self._accumulated_token_usage["input_tokens"],
+                    output_tokens=self._accumulated_token_usage["output_tokens"],
+                    input_cost=self._accumulated_token_usage["input_cost"],
+                    output_cost=self._accumulated_token_usage["output_cost"],
+                    speed=0.0,
+                    model_names=self._accumulated_token_usage["model_name"],
+                    sampling_count=1
+                )
+        except Exception as e:
+            # 如果打印失败，使用简单的格式
+            total_tokens = self._accumulated_token_usage["input_tokens"] + self._accumulated_token_usage["output_tokens"]
+            total_cost = self._accumulated_token_usage["input_cost"] + self._accumulated_token_usage["output_cost"]
+            self._console.print(Panel(
+                f"总计 Token 使用: {total_tokens} (输入: {self._accumulated_token_usage['input_tokens']}, 输出: {self._accumulated_token_usage['output_tokens']})\n"
+                f"总计成本: ${total_cost:.6f}",
+                title="📊 Token 使用统计",
+                border_style="cyan"
+            ))
+            
+    def _reset_token_usage(self):
+        """
+        重置累计的 token 使用情况
+        """
+        self._accumulated_token_usage = {
+            "model_name": "",
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "input_cost": 0.0,
+            "output_cost": 0.0
+        }
+
     def _format_tool_result_content(self, content: Any, tool_name: str = "") -> str | Syntax:
         """
         格式化工具结果内容
@@ -300,6 +527,9 @@ class AutoCoderCore:
             BridgeError: 桥接层错误
         """
         try:
+            # 重置累计的 token 使用情况
+            self._reset_token_usage()
+            
             # 先返回用户消息
             user_message = Message(role="user", content=prompt)
             yield user_message
@@ -364,8 +594,15 @@ class AutoCoderCore:
                 if show_terminal:
                     time.sleep(0.05)
             
+            # 打印最终的累计 token 使用情况
+            if show_terminal:
+                self._print_final_token_usage()
+            
         except Exception as e:
-            raise BridgeError(f"Query stream failed: {str(e)}", original_error=e)
+            # 在异常时也打印累计的 token 使用情况
+            if show_terminal:
+                self._print_final_token_usage()
+            raise e
     
     def query_sync(self, prompt: str, show_terminal: bool = True) -> str:
         """
@@ -382,6 +619,9 @@ class AutoCoderCore:
             BridgeError: 桥接层错误
         """
         try:
+            # 重置累计的 token 使用情况
+            self._reset_token_usage()
+            
             event_stream = self._sync_run_auto_command(prompt)
             
             # 收集所有内容
@@ -392,17 +632,25 @@ class AutoCoderCore:
                 
                 if event.event_type == "content":
                     content_parts.append(event.data.get("content", ""))
-                elif event.event_type == "error":
+                elif event.event_type == "error":                                        
                     raise BridgeError(f"Query failed: {event.data.get('error', 'Unknown error')}")
                 
                 # 添加小延迟以改善视觉效果
                 if show_terminal:
                     time.sleep(0.05)
             
+            # 打印最终的累计 token 使用情况
+            if show_terminal:
+                self._print_final_token_usage()
+            
             return "".join(content_parts)
             
         except Exception as e:
-            raise BridgeError(f"Sync query failed: {str(e)}", original_error=e)
+            # 在异常时也打印累计的 token 使用情况
+            if show_terminal:
+                self._print_final_token_usage()
+              
+            raise e
     
     def modify_code(
         self, 
@@ -424,6 +672,9 @@ class AutoCoderCore:
             CodeModificationResult: 修改结果
         """
         try:
+            # 重置累计的 token 使用情况
+            self._reset_token_usage()
+            
             event_stream = self._sync_run_auto_command(
                 prompt, 
                 pre_commit=pre_commit, 
@@ -458,6 +709,10 @@ class AutoCoderCore:
                 if show_terminal:
                     time.sleep(0.05)
             
+            # 打印最终的累计 token 使用情况
+            if show_terminal:
+                self._print_final_token_usage()
+            
             return CodeModificationResult(
                 success=success,
                 message="".join(messages),
@@ -472,7 +727,9 @@ class AutoCoderCore:
             )
             
         except Exception as e:
+            # 在异常时也打印累计的 token 使用情况
             if show_terminal:
+                self._print_final_token_usage()
                 self._console.print(Panel(
                     f"[bold red]FATAL ERROR:[/bold red]\n{str(e)}", 
                     title="🔥 System Error", 
@@ -505,6 +762,9 @@ class AutoCoderCore:
             StreamEvent: 修改事件流
         """
         try:
+            # 重置累计的 token 使用情况
+            self._reset_token_usage()
+            
             loop = asyncio.get_event_loop()
             
             # 在线程池中执行同步调用
@@ -527,8 +787,16 @@ class AutoCoderCore:
                 # 添加小延迟以改善视觉效果
                 if show_terminal:
                     time.sleep(0.05)
+            
+            # 打印最终的累计 token 使用情况
+            if show_terminal:
+                self._print_final_token_usage()
                 
         except Exception as e:
+            # 在异常时也打印累计的 token 使用情况
+            if show_terminal:
+                self._print_final_token_usage()
+                
             error_event = StreamEvent(
                 event_type="error",
                 data={"error": str(e), "error_type": type(e).__name__}

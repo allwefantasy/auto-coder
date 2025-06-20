@@ -48,7 +48,8 @@ class CommandHandler:
             permission_mode=self.options.permission_mode,
             output_format=self.options.output_format,
             stream=self.options.output_format.startswith("stream"),
-            session_id=self.options.resume_session
+            session_id=self.options.resume_session,
+            continue_session=self.options.continue_session
         )
         
     def _get_prompt(self) -> str:
@@ -106,7 +107,14 @@ class PrintModeHandler(CommandHandler):
         try:
             prompt = self._get_prompt()
             core_options = self._create_core_options()
-            core = AutoCoderCore(core_options)
+            core = AutoCoderCore(core_options)        
+
+            if not core_options.continue_session:
+                prompt = "/new " + prompt
+            
+            if core_options.session_id:
+                prompt = f"/id {core_options.session_id} {prompt}" 
+            
             
             # 根据输出格式选择不同的处理方式
             if self.options.output_format == "stream-json":
