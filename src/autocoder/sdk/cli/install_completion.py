@@ -34,14 +34,64 @@ class CompletionInstaller:
     
     def _get_completion_script(self, shell: str) -> str:
         """获取对应 shell 的补全脚本"""
+        # 获取当前 Python 环境的路径
+        python_path = sys.executable
+        register_cmd_path = os.path.join(os.path.dirname(python_path), 'register-python-argcomplete')
+        
+        # 检查 register-python-argcomplete 是否存在
+        if not os.path.exists(register_cmd_path):
+            # 如果不存在，提供一个简化的解决方案
+            return self._get_simple_completion_script(shell)
+        
         if shell == 'bash':
-            return 'eval "$(register-python-argcomplete auto-coder.run)"'
+            return f'''# Auto-Coder CLI 自动补全
+eval "$({register_cmd_path} auto-coder.run 2>/dev/null || echo '')"'''
         elif shell == 'zsh':
-            return '''# 启用 bash 兼容模式用于补全
-autoload -U +X bashcompinit && bashcompinit
-eval "$(register-python-argcomplete auto-coder.run)"'''
+            return f'''# Auto-Coder CLI 自动补全
+# 检查是否在 zsh 环境中
+if [[ -n "$ZSH_VERSION" ]]; then
+    autoload -U +X bashcompinit && bashcompinit 2>/dev/null
+fi
+eval "$({register_cmd_path} auto-coder.run 2>/dev/null || echo '')"'''
         elif shell == 'fish':
-            return 'register-python-argcomplete --shell fish auto-coder.run | source'
+            return f'''# Auto-Coder CLI 自动补全
+{register_cmd_path} --shell fish auto-coder.run 2>/dev/null | source'''
+        else:
+            return ''
+    
+    def _get_simple_completion_script(self, shell: str) -> str:
+        """获取简化的补全脚本（当 register-python-argcomplete 不可用时）"""
+        python_path = sys.executable
+        
+        if shell in ['bash', 'zsh']:
+            return f'''# Auto-Coder CLI 自动补全（简化版本）
+# 注意：需要安装 argcomplete 包才能使用完整功能
+_auto_coder_run_completion() {{
+    local cur prev opts
+    COMPREPLY=()
+    cur="${{COMP_WORDS[COMP_CWORD]}}"
+    prev="${{COMP_WORDS[COMP_CWORD-1]}}"
+    
+    opts="-h --help -p --print -c --continue -r --resume --output-format --input-format -v --verbose --max-turns --system-prompt --allowed-tools --permission-mode"
+    
+    case "${{prev}}" in
+        --allowed-tools)
+            COMPREPLY=( $(compgen -W "execute_command read_file write_to_file replace_in_file search_files list_files list_code_definition_names ask_followup_question attempt_completion list_package_info mcp_tool rag_tool" -- ${{cur}}) )
+            return 0
+            ;;
+        --output-format|--input-format)
+            COMPREPLY=( $(compgen -W "text json stream-json" -- ${{cur}}) )
+            return 0
+            ;;
+        --permission-mode)
+            COMPREPLY=( $(compgen -W "manual acceptEdits" -- ${{cur}}) )
+            return 0
+            ;;
+    esac
+    
+    COMPREPLY=( $(compgen -W "${{opts}}" -- ${{cur}}) )
+}}
+complete -F _auto_coder_run_completion auto-coder.run'''
         else:
             return ''
     
