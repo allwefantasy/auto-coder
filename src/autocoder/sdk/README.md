@@ -42,7 +42,74 @@ src/autocoder/sdk/
 
 ## 快速开始
 
-### 1. Python API 使用
+### 0. 模型配置
+
+编辑 `~/.auto-coder/keys/models.json` 文件，增加如下配置（这里是配置v3）：
+
+
+```json
+[
+{
+    "name": "deepseek/v3",
+    "description": "DeepSeek Chat is for coding",
+    "model_name": "deepseek-chat",
+    "model_type": "saas/openai",
+    "base_url": "https://api.deepseek.com/v1",
+    "api_key_path": "api.deepseek.com",
+    "is_reasoning": false,
+    "input_price": 0,
+    "output_price": 0,
+    "average_speed": 0,
+    "max_output_tokens": 8096,    
+}
+]
+```
+
+然后将 API KEY 放到同目录下的 `api.deepseek.com` 文件里即可。
+
+后续你就可以使用名字 'deepseek/v3' 来引用这个模型了。
+
+### 1. 命令行工具使用
+
+#### 安装和基本使用
+
+```bash
+# 单次运行模式
+auto-coder.run -p "Write a function to calculate Fibonacci numbers" --model v3_chat
+
+# 通过管道提供输入
+echo "Explain this code" | auto-coder.run -p
+
+# 指定输出格式
+auto-coder.run -p "Generate a hello world function" --output-format json
+
+# 继续最近的对话
+auto-coder.run --continue -p "继续修改xxxxx"
+
+# 恢复特定会话
+auto-coder.run --resume 550e8400-e29b-41d4-a716-446655440000  -p "修改xxxx"
+```
+
+#### 高级选项
+
+```bash
+# 设置最大对话轮数
+auto-coder.run -p "Help me debug this code" --max-turns 5
+
+# 指定系统提示
+auto-coder.run -p "Create a web API" --system-prompt "You are a backend developer"
+
+# 限制可用工具
+auto-coder.run -p "Analyze this file" --allowed-tools Read Search
+
+# 设置权限模式
+auto-coder.run -p "Fix this bug" --permission-mode acceptEdits
+
+# 详细输出
+auto-coder.run -p "Optimize this algorithm" --verbose
+```
+
+### 2. Python API 使用
 
 #### 基本查询
 
@@ -154,45 +221,7 @@ config_dict = options.to_dict()
 new_options = AutoCodeOptions.from_dict(config_dict)
 ```
 
-### 2. 命令行工具使用
 
-#### 安装和基本使用
-
-```bash
-# 单次运行模式
-auto-coder.run -p "Write a function to calculate Fibonacci numbers"
-
-# 通过管道提供输入
-echo "Explain this code" | auto-coder.run -p
-
-# 指定输出格式
-auto-coder.run -p "Generate a hello world function" --output-format json
-
-# 继续最近的对话
-auto-coder.run --continue -p "继续修改xxxxx"
-
-# 恢复特定会话
-auto-coder.run --resume 550e8400-e29b-41d4-a716-446655440000  -p "修改xxxx"
-```
-
-#### 高级选项
-
-```bash
-# 设置最大对话轮数
-auto-coder.run -p "Help me debug this code" --max-turns 5
-
-# 指定系统提示
-auto-coder.run -p "Create a web API" --system-prompt "You are a backend developer"
-
-# 限制可用工具
-auto-coder.run -p "Analyze this file" --allowed-tools Read Search
-
-# 设置权限模式
-auto-coder.run -p "Fix this bug" --permission-mode acceptEdits
-
-# 详细输出
-auto-coder.run -p "Optimize this algorithm" --verbose
-```
 
 ## 核心组件详解
 

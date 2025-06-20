@@ -142,7 +142,7 @@ class AutoCoderCLI:
         advanced.add_argument("--allowed-tools", nargs="+", help="允许使用的工具列表")
         advanced.add_argument("--permission-mode", choices=["manual", "acceptEdits"],
                            default="manual", help="权限模式 (默认: manual)")
-        advanced.add_argument("--model", help="指定使用的模型名称 (如: gpt-4, gpt-3.5-turbo, claude-3-sonnet 等)")
+        advanced.add_argument("--model", required=True, help="指定使用的模型名称 (如: gpt-4, gpt-3.5-turbo, claude-3-sonnet 等)")
         
         # 启用自动补全
         if ARGCOMPLETE_AVAILABLE:

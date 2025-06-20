@@ -55,6 +55,10 @@ class CLIOptions:
         # 验证会话选项的互斥性
         if self.continue_session and self.resume_session:
             raise ValueError("continue_session和resume_session不能同时设置")
+        
+        # 验证模型参数必须存在
+        if not self.model or not self.model.strip():
+            raise ValueError("model参数是必需的，请使用 --model 参数指定要使用的模型")
 
 
 @dataclass

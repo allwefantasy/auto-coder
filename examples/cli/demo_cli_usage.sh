@@ -80,10 +80,10 @@ demo_basic_code_generation() {
     
     local prompt="创建一个简单的 Python 计算器模块，包含加减乘除四个基本运算函数，每个函数都要有文档字符串和类型提示。文件名为 calculator.py"
     
-    print_info "执行命令: auto-coder.run -p \"$prompt\" --model gpt-4"
+    print_info "执行命令: auto-coder.run -p \"$prompt\" --model deepseek/v3"
     
     # 使用 auto-coder.run 生成代码，指定模型
-    auto-coder.run -p "$prompt" --output-format text --permission-mode acceptEdits --verbose --model gpt-4
+    auto-coder.run -p "$prompt" --output-format text --permission-mode acceptEdits --verbose --model deepseek/v3
     
     # 检查生成的文件
     if [ -f "calculator.py" ]; then
@@ -104,10 +104,10 @@ demo_code_optimization() {
     
     local prompt="为现有的 calculator.py 模块添加完善的错误处理（如除零检查），并创建一个对应的单元测试文件 test_calculator.py，使用 pytest 框架"
     
-    print_info "执行命令: auto-coder.run -p \"$prompt\""
+    print_info "执行命令: auto-coder.run -p \"$prompt\" --model deepseek/v3"
     
     # 继续优化代码
-    auto-coder.run -p "$prompt" --output-format text --permission-mode acceptEdits --verbose --max-turns 5
+    auto-coder.run -p "$prompt" --output-format text --permission-mode acceptEdits --verbose --max-turns 5 --model deepseek/v3
     
     # 检查生成的测试文件
     if [ -f "test_calculator.py" ]; then
@@ -128,10 +128,10 @@ demo_json_output() {
     
     local prompt="为项目创建一个 README.md 文件，说明如何使用这个计算器模块"
     
-    print_info "执行命令: auto-coder.run -p \"$prompt\" --output-format json"
+    print_info "执行命令: auto-coder.run -p \"$prompt\" --output-format json --model deepseek/v3"
     
     # 使用JSON格式输出
-    auto-coder.run -p "$prompt" --output-format json --permission-mode acceptEdits > output.json
+    auto-coder.run -p "$prompt" --output-format json --permission-mode acceptEdits --model deepseek/v3 > output.json
     
     if [ -f "output.json" ]; then
         print_success "JSON 输出保存到 output.json"
@@ -154,10 +154,10 @@ demo_tool_restrictions() {
     
     local prompt="分析当前项目中的所有 Python 文件，总结代码结构和功能"
     
-    print_info "执行命令: auto-coder.run -p \"$prompt\" --allowed-tools read_file search_files"
+    print_info "执行命令: auto-coder.run -p \"$prompt\" --allowed-tools read_file search_files --model deepseek/v3"
     
     # 限制工具使用
-    auto-coder.run -p "$prompt" --allowed-tools read_file search_files --output-format text --verbose
+    auto-coder.run -p "$prompt" --allowed-tools read_file search_files --output-format text --verbose --model deepseek/v3
 }
 
 # 显示项目结构
