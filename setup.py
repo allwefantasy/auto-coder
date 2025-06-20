@@ -38,6 +38,7 @@ setup(
             'auto-coder.serve = autocoder.auto_coder_server:main',
             'auto-coder.rag = autocoder.auto_coder_rag:main',
             'auto-coder.run = autocoder.sdk.cli:main',
+            'auto-coder.cli = autocoder.sdk.cli:main',
         ],
     },
     package_dir={"": "src"},

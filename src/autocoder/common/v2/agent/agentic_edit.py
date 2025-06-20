@@ -441,7 +441,7 @@ class AgenticEdit:
         <list_code_definition_names>
         <path>Directory path here</path>
         </list_code_definition_names>
-
+                
         ## ask_followup_question
         Description: Ask the user a question to gather additional information needed to complete the task. This tool should be used when you encounter ambiguities, need clarification, or require more details to proceed effectively. It allows for interactive problem-solving by enabling direct communication with the user. Use this tool judiciously to maintain a balance between gathering necessary information and avoiding excessive back-and-forth.
         Parameters:
@@ -453,7 +453,7 @@ class AgenticEdit:
         <options>
         Array of options here (optional), e.g. ["Option 1", "Option 2", "Option 3"]
         </options>
-        </ask_followup_question>
+        </ask_followup_question>        
 
         ## attempt_completion
         Description: After each tool use, the user will respond with the result of that tool use, i.e. if it succeeded or failed, along with any reasons for failure. Once you've received the results of tool uses and can confirm that the task is complete, use this tool to present the result of your work to the user. Optionally you may provide a CLI command to showcase the result of your work. The user may respond with feedback if they are not satisfied with the result, which you can use to make improvements and try again.
@@ -1118,6 +1118,7 @@ class AgenticEdit:
             "enable_active_context_in_generate": self.args.enable_active_context_in_generate,
             "extra_docs": extra_docs,
             "file_paths_str": file_paths_str,
+            "agentic_auto_approve": self.args.enable_agentic_auto_approve,
         }
 
     # Removed _execute_command_result and execute_auto_command methods

@@ -245,4 +245,4 @@ def get_command_kwargs(query: str, command: str) -> Dict[str, str]:
     command_info = parser.parse_command(query, command)
     if command_info:
         return command_info['kwargs']
-    return {} 
+    return {}
