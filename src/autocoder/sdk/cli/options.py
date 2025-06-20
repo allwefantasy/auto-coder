@@ -7,6 +7,8 @@ CLI 选项定义模块
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any
 
+from ..constants import DEFAULT_MODEL
+
 
 @dataclass
 class CLIOptions:
