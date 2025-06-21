@@ -283,14 +283,14 @@ def start():
         configure_logger()
         init_singleton_instances()
 
-    conversation_manager = get_conversation_manager()
-    if not conversation_manager.get_current_conversation():
-        # Format: yyyyMMdd-MM-ss-uuid
-        current_time = datetime.datetime.now()
-        time_str = current_time.strftime("%Y%m%d-%H-%M-%S")
-        name = f"{time_str}-{str(uuid.uuid4())}"
-        conversation_id = conversation_manager.create_new_conversation(name=name,description="")
-        conversation_manager.set_current_conversation(conversation_id)
+    # conversation_manager = get_conversation_manager()
+    # if not conversation_manager.get_current_conversation():
+    #     # Format: yyyyMMdd-MM-ss-uuid
+    #     current_time = datetime.datetime.now()
+    #     time_str = current_time.strftime("%Y%m%d-%H-%M-%S")
+    #     name = f"{time_str}-{str(uuid.uuid4())}"
+    #     conversation_id = conversation_manager.create_new_conversation(name=name,description="")
+    #     conversation_manager.set_current_conversation(conversation_id)
             
 
 def stop():
