@@ -10,8 +10,11 @@ from .core.auto_coder_core import AutoCoderCore
 from .models.options import AutoCodeOptions
 from .models.messages import Message
 from .models.responses import StreamEvent, CodeModificationResult
+from .session.session import Session
+from .session.session_manager import SessionManager
 from .exceptions import (
     AutoCoderSDKError,
+    SessionNotFoundError,
     InvalidOptionsError,
     BridgeError,
     ValidationError
@@ -31,8 +34,13 @@ __all__ = [
     "StreamEvent",
     "CodeModificationResult",
     
+    # 会话管理
+    "Session",
+    "SessionManager",
+    
     # 异常
     "AutoCoderSDKError",
+    "SessionNotFoundError",
     "InvalidOptionsError",
     "BridgeError",
     "ValidationError",
