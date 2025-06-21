@@ -3,52 +3,190 @@
 
 该模块提供了一套完整的API，用于管理和分析 `.autocodercommands` 目录中的命令文件。它能够列出目录中的命令文件、读取指定文件内容，以及提取文件中的 Jinja2 变量及其元数据。特别适合需要处理模板文件和动态生成内容的场景。
 
-## 模块概览
+## 快速开始
 
-```
-command_file_manager/
-├── __init__.py              # 模块导入接口
-├── models.py               # 数据模型定义
-├── manager.py              # 命令管理器核心实现
-├── utils.py                # 工具函数
-├── examples.py             # 使用示例
-└── README.md               # 本文档
-```
-
-## 核心组件
-
-### CommandManager - 命令管理器
-
-提供高层次的API接口，用于管理和分析命令文件。是整个模块的主要入口点。
-
-#### 基本用法
+### 基本用法示例
 
 ```python
 from autocoder.common.command_file_manager import CommandManager
 
-# 创建命令管理器实例
+# 1. 创建命令管理器实例
 manager = CommandManager("/path/to/.autocodercommands")
 
-# 列出所有命令文件
+# 2. 列出所有命令文件
+result = manager.list_command_files(recursive=True)
+if result.success:
+    print(f"找到 {len(result.command_files)} 个命令文件:")
+    for file_path in result.command_files:
+        print(f"  - {file_path}")
+else:
+    print(f"列出文件失败: {result.errors}")
+
+# 3. 读取指定命令文件
+command_file = manager.read_command_file("example.md")
+if command_file:
+    print(f"文件名: {command_file.file_name}")
+    print(f"文件路径: {command_file.file_path}")
+    print(f"文件内容:\n{command_file.content}")
+else:
+    print("文件读取失败")
+
+# 4. 分析文件中的 Jinja2 变量
+analysis = manager.analyze_command_file("example.md")
+if analysis:
+    print(f"文件 {analysis.file_name} 包含的变量:")
+    for var in analysis.variables:
+        print(f"  - {var.name}")
+        if var.default_value:
+            print(f"    默认值: {var.default_value}")
+        if var.description:
+            print(f"    描述: {var.description}")
+else:
+    print("文件分析失败")
+
+# 5. 获取所有文件中的变量映射
+variables_map = manager.get_all_variables(recursive=True)
+for file_path, variables in variables_map.items():
+    print(f"文件 {file_path} 中的变量: {', '.join(variables)}")
+```
+
+## 核心 API 详解
+
+### CommandManager 类
+
+CommandManager 是模块的主要入口点，提供了所有核心功能的高层次接口。
+
+#### 初始化
+
+```python
+from autocoder.common.command_file_manager import CommandManager
+
+# 初始化管理器，指定命令文件目录
+manager = CommandManager("/path/to/.autocodercommands")
+```
+
+#### 主要方法
+
+##### 1. list_command_files(recursive=True)
+
+列出目录中的所有命令文件。
+
+**参数:**
+- `recursive` (bool): 是否递归搜索子目录，默认为 True
+
+**返回值:** `ListCommandsResult` 对象
+- `success` (bool): 操作是否成功
+- `command_files` (List[str]): 找到的命令文件路径列表
+- `errors` (Dict[str, str]): 错误信息映射
+
+**示例:**
+```python
+# 递归搜索所有命令文件
 result = manager.list_command_files(recursive=True)
 if result.success:
     for file_path in result.command_files:
         print(f"找到命令文件: {file_path}")
+else:
+    for path, error in result.errors.items():
+        print(f"错误 {path}: {error}")
+
+# 只搜索顶层目录
+result = manager.list_command_files(recursive=False)
 ```
 
-#### 主要功能
+##### 2. read_command_file(file_name)
 
-1. **文件管理**: 列出命令文件、读取文件内容、获取文件路径
-2. **变量提取**: 分析 Jinja2 变量、提取变量元数据、获取所有变量
-3. **目录操作**: 支持递归搜索、自动创建目录、相对路径处理
-4. **错误处理**: 完善的异常处理机制、详细的错误信息记录
+读取指定的命令文件内容。
 
-#### 核心方法
+**参数:**
+- `file_name` (str): 要读取的文件名
 
-- `list_command_files(recursive=True)`: 列出命令文件
-- `read_command_file(file_name)`: 读取指定文件
-- `analyze_command_file(file_name)`: 分析文件中的变量
-- `get_all_variables(recursive=False)`: 获取所有文件的变量
+**返回值:** `CommandFile` 对象或 None
+- `file_path` (str): 文件的完整路径
+- `file_name` (str): 文件名
+- `content` (str): 文件内容
+
+**示例:**
+```python
+command_file = manager.read_command_file("template.md")
+if command_file:
+    print(f"文件: {command_file.file_name}")
+    print(f"路径: {command_file.file_path}")
+    print(f"内容长度: {len(command_file.content)} 字符")
+else:
+    print("文件不存在或读取失败")
+```
+
+##### 3. analyze_command_file(file_name)
+
+分析命令文件，提取其中的 Jinja2 变量及元数据。
+
+**参数:**
+- `file_name` (str): 要分析的文件名
+
+**返回值:** `CommandFileAnalysisResult` 对象或 None
+- `file_path` (str): 文件路径
+- `file_name` (str): 文件名
+- `variables` (List[JinjaVariable]): 提取的变量列表
+- `raw_variables` (Set[str]): 原始变量名集合
+
+**示例:**
+```python
+analysis = manager.analyze_command_file("template.md")
+if analysis:
+    print(f"分析文件: {analysis.file_name}")
+    print(f"找到 {len(analysis.variables)} 个变量:")
+    
+    for var in analysis.variables:
+        print(f"  变量名: {var.name}")
+        if var.default_value:
+            print(f"  默认值: {var.default_value}")
+        if var.description:
+            print(f"  描述: {var.description}")
+        print("  ---")
+else:
+    print("文件分析失败")
+```
+
+##### 4. get_all_variables(recursive=False)
+
+获取所有命令文件中的变量映射。
+
+**参数:**
+- `recursive` (bool): 是否递归搜索，默认为 False
+
+**返回值:** `Dict[str, Set[str]]` - 文件路径到变量名集合的映射
+
+**示例:**
+```python
+# 获取所有文件的变量映射
+variables_map = manager.get_all_variables(recursive=True)
+
+print("变量使用统计:")
+all_variables = set()
+for file_path, variables in variables_map.items():
+    print(f"{file_path}: {len(variables)} 个变量")
+    print(f"  变量: {', '.join(sorted(variables))}")
+    all_variables.update(variables)
+
+print(f"\n总计唯一变量: {len(all_variables)}")
+print(f"所有变量: {', '.join(sorted(all_variables))}")
+```
+
+##### 5. get_command_file_path(file_name)
+
+获取命令文件的完整路径。
+
+**参数:**
+- `file_name` (str): 文件名
+
+**返回值:** `str` - 文件的完整路径
+
+**示例:**
+```python
+file_path = manager.get_command_file_path("example.md")
+print(f"文件完整路径: {file_path}")
+```
 
 ### 数据模型
 
@@ -176,9 +314,399 @@ print(is_command_file("example.md"))     # True
 print(is_command_file("example.txt"))    # False
 ```
 
-## 使用示例
+## 实际应用场景
 
-### 基础使用流程
+### 场景 1: 文档管理系统
+
+在构建文档管理系统时，可以使用 CommandManager 来管理和分析文档模板：
+
+```python
+from autocoder.common.command_file_manager import CommandManager
+import os
+from pathlib import Path
+
+class DocumentManager:
+    def __init__(self, project_path: str):
+        """初始化文档管理器"""
+        self.documents_path = Path(project_path) / ".autocodercommands"
+        self.manager = CommandManager(str(self.documents_path))
+    
+    def list_all_documents(self, recursive: bool = False):
+        """列出所有文档文件"""
+        result = self.manager.list_command_files(recursive=recursive)
+        
+        if not result.success:
+            return {"success": False, "errors": result.errors}
+        
+        # 转换为文档对象
+        documents = []
+        for file_path in result.command_files:
+            file_name = os.path.basename(file_path)
+            documents.append({
+                "file_name": file_name,
+                "file_path": file_path
+            })
+        
+        return {"success": True, "documents": documents}
+    
+    def get_document_content(self, file_name: str):
+        """获取文档内容"""
+        command_file = self.manager.read_command_file(file_name)
+        
+        if not command_file:
+            return {"success": False, "error": f"文档 '{file_name}' 未找到"}
+        
+        return {
+            "success": True,
+            "document": {
+                "file_name": command_file.file_name,
+                "file_path": command_file.file_path
+            },
+            "content": command_file.content
+        }
+    
+    def analyze_document_variables(self, file_name: str):
+        """分析文档变量"""
+        analysis = self.manager.analyze_command_file(file_name)
+        
+        if not analysis:
+            return {"success": False, "error": f"无法分析文档 '{file_name}'"}
+        
+        # 转换变量格式
+        variables = []
+        for var in analysis.variables:
+            variables.append({
+                "name": var.name,
+                "default_value": var.default_value,
+                "description": var.description
+            })
+        
+        return {
+            "success": True,
+            "analysis": {
+                "file_name": analysis.file_name,
+                "file_path": analysis.file_path,
+                "variables": variables
+            }
+        }
+    
+    def get_all_variables_map(self, recursive: bool = False):
+        """获取所有变量映射"""
+        try:
+            variables = self.manager.get_all_variables(recursive=recursive)
+            return {"success": True, "variables": variables}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+# 使用示例
+doc_manager = DocumentManager("/path/to/project")
+
+# 列出所有文档
+result = doc_manager.list_all_documents(recursive=True)
+if result["success"]:
+    print(f"找到 {len(result['documents'])} 个文档")
+    for doc in result["documents"]:
+        print(f"  - {doc['file_name']}")
+
+# 读取特定文档
+content_result = doc_manager.get_document_content("example.md")
+if content_result["success"]:
+    print(f"文档内容: {content_result['content']}")
+
+# 分析文档变量
+analysis_result = doc_manager.analyze_document_variables("example.md")
+if analysis_result["success"]:
+    analysis = analysis_result["analysis"]
+    print(f"文档 {analysis['file_name']} 包含变量:")
+    for var in analysis["variables"]:
+        print(f"  - {var['name']}: {var.get('description', '无描述')}")
+```
+
+### 场景 2: 模板渲染引擎
+
+结合 Jinja2 模板引擎，创建一个完整的模板渲染系统：
+
+```python
+from jinja2 import Template, Environment
+from autocoder.common.command_file_manager import CommandManager
+
+class TemplateRenderer:
+    def __init__(self, commands_dir: str):
+        self.manager = CommandManager(commands_dir)
+        self.env = Environment()
+    
+    def render_template(self, file_name: str, variables: dict):
+        """渲染模板文件"""
+        try:
+            # 读取模板文件
+            command_file = self.manager.read_command_file(file_name)
+            if not command_file:
+                return {"success": False, "error": f"模板文件 '{file_name}' 未找到"}
+            
+            # 分析模板变量
+            analysis = self.manager.analyze_command_file(file_name)
+            if analysis:
+                # 检查必需变量
+                required_vars = {var.name for var in analysis.variables 
+                               if var.default_value is None}
+                missing_vars = required_vars - set(variables.keys())
+                if missing_vars:
+                    return {"success": False, "error": f"缺少必需变量: {missing_vars}"}
+                
+                # 应用默认值
+                final_vars = variables.copy()
+                for var in analysis.variables:
+                    if var.name not in final_vars and var.default_value:
+                        final_vars[var.name] = var.default_value
+            else:
+                final_vars = variables
+            
+            # 创建并渲染模板
+            template = self.env.from_string(command_file.content)
+            rendered_content = template.render(**final_vars)
+            
+            return {"success": True, "rendered_content": rendered_content}
+            
+        except Exception as e:
+            return {"success": False, "error": f"渲染错误: {str(e)}"}
+    
+    def get_template_variables(self, file_name: str):
+        """获取模板所需变量"""
+        analysis = self.manager.analyze_command_file(file_name)
+        if not analysis:
+            return {"success": False, "error": f"无法分析模板 '{file_name}'"}
+        
+        variables_info = []
+        for var in analysis.variables:
+            variables_info.append({
+                "name": var.name,
+                "required": var.default_value is None,
+                "default_value": var.default_value,
+                "description": var.description
+            })
+        
+        return {"success": True, "variables": variables_info}
+
+# 使用示例
+renderer = TemplateRenderer(".autocodercommands")
+
+# 获取模板变量信息
+vars_result = renderer.get_template_variables("project_template.md")
+if vars_result["success"]:
+    print("模板变量:")
+    for var in vars_result["variables"]:
+        status = "必需" if var["required"] else "可选"
+        print(f"  - {var['name']} ({status})")
+        if var["description"]:
+            print(f"    描述: {var['description']}")
+        if var["default_value"]:
+            print(f"    默认值: {var['default_value']}")
+
+# 渲染模板
+template_vars = {
+    "project_name": "MyAwesomeProject",
+    "author": "John Doe",
+    "version": "1.0.0"
+}
+
+render_result = renderer.render_template("project_template.md", template_vars)
+if render_result["success"]:
+    print("渲染结果:")
+    print(render_result["rendered_content"])
+else:
+    print(f"渲染失败: {render_result['error']}")
+```
+
+### 场景 3: 命令行工具集成
+
+创建一个命令行工具来管理命令文件：
+
+```python
+import argparse
+import json
+from autocoder.common.command_file_manager import CommandManager
+
+class CommandLineTool:
+    def __init__(self):
+        self.manager = None
+    
+    def set_directory(self, directory: str):
+        """设置命令文件目录"""
+        self.manager = CommandManager(directory)
+        print(f"已设置命令文件目录: {directory}")
+    
+    def list_files(self, recursive: bool = False):
+        """列出命令文件"""
+        if not self.manager:
+            print("错误: 请先设置命令文件目录")
+            return
+        
+        result = self.manager.list_command_files(recursive=recursive)
+        if result.success:
+            print(f"找到 {len(result.command_files)} 个命令文件:")
+            for file_path in result.command_files:
+                print(f"  {file_path}")
+        else:
+            print("列出文件失败:")
+            for path, error in result.errors.items():
+                print(f"  {path}: {error}")
+    
+    def show_file_info(self, file_name: str):
+        """显示文件信息"""
+        if not self.manager:
+            print("错误: 请先设置命令文件目录")
+            return
+        
+        # 读取文件
+        command_file = self.manager.read_command_file(file_name)
+        if not command_file:
+            print(f"错误: 文件 '{file_name}' 未找到")
+            return
+        
+        print(f"文件名: {command_file.file_name}")
+        print(f"路径: {command_file.file_path}")
+        print(f"内容长度: {len(command_file.content)} 字符")
+        
+        # 分析变量
+        analysis = self.manager.analyze_command_file(file_name)
+        if analysis:
+            print(f"变量数量: {len(analysis.variables)}")
+            if analysis.variables:
+                print("变量列表:")
+                for var in analysis.variables:
+                    print(f"  - {var.name}")
+                    if var.default_value:
+                        print(f"    默认值: {var.default_value}")
+                    if var.description:
+                        print(f"    描述: {var.description}")
+    
+    def export_variables(self, output_file: str, recursive: bool = False):
+        """导出所有变量到 JSON 文件"""
+        if not self.manager:
+            print("错误: 请先设置命令文件目录")
+            return
+        
+        try:
+            variables_map = self.manager.get_all_variables(recursive=recursive)
+            
+            # 转换 set 为 list 以便 JSON 序列化
+            json_data = {path: list(variables) for path, variables in variables_map.items()}
+            
+            with open(output_file, 'w', encoding='utf-8') as f:
+                json.dump(json_data, f, ensure_ascii=False, indent=2)
+            
+            print(f"变量已导出到: {output_file}")
+            
+        except Exception as e:
+            print(f"导出失败: {e}")
+    
+    def validate_template(self, file_name: str, variables_file: str = None):
+        """验证模板文件"""
+        if not self.manager:
+            print("错误: 请先设置命令文件目录")
+            return
+        
+        analysis = self.manager.analyze_command_file(file_name)
+        if not analysis:
+            print(f"错误: 无法分析文件 '{file_name}'")
+            return
+        
+        print(f"验证模板: {file_name}")
+        print(f"发现 {len(analysis.variables)} 个变量")
+        
+        # 检查变量完整性
+        required_vars = [var for var in analysis.variables if var.default_value is None]
+        optional_vars = [var for var in analysis.variables if var.default_value is not None]
+        
+        if required_vars:
+            print("必需变量:")
+            for var in required_vars:
+                print(f"  - {var.name}: {var.description or '无描述'}")
+        
+        if optional_vars:
+            print("可选变量:")
+            for var in optional_vars:
+                print(f"  - {var.name} (默认: {var.default_value}): {var.description or '无描述'}")
+        
+        # 如果提供了变量文件，验证完整性
+        if variables_file:
+            try:
+                with open(variables_file, 'r', encoding='utf-8') as f:
+                    provided_vars = json.load(f)
+                
+                missing_vars = [var.name for var in required_vars if var.name not in provided_vars]
+                if missing_vars:
+                    print(f"警告: 缺少必需变量: {missing_vars}")
+                else:
+                    print("✓ 所有必需变量都已提供")
+                    
+            except Exception as e:
+                print(f"读取变量文件失败: {e}")
+
+def main():
+    parser = argparse.ArgumentParser(description='命令文件管理工具')
+    parser.add_argument('-d', '--directory', default='.autocodercommands', 
+                       help='命令文件目录路径')
+    
+    subparsers = parser.add_subparsers(dest='command', help='可用命令')
+    
+    # 列出文件命令
+    list_parser = subparsers.add_parser('list', help='列出命令文件')
+    list_parser.add_argument('-r', '--recursive', action='store_true', 
+                           help='递归搜索子目录')
+    
+    # 显示文件信息命令
+    info_parser = subparsers.add_parser('info', help='显示文件信息')
+    info_parser.add_argument('file_name', help='文件名')
+    
+    # 导出变量命令
+    export_parser = subparsers.add_parser('export', help='导出变量')
+    export_parser.add_argument('output_file', help='输出文件路径')
+    export_parser.add_argument('-r', '--recursive', action='store_true', 
+                             help='递归搜索子目录')
+    
+    # 验证模板命令
+    validate_parser = subparsers.add_parser('validate', help='验证模板文件')
+    validate_parser.add_argument('file_name', help='模板文件名')
+    validate_parser.add_argument('-v', '--variables', help='变量文件路径')
+    
+    args = parser.parse_args()
+    
+    tool = CommandLineTool()
+    tool.set_directory(args.directory)
+    
+    if args.command == 'list':
+        tool.list_files(args.recursive)
+    elif args.command == 'info':
+        tool.show_file_info(args.file_name)
+    elif args.command == 'export':
+        tool.export_variables(args.output_file, args.recursive)
+    elif args.command == 'validate':
+        tool.validate_template(args.file_name, args.variables)
+    else:
+        parser.print_help()
+
+if __name__ == '__main__':
+    main()
+```
+
+### 使用示例
+
+```bash
+# 列出所有命令文件
+python cli_tool.py list -r
+
+# 显示特定文件信息
+python cli_tool.py info example.md
+
+# 导出所有变量到 JSON 文件
+python cli_tool.py export variables.json -r
+
+# 验证模板文件
+python cli_tool.py validate template.md -v variables.json
+```
+
+## 基础使用流程
 
 ```python
 from autocoder.common.command_file_manager import CommandManager
