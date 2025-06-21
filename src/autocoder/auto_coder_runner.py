@@ -12,6 +12,7 @@ import io
 import uuid
 import glob
 import time
+import datetime
 import hashlib
 from contextlib import contextmanager
 from typing import List, Dict, Any, Optional
@@ -281,6 +282,16 @@ def start():
     if os.environ.get('autocoder_auto_init',"true") in ["true","True","True",True]:
         configure_logger()
         init_singleton_instances()
+
+    conversation_manager = get_conversation_manager()
+    if not conversation_manager.get_current_conversation():
+        # Format: yyyyMMdd-MM-ss-uuid
+        current_time = datetime.datetime.now()
+        time_str = current_time.strftime("%Y%m%d-%H-%M-%S")
+        name = f"{time_str}-{str(uuid.uuid4())}"
+        conversation_id = conversation_manager.create_new_conversation(name=name,description="")
+        conversation_manager.set_current_conversation(conversation_id)
+            
 
 def stop():
     try:
@@ -736,6 +747,266 @@ def revert():
     else:
         result_manager.append(content="No previous chat action found to revert.", meta={"action": "revert","success":False, "input":{                
             }})        
+
+
+def add_files(args: List[str]):
+
+    result_manager = ResultManager()
+    if "groups" not in memory["current_files"]:
+        memory["current_files"]["groups"] = {}
+    if "groups_info" not in memory["current_files"]:
+        memory["current_files"]["groups_info"] = {}
+    if "current_groups" not in memory["current_files"]:
+        memory["current_files"]["current_groups"] = []
+    groups = memory["current_files"]["groups"]
+    groups_info = memory["current_files"]["groups_info"]
+
+    console = Console()
+    printer = Printer()
+
+    if not args:
+        printer.print_in_terminal("add_files_no_args", style="red")
+        result_manager.append(content=printer.get_message_from_key("add_files_no_args"), 
+                              meta={"action": "add_files","success":False, "input":{ "args": args}})
+        return
+
+    if args[0] == "/refresh":
+        completer.refresh_files()
+
+
+def _handle_post_commit_and_pr(post_commit: bool, pr: bool, query: str, args, llm):
+    """
+    处理 post_commit 和 PR 功能
+    
+    Args:
+        post_commit: 是否执行 post_commit
+        pr: 是否创建 PR
+        query: 原始查询
+        args: 配置参数
+        llm: LLM 实例
+    """
+    printer = Printer()
+    console = Console()
+    
+    try:
+        if post_commit:
+            # 执行 post_commit 操作
+            printer.print_in_terminal("post_commit_executing", style="blue")
+            
+            # 检查是否有未提交的更改
+            uncommitted_changes = git_utils.get_uncommitted_changes(".")
+            if uncommitted_changes:
+                # 生成提交消息
+                commit_message = git_utils.generate_commit_message.with_llm(llm).run(
+                    uncommitted_changes
+                )
+                
+                # 执行提交
+                commit_result = git_utils.commit_changes(".", commit_message)
+                git_utils.print_commit_info(commit_result=commit_result)
+                printer.print_in_terminal("post_commit_success", style="green", message=commit_message)
+                
+                # 如果需要创建 PR，则继续处理
+                if pr:
+                    _create_pull_request(commit_result, query, llm)
+            else:
+                printer.print_in_terminal("post_commit_no_changes", style="yellow")
+                
+        elif pr:
+            # 只创建 PR，不执行 post_commit
+            # 获取最后一个 commit
+            try:
+                repo = git.Repo(".")
+                last_commit = repo.head.commit
+                
+                # 创建一个模拟的 commit_result 对象
+                class MockCommitResult:
+                    def __init__(self, commit):
+                        self.commit_hash = commit.hexsha
+                        self.commit_message = commit.message.strip()
+                        self.changed_files = []
+                        
+                mock_commit_result = MockCommitResult(last_commit)
+                _create_pull_request(mock_commit_result, query, llm)
+                
+            except Exception as e:
+                printer.print_in_terminal("pr_get_last_commit_failed", style="red", error=str(e))
+                
+    except Exception as e:
+        printer.print_in_terminal("post_commit_pr_failed", style="red", error=str(e))
+
+
+def _create_pull_request(commit_result, original_query: str, llm):
+    """
+    创建 Pull Request
+    
+    Args:
+        commit_result: 提交结果对象
+        original_query: 原始查询
+        llm: LLM 实例
+    """
+    printer = Printer()
+    console = Console()
+    
+    try:
+        # 检查是否安装了 gh CLI
+        gh_check = subprocess.run(["gh", "--version"], capture_output=True, text=True)
+        if gh_check.returncode != 0:
+            printer.print_in_terminal("pr_gh_not_installed", style="red")
+            return
+            
+        # 检查是否已经登录 GitHub
+        auth_check = subprocess.run(["gh", "auth", "status"], capture_output=True, text=True)
+        if auth_check.returncode != 0:
+            printer.print_in_terminal("pr_gh_not_authenticated", style="red")
+            return
+            
+        # 获取当前分支名
+        repo = git.Repo(".")
+        current_branch = repo.active_branch.name
+        
+        # 如果在 main/master 分支，创建新分支
+        if current_branch in ["main", "master"]:
+            # 生成新分支名
+            import re
+            branch_name = re.sub(r'[^a-zA-Z0-9\-_]', '-', original_query.lower())
+            branch_name = f"auto-coder-{branch_name[:30]}-{int(time.time())}"
+            
+            # 创建并切换到新分支
+            new_branch = repo.create_head(branch_name)
+            new_branch.checkout()
+            current_branch = branch_name
+            
+            printer.print_in_terminal("pr_created_branch", style="blue", branch=branch_name)
+            
+        # 推送当前分支到远程
+        try:
+            origin = repo.remotes.origin
+            origin.push(current_branch)
+            printer.print_in_terminal("pr_pushed_branch", style="blue", branch=current_branch)
+        except Exception as e:
+            printer.print_in_terminal("pr_push_failed", style="red", error=str(e))
+            return
+            
+        # 生成 PR 标题和描述
+        pr_title, pr_body = _generate_pr_content(commit_result, original_query, llm)
+        
+        # 创建 PR
+        pr_cmd = [
+            "gh", "pr", "create",
+            "--title", pr_title,
+            "--body", pr_body,
+            "--head", current_branch
+        ]
+        
+        pr_result = subprocess.run(pr_cmd, capture_output=True, text=True)
+        
+        if pr_result.returncode == 0:
+            pr_url = pr_result.stdout.strip()
+            printer.print_in_terminal("pr_created_success", style="green", url=pr_url)
+            
+            # 显示 PR 信息
+            console.print(Panel(
+                f"[bold green]Pull Request Created Successfully![/bold green]\n\n"
+                f"[bold]Title:[/bold] {pr_title}\n"
+                f"[bold]URL:[/bold] {pr_url}\n"
+                f"[bold]Branch:[/bold] {current_branch}",
+                title="🎉 Pull Request",
+                border_style="green"
+            ))
+        else:
+            printer.print_in_terminal("pr_creation_failed", style="red", error=pr_result.stderr)
+            
+    except Exception as e:
+        printer.print_in_terminal("pr_creation_error", style="red", error=str(e))
+
+
+@byzerllm.prompt()
+def _generate_pr_content(commit_result, original_query: str, llm) -> tuple:
+    """
+    生成 PR 标题和描述
+    
+    根据提交信息和原始查询生成合适的 PR 标题和描述。
+    
+    Args:
+        commit_result: 提交结果，包含 commit_message 和 changed_files
+        original_query: 用户的原始查询请求
+        
+    Returns:
+        tuple: (pr_title, pr_body) PR标题和描述内容
+        
+    请生成简洁明了的 PR 标题（不超过72字符）和详细的描述内容。
+    标题应该概括主要变更，描述应该包含：
+    1. 变更的背景和目的
+    2. 主要修改内容
+    3. 影响的文件（如果有的话）
+    
+    提交信息：{{ commit_result.commit_message }}
+    原始需求：{{ original_query }}
+    {% if commit_result.changed_files %}
+    修改的文件：
+    {% for file in commit_result.changed_files %}
+    - {{ file }}
+    {% endfor %}
+    {% endif %}
+    """
+    
+    # 这个函数会被 byzerllm 装饰器处理，返回 LLM 生成的内容
+    # 实际实现会在运行时由装饰器处理
+    pass
+
+
+# 实际的 PR 内容生成函数
+def _generate_pr_content(commit_result, original_query: str, llm):
+    """
+    生成 PR 标题和描述的实际实现
+    """
+    try:
+        # 使用 LLM 生成 PR 内容
+        prompt = f"""
+根据以下信息生成 Pull Request 的标题和描述：
+
+提交信息：{getattr(commit_result, 'commit_message', 'Auto-generated commit')}
+原始需求：{original_query}
+修改的文件：{getattr(commit_result, 'changed_files', [])}
+
+请生成：
+1. 简洁的 PR 标题（不超过72字符）
+2. 详细的 PR 描述，包含变更背景、主要修改内容等
+
+格式要求：
+TITLE: [标题内容]
+BODY: [描述内容]
+"""
+        
+        response = llm.chat([{"role": "user", "content": prompt}])
+        
+        # 解析响应
+        lines = response.split('\n')
+        title = ""
+        body = ""
+        
+        for line in lines:
+            if line.startswith("TITLE:"):
+                title = line.replace("TITLE:", "").strip()
+            elif line.startswith("BODY:"):
+                body = line.replace("BODY:", "").strip()
+            elif body:  # 如果已经开始收集 body，继续添加后续行
+                body += "\n" + line
+                
+        # 如果解析失败，使用默认值
+        if not title:
+            title = f"Auto-coder: {original_query[:50]}..."
+        if not body:
+            body = f"This PR was automatically generated by Auto-coder.\n\nOriginal request: {original_query}"
+            
+        return title, body
+        
+    except Exception as e:
+        # 如果 LLM 生成失败，使用默认值
+        title = f"Auto-coder: {original_query[:50]}..."
+        body = f"This PR was automatically generated by Auto-coder.\n\nOriginal request: {original_query}\n\nCommit: {getattr(commit_result, 'commit_message', 'Auto-generated commit')}"
+        return title, body
 
 
 def add_files(args: List[str]):
@@ -3023,7 +3294,9 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
 
 
 def run_auto_command(query: str,
-                     pre_commit:bool=False,                     
+                     pre_commit:bool=False,
+                     post_commit:bool=False,
+                     pr:bool=False,
                      extra_args: Dict[str,Any]={}
                      ):    
     """处理/auto指令"""        
@@ -3092,6 +3365,10 @@ def run_auto_command(query: str,
         for event in events:
             yield event
             
+        # 处理 post_commit 和 PR 功能
+        if post_commit or pr:
+            _handle_post_commit_and_pr(post_commit, pr, query, args, llm)
+            
         completer.refresh_files()
         return
         
@@ -3145,4 +3422,9 @@ def run_auto_command(query: str,
         border_style="blue",
         padding=(1, 2)
     ))
+    
+    # 处理 post_commit 和 PR 功能
+    if post_commit or pr:
+        _handle_post_commit_and_pr(post_commit, pr, query, args, llm)
+    
     completer.refresh_files()

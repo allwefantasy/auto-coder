@@ -52,7 +52,7 @@ class CodeAutoGenerateEditBlock:
                                  package_context: str = ""
                                  ) -> str:
         """
-        如果你需要生成代码，对于每个需要更改的文件,你需要按 *SEARCH/REPLACE block* 的格式进行生成。
+        如果你需要生成代码，对于每个需要更改的文件,你需要按 *SEARCH/REPLACE block* 的格式进行生成。        
 
         # *SEARCH/REPLACE block* Rules:
 
@@ -196,7 +196,15 @@ class CodeAutoGenerateEditBlock:
         <extra_context>
         {{ context }}
         </extra_context>
-        {%- endif %}     
+        {%- endif %}   
+
+        ====
+
+        RULES PROVIDED BY SYSTEM
+
+        Before outputting the *SEARCH/REPLACE block* format, you must carefully think through the user's question and make a complete design. These thoughts and designs should be placed within the <thinking></thinking> tags.
+
+        ====  
 
         {%- if extra_docs %}
         ====
