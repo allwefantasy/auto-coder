@@ -14,10 +14,10 @@ from ..constants import DEFAULT_MODEL
 class CLIOptions:
     """CLI选项数据类，用于配置命令行工具的行为。"""
     
-    # 运行模式选项
-    print_mode: bool = False  # 单次运行模式，执行一次查询后退出
-    continue_session: bool = False  # 继续最近的对话
-    resume_session: Optional[str] = None  # 恢复特定会话的ID
+    # 运行模式选项 - 只保留打印模式作为默认模式
+    print_mode: bool = True  # 单次运行模式，执行一次查询后退出（默认模式）
+    continue_session: bool = False  # 已移除会话模式，保留字段以兼容
+    resume_session: Optional[str] = None  # 已移除会话模式，保留字段以兼容
     
     # 输入选项
     prompt: Optional[str] = None  # 提示内容，如果为None则从stdin读取
@@ -54,9 +54,7 @@ class CLIOptions:
         if self.max_turns <= 0:
             raise ValueError("max_turns必须为正数")
         
-        # 验证会话选项的互斥性
-        if self.continue_session and self.resume_session:
-            raise ValueError("continue_session和resume_session不能同时设置")
+        # 会话选项已移除，不再需要验证互斥性
         
         # 验证模型参数必须存在
         if not self.model or not self.model.strip():

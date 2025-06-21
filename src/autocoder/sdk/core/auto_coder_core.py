@@ -828,16 +828,6 @@ class AutoCoderCore:
             stream=True
         )
     
-    def get_session_manager(self):
-        """
-        获取会话管理器
-        
-        Returns:
-            SessionManager: 会话管理器实例
-        """
-        from ..session.session_manager import SessionManager
-        cwd_str = str(self.options.cwd) if self.options.cwd is not None else os.getcwd()
-        return SessionManager(cwd_str)
     
     def get_project_memory(self) -> Dict[str, Any]:
         """
