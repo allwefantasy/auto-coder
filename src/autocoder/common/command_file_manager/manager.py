@@ -20,13 +20,15 @@ from autocoder.common.command_file_manager.utils import (
 class CommandManager:
     """命令管理器，提供高层次的API接口"""
     
-    def __init__(self, commands_dir: str):
+    def __init__(self, commands_dir: Optional[str] = None):
         """
         初始化命令管理器
         
         Args:
-            commands_dir: 命令文件目录路径
+            commands_dir: 命令文件目录路径，如果为None则默认使用工作目录下的.autocodercommands目录
         """
+        if commands_dir is None:
+            commands_dir = os.path.join(os.getcwd(), ".autocodercommands")
         self.commands_dir = os.path.abspath(commands_dir)
         
         # 确保目录存在

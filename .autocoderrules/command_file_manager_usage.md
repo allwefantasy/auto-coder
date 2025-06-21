@@ -13,7 +13,11 @@ alwaysApply: false
 ```python
 from autocoder.common.command_file_manager import CommandManager, JinjaVariable
 
-# 初始化命令管理器，指定命令文件目录
+# 初始化命令管理器
+# 方式1：使用默认目录（工作目录下的.autocodercommands目录）
+manager = CommandManager()
+
+# 方式2：指定自定义命令文件目录
 manager = CommandManager("/path/to/commands")
 
 # 列出所有命令文件（支持递归搜索）
