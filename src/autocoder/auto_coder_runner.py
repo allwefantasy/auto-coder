@@ -3314,8 +3314,8 @@ def render_command_file_with_variables(command_infos: Dict[str, Any]) -> str:
         if not command_infos:
             raise ValueError("command_infos 为空，无法获取命令信息")
         
-        # 获取第一个命令
-        first_command = next(iter(command_infos.values()))
+        # command 的位置参数作为路径
+        first_command = command_infos["command"]
         
         # 获取位置参数（文件路径）
         args = first_command.get("args", [])
