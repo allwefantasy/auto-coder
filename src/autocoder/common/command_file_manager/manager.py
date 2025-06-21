@@ -5,7 +5,7 @@
 """
 
 import os
-import logging
+from loguru import logger
 from typing import Dict, List, Optional, Set, Tuple
 
 from autocoder.common.command_file_manager.models import (
@@ -15,8 +15,6 @@ from autocoder.common.command_file_manager.utils import (
     extract_jinja2_variables, extract_jinja2_variables_with_metadata,
     analyze_command_file, is_command_file
 )
-
-logger = logging.getLogger(__name__)
 
 
 class CommandManager:
