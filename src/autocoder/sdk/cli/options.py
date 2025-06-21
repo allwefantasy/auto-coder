@@ -14,8 +14,7 @@ from ..constants import DEFAULT_MODEL
 class CLIOptions:
     """CLI选项数据类，用于配置命令行工具的行为。"""
     
-    # 运行模式选项
-    print_mode: bool = False  # 单次运行模式，执行一次查询后退出
+    # 会话选项
     continue_session: bool = False  # 继续最近的对话
     resume_session: Optional[str] = None  # 恢复特定会话的ID
     

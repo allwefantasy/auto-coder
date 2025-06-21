@@ -1,7 +1,7 @@
 """
 命令处理器模块
 
-提供处理不同命令行模式的处理器，包括打印模式和会话模式。
+提供统一的命令处理器，支持单次运行和会话复用功能。
 """
 
 import sys
@@ -10,9 +10,8 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List, Union
 
 from ..core import AutoCoderCore
-from ..session import SessionManager
 from ..models import AutoCodeOptions, Message
-from ..exceptions import SessionNotFoundError, AutoCoderSDKError
+from ..exceptions import AutoCoderSDKError
 from .options import CLIOptions, CLIResult
 from .formatters import OutputFormatter, InputFormatter
 
@@ -96,11 +95,11 @@ class CommandHandler:
 
 
 class PrintModeHandler(CommandHandler):
-    """打印模式处理器，执行一次查询后退出。"""
+    """统一的命令处理器，支持单次运行和会话复用。"""
     
     def handle(self) -> CLIResult:
         """
-        处理打印模式命令。
+        处理命令，支持会话复用。
         
         Returns:
             命令执行结果
@@ -108,22 +107,18 @@ class PrintModeHandler(CommandHandler):
         try:
             prompt = self._get_prompt()
             core_options = self._create_core_options()
-            core = AutoCoderCore(core_options)        
+            core = AutoCoderCore(core_options)
 
-            if not core_options.continue_session:
-                prompt = "/new " + prompt
-            
-            if core_options.session_id:
-                prompt = f"/id {core_options.session_id} {prompt}" 
-            
+            # 根据会话参数构建完整的 prompt
+            final_prompt = self._build_prompt_with_session_context(prompt)
             
             # 根据输出格式选择不同的处理方式
             if self.options.output_format == "stream-json":
                 # 流式JSON输出
-                result = asyncio.run(self._handle_stream(core, prompt))
+                result = asyncio.run(self._handle_stream(core, final_prompt))
             else:
                 # 同步查询
-                response = core.query_sync(prompt)
+                response = core.query_sync(final_prompt)
                 
                 # 格式化输出
                 if self.options.output_format == "json":
@@ -135,6 +130,23 @@ class PrintModeHandler(CommandHandler):
             
         except Exception as e:
             return CLIResult(success=False, error=str(e))
+    
+    def _build_prompt_with_session_context(self, prompt: str) -> str:
+        """
+        根据会话参数构建完整的 prompt。
+        
+        Args:
+            prompt: 原始提示内容
+            
+        Returns:
+            str: 构建后的完整提示
+        """
+        if self.options.continue_session:
+            return f" {prompt}" if prompt else ""
+        elif self.options.resume_session:
+            return f"/resume {self.options.resume_session} {prompt}" if prompt else f"/resume {self.options.resume_session}"
+        else:
+            return f"/new {prompt}"
             
     async def _handle_stream(self, core: AutoCoderCore, prompt: str) -> str:
         """
@@ -157,153 +169,3 @@ class PrintModeHandler(CommandHandler):
         return "\n".join(result)
 
 
-class SessionModeHandler(CommandHandler):
-    """会话模式处理器，支持多轮对话。"""
-    
-    def handle(self) -> CLIResult:
-        """
-        处理会话模式命令。
-        
-        Returns:
-            命令执行结果
-        """
-        try:
-            core_options = self._create_core_options()
-            core = AutoCoderCore(core_options)
-            session_manager = core.get_session_manager()
-            
-            # 根据选项决定是继续最近会话还是恢复特定会话
-            if self.options.continue_session:
-                return self._continue_latest_session(session_manager)
-            elif self.options.resume_session:
-                return self._resume_specific_session(session_manager)
-            else:
-                # 创建新会话
-                return self._create_new_session(session_manager)
-                
-        except SessionNotFoundError as e:
-            return CLIResult(success=False, error=f"会话未找到: {str(e)}")
-        except Exception as e:
-            return CLIResult(success=False, error=str(e))
-            
-    def _continue_latest_session(self, session_manager: SessionManager) -> CLIResult:
-        """
-        继续最近的会话。
-        
-        Args:
-            session_manager: 会话管理器
-            
-        Returns:
-            命令执行结果
-        """
-        try:
-            session = session_manager.get_latest_session()
-            if not session:
-                return CLIResult(success=False, error="没有找到最近的会话")
-                
-            prompt = self._get_prompt() if self.options.prompt else None
-            if prompt:
-                response = asyncio.run(session.query(prompt))
-                
-                # 格式化输出
-                if self.options.output_format == "json":
-                    output = self.output_formatter.format_json(response)
-                else:
-                    output = self.output_formatter.format_text(response)
-                    
-                return CLIResult(success=True, output=output)
-            else:
-                # 如果没有提示，则显示会话历史
-                history = session.get_history()
-                
-                if self.options.output_format == "json":
-                    output = self.output_formatter.format_json({"history": history})
-                else:
-                    output = self._format_history_text(history)
-                    
-                return CLIResult(success=True, output=output)
-                
-        except Exception as e:
-            return CLIResult(success=False, error=str(e))
-            
-    def _resume_specific_session(self, session_manager: SessionManager) -> CLIResult:
-        """
-        恢复特定会话。
-        
-        Args:
-            session_manager: 会话管理器
-            
-        Returns:
-            命令执行结果
-        """
-        try:
-            session = session_manager.get_session(self.options.resume_session)
-            
-            prompt = self._get_prompt() if self.options.prompt else None
-            if prompt:
-                response = asyncio.run(session.query(prompt))
-                
-                # 格式化输出
-                if self.options.output_format == "json":
-                    output = self.output_formatter.format_json(response)
-                else:
-                    output = self.output_formatter.format_text(response)
-                    
-                return CLIResult(success=True, output=output)
-            else:
-                # 如果没有提示，则显示会话历史
-                history = session.get_history()
-                
-                if self.options.output_format == "json":
-                    output = self.output_formatter.format_json({"history": history})
-                else:
-                    output = self._format_history_text(history)
-                    
-                return CLIResult(success=True, output=output)
-                
-        except Exception as e:
-            return CLIResult(success=False, error=str(e))
-            
-    def _create_new_session(self, session_manager: SessionManager) -> CLIResult:
-        """
-        创建新会话。
-        
-        Args:
-            session_manager: 会话管理器
-            
-        Returns:
-            命令执行结果
-        """
-        try:
-            session = session_manager.create_session(self._create_core_options())
-            
-            prompt = self._get_prompt()
-            response = asyncio.run(session.query(prompt))
-            
-            # 格式化输出
-            if self.options.output_format == "json":
-                output = self.output_formatter.format_json(response)
-            else:
-                output = self.output_formatter.format_text(response)
-                
-            return CLIResult(success=True, output=output)
-                
-        except Exception as e:
-            return CLIResult(success=False, error=str(e))
-            
-    def _format_history_text(self, history: List[Message]) -> str:
-        """
-        将会话历史格式化为文本。
-        
-        Args:
-            history: 会话历史
-            
-        Returns:
-            格式化后的文本
-        """
-        result = []
-        for message in history:
-            role = "用户" if message.role == "user" else "助手"
-            result.append(f"[{role}]\n{message.content}\n")
-            
-        return "\n".join(result)

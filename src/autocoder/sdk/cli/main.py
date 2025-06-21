@@ -16,7 +16,7 @@ except ImportError:
     ARGCOMPLETE_AVAILABLE = False
 
 from .options import CLIOptions, CLIResult
-from .handlers import PrintModeHandler, SessionModeHandler
+from .handlers import PrintModeHandler
 from ..exceptions import AutoCoderSDKError
 
 
@@ -29,7 +29,7 @@ class AutoCoderCLI:
         
     def run(self, options: CLIOptions, cwd: Optional[str] = None) -> CLIResult:
         """
-        运行CLI命令。
+        运行CLI命令 - 统一使用 Print Mode。
         
         Args:
             options: CLI选项
@@ -42,11 +42,8 @@ class AutoCoderCLI:
             # 验证选项
             options.validate()
             
-            # 根据模式选择处理器
-            if options.print_mode:
-                return self.handle_print_mode(options, cwd)
-            else:
-                return self.handle_session_mode(options, cwd)
+            # 移除模式判断，直接使用 PrintModeHandler
+            return self.handle_print_mode(options, cwd)
                 
         except Exception as e:
             return CLIResult(success=False, error=str(e))
@@ -65,19 +62,6 @@ class AutoCoderCLI:
         handler = PrintModeHandler(options, cwd)
         return handler.handle()
         
-    def handle_session_mode(self, options: CLIOptions, cwd: Optional[str] = None) -> CLIResult:
-        """
-        处理会话模式。
-        
-        Args:
-            options: CLI选项
-            cwd: 当前工作目录
-            
-        Returns:
-            命令执行结果
-        """
-        handler = SessionModeHandler(options, cwd)
-        return handler.handle()
         
     @classmethod
     def parse_args(cls, args: Optional[List[str]] = None) -> CLIOptions:
@@ -95,37 +79,31 @@ class AutoCoderCLI:
             formatter_class=argparse.RawDescriptionHelpFormatter,
             epilog="""
 示例:
-  # 单次运行模式
-  auto-coder.run -p "Write a function to calculate Fibonacci numbers"
+  # 基本使用
+  auto-coder.run "Write a function to calculate Fibonacci numbers" --model gpt-4
   
   # 通过管道提供输入
-  echo "Explain this code" | auto-coder.run -p
+  echo "Explain this code" | auto-coder.run --model gpt-4
   
   # 指定输出格式
-  auto-coder.run -p "Generate a hello world function" --output-format json
-  
-  # 指定模型
-  auto-coder.run -p "Create a web API" --model gpt-4
+  auto-coder.run "Generate a hello world function" --output-format json --model gpt-4
   
   # 继续最近的对话
-  auto-coder.run --continue
+  auto-coder.run --continue "继续修改代码" --model gpt-4
   
   # 恢复特定会话
-  auto-coder.run --resume 550e8400-e29b-41d4-a716-446655440000
+  auto-coder.run --resume 550e8400-e29b-41d4-a716-446655440000 "新的请求" --model gpt-4
   
   # 组合使用多个选项
-  auto-coder.run -p "Optimize this code" --model claude-3-sonnet --max-turns 5 --verbose
+  auto-coder.run "Optimize this code" --model claude-3-sonnet --max-turns 5 --verbose
 """
         )
         
-        # 运行模式选项
-        mode_group = parser.add_mutually_exclusive_group()
-        mode_group.add_argument("-p", "--print", dest="print_mode", action="store_true",
-                             help="单次运行模式，执行一次查询后退出")
-        mode_group.add_argument("-c", "--continue", dest="continue_session", action="store_true",
-                             help="继续最近的对话")
-        mode_group.add_argument("-r", "--resume", dest="resume_session", metavar="SESSION_ID",
-                             help="恢复特定会话")
+        # 会话选项（移除模式选择，--continue 和 --resume 作为独立参数）
+        parser.add_argument("-c", "--continue", dest="continue_session", action="store_true",
+                           help="继续最近的对话")
+        parser.add_argument("-r", "--resume", dest="resume_session", metavar="SESSION_ID",
+                           help="恢复特定会话")
         
         # 输入输出选项
         parser.add_argument("prompt", nargs="?", help="提示内容，如果未提供则从stdin读取")
@@ -155,7 +133,6 @@ class AutoCoderCLI:
         
         # 转换为CLIOptions
         options = CLIOptions(
-            print_mode=parsed_args.print_mode,
             continue_session=parsed_args.continue_session,
             resume_session=parsed_args.resume_session,
             prompt=parsed_args.prompt,

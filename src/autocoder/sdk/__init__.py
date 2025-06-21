@@ -74,8 +74,10 @@ async def query(
         >>> 
         >>> asyncio.run(main())
     """
-    core = AutoCoderCore(options or AutoCodeOptions())
-    async for message in core.query_stream(prompt, show_terminal):
+    if options is None:
+        options = AutoCodeOptions()
+    core = AutoCoderCore(options)
+    async for message in core.query_stream(f"/new {prompt}", show_terminal):
         yield message
 
 
@@ -102,8 +104,10 @@ def query_sync(
         >>> response = query_sync("Write a simple calculator function", options)
         >>> print(response)
     """
-    core = AutoCoderCore(options or AutoCodeOptions())
-    return core.query_sync(prompt, show_terminal)
+    if options is None:
+        options = AutoCodeOptions()
+    core = AutoCoderCore(options)
+    return core.query_sync(f"/new {prompt}", show_terminal)
 
 
 def modify_code(
