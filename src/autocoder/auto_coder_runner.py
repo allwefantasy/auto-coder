@@ -3219,7 +3219,11 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
             task_query = " ".join(command_infos["id"]["args"][1:])  
 
         if "list" in command_infos:
-            conversation_config.action = "list"            
+            conversation_config.action = "list"   
+
+        if "command" in command_infos:
+            conversation_config.action = "command"
+            task_query = render_command_file_with_variables(command_infos)             
              
 
         conversation_config.query = task_query
@@ -3399,7 +3403,7 @@ def run_auto_command(query: str,
         
         if "command" in command_infos:
             conversation_config.action = "command"
-            task_query = render_command_file_with_variables(command_infos["command"])
+            task_query = render_command_file_with_variables(command_infos)
              
         conversation_config.query = task_query
 
