@@ -68,6 +68,8 @@ from autocoder.utils.project_structure import EnhancedFileAnalyzer
 from autocoder.common import SourceCodeList,SourceCode
 from autocoder.common.file_monitor import FileMonitor
 from filelock import FileLock
+from autocoder.common.command_file_manager import CommandManager
+=======
 
 
 ## 对外API，用于第三方集成 auto-coder 使用。
@@ -3291,6 +3293,62 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
     ))
     completer.refresh_files()
 
+
+
+def render_command_file_with_variables(command_infos: Dict[str, Any]) -> str:
+    """
+    使用 CommandManager 加载并渲染命令文件
+    
+    Args:
+        command_infos: parse_query(query) 的返回结果，包含命令和参数信息
+        
+    Returns:
+        str: 渲染后的文件内容
+        
+    Raises:
+        ValueError: 当参数不足或文件不存在时
+        Exception: 当渲染过程出现错误时
+    """
+    try:
+        # 获取第一个命令的信息
+        if not command_infos:
+            raise ValueError("command_infos 为空，无法获取命令信息")
+        
+        # 获取第一个命令
+        first_command = next(iter(command_infos.values()))
+        
+        # 获取位置参数（文件路径）
+        args = first_command.get("args", [])
+        if not args:
+            raise ValueError("未提供文件路径参数")
+        
+        file_path = args[0]  # 第一个位置参数作为文件路径
+        
+        # 获取关键字参数作为渲染参数
+        kwargs = first_command.get("kwargs", {})
+        
+        # 初始化 CommandManager
+        command_manager = CommandManager()
+        
+        # 读取命令文件
+        command_file = command_manager.read_command_file(file_path)
+        if command_file is None:
+            raise ValueError(f"无法读取命令文件: {file_path}")
+        
+        # 使用 format_str_jinja2 进行模板渲染
+        try:
+            rendered_content = format_str_jinja2(command_file.content, **kwargs)
+            
+            global_logger.info(f"成功渲染命令文件: {file_path}, 使用参数: {kwargs}")
+            return rendered_content
+            
+        except Exception as e:
+            global_logger.error(f"渲染命令文件时出错: {file_path}, 错误: {str(e)}")
+            raise Exception(f"渲染命令文件失败: {str(e)}")
+            
+    except Exception as e:
+        global_logger.error(f"render_command_file_with_variables 执行失败: {str(e)}")
+        raise
 
 
 def run_auto_command(query: str,
