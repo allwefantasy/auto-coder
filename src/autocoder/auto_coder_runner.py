@@ -69,7 +69,6 @@ from autocoder.common import SourceCodeList,SourceCode
 from autocoder.common.file_monitor import FileMonitor
 from filelock import FileLock
 from autocoder.common.command_file_manager import CommandManager
-=======
 
 
 ## 对外API，用于第三方集成 auto-coder 使用。
@@ -3396,8 +3395,12 @@ def run_auto_command(query: str,
 
         if "list" in command_infos:
             conversation_config.action = "list"
-             
 
+        
+        if "command" in command_infos:
+            conversation_config.action = "command"
+            task_query = render_command_file_with_variables(command_infos["command"])
+             
         conversation_config.query = task_query
 
         agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
