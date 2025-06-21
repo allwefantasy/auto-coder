@@ -3218,7 +3218,7 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
             task_query = " ".join(command_infos["id"]["args"][1:])  
 
         if "list" in command_infos:
-            conversation_config.action = "list"
+            conversation_config.action = "list"            
              
 
         conversation_config.query = task_query

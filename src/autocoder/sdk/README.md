@@ -83,10 +83,10 @@ echo "Explain this code" | auto-coder.run -p
 auto-coder.run -p "Generate a hello world function" --output-format json
 
 # 继续最近的对话
-auto-coder.run --continue -p "继续修改xxxxx"
+auto-coder.run --continue "继续修改xxxxx"
 
-# 恢复特定会话
-auto-coder.run --resume 550e8400-e29b-41d4-a716-446655440000  -p "修改xxxx"
+# Resume a specific conversation by session ID
+auto-coder.run --resume 550e8400-e29b-41d4-a716-446655440000 "" 
 ```
 
 #### 高级选项
