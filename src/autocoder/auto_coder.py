@@ -893,172 +893,34 @@ def main(input_args: Optional[List[str]] = None):
             #     )
             return
         elif raw_args.agent_command == "project_reader":
-                        
-            target_llm = llm.get_sub_client("planner_model")
-            if not target_llm:
-                target_llm = llm
-            model_filter = ModelPathFilter.from_model_object(target_llm, args)
-            if model_filter.has_rules():
-                printer = Printer()
-                msg = printer.get_message_from_key_with_format("model_has_access_restrictions",                                            
-                                           model_name=",".join(get_llm_names(target_llm)))
-                raise ValueError(msg)
-
-            from autocoder.agent.project_reader import ProjectReader
-
-            project_reader = ProjectReader(args, llm)
-            v = project_reader.run(args.query)            
-            console = Console()
-            markdown_content = v
-
-            with Live(
-                Panel("", title="Response", border_style="green", expand=False),
-                refresh_per_second=4,
-                auto_refresh=True,
-                vertical_overflow="visible",
-                console=Console(force_terminal=True, color_system="auto", height=None)
-            ) as live:
-                live.update(
-                    Panel(
-                        Markdown(markdown_content),
-                        title="Response",
-                        border_style="green",
-                        expand=False,
-                    )
-                )
-
+            from autocoder.agent.entry_command_agent import ProjectReaderAgent
+            
+            project_reader_agent = ProjectReaderAgent(args, llm, raw_args)
+            project_reader_agent.run()
             return
         elif raw_args.agent_command == "voice2text":
-            from autocoder.common.audio import TranscribeAudio
-            import tempfile
-
-            transcribe_audio = TranscribeAudio()
-            temp_wav_file = os.path.join(
-                tempfile.gettempdir(), "voice_input.wav")
-
-            console = Console()
-
-            transcribe_audio.record_audio(temp_wav_file)
-            console.print(
-                Panel(
-                    "Recording finished. Transcribing...",
-                    title="Voice",
-                    border_style="green",
-                )
-            )
-
-            if llm and llm.get_sub_client("voice2text_model"):
-                voice2text_llm = llm.get_sub_client("voice2text_model")
-            else:
-                voice2text_llm = llm
-            transcription = transcribe_audio.transcribe_audio(
-                temp_wav_file, voice2text_llm
-            )
-
-            console.print(
-                Panel(
-                    f"Transcription: <_transcription_>{transcription}</_transcription_>",
-                    title="Result",
-                    border_style="magenta",
-                )
-            )
-
-            with open(os.path.join(".auto-coder", "exchange.txt"), "w",encoding="utf-8") as f:
-                f.write(transcription)
-
-            request_queue.add_request(
-                args.request_id,
-                RequestValue(
-                    value=DefaultValue(value=transcription),
-                    status=RequestOption.COMPLETED,
-                ),
-            )
-
-            os.remove(temp_wav_file)
+            from autocoder.agent.entry_command_agent import Voice2TextAgent
+            
+            voice2text_agent = Voice2TextAgent(args, llm, raw_args)
+            voice2text_agent.run()
             return
         elif raw_args.agent_command == "generate_command":
-            from autocoder.common.command_generator import generate_shell_script
-
-            console = Console()            
-
-            shell_script = generate_shell_script(args, llm)
-
-            console.print(
-                Panel(
-                    shell_script,
-                    title="Shell Script",
-                    border_style="magenta",
-                )
-            )
-
-            with open(os.path.join(".auto-coder", "exchange.txt"), "w",encoding="utf-8") as f:
-                f.write(shell_script)
-
-            request_queue.add_request(
-                args.request_id,
-                RequestValue(
-                    value=DefaultValue(value=shell_script),
-                    status=RequestOption.COMPLETED,
-                ),
-            )
-
+            from autocoder.agent.entry_command_agent import GenerateCommandAgent
+            
+            generate_command_agent = GenerateCommandAgent(args, llm, raw_args)
+            generate_command_agent.run()
             return
         elif raw_args.agent_command == "auto_tool":
-            from autocoder.agent.auto_tool import AutoTool
-
-            auto_tool = AutoTool(args, llm)
-            v = auto_tool.run(args.query)
-            if args.request_id:
-                request_queue.add_request(
-                    args.request_id,
-                    RequestValue(
-                        value=DefaultValue(value=v), status=RequestOption.COMPLETED
-                    ),
-                )
-            console = Console()
-            markdown_content = v
-
-            with Live(
-                Panel("", title="Response", border_style="green", expand=False),
-                refresh_per_second=4,
-                auto_refresh=True,
-                vertical_overflow="visible",
-                console=Console(force_terminal=True, color_system="auto", height=None)
-            ) as live:
-                live.update(
-                    Panel(
-                        Markdown(markdown_content),
-                        title="Response",
-                        border_style="green",
-                        expand=False,
-                    )
-                )
-
+            from autocoder.agent.entry_command_agent import AutoToolAgent
+            
+            auto_tool_agent = AutoToolAgent(args, llm, raw_args)
+            auto_tool_agent.run()
             return
         elif raw_args.agent_command == "designer":
-            from autocoder.agent.designer import SVGDesigner, SDDesigner, LogoDesigner
-
-            if args.agent_designer_mode == "svg":
-                designer = SVGDesigner(args, llm)
-                designer.run(args.query)
-                print("Successfully generated image in output.png")
-            elif args.agent_designer_mode == "sd":
-                designer = SDDesigner(args, llm)
-                designer.run(args.query)
-                print("Successfully generated image in output.jpg")
-            elif args.agent_designer_mode.startswith("logo"):
-                designer = LogoDesigner(args, llm)
-                designer.run(args.query)
-                print("Successfully generated image in output.png")
-            if args.request_id:
-                request_queue.add_request(
-                    args.request_id,
-                    RequestValue(
-                        value=DefaultValue(
-                            value="Successfully generated image"),
-                        status=RequestOption.COMPLETED,
-                    ),
-                )
+            from autocoder.agent.entry_command_agent import DesignerAgent
+            
+            designer_agent = DesignerAgent(args, llm, raw_args)
+            designer_agent.run()
             return
 
         elif raw_args.agent_command == "chat":
