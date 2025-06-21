@@ -142,10 +142,13 @@ class PrintModeHandler(CommandHandler):
             str: 构建后的完整提示
         """
         if self.options.continue_session:
-            return f" {prompt}" if prompt else ""
+            # 继续当前对话
+            return f"{prompt}" if prompt else ""
         elif self.options.resume_session:
+            # 恢复特定会话  
             return f"/resume {self.options.resume_session} {prompt}" if prompt else f"/resume {self.options.resume_session}"
         else:
+            # 创建新对话
             return f"/new {prompt}"
             
     async def _handle_stream(self, core: AutoCoderCore, prompt: str) -> str:

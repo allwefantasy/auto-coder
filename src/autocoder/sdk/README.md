@@ -117,15 +117,15 @@ import asyncio
 from autocoder.sdk import query, query_sync, AutoCodeOptions
 
 # 同步查询
-response = query_sync("Write a function to calculate Fibonacci numbers")
+response = query_sync("Write a function to calculate Fibonacci numbers",options = AutoCodeOptions(                
+        model="v3_chat"
+    ))
 print(response)
 
 # 异步查询
 async def async_example():
-    options = AutoCodeOptions(
-        max_turns=5,
-        temperature=0.7,
-        verbose=True
+    options = AutoCodeOptions(                
+        model="v3_chat"
     )
     
     async for message in query("Explain how Python decorators work", options):
