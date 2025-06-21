@@ -315,7 +315,13 @@ def main():
 
     @kb.add("c-c")
     def _(event):
-        event.app.exit()
+        # 如果在历史搜索模式中
+        if event.app.layout.is_searching:
+            event.app.current_buffer.history_search_text = None
+            # 清除当前缓冲区
+            event.app.current_buffer.reset()
+        else:
+            event.app.exit()
 
     @kb.add("tab")
     def _(event):
