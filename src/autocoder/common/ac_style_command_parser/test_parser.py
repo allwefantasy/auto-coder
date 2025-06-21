@@ -460,6 +460,19 @@ class TestErrorHandling:
         }
         assert result == expected
 
+    def test__command_with_path(self, parser):
+        """测试单个命令混合参数"""
+        result = parser.parse('/command "tdd/hello.md" name="威廉"')
+        expected = {
+            "command": {
+                "args": ["tdd/hello.md"],
+                "kwargs": {
+                    "name": "威廉"
+                }
+            }
+        }
+        assert result == expected    
+
 
 # 参数化测试用例
 @pytest.mark.parametrize("query,expected_commands", [
