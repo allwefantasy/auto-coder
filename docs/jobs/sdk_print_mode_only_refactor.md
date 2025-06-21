@@ -163,7 +163,7 @@ class PrintModeHandler(CommandHandler):
     def _build_prompt_with_session_context(self, prompt: str) -> str:
         """根据会话参数构建完整的 prompt"""
         if self.options.continue_session:
-            return f"/continue {prompt}" if prompt else "/continue"
+            return f" {prompt}" if prompt else ""
         elif self.options.resume_session:
             return f"/resume {self.options.resume_session} {prompt}" if prompt else f"/resume {self.options.resume_session}"
         else:
@@ -328,42 +328,3 @@ session = Session()
 response = session.query_sync("Hello")
 ```
 
-## 风险评估
-
-### 低风险
-- CLI 参数重构：主要是移除互斥组，风险较低
-- 核心查询功能：保持不变，风险很低
-- Python API：保持兼容，风险很低
-
-### 中等风险
-- 会话管理简化：可能影响复杂的会话使用场景
-- 处理器重构：需要仔细测试各种参数组合
-
-### 缓解措施
-1. 保持详细的测试覆盖
-2. 提供清晰的迁移指南
-3. 在重构过程中保持向下兼容
-4. 分阶段实施，每个阶段充分测试
-
-## 预期收益
-
-### 代码简化
-- 移除约 30% 的会话管理代码
-- 简化 CLI 参数解析逻辑
-- 减少维护复杂性
-
-### 用户体验改善
-- 统一的使用方式，减少学习成本
-- 更清晰的参数语义
-- 保持所有核心功能
-
-### 维护性提升
-- 更简单的代码结构
-- 更少的边界情况
-- 更容易添加新功能
-
-## 总结
-
-这次重构将显著简化 Auto-Coder SDK 的架构，同时保持所有核心功能和向下兼容性。通过移除冗余的 Session Mode，我们可以提供更清晰、更易用的接口，同时减少维护负担。
-
-重构后的 SDK 将更加专注于其核心价值：提供简单、强大的 Auto-Coder 功能访问接口，无论是通过 CLI 还是 Python API。
