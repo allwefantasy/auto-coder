@@ -98,7 +98,7 @@ class CommandManager:
             logger.error(f"读取命令文件时出错: {str(e)}")
             return None
     
-    def read_command_file_with_render(self, file_name: str, render_variables: Dict[str, Any] = None) -> Optional[str]:
+    def read_command_file_with_render(self, file_name: str, render_variables: Dict[str, Any] = {}) -> Optional[str]:
         """
         读取指定的命令文件并使用 Jinja2 进行渲染
         
