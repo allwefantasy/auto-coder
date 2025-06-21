@@ -13,7 +13,6 @@ src/autocoder/sdk/
 ├── cli/                       # 命令行接口模块
 │   ├── __init__.py
 │   ├── __main__.py           # CLI模块入口点
-│   ├── auto_coder_cli.py     # CLI核心实现
 │   ├── completion_wrapper.py # 自动补全包装器
 │   ├── formatters.py         # 输出格式化器
 │   ├── handlers.py           # 命令处理器（打印模式、会话模式）
