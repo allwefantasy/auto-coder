@@ -3330,21 +3330,13 @@ def render_command_file_with_variables(command_infos: Dict[str, Any]) -> str:
         # 初始化 CommandManager
         command_manager = CommandManager()
         
-        # 读取命令文件
-        command_file = command_manager.read_command_file(file_path)
-        if command_file is None:
-            raise ValueError(f"无法读取命令文件: {file_path}")
+        # 使用 read_command_file_with_render 直接读取并渲染命令文件
+        rendered_content = command_manager.read_command_file_with_render(file_path, kwargs)
+        if rendered_content is None:
+            raise ValueError(f"无法读取或渲染命令文件: {file_path}")
         
-        # 使用 format_str_jinja2 进行模板渲染
-        try:
-            rendered_content = format_str_jinja2(command_file.content, **kwargs)
-            
-            global_logger.info(f"成功渲染命令文件: {file_path}, 使用参数: {kwargs}")
-            return rendered_content
-            
-        except Exception as e:
-            global_logger.error(f"渲染命令文件时出错: {file_path}, 错误: {str(e)}")
-            raise Exception(f"渲染命令文件失败: {str(e)}")
+        global_logger.info(f"成功渲染命令文件: {file_path}, 使用参数: {kwargs}")
+        return rendered_content
             
     except Exception as e:
         global_logger.error(f"render_command_file_with_variables 执行失败: {str(e)}")
