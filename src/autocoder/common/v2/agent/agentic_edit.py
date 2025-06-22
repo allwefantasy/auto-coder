@@ -1644,9 +1644,9 @@ class AgenticEdit:
                             else:
                                 yield ToolCallEvent(tool=tool_obj, tool_xml=reconstructed_xml)
                         else:
-                            yield ErrorEvent(message=f"Failed to parse tool: <{current_tool_tag}>")
+                            # yield ErrorEvent(message=f"Failed to parse tool: <{current_tool_tag}>")
                             # Optionally yield the raw XML as plain text?
-                            # yield LLMOutputEvent(text=tool_xml)
+                            yield LLMOutputEvent(text=f"Failed to parse tool: <{current_tool_tag}> {tool_xml}")
 
                         buffer = buffer[tool_block_end_index:]
                         in_tool_block = False
@@ -2378,6 +2378,16 @@ class AgenticEdit:
                     
                     # 记录日志
                     logger.info(f"当前会话总 tokens: {agent_event.tokens_used}")
+
+                elif isinstance(agent_event, ConversationIdEvent):
+                    metadata.path = "/agent/edit/conversation_id"
+                    content = EventContentCreator.create_result(
+                        content={
+                            "conversation_id": agent_event.conversation_id
+                        },
+                        metadata={}
+                    )
+                    event_manager.write_result(content=content.to_dict(), metadata=metadata.to_dict())    
                     
                 elif isinstance(agent_event, ErrorEvent):                                        
                     metadata.path = "/agent/edit/error"
@@ -2387,7 +2397,7 @@ class AgenticEdit:
                         details={"agent_event_type": "ErrorEvent"}
                     )
                     event_manager.write_error(
-                        content=content.to_dict(), metadata=metadata.to_dict())
+                        content=content.to_dict(), metadata=metadata.to_dict())                
                 else:
                     metadata.path = "/agent/edit/error"
                     logger.warning(
