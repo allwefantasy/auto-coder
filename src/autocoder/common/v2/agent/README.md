@@ -227,20 +227,171 @@ success = agent.rollback_to_checkpoint(checkpoint_id)
 
 ### 3. 事件系统
 
-**事件类型：**
-- `LLMOutputEvent`: LLM的普通文本输出
-- `LLMThinkingEvent`: LLM的思考过程（`<thinking>`标签内容）
-- `ToolCallEvent`: 工具调用事件
-- `ToolResultEvent`: 工具执行结果事件
-- `CompletionEvent`: 任务完成事件
-- `ErrorEvent`: 错误事件
-- `TokenUsageEvent`: Token使用统计事件
-- `WindowLengthChangeEvent`: 对话窗口长度变化事件
+事件系统是 AgenticEdit 的核心组件，负责将整个交互过程转换为结构化的事件流，支持实时流式输出和多种输出格式。
 
-**事件流处理：**
-- 支持实时流式输出，提供良好的用户体验
-- 事件可以转换为不同的输出格式（终端显示、Web事件等）
-- 统一的错误处理和异常捕获机制
+#### 3.1 核心事件类型
+
+**LLM 交互事件：**
+
+- **`LLMOutputEvent`**: LLM的普通文本输出
+  - **用途**: 承载LLM生成的正常文本内容
+  - **触发时机**: LLM流式输出过程中，非思考和工具调用的文本片段
+  - **数据结构**: `{ text: str }`
+  - **示例**: 当LLM回答问题或提供解释时的文本内容
+
+- **`LLMThinkingEvent`**: LLM的思考过程
+  - **用途**: 承载LLM在`<thinking>`标签内的思考内容
+  - **触发时机**: 解析到`<thinking>...</thinking>`标签时
+  - **数据结构**: `{ text: str }`
+  - **示例**: LLM分析问题、制定计划时的内部思考过程
+
+**工具系统事件：**
+
+- **`ToolCallEvent`**: 工具调用事件
+  - **用途**: 记录LLM决定调用某个工具的行为
+  - **触发时机**: 解析到工具XML标签（如`<read_file>`, `<write_to_file>`等）时
+  - **数据结构**: `{ tool: BaseTool, tool_xml: str }`
+  - **示例**: LLM决定读取文件、执行命令或写入文件时
+
+- **`ToolResultEvent`**: 工具执行结果事件
+  - **用途**: 记录工具执行的结果和状态
+  - **触发时机**: 工具执行完成后
+  - **数据结构**: `{ tool_name: str, result: ToolResult }`
+  - **ToolResult结构**: `{ success: bool, message: str, content: Any }`
+  - **示例**: 文件读取成功/失败、命令执行结果等
+
+**任务控制事件：**
+
+- **`CompletionEvent`**: 任务完成事件
+  - **用途**: 标记整个任务的完成
+  - **触发时机**: LLM调用`attempt_completion`工具时
+  - **数据结构**: `{ completion: AttemptCompletionTool, completion_xml: str }`
+  - **示例**: LLM认为任务已完成并提供最终结果
+
+- **`PlanModeRespondEvent`**: 计划模式响应事件
+  - **用途**: 在计划模式下的响应
+  - **触发时机**: LLM调用`plan_mode_respond`工具时
+  - **数据结构**: `{ completion: PlanModeRespondTool, completion_xml: str }`
+  - **示例**: 在计划模式下提供分析和建议
+
+**系统监控事件：**
+
+- **`ErrorEvent`**: 错误事件
+  - **用途**: 记录系统运行过程中的错误
+  - **触发时机**: 工具执行失败、解析错误、系统异常等
+  - **数据结构**: `{ message: str }`
+  - **示例**: 文件不存在、权限不足、网络错误等
+
+- **`TokenUsageEvent`**: Token使用统计事件
+  - **用途**: 记录LLM调用的Token消耗和成本
+  - **触发时机**: LLM流式响应结束时
+  - **数据结构**: `{ usage: SingleOutputMeta }`
+  - **包含信息**: 输入/输出Token数量、成本计算、模型信息等
+
+- **`WindowLengthChangeEvent`**: 对话窗口长度变化事件
+  - **用途**: 跟踪当前对话的Token使用情况
+  - **触发时机**: 对话历史更新时（添加用户消息、助手回复、工具结果等）
+  - **数据结构**: `{ tokens_used: int }`
+  - **示例**: 用于监控对话长度，触发上下文剪枝
+
+**会话管理事件：**
+
+- **`ConversationIdEvent`**: 对话ID事件
+  - **用途**: 提供当前对话的唯一标识符
+  - **触发时机**: 对话开始时或恢复对话时
+  - **数据结构**: `{ conversation_id: str }`
+  - **示例**: 用于前端界面显示当前对话ID
+
+#### 3.2 事件流处理机制
+
+**流式解析架构：**
+```python
+def stream_and_parse_llm_response(self, generator) -> Generator[Event, None, None]:
+    """
+    核心流式解析方法，将LLM的原始输出转换为结构化事件
+    
+    解析流程：
+    1. 缓冲区管理：维护文本缓冲区，处理不完整的标签
+    2. 状态机：跟踪当前解析状态（普通文本/思考/工具调用）
+    3. XML解析：识别和解析工具调用的XML标签
+    4. 事件生成：将解析结果转换为对应的事件对象
+    """
+```
+
+**事件生成时序：**
+1. **对话开始**: `ConversationIdEvent` → `WindowLengthChangeEvent`
+2. **LLM响应**: `LLMThinkingEvent` → `LLMOutputEvent` → `ToolCallEvent`
+3. **工具执行**: `ToolResultEvent` → `WindowLengthChangeEvent`
+4. **任务完成**: `CompletionEvent` → `TokenUsageEvent`
+5. **错误处理**: `ErrorEvent`（可在任何阶段触发）
+
+**事件转换适配：**
+- **终端模式**: 事件直接渲染为Rich格式的终端输出
+- **Web模式**: 事件转换为标准事件系统格式，通过EventManager发布
+- **API模式**: 事件序列化为JSON格式，支持WebSocket或HTTP推送
+
+#### 3.3 事件系统集成
+
+**与标准事件系统的桥接：**
+```python
+def run_with_events(self, request: AgenticEditRequest):
+    """
+    将AgenticEdit的内部事件转换为标准事件系统格式
+    
+    转换映射：
+    - LLMOutputEvent → StreamContent (content类型)
+    - LLMThinkingEvent → StreamContent (thinking类型)  
+    - ToolCallEvent → ResultContent (工具调用信息)
+    - ToolResultEvent → ResultContent (工具结果信息)
+    - CompletionEvent → CompletionContent (任务完成)
+    - ErrorEvent → ErrorContent (错误信息)
+    """
+```
+
+**事件路径规范：**
+- `/agent/edit/thinking`: 思考过程事件
+- `/agent/edit/output`: 正常输出事件
+- `/agent/edit/tool/call`: 工具调用事件
+- `/agent/edit/tool/result`: 工具结果事件
+- `/agent/edit/completion`: 任务完成事件
+- `/agent/edit/error`: 错误事件
+- `/agent/edit/token_usage`: Token使用事件
+- `/agent/edit/window_length_change`: 窗口长度变化事件
+- `/agent/edit/conversation_id`: 对话ID事件
+
+#### 3.4 事件处理最佳实践
+
+**事件监听模式：**
+```python
+# 终端模式 - 直接处理事件
+for event in agent.analyze(request):
+    if isinstance(event, LLMOutputEvent):
+        console.print(event.text, end="")
+    elif isinstance(event, ToolCallEvent):
+        display_tool_call(event.tool)
+    elif isinstance(event, CompletionEvent):
+        display_completion(event.completion)
+
+# Web模式 - 通过事件管理器
+event_manager = get_event_manager()
+agent.run_with_events(request)  # 自动发布事件
+```
+
+**错误恢复机制：**
+- **解析错误**: 继续处理后续内容，记录错误但不中断流程
+- **工具错误**: 将错误信息作为工具结果返回给LLM
+- **系统错误**: 发布ErrorEvent，可选择中断或继续
+
+**性能优化：**
+- **批量处理**: 小的文本片段会被合并以减少事件数量
+- **缓冲管理**: 智能缓冲区管理避免内存泄漏
+- **异步处理**: 支持异步事件处理，不阻塞主流程
+
+**调试支持：**
+- **事件日志**: 所有事件都会被记录到日志系统
+- **事件重放**: 支持保存和重放事件序列用于调试
+- **状态检查**: 提供事件流状态检查工具
+=======
 
 ### 4. 文件管理系统
 
