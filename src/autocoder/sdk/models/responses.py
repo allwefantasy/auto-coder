@@ -33,7 +33,7 @@ class CLIResult:
             self.exit_code = CLI_EXIT_ERROR
     
     @classmethod
-    def success_result(cls, output: str, debug_info: Dict[str, Any] = None) -> "CLIResult":
+    def success_result(cls, output: str, debug_info: Optional[Dict[str, Any]] = None) -> "CLIResult":
         """创建成功结果"""
         return cls(
             success=True,
@@ -42,7 +42,7 @@ class CLIResult:
         )
     
     @classmethod
-    def error_result(cls, error: str, exit_code: int = CLI_EXIT_ERROR, debug_info: Dict[str, Any] = None) -> "CLIResult":
+    def error_result(cls, error: str, exit_code: int = CLI_EXIT_ERROR, debug_info: Optional[Dict[str, Any]] = None) -> "CLIResult":
         """创建错误结果"""
         return cls(
             success=False,
@@ -198,7 +198,7 @@ class StreamEvent:
             self.timestamp = datetime.now()
     
     @classmethod
-    def start_event(cls, session_id: str = None) -> "StreamEvent":
+    def start_event(cls, session_id: Optional[str] = None) -> "StreamEvent":
         """创建开始事件"""
         return cls(
             event_type="start",
@@ -207,7 +207,7 @@ class StreamEvent:
         )
     
     @classmethod
-    def content_event(cls, content: str, session_id: str = None) -> "StreamEvent":
+    def content_event(cls, content: str, session_id: Optional[str] = None) -> "StreamEvent":
         """创建内容事件"""
         return cls(
             event_type="content",
@@ -216,7 +216,7 @@ class StreamEvent:
         )
     
     @classmethod
-    def end_event(cls, session_id: str = None) -> "StreamEvent":
+    def end_event(cls, session_id: Optional[str] = None) -> "StreamEvent":
         """创建结束事件"""
         return cls(
             event_type="end",
@@ -225,7 +225,7 @@ class StreamEvent:
         )
     
     @classmethod
-    def error_event(cls, error: str, session_id: str = None) -> "StreamEvent":
+    def error_event(cls, error: str, session_id: Optional[str] = None) -> "StreamEvent":
         """创建错误事件"""
         return cls(
             event_type="error",
@@ -265,6 +265,47 @@ class StreamEvent:
         """从JSON字符串创建StreamEvent实例"""
         data = json.loads(json_str)
         return cls.from_dict(data)
+
+
+@dataclass
+class CodeModificationResult:
+    """代码修改结果"""
+    success: bool
+    message: str
+    modified_files: List[str] = field(default_factory=list)
+    created_files: List[str] = field(default_factory=list)
+    deleted_files: List[str] = field(default_factory=list)
+    error_details: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """转换为字典"""
+        return {
+            "success": self.success,
+            "message": self.message,
+            "modified_files": self.modified_files,
+            "created_files": self.created_files,
+            "deleted_files": self.deleted_files,
+            "error_details": self.error_details,
+            "metadata": self.metadata
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "CodeModificationResult":
+        """从字典创建实例"""
+        return cls(
+            success=data.get("success", False),
+            message=data.get("message", ""),
+            modified_files=data.get("modified_files", []),
+            created_files=data.get("created_files", []),
+            deleted_files=data.get("deleted_files", []),
+            error_details=data.get("error_details"),
+            metadata=data.get("metadata", {})
+        )
+    
+    def to_json(self) -> str:
+        """转换为JSON字符串"""
+        return json.dumps(self.to_dict(), ensure_ascii=False, indent=2)
 
 
 

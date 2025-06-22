@@ -26,10 +26,12 @@ class IndexManager:
         """
         self.index_path = Path(index_path)
         self.index_file = self.index_path / "conversations.idx"
+        self.config_file = self.index_path / "config.json"
         self.lock_file = self.index_path / "index.lock"
         
         self._ensure_index_directory()
         self._load_index()
+        self._load_config()
     
     def _ensure_index_directory(self):
         """确保索引目录存在"""
@@ -46,6 +48,18 @@ class IndexManager:
         except (json.JSONDecodeError, OSError, IOError):
             # 如果索引损坏，重建空索引
             self._index_data = {}
+    
+    def _load_config(self):
+        """加载配置数据"""
+        try:
+            if self.config_file.exists():
+                with open(self.config_file, 'r', encoding='utf-8') as f:
+                    self._config_data = json.load(f)
+            else:
+                self._config_data = {}
+        except (json.JSONDecodeError, OSError, IOError):
+            # 如果配置损坏，重建空配置
+            self._config_data = {}
     
     def _save_index(self) -> bool:
         """
@@ -67,6 +81,81 @@ class IndexManager:
             
         except (OSError, IOError):
             return False
+    
+    def _save_config(self) -> bool:
+        """
+        保存配置数据
+        
+        Returns:
+            bool: 保存成功返回True
+        """
+        try:
+            # 使用临时文件进行原子写入
+            temp_file = self.config_file.with_suffix('.tmp')
+            
+            with open(temp_file, 'w', encoding='utf-8') as f:
+                json.dump(self._config_data, f, ensure_ascii=False, indent=2)
+            
+            # 原子重命名
+            temp_file.replace(self.config_file)
+            return True
+            
+        except (OSError, IOError):
+            return False
+    
+    def set_current_conversation(self, conversation_id: Optional[str]) -> bool:
+        """
+        设置当前对话ID
+        
+        Args:
+            conversation_id: 对话ID，None表示清除当前对话
+            
+        Returns:
+            bool: 设置成功返回True
+        """
+        try:
+            # 重新加载配置以获取最新数据
+            self._load_config()
+            
+            # 设置或清除当前对话ID
+            if conversation_id is None:
+                self._config_data.pop('current_conversation_id', None)
+            else:
+                self._config_data['current_conversation_id'] = conversation_id
+            
+            # 更新时间戳
+            self._config_data['last_updated'] = time.time()
+            
+            # 保存配置
+            return self._save_config()
+            
+        except Exception:
+            return False
+    
+    def get_current_conversation_id(self) -> Optional[str]:
+        """
+        获取当前对话ID
+        
+        Returns:
+            Optional[str]: 当前对话ID，未设置返回None
+        """
+        try:
+            # 重新加载配置以获取最新数据
+            self._load_config()
+            
+            return self._config_data.get('current_conversation_id')
+            
+        except Exception:
+            return None
+    
+    def clear_current_conversation(self) -> bool:
+        """
+        清除当前对话设置
+        
+        Returns:
+            bool: 清除成功返回True
+        """
+        return self.set_current_conversation(None)
     
     def add_conversation(self, conversation_metadata: Dict[str, Any]) -> bool:
         """

@@ -7,13 +7,14 @@ CLI 选项定义模块
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any
 
+from ..constants import DEFAULT_MODEL
+
 
 @dataclass
 class CLIOptions:
     """CLI选项数据类，用于配置命令行工具的行为。"""
     
-    # 运行模式选项
-    print_mode: bool = False  # 单次运行模式，执行一次查询后退出
+    # 会话选项
     continue_session: bool = False  # 继续最近的对话
     resume_session: Optional[str] = None  # 恢复特定会话的ID
     
@@ -30,6 +31,7 @@ class CLIOptions:
     system_prompt: Optional[str] = None  # 系统提示
     allowed_tools: list = field(default_factory=list)  # 允许使用的工具列表
     permission_mode: str = "manual"  # 权限模式，可选值: manual, acceptEdits
+    model: Optional[str] = None  # 模型名称，如 gpt-4, gpt-3.5-turbo 等
     
     def validate(self) -> None:
         """验证选项的有效性。"""
@@ -54,6 +56,10 @@ class CLIOptions:
         # 验证会话选项的互斥性
         if self.continue_session and self.resume_session:
             raise ValueError("continue_session和resume_session不能同时设置")
+        
+        # 验证模型参数必须存在
+        if not self.model or not self.model.strip():
+            raise ValueError("model参数是必需的，请使用 --model 参数指定要使用的模型")
 
 
 @dataclass

@@ -12,6 +12,7 @@ import io
 import uuid
 import glob
 import time
+import datetime
 import hashlib
 from contextlib import contextmanager
 from typing import List, Dict, Any, Optional
@@ -24,6 +25,7 @@ from autocoder.auto_coder import main as auto_coder_main
 from autocoder.utils import get_last_yaml_file
 from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
 from autocoder.common.v2.agent.agentic_edit import AgenticEdit,AgenticEditRequest
+from autocoder.common.v2.agent.agentic_edit_types import AgenticEditConversationConfig
 from autocoder.index.symbols_utils import (
     extract_symbols,
     SymbolType,
@@ -60,12 +62,13 @@ from autocoder.utils.thread_utils import run_in_raw_thread
 from autocoder.memory.active_context_manager import ActiveContextManager
 from autocoder.common.command_completer import CommandCompleter,FileSystemModel as CCFileSystemModel,MemoryConfig as CCMemoryModel
 from autocoder.common.conf_validator import ConfigValidator
-from autocoder import command_parser as CommandParser
+from autocoder.common.ac_style_command_parser import parse_query
 from loguru import logger as global_logger
 from autocoder.utils.project_structure import EnhancedFileAnalyzer
 from autocoder.common import SourceCodeList,SourceCode
 from autocoder.common.file_monitor import FileMonitor
 from filelock import FileLock
+from autocoder.common.command_file_manager import CommandManager
 
 
 ## 对外API，用于第三方集成 auto-coder 使用。
@@ -193,7 +196,7 @@ def configure_project_type():
 
     if project_type:
         configure(f"project_type:{project_type}", skip_print=True)
-        configure("skip_build_index:false", skip_print=True)
+        configure("skip_build_index:true", skip_print=True)
         print_info(f"\n{get_message('project_type_set')} {project_type}")
     else:
         print_info(f"\n{get_message('using_default_type')}")
@@ -280,6 +283,16 @@ def start():
     if os.environ.get('autocoder_auto_init',"true") in ["true","True","True",True]:
         configure_logger()
         init_singleton_instances()
+
+    # conversation_manager = get_conversation_manager()
+    # if not conversation_manager.get_current_conversation():
+    #     # Format: yyyyMMdd-MM-ss-uuid
+    #     current_time = datetime.datetime.now()
+    #     time_str = current_time.strftime("%Y%m%d-%H-%M-%S")
+    #     name = f"{time_str}-{str(uuid.uuid4())}"
+    #     conversation_id = conversation_manager.create_new_conversation(name=name,description="")
+    #     conversation_manager.set_current_conversation(conversation_id)
+            
 
 def stop():
     try:
@@ -735,6 +748,266 @@ def revert():
     else:
         result_manager.append(content="No previous chat action found to revert.", meta={"action": "revert","success":False, "input":{                
             }})        
+
+
+def add_files(args: List[str]):
+
+    result_manager = ResultManager()
+    if "groups" not in memory["current_files"]:
+        memory["current_files"]["groups"] = {}
+    if "groups_info" not in memory["current_files"]:
+        memory["current_files"]["groups_info"] = {}
+    if "current_groups" not in memory["current_files"]:
+        memory["current_files"]["current_groups"] = []
+    groups = memory["current_files"]["groups"]
+    groups_info = memory["current_files"]["groups_info"]
+
+    console = Console()
+    printer = Printer()
+
+    if not args:
+        printer.print_in_terminal("add_files_no_args", style="red")
+        result_manager.append(content=printer.get_message_from_key("add_files_no_args"), 
+                              meta={"action": "add_files","success":False, "input":{ "args": args}})
+        return
+
+    if args[0] == "/refresh":
+        completer.refresh_files()
+
+
+def _handle_post_commit_and_pr(post_commit: bool, pr: bool, query: str, args, llm):
+    """
+    处理 post_commit 和 PR 功能
+    
+    Args:
+        post_commit: 是否执行 post_commit
+        pr: 是否创建 PR
+        query: 原始查询
+        args: 配置参数
+        llm: LLM 实例
+    """
+    printer = Printer()
+    console = Console()
+    
+    try:
+        if post_commit:
+            # 执行 post_commit 操作
+            printer.print_in_terminal("post_commit_executing", style="blue")
+            
+            # 检查是否有未提交的更改
+            uncommitted_changes = git_utils.get_uncommitted_changes(".")
+            if uncommitted_changes:
+                # 生成提交消息
+                commit_message = git_utils.generate_commit_message.with_llm(llm).run(
+                    uncommitted_changes
+                )
+                
+                # 执行提交
+                commit_result = git_utils.commit_changes(".", commit_message)
+                git_utils.print_commit_info(commit_result=commit_result)
+                printer.print_in_terminal("post_commit_success", style="green", message=commit_message)
+                
+                # 如果需要创建 PR，则继续处理
+                if pr:
+                    _create_pull_request(commit_result, query, llm)
+            else:
+                printer.print_in_terminal("post_commit_no_changes", style="yellow")
+                
+        elif pr:
+            # 只创建 PR，不执行 post_commit
+            # 获取最后一个 commit
+            try:
+                repo = git.Repo(".")
+                last_commit = repo.head.commit
+                
+                # 创建一个模拟的 commit_result 对象
+                class MockCommitResult:
+                    def __init__(self, commit):
+                        self.commit_hash = commit.hexsha
+                        self.commit_message = commit.message.strip()
+                        self.changed_files = []
+                        
+                mock_commit_result = MockCommitResult(last_commit)
+                _create_pull_request(mock_commit_result, query, llm)
+                
+            except Exception as e:
+                printer.print_in_terminal("pr_get_last_commit_failed", style="red", error=str(e))
+                
+    except Exception as e:
+        printer.print_in_terminal("post_commit_pr_failed", style="red", error=str(e))
+
+
+def _create_pull_request(commit_result, original_query: str, llm):
+    """
+    创建 Pull Request
+    
+    Args:
+        commit_result: 提交结果对象
+        original_query: 原始查询
+        llm: LLM 实例
+    """
+    printer = Printer()
+    console = Console()
+    
+    try:
+        # 检查是否安装了 gh CLI
+        gh_check = subprocess.run(["gh", "--version"], capture_output=True, text=True)
+        if gh_check.returncode != 0:
+            printer.print_in_terminal("pr_gh_not_installed", style="red")
+            return
+            
+        # 检查是否已经登录 GitHub
+        auth_check = subprocess.run(["gh", "auth", "status"], capture_output=True, text=True)
+        if auth_check.returncode != 0:
+            printer.print_in_terminal("pr_gh_not_authenticated", style="red")
+            return
+            
+        # 获取当前分支名
+        repo = git.Repo(".")
+        current_branch = repo.active_branch.name
+        
+        # 如果在 main/master 分支，创建新分支
+        if current_branch in ["main", "master"]:
+            # 生成新分支名
+            import re
+            branch_name = re.sub(r'[^a-zA-Z0-9\-_]', '-', original_query.lower())
+            branch_name = f"auto-coder-{branch_name[:30]}-{int(time.time())}"
+            
+            # 创建并切换到新分支
+            new_branch = repo.create_head(branch_name)
+            new_branch.checkout()
+            current_branch = branch_name
+            
+            printer.print_in_terminal("pr_created_branch", style="blue", branch=branch_name)
+            
+        # 推送当前分支到远程
+        try:
+            origin = repo.remotes.origin
+            origin.push(current_branch)
+            printer.print_in_terminal("pr_pushed_branch", style="blue", branch=current_branch)
+        except Exception as e:
+            printer.print_in_terminal("pr_push_failed", style="red", error=str(e))
+            return
+            
+        # 生成 PR 标题和描述
+        pr_title, pr_body = _generate_pr_content(commit_result, original_query, llm)
+        
+        # 创建 PR
+        pr_cmd = [
+            "gh", "pr", "create",
+            "--title", pr_title,
+            "--body", pr_body,
+            "--head", current_branch
+        ]
+        
+        pr_result = subprocess.run(pr_cmd, capture_output=True, text=True)
+        
+        if pr_result.returncode == 0:
+            pr_url = pr_result.stdout.strip()
+            printer.print_in_terminal("pr_created_success", style="green", url=pr_url)
+            
+            # 显示 PR 信息
+            console.print(Panel(
+                f"[bold green]Pull Request Created Successfully![/bold green]\n\n"
+                f"[bold]Title:[/bold] {pr_title}\n"
+                f"[bold]URL:[/bold] {pr_url}\n"
+                f"[bold]Branch:[/bold] {current_branch}",
+                title="🎉 Pull Request",
+                border_style="green"
+            ))
+        else:
+            printer.print_in_terminal("pr_creation_failed", style="red", error=pr_result.stderr)
+            
+    except Exception as e:
+        printer.print_in_terminal("pr_creation_error", style="red", error=str(e))
+
+
+@byzerllm.prompt()
+def _generate_pr_content(commit_result, original_query: str, llm) -> tuple:
+    """
+    生成 PR 标题和描述
+    
+    根据提交信息和原始查询生成合适的 PR 标题和描述。
+    
+    Args:
+        commit_result: 提交结果，包含 commit_message 和 changed_files
+        original_query: 用户的原始查询请求
+        
+    Returns:
+        tuple: (pr_title, pr_body) PR标题和描述内容
+        
+    请生成简洁明了的 PR 标题（不超过72字符）和详细的描述内容。
+    标题应该概括主要变更，描述应该包含：
+    1. 变更的背景和目的
+    2. 主要修改内容
+    3. 影响的文件（如果有的话）
+    
+    提交信息：{{ commit_result.commit_message }}
+    原始需求：{{ original_query }}
+    {% if commit_result.changed_files %}
+    修改的文件：
+    {% for file in commit_result.changed_files %}
+    - {{ file }}
+    {% endfor %}
+    {% endif %}
+    """
+    
+    # 这个函数会被 byzerllm 装饰器处理，返回 LLM 生成的内容
+    # 实际实现会在运行时由装饰器处理
+    pass
+
+
+# 实际的 PR 内容生成函数
+def _generate_pr_content(commit_result, original_query: str, llm):
+    """
+    生成 PR 标题和描述的实际实现
+    """
+    try:
+        # 使用 LLM 生成 PR 内容
+        prompt = f"""
+根据以下信息生成 Pull Request 的标题和描述：
+
+提交信息：{getattr(commit_result, 'commit_message', 'Auto-generated commit')}
+原始需求：{original_query}
+修改的文件：{getattr(commit_result, 'changed_files', [])}
+
+请生成：
+1. 简洁的 PR 标题（不超过72字符）
+2. 详细的 PR 描述，包含变更背景、主要修改内容等
+
+格式要求：
+TITLE: [标题内容]
+BODY: [描述内容]
+"""
+        
+        response = llm.chat([{"role": "user", "content": prompt}])
+        
+        # 解析响应
+        lines = response.split('\n')
+        title = ""
+        body = ""
+        
+        for line in lines:
+            if line.startswith("TITLE:"):
+                title = line.replace("TITLE:", "").strip()
+            elif line.startswith("BODY:"):
+                body = line.replace("BODY:", "").strip()
+            elif body:  # 如果已经开始收集 body，继续添加后续行
+                body += "\n" + line
+                
+        # 如果解析失败，使用默认值
+        if not title:
+            title = f"Auto-coder: {original_query[:50]}..."
+        if not body:
+            body = f"This PR was automatically generated by Auto-coder.\n\nOriginal request: {original_query}"
+            
+        return title, body
+        
+    except Exception as e:
+        # 如果 LLM 生成失败，使用默认值
+        title = f"Auto-coder: {original_query[:50]}..."
+        body = f"This PR was automatically generated by Auto-coder.\n\nOriginal request: {original_query}\n\nCommit: {getattr(commit_result, 'commit_message', 'Auto-generated commit')}"
+        return title, body
 
 
 def add_files(args: List[str]):
@@ -1704,7 +1977,7 @@ def chat(query: str):
         yaml_config["emb_model"] = conf["emb_model"]
 
     # 解析命令        
-    commands_infos = CommandParser.parse_query(query)    
+    commands_infos = parse_query(query)    
     if len(commands_infos) > 0:
         if "query" in commands_infos:
             query = " ".join(commands_infos["query"]["args"])
@@ -1866,7 +2139,7 @@ def active_context(query: str):
         query: 命令参数，例如 "list" 列出所有任务
     """    
     # 解析命令
-    commands_infos = CommandParser.parse_query(query)
+    commands_infos = parse_query(query)
     command = "list"  # 默认命令是列出所有任务
     
     if len(commands_infos) > 0:
@@ -2918,16 +3191,55 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
                     
         llm = get_single_llm(args.code_model or args.model,product_mode=args.product_mode) 
         conversation_history = extra_args.get("conversations",[])   
+
+        command_infos = parse_query(query) 
+
+        # terminal 的总是接着上次对话, 所以这里总是设置为 resume
+        conversation_config = AgenticEditConversationConfig(
+            action="resume"
+        )
+        
+        ## web 模式会自己管理对话,所以这里总是设置为新对话
+        if get_run_context().mode == RunMode.WEB:
+            command_infos = {
+                "new":{
+                    "args":[query]
+                }
+            }
+        
+        task_query = query
+        
+        if "new" in command_infos:  
+            conversation_config.action = "new"
+            task_query = " ".join(command_infos["new"]["args"])
+            
+        if "resume" in command_infos:
+            conversation_config.action = "resume"
+            conversation_config.conversation_id = command_infos["resume"]["args"][0]            
+            task_query = " ".join(command_infos["resume"]["args"][1:])  
+
+        if "list" in command_infos:
+            conversation_config.action = "list"   
+
+        if "command" in command_infos:
+            conversation_config.action = "command"
+            task_query = render_command_file_with_variables(command_infos)             
+             
+
+        conversation_config.query = task_query
+
         agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
                             conversation_history=conversation_history,
                             memory_config=MemoryConfig(memory=memory, 
                             save_memory_func=save_memory), command_config=CommandConfig,
-                            conversation_name="current"
+                            conversation_name="current",
+                            conversation_config=conversation_config
                             )           
         if get_run_context().mode == RunMode.WEB:
-            agent.run_with_events(AgenticEditRequest(user_input=query))
-        else:
-            agent.run_in_terminal(AgenticEditRequest(user_input=query))
+            agent.run_with_events(AgenticEditRequest(user_input=task_query))
+        
+        if get_run_context().mode == RunMode.TERMINAL:
+            agent.run_in_terminal(AgenticEditRequest(user_input=task_query))
             
         completer.refresh_files()
         return
@@ -2983,3 +3295,193 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
         padding=(1, 2)
     ))
     completer.refresh_files()
+
+
+
+def run_auto_command(query: str,
+                     pre_commit:bool=False,
+                     post_commit:bool=False,
+                     pr:bool=False,
+                     extra_args: Dict[str,Any]={}
+                     ):    
+    """处理/auto指令"""        
+    args = get_final_config() 
+    memory = get_memory()         
+    if args.enable_agentic_edit:        
+        from autocoder.run_context import get_run_context,RunMode
+        execute_file,args = generate_new_yaml(query)
+        args.file = execute_file                      
+        current_files = memory.get("current_files",{}).get("files",[])
+        sources = []
+        for file in current_files:
+            try:
+                with open(file,"r",encoding="utf-8") as f:
+                    sources.append(SourceCode(module_name=file,source_code=f.read()))  
+            except Exception as e:
+                global_logger.error(f"Failed to read file {file}: {e}")
+                    
+        llm = get_single_llm(args.code_model or args.model,product_mode=args.product_mode) 
+        conversation_history = extra_args.get("conversations",[])   
+
+        command_infos = parse_query(query) 
+
+        # terminal 的总是接着上次对话, 所以这里总是设置为 resume
+        conversation_config = AgenticEditConversationConfig(
+            action="resume"
+        )
+        
+        ## web 模式会自己管理对话,所以这里总是设置为新对话
+        if get_run_context().mode == RunMode.WEB:
+            command_infos = {
+                "new":{
+                    "args":[query]
+                }
+            }
+        
+        task_query = query        
+        
+        if "new" in command_infos:  
+            conversation_config.action = "new"
+            task_query = " ".join(command_infos["new"]["args"])
+            
+        if "resume" in command_infos:
+            conversation_config.action = "resume"
+            conversation_config.conversation_id = command_infos["resume"]["args"][0]            
+            task_query = " ".join(command_infos["resume"]["args"][1:])  
+
+        if "list" in command_infos:
+            conversation_config.action = "list"
+
+        
+        if "command" in command_infos:
+            conversation_config.action = "command"
+            task_query = render_command_file_with_variables(command_infos)
+             
+        conversation_config.query = task_query        
+
+        agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
+                            conversation_history=conversation_history,
+                            memory_config=MemoryConfig(memory=memory, 
+                            save_memory_func=save_memory), command_config=CommandConfig,
+                            conversation_name="current",
+                            conversation_config=conversation_config
+                            )           
+        if pre_commit:
+            agent.apply_pre_changes()
+        
+        events = agent.run(AgenticEditRequest(user_input=task_query))        
+        
+        for event in events:
+            yield event
+            
+        # 处理 post_commit 和 PR 功能
+        if post_commit or pr:
+            _handle_post_commit_and_pr(post_commit, pr, query, args, llm)
+            
+        completer.refresh_files()
+        return
+        
+    args = get_final_config()  
+    # 准备请求参数
+    request = AutoCommandRequest(
+        user_input=query        
+    )
+
+    # 初始化调优器
+    llm = get_single_llm(args.chat_model or args.model,product_mode=args.product_mode)    
+    tuner = CommandAutoTuner(llm, 
+                             args=args,
+                             memory_config=MemoryConfig(memory=memory, save_memory_func=save_memory), 
+                             command_config=CommandConfig(
+                                 add_files=add_files,
+                                 remove_files=remove_files,
+                                 list_files=list_files,
+                                 conf=configure,
+                                 revert=revert,
+                                 commit=commit,
+                                 help=help,
+                                 exclude_dirs=exclude_dirs,
+                                 exclude_files=exclude_files,
+                                 ask=ask,
+                                 chat=chat,
+                                 coding=coding,
+                                 design=design,
+                                 summon=summon,
+                                 lib=lib_command,
+                                 mcp=mcp,
+                                 models=manage_models,
+                                 index_build=index_build,
+                                 index_query=index_query,  
+                                 execute_shell_command=execute_shell_command,  
+                                 generate_shell_command=generate_shell_command,
+                                 conf_export=conf_export,
+                                 conf_import=conf_import,
+                                 index_export=index_export,
+                                 index_import=index_import                                                                                       
+                             ))
+
+    # 生成建议
+    response = tuner.analyze(request)
+    printer = Printer()
+    # 显示建议
+    console = Console()        
+    console.print(Panel(
+        Markdown(response.reasoning or ""),
+        title=printer.get_message_from_key_with_format("auto_command_reasoning_title"),
+        border_style="blue",
+        padding=(1, 2)
+    ))
+    
+    # 处理 post_commit 和 PR 功能
+    if post_commit or pr:
+        _handle_post_commit_and_pr(post_commit, pr, query, args, llm)
+    
+    completer.refresh_files()
+
+
+def render_command_file_with_variables(command_infos: Dict[str, Any]) -> str:
+    """
+    使用 CommandManager 加载并渲染命令文件
+    
+    Args:
+        command_infos: parse_query(query) 的返回结果，包含命令和参数信息
+        
+    Returns:
+        str: 渲染后的文件内容
+        
+    Raises:
+        ValueError: 当参数不足或文件不存在时
+        Exception: 当渲染过程出现错误时
+    """
+    try:
+        # 获取第一个命令的信息
+        if not command_infos:
+            raise ValueError("command_infos 为空，无法获取命令信息")
+        
+        # command 的位置参数作为路径
+        first_command = command_infos["command"]
+        
+        # 获取位置参数（文件路径）
+        args = first_command.get("args", [])
+        if not args:
+            raise ValueError("未提供文件路径参数")
+        
+        file_path = args[0]  # 第一个位置参数作为文件路径
+        
+        # 获取关键字参数作为渲染参数
+        kwargs = first_command.get("kwargs", {})
+        
+        # 初始化 CommandManager
+        command_manager = CommandManager()
+        
+        # 使用 read_command_file_with_render 直接读取并渲染命令文件
+        rendered_content = command_manager.read_command_file_with_render(file_path, kwargs)
+        if rendered_content is None:
+            raise ValueError(f"无法读取或渲染命令文件: {file_path}")
+        
+        global_logger.info(f"成功渲染命令文件: {file_path}, 使用参数: {kwargs}")
+        return rendered_content
+            
+    except Exception as e:
+        global_logger.error(f"render_command_file_with_variables 执行失败: {str(e)}")
+        raise

@@ -847,7 +847,7 @@ class BaseAgent(ABC):
                         logger.info(f"Completion result: {tool_obj.result[:50]}...")
                         completion_event = CompletionEvent(completion=tool_obj, completion_xml=tool_xml)
                         logger.info(
-                            "AgenticEdit analyze loop finished due to AttemptCompletion.")
+                            "Agentic analyze loop finished due to AttemptCompletion.")
                         save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")    
                         mark_event_should_finish = True
                         should_yield_completion_event = True
@@ -965,7 +965,7 @@ class BaseAgent(ABC):
                 logger.info("Continuing the LLM interaction loop without breaking")
                 continue
             
-        logger.info(f"AgenticEdit analyze loop finished after {iteration_count} iterations.")
+        logger.info(f"Agentic analyze loop finished after {iteration_count} iterations.")
         save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_conversation")        
     
     def stream_and_parse_llm_response(

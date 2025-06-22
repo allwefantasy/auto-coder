@@ -86,6 +86,11 @@ class TokenUsageEvent(BaseModel):
     """Represents the result of executing a tool."""
     usage: Any
 
+
+class ConversationIdEvent(BaseModel):
+    """Represents the conversation id."""
+    conversation_id: str
+
 class PlanModeRespondEvent(BaseModel):
     """Represents the LLM attempting to complete the task."""
     completion: SkipValidation[PlanModeRespondTool] # Skip validation
@@ -177,3 +182,8 @@ class CommandConfig(BaseModel):
     index_import: SkipValidation[Callable]
     exclude_files: SkipValidation[Callable]
 
+class AgenticEditConversationConfig(BaseModel):     
+    conversation_name: Optional[str] = "current"
+    conversation_id: Optional[str] = None 
+    action: Optional[str] = None
+    query: Optional[str] = None

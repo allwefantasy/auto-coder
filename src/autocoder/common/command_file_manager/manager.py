@@ -5,8 +5,9 @@
 """
 
 import os
-import logging
-from typing import Dict, List, Optional, Set, Tuple
+from loguru import logger
+from typing import Dict, List, Optional, Set, Tuple, Any
+from byzerllm.utils import format_str_jinja2
 
 from autocoder.common.command_file_manager.models import (
     CommandFile, JinjaVariable, CommandFileAnalysisResult, ListCommandsResult
@@ -16,19 +17,19 @@ from autocoder.common.command_file_manager.utils import (
     analyze_command_file, is_command_file
 )
 
-logger = logging.getLogger(__name__)
-
 
 class CommandManager:
     """命令管理器，提供高层次的API接口"""
     
-    def __init__(self, commands_dir: str):
+    def __init__(self, commands_dir: Optional[str] = None):
         """
         初始化命令管理器
         
         Args:
-            commands_dir: 命令文件目录路径
+            commands_dir: 命令文件目录路径，如果为None则默认使用工作目录下的.autocodercommands目录
         """
+        if commands_dir is None:
+            commands_dir = os.path.join(os.getcwd(), ".autocodercommands")
         self.commands_dir = os.path.abspath(commands_dir)
         
         # 确保目录存在
@@ -95,6 +96,36 @@ class CommandManager:
             )
         except Exception as e:
             logger.error(f"读取命令文件时出错: {str(e)}")
+            return None
+    
+    def read_command_file_with_render(self, file_name: str, render_variables: Dict[str, Any] = {}) -> Optional[str]:
+        """
+        读取指定的命令文件并使用 Jinja2 进行渲染
+        
+        Args:
+            file_name: 命令文件名或相对路径
+            render_variables: 用于 Jinja2 渲染的变量字典，如果为 None 则使用空字典
+            
+        Returns:
+            Optional[str]: 渲染后的文件内容，如果文件不存在或渲染失败则返回None
+        """
+        if render_variables is None:
+            render_variables = {}
+            
+        # 首先读取命令文件
+        command_file = self.read_command_file(file_name)
+        if command_file is None:
+            return None
+        
+        try:
+            # 使用 format_str_jinja2 进行渲染
+            rendered_content = format_str_jinja2(command_file.content, **render_variables)
+            
+            logger.info(f"成功渲染命令文件: {file_name}, 使用变量: {render_variables}")
+            return rendered_content
+            
+        except Exception as e:
+            logger.error(f"渲染命令文件时出错: {file_name}, 错误: {str(e)}")
             return None
     
     def analyze_command_file(self, file_name: str) -> Optional[CommandFileAnalysisResult]:

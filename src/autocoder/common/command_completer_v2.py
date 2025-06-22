@@ -22,7 +22,7 @@ COMMAND_HIERARCHY = {
     "/mcp": {"/add": {}, "/remove": {}, "/list": {}, "/list_running": {}, "/refresh": {}, "/info": {}},
     "/lib": {"/add": {}, "/remove": {}, "/list": {}, "/set-proxy": {}, "/refresh": {}, "/get": {}},
     "/models": {"/chat": {}, "/add": {}, "/add_model": {}, "/remove": {}, "/list": {}, "/speed": {}, "/speed-test": {}, "/input_price": {}, "/output_price": {}, "/activate": {}},
-    "/auto": {},
+    "/auto": {"/new": {}, "/id": {}, "/list": {}},
     "/shell": {"/chat": {}},
     "/active_context": {"/list": {}, "/run": {}},
     "/index": {"/query": {}, "/build": {}, "/export": {}, "/import": {}},

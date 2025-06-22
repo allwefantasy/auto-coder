@@ -17,7 +17,7 @@ from autocoder.auto_coder_runner import get_final_config, get_single_llm
 from autocoder.chat_auto_coder_lang import get_message, get_message_with_format
 from autocoder.rag.token_counter import count_tokens
 from autocoder.common.printer import Printer
-from autocoder.command_parser import CommandParser
+from autocoder.common.ac_style_command_parser import CommandParser
 from loguru import logger
 
 printer = Printer()

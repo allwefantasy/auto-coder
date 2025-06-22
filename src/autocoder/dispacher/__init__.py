@@ -8,6 +8,11 @@ from autocoder.dispacher.actions.action import (
 from autocoder.dispacher.actions.plugins.action_regex_project import ActionRegexProject
 from typing import Optional
 import byzerllm
+# from autocoder.common.conversations.get_conversation_manager import (
+#     get_conversation_manager,
+#     get_conversation_manager_config,
+#     reset_conversation_manager
+# )
 
 
 class Dispacher:
@@ -16,6 +21,11 @@ class Dispacher:
         self.llm = llm
 
     def dispach(self):
+        # manager = get_conversation_manager()
+        # if not manager.get_current_conversation():
+        #     manager.create_conversation(name="New Conversation", description="New Conversation")
+        #     manager.set_current_conversation(manager.get_current_conversation_id())
+
         args = self.args
         actions = [            
             ActionTSProject(args=args, llm=self.llm),

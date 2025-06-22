@@ -9,7 +9,7 @@ import sys
 import json
 from typing import Dict, Set, List
 
-from autocoder.common.command_manager import (
+from autocoder.common.command_file_manager import (
     CommandManager, CommandFile, JinjaVariable, CommandFileAnalysisResult
 )
 
@@ -122,16 +122,30 @@ def get_all_variables_example(manager: CommandManager):
         print()
 
 
+def initialization_examples():
+    """初始化示例"""
+    print("\n=== CommandManager 初始化示例 ===")
+    
+    # 方式1: 使用默认目录（工作目录下的.autocodercommands目录）
+    print("方式1: 使用默认目录")
+    default_manager = CommandManager()
+    print(f"默认命令目录: {default_manager.commands_dir}")
+    
+    # 方式2: 指定自定义目录
+    print("\n方式2: 指定自定义目录")
+    test_dir = setup_test_environment()
+    custom_manager = CommandManager(test_dir)
+    print(f"自定义命令目录: {custom_manager.commands_dir}")
+    
+    return custom_manager
+
+
 def main():
     """主函数"""
-    # 设置测试环境
-    test_dir = setup_test_environment()
-    print(f"测试目录: {test_dir}")
+    # 展示初始化示例
+    manager = initialization_examples()
     
-    # 创建命令管理器
-    manager = CommandManager(test_dir)
-    
-    # 运行示例
+    # 运行其他示例
     list_command_files_example(manager)
     read_command_file_example(manager)
     analyze_command_file_example(manager)

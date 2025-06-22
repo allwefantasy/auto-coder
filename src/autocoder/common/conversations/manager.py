@@ -816,6 +816,7 @@ class PersistConversationManager:
             **self._stats,
             'cache_stats': cache_stats,
             'total_conversations': len(self.index_manager.list_conversations()),
+            'current_conversation_id': self.get_current_conversation_id(),
             'storage_path': self.config.storage_path
         }
     
@@ -916,3 +917,112 @@ class PersistConversationManager:
             self.index_manager._save_index()
         except Exception:
             pass  # Ignore errors during cleanup 
+
+    # Current Conversation Management Methods
+    
+    def set_current_conversation(self, conversation_id: str) -> bool:
+        """
+        设置当前对话。
+        
+        Args:
+            conversation_id: 要设置为当前对话的ID
+            
+        Returns:
+            True if setting was successful
+            
+        Raises:
+            ConversationNotFoundError: 如果对话不存在
+        """
+        try:
+            # 验证对话是否存在
+            conversation_data = self.get_conversation(conversation_id)
+            if not conversation_data:
+                raise ConversationNotFoundError(conversation_id)
+            
+            # 设置当前对话
+            success = self.index_manager.set_current_conversation(conversation_id)
+            if not success:
+                raise ConversationManagerError(f"Failed to set current conversation: {conversation_id}")
+            
+            return True
+            
+        except ConversationNotFoundError:
+            raise
+        except Exception as e:
+            raise ConversationManagerError(f"Failed to set current conversation {conversation_id}: {e}")
+    
+    def get_current_conversation_id(self) -> Optional[str]:
+        """
+        获取当前对话ID。
+        
+        Returns:
+            当前对话ID，如果未设置返回None
+        """
+        try:
+            return self.index_manager.get_current_conversation_id()
+        except Exception as e:
+            raise ConversationManagerError(f"Failed to get current conversation ID: {e}")
+    
+    def get_current_conversation(self) -> Optional[Dict[str, Any]]:
+        """
+        获取当前对话的完整数据。
+        
+        Returns:
+            当前对话的数据字典，如果未设置或对话不存在返回None
+        """
+        try:
+            current_id = self.get_current_conversation_id()
+            if not current_id:
+                return None
+            
+            return self.get_conversation(current_id)
+            
+        except Exception as e:
+            raise ConversationManagerError(f"Failed to get current conversation: {e}")
+    
+    def clear_current_conversation(self) -> bool:
+        """
+        清除当前对话设置。
+        
+        Returns:
+            True if clearing was successful
+        """
+        try:
+            success = self.index_manager.clear_current_conversation()
+            if not success:
+                raise ConversationManagerError("Failed to clear current conversation")
+            
+            return True
+            
+        except Exception as e:
+            raise ConversationManagerError(f"Failed to clear current conversation: {e}")
+    
+    def append_message_to_current(
+        self,
+        role: str,
+        content: Union[str, Dict[str, Any], List[Any]],
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """
+        向当前对话添加消息。
+        
+        Args:
+            role: 消息角色
+            content: 消息内容
+            metadata: 可选的消息元数据
+            
+        Returns:
+            消息ID
+            
+        Raises:
+            ConversationManagerError: 如果没有设置当前对话或添加失败
+        """
+        try:
+            current_id = self.get_current_conversation_id()
+            if not current_id:
+                raise ConversationManagerError("No current conversation set")
+            
+            return self.append_message(current_id, role, content, metadata)
+            
+        except Exception as e:
+            raise ConversationManagerError(f"Failed to append message to current conversation: {e}")

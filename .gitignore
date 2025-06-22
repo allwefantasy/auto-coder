@@ -70,3 +70,8 @@ notebooks/generated_image.png
 .windsurfrules
 .cursor
 
+
+.auto-coder/
+/actions/
+/output.txt
+/examples/
