@@ -211,19 +211,181 @@ success = agent.rollback_to_checkpoint(checkpoint_id)
 - 基于Pydantic模型进行类型安全的参数验证
 - 统一的ToolResult返回格式
 
-**工具类型：**
-- **文件操作工具**: `read_file`, `write_to_file`, `replace_in_file`
-- **搜索工具**: `search_files`, `list_files`, `list_code_definition_names`
-- **系统工具**: `execute_command`, `list_package_info`
-- **交互工具**: `ask_followup_question`, `attempt_completion`
-- **扩展工具**: `use_mcp_tool`, `use_rag_tool`
+#### 2.1 工具类型定义
 
-**工具解析流程：**
-1. LLM输出XML格式的工具调用
-2. `stream_and_parse_llm_response()` 解析XML并创建工具对象
-3. 根据工具类型查找对应的解析器
-4. 解析器执行具体逻辑并返回ToolResult
-5. 结果转换为XML格式继续对话
+**文件操作工具：**
+
+- **`read_file`**: 文件读取工具
+  - **类型**: `ReadFileTool`
+  - **参数**: `path: str` - 要读取的文件路径（相对于项目根目录）
+  - **功能**: 读取指定文件的完整内容
+  - **返回**: 文件内容字符串，支持自动检测编码
+  - **用途**: 查看现有文件内容、分析代码结构、获取配置信息
+  - **示例**: `<read_file><path>src/main.py</path></read_file>`
+
+- **`write_to_file`**: 文件写入工具
+  - **类型**: `WriteToFileTool`
+  - **参数**: 
+    - `path: str` - 目标文件路径
+    - `content: str` - 要写入的完整文件内容
+  - **功能**: 创建新文件或完全覆盖现有文件内容
+  - **返回**: 写入操作的成功状态和消息
+  - **用途**: 创建新文件、重写整个文件、生成配置文件
+  - **注意**: 会自动创建必要的目录结构
+
+- **`replace_in_file`**: 文件内容替换工具
+  - **类型**: `ReplaceInFileTool`
+  - **参数**:
+    - `path: str` - 目标文件路径
+    - `diff: str` - SEARCH/REPLACE格式的差异内容
+  - **功能**: 对文件进行精确的部分内容替换
+  - **返回**: 替换操作的结果和修改详情
+  - **用途**: 修改函数实现、更新配置项、重构代码
+  - **格式**: 使用`<<<<<<< SEARCH`和`>>>>>>> REPLACE`标记
+
+**搜索和探索工具：**
+
+- **`search_files`**: 文件内容搜索工具
+  - **类型**: `SearchFilesTool`
+  - **参数**:
+    - `path: str` - 搜索目录路径
+    - `regex: str` - 正则表达式搜索模式
+    - `file_pattern: Optional[str]` - 文件名过滤模式（如`*.py`）
+  - **功能**: 在指定目录中递归搜索匹配的文件内容
+  - **返回**: 匹配结果列表，包含文件路径、行号和上下文
+  - **用途**: 查找函数定义、搜索特定模式、代码审查
+
+- **`list_files`**: 文件列表工具
+  - **类型**: `ListFilesTool`
+  - **参数**:
+    - `path: str` - 目录路径
+    - `recursive: Optional[bool]` - 是否递归列出子目录（默认false）
+  - **功能**: 列出指定目录中的文件和子目录
+  - **返回**: 文件和目录的结构化列表
+  - **用途**: 探索项目结构、了解目录组织、查找特定文件
+
+- **`list_code_definition_names`**: 代码定义列表工具
+  - **类型**: `ListCodeDefinitionNamesTool`
+  - **参数**: `path: str` - 源代码目录路径
+  - **功能**: 提取指定目录中所有源代码文件的顶级定义
+  - **返回**: 类、函数、方法等定义的名称列表
+  - **用途**: 快速了解代码库结构、查找API接口、分析依赖关系
+
+- **`list_package_info`**: 包信息工具
+  - **类型**: `ListPackageInfoTool`
+  - **参数**: `path: str` - 源码包目录路径
+  - **功能**: 获取源代码包的详细信息，包括最近变更和文档摘要
+  - **返回**: 包的元信息、重要文件列表、变更历史
+  - **用途**: 理解包的作用、查看最近修改、获取使用指南
+
+**系统操作工具：**
+
+- **`execute_command`**: 命令执行工具
+  - **类型**: `ExecuteCommandTool`
+  - **参数**:
+    - `command: str` - 要执行的CLI命令
+    - `requires_approval: bool` - 是否需要用户批准（危险操作设为true）
+  - **功能**: 在系统中执行命令行指令
+  - **返回**: 命令执行结果、输出内容、退出状态
+  - **用途**: 运行构建脚本、安装依赖、执行测试、系统操作
+  - **安全**: 内置危险命令检查机制
+
+**交互控制工具：**
+
+- **`ask_followup_question`**: 用户交互工具
+  - **类型**: `AskFollowupQuestionTool`
+  - **参数**:
+    - `question: str` - 要询问用户的问题
+    - `options: Optional[List[str]]` - 可选的预设答案列表
+  - **功能**: 向用户请求额外信息或确认
+  - **返回**: 用户的响应内容
+  - **用途**: 获取缺失参数、确认操作、收集需求细节
+
+- **`attempt_completion`**: 任务完成工具
+  - **类型**: `AttemptCompletionTool`
+  - **参数**:
+    - `result: str` - 任务完成的结果描述
+    - `command: Optional[str]` - 可选的演示命令
+  - **功能**: 标记任务完成并提供最终结果
+  - **返回**: 任务完成状态
+  - **用途**: 结束工作流程、提供总结、建议后续操作
+  - **注意**: 调用此工具会终止当前会话
+
+- **`plan_mode_respond`**: 计划模式响应工具
+  - **类型**: `PlanModeRespondTool`
+  - **参数**:
+    - `response: str` - 计划模式下的响应内容
+    - `options: Optional[List[str]]` - 可选的后续选项
+  - **功能**: 在计划模式下提供分析和建议而不执行实际操作
+  - **返回**: 计划和建议内容
+  - **用途**: 需求分析、方案设计、风险评估
+
+**扩展集成工具：**
+
+- **`use_mcp_tool`**: MCP工具调用
+  - **类型**: `UseMcpTool`
+  - **参数**:
+    - `server_name: str` - MCP服务器名称
+    - `tool_name: str` - 具体工具名称
+    - `query: str` - 传递给工具的查询内容
+  - **功能**: 通过Model Context Protocol调用外部工具
+  - **返回**: 外部工具的执行结果
+  - **用途**: 集成第三方服务、扩展功能边界、访问专业工具
+  - **示例**: GitHub操作、数据库查询、API调用
+
+- **`use_rag_tool`**: RAG检索工具
+  - **类型**: `UseRAGTool`
+  - **参数**:
+    - `server_name: str` - RAG服务器URL或名称
+    - `query: str` - 检索查询内容
+  - **功能**: 通过检索增强生成系统获取相关信息
+  - **返回**: 检索到的相关文档和信息
+  - **用途**: 知识库查询、文档检索、上下文增强
+
+#### 2.2 工具解析流程
+
+**XML解析机制：**
+```python
+# 工具调用格式示例
+<read_file>
+<path>src/main.py</path>
+</read_file>
+
+<write_to_file>
+<path>config/settings.json</path>
+<content>
+{
+  "version": "1.0.0",
+  "debug": true
+}
+</content>
+</write_to_file>
+```
+
+**解析执行流程：**
+1. **XML识别**: `stream_and_parse_llm_response()` 识别工具XML标签
+2. **参数提取**: 解析XML内容，提取工具参数
+3. **模型验证**: 使用Pydantic模型验证参数类型和格式
+4. **解析器查找**: 根据工具类型查找对应的解析器类
+5. **工具执行**: 解析器执行具体的工具逻辑
+6. **结果封装**: 将执行结果封装为ToolResult对象
+7. **XML响应**: 将结果转换为XML格式返回给LLM
+
+**统一结果格式：**
+```python
+class ToolResult(BaseModel):
+    success: bool      # 执行是否成功
+    message: str       # 结果描述信息
+    content: Any       # 具体的结果内容（可选）
+```
+
+**错误处理机制：**
+- **参数验证错误**: 返回详细的参数格式说明
+- **权限错误**: 提示权限不足并建议解决方案
+- **文件操作错误**: 提供具体的文件路径和错误原因
+- **命令执行错误**: 返回命令输出和退出码
+- **网络错误**: 提供连接状态和重试建议
+=======
 
 ### 3. 事件系统
 
