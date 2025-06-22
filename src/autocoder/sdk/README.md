@@ -122,6 +122,23 @@ async def async_example():
 asyncio.run(async_example())
 ```
 
+#### 返回事件生成器
+
+```python
+import asyncio
+from autocoder.sdk import modify_code_stream, AutoCodeOptions        
+async def main():
+    options = AutoCodeOptions(cwd="/path/to/project")
+    async for event in modify_code_stream(
+        "Refactor the user authentication module",
+        options=options
+    ):
+        print(f"[{event.event_type}] {event.data}")
+
+asyncio.run(main())
+```
+
+
 #### 配置选项
 
 ```python
