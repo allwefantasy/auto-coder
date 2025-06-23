@@ -1,19 +1,20 @@
 
 # .ac.mod.md 文件编写指南
 
-用户可以根据本文档按用户的需求做模块开发设计，然后撰写.ac.mod.md模块文档。整个过程需要遵循项目标准并使用 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 记录工作进度。
+你的目标是探索指定模块目录，然后根据阅读的代码后撰写.ac.mod.md模块文档。整个过程需要遵循项目标准并使用 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 记录工作进度。
 
 ## 任务概述
 
-你需要为指定的模块创建完整的 `.ac.mod.md` 文档，该文档应该帮助开发者快速理解和使用模块功能。
+你需要为指定的模块创建或者更新 `.ac.mod.md` 文档，该文档应该帮助开发者快速理解和使用模块功能。
 
 ## 工作流程要求
 
-### 1. 创建工作状态追踪文件
+### 1. 创建 todo-list-<moduel_name>.md 工作状态追踪文件
 
-在开始设计前，必须创建 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 文件来记录你的设计过程：
+在开始设计前，必须创建 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 文件来记录你的设计过程,下面是
+todo-list-<module_name>.md 的示例格式：
 
-```markdown
+<document_content>
 # 模块文档编写任务清单
 
 ## 基本信息
@@ -65,7 +66,7 @@
 
 ## 工作日志
 - [时间] 开始任务...
-```
+</document_content>
 
 ### 2. 在每个工作阶段更新状态
 
@@ -75,27 +76,25 @@
 - 记录遇到的问题和解决方案
 - 添加工作日志条目
 
-## 文档编写标准
+## .ac.mod.md 文档编写标准
 
 ### 必需章节结构
 
 按照以下结构创建 `.ac.mod.md` 文档：
 
-```markdown
+<document_content>
 # [模块名称]
 
-[一句话描述模块的核心功能和在 AutoCoder 项目中的作用]
+[一句话描述模块的核心功能以及在项目中的作用]
 
 ## 目录结构
 
 ```
 [模块路径]/
-├── __init__.py                    # 模块初始化文件
-├── [主要文件1].py                 # [详细功能描述]
-├── [主要文件2].py                 # [详细功能描述]
+├── [主要文件1]                 # [详细功能描述]
+├── [主要文件2]                 # [详细功能描述]
 ├── [子目录]/                      # [子目录功能描述]
-│   ├── __init__.py               # [子模块初始化]
-│   └── [子文件].py               # [子文件功能描述]
+│   └── [子文件]               # [子文件功能描述]
 └── .ac.mod.md                  # 本文档
 ```
 
@@ -146,8 +145,8 @@ from [模块路径] import [主要类名], [辅助类名]
 ```mermaid
 graph TB
     %% 核心模块定义
-    [主模块][主模块.py<br/>核心功能描述]
-    [子模块1][子模块1.py<br/>功能描述]
+    [主模块][主模块<br/>核心功能描述]
+    [子模块1][子模块1<br/>功能描述]
     
     %% 依赖关系
     [主模块] --> [子模块1]
@@ -163,7 +162,7 @@ graph TB
 ### 依赖关系说明
 
 [详细说明各模块间的依赖关系和交互方式]
-```
+</document_content>
 
 ### 内容质量要求
 
@@ -183,7 +182,7 @@ graph TB
 ```python
 # 使用以下工具探索模块结构
 list_files(path="[模块路径]", recursive=True)
-read_file(path="[模块路径]/__init__.py")
+read_file(path="[模块路径]/__init__")
 list_code_definition_names(path="[模块路径]")
 search_files(path="[模块路径]", regex="class|def|import")
 ```
@@ -198,7 +197,7 @@ read_file(path="[主要文件路径]")
 # 查找使用示例
 search_files(path=".", regex="from [模块路径]|import.*[模块名]")
 # 查找测试文件
-search_files(path=".", regex="test.*[模块名]", file_pattern="*.py")
+search_files(path=".", regex="test.*[模块名]", file_pattern="*")
 ```
 
 **更新要求**: 在 todo-list.md 中记录核心类、方法、使用模式等
@@ -266,6 +265,12 @@ search_files(path=".", regex="test.*[模块名]", file_pattern="*.py")
 
 ## 开始工作
 
+下面是用户的模块开发需求：
+
+<user_query>
+{{ query }}
+</quer_query>
+
 现在请开始为指定的模块编写文档：
 
 1. 首先创建 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 文件
@@ -275,4 +280,4 @@ search_files(path=".", regex="test.*[模块名]", file_pattern="*.py")
 5. 完成质量检查
 6. 提交最终文档
 
-记住：**每完成一个重要步骤都要更新 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 文件！**
+记住：**每完成一个重要步骤都要更新 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 文件！整个流程不允许创建任何代码文件包括测试代码**
