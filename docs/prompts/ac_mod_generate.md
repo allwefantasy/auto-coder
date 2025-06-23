@@ -11,7 +11,7 @@
 
 ### 1. 创建工作状态追踪文件
 
-在开始文档编写前，必须创建 `todo-list.md` 文件来记录你的工作状态：
+在开始设计前，必须创建 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 文件来记录你的设计过程：
 
 ```markdown
 # 模块文档编写任务清单
