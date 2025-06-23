@@ -1,7 +1,7 @@
 
-# AutoCoder 模块文档编写指南
+# .ac.mod.md 文件编写指南
 
-本 prompt 用于指导大模型为 AutoCoder 项目编写高质量的模块文档，遵循项目标准并使用 todo-list.md 记录工作进度。
+用户可以根据本文档按用户的需求做模块开发设计，然后撰写.ac.mod.md模块文档。整个过程需要遵循项目标准并使用 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 记录工作进度。
 
 ## 任务概述
 
@@ -178,7 +178,7 @@ graph TB
 
 ## 工作执行步骤
 
-### 步骤 1: 深度探索模块 (更新 todo-list.md)
+### 步骤 1: 深度探索模块 (更新 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md`)
 
 ```python
 # 使用以下工具探索模块结构
@@ -188,9 +188,9 @@ list_code_definition_names(path="[模块路径]")
 search_files(path="[模块路径]", regex="class|def|import")
 ```
 
-**更新要求**: 在 todo-list.md 中记录发现的文件、类、函数等信息
+**更新要求**: 在 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 中记录发现的文件、类、函数等信息
 
-### 步骤 2: 分析核心功能 (更新 todo-list.md)
+### 步骤 2: 分析核心功能 (更新 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md`)
 
 ```python
 # 读取主要文件内容
@@ -219,7 +219,7 @@ search_files(path=".", regex="test.*[模块名]", file_pattern="*.py")
 
 ## 质量检查清单
 
-在完成文档后，使用以下清单进行最终检查，并在 todo-list.md 中记录检查结果：
+在完成文档后，使用以下清单进行最终检查，并在 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 中记录检查结果：
 
 ### 内容完整性 ✅
 - [ ] 模块概述清晰准确
@@ -248,8 +248,8 @@ search_files(path=".", regex="test.*[模块名]", file_pattern="*.py")
 
 ## 最终交付要求
 
-1. **完整的 `.ac.mod.md` 文档**: 按照标准结构编写的完整模块文档
-2. **完整的 `todo-list.md` 文件**: 记录完整工作过程的状态追踪文件
+1. **完整的 `<模块根目录下>/.ac.mod.md` 文档**: 按照标准结构编写的完整模块文档
+2. **完整的 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 文件**: 记录完整工作过程的状态追踪文件
 3. **工作总结**: 在 todo-list.md 末尾添加工作总结，包括：
    - 模块的主要特点和价值
    - 编写过程中的发现和洞察
@@ -258,21 +258,21 @@ search_files(path=".", regex="test.*[模块名]", file_pattern="*.py")
 
 ## 注意事项
 
-1. **始终保持 todo-list.md 更新**: 这是工作状态的重要记录
+1. **始终保持 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 更新**: 这是工作状态的重要记录
 2. **代码示例必须可运行**: 不要使用占位符，提供真实可用的代码
 3. **保持与项目风格一致**: 参考现有文档的写作风格和格式
 4. **注重实用性**: 文档应该真正帮助开发者使用模块
-5. **及时记录问题**: 在 todo-list.md 中记录遇到的问题和解决过程
+5. **及时记录问题**: 在 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 中记录遇到的问题和解决过程
 
 ## 开始工作
 
 现在请开始为指定的模块编写文档：
 
-1. 首先创建 `todo-list.md` 文件
+1. 首先创建 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 文件
 2. 开始模块探索和分析
 3. 按步骤编写文档内容
 4. 持续更新工作状态
 5. 完成质量检查
 6. 提交最终文档
 
-记住：**每完成一个重要步骤都要更新 todo-list.md 文件！**
+记住：**每完成一个重要步骤都要更新 `.auto-coder/docs/jobs/todo-list-<moduel_name>.md` 文件！**
