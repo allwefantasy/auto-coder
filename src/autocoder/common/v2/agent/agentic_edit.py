@@ -1050,7 +1050,7 @@ class AgenticEdit:
         {% endfor %}  
         </user_rule_or_document_files>              
         
-        Make sure you always start your task by using the read_file tool to get the relevant RULE files listed in index.md based on the user's specific requirements.        
+        You should decide based on the user's requirements whether to use the read_file tool to get the relevant files listed in index.md.        
         {% endif %}
 
 
