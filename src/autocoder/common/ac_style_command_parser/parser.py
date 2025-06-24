@@ -22,8 +22,8 @@ class CommandParser:
         # 匹配命令的正则表达式 - 必须是以/开头，后跟单词字符，且不能后跟/或.
         # (?<!\S) 确保命令前是字符串开头或空白字符
         self.command_pattern = r'(?<!\S)/(\w+)(?!/|\.)'
-        # 匹配键值对参数的正则表达式，支持带引号的值
-        self.key_value_pattern = r'(\w+)=(?:"([^"]*?)"|\'([^\']*?)\'|([^\s"\']+))(?:\s|$)'
+        # 匹配键值对参数的正则表达式，支持带引号的值（包括三重引号）
+        self.key_value_pattern = r'(\w+)=(?:\'\'\'([^\']*?)\'\'\'|"""([^"]*?)"""|"([^"]*?)"|\'([^\']*?)\'|([^\s"\']*))(?:\s|$)'
         # 匹配路径模式的正则表达式
         self.path_pattern = r'/\w+(?:/[^/\s]+)+'
 
@@ -119,8 +119,9 @@ class CommandParser:
         if key_value_pairs:
             for match in key_value_pairs:
                 key = match[0]
-                # 值可能在三个捕获组中的一个，取非空的那个
-                value = match[1] or match[2] or match[3]
+                # 值可能在六个捕获组中的一个，取非空的那个
+                # match[1]: 三重单引号, match[2]: 三重双引号, match[3]: 双引号, match[4]: 单引号, match[5]: 无引号
+                value = match[1] or match[2] or match[3] or match[4] or match[5]
                 kwargs[key] = value.strip()
                 
             # 替换带引号的键值对
@@ -131,15 +132,22 @@ class CommandParser:
             
             # 现在 processed_params_str 中应该只剩下位置参数
             
-            # 处理带引号的位置参数
-            quote_pattern = r'(?:"([^"]*?)"|\'([^\']*?)\')'
+            # 处理带引号的位置参数（包括三重引号）
+            quote_pattern = r'(?:\'\'\'([^\']*?)\'\'\'|"""([^"]*?)"""|"([^"]*?)"|\'([^\']*?)\')'
             quoted_args = re.findall(quote_pattern, processed_params_str)
             for quoted_arg in quoted_args:
                 # 取非空的那个捕获组
-                arg = quoted_arg[0] or quoted_arg[1]
+                arg = quoted_arg[0] or quoted_arg[1] or quoted_arg[2] or quoted_arg[3]
                 args.append(arg)
                 # 从参数字符串中移除这个带引号的参数
-                quoted_pattern = f'"{arg}"' if quoted_arg[0] else f"'{arg}'"
+                if quoted_arg[0]:  # 三重单引号
+                    quoted_pattern = f"'''{arg}'''"
+                elif quoted_arg[1]:  # 三重双引号
+                    quoted_pattern = f'"""{arg}"""'
+                elif quoted_arg[2]:  # 双引号
+                    quoted_pattern = f'"{arg}"'
+                else:  # 单引号
+                    quoted_pattern = f"'{arg}'"
                 processed_params_str = processed_params_str.replace(quoted_pattern, "", 1).strip()
             
             # 分割剩余的位置参数（不带引号的）
@@ -148,17 +156,24 @@ class CommandParser:
         else:
             # 如果没有键值对，处理所有参数作为位置参数
             
-            # 处理带引号的位置参数
-            quote_pattern = r'(?:"([^"]*?)"|\'([^\']*?)\')'
+            # 处理带引号的位置参数（包括三重引号）
+            quote_pattern = r'(?:\'\'\'([^\']*?)\'\'\'|"""([^"]*?)"""|"([^"]*?)"|\'([^\']*?)\')'
             quoted_args = re.findall(quote_pattern, params_str)
             processed_params_str = params_str
             
             for quoted_arg in quoted_args:
                 # 取非空的那个捕获组
-                arg = quoted_arg[0] or quoted_arg[1]
+                arg = quoted_arg[0] or quoted_arg[1] or quoted_arg[2] or quoted_arg[3]
                 args.append(arg)
                 # 从参数字符串中移除这个带引号的参数
-                quoted_pattern = f'"{arg}"' if quoted_arg[0] else f"'{arg}'"
+                if quoted_arg[0]:  # 三重单引号
+                    quoted_pattern = f"'''{arg}'''"
+                elif quoted_arg[1]:  # 三重双引号
+                    quoted_pattern = f'"""{arg}"""'
+                elif quoted_arg[2]:  # 双引号
+                    quoted_pattern = f'"{arg}"'
+                else:  # 单引号
+                    quoted_pattern = f"'{arg}'"
                 processed_params_str = processed_params_str.replace(quoted_pattern, "", 1).strip()
             
             # 分割剩余的位置参数（不带引号的）
