@@ -243,6 +243,30 @@ class TestCommandParser:
             }
         }
         assert result == expected
+        
+    def test_parse_params_without_command(self, parser):
+        """测试解析不带命令前缀的参数"""
+        result = parser.parse('"tdd/hello.md" name="威廉"')
+        expected = {
+            "": {
+                "args": ["tdd/hello.md"],
+                "kwargs": {
+                    "name": "威廉"
+                }
+            }
+        }
+        assert result == expected
+        
+    def test_parse_params_only_method(self, parser):
+        """测试parse_params_only方法"""
+        result = parser.parse_params_only('"tdd/hello.md" name="威廉"')
+        expected = {
+            "args": ["tdd/hello.md"],
+            "kwargs": {
+                "name": "威廉"
+            }
+        }
+        assert result == expected
 
 
 class TestConvenienceFunctions:
@@ -471,7 +495,7 @@ class TestErrorHandling:
                 }
             }
         }
-        assert result == expected    
+        assert result == expected
 
 
 # 参数化测试用例

@@ -63,7 +63,22 @@ class CommandParser:
 
         # 找出所有命令
         commands = re.findall(self.command_pattern, processed_query)
+        
+        # 如果没有找到命令，但有内容，则将整个字符串作为参数处理，使用空字符串作为命令名
         if not commands:
+            # 恢复路径参数的原始值
+            for placeholder, path in placeholders.items():
+                query = query.replace(placeholder, path)
+            
+            # 解析参数
+            args, kwargs = self._parse_params(query.strip())
+            if args or kwargs:  # 只有当有参数时才返回结果
+                return {
+                    "": {
+                        'args': args,
+                        'kwargs': kwargs
+                    }
+                }
             return {}
 
         # 将查询字符串按命令分割
@@ -180,6 +195,23 @@ class CommandParser:
         """
         commands = self.parse(query)
         return commands.get(command)
+    
+    def parse_params_only(self, params_str: str) -> Dict[str, Any]:
+        """
+        直接解析参数字符串，不需要命令前缀。
+        用于解析类似 '"tdd/hello.md" name="威廉"' 这样的参数字符串。
+        
+        参数:
+            params_str: 参数字符串
+            
+        返回:
+            Dict[str, Any]: 包含args和kwargs的字典
+        """
+        if not params_str or not params_str.strip():
+            return {'args': [], 'kwargs': {}}
+        
+        args, kwargs = self._parse_params(params_str.strip())
+        return {'args': args, 'kwargs': kwargs}
 
 
 def parse_query(query: str) -> Dict[str, Any]:

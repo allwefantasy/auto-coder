@@ -75,3 +75,6 @@ notebooks/generated_image.png
 /actions/
 /output.txt
 /examples/
+.auto-coder/
+/actions/
+/output.txt
