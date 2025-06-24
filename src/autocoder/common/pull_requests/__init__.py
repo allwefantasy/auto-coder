@@ -4,6 +4,7 @@ Pull Request 统一管理模块
 统一的 Pull Request 创建和管理模块，支持 GitHub、GitLab、Gitee、GitCode 四大代码托管平台的 PR 操作。
 """
 from typing import Optional, List, Dict, Any
+from loguru import logger
 
 from .models import (
     PRConfig, PRResult, PRInfo, PRData, RepoInfo, PlatformType, 
@@ -18,15 +19,17 @@ from .exceptions import (
 from .config import get_config
 from .utils import (
     parse_git_url, detect_platform_from_repo, get_repo_info_from_path,
-    get_current_branch, branch_exists, is_git_repo
+    get_current_branch, branch_exists, is_git_repo, get_default_remote_branch,
+    ensure_branch_exists_remotely, is_main_branch, create_and_checkout_branch,
+    generate_auto_branch_name
 )
 
 
 def create_pull_request(
     repo_path: str,
-    source_branch: str,
-    target_branch: str,
     title: str,
+    source_branch: Optional[str] = None,
+    target_branch: Optional[str] = None,
     description: str = "",
     labels: Optional[List[str]] = None,
     assignees: Optional[List[str]] = None,
@@ -43,9 +46,9 @@ def create_pull_request(
     
     Args:
         repo_path: 仓库路径
-        source_branch: 源分支
-        target_branch: 目标分支
         title: PR标题
+        source_branch: 源分支（可选，默认为当前分支）
+        target_branch: 目标分支（可选，默认为远程默认分支或main）
         description: PR描述
         labels: 标签列表
         assignees: 负责人列表
@@ -60,6 +63,48 @@ def create_pull_request(
     Returns:
         PR创建结果
     """
+    # 处理可选的分支参数
+    if source_branch is None:
+        source_branch = get_current_branch(repo_path)
+        if not source_branch:
+            raise ValidationError("无法获取当前分支，请指定source_branch参数")
+    
+    # 从当前分支，自动创建新分支
+    auto_branch_name = generate_auto_branch_name()
+    logger.info(f"检测到当前分支 '{source_branch}' 为主分支，自动创建新分支: {auto_branch_name}")
+    
+    if not create_and_checkout_branch(repo_path, auto_branch_name):
+        raise ValidationError(f"无法从主分支 '{source_branch}' 创建新分支 '{auto_branch_name}'")
+    
+    source_branch = auto_branch_name
+    logger.info(f"已切换到新分支: {source_branch}")
+    
+    if target_branch is None:
+        target_branch = get_default_remote_branch(repo_path)
+        if not target_branch:
+            target_branch = "main"  # 默认值
+    
+    # 验证仓库是否为Git仓库
+    if not is_git_repo(repo_path):
+        raise ValidationError(f"路径 {repo_path} 不是一个有效的Git仓库")
+    
+    # 检查源分支和目标分支是否相同
+    if source_branch == target_branch:
+        raise ValidationError(f"源分支和目标分支不能相同: {source_branch}")
+    
+    # 确保源分支存在于远程仓库，如果不存在则自动推送
+    if not ensure_branch_exists_remotely(repo_path, source_branch):
+        raise BranchNotFoundError(
+            f"源分支 '{source_branch}' 在本地不存在或推送失败。"
+            f"请检查分支是否存在或网络连接是否正常。"
+        )
+    
+    # 检查目标分支是否存在于远程仓库
+    if not branch_exists(repo_path, target_branch, remote=True):
+        raise BranchNotFoundError(
+            f"目标分支 '{target_branch}' 在远程仓库中不存在。"
+        )
+    
     # 如果提供了token，创建临时配置
     manager = get_global_manager()
     

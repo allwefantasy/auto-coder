@@ -70,8 +70,40 @@ class BasePlatformProvider(ABC):
                 elif response.status_code == 429:
                     retry_after = int(response.headers.get('Retry-After', 60))
                     raise RateLimitError(f"API限流，请等待{retry_after}秒后重试", retry_after=retry_after)
+                elif response.status_code == 422:
+                    # 422 通常是验证错误，尝试解析响应内容获取详细错误信息
+                    try:
+                        error_data = response.json()
+                        if 'errors' in error_data:
+                            errors = error_data['errors']
+                            error_msgs = []
+                            for error in errors:
+                                if isinstance(error, dict):
+                                    field = error.get('field', '')
+                                    code = error.get('code', '')
+                                    message = error.get('message', str(error))
+                                    if field and code:
+                                        error_msgs.append(f"{field}: {message} (code: {code})")
+                                    else:
+                                        error_msgs.append(message)
+                                else:
+                                    error_msgs.append(str(error))
+                            raise ValidationError(f"请求验证失败: {'; '.join(error_msgs)}")
+                        elif 'message' in error_data:
+                            raise ValidationError(f"请求验证失败: {error_data['message']}")
+                        else:
+                            raise ValidationError(f"请求验证失败: {response.text}")
+                    except (ValueError, KeyError):
+                        raise ValidationError(f"请求验证失败: HTTP 422 - {response.text}")
                 elif response.status_code >= 400:
-                    raise PRError(f"API请求失败: HTTP {response.status_code}")
+                    try:
+                        error_data = response.json()
+                        if 'message' in error_data:
+                            raise PRError(f"API请求失败: HTTP {response.status_code} - {error_data['message']}")
+                        else:
+                            raise PRError(f"API请求失败: HTTP {response.status_code} - {response.text}")
+                    except (ValueError, KeyError):
+                        raise PRError(f"API请求失败: HTTP {response.status_code} - {response.text}")
                 
                 return response
                 

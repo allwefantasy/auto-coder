@@ -2020,9 +2020,7 @@ class AgenticEdit:
             
             result = create_pull_request(
                 repo_path=self.args.source_dir,
-                source_branch=current_branch,
-                target_branch="main",  # 默认目标分支
-                title=pr_title,
+                title=pr_title,                
                 description=pr_description,                
             )
             
