@@ -1996,7 +1996,7 @@ class AgenticEdit:
             
             # 准备 PR 标题和描述
             query = self.args.query or get_message("/agent/edit/pull_request/default_query")
-            pr_title = get_message_with_format("/agent/edit/pull_request/title", query=query)
+            pr_title = get_message_with_format("/agent/edit/pull_request/title", query=query[0:40])
             
             # 构建 PR 描述
             file_list = ""
