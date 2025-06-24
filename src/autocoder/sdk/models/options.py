@@ -62,12 +62,12 @@ class AutoCodeOptions:
     def validate(self) -> None:
         """验证配置选项"""
         
-        # 验证max_turns
-        if self.max_turns <= 0:
-            raise ValidationError("max_turns", "must be positive integer")
+        # 验证max_turns（-1表示不限制）
+        if self.max_turns <= 0 and self.max_turns != -1:
+            raise ValidationError("max_turns", "must be positive integer or -1 (unlimited)")
         
-        if self.max_turns > 100:
-            raise ValidationError("max_turns", "cannot exceed 100")
+        if self.max_turns > 100 and self.max_turns != -1:
+            raise ValidationError("max_turns", "cannot exceed 100 (unless -1 for unlimited)")
         
         # 验证output_format
         if self.output_format not in OUTPUT_FORMATS:

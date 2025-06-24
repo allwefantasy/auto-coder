@@ -50,9 +50,9 @@ class CLIOptions:
         if self.permission_mode not in valid_permission_modes:
             raise ValueError(f"无效的权限模式: {self.permission_mode}，有效值为: {', '.join(valid_permission_modes)}")
         
-        # 验证最大对话轮数
-        if self.max_turns <= 0:
-            raise ValueError("max_turns必须为正数")
+        # 验证最大对话轮数（-1表示不限制）
+        if self.max_turns <= 0 and self.max_turns != -1:
+            raise ValueError("max_turns必须为正数或-1（表示不限制）")
         
         # 验证会话选项的互斥性
         if self.continue_session and self.resume_session:

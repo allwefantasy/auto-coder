@@ -14,7 +14,7 @@ class GitHubProvider(BasePlatformProvider):
     
     def _get_auth_header(self) -> str:
         """获取认证头"""
-        return f"Bearer {self.config.token}"
+        return f"token {self.config.token}"
     
     def create_pr(self, repo_info: RepoInfo, pr_data: PRData) -> PRResult:
         """创建 Pull Request"""

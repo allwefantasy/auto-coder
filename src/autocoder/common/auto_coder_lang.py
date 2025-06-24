@@ -849,6 +849,84 @@ MESSAGES = {
     "/agent/edit/apply_changes":{
         "en":"Commit the changes in preview steps",
         "zh":"提交前面步骤的修改"
+    },
+    "/agent/edit/pull_request/branch_name_failed": {
+        "en": "Unable to get current branch name, skipping PR creation",
+        "zh": "无法获取当前分支名，跳过 PR 创建"
+    },
+    "/agent/edit/pull_request/title": {
+        "en": "AutoCoder: {{query}}",
+        "zh": "AutoCoder: {{query}}"
+    },
+    "/agent/edit/pull_request/default_query": {
+        "en": "Code auto generation",
+        "zh": "代码自动生成"
+    },
+    "/agent/edit/pull_request/description": {
+        "en": """## 🤖 AutoCoder Generated Pull Request
+
+**Task Description**: {{query}}
+
+### 📝 Change Summary
+- Modified {{file_count}} files
+- Commit Hash: `{{commit_hash}}`
+
+### 📂 Changed Files List
+{{file_list}}
+
+### ⚙️ Generation Configuration
+- Source Branch: `{{source_branch}}`
+- Target Branch: `{{target_branch}}`
+- Auto-generated Time: {{timestamp}}
+
+### 🔍 Next Steps
+- [ ] Code Review
+- [ ] Test Verification
+- [ ] Merge to Main Branch
+
+---
+*This PR was automatically created by AutoCoder*
+""",
+        "zh": """## 🤖 AutoCoder 自动生成的 Pull Request
+
+**任务描述**: {{query}}
+
+### 📝 变更摘要
+- 共修改 {{file_count}} 个文件
+- 提交哈希: `{{commit_hash}}`
+
+### 📂 变更文件列表
+{{file_list}}
+
+### ⚙️ 生成配置
+- 源分支: `{{source_branch}}`
+- 目标分支: `{{target_branch}}`
+- 自动生成时间: {{timestamp}}
+
+### 🔍 下一步
+- [ ] 代码审查
+- [ ] 测试验证
+- [ ] 合并到主分支
+
+---
+*此 PR 由 AutoCoder 自动创建*
+"""
+    },
+    "/agent/edit/pull_request/creating": {
+        "en": "Creating Pull Request: {{title}}",
+        "zh": "正在创建 Pull Request: {{title}}"
+    },
+    "/agent/edit/pull_request/success": {
+        "en": "✅ Pull Request created successfully",
+        "zh": "✅ Pull Request 创建成功"
+    },
+    "/agent/edit/pull_request/failed": {
+        "en": "❌ Pull Request creation failed: {{error}}",
+        "zh": "❌ Pull Request 创建失败: {{error}}"
+    },
+    "/agent/edit/pull_request/exception": {
+        "en": "❌ Exception occurred while creating Pull Request: {{error}}",
+        "zh": "❌ 创建 Pull Request 时发生异常: {{error}}"
     }
 }
 
