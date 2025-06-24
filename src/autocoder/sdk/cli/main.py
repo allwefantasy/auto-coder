@@ -115,12 +115,13 @@ class AutoCoderCLI:
         
         # 高级选项
         advanced = parser.add_argument_group("高级选项")
-        advanced.add_argument("--max-turns", type=int, default=3, help="最大对话轮数 (默认: 3)")
+        advanced.add_argument("--max-turns", type=int, default= -1, help="最大对话轮数 (默认: -1 不限制)")
         advanced.add_argument("--system-prompt", help="系统提示")
         advanced.add_argument("--allowed-tools", nargs="+", help="允许使用的工具列表")
         advanced.add_argument("--permission-mode", choices=["manual", "acceptEdits"],
                            default="manual", help="权限模式 (默认: manual)")
         advanced.add_argument("--model", required=True, help="指定使用的模型名称 (如: gpt-4, gpt-3.5-turbo, claude-3-sonnet 等)")
+        advanced.add_argument("--pr", action="store_true", help="创建 Pull Request")
         
         # 启用自动补全
         if ARGCOMPLETE_AVAILABLE:
@@ -143,7 +144,8 @@ class AutoCoderCLI:
             system_prompt=parsed_args.system_prompt,
             allowed_tools=parsed_args.allowed_tools or [],
             permission_mode=parsed_args.permission_mode,
-            model=parsed_args.model
+            model=parsed_args.model,
+            pr=parsed_args.pr
         )
         
         return options

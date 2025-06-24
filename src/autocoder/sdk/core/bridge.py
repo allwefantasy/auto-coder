@@ -65,6 +65,7 @@ class AutoCoderBridge:
         self,
         query: str,
         pre_commit: bool = False,
+        pr: bool = False,
         extra_args: Optional[Dict[str, Any]] = None,
         stream: bool = True
     ) -> Iterator[StreamEvent]:
@@ -74,6 +75,7 @@ class AutoCoderBridge:
         Args:
             query: 查询内容
             pre_commit: 是否预提交
+            pr: 是否预提交
             extra_args: 额外参数
             stream: 是否流式返回
 
@@ -103,6 +105,7 @@ class AutoCoderBridge:
                 events = run_auto_command(
                     query=query,
                     pre_commit=pre_commit,
+                    pr=pr,
                     extra_args=extra_args
                 )
 

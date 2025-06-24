@@ -1920,75 +1920,59 @@ class AgenticEdit:
     def apply_changes(self):
         """
         Apply all tracked file changes to the original project directory.
-        """
-        diff_file_num = 0
-        if self.shadow_manager:
-            for (file_path, change) in self.get_all_file_changes().items():
-                # Ensure the directory exists before writing the file
-                dir_path = os.path.dirname(file_path)
-                if dir_path: # Ensure dir_path is not empty (for files in root)
-                    os.makedirs(dir_path, exist_ok=True)
+        """                            
+        if not self.args.skip_commit:
+            try:
+                file_name = os.path.basename(self.args.file)
+                commit_result = git_utils.commit_changes(
+                    self.args.source_dir,
+                    f"{self.args.query}\nauto_coder_{file_name}",
+                )
+                
+                get_event_manager(self.args.event_file).write_result(
+                    EventContentCreator.create_result(
+                        content={
+                            "have_commit":commit_result.success,
+                            "commit_hash":commit_result.commit_hash,
+                            "diff_file_num":diff_file_num,
+                            "event_file":self.args.event_file                                
+                        }), metadata=EventMetadata(
+                        action_file=self.args.file,
+                        is_streaming=False,
+                        path="/agent/edit/apply_changes",
+                        stream_out_type="/agent/edit").to_dict())
+                
+                action_yml_file_manager = ActionYmlFileManager(
+                    self.args.source_dir)
+                action_file_name = os.path.basename(self.args.file)
+                add_updated_urls = []
+                commit_result.changed_files
+                for file in commit_result.changed_files:
+                    add_updated_urls.append(
+                        os.path.join(self.args.source_dir, file))
 
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    f.write(change.content)
-            diff_file_num = len(self.get_all_file_changes())  
-        else:          
-            changes = self.checkpoint_manager.get_changes_by_group(self.args.event_file)
-            diff_file_num = len(changes)
-            
-        if diff_file_num > 0:
-            if not self.args.skip_commit:
-                try:
-                    file_name = os.path.basename(self.args.file)
-                    commit_result = git_utils.commit_changes(
-                        self.args.source_dir,
-                        f"{self.args.query}\nauto_coder_{file_name}",
-                    )
-                    
-                    get_event_manager(self.args.event_file).write_result(
-                        EventContentCreator.create_result(
-                            content={
-                                "have_commit":commit_result.success,
-                                "commit_hash":commit_result.commit_hash,
-                                "diff_file_num":diff_file_num,
-                                "event_file":self.args.event_file                                
-                            }), metadata=EventMetadata(
-                            action_file=self.args.file,
-                            is_streaming=False,
-                            path="/agent/edit/apply_changes",
-                            stream_out_type="/agent/edit").to_dict())
-                    
-                    action_yml_file_manager = ActionYmlFileManager(
-                        self.args.source_dir)
-                    action_file_name = os.path.basename(self.args.file)
-                    add_updated_urls = []
-                    commit_result.changed_files
-                    for file in commit_result.changed_files:
-                        add_updated_urls.append(
-                            os.path.join(self.args.source_dir, file))
+                self.args.add_updated_urls = add_updated_urls
+                update_yaml_success = action_yml_file_manager.update_yaml_field(
+                    action_file_name, "add_updated_urls", add_updated_urls)
+                if not update_yaml_success:
+                    self.printer.print_in_terminal(
+                        "yaml_save_error", style="red", yaml_file=action_file_name)
 
-                    self.args.add_updated_urls = add_updated_urls
-                    update_yaml_success = action_yml_file_manager.update_yaml_field(
-                        action_file_name, "add_updated_urls", add_updated_urls)
-                    if not update_yaml_success:
-                        self.printer.print_in_terminal(
-                            "yaml_save_error", style="red", yaml_file=action_file_name)
-
-                    if self.args.enable_active_context:
-                        active_context_manager = ActiveContextManager(
-                            self.llm, self.args.source_dir)
-                        task_id = active_context_manager.process_changes(
-                            self.args)
-                        self.printer.print_in_terminal("active_context_background_task",
-                                                       style="blue",
-                                                       task_id=task_id)
-                    git_utils.print_commit_info(commit_result=commit_result)
-                except Exception as e:
-                    self.printer.print_str_in_terminal(
-                        self.git_require_msg(
-                            source_dir=self.args.source_dir, error=str(e)),
-                        style="red"
-                    )        
+                if self.args.enable_active_context:
+                    active_context_manager = ActiveContextManager(
+                        self.llm, self.args.source_dir)
+                    task_id = active_context_manager.process_changes(
+                        self.args)
+                    self.printer.print_in_terminal("active_context_background_task",
+                                                    style="blue",
+                                                    task_id=task_id)
+                git_utils.print_commit_info(commit_result=commit_result)
+            except Exception as e:
+                self.printer.print_str_in_terminal(
+                    self.git_require_msg(
+                        source_dir=self.args.source_dir, error=str(e)),
+                    style="red"
+                )        
             
 
     def run_in_terminal(self, request: AgenticEditRequest):

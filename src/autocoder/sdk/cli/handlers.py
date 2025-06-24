@@ -49,7 +49,8 @@ class CommandHandler:
             stream=self.options.output_format.startswith("stream"),
             session_id=self.options.resume_session,
             continue_session=self.options.continue_session,
-            model=self.options.model
+            model=self.options.model,
+            pr=self.options.pr
         )
         
     def _get_prompt(self) -> str:

@@ -3357,7 +3357,8 @@ def run_auto_command(query: str,
             conversation_config.action = "command"
             task_query = render_command_file_with_variables(command_infos)
              
-        conversation_config.query = task_query        
+        conversation_config.query = task_query   
+        conversation_config.pull_request = pr     
 
         agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
                             conversation_history=conversation_history,

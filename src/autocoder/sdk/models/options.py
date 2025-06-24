@@ -52,6 +52,7 @@ class AutoCodeOptions:
     timeout: int = 30
     verbose: bool = False
     include_project_structure: bool = True
+    pr: bool = False  # 是否创建 PR
     
     def __post_init__(self):
         """初始化后验证"""
@@ -140,7 +141,8 @@ class AutoCodeOptions:
             "temperature": self.temperature,
             "timeout": self.timeout,
             "verbose": self.verbose,
-            "include_project_structure": self.include_project_structure
+            "include_project_structure": self.include_project_structure,
+            "pr": self.pr
         }
     
     @classmethod

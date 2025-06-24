@@ -187,3 +187,4 @@ class AgenticEditConversationConfig(BaseModel):
     conversation_id: Optional[str] = None 
     action: Optional[str] = None
     query: Optional[str] = None
+    pull_request: bool = False

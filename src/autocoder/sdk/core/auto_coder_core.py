@@ -656,6 +656,7 @@ class AutoCoderCore:
         self, 
         prompt: str, 
         pre_commit: bool = False,
+        pr: Optional[bool] = None,
         extra_args: Optional[Dict[str, Any]] = None,
         show_terminal: bool = True
     ) -> CodeModificationResult:
@@ -665,6 +666,7 @@ class AutoCoderCore:
         Args:
             prompt: 修改提示
             pre_commit: 是否预提交
+            pr: 是否创建 PR，如果为None则使用配置中的值
             extra_args: 额外参数
             show_terminal: 是否显示到终端
             
@@ -677,7 +679,8 @@ class AutoCoderCore:
             
             event_stream = self._sync_run_auto_command(
                 prompt, 
-                pre_commit=pre_commit, 
+                pre_commit=pre_commit,
+                pr=pr,
                 extra_args=extra_args
             )
             
@@ -746,6 +749,7 @@ class AutoCoderCore:
         self, 
         prompt: str, 
         pre_commit: bool = False,
+        pr: Optional[bool] = None,
         extra_args: Optional[Dict[str, Any]] = None,
         show_terminal: bool = True
     ) -> AsyncIterator[StreamEvent]:
@@ -755,6 +759,7 @@ class AutoCoderCore:
         Args:
             prompt: 修改提示
             pre_commit: 是否预提交
+            pr: 是否创建 PR，如果为None则使用配置中的值
             extra_args: 额外参数
             show_terminal: 是否显示到终端
             
@@ -773,6 +778,7 @@ class AutoCoderCore:
                 self._sync_run_auto_command,
                 prompt,
                 pre_commit,
+                pr,
                 extra_args
             )
             
@@ -808,6 +814,7 @@ class AutoCoderCore:
         self, 
         prompt: str, 
         pre_commit: bool = False,
+        pr: Optional[bool] = None,
         extra_args: Optional[Dict[str, Any]] = None
     ) -> Iterator[StreamEvent]:
         """
@@ -816,14 +823,20 @@ class AutoCoderCore:
         Args:
             prompt: 查询提示
             pre_commit: 是否预提交
+            pr: 是否创建 PR，如果为None则使用配置中的值
             extra_args: 额外参数
             
         Returns:
             Iterator[StreamEvent]: 事件流
         """
+        # 如果没有明确指定pr参数，使用配置中的值
+        if pr is None:
+            pr = self.options.pr
+        
         return self.bridge.call_run_auto_command(
             query=prompt,
             pre_commit=pre_commit,
+            pr=pr,
             extra_args=extra_args or {},
             stream=True
         )
