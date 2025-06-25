@@ -45,8 +45,19 @@ func (m *Manager) CreateWorktree(name string) (*WorktreeInfo, error) {
 		return nil, fmt.Errorf("工作目录已存在: %s", fullPath)
 	}
 
+	// 确定基础分支
+	baseBranch := m.FromBranch
+	if baseBranch == "" {
+		// 如果没有指定分支，自动检测默认分支
+		detectedBranch, err := m.detectDefaultBranch()
+		if err != nil {
+			return nil, fmt.Errorf("自动检测默认分支失败: %v", err)
+		}
+		baseBranch = detectedBranch
+	}
+
 	// 创建 git worktree
-	cmd := exec.Command("git", "worktree", "add", fullPath, "-b", name, m.FromBranch)
+	cmd := exec.Command("git", "worktree", "add", fullPath, "-b", name, baseBranch)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -59,6 +70,47 @@ func (m *Manager) CreateWorktree(name string) (*WorktreeInfo, error) {
 		Path:   fullPath,
 		Branch: name,
 	}, nil
+}
+
+// detectDefaultBranch 自动检测 git 仓库的默认分支
+func (m *Manager) detectDefaultBranch() (string, error) {
+	// 首先尝试获取当前分支
+	cmd := exec.Command("git", "branch", "--show-current")
+	output, err := cmd.Output()
+	if err == nil {
+		currentBranch := strings.TrimSpace(string(output))
+		if currentBranch != "" {
+			return currentBranch, nil
+		}
+	}
+
+	// 如果无法获取当前分支，检查本地分支中是否有 main 或 master
+	cmd = exec.Command("git", "branch", "--list")
+	output, err = cmd.Output()
+	if err == nil {
+		branches := strings.Split(string(output), "\n")
+		for _, branch := range branches {
+			branch = strings.TrimSpace(strings.TrimPrefix(branch, "*"))
+			branch = strings.TrimSpace(branch)
+			if branch == "main" {
+				return "main", nil
+			}
+			if branch == "master" {
+				return "master", nil
+			}
+		}
+		
+		// 如果找不到 main 或 master，返回第一个分支
+		for _, branch := range branches {
+			branch = strings.TrimSpace(strings.TrimPrefix(branch, "*"))
+			branch = strings.TrimSpace(branch)
+			if branch != "" {
+				return branch, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("无法检测到任何可用的分支")
 }
 
 // CleanupWorktree 清理指定的 worktree

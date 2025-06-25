@@ -18,6 +18,11 @@ except ImportError:
 from .options import CLIOptions, CLIResult
 from .handlers import PrintModeHandler
 from ..exceptions import AutoCoderSDKError
+from autocoder.run_context import get_run_context,RunMode
+
+# 设置运行模式为终端模式
+get_run_context().set_mode(RunMode.CLI)
+
 
 
 class AutoCoderCLI:

@@ -29,6 +29,14 @@ class AskFollowupQuestionToolResolver(BaseToolResolver):
         Packages the question and options to be handled by the main loop/UI.
         This resolver doesn't directly ask the user but prepares the data for it.
         """
+        # Check if running in CLI mode, if so return immediately with a message
+        # instructing the model to solve the problem on its own
+        if get_run_context().is_cli():
+            return ToolResult(
+                success=False,
+                message="Remember, you cannot ask follow-up questions. Please try to solve the problem on your own using the available information. Do not give up and do your best to find a solution."
+            )
+            
         question = self.tool.question
         options = self.tool.options or []
         options_text = "\n".join([f"{i+1}. {option}" for i, option in enumerate(options)])

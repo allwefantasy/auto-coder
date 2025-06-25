@@ -10,6 +10,7 @@ class RunMode(Enum):
     TERMINAL = auto()
     WEB = auto()
     API = auto()
+    CLI = auto()
 
 
 class RunContext:
@@ -51,6 +52,14 @@ class RunContext:
     def is_web(self) -> bool:
         """Check if running in web mode."""
         return self._mode == RunMode.WEB
+
+    def is_cli(self) -> bool:
+        """Check if running in cli mode."""
+        return self._mode == RunMode.CLI
+        
+    def is_api(self) -> bool:
+        """Check if running in api mode."""
+        return self._mode == RunMode.API        
 
 
 def get_run_context() -> RunContext:

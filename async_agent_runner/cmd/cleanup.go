@@ -14,8 +14,8 @@ var cleanupCmd = &cobra.Command{
 	Long: `清理所有在工作目录中的 git worktree。
 
 示例:
-  ac cleanup               # 清理所有 worktree
-  ac cleanup --pattern abc # 只清理包含 'abc' 的 worktree`,
+  async_agent_runner cleanup               # 清理所有 worktree
+async_agent_runner cleanup --pattern abc # 只清理包含 'abc' 的 worktree`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runCleanup()
 	},

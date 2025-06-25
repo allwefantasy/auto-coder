@@ -75,3 +75,5 @@ notebooks/generated_image.png
 /actions/
 /output.txt
 /examples/
+/async_agent_runner/bin/
+/async_agent_runner/examples/

@@ -15,8 +15,8 @@ var listCmd = &cobra.Command{
 	Long: `显示所有 git worktree 的状态和信息。
 
 示例:
-  ac list                  # 列出所有 worktree
-  ac list --only-managed   # 只显示在工作目录中的 worktree`,
+  async_agent_runner list                  # 列出所有 worktree
+async_agent_runner list --only-managed   # 只显示在工作目录中的 worktree`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runList()
 	},
@@ -56,7 +56,7 @@ func runList() error {
 		
 		// 标记是否是我们管理的
 		if strings.HasPrefix(wt.Path, workdir) {
-			fmt.Printf("   状态: 由 ac 管理\n")
+			fmt.Printf("   状态: 由 async_agent_runner 管理\n")
 		} else {
 			fmt.Printf("   状态: 外部 worktree\n")
 		}

@@ -49,35 +49,35 @@ source ~/.zshrc
 
 ```bash
 # 按 H1 标题分割 (默认模式)
-cat task.md | ac --model cus/anthropic/claude-sonnet-4 --pr
+cat task.md | async_agent_runner --model cus/anthropic/claude-sonnet-4 --pr
 
 # 按 H2 标题分割
-cat task.md | ac --model your-model --split h2 --pr
+cat task.md | async_agent_runner --model your-model --split h2 --pr
 
 # 使用自定义分隔符 (兼容原有方式)
-cat task.md | ac --model your-model --split delimiter --delimiter "===" --pr
+cat task.md | async_agent_runner --model your-model --split delimiter --delimiter "===" --pr
 
 # 按指定标题级别范围分割
-cat task.md | ac --model your-model --split any --min-level 2 --max-level 3 --pr
+cat task.md | async_agent_runner --model your-model --split any --min-level 2 --max-level 3 --pr
 
 # 指定不同的基础分支
-cat task.md | ac --model your-model --from develop --pr
+cat task.md | async_agent_runner --model your-model --from develop --pr
 ```
 
 ### 管理 Worktree
 
 ```bash
 # 列出所有 worktree
-ac list
+async_agent_runner list
 
-# 只显示由 ac 管理的 worktree
-ac list --only-managed
+# 只显示由 async_agent_runner 管理的 worktree
+async_agent_runner list --only-managed
 
 # 清理所有管理的 worktree
-ac cleanup
+async_agent_runner cleanup
 
 # 清理匹配模式的 worktree
-ac cleanup --pattern test
+async_agent_runner cleanup --pattern test
 ```
 
 ## 📝 Markdown 文件示例
@@ -150,7 +150,7 @@ ac cleanup --pattern test
 ## 📁 生成的目录结构
 
 ```
-../ac_async_agent_workdir/
+../async_agent_runner_workdir/
 ├── stdin_创建基础组件_20231201123456/     # H1: 创建基础组件
 │   └── stdin_创建基础组件.md
 ├── stdin_添加用户认证_20231201123456/     # H1: 添加用户认证  
@@ -164,13 +164,13 @@ ac cleanup --pattern test
 ### 自定义工作目录
 
 ```bash
-cat task.md | ac --model your-model --workdir ./my_workspace --pr
+cat task.md | async_agent_runner --model your-model --workdir ./my_workspace --pr
 ```
 
 ### 组合多种选项
 
 ```bash
-cat complex_task.md | ac \
+cat complex_task.md | async_agent_runner \
   --model cus/anthropic/claude-sonnet-4 \
   --split h2 \
   --from develop \
