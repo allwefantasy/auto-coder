@@ -464,7 +464,34 @@ class AgenticEdit:
         <options>
         Array of options here (optional), e.g. ["Option 1", "Option 2", "Option 3"]
         </options>
-        </ask_followup_question>        
+        </ask_followup_question>    
+
+        ## todo_read
+        Description: Request to read the current todo list for the session. This tool helps you track progress, organize complex tasks, and understand the current status of ongoing work. Use this tool proactively to stay aware of task progress and demonstrate thoroughness.
+        Parameters:
+        - No parameters required
+        Usage:
+        <todo_read>
+        </todo_read>
+
+        ## todo_write
+        Description: Request to create and manage a structured task list for your current coding session. This helps you track progress, organize complex tasks, and demonstrate thoroughness to the user. It also helps the user understand the progress of the task and overall progress of their request. Use this tool proactively for complex multi-step tasks, when explicitly requested by the user, or when you need to organize multiple operations.
+        Parameters:
+        - action: (required) The action to perform: 'create' (create new todo list), 'add_task' (add single task), 'update' (update existing task), 'mark_progress' (mark task as in progress), 'mark_completed' (mark task as completed)
+        - task_id: (optional) The ID of the task to update (required for update, mark_progress, mark_completed actions)
+        - content: (optional) The task content or description (required for create, add_task actions)
+        - priority: (optional) Task priority level: 'high', 'medium', 'low' (default: 'medium')
+        - status: (optional) Task status: 'pending', 'in_progress', 'completed' (default: 'pending')
+        - notes: (optional) Additional notes or details about the task
+        Usage:
+        <todo_write>
+        <action>create</action>
+        <content>1. Read the configuration file
+        2. Update the database settings  
+        3. Test the connection
+        4. Deploy the changes</content>
+        <priority>high</priority>
+        </todo_write>     
 
         ## attempt_completion
         Description: After each tool use, the user will respond with the result of that tool use, i.e. if it succeeded or failed, along with any reasons for failure. Once you've received the results of tool uses and can confirm that the task is complete, use this tool to present the result of your work to the user. Optionally you may provide a CLI command to showcase the result of your work. The user may respond with feedback if they are not satisfied with the result, which you can use to make improvements and try again.
@@ -514,7 +541,7 @@ class AgenticEdit:
         {%if rag_server_info %}
         ### RAG_SERVER_LIST
         {{rag_server_info}}
-        {%endif%}
+        {%endif%}        
 
         # Tool Use Examples
 
@@ -588,7 +615,33 @@ class AgenticEdit:
         <server_name>github</server_name>
         <tool_name>create_issue</tool_name>
         <query>ower is octocat, repo is hello-world, title is Found a bug, body is I'm having a problem with this. labels is "bug" and "help wanted",assignees is "octocat"</query>        
-        </use_mcp_tool>                
+        </use_mcp_tool>
+
+        ## Example 5: Reading the current todo list
+
+        <todo_read>
+        </todo_read>
+
+        ## Example 6: Creating a new todo list for a complex task
+
+        <todo_write>
+        <action>create</action>
+        <content>1. Analyze the existing codebase structure
+        2. Design the new feature architecture
+        3. Implement the core functionality
+        4. Add comprehensive tests
+        5. Update documentation
+        6. Review and refactor code</content>
+        <priority>high</priority>
+        </todo_write>
+
+        ## Example 7: Marking a specific task as completed
+
+        <todo_write>
+        <action>mark_completed</action>
+        <task_id>task_123</task_id>
+        <notes>Successfully implemented with 95% test coverage</notes>
+        </todo_write>
 
         # Tool Use Guidelines
         0. **ALWAYS START WITH THOROUGH SEARCH AND EXPLORATION.** Before making any code changes, use search tools (list_files, grep commands) to fully understand the codebase structure, existing patterns, and dependencies. This prevents errors and ensures your changes align with project conventions.
@@ -749,10 +802,10 @@ class AgenticEdit:
         - **Combine multiple approaches** for comprehensive understanding
 
         **Default workflow:**
-        1. `list_files` → understand structure
+        1. `list_files`(without recursively) → understand structure (if needed)
         2. `grep` → find specific patterns/symbols  
         3. `read_file` → examine details
-        4. Implement changes
+        4.  Implement changes
         5. `grep` → verify changes
 
         # Comprehensive Workflow
@@ -818,13 +871,7 @@ class AgenticEdit:
 
         More detail is on the EDITING FILES PART.
 
-        ## Phase 5: Comprehensive Verification
-
-        **File System Verification**
-        <execute_command>
-        <command>ls -la newfile.* 2>/dev/null || echo "Expected new files not found"</command>
-        <requires_approval>false</requires_approval>
-        </execute_command>
+        ## Phase 5: Comprehensive Verification                
 
         **Code Integration Verification**
         <execute_command>
@@ -841,17 +888,7 @@ class AgenticEdit:
         <execute_command>
         <command>npm run lint 2>/dev/null || echo "Linting not configured"</command>
         <requires_approval>false</requires_approval>
-        </execute_command>
-
-        <execute_command>
-        <command>npm test 2>/dev/null || echo "Testing not configured"</command>
-        <requires_approval>false</requires_approval>
-        </execute_command>
-
-        <execute_command>
-        <command>npm run build 2>/dev/null || echo "Build not configured"</command>
-        <requires_approval>false</requires_approval>
-        </execute_command>
+        </execute_command>      
 
         **Documentation & Comments**
         - Verify that new functions/classes have appropriate documentation
@@ -886,6 +923,118 @@ class AgenticEdit:
         - **Pattern Consistency**: Follow established project patterns rather than introducing new ones
 
         By following this comprehensive approach, you ensure thorough understanding, reliable implementation, and robust verification of all code changes.          
+
+        ====
+
+        TODO FILE TOOLS
+
+        The TODO tools help you manage and track task progress during complex coding sessions. They provide structured task management capabilities that enhance productivity and demonstrate thoroughness to users.
+
+        # todo_read
+
+        ## Purpose
+
+        - Read and display the current session's todo list to understand task progress
+        - Get an overview of all pending, in-progress, and completed tasks
+        - Track the status of complex multi-step operations
+
+        ## When to Use
+
+        Use this tool proactively and frequently to ensure awareness of current task status:
+
+        - **At the beginning of conversations** to see what's pending
+        - **Before starting new tasks** to prioritize work appropriately
+        - **When the user asks about previous tasks** or plans
+        - **Whenever you're uncertain about what to do next**
+        - **After completing tasks** to update understanding of remaining work
+        - **After every few messages** to ensure you're staying on track
+        - **Periodically during long sessions** to review progress and stay organized
+
+        ## Important Considerations
+
+        - This tool takes **no parameters** - leave the input completely blank or empty
+        - **DO NOT** include dummy objects, placeholder strings, or keys like "input" or "empty"
+        - **LEAVE IT BLANK** - the tool will automatically read the current session's todo list
+        - Returns formatted output showing tasks grouped by status (In Progress, Pending, Completed)
+        - Provides summary statistics about task completion rates
+
+        ## Benefits
+
+        - Helps maintain context and continuity across complex tasks
+        - Provides clear visibility into what has been accomplished and what remains
+        - Demonstrates organized approach to problem-solving
+        - Helps prioritize next steps based on current task status
+
+        # todo_write
+
+        ## Purpose
+
+        - Create and manage structured task lists for complex coding sessions
+        - Track progress on multi-step operations with status updates
+        - Organize work into manageable, prioritized tasks
+        - Provide clear progress visibility to users
+
+        ## When to Use
+
+        Use this tool proactively in these scenarios:
+
+        - **Complex multi-step tasks**: When a task requires 3 or more distinct steps or actions
+        - **Non-trivial and complex tasks**: Tasks that require careful planning or multiple operations
+        - **User explicitly requests todo list**: When the user directly asks you to use the todo list
+        - **User provides multiple tasks**: When users provide a list of things to be done (numbered or comma-separated)
+        - **After receiving new instructions**: Immediately capture user requirements as todos
+        - **When you start working on a task**: Mark it as in_progress BEFORE beginning work (ideally only one task should be in_progress at a time)
+        - **After completing a task**: Mark it as completed and add any new follow-up tasks discovered during implementation
+
+        ## When NOT to Use
+
+        Skip using this tool when:
+
+        - There is only a **single, straightforward task**
+        - The task is **trivial** and tracking it provides no organizational benefit
+        - The task can be completed in **less than 3 trivial steps**
+        - The task is **purely conversational or informational**
+
+        **NOTE**: Do not use this tool if there is only one trivial task to do. In this case you are better off just doing the task directly.        
+
+        ## Important Considerations
+
+        - Each task gets a unique ID that can be used for future updates
+        - Task content for 'create' action should be formatted as a numbered list for multiple tasks
+        - The system automatically tracks task creation and modification timestamps
+        - Todo lists persist across tool calls within the same session
+        - Use descriptive task names that clearly indicate what needs to be accomplished
+
+        ## Example Usage Scenario
+
+        ```
+        User: I want to add a dark mode toggle to the application settings. Make sure you run the tests and build when you're done!
+
+        Assistant: I'll help add a dark mode toggle to your application settings. Let me create a todo list to track this implementation.
+
+        Creates todo list with the following items:
+        1. Create dark mode toggle component in Settings page
+        2. Add dark mode state management (context/store)
+        3. Implement CSS-in-JS styles for dark theme
+        4. Update existing components to support theme switching
+        5. Run tests and build process, addressing any failures or errors that occur
+
+        Thinking: The assistant used the todo list because:
+        1. Adding dark mode is a multi-step feature requiring UI, state management, and styling changes
+        2. The user explicitly requested tests and build be run afterward
+        3. The assistant inferred that tests and build need to pass by adding "Ensure tests and build succeed" as the final task
+        ```
+
+        ## Workflow Tips
+
+        1. **Start with creation**: Use 'create' action to establish the initial task list for complex projects
+        2. **Add tasks incrementally**: Use 'add_task' as new requirements emerge during implementation
+        3. **Track progress actively**: Use 'mark_progress' when starting work on a task
+        4. **Complete tasks promptly**: Use 'mark_completed' when tasks are finished
+        5. **Add context**: Use 'notes' parameter to record important decisions or challenges
+        6. **Review regularly**: Use todo_read to maintain awareness of overall progress
+
+        By using these TODO tools effectively, you can maintain better organization, provide clear progress visibility, and demonstrate a systematic approach to complex coding tasks.
 
         ====
 
