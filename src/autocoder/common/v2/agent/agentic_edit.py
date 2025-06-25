@@ -118,6 +118,7 @@ from autocoder.common.conversations import ConversationManagerConfig
 from autocoder.common.pull_requests import create_pull_request, detect_platform_from_repo
 from autocoder.common.auto_coder_lang import get_message, get_message_with_format
 from autocoder.common.pruner.agentic_conversation_pruner import AgenticConversationPruner
+from copy import deepcopy
 
 
 # --- Tool Display Customization is now handled by agentic_tool_display.py ---
@@ -1304,7 +1305,7 @@ class AgenticEdit:
             # ## 实际请求大模型,并且我们会裁剪对话窗口长度
             llm_response_gen = stream_chat_with_continue(
                 llm=self.llm,
-                conversations=self.agentic_pruner.prune_conversations(conversations),
+                conversations=self.agentic_pruner.prune_conversations(deepcopy(conversations)),
                 llm_config={},  # Placeholder for future LLM configs
                 args=self.args
             )
