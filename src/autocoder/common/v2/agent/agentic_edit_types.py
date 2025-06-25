@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict, Any, Callable, Optional, Type
+from typing import List, Dict, Any, Callable, Optional, Type, Union
 from pydantic import SkipValidation
 
 # Result class used by Tool Resolvers
@@ -108,6 +108,20 @@ class ErrorEvent(BaseModel):
 class WindowLengthChangeEvent(BaseModel):
     """Represents the token usage in the conversation window."""
     tokens_used: int
+
+# Base event class for all agent events
+class AgentEvent(BaseModel):
+    """Base class for all agent events."""
+    pass
+
+# Metadata for token usage tracking
+class SingleOutputMeta(BaseModel):
+    """Metadata for tracking token usage for a single LLM output."""
+    model_name: str
+    input_tokens: int
+    output_tokens: int
+    input_cost: float
+    output_cost: float
 
 # Deprecated: Will be replaced by specific Event types
 # class PlainTextOutput(BaseModel):

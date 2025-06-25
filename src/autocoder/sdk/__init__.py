@@ -5,7 +5,8 @@ Auto-Coder SDK
 """
 
 from typing import AsyncIterator, Optional, Dict, Any
-
+import os
+import subprocess
 from .core.auto_coder_core import AutoCoderCore
 from .models.options import AutoCodeOptions
 from .models.messages import Message
@@ -19,6 +20,7 @@ from .exceptions import (
     BridgeError,
     ValidationError
 )
+from autocoder.auto_coder_runner import init_project_if_required as init_project_if_required_buildin
 
 __version__ = "1.0.0"
 __all__ = [
@@ -186,3 +188,7 @@ async def modify_code_stream(
     core = AutoCoderCore(options or AutoCodeOptions())
     async for event in core.modify_code_stream(prompt, pre_commit, extra_args, show_terminal):
         yield event
+
+
+def init_project_if_required(target_dir: str,project_type = ".py,.ts"):
+    init_project_if_required_buildin(target_dir,project_type)

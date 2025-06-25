@@ -56,10 +56,8 @@ class AutoCoderBridge:
             pass
 
     def init_project_if_required(self):
-        if not os.path.exists(".auto-coder") or not os.path.exists("actions"):
-            subprocess.run(
-                ["auto-coder", "init", "--source_dir", "."], check=True
-            )        
+        from autocoder.auto_coder_runner import init_project_if_required as init_project_if_required_buildin
+        init_project_if_required_buildin(self.project_root,".py,.ts")
 
     def call_run_auto_command(
         self,

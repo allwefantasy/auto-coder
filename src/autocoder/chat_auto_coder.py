@@ -170,9 +170,14 @@ def show_help():
         print("  \033[94mCommand\033[0m - \033[93mDescription\033[0m")
         for cmd, (_, desc, plugin_id) in plugin_manager.command_handlers.items():
             plugin = plugin_manager.get_plugin(plugin_id)
-            print(
-                f"  \033[94m{cmd}\033[0m - \033[92m{desc} (from {plugin.plugin_name()})\033[0m"
-            )
+            if plugin:
+                print(
+                    f"  \033[94m{cmd}\033[0m - \033[92m{desc} (from {plugin.plugin_name()})\033[0m"
+                )
+            else:
+                print(
+                    f"  \033[94m{cmd}\033[0m - \033[92m{desc} (from unknown plugin)\033[0m"
+                )
         print()
 
 

@@ -48,7 +48,7 @@ class TerminalRunner(BaseRunner):
         project_name = os.path.basename(os.path.abspath(self.args.source_dir))
 
         if self.conversation_config.action == "list":
-            conversations = self.conversation_manager.list_conversations()
+            conversations = self.agent.conversation_manager.list_conversations()
             # 只保留 conversation_id 和 name 字段
             filtered_conversations = []
             for conv in conversations:
@@ -66,7 +66,7 @@ class TerminalRunner(BaseRunner):
         
 
         if self.conversation_config.action == "new" and not request.user_input.strip():
-            console.print(Panel(Markdown(f"New conversation created: {self.conversation_manager.get_current_conversation_id()}"),
+            console.print(Panel(Markdown(f"New conversation created: {self.agent.conversation_manager.get_current_conversation_id()}"),
                                   title="🏁 Task Completion", border_style="green", title_align="left"))
             return
 

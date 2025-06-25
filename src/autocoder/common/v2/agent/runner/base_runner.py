@@ -10,12 +10,11 @@ from typing import Generator, Any, Dict, Optional, Callable, List
 
 from autocoder.common.v2.agent.agentic_edit_types import (
     AgenticEditRequest, AgentEvent, CompletionEvent, 
-    AgenticEditConversationConfig, CommandConfig
+    AgenticEditConversationConfig, CommandConfig, MemoryConfig
 )
-from autocoder.common.v2.memory_config import MemoryConfig
-from autocoder.common import AutoCoderArgs
-from autocoder.common.v2.source_code_list import SourceCodeList
+from autocoder.common import AutoCoderArgs, SourceCodeList
 from autocoder.common.v2.agent.agentic_edit import AgenticEdit
+from autocoder.common.printer import Printer
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +57,8 @@ class BaseRunner:
         self.memory_config = memory_config
         self.command_config = command_config
         self.conversation_name = conversation_name
-        self.conversation_config = conversation_config                
+        self.conversation_config = conversation_config  
+        self.printer = Printer()              
         
         self.agent = AgenticEdit(
             llm=llm,

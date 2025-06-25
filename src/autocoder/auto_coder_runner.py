@@ -24,7 +24,7 @@ from autocoder.version import __version__
 from autocoder.auto_coder import main as auto_coder_main
 from autocoder.utils import get_last_yaml_file
 from autocoder.commands.auto_command import CommandAutoTuner, AutoCommandRequest, CommandConfig, MemoryConfig
-from autocoder.common.v2.agent.agentic_edit import AgenticEdit,AgenticEditRequest
+from autocoder.common.v2.agent.agentic_edit import AgenticEditRequest
 from autocoder.common.v2.agent.agentic_edit_types import AgenticEditConversationConfig
 from autocoder.index.symbols_utils import (
     extract_symbols,
@@ -69,8 +69,7 @@ from autocoder.common import SourceCodeList,SourceCode
 from autocoder.common.file_monitor import FileMonitor
 from filelock import FileLock
 from autocoder.common.command_file_manager import CommandManager
-from autocoder.common.v2.agent.runner import SdkRunner
-
+from autocoder.common.v2.agent.runner import SdkRunner,TerminalRunner,EventRunner
 
 ## 对外API，用于第三方集成 auto-coder 使用。
 class SymbolItem(BaseModel):
@@ -836,6 +835,84 @@ def _handle_post_commit_and_pr(post_commit: bool, pr: bool, query: str, args, ll
                 
     except Exception as e:
         printer.print_in_terminal("post_commit_pr_failed", style="red", error=str(e))
+
+def init_project_if_required(target_dir: str,project_type:str):
+    """
+    如果项目没有初始化，则自动初始化项目
+    
+    Args:
+        target_dir: 目标目录路径
+    """    
+    
+    # 确保目标目录是绝对路径
+    if not os.path.isabs(target_dir):
+        target_dir = os.path.abspath(target_dir)
+    
+    actions_dir = os.path.join(target_dir, "actions")
+    auto_coder_dir = os.path.join(target_dir, ".auto-coder")
+    
+    # 检查是否已经初始化
+    if os.path.exists(actions_dir) and os.path.exists(auto_coder_dir):
+        return  # 已经初始化，无需再次初始化
+    
+    printer = Printer()
+    
+    try:                        
+        # 创建必要的目录
+        os.makedirs(actions_dir, exist_ok=True)
+        os.makedirs(auto_coder_dir, exist_ok=True)
+        
+        # 导入并使用 create_actions 创建默认的 action 文件
+        from autocoder.common.command_templates import create_actions
+        
+        create_actions(
+            source_dir=target_dir,
+            params={
+                "project_type": project_type,
+                "source_dir": target_dir
+            },
+        )
+        
+        # 初始化 git 仓库
+        try:
+            git_utils.init(target_dir)
+        except Exception as e:
+            global_logger.warning(f"Failed to initialize git repository: {e}")
+        
+        # 创建或更新 .gitignore 文件
+        gitignore_path = os.path.join(target_dir, ".gitignore")
+        gitignore_entries = ["\n.auto-coder/", "\n/actions/", "\n/output.txt"]
+        
+        try:
+            # 检查现有的 .gitignore 内容，避免重复添加
+            existing_content = ""
+            if os.path.exists(gitignore_path):
+                with open(gitignore_path, "r", encoding="utf-8") as f:
+                    existing_content = f.read()
+            
+            with open(gitignore_path, "a", encoding="utf-8") as f:
+                for entry in gitignore_entries:
+                    if entry.strip() not in existing_content:
+                        f.write(entry)
+        except Exception as e:
+            global_logger.warning(f"Failed to update .gitignore: {e}")
+        
+        # 创建 .autocoderignore 文件
+        try:
+            autocoderignore_path = os.path.join(target_dir, ".autocoderignore")
+            if not os.path.exists(autocoderignore_path):
+                autocoderignore_content = "target\n"
+                with open(autocoderignore_path, "w", encoding="utf-8") as f:
+                    f.write(autocoderignore_content)
+        except Exception as e:
+            global_logger.warning(f"Failed to create .autocoderignore: {e}")
+
+        configure("project_type={project_type}")                
+        global_logger.info(f"Successfully initialized auto-coder project in {target_dir}")        
+        
+    except Exception as e:
+        global_logger.error(f"Failed to initialize project in {target_dir}: {e}")
+        printer.print_in_terminal("init_project_error", style="red", error=str(e))
 
 
 def _create_pull_request(commit_result, original_query: str, llm):
@@ -3229,9 +3306,7 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
 
         conversation_config.query = task_query
 
-        if get_run_context().mode == RunMode.WEB:
-            from autocoder.common.v2.agent.runner import EventRunner
-            
+        if get_run_context().mode == RunMode.WEB:                        
             runner = EventRunner(llm=llm,
                               args=args,
                               files=SourceCodeList(sources=sources), 
@@ -3244,9 +3319,7 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
                              )
             runner.run(AgenticEditRequest(user_input=task_query))
         
-        if get_run_context().mode == RunMode.TERMINAL:
-            from autocoder.common.v2.agent.runner import TerminalRunner
-            
+        if get_run_context().mode == RunMode.TERMINAL:                        
             runner = TerminalRunner(llm=llm,
                               args=args,
                               files=SourceCodeList(sources=sources), 

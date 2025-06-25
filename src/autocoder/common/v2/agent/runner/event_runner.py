@@ -13,10 +13,9 @@ from autocoder.common.v2.agent.agentic_edit_types import (
     LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
     ToolResultEvent, TokenUsageEvent, ErrorEvent
 )
-from autocoder.common.v2.event_manager import get_event_manager
-from autocoder.common.v2.event_types import (
-    EventMetadata, EventContentCreator
-)
+from autocoder.events.event_manager_singleton import get_event_manager
+from autocoder.events.event_types import EventMetadata
+from autocoder.events import event_content as EventContentCreator
 from .base_runner import BaseRunner
 
 logger = logging.getLogger(__name__)
