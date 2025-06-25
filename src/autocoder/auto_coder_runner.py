@@ -69,6 +69,7 @@ from autocoder.common import SourceCodeList,SourceCode
 from autocoder.common.file_monitor import FileMonitor
 from filelock import FileLock
 from autocoder.common.command_file_manager import CommandManager
+from autocoder.common.v2.agent.runner import SdkRunner
 
 
 ## 对外API，用于第三方集成 auto-coder 使用。
@@ -3228,18 +3229,35 @@ def auto_command(query: str,extra_args: Dict[str,Any]={}):
 
         conversation_config.query = task_query
 
-        agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
-                            conversation_history=conversation_history,
-                            memory_config=MemoryConfig(memory=memory, 
-                            save_memory_func=save_memory), command_config=CommandConfig,
-                            conversation_name="current",
-                            conversation_config=conversation_config
-                            )           
         if get_run_context().mode == RunMode.WEB:
-            agent.run_with_events(AgenticEditRequest(user_input=task_query))
+            from autocoder.common.v2.agent.runner import EventRunner
+            
+            runner = EventRunner(llm=llm,
+                              args=args,
+                              files=SourceCodeList(sources=sources), 
+                              conversation_history=conversation_history,
+                              memory_config=MemoryConfig(memory=memory, 
+                              save_memory_func=save_memory),
+                              command_config=CommandConfig,
+                              conversation_name="current",
+                              conversation_config=conversation_config
+                             )
+            runner.run(AgenticEditRequest(user_input=task_query))
         
         if get_run_context().mode == RunMode.TERMINAL:
-            agent.run_in_terminal(AgenticEditRequest(user_input=task_query))
+            from autocoder.common.v2.agent.runner import TerminalRunner
+            
+            runner = TerminalRunner(llm=llm,
+                              args=args,
+                              files=SourceCodeList(sources=sources), 
+                              conversation_history=conversation_history,
+                              memory_config=MemoryConfig(memory=memory, 
+                              save_memory_func=save_memory),
+                              command_config=CommandConfig,
+                              conversation_name="current",
+                              conversation_config=conversation_config
+                             )
+            runner.run(AgenticEditRequest(user_input=task_query))
             
         completer.refresh_files()
         return
@@ -3358,19 +3376,22 @@ def run_auto_command(query: str,
             task_query = render_command_file_with_variables(command_infos)
              
         conversation_config.query = task_query   
-        conversation_config.pull_request = pr     
-
-        agent = AgenticEdit(llm=llm,args=args,files=SourceCodeList(sources=sources), 
-                            conversation_history=conversation_history,
-                            memory_config=MemoryConfig(memory=memory, 
-                            save_memory_func=save_memory), command_config=CommandConfig,
-                            conversation_name="current",
-                            conversation_config=conversation_config
-                            )           
-        if pre_commit:
-            agent.apply_pre_changes()
+        conversation_config.pull_request = pr             
         
-        events = agent.run(AgenticEditRequest(user_input=task_query))        
+        runner = SdkRunner(llm=llm,
+                          args=args,
+                          files=SourceCodeList(sources=sources), 
+                          conversation_history=conversation_history,
+                          memory_config=MemoryConfig(memory=memory, 
+                          save_memory_func=save_memory), 
+                          command_config=CommandConfig,
+                          conversation_name="current",
+                          conversation_config=conversation_config
+                         )           
+        if pre_commit:
+            runner.apply_pre_changes()
+        
+        events = runner.run(AgenticEditRequest(user_input=task_query))
         
         for event in events:
             yield event

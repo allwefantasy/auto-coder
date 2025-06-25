@@ -176,31 +176,99 @@ func (p *Processor) parseMultipleDocuments(content string) ([]DocumentPart, erro
 
 // splitByFrontMatter 按 YAML front matter 分割
 func (p *Processor) splitByFrontMatter(content string) []DocumentPart {
-	// 分割 YAML front matter 文档
-	pattern := regexp.MustCompile(`(?ms)^---\s*\n(.*?)\n---\s*\n?(.*?)(?=\n---|\z)`)
-	matches := pattern.FindAllStringSubmatch(content, -1)
+	var docParts []DocumentPart
 
-	var parts []DocumentPart
-	for _, match := range matches {
-		if len(match) >= 3 {
-			metadata := p.parseYAMLMetadata(match[1])
-			content := strings.TrimSpace(match[2])
+	// 简单的实现：按 "---" 分割，然后解析每一块
+	lines := strings.Split(content, "\n")
+	var currentDoc strings.Builder
+	var currentYAML strings.Builder
+	inYAML := false
+	var inContent bool
 
-			title := p.extractTitle(content)
-			if titleFromMeta, ok := metadata["title"].(string); ok && titleFromMeta != "" {
-				title = titleFromMeta
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if trimmed == "---" {
+			if !inYAML && !inContent {
+				// 开始新的 YAML block
+				inYAML = true
+				continue
+			} else if inYAML && !inContent {
+				// YAML block 结束，内容开始
+				inYAML = false
+				inContent = true
+				continue
+			} else if inContent {
+				// 当前文档结束，保存并开始新文档
+				if currentDoc.Len() > 0 || currentYAML.Len() > 0 {
+					p.addFrontMatterDoc(&docParts, currentYAML.String(), currentDoc.String())
+				}
+
+				// 重置状态
+				currentDoc.Reset()
+				currentYAML.Reset()
+				inYAML = true
+				inContent = false
+				continue
 			}
+		}
 
-			parts = append(parts, DocumentPart{
-				Content:  content,
-				Title:    title,
-				Level:    1,
-				Metadata: metadata,
-			})
+		if inYAML {
+			if currentYAML.Len() > 0 {
+				currentYAML.WriteString("\n")
+			}
+			currentYAML.WriteString(line)
+		} else if inContent {
+			if currentDoc.Len() > 0 {
+				currentDoc.WriteString("\n")
+			}
+			currentDoc.WriteString(line)
+		} else {
+			// 没有 YAML header 的情况，直接当作内容处理
+			if currentDoc.Len() > 0 {
+				currentDoc.WriteString("\n")
+			}
+			currentDoc.WriteString(line)
+			inContent = true
 		}
 	}
 
-	return parts
+	// 添加最后一个文档
+	if currentDoc.Len() > 0 || currentYAML.Len() > 0 {
+		p.addFrontMatterDoc(&docParts, currentYAML.String(), currentDoc.String())
+	}
+
+	// 如果没有找到任何文档，返回整个内容作为一个文档
+	if len(docParts) == 0 {
+		docParts = append(docParts, DocumentPart{
+			Content:  strings.TrimSpace(content),
+			Title:    p.extractTitle(content),
+			Level:    1,
+			Metadata: make(map[string]interface{}),
+		})
+	}
+
+	return docParts
+}
+
+// addFrontMatterDoc 添加一个 front matter 文档
+func (p *Processor) addFrontMatterDoc(docParts *[]DocumentPart, yamlContent, markdownContent string) {
+	metadata := p.parseYAMLMetadata(yamlContent)
+	content := strings.TrimSpace(markdownContent)
+
+	title := p.extractTitle(content)
+	if titleFromMeta, ok := metadata["title"].(string); ok && titleFromMeta != "" {
+		title = titleFromMeta
+	}
+
+	if content != "" || len(metadata) > 0 {
+		*docParts = append(*docParts, DocumentPart{
+			Content:  content,
+			Title:    title,
+			Level:    1,
+			Metadata: metadata,
+		})
+	}
 }
 
 // parseYAMLMetadata 解析 YAML 元数据（简单实现）
@@ -273,9 +341,23 @@ func (p *Processor) splitLongDocument(part DocumentPart) []DocumentPart {
 	maxLen := p.Config.MaxLength
 	overlap := p.Config.OverlapSize
 
-	for len(content) > maxLen {
+	// 安全检查：防止无限循环
+	maxIterations := 100
+	iterations := 0
+
+	for len(content) > maxLen && iterations < maxIterations {
+		iterations++
+
 		// 找到合适的分割点（优先在句号、换行符处分割）
 		splitPos := p.findBestSplitPosition(content, maxLen)
+
+		// 安全检查：确保分割位置有效
+		if splitPos <= 0 {
+			splitPos = maxLen / 2 // 强制分割
+		}
+		if splitPos >= len(content) {
+			break
+		}
 
 		// 创建当前部分
 		currentPart := DocumentPart{
@@ -288,10 +370,21 @@ func (p *Processor) splitLongDocument(part DocumentPart) []DocumentPart {
 
 		// 计算下一部分的起始位置（考虑重叠）
 		nextStart := splitPos - overlap
-		if nextStart < 0 {
-			nextStart = splitPos
+		if nextStart < 0 || nextStart >= splitPos {
+			nextStart = splitPos // 确保前进
 		}
+
+		// 确保实际前进，防止无限循环
+		if nextStart >= len(content) {
+			break
+		}
+
 		content = content[nextStart:]
+
+		// 额外的安全检查
+		if len(content) <= overlap {
+			break
+		}
 	}
 
 	// 添加最后一部分
@@ -302,6 +395,11 @@ func (p *Processor) splitLongDocument(part DocumentPart) []DocumentPart {
 			Level:    part.Level,
 			Metadata: part.Metadata,
 		})
+	}
+
+	// 如果没有成功分割，返回原文档
+	if len(parts) == 0 {
+		return []DocumentPart{part}
 	}
 
 	return parts

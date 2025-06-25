@@ -31,7 +31,7 @@ class AskFollowupQuestionToolResolver(BaseToolResolver):
         """
         # Check if running in CLI mode, if so return immediately with a message
         # instructing the model to solve the problem on its own
-        if get_run_context().is_cli():
+        if get_run_context().is_cli() or self.agent.args.enable_agentic_auto_approve:
             return ToolResult(
                 success=False,
                 message="Remember, you cannot ask follow-up questions. Please try to solve the problem on your own using the available information. Do not give up and do your best to find a solution."
