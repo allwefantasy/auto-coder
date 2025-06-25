@@ -7,6 +7,7 @@ from autocoder.common.printer import Printer
 from autocoder.rag.token_counter import count_tokens
 from loguru import logger
 from autocoder.common import AutoCoderArgs
+from autocoder.common.save_formatted_log import save_formatted_log
 
 class AgenticPruneStrategy(BaseModel):
     name: str
@@ -110,6 +111,8 @@ class AgenticConversationPruner:
         
         final_tokens = count_tokens(json.dumps(processed_conversations, ensure_ascii=False))
         logger.info(f"Cleanup completed. Token count: {current_tokens} -> {final_tokens}")
+
+        save_formatted_log(self.args.source_dir, json.dumps(conversations, ensure_ascii=False), "agentic_pruned_conversation")                                
         
         return processed_conversations
 
