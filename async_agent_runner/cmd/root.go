@@ -143,7 +143,7 @@ func runAutoCoderAsync() error {
 	documents := mdProcessor.ProcessContent(inputStr, "stdin")
 	
 	// 生成时间戳
-	timestamp := time.Now().Format("200601")
+	timestamp := time.Now().Format("20060102150405")
 
 	// 处理每个文档
 	for _, doc := range documents {
