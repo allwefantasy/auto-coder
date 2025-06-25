@@ -26,9 +26,7 @@ __version__ = "1.0.0"
 __all__ = [
     # 核心功能
     "query",
-    "query_sync",
-    "modify_code",
-    "modify_code_stream",
+    "query_sync",    
     
     # 数据模型
     "AutoCodeOptions",
@@ -110,85 +108,6 @@ def query_sync(
         options = AutoCodeOptions()
     core = AutoCoderCore(options)
     return core.query_sync(f"/new {prompt}", show_terminal)
-
-
-def modify_code(
-    prompt: str,
-    pre_commit: bool = False,
-    extra_args: Optional[Dict[str, Any]] = None,
-    options: Optional[AutoCodeOptions] = None,
-    show_terminal: bool = True
-) -> CodeModificationResult:
-    """
-    代码修改接口
-    
-    Args:
-        prompt: 修改提示
-        pre_commit: 是否预提交
-        extra_args: 额外参数
-        options: 配置选项
-        show_terminal: 是否在终端显示友好的渲染输出
-        
-    Returns:
-        CodeModificationResult: 修改结果
-        
-    Example:
-        >>> from autocoder.sdk import modify_code, AutoCodeOptions
-        >>> 
-        >>> options = AutoCodeOptions(cwd="/path/to/project")
-        >>> result = modify_code(
-        ...     "Add error handling to the main function",
-        ...     pre_commit=False,
-        ...     options=options
-        ... )
-        >>> 
-        >>> if result.success:
-        ...     print(f"Modified files: {result.modified_files}")
-        ... else:
-        ...     print(f"Error: {result.error_details}")
-    """
-    core = AutoCoderCore(options or AutoCodeOptions())
-    return core.modify_code(prompt, pre_commit, extra_args, show_terminal)
-
-
-async def modify_code_stream(
-    prompt: str,
-    pre_commit: bool = False,
-    extra_args: Optional[Dict[str, Any]] = None,
-    options: Optional[AutoCodeOptions] = None,
-    show_terminal: bool = True
-) -> AsyncIterator[StreamEvent]:
-    """
-    异步流式代码修改接口
-    
-    Args:
-        prompt: 修改提示
-        pre_commit: 是否预提交
-        extra_args: 额外参数
-        options: 配置选项
-        show_terminal: 是否在终端显示友好的渲染输出
-        
-    Yields:
-        StreamEvent: 修改事件流
-        
-    Example:
-        >>> import asyncio
-        >>> from autocoder.sdk import modify_code_stream, AutoCodeOptions
-        >>> 
-        >>> async def main():
-        ...     options = AutoCodeOptions(cwd="/path/to/project")
-        ...     async for event in modify_code_stream(
-        ...         "Refactor the user authentication module",
-        ...         options=options
-        ...     ):
-        ...         print(f"[{event.event_type}] {event.data}")
-        >>> 
-        >>> asyncio.run(main())
-    """
-    core = AutoCoderCore(options or AutoCodeOptions())
-    async for event in core.modify_code_stream(prompt, pre_commit, extra_args, show_terminal):
-        yield event
-
 
 def init_project_if_required(target_dir: str,project_type = ".py,.ts"):
     init_project_if_required_buildin(target_dir,project_type)
