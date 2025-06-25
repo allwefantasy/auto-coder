@@ -63,6 +63,24 @@ class UseRAGTool(BaseTool):
 class ListPackageInfoTool(BaseTool):
     path: str  # 源码包目录，相对路径或绝对路径
 
+class TodoReadTool(BaseTool):
+    """
+    Tool for reading the current todo list.
+    Takes no parameters.
+    """
+    pass  # No parameters needed
+
+class TodoWriteTool(BaseTool):
+    """
+    Tool for creating and managing a structured task list.
+    """
+    action: str  # 'create', 'update', 'mark_progress', 'mark_completed', 'add_task'
+    task_id: Optional[str] = None  # Task ID for update/mark operations
+    content: Optional[str] = None  # Task content for create/add operations
+    priority: Optional[str] = None  # 'high', 'medium', 'low'
+    status: Optional[str] = None  # 'pending', 'in_progress', 'completed'
+    notes: Optional[str] = None  # Additional notes for the task
+
 # Event Types for Rich Output Streaming
 class LLMOutputEvent(BaseModel):
     """Represents plain text output from the LLM."""
@@ -142,7 +160,9 @@ TOOL_MODEL_MAP: Dict[str, Type[BaseTool]] = {
     "plan_mode_respond": PlanModeRespondTool,
     "use_mcp_tool": UseMcpTool,
     "use_rag_tool": UseRAGTool,
-    "list_package_info": ListPackageInfoTool,    
+    "list_package_info": ListPackageInfoTool,
+    "todo_read": TodoReadTool,
+    "todo_write": TodoWriteTool,
 }
 
 class FileChangeEntry(BaseModel):

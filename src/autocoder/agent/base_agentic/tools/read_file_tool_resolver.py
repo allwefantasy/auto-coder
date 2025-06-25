@@ -5,7 +5,7 @@ from autocoder.agent.base_agentic.types import ReadFileTool, ToolResult  # Impor
 from loguru import logger
 import typing
 from autocoder.common import AutoCoderArgs
-from autocoder.common.context_pruner import PruneContext
+from autocoder.common.pruner.context_pruner import PruneContext
 from autocoder.common import SourceCode
 from autocoder.rag.token_counter import count_tokens
 from loguru import logger

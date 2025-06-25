@@ -60,7 +60,8 @@ from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific re
     ReplaceInFileToolResolver, SearchFilesToolResolver, ListFilesToolResolver,
     ListCodeDefinitionNamesToolResolver, AskFollowupQuestionToolResolver,
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver,
-    UseRAGToolResolver, ListPackageInfoToolResolver
+    UseRAGToolResolver, ListPackageInfoToolResolver, TodoReadToolResolver,
+    TodoWriteToolResolver
 )
 from autocoder.common.llm_friendly_package import LLMFriendlyPackageManager
 from autocoder.common.rulefiles.autocoderrules_utils import get_rules,auto_select_rules,get_required_and_index_rules
@@ -73,7 +74,8 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           ListFilesTool,
                                                           ListCodeDefinitionNamesTool, AskFollowupQuestionTool,
                                                           AttemptCompletionTool, PlanModeRespondTool, UseMcpTool,
-                                                          UseRAGTool, ListPackageInfoTool,
+                                                          UseRAGTool, ListPackageInfoTool, TodoReadTool,
+                                                          TodoWriteTool,
                                                           TOOL_MODEL_MAP,
                                                           # Event Types
                                                           LLMOutputEvent, LLMThinkingEvent, ToolCallEvent,
@@ -103,7 +105,9 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     AttemptCompletionTool: AttemptCompletionToolResolver,  # Will stop the loop anyway
     PlanModeRespondTool: PlanModeRespondToolResolver,
     UseMcpTool: UseMcpToolResolver,
-    UseRAGTool: UseRAGToolResolver
+    UseRAGTool: UseRAGToolResolver,
+    TodoReadTool: TodoReadToolResolver,
+    TodoWriteTool: TodoWriteToolResolver
 }
 from autocoder.common.conversations.get_conversation_manager import (
     get_conversation_manager,
@@ -113,6 +117,7 @@ from autocoder.common.conversations.get_conversation_manager import (
 from autocoder.common.conversations import ConversationManagerConfig
 from autocoder.common.pull_requests import create_pull_request, detect_platform_from_repo
 from autocoder.common.auto_coder_lang import get_message, get_message_with_format
+from autocoder.common.pruner.agentic_conversation_pruner import AgenticConversationPruner
 
 
 # --- Tool Display Customization is now handled by agentic_tool_display.py ---
@@ -197,6 +202,9 @@ class AgenticEdit:
         # 对话管理器
         self.conversation_config =conversation_config
         self.conversation_manager = get_conversation_manager()
+        
+        # Agentic 对话修剪器
+        self.agentic_pruner = AgenticConversationPruner(args=args, llm=self.context_prune_llm)
 
         if self.conversation_config.action == "new":
             conversation_id = self.conversation_manager.create_conversation(name=self.conversation_config.query or "New Conversation",
@@ -1257,9 +1265,9 @@ class AgenticEdit:
         
         self.current_conversations = conversations
         
-        # 计算初始对话窗口长度并触发事件
+        # 计算初始对话窗口长度
         conversation_str = json.dumps(conversations, ensure_ascii=False)
-        current_tokens = count_tokens(conversation_str)
+        current_tokens = count_tokens(conversation_str)                       
         yield WindowLengthChangeEvent(tokens_used=current_tokens)
         
         logger.info(
@@ -1291,12 +1299,12 @@ class AgenticEdit:
                 f"Starting LLM interaction cycle. History size: {len(conversations)}")
 
             assistant_buffer = ""
-            logger.info("Initializing stream chat with LLM")
+            logger.info("Initializing stream chat with LLM")        
 
-            # ## 实际请求大模型
+            # ## 实际请求大模型,并且我们会裁剪对话窗口长度
             llm_response_gen = stream_chat_with_continue(
                 llm=self.llm,
-                conversations=conversations,
+                conversations=self.agentic_pruner.prune_conversations(conversations),
                 llm_config={},  # Placeholder for future LLM configs
                 args=self.args
             )

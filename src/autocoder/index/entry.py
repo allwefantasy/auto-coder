@@ -25,7 +25,7 @@ from autocoder.index.filter.normal_filter import NormalFilter
 from autocoder.index.index import IndexManager
 from loguru import logger
 from autocoder.common import SourceCodeList
-from autocoder.common.context_pruner import PruneContext
+from autocoder.common.pruner.context_pruner import PruneContext
 from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 
 from autocoder.events.event_manager_singleton import get_event_manager

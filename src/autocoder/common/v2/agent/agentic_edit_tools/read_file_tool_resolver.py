@@ -3,7 +3,7 @@ from typing import Dict, Any, Optional
 from autocoder.common import AutoCoderArgs,SourceCode
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
 from autocoder.common.v2.agent.agentic_edit_types import ReadFileTool, ToolResult
-from autocoder.common.context_pruner import PruneContext
+from autocoder.common.pruner.context_pruner import PruneContext
 from autocoder.common import SourceCode
 from autocoder.rag.token_counter import count_tokens
 from loguru import logger

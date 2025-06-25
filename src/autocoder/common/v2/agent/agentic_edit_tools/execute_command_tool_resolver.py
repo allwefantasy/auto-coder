@@ -9,7 +9,7 @@ from autocoder.common import shells
 from autocoder.common.printer import Printer
 from loguru import logger
 import typing   
-from autocoder.common.context_pruner import PruneContext
+from autocoder.common.pruner.context_pruner import PruneContext
 from autocoder.rag.token_counter import count_tokens
 from autocoder.common import SourceCode
 from autocoder.common import AutoCoderArgs

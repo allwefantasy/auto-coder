@@ -110,7 +110,7 @@ def test_create_new_file(test_args, temp_test_dir, mock_agent_no_shadow):
     result = resolver.resolve()
 
     assert result.success is True
-    assert "成功写入文件" in result.message or "Successfully wrote file" in result.message
+    assert "Successfully wrote file" in result.message
     
     expected_file_abs_path = os.path.join(temp_test_dir, file_path)
     assert os.path.exists(expected_file_abs_path)
@@ -135,7 +135,7 @@ def test_overwrite_existing_file(test_args, temp_test_dir, mock_agent_no_shadow)
 
     assert result.success is True
     assert os.path.exists(abs_file_path)
-    with open(abs_file_path, "r", encoding="utf-f8") as f:
+    with open(abs_file_path, "r", encoding="utf-8") as f:
         assert f.read() == new_content
     mock_agent_no_shadow.record_file_change.assert_called_once_with(file_path, "modified", content=new_content, diffs=None)
 
@@ -202,7 +202,7 @@ def test_path_outside_project_root_fails(test_args, temp_test_dir, mock_agent_no
     result = resolver.resolve()
 
     assert result.success is False
-    assert "访问被拒绝" in result.message or "Access denied" in result.message
+    assert "Access denied" in result.message
     assert not os.path.exists(outside_abs_path)
     
     # shutil.rmtree(another_temp_dir) # Clean up the other temp dir if created by this test
@@ -226,8 +226,8 @@ def test_linting_not_called_if_disabled(test_args, temp_test_dir, mock_agent_no_
     if mock_agent_no_shadow and hasattr(mock_agent_no_shadow, 'shadow_linter') and mock_agent_no_shadow.shadow_linter:
         mock_agent_no_shadow.shadow_linter.lint_shadow_file.assert_not_called()
     
-    # Check if "代码质量检查已禁用" or "Linting is disabled" is in message
-    assert "代码质量检查已禁用" in result.message or "Linting is disabled" in result.message or "成功写入文件" in result.message
+    # Check if "Linting is disabled" or "Successfully wrote file" is in message
+    assert "Linting is disabled" in result.message or "Successfully wrote file" in result.message
 
 
 def test_linting_called_if_enabled(test_args, temp_test_dir, mock_agent_with_shadow):
@@ -251,7 +251,7 @@ def test_linting_called_if_enabled(test_args, temp_test_dir, mock_agent_with_sha
     # The actual path passed to lint_shadow_file will be the shadow path
     shadow_path = mock_agent_with_shadow.shadow_manager.to_shadow_path(os.path.join(temp_test_dir, file_path))
     mock_agent_with_shadow.shadow_linter.lint_shadow_file.assert_called_with(shadow_path)
-    assert "代码质量检查通过" in result.message or "Linting passed" in result.message
+    assert "Linting passed" in result.message
 
 
 def test_create_file_with_shadow_manager(test_args, temp_test_dir, mock_agent_with_shadow):
@@ -311,12 +311,12 @@ def test_linting_error_message_propagation(test_args, temp_test_dir, mock_agent_
     
     # Temporarily patch _format_lint_issues within the resolver instance for this test
     # to ensure consistent output for assertion.
-    formatted_issue_text = f"文件: {mock_agent_with_shadow.shadow_manager.to_shadow_path(os.path.join(temp_test_dir, file_path))}\n  - [错误] 第1行, 第0列: SyntaxError: Missing parentheses in call to 'print' (规则: E999)\n"
+    formatted_issue_text = f"File: {mock_agent_with_shadow.shadow_manager.to_shadow_path(os.path.join(temp_test_dir, file_path))}\n  - [ERROR] Line 1, Column 0: SyntaxError: Missing parentheses in call to 'print' (Rule: E999)\n"
     with patch.object(resolver, '_format_lint_issues', return_value=formatted_issue_text) as mock_format:
         result = resolver.resolve()
 
     assert result.success is True # Write itself is successful
     mock_format.assert_called_once_with(mock_lint_result)
-    assert "代码质量检查发现 1 个问题" in result.message or "Linting found 1 issue(s)" in result.message
+    assert "Linting found 1 issue(s)" in result.message
     assert "SyntaxError: Missing parentheses in call to 'print'" in result.message
 
