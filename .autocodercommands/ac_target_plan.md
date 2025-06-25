@@ -109,10 +109,10 @@ async function testWorkflow() {
 
 ===
 
-现在，用户的需求是：
+现在，用户的需求：
 
 <query>
 {{ query }}
 </query>
 
-请开始撰写验证脚本。
+请开始撰写验证脚本（注意脚本要放在 ./.auto-coder/targets 目录下）
