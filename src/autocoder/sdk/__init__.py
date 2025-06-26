@@ -21,33 +21,13 @@ from .exceptions import (
     ValidationError
 )
 from autocoder.auto_coder_runner import init_project_if_required as init_project_if_required_buildin
-
-__version__ = "1.0.0"
-__all__ = [
-    # 核心功能
-    "query",
-    "query_sync",
-    "query_with_events",
-    "query_with_events_sync",
-    
-    # 数据模型
-    "AutoCodeOptions",
-    "Message",
-    "StreamEvent",
-    "CodeModificationResult",
-    
-    # 会话管理
-    "Session",
-    "SessionManager",
-    
-    # 异常
-    "AutoCoderSDKError",
-    "SessionNotFoundError",
-    "InvalidOptionsError",
-    "BridgeError",
-    "ValidationError",
-]
-
+from autocoder.auto_coder_runner import (
+    configure as configure_buildin,
+    load_tokenizer,
+    start as start_engine
+)
+from autocoder.rag.variable_holder import VariableHolder
+from autocoder.utils.llms import get_single_llm
 
 async def query(
     prompt: str, 
@@ -202,3 +182,44 @@ def query_with_events_sync(
 
 def init_project_if_required(target_dir: str,project_type = ".py,.ts"):
     init_project_if_required_buildin(target_dir,project_type)
+    if not VariableHolder.TOKENIZER_MODEL:
+        load_tokenizer()
+    start_engine()
+
+
+def configure(key:str,value:str):
+    configure_buildin(f"{key}:{value}")
+
+
+def get_llm(model:str,product_mode:str="lite"):
+    return get_single_llm(mode,product_mode)
+
+
+__version__ = "1.0.0"
+__all__ = [
+    # 核心功能
+    "query",
+    "query_sync",
+    "query_with_events",
+    "query_with_events_sync",
+    "get_llm",
+    "configure",
+    "init_project_if_required"
+    
+    # 数据模型
+    "AutoCodeOptions",
+    "Message",
+    "StreamEvent",
+    "CodeModificationResult",
+    
+    # 会话管理
+    "Session",
+    "SessionManager",
+    
+    # 异常
+    "AutoCoderSDKError",
+    "SessionNotFoundError",
+    "InvalidOptionsError",
+    "BridgeError",
+    "ValidationError",
+]    
