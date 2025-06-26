@@ -166,10 +166,11 @@ TOOL_MODEL_MAP: Dict[str, Type[BaseTool]] = {
     "attempt_completion": AttemptCompletionTool,
     "plan_mode_respond": PlanModeRespondTool,
     "use_mcp_tool": UseMcpTool,
-    "use_rag_tool": UseRAGTool,
-    "list_package_info": ListPackageInfoTool,
+    "use_rag_tool": UseRAGTool,    
     "todo_read": TodoReadTool,
     "todo_write": TodoWriteTool,
+    "ac_mod_read": ACModReadTool,
+    "ac_mod_write": ACModWriteTool,
 }
 
 class FileChangeEntry(BaseModel):
