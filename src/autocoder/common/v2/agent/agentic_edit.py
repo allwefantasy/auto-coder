@@ -486,12 +486,14 @@ class AgenticEdit:
         Usage:
         <todo_write>
         <action>create</action>
-        <content>1. Read the configuration file
-        2. Update the database settings  
-        3. Test the connection
-        4. Deploy the changes</content>
+        <content> 
+        <task>Read the configuration file</task>
+        <task>Update the database settings</task>
+        <task>Test the connection</task>
+        <task>Deploy the changes</task>
+        </content>
         <priority>high</priority>
-        </todo_write>     
+        </todo_write>           
 
         ## attempt_completion
         Description: After each tool use, the user will respond with the result of that tool use, i.e. if it succeeded or failed, along with any reasons for failure. Once you've received the results of tool uses and can confirm that the task is complete, use this tool to present the result of your work to the user. Optionally you may provide a CLI command to showcase the result of your work. The user may respond with feedback if they are not satisfied with the result, which you can use to make improvements and try again.
@@ -626,12 +628,14 @@ class AgenticEdit:
 
         <todo_write>
         <action>create</action>
-        <content>1. Analyze the existing codebase structure
-        2. Design the new feature architecture
-        3. Implement the core functionality
-        4. Add comprehensive tests
-        5. Update documentation
-        6. Review and refactor code</content>
+        <content>
+        <task>Analyze the existing codebase structure</task>
+        <task>Design the new feature architecture</task>
+        <task>Implement the core functionality</task>
+        <task>Add comprehensive tests</task>
+        <task>Update documentation</task>
+        <task>Review and refactor code</task>
+        </content>
         <priority>high</priority>
         </todo_write>
 
