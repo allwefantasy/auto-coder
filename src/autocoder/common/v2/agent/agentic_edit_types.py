@@ -60,8 +60,15 @@ class UseRAGTool(BaseTool):
     server_name: str
     query: str
 
-class ListPackageInfoTool(BaseTool):
+class ACModReadTool(BaseTool):
     path: str  # 源码包目录，相对路径或绝对路径
+
+class ACModWriteTool(BaseTool):
+    """
+    Tool for creating or updating an AC Module's .ac.mod.md file.
+    """
+    path: str  # AC Module directory path, relative or absolute path
+    content: str  # Content to write to the .ac.mod.md file
 
 class TodoReadTool(BaseTool):
     """

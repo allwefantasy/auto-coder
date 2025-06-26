@@ -1,56 +1,34 @@
 import json
 import os
 import time
-from pydantic import BaseModel, Field
 import byzerllm
-from typing import List, Dict, Any, Union, Callable, Optional, Tuple
+from typing import List, Dict, Any, Union, Optional, Tuple
 from autocoder.common.printer import Printer
-from rich.console import Console
-from rich.panel import Panel
-from pydantic import SkipValidation
-from byzerllm.utils.types import SingleOutputMeta
 
-from byzerllm.utils import (        
-    format_str_jinja2
-)
-
-from autocoder.common import AutoCoderArgs, git_utils, SourceCodeList, SourceCode
+from autocoder.common import AutoCoderArgs, git_utils, SourceCodeList
 from autocoder.common.global_cancel import global_cancel
 from autocoder.common import detect_env
 from autocoder.common import shells
 from loguru import logger
-from autocoder.utils import llms as llms_utils
-from autocoder.common.auto_configure import config_readme
 from autocoder.utils.auto_project_type import ProjectTypeAnalyzer
-from rich.text import Text
+
 from autocoder.common.mcp_server import get_mcp_server, McpServerInfoRequest
 from autocoder.common import SourceCodeList
 from autocoder.common.utils_code_auto_generate import stream_chat_with_continue  # Added import
 import re
 import xml.sax.saxutils
 import time  # Added for sleep
-from typing import Iterator, Union, Type, Generator
-from xml.etree import ElementTree as ET
-from rich.console import Console  # Added
-from rich.panel import Panel  # Added
-from rich.syntax import Syntax  # Added
-from rich.markdown import Markdown  # Added
+from typing import Union, Type, Generator
 from autocoder.events.event_manager_singleton import get_event_manager
-from autocoder.events.event_types import Event, EventType, EventMetadata
+from autocoder.events.event_types import EventMetadata
 from autocoder.memory.active_context_manager import ActiveContextManager
 from autocoder.events import event_content as EventContentCreator
-from autocoder.shadows.shadow_manager import ShadowManager
-from autocoder.linters.shadow_linter import ShadowLinter
-from autocoder.compilers.shadow_compiler import ShadowCompiler
 from autocoder.common.action_yml_file_manager import ActionYmlFileManager
 from autocoder.common.auto_coder_lang import get_message
 from autocoder.common.save_formatted_log import save_formatted_log
-# Import the new display function
-from autocoder.common.v2.agent.agentic_tool_display import get_tool_display_message
 from autocoder.common.v2.agent.agentic_edit_types import FileChangeEntry
 from autocoder.utils.llms import get_single_llm
 
-from autocoder.common.file_checkpoint.models import FileChange as CheckpointFileChange
 from autocoder.common.file_checkpoint.manager import FileChangeManager as CheckpointFileChangeManager
 from autocoder.linters.normal_linter import NormalLinter
 from autocoder.compilers.normal_compiler import NormalCompiler
@@ -60,7 +38,7 @@ from autocoder.common.v2.agent.agentic_edit_tools import (  # Import specific re
     ReplaceInFileToolResolver, SearchFilesToolResolver, ListFilesToolResolver,
     ListCodeDefinitionNamesToolResolver, AskFollowupQuestionToolResolver,
     AttemptCompletionToolResolver, PlanModeRespondToolResolver, UseMcpToolResolver,
-    UseRAGToolResolver, ListPackageInfoToolResolver, TodoReadToolResolver,
+    UseRAGToolResolver, ACModReadToolResolver, ACModWriteToolResolver, TodoReadToolResolver,
     TodoWriteToolResolver
 )
 from autocoder.common.llm_friendly_package import LLMFriendlyPackageManager
@@ -74,7 +52,7 @@ from autocoder.common.v2.agent.agentic_edit_types import (AgenticEditRequest, To
                                                           ListFilesTool,
                                                           ListCodeDefinitionNamesTool, AskFollowupQuestionTool,
                                                           AttemptCompletionTool, PlanModeRespondTool, UseMcpTool,
-                                                          UseRAGTool, ListPackageInfoTool, TodoReadTool,
+                                                          UseRAGTool, ACModReadTool, ACModWriteTool, TodoReadTool,
                                                           TodoWriteTool,
                                                           TOOL_MODEL_MAP,
                                                           # Event Types
@@ -100,7 +78,8 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     SearchFilesTool: SearchFilesToolResolver,
     ListFilesTool: ListFilesToolResolver,
     ListCodeDefinitionNamesTool: ListCodeDefinitionNamesToolResolver,
-    ListPackageInfoTool: ListPackageInfoToolResolver,
+    ACModReadTool: ACModReadToolResolver,
+    ACModWriteTool: ACModWriteToolResolver,
     AskFollowupQuestionTool: AskFollowupQuestionToolResolver,
     AttemptCompletionTool: AttemptCompletionToolResolver,  # Will stop the loop anyway
     PlanModeRespondTool: PlanModeRespondToolResolver,
@@ -109,13 +88,8 @@ TOOL_RESOLVER_MAP: Dict[Type[BaseTool], Type[BaseToolResolver]] = {
     TodoReadTool: TodoReadToolResolver,
     TodoWriteTool: TodoWriteToolResolver
 }
-from autocoder.common.conversations.get_conversation_manager import (
-    get_conversation_manager,
-    get_conversation_manager_config,
-    reset_conversation_manager
-)
-from autocoder.common.conversations import ConversationManagerConfig
-from autocoder.common.pull_requests import create_pull_request, detect_platform_from_repo
+from autocoder.common.conversations.get_conversation_manager import get_conversation_manager 
+from autocoder.common.pull_requests import create_pull_request
 from autocoder.common.auto_coder_lang import get_message, get_message_with_format
 from autocoder.common.pruner.agentic_conversation_pruner import AgenticConversationPruner
 from copy import deepcopy
@@ -353,14 +327,33 @@ class AgenticEdit:
         <requires_approval>true or false</requires_approval>
         </execute_command>
 
-        ## list_package_info
-        Description: Request to retrieve information about a source code package, such as recent changes or documentation summary, to better understand the code context. It accepts a directory path (absolute or relative to the current project).
+        ## ac_mod_read
+        Description: Request to retrieve information about an AC Module - a language-agnostic module containing a .ac.mod.md file that provides complete functionality and can be used as an API. The .ac.mod.md file contains usage examples, core components, component dependencies, references to other AC modules, and testing information. It accepts a directory path (absolute or relative to the current project).
         Parameters:
-        - path: (required) The source code package directory path.
+        - path: (required) The AC Module directory path (directory containing .ac.mod.md file).
         Usage:
-        <list_package_info>
-        <path>relative/or/absolute/package/path</path>
-        </list_package_info>
+        <ac_mod_read>
+        <path>relative/or/absolute/ac/module/path</path>
+        </ac_mod_read>
+
+        ## ac_mod_write
+        Description: Request to create or update an AC Module's .ac.mod.md file. This tool allows you to define a new AC Module or modify an existing one by writing to its .ac.mod.md file. The file contains usage examples, core components, component dependencies, references to other AC modules, and testing information.
+        Parameters:
+        - path: (required) The AC Module directory path (directory where .ac.mod.md file should be created or updated).
+        - content: (required) The content to write to the .ac.mod.md file.
+        Usage:
+        <ac_mod_write>
+        <path>relative/or/absolute/ac/module/path</path>
+        <content>
+        # Module Name
+        
+        ## Usage Examples
+        ...
+        
+        ## Core Components
+        ...
+        </content>
+        </ac_mod_write>
 
         ## read_file
         Description: Request to read the contents of a file at the specified path. Use this when you need to examine the contents of an existing file you do not know the contents of, for example to analyze code, review text files, or extract information from configuration files. Automatically extracts raw text from PDF and DOCX files. May not be suitable for other types of binary files, as it returns the raw content as a string.
@@ -1118,40 +1111,40 @@ class AgenticEdit:
 
         ====        
 
-        PACKAGE CONTEXT INFORMATION
+        AC MOD
 
-        # Understanding Directory Context
+        # AC Modules (.ac.mod.md)         
 
-        ## Purpose
+        ## What is an AC Module?
 
-        - Each directory in the project (especially source code directories) has implicit context information
-        - This includes recent changes, important files, and their purposes
-        - This contextual information helps you understand the role of the directory and the files in the directory
+        Any directory containing a `.ac.mod.md` file is considered an AC Module - a language-agnostic module that provides complete functionality and can be used as an API. These modules are self-contained units with well-defined interfaces and comprehensive documentation.
 
-        ## Accessing Directory Context
+        ## AC Module Structure        
+        - **.ac.mod.md documentation**: Contains detailed information about:
+          - Usage examples and quick start guides
+          - Core components and their relationships
+          - Dependencies between components
+          - References to other AC modules it depends on
+          - Testing instructions and examples
 
-        - Use the **list_package_info** tool to view this information for a specific directory
-        - Do NOT use other tools like list_files to view this specialized context information        
+        ## When to Use AC Modules
 
-        ## When to Use
+        1. **Avoid duplicate implementation**: Check if functionality already exists in project AC modules before implementing new features
+        2. **Project understanding**: Review multiple AC modules to gain comprehensive knowledge of the entire project architecture
+        3. **File modification context**: When modifying files in a directory, check if it's an AC module or contains AC modules to understand the full impact
 
-        - When you need to understand what has recently changed in a directory
-        - When you need insight into the purpose and organization of a directory
-        - Before diving into detailed file exploration with other tools
+        ## Accessing AC Module Information
+
+        - Use the **ac_mod_read** tool to retrieve comprehensive information about an AC module
+        - The tool reads the `.ac.mod.md` file and provides structured information about the module        
 
         ## Example
 
         ```xml
-        <list_package_info>
-        <path>src/some/directory</path>
-        </list_package_info>
+        <ac_mod_read>
+        <path>src/autocoder/agent</path>
+        </ac_mod_read>
         ```
-
-        # Benefits
-
-        - Quickly identifies recently modified files that may be relevant to your task
-        - Provides high-level understanding of directory contents and purpose
-        - Helps prioritize which files to examine in detail with tools like read_file, shell commands, or list_code_definition_names
 
         ====
 
