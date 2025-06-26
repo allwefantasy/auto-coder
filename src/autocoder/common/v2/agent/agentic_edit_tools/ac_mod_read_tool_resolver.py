@@ -34,7 +34,7 @@ class ACModReadToolResolver(BaseToolResolver):
         try:
             with open(mod_file_path, 'r', encoding='utf-8', errors='replace') as f:
                 content = f.read()
-            return ToolResult(success=True, message="The path {self.tool.path} is AC module.", content=content)
+            return ToolResult(success=True, message=f"The path {self.tool.path} is AC module.", content=content)
         except Exception as e:
             logger.error(f"Error reading package info file: {e}")
             return ToolResult(success=False, message=f"Error reading {self.tool.path}/.ac.mod.md file: {e}")
