@@ -72,40 +72,79 @@ class TodoWriteToolResolver(BaseToolResolver):
     
     def _create_todo_list(self, content: str) -> List[Dict[str, Any]]:
         """Create a new todo list from content."""
-        # Parse content for multiple tasks
-        lines = content.strip().split('\n')
+        import re
+        
         todos = []
         
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
+        # First, try to parse <task> tags
+        task_pattern = r'<task>(.*?)</task>'
+        task_matches = re.findall(task_pattern, content, re.DOTALL)
+        
+        if task_matches:
+            # Found <task> tags, use them
+            for task_content in task_matches:
+                task_content = task_content.strip()
+                if task_content:
+                    todo = {
+                        "id": self._generate_todo_id(),
+                        "content": task_content,
+                        "status": "pending",
+                        "priority": self.tool.priority or "medium",
+                        "created_at": datetime.now().isoformat(),
+                        "updated_at": datetime.now().isoformat()
+                    }
+                    
+                    if self.tool.notes:
+                        todo["notes"] = self.tool.notes
+                    
+                    todos.append(todo)
+        else:
+            # Fallback to original line-by-line parsing
+            lines = content.strip().split('\n')
             
-            # Remove common prefixes like "1.", "- ", "* ", etc.
-            line = line.lstrip('0123456789.- *\t')
-            
-            if line:
-                todo = {
-                    "id": self._generate_todo_id(),
-                    "content": line,
-                    "status": "pending",
-                    "priority": self.tool.priority or "medium",
-                    "created_at": datetime.now().isoformat(),
-                    "updated_at": datetime.now().isoformat()
-                }
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
                 
-                if self.tool.notes:
-                    todo["notes"] = self.tool.notes
+                # Remove common prefixes like "1.", "- ", "* ", etc.
+                line = line.lstrip('0123456789.- *\t')
                 
-                todos.append(todo)
+                if line:
+                    todo = {
+                        "id": self._generate_todo_id(),
+                        "content": line,
+                        "status": "pending",
+                        "priority": self.tool.priority or "medium",
+                        "created_at": datetime.now().isoformat(),
+                        "updated_at": datetime.now().isoformat()
+                    }
+                    
+                    if self.tool.notes:
+                        todo["notes"] = self.tool.notes
+                    
+                    todos.append(todo)
         
         return todos
     
     def _add_single_task(self, todos: List[Dict[str, Any]], content: str) -> Dict[str, Any]:
         """Add a single task to the existing todo list."""
+        import re
+        
+        # Check if content contains <task> tags
+        task_pattern = r'<task>(.*?)</task>'
+        task_matches = re.findall(task_pattern, content, re.DOTALL)
+        
+        if task_matches:
+            # If <task> tags found, use the first one
+            task_content = task_matches[0].strip()
+        else:
+            # Use the content as-is
+            task_content = content.strip()
+        
         todo = {
             "id": self._generate_todo_id(),
-            "content": content,
+            "content": task_content,
             "status": self.tool.status or "pending",
             "priority": self.tool.priority or "medium",
             "created_at": datetime.now().isoformat(),
