@@ -1111,7 +1111,7 @@ class AgenticEdit:
 
         ====        
 
-        AC MOD
+        AC MOD FILES
 
         # AC Modules (.ac.mod.md)         
 
