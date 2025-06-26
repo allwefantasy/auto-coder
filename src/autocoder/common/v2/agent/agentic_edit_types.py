@@ -68,7 +68,7 @@ class ACModWriteTool(BaseTool):
     Tool for creating or updating an AC Module's .ac.mod.md file.
     """
     path: str  # AC Module directory path, relative or absolute path
-    content: str  # Content to write to the .ac.mod.md file
+    diff: str  # diff content to edit the .ac.mod.md file
 
 class TodoReadTool(BaseTool):
     """

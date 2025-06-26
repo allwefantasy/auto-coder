@@ -340,19 +340,23 @@ class AgenticEdit:
         Description: Request to create or update an AC Module's .ac.mod.md file. This tool allows you to define a new AC Module or modify an existing one by writing to its .ac.mod.md file. The file contains usage examples, core components, component dependencies, references to other AC modules, and testing information.
         Parameters:
         - path: (required) The AC Module directory path (directory where .ac.mod.md file should be created or updated).
-        - content: (required) The full content to write to the .ac.mod.md file.
+        - diff: (required) One or more SEARCH/REPLACE blocks following this exact format:
+        ```
+        <<<<<<< SEARCH
+        [exact content to find]
+        =======
+        [new content to replace with]
+        >>>>>>> REPLACE
+
+        This tool have the same usage as the replace_in_file tool, but it is used to update the AC Module's .ac.mod.md file.
+        
         Usage:
+        
         <ac_mod_write>
         <path>relative/or/absolute/ac/module/path</path>
-        <content>
-        # Module Name
-        
-        ## Usage Examples
-        ...
-        
-        ## Core Components
-        ...
-        </content>
+        <diff>
+        Search and replace blocks here
+        </diff>
         </ac_mod_write>
 
         ## read_file
@@ -1156,12 +1160,13 @@ class AgenticEdit:
         
         <ac_mod_write>
         <path>src/autocoder/agent</path>
-        <content>
-        ... 
-        </content>
+        <diff>
+         search and replace blocks here
+        </diff>
         </ac_mod_write>
 
        The content of the `.ac.mod.md` file should be ***strictly following*** the structure of the example as follows:
+       
        <ac_mod_md_example>
         # [Module Name]
 
@@ -1207,7 +1212,7 @@ class AgenticEdit:
         ## Core Components
 
         ### 1. [MainClassName] Main Class
-
+        [YOU SHOULD KEEP THIS PART AS SIMPLIFIED AS POSSIBLE]
         **Core Features:**
         - [Feature1]: [Detailed description]
         - [Feature2]: [Detailed description]
