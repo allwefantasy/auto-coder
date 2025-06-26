@@ -340,7 +340,7 @@ class AgenticEdit:
         Description: Request to create or update an AC Module's .ac.mod.md file. This tool allows you to define a new AC Module or modify an existing one by writing to its .ac.mod.md file. The file contains usage examples, core components, component dependencies, references to other AC modules, and testing information.
         Parameters:
         - path: (required) The AC Module directory path (directory where .ac.mod.md file should be created or updated).
-        - content: (required) The content to write to the .ac.mod.md file.
+        - content: (required) The full content to write to the .ac.mod.md file.
         Usage:
         <ac_mod_write>
         <path>relative/or/absolute/ac/module/path</path>
@@ -1120,7 +1120,7 @@ class AgenticEdit:
         Any directory containing a `.ac.mod.md` file is considered an AC Module - a language-agnostic module that provides complete functionality and can be used as an API. These modules are self-contained units with well-defined interfaces and comprehensive documentation.
 
         ## AC Module Structure        
-        - **.ac.mod.md documentation**: Contains detailed information about:
+        - .ac.mod.md contains detailed information about:
           - Usage examples and quick start guides
           - Core components and their relationships
           - Dependencies between components
@@ -1133,19 +1133,135 @@ class AgenticEdit:
         2. **Project understanding**: Review multiple AC modules to gain comprehensive knowledge of the entire project architecture
         3. **File modification context**: When modifying files in a directory, check if it's an AC module or contains AC modules to understand the full impact
 
-        ## Accessing AC Module Information
-
-        - Use the **ac_mod_read** tool to retrieve comprehensive information about an AC module
+        ## ac_mod_read
+        
+        When to use:
+        - Use the this tool to retrieve comprehensive information about an AC module
         - The tool reads the `.ac.mod.md` file and provides structured information about the module        
 
-        ## Example
-
-        ```xml
+        Example:
+        
         <ac_mod_read>
         <path>src/autocoder/agent</path>
         </ac_mod_read>
+        
+
+        ## ac_mod_write
+        
+        When to use:
+        - When we edit files in an AC module, we should update the `.ac.mod.md` file to reflect the changes.
+        - When the user directly asks you to create or update an AC module 
+        
+        Example:
+        
+        <ac_mod_write>
+        <path>src/autocoder/agent</path>
+        <content>
+        ... 
+        </content>
+        </ac_mod_write>
+
+       The content of the `.ac.mod.md` file should be ***strictly following*** the structure of the example as follows:
+       <ac_mod_md_example>
+        # [Module Name]
+
+        [One-sentence description of the module's core functionality and its role in the project]
+
+        ## Directory Structure
+
+        ```
+        [module_path]/
+        ├── [main_file1]                 # [Detailed function description]
+        ├── [main_file2]                 # [Detailed function description]
+        ├── [subdirectory]/              # [Subdirectory function description]
+        │   └── [subfile]                # [Subfile function description]
+        └── .ac.mod.md                   # This document
         ```
 
+        ## Quick Start
+
+        ### Basic Usage
+
+        ```python
+        # Import necessary modules
+        from [module_path] import [MainClassName], [HelperClassName]
+
+        # 1. Initialize configuration
+        [Specific initialization code example]
+
+        # 2. Create instance
+        [Instance creation code example]
+
+        # 3. Basic usage
+        [Basic usage code example]
+        ```
+
+        ### Helper Functions
+
+        [Detailed explanation of helper functions provided by the module]
+
+        ### Configuration Management
+
+        [Explanation of configuration options and management methods]
+
+        ## Core Components
+
+        ### 1. [MainClassName] Main Class
+
+        **Core Features:**
+        - [Feature1]: [Detailed description]
+        - [Feature2]: [Detailed description]
+
+        **Main Methods:**
+        - `[method1]()`: [Method functionality and parameter description]
+        - `[method2]()`: [Method functionality and parameter description]
+
+        ### 2. [Module] Architecture
+
+        [Detailed explanation of the module's design and implementation]
+
+        ## Mermaid File Dependency Graph
+        [Main description of dependencies within the module]
+
+        ```mermaid
+        graph TB
+            %% Core module definition
+            [MainModule][MainModule<br/>Core functionality description]
+            [SubModule1][SubModule1<br/>Functionality description]
+            
+            %% Dependency relationships
+            [MainModule] --> [SubModule1]
+            
+            %% Style definitions
+            classDef coreClass fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+            classDef subClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:1px
+            
+            class [MainModule] coreClass
+            class [SubModule1] subClass
+        ```
+
+        ## Dependency Relationships
+        Dependencies on other modules with .ac.mod.md files, simply shown as a relative path list, for example:
+
+        - ../a/.ac.mod.md
+        - ../../b/.ac.mod.md
+
+        ## Commands to Verify Module Functionality
+
+        [Executable commands], for example:
+
+        ```
+        node --experimental-transform-types ./a/b/c.ts
+        ```
+
+        Or test execution commands:
+
+        ```
+        pytest path/to/your/module/tests -v
+        ```
+       </ac_mod_md_example>
+    
+        
         ====
 
         CAPABILITIES

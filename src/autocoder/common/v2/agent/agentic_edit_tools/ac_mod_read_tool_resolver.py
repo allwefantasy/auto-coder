@@ -2,7 +2,7 @@
 import os
 from typing import Optional
 from autocoder.common.v2.agent.agentic_edit_tools.base_tool_resolver import BaseToolResolver
-from autocoder.common.v2.agent.agentic_edit_types import PackageInfoReadTool, ToolResult
+from autocoder.common.v2.agent.agentic_edit_types import ACModReadTool, ToolResult
 from loguru import logger
 import typing
 
@@ -10,9 +10,9 @@ if typing.TYPE_CHECKING:
     from autocoder.common.v2.agent.agentic_edit import AgenticEdit
 
 class ACModReadToolResolver(BaseToolResolver):
-    def __init__(self, agent: Optional['AgenticEdit'], tool: PackageInfoReadTool, args):
+    def __init__(self, agent: Optional['AgenticEdit'], tool: ACModReadTool, args):
         super().__init__(agent, tool, args)
-        self.tool: PackageInfoReadTool = tool
+        self.tool: ACModReadTool = tool
 
     def resolve(self) -> ToolResult:
         source_dir = self.args.source_dir or "."        

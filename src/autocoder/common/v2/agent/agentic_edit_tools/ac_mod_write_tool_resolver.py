@@ -16,13 +16,27 @@ class ACModWriteToolResolver(BaseToolResolver):
     def resolve(self) -> ToolResult:
         source_dir = self.args.source_dir or "."        
         input_path = self.tool.path.strip()
-        abs_input_path = os.path.abspath(os.path.join(source_dir, input_path)) if not os.path.isabs(input_path) else input_path
-
-        # Create the directory if it doesn't exist
-        os.makedirs(abs_input_path, exist_ok=True)
-
-        # Path to the .ac.mod.md file
-        mod_file_path = os.path.join(abs_input_path, ".ac.mod.md")
+        
+        # Check if the path already contains .ac.mod.md file name
+        if input_path.endswith('.ac.mod.md'):
+            # Path already includes the filename
+            if not os.path.isabs(input_path):
+                mod_file_path = os.path.abspath(os.path.join(source_dir, input_path))
+            else:
+                mod_file_path = input_path
+            
+            # Create the parent directory if it doesn't exist
+            parent_dir = os.path.dirname(mod_file_path)
+            os.makedirs(parent_dir, exist_ok=True)
+        else:
+            # Path is a directory, need to append .ac.mod.md
+            abs_input_path = os.path.abspath(os.path.join(source_dir, input_path)) if not os.path.isabs(input_path) else input_path
+            
+            # Create the directory if it doesn't exist
+            os.makedirs(abs_input_path, exist_ok=True)
+            
+            # Path to the .ac.mod.md file
+            mod_file_path = os.path.join(abs_input_path, ".ac.mod.md")
         
         try:
             with open(mod_file_path, 'w', encoding='utf-8') as f:
