@@ -1252,8 +1252,8 @@ class AgenticEdit:
         - ../../b/.ac.mod.md
 
         ## Commands to Verify Module Functionality
-
-        [Executable commands], for example:
+     
+        Usually an executable command that can run a script or execute tests, for example:
 
         ```
         node --experimental-transform-types ./a/b/c.ts
