@@ -907,7 +907,7 @@ def init_project_if_required(target_dir: str,project_type:str):
         except Exception as e:
             global_logger.warning(f"Failed to create .autocoderignore: {e}")
 
-        configure("project_type:{project_type}")                
+        configure(f"project_type:{project_type}")                
         global_logger.info(f"Successfully initialized auto-coder project in {target_dir}")        
         
     except Exception as e:

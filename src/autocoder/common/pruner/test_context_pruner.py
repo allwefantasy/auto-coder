@@ -57,6 +57,11 @@ class TestPruneContextExtractStrategy:
         return PruneContext(max_tokens=60, args=mock_args, llm=real_llm)
 
     @pytest.fixture
+    def verbose_pruner(self, mock_args, real_llm):
+        """Create PruneContext instance with verbose=True for testing"""
+        return PruneContext(max_tokens=60, args=mock_args, llm=real_llm, verbose=True)
+
+    @pytest.fixture
     def sample_file_sources(self, temp_test_dir):
         """Sample file sources for testing
         Creates a simulated project structure in the temporary directory
@@ -334,6 +339,49 @@ def multiply(a, b):
             )
 
         assert "无效策略" in str(exc_info.value), "应该抛出无效策略错误"
+
+    def test_verbose_functionality(self, verbose_pruner, sample_file_sources, sample_conversations, capsys):
+        """测试verbose参数的功能"""
+        # 使用verbose=True的pruner进行测试
+        result = verbose_pruner.handle_overflow(
+            file_sources=sample_file_sources,
+            conversations=sample_conversations,
+            strategy="extract"
+        )
+
+        # 捕获输出
+        captured = capsys.readouterr()
+        
+        # 验证verbose输出包含预期的信息
+        assert "🚀 开始代码片段抽取处理" in captured.out, "应该包含开始处理的信息"
+        assert "📋 处理策略" in captured.out, "应该包含处理策略信息"
+        assert "🎯 代码片段抽取处理完成" in captured.out, "应该包含处理完成的信息"
+        assert "📊 处理结果统计" in captured.out, "应该包含结果统计信息"
+        
+        # 验证结果仍然正确
+        assert isinstance(result, list), "应该返回文件列表"
+        assert len(result) >= 0, "应该返回有效的结果列表"
+
+    def test_non_verbose_functionality(self, pruner, sample_file_sources, sample_conversations, capsys):
+        """测试verbose=False时不输出详细信息"""
+        # 使用verbose=False的pruner进行测试
+        result = pruner.handle_overflow(
+            file_sources=sample_file_sources,
+            conversations=sample_conversations,
+            strategy="extract"
+        )
+
+        # 捕获输出
+        captured = capsys.readouterr()
+        
+        # 验证不包含verbose特有的输出
+        assert "🚀 开始代码片段抽取处理" not in captured.out, "非verbose模式不应该包含详细处理信息"
+        assert "📋 处理策略" not in captured.out, "非verbose模式不应该包含处理策略信息"
+        assert "🎯 代码片段抽取处理完成" not in captured.out, "非verbose模式不应该包含处理完成的详细信息"
+        
+        # 验证结果仍然正确
+        assert isinstance(result, list), "应该返回文件列表"
+        assert len(result) >= 0, "应该返回有效的结果列表"
 
 
 if __name__ == "__main__":

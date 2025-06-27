@@ -15,11 +15,12 @@ from autocoder.common.auto_coder_lang import get_message_with_format
 
 
 class PruneContext:
-    def __init__(self, max_tokens: int, args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM]):
+    def __init__(self, max_tokens: int, args: AutoCoderArgs, llm: Union[byzerllm.ByzerLLM, byzerllm.SimpleByzerLLM], verbose: bool = False):
         self.max_tokens = max_tokens
         self.args = args
         self.llm = llm
         self.printer = Printer()
+        self.verbose = verbose
 
     def _split_content_with_sliding_window(self, content: str, window_size=100, overlap=20) -> List[Tuple[int, int, str]]:
         """使用滑动窗口分割大文件内容，返回包含行号信息的文本块
@@ -95,6 +96,11 @@ class PruneContext:
         token_count = 0
         selected_files = []
         full_file_tokens = int(self.max_tokens * 0.8)
+        
+        if self.verbose:
+            total_input_tokens = sum(f.tokens for f in file_sources)
+            self.printer.print_str_in_terminal(f"🚀 开始代码片段抽取处理，共 {len(file_sources)} 个文件，总token数: {total_input_tokens}")
+            self.printer.print_str_in_terminal(f"📋 处理策略: 完整文件优先阈值={full_file_tokens}, 最大token限制={self.max_tokens}")
 
         @byzerllm.prompt()
         def extract_code_snippets(conversations: List[Dict[str, str]], content: str, is_partial_content: bool = False) -> str:
@@ -206,6 +212,8 @@ class PruneContext:
                     selected_files.append(SourceCode(
                         module_name=file_source.module_name, source_code=file_source.source_code, tokens=tokens))
                     token_count += tokens
+                    if self.verbose:
+                        self.printer.print_str_in_terminal(f"✅ 文件 {file_source.module_name} 完整保留 (token数: {tokens}，当前总token数: {token_count})")
                     continue
 
                 # 如果单个文件太大，那么先按滑动窗口分割，然后对窗口抽取代码片段
@@ -216,8 +224,16 @@ class PruneContext:
                     chunks = self._split_content_with_sliding_window(file_source.source_code,
                                                                         self.args.context_prune_sliding_window_size,
                                                                         self.args.context_prune_sliding_window_overlap)
+                    
+                    if self.verbose:
+                        self.printer.print_str_in_terminal(f"📊 文件 {file_source.module_name} 通过滑动窗口分割为 {len(chunks)} 个chunks")
+                    
                     all_snippets = []
-                    for chunk_start, chunk_end, chunk_content in chunks:                        
+                    chunk_with_results = 0
+                    for chunk_idx, (chunk_start, chunk_end, chunk_content) in enumerate(chunks):
+                        if self.verbose:
+                            self.printer.print_str_in_terminal(f"  🔍 处理chunk {chunk_idx + 1}/{len(chunks)} (行号: {chunk_start}-{chunk_end})")
+                            
                         extracted = extract_code_snippets.with_llm(self.llm).run(
                             conversations=conversations,
                             content=chunk_content,
@@ -227,16 +243,35 @@ class PruneContext:
                             json_str = extract_code(extracted)[0][1]
                             snippets = json.loads(json_str)
 
-                            # 获取到的本来就是在原始文件里的绝对行号
-                            # 后续在构建代码片段内容时，会为了适配数组操作修改行号，这里无需处理
-                            adjusted_snippets = [{
-                                "start_line": snippet["start_line"],
-                                "end_line": snippet["end_line"]
-                            } for snippet in snippets]
-                            all_snippets.extend(adjusted_snippets)
+                            if snippets:  # 有抽取结果
+                                chunk_with_results += 1
+                                if self.verbose:
+                                    self.printer.print_str_in_terminal(f"    ✅ chunk {chunk_idx + 1} 抽取到 {len(snippets)} 个代码片段: {snippets}")
+                                
+                                # 获取到的本来就是在原始文件里的绝对行号
+                                # 后续在构建代码片段内容时，会为了适配数组操作修改行号，这里无需处理
+                                adjusted_snippets = [{
+                                    "start_line": snippet["start_line"],
+                                    "end_line": snippet["end_line"]
+                                } for snippet in snippets]
+                                all_snippets.extend(adjusted_snippets)
+                            else:
+                                if self.verbose:
+                                    self.printer.print_str_in_terminal(f"    ❌ chunk {chunk_idx + 1} 未抽取到相关代码片段")
+                        else:
+                            if self.verbose:
+                                self.printer.print_str_in_terminal(f"    ❌ chunk {chunk_idx + 1} 抽取失败，未返回结果")
                     
-                    merged_snippets = self._merge_overlapping_snippets(
-                        all_snippets)
+                    if self.verbose:
+                        self.printer.print_str_in_terminal(f"📈 滑动窗口处理完成: {chunk_with_results}/{len(chunks)} 个chunks有抽取结果，共收集到 {len(all_snippets)} 个代码片段")
+                    
+                    merged_snippets = self._merge_overlapping_snippets(all_snippets)
+                    
+                    if self.verbose:
+                        self.printer.print_str_in_terminal(f"🔄 合并重叠片段: {len(all_snippets)} -> {len(merged_snippets)} 个片段")
+                        if merged_snippets:
+                            self.printer.print_str_in_terminal(f"    合并后的片段: {merged_snippets}")
+                    
                     content_snippets = self._build_snippet_content(
                         file_source.module_name, file_source.source_code, merged_snippets)
                     snippet_tokens = count_tokens(content_snippets)
@@ -249,8 +284,12 @@ class PruneContext:
                                                         total_tokens=token_count,
                                                         tokens=tokens,
                                                         snippet_tokens=snippet_tokens)
+                        if self.verbose:
+                            self.printer.print_str_in_terminal(f"✅ 文件 {file_source.module_name} 滑动窗口处理成功，最终抽取到结果")
                         continue
                     else:
+                        if self.verbose:
+                            self.printer.print_str_in_terminal(f"❌ 文件 {file_source.module_name} 滑动窗口处理后token数超限 ({token_count + snippet_tokens} > {self.max_tokens})，停止处理")
                         break
 
                 # 抽取关键片段
@@ -264,6 +303,10 @@ class PruneContext:
                 # 抽取代码片段
                 self.printer.print_in_terminal(
                     "file_snippet_processing", file_path=file_source.module_name)
+                
+                if self.verbose:
+                    self.printer.print_str_in_terminal(f"🔍 开始对文件 {file_source.module_name} 进行整体代码片段抽取 (共 {len(lines)} 行)")
+                
                 extracted = extract_code_snippets.with_llm(self.llm).run(
                     conversations=conversations,
                     content=new_content
@@ -273,6 +316,13 @@ class PruneContext:
                 if extracted:
                     json_str = extract_code(extracted)[0][1]
                     snippets = json.loads(json_str)
+                    
+                    if self.verbose:
+                        if snippets:
+                            self.printer.print_str_in_terminal(f"    ✅ 抽取到 {len(snippets)} 个代码片段: {snippets}")
+                        else:
+                            self.printer.print_str_in_terminal(f"    ❌ 未抽取到相关代码片段")
+                    
                     content_snippets = self._build_snippet_content(
                         file_source.module_name, file_source.source_code, snippets)
 
@@ -286,11 +336,43 @@ class PruneContext:
                                                         total_tokens=token_count,
                                                         tokens=tokens,
                                                         snippet_tokens=snippet_tokens)
+                        if self.verbose:
+                            self.printer.print_str_in_terminal(f"✅ 文件 {file_source.module_name} 整体抽取成功，最终抽取到结果")
                     else:
+                        if self.verbose:
+                            self.printer.print_str_in_terminal(f"❌ 文件 {file_source.module_name} 整体抽取后token数超限 ({token_count + snippet_tokens} > {self.max_tokens})，停止处理")
                         break
+                else:
+                    if self.verbose:
+                        self.printer.print_str_in_terminal(f"❌ 文件 {file_source.module_name} 整体抽取失败，未返回结果")
             except Exception as e:
                 logger.error(f"Failed to process {file_source.module_name}: {e}")
+                if self.verbose:
+                    self.printer.print_str_in_terminal(f"❌ 文件 {file_source.module_name} 处理异常: {e}")
                 continue
+
+        if self.verbose:
+            total_input_tokens = sum(f.tokens for f in file_sources)
+            final_tokens = sum(f.tokens for f in selected_files)
+            self.printer.print_str_in_terminal(f"🎯 代码片段抽取处理完成")
+            self.printer.print_str_in_terminal(f"📊 处理结果统计:")
+            self.printer.print_str_in_terminal(f"   • 输入文件数: {len(file_sources)} 个，输入token数: {total_input_tokens}")
+            self.printer.print_str_in_terminal(f"   • 输出文件数: {len(selected_files)} 个，输出token数: {final_tokens}")
+            self.printer.print_str_in_terminal(f"   • Token压缩率: {((total_input_tokens - final_tokens) / total_input_tokens * 100):.1f}%")
+            
+            # 统计各种处理方式的文件数量
+            complete_files = 0
+            snippet_files = 0
+            for i, file_source in enumerate(file_sources):
+                if i < len(selected_files):
+                    if selected_files[i].source_code == file_source.source_code:
+                        complete_files += 1
+                    else:
+                        snippet_files += 1
+                        
+            self.printer.print_str_in_terminal(f"   • 完整保留文件: {complete_files} 个")
+            self.printer.print_str_in_terminal(f"   • 片段抽取文件: {snippet_files} 个")
+            self.printer.print_str_in_terminal(f"   • 跳过处理文件: {len(file_sources) - len(selected_files)} 个")
 
         return selected_files
 
