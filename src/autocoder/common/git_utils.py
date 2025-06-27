@@ -294,7 +294,7 @@ def get_uncommitted_changes(repo_path: str) -> str:
         return f"Error: {str(e)}"
 
 @byzerllm.prompt()
-def generate_commit_message(changes_report: str) -> str:
+def generate_commit_message(changes_report: str, query: Optional[str] = None) -> str:
     '''
     我是一个Git提交信息生成助手。我们的目标是通过一些变更报告，倒推用户的需求，将需求作为commit message。
     commit message 需要简洁,包含两部分：
@@ -635,7 +635,12 @@ def generate_commit_message(changes_report: str) -> str:
     </examples>
     
     下面是变更报告：
-    {{ changes_report }}    
+    {{ changes_report }}   
+    
+    {% if query %}
+    这里你需要遵守的用户的额外要求：
+    {{ query }} 
+    {% endif %}
 
     请输出commit message, 不要输出任何其他内容.
     '''

@@ -22,7 +22,8 @@ from autocoder.auto_coder_runner import init_project_if_required as init_project
 from autocoder.auto_coder_runner import (
     configure as configure_buildin,
     load_tokenizer,
-    start as start_engine
+    start as start_engine,
+    commit as commit_buildin
 )
 from autocoder.rag.variable_holder import VariableHolder
 from autocoder.utils.llms import get_single_llm
@@ -192,6 +193,9 @@ def configure(key:str,value:str):
 def get_llm(model:str,product_mode:str="lite"):
     return get_single_llm(model,product_mode)
 
+def commit(query: Optional[str] = None):
+    commit_buildin(query)
+
 
 __version__ = "1.0.0"
 __all__ = [
@@ -213,4 +217,5 @@ __all__ = [
     "InvalidOptionsError",
     "BridgeError",
     "ValidationError",
+    "commit",
 ]    

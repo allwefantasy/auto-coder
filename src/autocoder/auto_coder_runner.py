@@ -1755,7 +1755,7 @@ def code_next(query: str):
 
 
 @run_in_raw_thread()
-def commit(query: str):
+def commit(query: Optional[str] = None):
     conf = memory.get("conf", {})
     product_mode = conf.get("product_mode", "lite")
     def prepare_commit_yaml():
@@ -1818,7 +1818,7 @@ def commit(query: str):
             try:
                 uncommitted_changes = git_utils.get_uncommitted_changes(".")
                 commit_message = git_utils.generate_commit_message.with_llm(llm).run(
-                    uncommitted_changes
+                    uncommitted_changes, query=query
                 )                
                 # memory["conversation"].append(
                 #     {"role": "user", "content": commit_message})
