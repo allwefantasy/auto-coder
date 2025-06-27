@@ -3,7 +3,7 @@ from typing import Tuple
 from pathlib import Path
 import json
 from loguru import logger
-from autocoder.common.tokens import count_string_tokens
+from autocoder.common.tokens import count_string_tokens as count_tokens
 from autocoder.common import AutoCoderArgs, SourceCode
 from byzerllm.utils.client.code_utils import extract_code
 from autocoder.index.types import VerifyFileRelevance
@@ -234,11 +234,13 @@ class PruneContext:
                                 "end_line": snippet["end_line"]
                             } for snippet in snippets]
                             all_snippets.extend(adjusted_snippets)
+                    
                     merged_snippets = self._merge_overlapping_snippets(
                         all_snippets)
                     content_snippets = self._build_snippet_content(
                         file_source.module_name, file_source.source_code, merged_snippets)
                     snippet_tokens = count_tokens(content_snippets)
+                    
                     if token_count + snippet_tokens <= self.max_tokens:
                         selected_files.append(SourceCode(
                             module_name=file_source.module_name, source_code=content_snippets, tokens=snippet_tokens))
