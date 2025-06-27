@@ -4,9 +4,7 @@ Auto-Coder SDK
 为第三方开发者提供的 Python SDK，允许通过命令行工具和 Python API 两种方式使用 Auto-Coder 的核心功能。
 """
 
-from typing import AsyncIterator, Iterator, Optional, Dict, Any
-import os
-import subprocess
+from typing import AsyncIterator, Iterator, Optional
 from .core.auto_coder_core import AutoCoderCore
 from .models.options import AutoCodeOptions
 from .models.messages import Message
@@ -180,7 +178,7 @@ def query_with_events_sync(
         yield event
 
 
-def init_project_if_required(target_dir: str,project_type = ".py,.ts"):
+def init_project_if_required(target_dir: str,project_type = ".py,.ts"):    
     init_project_if_required_buildin(target_dir,project_type)
     if not VariableHolder.TOKENIZER_MODEL:
         load_tokenizer()
@@ -192,31 +190,24 @@ def configure(key:str,value:str):
 
 
 def get_llm(model:str,product_mode:str="lite"):
-    return get_single_llm(mode,product_mode)
+    return get_single_llm(model,product_mode)
 
 
 __version__ = "1.0.0"
 __all__ = [
-    # 核心功能
     "query",
     "query_sync",
     "query_with_events",
     "query_with_events_sync",
     "get_llm",
     "configure",
-    "init_project_if_required"
-    
-    # 数据模型
+    "init_project_if_required",
     "AutoCodeOptions",
     "Message",
     "StreamEvent",
     "CodeModificationResult",
-    
-    # 会话管理
     "Session",
     "SessionManager",
-    
-    # 异常
     "AutoCoderSDKError",
     "SessionNotFoundError",
     "InvalidOptionsError",

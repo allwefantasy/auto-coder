@@ -8,9 +8,12 @@
     ],
     "python.testing.autoTestDiscoverOnSaveEnabled": false,
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": false,    
+    "python.testing.pytestEnabled": true,    
     "testing.automaticallyOpenPeekView": "never",    
     "[python]": {
         "editor.formatOnSave": false
-    }
+    },
+    "python.testing.pytestArgs": [
+        "src"
+    ]
 }

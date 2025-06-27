@@ -1,15 +1,11 @@
-"""
-Pytest tests for PruneContext
-
-This module contains tests for the PruneContext class, focusing on the extract strategy functionality.
-"""
-
 import pytest
 import tempfile
 import shutil
+import os
 from unittest.mock import MagicMock, patch
 from autocoder.common.pruner.context_pruner import PruneContext
 from autocoder.common import AutoCoderArgs, SourceCode
+from autocoder.sdk import get_llm,init_project_if_required
 
 
 class TestPruneContextExtractStrategy:
@@ -21,37 +17,7 @@ class TestPruneContextExtractStrategy:
         temp_dir = tempfile.mkdtemp()
         yield temp_dir
         shutil.rmtree(temp_dir)
-
-    @pytest.fixture
-    def setup_file_monitor(self, temp_test_dir):
-        """初始化FileMonitor，必须最先执行"""
-        try:
-            from autocoder.common.file_monitor.monitor import FileMonitor
-            monitor = FileMonitor(temp_test_dir)
-            monitor.reset_instance()
-            if not monitor.is_running():
-                monitor.start()
-        except Exception:
-            pass  # 如果初始化失败，继续测试
-        
-        try:
-            from autocoder.common.rulefiles.autocoderrules_utils import get_rules, reset_rules_manager
-            reset_rules_manager()
-            get_rules(temp_test_dir)
-        except Exception:
-            pass  # 如果加载规则失败，继续测试
-        
-        return temp_test_dir
-
-    @pytest.fixture
-    def load_tokenizer_fixture(self, setup_file_monitor):
-        """加载tokenizer，必须在FileMonitor和rules初始化之后"""
-        try:
-            from autocoder.auto_coder_runner import load_tokenizer
-            load_tokenizer()
-        except Exception:
-            pass  # 如果加载失败，继续测试
-        return True
+    
 
     @pytest.fixture
     def mock_args(self):
@@ -67,15 +33,11 @@ class TestPruneContextExtractStrategy:
         )
 
     @pytest.fixture
-    def real_llm(self, load_tokenizer_fixture):
-        """创建真实的LLM对象"""
-        try:
-            from autocoder.utils.llms import get_single_llm
-            llm = get_single_llm("v3_chat", product_mode="lite")
-            return llm
-        except Exception:
-            # 如果无法获取真实LLM，使用Mock
-            return MagicMock()
+    def real_llm(self):
+        """创建真实的LLM对象"""        
+        llm = get_llm("v3_chat", product_mode="lite")
+        return llm
+        
 
     @pytest.fixture
     def pruner(self, mock_args, real_llm):
@@ -83,46 +45,110 @@ class TestPruneContextExtractStrategy:
         return PruneContext(max_tokens=1000, args=mock_args, llm=real_llm)
 
     @pytest.fixture
-    def sample_file_sources(self):
-        """Sample file sources for testing"""
-        return [
-            SourceCode(
-                module_name="math_utils.py",
-                source_code="""def add(a, b):
-    \"\"\"加法函数\"\"\"
+    def sample_file_sources(self, temp_test_dir):
+        """Sample file sources for testing
+        Creates a simulated project structure in the temporary directory
+        """
+        # 创建项目结构
+        src_dir = os.path.join(temp_test_dir, "src")
+        utils_dir = os.path.join(src_dir, "utils")
+        os.makedirs(utils_dir, exist_ok=True)
+        
+        # 创建 __init__.py 文件使其成为有效的 Python 包
+        with open(os.path.join(src_dir, "__init__.py"), "w") as f:
+            f.write("# src package")
+        with open(os.path.join(utils_dir, "__init__.py"), "w") as f:
+            f.write("# utils package")
+        
+        # 创建数学工具模块
+        math_utils_content = '''def add(a, b):
+    """加法函数"""
     return a + b
 
 def subtract(a, b):
-    \"\"\"减法函数\"\"\"
+    """减法函数"""
     return a - b
 
 def multiply(a, b):
-    \"\"\"乘法函数\"\"\"
+    """乘法函数"""
     return a * b
 
 def divide(a, b):
-    \"\"\"除法函数\"\"\"
+    """除法函数"""
     if b == 0:
         raise ValueError("Cannot divide by zero")
     return a / b
-""",
-                tokens=500
-            ),
-            SourceCode(
-                module_name="string_utils.py",
-                source_code="""def format_string(s):
-    \"\"\"格式化字符串\"\"\"
+'''
+        math_utils_path = os.path.join(utils_dir, "math_utils.py")
+        with open(math_utils_path, "w") as f:
+            f.write(math_utils_content)
+        
+        # 创建字符串工具模块
+        string_utils_content = '''def format_string(s):
+    """格式化字符串"""
     return s.strip().lower()
 
 def reverse_string(s):
-    \"\"\"反转字符串\"\"\"
+    """反转字符串"""
     return s[::-1]
 
 def count_characters(s):
-    \"\"\"计算字符数\"\"\"
+    """计算字符数"""
     return len(s)
-""",
+'''
+        string_utils_path = os.path.join(utils_dir, "string_utils.py")
+        with open(string_utils_path, "w") as f:
+            f.write(string_utils_content)
+        
+        # 创建主程序文件
+        main_content = '''from utils.math_utils import add, subtract
+from utils.string_utils import format_string
+
+def main():
+    print("计算结果:", add(5, 3))
+    print("格式化结果:", format_string("  Hello World  "))
+
+if __name__ == "__main__":
+    main()
+'''
+        main_path = os.path.join(src_dir, "main.py")
+        with open(main_path, "w") as f:
+            f.write(main_content)
+        
+        # 创建 README 文件
+        readme_content = '''# 测试项目
+
+这是一个用于测试的模拟项目结构。
+
+## 功能
+
+- 数学运算
+- 字符串处理
+'''
+        readme_path = os.path.join(temp_test_dir, "README.md")
+        with open(readme_path, "w") as f:
+            f.write(readme_content)
+
+        ## 初始化该项目
+        os.chdir(temp_test_dir)
+        init_project_if_required(target_dir=temp_test_dir)    
+        
+        # 返回与原来相同的 SourceCode 对象列表，但使用相对路径作为 module_name
+        return [
+            SourceCode(
+                module_name="src/utils/math_utils.py",
+                source_code=math_utils_content,
+                tokens=500
+            ),
+            SourceCode(
+                module_name="src/utils/string_utils.py",
+                source_code=string_utils_content,
                 tokens=300
+            ),
+            SourceCode(
+                module_name="src/main.py",
+                source_code=main_content,
+                tokens=200
             )
         ]
 
@@ -141,81 +167,25 @@ def count_characters(s):
 [
     {"start_line": 1, "end_line": 7}
 ]
-```"""
+```"""        
+            
+        result = pruner.handle_overflow(
+            file_sources=sample_file_sources,
+            conversations=sample_conversations,
+            strategy="extract"
+        )
         
-        # Mock extract_code函数
-        with patch('byzerllm.utils.client.code_utils.extract_code') as mock_extract:
-            mock_extract.return_value = [("json", """[
-    {"start_line": 1, "end_line": 7}
-]""")]
-            
-            # Mock LLM调用
-            if hasattr(pruner.llm, 'chat'):
-                pruner.llm.chat.return_value = mock_response
-            else:
-                # 如果是真实LLM，模拟其行为
-                original_method = getattr(pruner.llm, 'chat', None)
-                if original_method:
-                    with patch.object(pruner.llm, 'chat', return_value=mock_response):
-                        result = pruner.handle_overflow(
-                            file_sources=sample_file_sources,
-                            conversations=sample_conversations,
-                            strategy="extract"
-                        )
-                else:
-                    # 如果没有chat方法，直接测试不依赖LLM的部分
-                    result = pruner._delete_overflow_files(sample_file_sources)
-            
-            # 执行测试
-            if 'result' not in locals():
-                result = pruner.handle_overflow(
-                    file_sources=sample_file_sources,
-                    conversations=sample_conversations,
-                    strategy="extract"
-                )
-            
-            # 验证结果
-            assert isinstance(result, list), "应该返回文件列表"
-            assert len(result) > 0, "应该至少返回一个文件"
-            
-            # 验证返回的是SourceCode对象
-            for item in result:
-                assert isinstance(item, SourceCode), "返回的应该是SourceCode对象"
-                assert hasattr(item, 'module_name'), "SourceCode应该有module_name属性"
-                assert hasattr(item, 'source_code'), "SourceCode应该有source_code属性"
-
-    def test_extract_strategy_with_mock_llm(self, mock_args, sample_file_sources, sample_conversations):
-        """使用Mock LLM测试extract策略"""
-        # 创建Mock LLM
-        mock_llm = MagicMock()
+        # 验证结果
+        assert isinstance(result, list), "应该返回文件列表"
+        assert len(result) > 0, "应该至少返回一个文件"
+        print(result)
         
-        # 创建pruner实例
-        pruner = PruneContext(max_tokens=1000, args=mock_args, llm=mock_llm)
-        
-        # Mock extract_code函数返回值
-        with patch('byzerllm.utils.client.code_utils.extract_code') as mock_extract:
-            mock_extract.return_value = [("json", """[
-    {"start_line": 1, "end_line": 4}
-]""")]
-            
-            # Mock count_tokens函数
-            with patch('autocoder.rag.token_counter.count_tokens') as mock_count:
-                # 设置token计数：总数超过限制，触发extract策略
-                mock_count.side_effect = [1500, 800, 200]  # 总数1500超过1000，单个文件800，片段200
-                
-                # 执行测试
-                result = pruner.handle_overflow(
-                    file_sources=sample_file_sources,
-                    conversations=sample_conversations,
-                    strategy="extract"
-                )
-                
-                # 验证结果
-                assert isinstance(result, list), "应该返回文件列表"
-                # 由于使用了mock，结果可能为空或包含处理过的文件
-                
-                # 验证LLM被调用
-                # 注意：由于代码结构，LLM可能不会被直接调用，这取决于具体的执行路径
+        # 验证返回的是SourceCode对象
+        for item in result:
+            assert isinstance(item, SourceCode), "返回的应该是SourceCode对象"
+            assert hasattr(item, 'module_name'), "SourceCode应该有module_name属性"
+            assert hasattr(item, 'source_code'), "SourceCode应该有source_code属性"
+   
 
     def test_sliding_window_split(self, pruner):
         """测试滑动窗口分割功能"""
