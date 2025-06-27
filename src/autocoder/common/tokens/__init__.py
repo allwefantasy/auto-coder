@@ -51,6 +51,20 @@ def count_directory_tokens(
     )
 
 
+def count_string_tokens(text: str) -> int:
+    """
+    统计字符串的 token 数量
+    
+    Args:
+        text: 要统计的字符串内容
+        
+    Returns:
+        int: token 数量
+    """
+    counter = TokenCounter()
+    return counter.count_string_tokens(text)
+
+
 __all__ = [
     'TokenResult',
     'DirectoryTokenResult',
@@ -59,4 +73,5 @@ __all__ = [
     'FileFilter',
     'count_file_tokens',
     'count_directory_tokens',
+    'count_string_tokens',
 ]

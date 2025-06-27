@@ -200,6 +200,26 @@ class TokenCounter:
             errors=errors
         )
     
+    def count_string_tokens(self, text: str) -> int:
+        """
+        统计字符串的 token 数量
+        
+        Args:
+            text: 要统计的字符串内容
+            
+        Returns:
+            int: token 数量
+        """
+        try:
+            if not isinstance(text, str):
+                raise ValueError("Input must be a string")
+            
+            # 使用 tokenizer 编码字符串并统计 token 数量
+            tokens = VariableHolder.TOKENIZER_MODEL.encode(text)
+            return len(tokens)
+        except Exception as e:
+            raise RuntimeError(f"Failed to count tokens: {str(e)}")
+    
     def set_tokenizer(self, tokenizer_name: str) -> None:
         """
         更改 tokenizer（目前不支持，仅为接口预留）
