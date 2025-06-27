@@ -3,7 +3,7 @@ from typing import Tuple
 from pathlib import Path
 import json
 from loguru import logger
-from autocoder.rag.token_counter import count_tokens
+from autocoder.common.tokens import count_string_tokens
 from autocoder.common import AutoCoderArgs, SourceCode
 from byzerllm.utils.client.code_utils import extract_code
 from autocoder.index.types import VerifyFileRelevance
@@ -383,7 +383,7 @@ class PruneContext:
                     tokens = file_source.tokens
                     total_tokens += file_source.tokens
                 else:
-                    tokens = count_tokens(file_source.source_code)                    
+                    tokens = count_string_tokens(file_source.source_code)                    
                     total_tokens += tokens
 
                 sources.append(SourceCode(module_name=file_source.module_name,

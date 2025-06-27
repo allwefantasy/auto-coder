@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 from autocoder.common.pruner.context_pruner import PruneContext
 from autocoder.common import AutoCoderArgs, SourceCode
 from autocoder.sdk import get_llm,init_project_if_required
+from autocoder.common.tokens import count_string_tokens
 
 
 class TestPruneContextExtractStrategy:
@@ -260,7 +261,7 @@ def multiply(a, b):
 
     def test_count_tokens_method(self, pruner, sample_file_sources):
         """测试token计数方法"""
-        with patch('autocoder.rag.token_counter.count_tokens') as mock_count:
+        with patch('autocoder.common.tokens.count_string_tokens') as mock_count:
             mock_count.return_value = 100
             
             total_tokens, sources = pruner._count_tokens(sample_file_sources)
@@ -292,7 +293,7 @@ def multiply(a, b):
         assert isinstance(result, list), "应该返回列表"
         assert len(result) == 0, "空输入应该返回空结果"
 
-    @patch('autocoder.rag.token_counter.count_tokens')
+    @patch('autocoder.common.tokens.count_string_tokens')
     def test_within_token_limit(self, mock_count, pruner, sample_file_sources, sample_conversations):
         """测试在token限制内的情况"""
         # 设置token计数低于限制
