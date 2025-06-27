@@ -139,17 +139,17 @@ if __name__ == "__main__":
             SourceCode(
                 module_name="src/utils/math_utils.py",
                 source_code=math_utils_content,
-                tokens=500
+                tokens=count_string_tokens(math_utils_content)
             ),
             SourceCode(
                 module_name="src/utils/string_utils.py",
                 source_code=string_utils_content,
-                tokens=300
+                tokens=count_string_tokens(string_utils_content)
             ),
             SourceCode(
                 module_name="src/main.py",
                 source_code=main_content,
-                tokens=200
+                tokens=count_string_tokens(main_content)
             )
         ]
 
