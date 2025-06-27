@@ -272,25 +272,32 @@ class PruneContext:
                         if merged_snippets:
                             self.printer.print_str_in_terminal(f"    合并后的片段: {merged_snippets}")
                     
-                    content_snippets = self._build_snippet_content(
-                        file_source.module_name, file_source.source_code, merged_snippets)
-                    snippet_tokens = count_tokens(content_snippets)
-                    
-                    if token_count + snippet_tokens <= self.max_tokens:
-                        selected_files.append(SourceCode(
-                            module_name=file_source.module_name, source_code=content_snippets, tokens=snippet_tokens))
-                        token_count += snippet_tokens
-                        self.printer.print_in_terminal("file_snippet_procesed", file_path=file_source.module_name,
-                                                        total_tokens=token_count,
-                                                        tokens=tokens,
-                                                        snippet_tokens=snippet_tokens)
-                        if self.verbose:
-                            self.printer.print_str_in_terminal(f"✅ 文件 {file_source.module_name} 滑动窗口处理成功，最终抽取到结果")
-                        continue
+                    # 只有当有代码片段时才处理
+                    if merged_snippets:
+                        content_snippets = self._build_snippet_content(
+                            file_source.module_name, file_source.source_code, merged_snippets)
+                        snippet_tokens = count_tokens(content_snippets)
+                        
+                        if token_count + snippet_tokens <= self.max_tokens:
+                            selected_files.append(SourceCode(
+                                module_name=file_source.module_name, source_code=content_snippets, tokens=snippet_tokens))
+                            token_count += snippet_tokens
+                            self.printer.print_in_terminal("file_snippet_procesed", file_path=file_source.module_name,
+                                                            total_tokens=token_count,
+                                                            tokens=tokens,
+                                                            snippet_tokens=snippet_tokens)
+                            if self.verbose:
+                                self.printer.print_str_in_terminal(f"✅ 文件 {file_source.module_name} 滑动窗口处理成功，最终抽取到结果")
+                            continue
+                        else:
+                            if self.verbose:
+                                self.printer.print_str_in_terminal(f"❌ 文件 {file_source.module_name} 滑动窗口处理后token数超限 ({token_count + snippet_tokens} > {self.max_tokens})，停止处理")
+                            break
                     else:
+                        # 滑动窗口处理后没有相关代码片段，跳过这个文件
                         if self.verbose:
-                            self.printer.print_str_in_terminal(f"❌ 文件 {file_source.module_name} 滑动窗口处理后token数超限 ({token_count + snippet_tokens} > {self.max_tokens})，停止处理")
-                        break
+                            self.printer.print_str_in_terminal(f"⏭️ 文件 {file_source.module_name} 滑动窗口处理后无相关代码片段，跳过处理")
+                        continue
 
                 # 抽取关键片段
                 lines = file_source.source_code.splitlines()
@@ -323,25 +330,31 @@ class PruneContext:
                         else:
                             self.printer.print_str_in_terminal(f"    ❌ 未抽取到相关代码片段")
                     
-                    content_snippets = self._build_snippet_content(
-                        file_source.module_name, file_source.source_code, snippets)
+                    # 只有当有代码片段时才处理
+                    if snippets:
+                        content_snippets = self._build_snippet_content(
+                            file_source.module_name, file_source.source_code, snippets)
 
-                    snippet_tokens = count_tokens(content_snippets)
-                    if token_count + snippet_tokens <= self.max_tokens:
-                        selected_files.append(SourceCode(module_name=file_source.module_name,
-                                                            source_code=content_snippets,
-                                                            tokens=snippet_tokens))
-                        token_count += snippet_tokens
-                        self.printer.print_in_terminal("file_snippet_procesed", file_path=file_source.module_name,
-                                                        total_tokens=token_count,
-                                                        tokens=tokens,
-                                                        snippet_tokens=snippet_tokens)
-                        if self.verbose:
-                            self.printer.print_str_in_terminal(f"✅ 文件 {file_source.module_name} 整体抽取成功，最终抽取到结果")
+                        snippet_tokens = count_tokens(content_snippets)
+                        if token_count + snippet_tokens <= self.max_tokens:
+                            selected_files.append(SourceCode(module_name=file_source.module_name,
+                                                                source_code=content_snippets,
+                                                                tokens=snippet_tokens))
+                            token_count += snippet_tokens
+                            self.printer.print_in_terminal("file_snippet_procesed", file_path=file_source.module_name,
+                                                            total_tokens=token_count,
+                                                            tokens=tokens,
+                                                            snippet_tokens=snippet_tokens)
+                            if self.verbose:
+                                self.printer.print_str_in_terminal(f"✅ 文件 {file_source.module_name} 整体抽取成功，最终抽取到结果")
+                        else:
+                            if self.verbose:
+                                self.printer.print_str_in_terminal(f"❌ 文件 {file_source.module_name} 整体抽取后token数超限 ({token_count + snippet_tokens} > {self.max_tokens})，停止处理")
+                            break
                     else:
+                        # 没有相关代码片段，跳过这个文件
                         if self.verbose:
-                            self.printer.print_str_in_terminal(f"❌ 文件 {file_source.module_name} 整体抽取后token数超限 ({token_count + snippet_tokens} > {self.max_tokens})，停止处理")
-                        break
+                            self.printer.print_str_in_terminal(f"⏭️ 文件 {file_source.module_name} 无相关代码片段，跳过处理")
                 else:
                     if self.verbose:
                         self.printer.print_str_in_terminal(f"❌ 文件 {file_source.module_name} 整体抽取失败，未返回结果")
@@ -457,7 +470,7 @@ class PruneContext:
         else:
             raise ValueError(f"无效策略: {strategy}. 可选值: delete/extract/score")
 
-    def _count_tokens(self, file_sources: List[SourceCode]) -> int:
+    def _count_tokens(self, file_sources: List[SourceCode]) -> Tuple[int, List[SourceCode]]:
         """计算文件总token数"""
         total_tokens = 0
         sources = []
@@ -467,7 +480,7 @@ class PruneContext:
                     tokens = file_source.tokens
                     total_tokens += file_source.tokens
                 else:
-                    tokens = count_string_tokens(file_source.source_code)                    
+                    tokens = count_tokens(file_source.source_code)                    
                     total_tokens += tokens
 
                 sources.append(SourceCode(module_name=file_source.module_name,
