@@ -68,7 +68,7 @@ class TokenHelperPlugin(Plugin):
         return {
             "token/count": (self.count_tokens_in_project, "Count tokens in all project files"),
             "token/top": (self.show_top_token_files, "Show top N files by token count"),
-            "token/file": (self.count_tokens_in_file, "Count tokens in a specific file"),
+            "token/file": (self.count_tokens_in_file, "Count tokens in a specific file or directory"),
             "token/summary": (self.show_token_summary, "Show token count summary for the project"),
         }
 
@@ -274,17 +274,46 @@ class TokenHelperPlugin(Plugin):
             print(f"{token_count.tokens:<10,} {token_count.file_size:<15,} {relative_path}")
 
     def count_tokens_in_file(self, args: str) -> None:
-        """Count tokens in a specific file.
+        """Count tokens in a specific file or directory.
         
         Args:
-            args: Path to the file
+            args: Path to the file or directory. If starts with @, remove @ and treat as path.
         """
         if not args:
-            print("Please specify a file path.")
+            print("Please specify a file or directory path.")
             return
             
-        file_path = args.strip()
+        # Handle @ prefix - remove it and treat as path
+        path = args.strip()
+        if path.startswith('@'):
+            path = path[1:]
         
+        if not os.path.exists(path):
+            print(f"Error: Path '{path}' does not exist.")
+            return
+            
+        try:
+            if os.path.isfile(path):
+                # Handle single file
+                self._count_tokens_single_file(path)
+            elif os.path.isdir(path):
+                # Handle directory recursively
+                self._count_tokens_directory(path)
+            else:
+                print(f"Error: '{path}' is neither a file nor a directory.")
+                
+        except Exception as e:
+            print(f"Error counting tokens: {str(e)}")
+    
+    def _count_tokens_single_file(self, file_path: str) -> int:
+        """Count tokens in a single file and display results.
+        
+        Args:
+            file_path: Path to the file
+            
+        Returns:
+            Number of tokens in the file
+        """
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -293,10 +322,81 @@ class TokenHelperPlugin(Plugin):
             print(f"\nFile: {file_path}")
             print(f"Tokens: {tokens:,}")
             print(f"File size: {len(content):,} bytes")
-            print(f"Avg bytes per token: {len(content)/tokens:.2f}")
+            if tokens > 0:
+                print(f"Avg bytes per token: {len(content)/tokens:.2f}")
             
+            return tokens
+            
+        except UnicodeDecodeError:
+            print(f"Warning: Skipping binary file '{file_path}'")
+            return 0
         except Exception as e:
-            print(f"Error counting tokens in file: {str(e)}")
+            print(f"Error reading file '{file_path}': {str(e)}")
+            return 0
+    
+    def _count_tokens_directory(self, dir_path: str) -> None:
+        """Count tokens in all files within a directory recursively.
+        
+        Args:
+            dir_path: Path to the directory
+        """
+        total_tokens = 0
+        file_count = 0
+        processed_files = []
+        
+        print(f"\nScanning directory: {dir_path}")
+        
+        for root, dirs, files in os.walk(dir_path):
+            # Skip common ignore directories
+            dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['__pycache__', 'node_modules', 'dist', 'build']]
+            
+            for file in files:
+                # Skip hidden files and common binary/generated files
+                if file.startswith('.') or file.endswith(('.pyc', '.pyo', '.so', '.dll', '.exe', '.bin')):
+                    continue
+                    
+                file_path = os.path.join(root, file)
+                relative_path = os.path.relpath(file_path, dir_path)
+                
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        
+                    tokens = count_tokens(content)
+                    total_tokens += tokens
+                    file_count += 1
+                    
+                    processed_files.append({
+                        'path': relative_path,
+                        'tokens': tokens,
+                        'size': len(content)
+                    })
+                    
+                except (UnicodeDecodeError, PermissionError):
+                    # Skip binary files and files without permission
+                    continue
+                except Exception as e:
+                    print(f"Warning: Error processing '{relative_path}': {str(e)}")
+                    continue
+        
+        # Display results
+        print(f"\nDirectory scan complete!")
+        print(f"Total files processed: {file_count}")
+        print(f"Total tokens: {total_tokens:,}")
+        
+        if file_count > 0:
+            avg_tokens = total_tokens / file_count
+            print(f"Average tokens per file: {avg_tokens:.2f}")
+            
+            # Show top 10 files by token count
+            if len(processed_files) > 1:
+                print(f"\nTop files by token count:")
+                sorted_files = sorted(processed_files, key=lambda x: x['tokens'], reverse=True)
+                print(f"{'Tokens':>8} {'Size':>8} {'File'}")
+                print(f"{'-'*8} {'-'*8} {'-'*50}")
+                
+                for file_info in sorted_files[:10]:
+                    print(f"{file_info['tokens']:>8,} {file_info['size']:>8} {file_info['path']}")
 
     def show_token_summary(self, args: str) -> None:
         """Show token count summary by file type.
