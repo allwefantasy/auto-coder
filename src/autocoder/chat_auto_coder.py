@@ -279,6 +279,41 @@ class EnhancedCompleter(Completer):
 ARGS = None
 
 
+def load_builtin_plugins():
+    """加载内置插件"""
+    try:
+        # 发现所有可用的插件
+        discovered_plugins = plugin_manager.discover_plugins()
+        
+        # 排除的示例插件列表
+        excluded_plugins = {
+            "autocoder.plugins.dynamic_completion_example",
+            "autocoder.plugins.sample_plugin"
+        }
+        
+        # 自动加载内置插件（在autocoder.plugins模块中的插件）
+        builtin_loaded = 0
+        for plugin_class in discovered_plugins:
+            module_name = plugin_class.__module__
+            if (module_name.startswith("autocoder.plugins.") 
+                and not module_name.endswith(".__init__")
+                and module_name not in excluded_plugins):
+                try:
+                    if plugin_manager.load_plugin(plugin_class):
+                        builtin_loaded += 1
+                        print(f"✓ Loaded builtin plugin: {plugin_class.plugin_name()}")
+                except Exception as e:
+                    print(f"✗ Failed to load builtin plugin {plugin_class.plugin_name()}: {e}")
+        
+        if builtin_loaded > 0:
+            print(f"Loaded {builtin_loaded} builtin plugin(s)")
+        else:
+            print("No builtin plugins loaded")
+            
+    except Exception as e:
+        print(f"Error loading builtin plugins: {e}")
+
+
 def main():
     load_tokenizer()    
     ARGS = parse_arguments()    
@@ -310,6 +345,9 @@ def main():
 
     # 加载保存的运行时配置
     plugin_manager.load_runtime_cfg()
+    
+    # 自动加载内置插件（如果还没有被配置文件加载）
+    load_builtin_plugins()
 
     memory = get_memory()
 
@@ -492,14 +530,21 @@ def main():
                 if temp_user_input.startswith("/"):
                     user_input = temp_user_input
 
-            # Check if this is a plugin command
+            # 修复插件命令处理逻辑
+            plugin_handled = False
             if user_input.startswith("/"):
                 plugin_result = plugin_manager.process_command(user_input)
                 if plugin_result:
                     plugin_name, handler, args = plugin_result
                     if handler:
                         handler(*args)
-                        continue                                    
+                        plugin_handled = True
+            
+            # 如果插件已处理命令，直接继续下一轮循环
+            if plugin_handled:
+                continue
+                
+            # 如果插件未处理，继续处理内置命令
             if (
                 memory["mode"] == "auto_detect"
                 and user_input
@@ -665,24 +710,27 @@ def main():
                 except Exception as e:
                     print(f"Debug error: {str(e)}")
 
-            # elif user_input.startswith("/shell"):
-            else:
-                command = user_input
-                if user_input.startswith("/shell"):
-                    command = user_input[len("/shell") :].strip()
-                    if not command:
-                        print("Please enter a shell command to execute.")
-                    else:
-                        if command.startswith("/chat"):
-                            event_file, file_id = gengerate_event_file_path()
-                            global_cancel.register_token(event_file)
-                            configure(f"event_file:{event_file}")
-                            command = command[len("/chat") :].strip()
-                            gen_and_exec_shell_command(command)
-                        else:
-                            execute_shell_command(command)
+            elif user_input.startswith("/shell"):
+                command = user_input[len("/shell") :].strip()
+                if not command:
+                    print("Please enter a shell command to execute.")
                 else:
-                    if user_input and user_input.strip():
+                    if command.startswith("/chat"):
+                        event_file, file_id = gengerate_event_file_path()
+                        global_cancel.register_token(event_file)
+                        configure(f"event_file:{event_file}")
+                        command = command[len("/chat") :].strip()
+                        gen_and_exec_shell_command(command)
+                    else:
+                        execute_shell_command(command)
+            else:
+                # 对于未识别的命令，显示提示信息而不是执行auto_command
+                if user_input and user_input.strip():
+                    if user_input.startswith("/"):
+                        print(f"\033[91mUnknown command: {user_input}\033[0m")
+                        print("Type /help to see available commands.")
+                    else:
+                        # 只有非命令输入才执行auto_command
                         auto_command(user_input)
 
         except KeyboardInterrupt:
