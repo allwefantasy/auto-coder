@@ -268,7 +268,8 @@ def main(input_args: Optional[List[str]] = None):
                     "saas.api_key": model_info["api_key"],
                     "saas.model": model_info["model_name"],
                     "saas.is_reasoning": model_info["is_reasoning"],
-                    "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                    "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                    "saas.https_verify": model_info.get("https_verify", True),
                 }
             )                                                    
 
@@ -292,7 +293,8 @@ def main(input_args: Optional[List[str]] = None):
                                 "saas.api_key": model_info["api_key"],
                                 "saas.model": model_info["model_name"],
                                 "saas.is_reasoning": model_info["is_reasoning"],
-                                "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                                "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                                "saas.https_verify": model_info.get("https_verify", True),
                             }
                         )
                         models.append(code_model)
@@ -311,7 +313,8 @@ def main(input_args: Optional[List[str]] = None):
                             "saas.api_key": model_info["api_key"],
                             "saas.model": model_info["model_name"],
                             "saas.is_reasoning": model_info["is_reasoning"],
-                            "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                            "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                            "saas.https_verify": model_info.get("https_verify", True),
                         }
                     )
                     llm.setup_sub_client("code_model", code_model)
@@ -333,7 +336,8 @@ def main(input_args: Optional[List[str]] = None):
                                 "saas.api_key": model_info["api_key"],
                                 "saas.model": model_info["model_name"],
                                 "saas.is_reasoning": model_info["is_reasoning"],
-                                "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                                "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                                "saas.https_verify": model_info.get("https_verify", True),
                             }
                         )
                         models.append(rerank_model)
@@ -352,7 +356,8 @@ def main(input_args: Optional[List[str]] = None):
                             "saas.api_key": model_info["api_key"],
                             "saas.model": model_info["model_name"],
                             "saas.is_reasoning": model_info["is_reasoning"],
-                            "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                            "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                            "saas.https_verify": model_info.get("https_verify", True),
                         }
                     )
                     llm.setup_sub_client("generate_rerank_model", rerank_model)
@@ -370,7 +375,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("inference_model", inference_model)                 
@@ -388,7 +394,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("index_filter_model", index_filter_model)            
@@ -406,7 +413,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("context_prune_model", context_prune_model)
@@ -424,7 +432,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("conversation_prune_model", conversation_prune_model)
@@ -599,7 +608,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("chat_model", chat_model)
@@ -617,7 +627,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("vl_model", vl_model)
@@ -635,7 +646,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("index_model", index_model)    
@@ -653,7 +665,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("sd_model", sd_model)
@@ -671,7 +684,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("text2voice_model", text2voice_model)
@@ -689,7 +703,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("voice2text_model", voice2text_model)
@@ -707,7 +722,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("planner_model", planner_model)
@@ -725,7 +741,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("commit_model", commit_model)    
@@ -743,7 +760,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("designer_model", designer_model)
@@ -761,7 +779,8 @@ def main(input_args: Optional[List[str]] = None):
                         "saas.api_key": model_info["api_key"],
                         "saas.model": model_info["model_name"],
                         "saas.is_reasoning": model_info["is_reasoning"],
-                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096)
+                        "saas.max_output_tokens": model_info.get("max_output_tokens", 8096),
+                        "saas.https_verify": model_info.get("https_verify", True),
                     }
                 )
                 llm.setup_sub_client("emb_model", emb_model)
