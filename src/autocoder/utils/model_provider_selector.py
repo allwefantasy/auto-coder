@@ -65,6 +65,17 @@ PROVIDER_INFO_LIST = [
         r1_output_price=0.0,
         v3_input_price=0.0,
         v3_output_price=0.0,
+    ),
+    ProviderInfo(
+        name="requesty",
+        endpoint="https://router.requesty.ai/v1",
+        r1_model="deepseek/deepseek-reasoner",
+        v3_model="deepseek/deepseek-chat",
+        api_key="",
+        r1_input_price=0.0,
+        r1_output_price=0.0,
+        v3_input_price=0.0,
+        v3_output_price=0.0,
     )
 ]
 
@@ -159,7 +170,8 @@ class ModelProviderSelector:
                 ("volcano", self.printer.get_message_from_key("model_provider_volcano")),
                 ("siliconflow", self.printer.get_message_from_key("model_provider_siliconflow")),
                 ("deepseek", self.printer.get_message_from_key("model_provider_deepseek")),
-                ("openrouter", self.printer.get_message_from_key("model_provider_openrouter"))
+                ("openrouter", self.printer.get_message_from_key("model_provider_openrouter")),
+                ("requesty", self.printer.get_message_from_key("model_provider_requesty"))
             ],
             style=dialog_style
         ).run()

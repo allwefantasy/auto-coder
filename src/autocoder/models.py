@@ -110,6 +110,19 @@ default_models_list = [
         "output_price": 0.0,
         "average_speed": 0.0,
         "max_output_tokens": 8096*2
+    },
+    {
+        "name": "requesty/deepseek/deepseek-chat",
+        "description": "",
+        "model_name": "deepseek/deepseek-chat",
+        "model_type": "saas/openai",
+        "base_url": "https://router.requesty.ai/v1",
+        "api_key_path": "",
+        "is_reasoning": False,
+        "input_price": 0.0,
+        "output_price": 0.0,
+        "average_speed": 0.0,
+        "max_output_tokens": 8096*2
     }
 ]
 
