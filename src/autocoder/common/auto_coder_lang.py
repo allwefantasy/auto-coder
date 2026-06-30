@@ -110,6 +110,10 @@ MESSAGES = {
         "en": "OpenRouter",
         "zh": "OpenRouter"
     },
+    "model_provider_requesty": {
+        "en": "Requesty",
+        "zh": "Requesty"
+    },
     "model_provider_api_key_title": {
         "en": "API Key",
         "zh": "API密钥"
@@ -121,6 +125,10 @@ MESSAGES = {
     "model_provider_openrouter_api_key_text": {
         "en": "Please enter your OpenRouter API key:",
         "zh": "请输入您的OpenRouter API密钥："
+    },
+    "model_provider_requesty_api_key_text": {
+        "en": "Please enter your Requesty API key:",
+        "zh": "请输入您的Requesty API密钥："
     },
     "model_provider_volcano_r1_text": {
         "en": "Please enter your Volcano Engine R1 endpoint (format: ep-20250204215011-vzbsg):",
