@@ -1,0 +1,4 @@
+{
+  "name": "auto-coder",
+  "install": "bash .cursor/install.sh"
+}

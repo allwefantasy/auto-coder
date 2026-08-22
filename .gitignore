@@ -68,7 +68,9 @@ notebooks/generated_image.png
 /examples/test_project
 /package-lock.json/
 .windsurfrules
-.cursor
+.cursor/*
+!.cursor/environment.json
+!.cursor/install.sh
 
 
 .auto-coder/
