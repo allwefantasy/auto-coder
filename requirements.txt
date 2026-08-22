@@ -89,6 +89,10 @@ SpeechRecognition
 pathvalidate
 pexpect
 mcp ; python_version >= '3.10'
-setuptools
+# setuptools>=81 removes the pkg_resources API that autocoder still imports.
+setuptools<81
 filelock
 argcomplete
+pandas
+sqlmodel
+psutil
